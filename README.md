@@ -10,6 +10,7 @@ Miscellaneous tools and utilities for raspiBackup
 	1. Sample eMail extension
 	2. Sample extension which reports the memory usage before and after backup
 	3. Sample extension which reports the CPU temperatur before and after backup
+	4. Sample extension which initiates different actions depending on the return code of raspiBackup
 
 [Details about raspiBackup (English)](https://www.linux-tips-and-tricks.de/en/backup)
 
