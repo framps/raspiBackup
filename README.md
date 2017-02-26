@@ -18,7 +18,7 @@ Miscellaneous tools and utilities for [raspiBackup](https://www.linux-tips-and-t
 	3. Configure go ```export GOPATH=/home/pi/go; export PATH=/home/pi/go/bin:$PATH```
 	4. Execute ```go get github.com/framps/raspiBackup```
 	5. Start REST API server ```raspiBackup```
-	6. Invoke raspiBackup via REST
+	6. Invoke raspiBackup via REST with curl
 	
 		```curl -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar"}' http://<raspiHost>:8080/v0.1/backup```
 
