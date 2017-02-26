@@ -13,6 +13,10 @@ Miscellaneous tools and utilities for [raspiBackup](https://www.linux-tips-and-t
 	4. Sample extension which initiates different actions depending on the return code of raspiBackup
 
 4. REST API Server Prototype for raspiBackup written in go [(Code)](https://github.com/framps/raspiBackup/blob/master/RESTAPIServer.go)
+	1. Install and configure go 
+	2. Execute ```go get -v github.com/framps/raspiBackup```
+	3. Invoke raspiBackup via REST and use following command:
+		```curl -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar"}' http://<raspiHost>:8080/v0.1/backup```
 
 [Details about raspiBackup (English)](https://www.linux-tips-and-tricks.de/en/backup)
 
