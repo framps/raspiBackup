@@ -15,7 +15,7 @@ Miscellaneous tools and utilities for [raspiBackup](https://www.linux-tips-and-t
 4. REST API Server Prototype for raspiBackup written in go [(Code)](https://github.com/framps/raspiBackup/blob/master/RESTAPIServer.go)
 	1. Install go (Use following [instructions](http://www.admfactory.com/how-to-install-golang-on-raspberry-pi/))
 	2. Create go subdirectory ```mkdir /home/pi/go```
-	3. Configure go ```export GOPATH=/home/pi/go; export PATH=/home/pi/go/bin:$PATH```
+	3. Configure go ```export GOPATH=/home/pi/go; export PATH=$GOPATH/bin:$PATH```
 	4. Execute ```go get github.com/framps/raspiBackup```
 	5. Start REST API server ```raspiBackup```
 	6. Invoke raspiBackup via REST with curl
