@@ -12,6 +12,8 @@ Miscellaneous tools and utilities for [raspiBackup](https://www.linux-tips-and-t
 	3. Sample extension which reports the CPU temperatur before and after backup
 	4. Sample extension which initiates different actions depending on the return code of raspiBackup
 
+4. REST API Server Prototype for raspiBackup written in go [(Code)](https://github.com/framps/raspiBackup/blob/master/RESTAPIServer.go)
+
 [Details about raspiBackup (English)](https://www.linux-tips-and-tricks.de/en/backup)
 
 [Details über raspiBackup (German)](https://www.linux-tips-and-tricks.de/de/raspiBackup)
