@@ -17,18 +17,24 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-const executable = "/usr/local/bin/raspiBackup.sh"
+const (
+	executable   = "/usr/local/bin/raspiBackup.sh"
+	passwordFile = "/usr/local/etc/raspiBackup.auth"
+)
 
 type parameter struct {
 	Target string  `json:"target" binding:"required"`
-	Type   *string `json:"type"`
+	Type   *string `json:"type,omitempty"`
 	Keep   *int    `json:"keep,omitempty"`
 	Mode   *string `json:"mode,omitempty"`
 }
@@ -43,8 +49,6 @@ func BackupHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
-
-	fmt.Printf("Payload: %+v\n", parm)
 
 	args := ""
 
@@ -62,8 +66,10 @@ func BackupHandler(c *gin.Context) {
 
 	args += " " + parm.Target
 
-	fmt.Println("args: " + args)
-	cmd := exec.Command(executable, args)
+	command := "sudo " + executable
+	args = `"` + args + `"`
+	combined := command + " " + args
+	cmd := exec.Command("/bin/bash", "-c", combined)
 
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
@@ -73,14 +79,50 @@ func BackupHandler(c *gin.Context) {
 }
 
 func main() {
+
 	api := gin.Default()
 
-	v1 := api.Group("v0.1")
+	passwordSet := false
+	var credentialMap = make(map[string]string, 0)
+
+	// read credentials
+	if _, err := os.Stat(passwordFile); err == nil {
+		fmt.Printf("INFO: Reading %v\n", passwordFile)
+		credentials, err := ioutil.ReadFile(passwordFile)
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(42)
+		}
+
+		lines := strings.Split(string(credentials), "\n")
+
+		for _, line := range lines {
+			splitCredentials := strings.Split(string(line), ":")
+			if len(splitCredentials) == 2 {
+				uid, pwd := strings.TrimSpace(splitCredentials[0]), strings.TrimSpace(splitCredentials[1])
+				credentialMap[uid] = pwd
+				fmt.Printf("INFO: Found uid '%v'\n", uid)
+				passwordSet = true
+			}
+		}
+
+	} else {
+		fmt.Printf("WARNING: REST API not protected with basic auth\n")
+	}
+
+	var v1 *gin.RouterGroup
+
+	if passwordSet {
+		v1 = api.Group("v1", gin.BasicAuth(credentialMap))
+	} else {
+		v1 = api.Group("v1")
+	}
+
 	{
 		v1.POST("/backup", BackupHandler)
 	}
 
-	// curl -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar"}' http://localhost:8080/v0.1/backup
+	// curl -u foo:bar -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar"}' http://localhost:8080/v1/backup
 
 	api.Run(":8080")
 }
