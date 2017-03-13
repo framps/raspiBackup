@@ -14,9 +14,10 @@ German native speakers should visit [raspiBackup DE](https://www.linux-tips-and-
 	3. Sample extension which reports the CPU temperatur before and after backup
 	4. Sample extension which initiates different actions depending on the return code of raspiBackup
 
-4. REST API Server for raspiBackup written in go [(Code)](https://github.com/framps/raspiBackup/blob/master/raspiBackupRESTAPI.go)
+4. REST API Server for raspiBackup written in go 
+
 	Allows to start a backup from a remote system or any web UI.
-	1. Download [(Executable)](https://github.com/framps/raspiBackup/blob/master/raspiBackupRESTListener) and copy this file to /usr/local/bin
+	1. Download executable from RESTAPI directory
 	2. Create a file /usr/local/etc/raspiBackup.auth and define access credentials for the API. For every user define a line userid:password
 	3. Set file attributes for /usr/local/etc/raspiBackup.auth to 600
 	4. Start the RESTAPI with ```sudo raspiBackupRESTAPI``` 
