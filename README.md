@@ -18,9 +18,9 @@ German native speakers should visit [raspiBackup DE](https://www.linux-tips-and-
 
 	Allows to start a backup from a remote system or any web UI.
 	1. Download executable from RESTAPI directory
-	2. Create a file /usr/local/etc/raspiBackup.auth and define access credentials for the API. For every user define a line userid:password
+	2. Create a file /usr/local/etc/raspiBackup.auth and define access credentials for the API. For every user create a line userid:password
 	3. Set file attributes for /usr/local/etc/raspiBackup.auth to 600
-	4. Start the RESTAPI with ```sudo raspiBackupRESTAPI``` 
+	4. Start the RESTAPI with ```sudo raspiBackupRESTAPIListener``` 
 	4. Use ```curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v0.1/backup``` to kick off a backup.
 	
 	
