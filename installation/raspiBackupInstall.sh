@@ -15,11 +15,11 @@ VERSION="0.3.3c"
 MYFILE="$0"
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
-set +u; GIT_DATE="$Date: 2017-01-06 09:39:30 +0100$"; set -u
+set +u; GIT_DATE="$Date: 2017-04-26 18:23:05 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE) 
-set +u; GIT_COMMIT="$Sha1: 4fb7d72$"; set -u
+set +u; GIT_COMMIT="$Sha1: 498b09b$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
