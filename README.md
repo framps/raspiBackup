@@ -14,14 +14,14 @@ German native speakers should visit [raspiBackup DE](https://www.linux-tips-and-
 	3. Sample extension which reports the CPU temperatur before and after backup
 	4. Sample extension which initiates different actions depending on the return code of raspiBackup
 
-4. REST API Server Prototype for raspiBackup written in go [(Code)](https://github.com/framps/raspiBackup/blob/master/RESTAPIServer.go)
-	1. Install go (Use following [instructions](http://www.admfactory.com/how-to-install-golang-on-raspberry-pi/))
-	2. Create go directory ```mkdir /home/pi/go```
-	3. Configure go ```export GOPATH=/home/pi/go; export PATH=$GOPATH/bin:$PATH```
-	4. Execute ```go get github.com/framps/raspiBackup```
-	5. Start REST API server ```raspiBackup```
-	6. Invoke raspiBackup via REST with curl
-	
-		```curl -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar"}' http://<raspiHost>:8080/v0.1/backup```
+4. REST API Server for raspiBackup written in go 
 
+	Allows to start a backup from a remote system or any web UI.
+	1. Download executable from RESTAPI directory
+	2. Create a file /usr/local/etc/raspiBackup.auth and define access credentials for the API. For every user create a line userid:password
+	3. Set file attributes for /usr/local/etc/raspiBackup.auth to 600
+	4. Start the RESTAPI with ```sudo raspiBackupRESTAPIListener``` 
+	4. Use ```curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v0.1/backup``` to kick off a backup.
+	
+	
 
