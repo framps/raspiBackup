@@ -7,10 +7,20 @@
 
 NFSSERVER="raspifix"
 NFSDIRECTORY="/disks/silver/photos"
+MOUNTPOINT="/backup"
+
+VERSION="0.0.2"
+
+function cleanup() {
+	umount -f $MOUNTPOINT
+}
+
+trap cleanup SIGINT SIGTERM EXIT	
 
 if ping -c1 -w3 $NFSSERVER &>/dev/null; then
 	if showmount -e $NFSSERVER | grep -q $NFSDIRECTORY; then
-		echo "Server $NFSSERVER provides $NFSDIRECTORY"
+		echo "Mouting $NFSSERVER:$NFSDIRECTORY to $MOUNTPOINT"
+		mount $NFSSERVER:$NFSDIRECTORY $MOUNTPOINT
 		/usr/local/bin/raspiBackup.sh
 	else
 		echo "Server $NFSSERVER does not provide $NFSDIRECTORY"

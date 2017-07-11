@@ -5,6 +5,7 @@ Miscellaneous tools and utilities for [raspiBackup EN](https://www.linux-tips-an
 German native speakers should visit [raspiBackup DE](https://www.linux-tips-and-tricks.de/de/raspiBackup) 
 
 1. Wrapper script for raspiBackup to add any activities before and after backup [(Code)](https://github.com/framps/raspiBackup/blob/master/raspiBackupWrapper.sh)
+2. Wrapper scipt which checks whether a nfsserver is online, mounts one exported directory and invokes raspiBackup. If the nfsserver is not online no backup is started. [(Code)](https://github.com/framps/raspiBackup/blob/master/raspiBackupNfsWrapper.sh)
 2. Installation scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/installation)
 	1. raspiBackup Installation
 	2. Extension sample installation
@@ -15,7 +16,6 @@ German native speakers should visit [raspiBackup DE](https://www.linux-tips-and-
 	4. Sample extension which initiates different actions depending on the return code of raspiBackup
 
 4. REST API Server for raspiBackup written in go 
-
 	Allows to start a backup from a remote system or any web UI.
 	1. Download executable from RESTAPI directory
 	2. Create a file /usr/local/etc/raspiBackup.auth and define access credentials for the API. For every user create a line userid:password
