@@ -6,7 +6,7 @@
 # (C) 2017 - framp at linux-tips-and-tricks dot de
 
 NFSSERVER="raspifix"
-NFSDIRECTORY="/disks/silver/photos"
+NFSDIRECTORY="/disks/silver/backup"
 MOUNTPOINT="/backup"
 
 VERSION="0.0.2"
