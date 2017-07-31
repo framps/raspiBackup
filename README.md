@@ -29,4 +29,8 @@ Allows to start a backup from a remote system or any web UI.
 4. Start the RESTAPI with ```sudo raspiBackupRESTAPIListener```
 5. Use ```curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v0.1/backup``` to kick off a backup.
 
-# PRs are welcome
+## New features and bug fixes
+
+Any PRs are welcome.
+1. Missing feature - raspiBackup has a lot of features already but if you miss some functionality just create a PR. I suggest to create an issue first in order to discuss the missing feature before start coding.
+2. Bugfixes - Nobody is perfect. Just create a PR
