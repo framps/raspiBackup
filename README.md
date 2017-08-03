@@ -32,5 +32,5 @@ Allows to start a backup from a remote system or any web UI.
 ## New features and bug fixes
 
 Any PRs are welcome.
-1. Missing feature - raspiBackup has a lot of features already but if you miss some functionality just create a PR. I suggest to create an issue first in order to discuss the missing feature before start coding.
-2. Bugfixes - Nobody is perfect. Just create a PR
+1. Missing feature - raspiBackup has a lot of features already but if you miss some functionality just create an issue or a PR. I suggest to create an issue first in order to discuss the missing feature before start coding.
+2. Bugfixes - Nobody is perfect. Either create an issue or just create a PR
