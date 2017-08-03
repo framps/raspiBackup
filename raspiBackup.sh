@@ -57,11 +57,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$q
 
-GIT_DATE="$Date: 2017-07-23 19:56:54 +0200$"
+GIT_DATE="$Date: 2017-08-03 22:12:49 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: ca3e64f$"
+GIT_COMMIT="$Sha1: add2874$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -275,7 +275,7 @@ MSG_EMAIL_PROG_NOT_SUPPORTED=14
 MSG_EN[$MSG_EMAIL_PROG_NOT_SUPPORTED]="RBK0014E: eMail program %1 not supported. Supported are %2"
 MSG_DE[$MSG_EMAIL_PROG_NOT_SUPPORTED]="RBK0014E: eMail Programm %1 ist nicht unterstützt. Möglich sind %2"
 MSG_INSTANCE_ACTIVE=15
-MSG_EN[$MSG_INSTANCE_ACTIVE]="RBK0015E: There is already and instance of $MYNAME up and running"
+MSG_EN[$MSG_INSTANCE_ACTIVE]="RBK0015E: There is already an instance of $MYNAME up and running"
 MSG_DE[$MSG_INSTANCE_ACTIVE]="RBK0015E: Es ist schon eine Instanz von $MYNAME aktiv"
 MSG_NO_SDCARD_FOUND=16
 MSG_EN[$MSG_NO_SDCARD_FOUND]="RBK0016E: No sd card %1 found"
@@ -315,16 +315,16 @@ MSG_EN[$MSG_NO_DEVICEMOUNTED]="RBK0027E: No external device mounted on %1. SD ca
 MSG_DE[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Kein externes Gerät an %1 verbunden. Die SD Karte würde für das Backup benutzt werden."
 MSG_SHELL_ERROR=28
 MSG_EN[$MSG_SHELL_ERROR]="RBK0028E: Command %1 received an error. $NL%2"
-MSG_DE[$MSG_SHELL_ERROR]="RBK0028E: Der Befehl %1 hat einen Fehler bekommen. $NL %2"
+MSG_DE[$MSG_SHELL_ERROR]="RBK0028E: Befehl %1 hat einen Fehler bekommen. $NL %2"
 MSG_MPACK_NOT_INSTALLED=29
 MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to send emails. No log can be attached to the eMail"
 MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden"
 MSG_IMG_DD_FAILED=30
 MSG_EN[$MSG_IMG_DD_FAILED]="RBK0030E: %1 file creation with dd failed with RC %2"
 MSG_DE[$MSG_IMG_DD_FAILED]="RBK0030E: %1 Datei Erzeugung mit dd endet fahlerhaft mit RC %2"
-#MSG_BACKUPPATH_DOESNOTEXIST=31
-#MSG_EN[$MSG_BACKUPPATH_DOESNOTEXIST]="RBK0031E: Backuppath %1 does not exist"
-#MSG_DE[$MSG_BACKUPPATH_DOESNOTEXIST]="RBK0031E: Backuppfad %1 exisitert nicht"
+MSG_CHECKING_FOR_NEW_VERSION=31
+MSG_EN[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Checking whether new version is available"
+MSG_DE[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Prüfe ob neue Version verfügbar ist"
 MSG_INVALID_LOG_LEVEL=32
 MSG_EN[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Invalid parameter %1 for -l detected. Using %2"
 MSG_DE[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Ungültiger Parameter %1 für -l eingegeben. Es wird %2 benutzt"
@@ -544,9 +544,9 @@ MSG_DE[$MSG_UNABLE_TO_WRITE]="RBK0103E: Ein Backup kann nicht auf %1 erstellt we
 MSG_LABELING=104
 MSG_EN[$MSG_LABELING]="RBK0104I: Labeling partition %1 with label %2"
 MSG_DE[$MSG_LABELING]="RBK0104I: Partition %1 erhält das Label %2"
-#MSG_MISSING_START_OR_STOP=105
-#MSG_EN[$MSG_MISSING_START_OR_STOP]="RBK0105E: Target %1 is too small. Minimum required: %2 bytes (%3) - Available: %4 bytes (%5). Option -j will truncate second partition accordingly"
-#MSG_DE[$MSG_MISSING_START_OR_STOP]="RBK0105E: Die Ziel %1 ist zu klein. Minimum erforderlich: %2 Bytes (%3) - Verfügbar: %4 Bytes (%5). Mit Option -j wird die zweite Partition entsprechend verkleinert"
+MSG_CLEANING_BACKUPDIRECTORY=105
+MSG_EN[$MSG_CLEANING_BACKUPDIRECTORY]="RBK0105I: Deleting new backup directory %1"
+MSG_DE[$MSG_CLEANING_BACKUPDIRECTORY]="RBK0105I: Neues Backupverzeichnis %1 wird gelöscht"
 MSG_DEPLOYMENT_FAILED=106
 MSG_EN[$MSG_DEPLOYMENT_FAILED]="RBK0106E: Installation of $MYNAME failed on server %1 for user %2"
 MSG_DE[$MSG_DEPLOYMENT_FAILED]="RBK0106E: Installation von $MYNAME auf Server %1 für Benutzer %2 fehlgeschlagen"
@@ -709,9 +709,9 @@ MSG_DE[$MSG_SKIP_STOPPING_SERVICES]="RBK0157W: Keine Services sind zu stoppen"
 MSG_MAIN_BACKUP_PROGRESSING=158
 MSG_EN[$MSG_MAIN_BACKUP_PROGRESSING]="RBK0158I: Creating native %1 backup %2"
 MSG_DE[$MSG_MAIN_BACKUP_PROGRESSING]="RBK0158I: %1 Backup %2 wird erstellt"
-#MSG_DISCOVERED_SYSTEM=159
-#MSG_EN[$MSG_DISCOVERED_SYSTEM]="RBK0159I: Discovered boot device: %1 - boot device name: %2 - boot partition prefix: %3"
-#MSG_DE[$MSG_DISCOVERED_SYSTEM]="RBK0159I: Discovered boot device: %1 - boot device name: %2 - boot partition prefix: %3"
+MSG_CHECKING_FOR_BETA=159
+MSG_EN[$MSG_CHECKING_FOR_BETA]="RBK0159I: Checking for beta version"
+MSG_DE[$MSG_CHECKING_FOR_BETA]="RBK0159I: Prüfe ob eine Beta Version verfügbar ist"
 MSG_TARGETSD_SIZE_TOO_SMALL=160
 MSG_EN[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Target %1 with %2 is smaller than backup source with %3"
 MSG_DE[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Ziel %1 mit %2 ist kleiner als die Backupquelle mit %3"
@@ -1036,7 +1036,7 @@ function executeShellCommand() { # command
 	cat "$LOG_TOOL_FILE" >> "$LOG_FILE"
 	if (( $rc != 0 )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHELL_ERROR "$1" "$(< $LOG_TOOL_FILE)"
-		rm -f "$LOG_TOOL_FILE"
+		rm -f "$LOG_TOOL_FILE"  &>/dev/null
 	fi
 	logExit "executeShellCommand: $rc"
 	return $rc
@@ -1146,10 +1146,10 @@ function logOptions() {
 LOG_MAIL_FILE="$CURRENT_DIR/${MYNAME}.maillog"
 LOG_TOOL_FILE="/tmp/${MYNAME}_$$.log"
 #logItem "Removing maillog file ${LOG_MAIL_FILE}"
-rm -f "$LOG_MAIL_FILE" 2>&1 1>/dev/null
+rm -f "$LOG_MAIL_FILE" &>/dev/null
 LOG_FILE="$CURRENT_DIR/${MYNAME}.log"
 #logItem "Removing log file ${LOG_FILE}"
-rm -f "$LOG_FILE" 2>&1 1>/dev/null
+rm -f "$LOG_FILE" &>/dev/null
 
 ############# Begin default config section #############
 
@@ -1216,7 +1216,7 @@ DEFAULT_YES_NO_RESTORE_DEVICE="loop"
 DEFAULT_LINK_BOOTPARTITIONFILES=0
 
 # Change these options only if you know what you are doing !!!
-DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAXx"
+DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx"
 DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
 DEFAULT_TAR_BACKUP_OPTIONS="-cpi"
 DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -1376,6 +1376,7 @@ function downloadPropertiesFile() { # FORCE
 
 		if shouldDownloadPropertiesFile "$1"; then
 
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_FOR_NEW_VERSION
 			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
 			local type=$BACKUPTYPE
 			local keep=$KEEPBACKUPS
@@ -1495,17 +1496,19 @@ function stopServices() {
 
 	logEntry "stopServices"
 
-	if [ -n "$STOPSERVICES" ]; then
+	if [[ -n "$STOPSERVICES" ]]; then
 		if [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STOPPING_SERVICES
 		else
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_STOPPING_SERVICES "$STOPSERVICES"
 			logItem "$STOPSERVICES"
-			executeShellCommand "$STOPSERVICES"
-			local rc=$?
-			if [[ $rc != 0 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOP_SERVICES_FAILED "$rc"
-				exitError $RC_STOP_SERVICES_ERROR
+			if (( ! $FAKE_BACKUPS )); then
+				executeShellCommand "$STOPSERVICES"
+				local rc=$?
+				if [[ $rc != 0 ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOP_SERVICES_FAILED "$rc"
+					exitError $RC_STOP_SERVICES_ERROR
+				fi
 			fi
 		fi
 	fi
@@ -1516,17 +1519,19 @@ function startServices() {
 
 	logEntry "startServices"
 
-	if [[ -n "$STARTSERVICES" ]]; then
+	if [[ -n "$STARTSERVICES" && (( ! $FAKE_BACKUPS )) ]]; then
 		if [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STARTING_SERVICES
 		else
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_STARTING_SERVICES "$STARTSERVICES"
 			logItem "$STARTSERVICES"
-			executeShellCommand $STARTSERVICES
-			local rc=$?
-			if [[ $rc != 0 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_START_SERVICES_FAILED "$rc"
-				exitError $RC_START_SERVICES_ERROR
+			if (( ! $FAKE_BACKUPS )); then
+				executeShellCommand $STARTSERVICES
+				local rc=$?
+				if [[ $rc != 0 ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_START_SERVICES_FAILED "$rc"
+					exitError $RC_START_SERVICES_ERROR
+				fi
 			fi
 		fi
 	fi
@@ -1591,7 +1596,7 @@ function updateScript() { # restart
 			fi
 
 		else
-			rm $MYSELF~ 1>/dev/null 2>&1
+			rm $MYSELF~ &>/dev/null
 			if [[ $rc == 1 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
 			elif [[ $rc == 3 ]]; then
@@ -1620,8 +1625,8 @@ function supportsHardlinks() {	# directory
 	links=$(ls -la /$1/$MYNAME.hlinkfile | cut -f 2 -d ' ')
 	logItem "Links: $links"
 	[[ $links == 2 ]] && result=0
-	rm -f /$1/$MYNAME.hlinkfile
-	rm -f /$1/$MYNAME.hlinklink
+	rm -f /$1/$MYNAME.hlinkfile &>/dev/null
+	rm -f /$1/$MYNAME.hlinklink &>/dev/null
 
 	logExit "supportsHardlinks: $result"
 
@@ -1751,7 +1756,10 @@ function setupEnvironment() {
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 		BACKUPTARGET_LOG_FILE="$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE"
 
-		[ ! -d "${BACKUPTARGET_DIR}" ] && mkdir -p "${BACKUPTARGET_DIR}"
+		if [ ! -d "${BACKUPTARGET_DIR}" ]; then
+			mkdir -p "${BACKUPTARGET_DIR}"
+			NEW_BACKUP_DIRECTORY_CREATED=1
+		fi
 
 		BACKUPPATH=$(sed -E 's@/+$@@g' <<< "$BACKUPPATH")
 
@@ -1796,7 +1804,7 @@ function setupEnvironment() {
 	fi
 
 	if [[ $LOG_OUTPUT != $LOG_OUTPUT_SYSLOG ]]; then	# keep syslog :-)
-		rm -rf "$LOG_FILE" 2>&1 1>/dev/null
+		rm -rf "$LOG_FILE" &>/dev/null
 	fi
 
 	LOGGING_ENABLED=1
@@ -1962,7 +1970,7 @@ function sendEMail() { # content subject
 					logItem "Sending email with mpack"
 					echo "$content" > /tmp/$$
 					mpack -s "$subject" -d /tmp/$$ "$LOG_FILE" "$EMAIL"
-					rm /tmp/$$
+					rm /tmp/$$ &>/dev/null
 				else
 					logItem "Sendig email with ssmtp"
 					logItem "echo -e To: $EMAIL\nFrom: root@$(hostname -f)\nSubject: $subject\n$content | $EMAIL_PROGRAM $EMAIL"
@@ -1994,16 +2002,22 @@ function cleanupBackupDirectory() {
 	logEntry "cleanupBackupDirectory"
 
 	if [[ $rc != 0 ]]; then
+		logItem "BackupDir created: $NEW_BACKUP_DIRECTORY_CREATED"
+		if (( $NEW_BACKUP_DIRECTORY_CREATED )); then
 
-		if [[ -z "$BACKUPTARGET_DIR" || "$BACKUPTARGET_DIR" == *"*"* ]]; then
-			assertionFailed $LINENO "backup target dir error"
-		fi
+			if [[ -z "$BACKUPPATH" || -z "$BACKUPFILE" || -z "$BACKUPTARGET_DIR" || "$BACKUPFILE" == *"*"* || "$BACKUPPATH" == *"*"* || "$BACKUPTARGET_DIR" == *"*"* ]]; then
+				assertionFailed $LINENO "backup path error"
+			fi
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_SAVING_LOG "$LOG_FILE"
-		if (( $BACKUP_STARTED )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_SAVING_LOG "$LOG_FILE"
+			if (( $BACKUP_STARTED )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
+			fi
+			if [[ -d "$BACKUPTARGET_DIR" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_BACKUPDIRECTORY "$BACKUPTARGET_DIR"
+				rm -fr "$BACKUPTARGET_DIR" # remove incomplete backupdir if it exists
+			fi
 		fi
-		rm -fr "$BACKUPTARGET_DIR" # remove incomplete backupdir if it exists
 	else
 		if [[ $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC ]]; then
 			logItem "Moving $LOG_FILE to $TARGET_LOG_FILE"
@@ -2035,6 +2049,10 @@ function cleanup() { # trap
 
 	cleanupTempFiles
 
+	if (( ! $RESTORE )); then
+		_no_more_locking
+	fi
+
 # 	borrowed from http://stackoverflow.com/questions/360201/kill-background-process-when-shell-script-exit
 
 	if [[ $rc == $RC_NATIVE_BACKUP_FAILED ]]; then
@@ -2064,7 +2082,7 @@ function cleanupRestore() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
 	fi
 
-	rm $$.sfdisk 1>/dev/null 2>&1
+	rm $$.sfdisk &>/dev/null
 
 	if [[ -n $MNT_POINT ]]; then
 		if isMounted $MNT_POINT; then
@@ -2202,17 +2220,21 @@ function isBetaAvailable() {
 	local downloadURL="$PROPERTY_URL"
 	local betaVersion=""
 
-	local tmpFile=$(mktemp)
+	if (( $NEW_PROPERTIES_FILE )); then
+		local tmpFile=$(mktemp)
 
-	wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmpFile
-	local rc=$?
-	if [[ $rc == 0 ]]; then
-		properties=$(grep "^BETA=" "$tmpFile" 2>/dev/null)
-		local betaVersion=$(cut -d '=' -f 2 <<< $properties)
-		betaVersion=${betaVersion//\"/}
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_BETA
+		wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmpFile
+		local rc=$?
+		if [[ $rc == 0 ]]; then
+			properties=$(grep "^BETA=" "$tmpFile" 2>/dev/null)
+			local betaVersion=$(cut -d '=' -f 2 <<< $properties)
+			betaVersion=${betaVersion//\"/}
+		fi
+
+		rm $tmpFile	 &>/dev/null
 	fi
 
-	rm $tmpFile
 	echo $betaVersion
 
 	logExit "isBetaAvailable: $betaVersion"
@@ -2234,10 +2256,6 @@ function cleanupBackup() { # trap
 	if (( $rc !=  0 )); then
 
 		echo "Invocation parms: '$INVOCATIONPARMS'" >> "$LOG_FILE"
-
-		if [[ -z "$BACKUPPATH" || -z "$BACKUPFILE" || -z "$BACKUPTARGET_DIR" || "$BACKUPFILE" == *"*"* || "$BACKUPPATH" == *"*"* || "$BACKUPTARGET_DIR" == *"*"* ]]; then
-			assertionFailed $LINENO "backup path error"
-		fi
 
 		if [[ $rc == $RC_STOP_SERVICES_ERROR ]]; then
 			startServices
@@ -2286,17 +2304,17 @@ function cleanupTempFiles() {
 
 	if [[ -f "$LOG_MAIL_FILE" ]]; then
 		logItem "Removing mailfile $LOG_MAIL_FILE"
-		rm -f "$LOG_MAIL_FILE" 1>/dev/null 2>&1
+		rm -f "$LOG_MAIL_FILE" &>/dev/null
 	fi
 
 	if [[ -f $MYSELF~ ]]; then
 		logItem "Removing newversion $MYSELF~"
-		rm -f $MYSELF~ 1>/dev/null 2>&1
+		rm -f $MYSELF~ &>/dev/null
 	fi
 
 	if [[ -f $LOG_TOOL_FILE ]]; then
 		logItem "Removing $LOG_TOOL_FILE"
-		rm -f $LOG_TOOL_FILE 1>/dev/null 2>&1
+		rm -f $LOG_TOOL_FILE &>/dev/null
 	fi
 
 	logExit "cleanupTempFiles"
@@ -2362,7 +2380,7 @@ function createLinks() { # backuptargetroot extension newfile
 	fi
 
 	if cmp -s $3 $possibleLinkTarget; then
-		rm $3
+		rm $3 &>/dev/null
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_REPLACING_FILE_BY_HARDLINK "$3" "$possibleLinkTarget"
 		cp -l "$possibleLinkTarget" "$3" &>/dev/null
 		rc=$?
@@ -2889,7 +2907,7 @@ function restore() {
 					partprobe $RESTORE_DEVICE &>>$LOG_FILE
 					logItem "--- udevadm ---"
 					udevadm settle &>>$LOG_FILE
-					rm $$.sfdisk
+					rm $$.sfdisk &>/dev/null
 				fi
 
 			fi
@@ -3955,7 +3973,7 @@ function restorePartitionBasedBackup() {
 		local error=$(<$tmp)
 		echo "$error" >> "$LOG_FILE"
 		logItem "Error: $error"
-		rm "$tmp"
+		rm "$tmp" &>/dev/null
 		if [ $rc != 0 ]; then
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "$error"
 			exitError $RC_CREATE_PARTITIONS_FAILED
@@ -4567,7 +4585,7 @@ function lockingFramework() {
 
 # PRIVATE
 	_lock()             { flock -$1 $LOCKFD; }
-	_no_more_locking()  { _lock u; _lock xn && rm -f $LOCKFILE; }
+	_no_more_locking()  { _lock u; _lock xn && rm -f $LOCKFILE ; }
 	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\""; trap _no_more_locking EXIT; }
 
 # ON START
@@ -4749,6 +4767,7 @@ RESTOREFILE=""
 BACKUP_DIRECTORY_NAME=""
 BACKUP_STARTED=0
 ROOT_PARTITION_DEFINED=0
+NEW_BACKUP_DIRECTORY_CREATED=0
 
 while getopts ":0159a:Ab:cd:D:e:E:FG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ" opt; do
 
@@ -4870,11 +4889,6 @@ while getopts ":0159a:Ab:cd:D:e:E:FG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ" 
 done
 shift $((OPTIND-1))
 
-if (( $? )); then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_ALREADY_ACTIVE
-	exitError $RC_MISC_ERROR
-fi
-
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY"
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_MESSAGE
 
@@ -4890,8 +4904,6 @@ if [[ -n "$1" ]]; then
 fi
 
 unusedParms="$@"
-
-trapWithArg cleanupTempFiles SIGINT SIGTERM EXIT
 
 if (( $HELP )); then
 	usage
@@ -4938,15 +4950,17 @@ else
 		exitError $RC_MISC_ERROR
 	fi
 
-	lockingFramework
-	#exlock_now
-	#if (( $? )); then
-	#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
-	#	exitError $RC_MISC_ERROR
-	#fi
-
 	setupEnvironment
 	logOptions						# config parms already read
+
+	if (( ! $RESTORE )); then
+		lockingFramework
+		exlock_now
+		if (( $? )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
+			exitError $RC_MISC_ERROR
+		fi
+	fi		
 
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_LOGFILE "$LOG_FILE_FINAL"
 
