@@ -57,11 +57,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$q
 
-GIT_DATE="$Date: 2017-08-03 22:12:49 +0200$"
+GIT_DATE="$Date: 2017-08-04 19:00:27 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: add2874$"
+GIT_COMMIT="$Sha1: 70245af$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -3482,16 +3482,18 @@ function inspect4Restore() {
 
 	logEntry "inspect4Restore"
 
-	SF_FILE=$(ls -1 $RESTOREFILE/*.sfdisk)
-	if [[ -z $SF_FILE ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.sfdisk"
-		exitError $RC_MISSING_FILES
-	fi
+	if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+		SF_FILE=$(ls -1 $RESTOREFILE/*.sfdisk)
+		if [[ -z $SF_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.sfdisk"
+			exitError $RC_MISSING_FILES
+		fi
 
-	MBR_FILE=$(ls -1 $RESTOREFILE/*.mbr)
-	if [[ -z $SF_FILE ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.mbr"
-		exitError $RC_MISSING_FILES
+		MBR_FILE=$(ls -1 $RESTOREFILE/*.mbr)
+		if [[ -z $SF_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.mbr"
+			exitError $RC_MISSING_FILES
+		fi
 	fi
 
 	if (( PARTITIONBASED_BACKUP )); then
