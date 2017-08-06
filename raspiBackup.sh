@@ -57,11 +57,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$q
 
-GIT_DATE="$Date: 2017-08-03 22:12:49 +0200$"
+GIT_DATE="$Date: 2017-08-04 19:00:27 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: add2874$"
+GIT_COMMIT="$Sha1: 70245af$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -211,6 +211,7 @@ RC_DD_IMG_FAILED=114
 RC_SDCARD_ERROR=115
 RC_RESTORE_FAILED=116
 RC_NATIVE_RESTORE_FAILED=117
+RC_DEVICES_NOTFOUND=118
 
 LOGGING_ENABLED=0
 
@@ -697,9 +698,9 @@ MSG_DE[$MSG_LABELING_FAILED]="RBK0153E: Partition kann nicht mit einem Label ver
 MSG_RESTORE_DEVICE_MOUNTED=154
 MSG_EN[$MSG_RESTORE_DEVICE_MOUNTED]="RBK0154E: Restore is not possible when a partition of device %1 is mounted"
 MSG_DE[$MSG_RESTORE_DEVICE_MOUNTED]="RBK0154E: Ein Restore ist nicht möglich wenn eine Partition von %1 gemounted ist"
-#MSG_NO_BOOTDEVICE_FOUND=155
-#MSG_EN[$MSG_NO_BOOTDEVICE_FOUND]="RBK0155E: No bootdevice found"
-#MSG_DE[$MSG_NO_BOOTDEVICE_FOUND]="RBK0155E: Kein Bootgerät gefunden"
+MSG_INVALID_RESTORE_ROOT_PARTITION=155
+MSG_EN[$MSG_INVALID_RESTORE_ROOT_PARTITION]="RBK0155E: Restore root partition %1 is no partition"
+MSG_DE[$MSG_INVALID_RESTORE_ROOT_PARTITION]="RBK0155E: Ziel Rootpartition %1 ist keine Partition"
 MSG_SKIP_STARTING_SERVICES=156
 MSG_EN[$MSG_SKIP_STARTING_SERVICES]="RBK0156W: No services to start"
 MSG_DE[$MSG_SKIP_STARTING_SERVICES]="RBK0156W: Keine Services sind zu starten"
@@ -755,6 +756,9 @@ MSG_DE[$MSG_ALREADY_ACTIVE]="RBK0167E: $MYSELF ist schon gestartet"
 MSG_BETAVERSION_AVAILABLE=168
 MSG_EN[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $MYSELF beta version %1 is available. Any help to test this beta is appreciated"
 MSG_DE[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $MYSELF Beta Version %1 ist verfügbar. Hilfe beim Testen dieser Beta ist sehr willkommen."
+MSG_ROOT_PARTITION_NOT_FOUND=169
+MSG_EN[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Target root partition %1 does not exist"
+MSG_DE[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Ziel Rootpartition %1 existiert nicht"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1497,7 +1501,7 @@ function stopServices() {
 	logEntry "stopServices"
 
 	if [[ -n "$STOPSERVICES" ]]; then
-		if [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
+		if [[ "$STOPSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STOPPING_SERVICES
 		else
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_STOPPING_SERVICES "$STOPSERVICES"
@@ -1519,14 +1523,14 @@ function startServices() {
 
 	logEntry "startServices"
 
-	if [[ -n "$STARTSERVICES" && (( ! $FAKE_BACKUPS )) ]]; then
+	if [[ -n "$STARTSERVICES" ]]; then
 		if [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STARTING_SERVICES
 		else
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_STARTING_SERVICES "$STARTSERVICES"
 			logItem "$STARTSERVICES"
 			if (( ! $FAKE_BACKUPS )); then
-				executeShellCommand $STARTSERVICES
+				executeShellCommand "$STARTSERVICES"
 				local rc=$?
 				if [[ $rc != 0 ]]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_START_SERVICES_FAILED "$rc"
@@ -3482,16 +3486,18 @@ function inspect4Restore() {
 
 	logEntry "inspect4Restore"
 
-	SF_FILE=$(ls -1 $RESTOREFILE/*.sfdisk)
-	if [[ -z $SF_FILE ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.sfdisk"
-		exitError $RC_MISSING_FILES
-	fi
+	if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+		SF_FILE=$(ls -1 $RESTOREFILE/*.sfdisk)
+		if [[ -z $SF_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.sfdisk"
+			exitError $RC_MISSING_FILES
+		fi
 
-	MBR_FILE=$(ls -1 $RESTOREFILE/*.mbr)
-	if [[ -z $SF_FILE ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.mbr"
-		exitError $RC_MISSING_FILES
+		MBR_FILE=$(ls -1 $RESTOREFILE/*.mbr)
+		if [[ -z $SF_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.mbr"
+			exitError $RC_MISSING_FILES
+		fi
 	fi
 
 	if (( PARTITIONBASED_BACKUP )); then
@@ -4395,6 +4401,18 @@ function doitRestore() {
 		exitError $RC_MISC_ERROR
 	fi
 
+	if (( $ROOT_PARTITION_DEFINED )); then
+		if ! [[ "$ROOT_PARTITION" =~ ^/dev/[a-z]+[0-9]$ ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_RESTORE_ROOT_PARTITION "$ROOT_PARTITION"
+			exitError $RC_DEVICES_NOTFOUND
+		fi
+
+		if ! [[ -e "$ROOT_PARTITION" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ROOT_PARTITION_NOT_FOUND "$ROOT_PARTITION"
+			exitError $RC_DEVICES_NOTFOUND
+		fi
+	fi
+
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logItem "ls: of $RESTOREFILE"
 	logItem $(ls -1 "$RESTOREFILE"* 2>/dev/null)
@@ -4537,7 +4555,7 @@ function synchronizeCmdlineAndfstab() {
 		if [[ $oldPartUUID != $newPartUUID ]]; then
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_CMDLINE "$oldPartUUID" "$newPartUUID"
-			sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE >& LOG_FILE
+			sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> LOG_FILE
 		fi
 	fi
 
@@ -4547,7 +4565,7 @@ function synchronizeCmdlineAndfstab() {
 		if [[ $oldPartUUID != $newPartUUID ]]; then
 			logItem "FSTAB root - newBootPartUUID: $newPartUUID, oldBootPartUUID: $oldPartUUID"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_FSTAB "$oldPartUUID" "$newPartUUID"
-			sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB >& LOG_FILE
+			sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
 		fi
 	fi
 
@@ -4557,7 +4575,7 @@ function synchronizeCmdlineAndfstab() {
 		if [[ $oldPartUUID != $newPartUUID ]]; then
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_FSTAB "$oldPartUUID" "$newPartUUID"
-			sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB >& LOG_FILE
+			sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
 		fi
 	fi
 
