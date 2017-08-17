@@ -37,7 +37,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.2.1"
+VERSION="0.6.2.2"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -55,13 +55,13 @@ IS_BETA=$((! $? ))
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-MYPID=$$q
+MYPID=$$
 
-GIT_DATE="$Date: 2017-08-04 19:00:27 +0200$"
+GIT_DATE="$Date: 2017-08-12 16:52:20 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 70245af$"
+GIT_COMMIT="$Sha1: a0f569c$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -351,7 +351,7 @@ MSG_MAILPROGRAM_NOT_INSTALLED=39
 MSG_EN[$MSG_MAILPROGRAM_NOT_INSTALLED]="RBK0039E: Mail program %1 not installed to send emails"
 MSG_DE[$MSG_MAILPROGRAM_NOT_INSTALLED]="RBK0039E: Mail Program %1 ist nicht installiert um eMail szu senden"
 MSG_INCOMPATIBLE_UPDATE=40
-MSG_EN[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: New version %1 has some incompatibilies to previous versions. Please read %2 and use option -S together with option -U to update script"
+MSG_EN[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: New version %1 has some incompatibilities to previous versions. Please read %2 and use option -S together with option -U to update script"
 MSG_DE[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: Die neue Version %1 hat inkompatible Änderungen zu vorhergehenden Versionen. Bitte %2 lesen und dann die Option -S zusammen mit -U benutzen um das Script zu updaten"
 MSG_TITLE_OK=41
 MSG_EN[$MSG_TITLE_OK]="%1: Backup finished successfully"
@@ -447,7 +447,7 @@ MSG_QUERY_CHARS_YES_NO=71
 MSG_EN[$MSG_QUERY_CHARS_YES_NO]="y/N"
 MSG_DE[$MSG_QUERY_CHARS_YES_NO]="j/N"
 MSG_SCRIPT_UPDATE_OK=72
-MSG_EN[$MSG_SCRIPT_UPDATE_OK]="RBK0072I: %1 updated from version %2 to current version %3. Previous version saved as %4"
+MSG_EN[$MSG_SCRIPT_UPDATE_OK]="RBK0072I: %1 updated from version %2 to version %3. Previous version saved as %4"
 MSG_DE[$MSG_SCRIPT_UPDATE_OK]="RBK0072I: %1 von Version %2 durch die aktuelle Version %3 ersetzt. Die vorherige Verion wurde als %4 gesichert"
 MSG_SCRIPT_UPDATE_NOT_NEEDED=73
 MSG_EN[$MSG_SCRIPT_UPDATE_NOT_NEEDED]="RBK0073I: %1 already current with version %2"
@@ -468,8 +468,8 @@ MSG_SCRIPT_UPDATE_NOT_UPLOADED=78
 MSG_EN[$MSG_SCRIPT_UPDATE_NOT_UPLOADED]="RBK0078I: %1 with version %2 is newer than uploaded version %3"
 MSG_DE[$MSG_SCRIPT_UPDATE_NOT_UPLOADED]="RBK0078I: %1 mit der Version %2 ist neuer als die uploaded Version %3"
 MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP=79
-MSG_EN[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Invalid backuptype %1 for option -z"
-MSG_DE[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Unbekannter Backuptyp %1 für Option -z"
+MSG_EN[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z not allowed with backuptype %1"
+MSG_DE[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z ist für Backuptyp %1 nicht erlaubt"
 MSG_NEW_VERSION_AVAILABLE=80
 MSG_EN[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) There is an updated $MYNAME version %1 available for download. You are running version %2 and now can use option -U to upgrade your local version"
 MSG_DE[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) Es gibt eine neuere Version von $MYNAME %1 zum downloaden. Die momentan benutze Version ist %2 und es kann mit der Option -U die lokale Version aktualisiert werden"
@@ -674,9 +674,9 @@ MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partitionen werden nicht erstel
 MSG_NO_PARTITION_TABLE_DEFINED=146
 MSG_EN[$MSG_NO_PARTITION_TABLE_DEFINED]="RBK0146I: No partitiontable found on %1"
 MSG_DE[$MSG_NO_PARTITION_TABLE_DEFINED]="RBK0146I: Keine Partitionstabelle auf %1 gefunden"
-MSG_RESTORE_DEVICE_MOUNTED=147
-MSG_EN[$MSG_RESTORE_DEVICE_MOUNTED]="RBK0147E: Restore is not possible when a partition of device %1 is mounted"
-MSG_DE[$MSG_RESTORE_DEVICE_MOUNTED]="RBK0147E: Ein Restore ist nicht möglich wenn eine Partition von %1 gemounted ist"
+#MSG_RESTORE_DEVICE_MOUNTED=147
+#MSG_EN[$MSG_RESTORE_DEVICE_MOUNTED]="RBK0147E: Restore is not possible when a partition of device %1 is mounted"
+#MSG_DE[$MSG_RESTORE_DEVICE_MOUNTED]="RBK0147E: Ein Restore ist nicht möglich wenn eine Partition von %1 gemounted ist"
 MSG_STACK_TRACE=148
 MSG_EN[$MSG_STACK_TRACE]="RBK0148E: @@@@@@@@@@@@@@@@@@@@ Stacktrace @@@@@@@@@@@@@@@@@@@@"
 MSG_DE[$MSG_STACK_TRACE]="RBK0148E: @@@@@@@@@@@@@@@@@@@@ Stacktrace @@@@@@@@@@@@@@@@@@@@"
@@ -750,15 +750,18 @@ ${NL}!!! RBK0165W: =========> HINWEIS <========="
 MSG_UMOUNT_ERROR=166
 MSG_EN[$MSG_UMOUNT_ERROR]="RBK0166E: Umount for %1 failed. RC %2. Maybe mounted somewhere else?"
 MSG_DE[$MSG_UMOUNT_ERROR]="RBK0166E: Umount für %1 fehlerhaft. RC %2. Vielleicht noch woanders gemounted?"
-MSG_ALREADY_ACTIVE=167
-MSG_EN[$MSG_ALREADY_ACTIVE]="RBK0167E: $MYSELF already up and running"
-MSG_DE[$MSG_ALREADY_ACTIVE]="RBK0167E: $MYSELF ist schon gestartet"
+#MSG_ALREADY_ACTIVE=167
+#MSG_EN[$MSG_ALREADY_ACTIVE]="RBK0167E: $MYSELF already up and running"
+#MSG_DE[$MSG_ALREADY_ACTIVE]="RBK0167E: $MYSELF ist schon gestartet"
 MSG_BETAVERSION_AVAILABLE=168
 MSG_EN[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $MYSELF beta version %1 is available. Any help to test this beta is appreciated"
 MSG_DE[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $MYSELF Beta Version %1 ist verfügbar. Hilfe beim Testen dieser Beta ist sehr willkommen."
 MSG_ROOT_PARTITION_NOT_FOUND=169
 MSG_EN[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Target root partition %1 does not exist"
 MSG_DE[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Ziel Rootpartition %1 existiert nicht"
+MSG_MISSING_R_OPTION=170
+MSG_EN[$MSG_MISSING_R_OPTION]="RBK0170E: Backup uses an external root partition. -R option missing"
+MSG_DE[$MSG_MISSING_R_OPTION]="RBK0170E: Backup benutzt eine externe root partition. Die Option -R fehlt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1882,7 +1885,7 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 
 	local file="$1"
 
-	logItem "File: $file"
+	logItem "File: $(cat $file)"
 
 	local oldIFS="$IFS"
 	IFS=""
@@ -2838,7 +2841,6 @@ function restore() {
 			mkdir -p $MNT_POINT
 
 			logItem "Umounting partitions"
-
 			umount $BOOT_PARTITION &>>"$LOG_FILE"
 			rc=$?
 			if (( ! $rc )); then
@@ -2892,6 +2894,12 @@ function restore() {
 						local sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
 						if [[ ${#sourceValues[@]} != 4 ]]; then
 							assertionFailed $LINENO "not 4 partitions error"
+						fi
+
+						# Backup partition has only one partition -> external root partition -> -R has to be specified
+						if (( ${sourceValues[2]} == 0 )) || (( ${sourceValues[3]} == 0 )); then
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_R_OPTION 
+							exitError $RC_MISC_ERROR							
 						fi
 
 						local adjustedTargetPartitionBlockSize=$(( $targetSDSize / 512 - ${sourceValues[1]} - ${sourceValues[0]} ))
@@ -3612,7 +3620,7 @@ function doitBackup() {
 
 	if (( $ZIP_BACKUP_TYPE_INVALID )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP $BACKUPTYPE
-		moentionHelp
+		mentionHelp
 		exitError $RC_PARAMETER_ERROR
 	fi
 

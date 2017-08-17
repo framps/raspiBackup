@@ -6,20 +6,20 @@
 #
 # (C) 2015-2017 - framp at linux-tips-and-tricks dot de
 
-set -o pipefail -o nounset -o errexit
+#set -o pipefail -o nounset -o errexit
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.3.3c"
+VERSION="0.3.4"
 
 MYFILE="$0"
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
-set +u; GIT_DATE="$Date: 2017-04-26 18:23:05 +0200$"; set -u
+set +u; GIT_DATE="$Date: 2017-08-13 23:39:39 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE) 
-set +u; GIT_COMMIT="$Sha1: 498b09b$"; set -u
+set +u; GIT_COMMIT="$Sha1: 63c1771$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -38,7 +38,7 @@ TAIL=0
 
 PROPERTY_URL="/downloads/raspibackup0613-properties/download"
 BETA_CODE_URL="/downloads/$FILE_TO_INSTALL_BETA/download"
-STABLE_CODE_URL="/$FILE_TO_INSTALL"
+STABLE_CODE_URL="$FILE_TO_INSTALL"
 
 DOWNLOAD_TIMEOUT=3 # seconds
 DOWNLOAD_RETRIES=3 
@@ -189,6 +189,9 @@ MSG_DE[$MSG_BETA_THANKYOU]="${MSG_PRF}0036I: Vielen Dank für die Hilfe beim Tes
 MSG_CODE_INSTALLED=37
 MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: Created %1"
 MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: %1 wurde erstellt"
+MSG_NO_INSTALLATION_FOUND=38
+MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: No installation to refresh detected"
+MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: Keine Installation für einen Update entdeckt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -217,7 +220,7 @@ function cleanup() {
 			writeToConsole $MSG_CLEANUP
 			(( $CONFIG_INSTALLED )) && rm $CONFIG_FILE_ABS_FILE &>>$LOG_FILE || true
 			(( $SCRIPT_INSTALLED )) && rm $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE || true 
-			(( $SCRIPT_INSTALLED )) && rm $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE || true 
+			(( $SCRIPT_INSTALLED && ! $KEEP_INSTALL_SCRIPT )) && rm $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE || true 
 			writeToConsole $MSG_INSTALLATION_FAILED "$FILE_TO_INSTALL"
 			rc=127
 		else
@@ -260,15 +263,15 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
 		msg="${MSG_EN[$2]}";      	      	        # fallback into english
     fi
 
-   for (( i=3; $i <= $#; i++ )); do            		# substitute all message parameters
+    for (( i=3; $i <= $#; i++ )); do            		# substitute all message parameters
       p=${!i}
       let s=$i-2
       s="%$s"
       msg="$( perl -p -e "s|$s|$p|" <<< "$msg" 2>/dev/null)"	  # have to use explicit command name 
-   done
+    done
    
-   msg="$( perl -p -e "s/%[0-9]+//g" <<< "$msg" 2>/dev/null)"     # delete trailing %n definitions
-   
+    msg="$( perl -p -e "s/%[0-9]+//g" <<< "$msg" 2>/dev/null)"     # delete trailing %n definitions
+	
 	local msgPref=${msg:0:3}
 	
 	if [[ $msgPref == "${MSG_PRF}" ]]; then
@@ -328,6 +331,9 @@ function downloadCode() {
 		newName="$FILE_TO_INSTALL_ABS_FILE.$oldVersion.sh"
 		writeToConsole $MSG_SAVING_FILE "$FILE_TO_INSTALL" "$newName"
 		mv $FILE_TO_INSTALL_ABS_FILE $newName
+	elif (( $REFRESH_SCRIPT )); then
+		writeToConsole $MSG_NO_INSTALLATION_FOUND
+		unrecoverableError
 	fi
 
 	if (( $BETA_INSTALL )); then
@@ -357,10 +363,7 @@ function downloadCode() {
 	fi
 
 	if (( ! $KEEP_INSTALL_SCRIPT )); then
-		if ! mv "$MYFILE" "$FILE_TO_INSTALL_ABS_PATH" &>>$LOG_FILE; then
-			writeToConsole $MSG_UNINSTALL_FAILED "$MYFILE"
-			unrecoverableError
-		fi
+		rm "$MYFILE"  &>>$LOG_FILE	# silently ignore error
 	fi
 	
 	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
@@ -479,45 +482,47 @@ function updateConfig() {
 }
 
 function usageEN() {
-    echo "$GIT_CODEVERSION"
-    echo ""
-    echo "Install and configure raspiBackup.sh"
-    echo ""
-    echo "Usage: sudo $0 [[-c] [-l DE | EN]] | [-u] | [-h]"
+	echo "$GIT_CODEVERSION"
+	echo ""
+	echo "Install and configure raspiBackup.sh"
+	echo ""
+	echo "Usage: sudo $0 [[-c] [-l DE | EN]] | [-u] | [-h]"
 	echo ""
 	echo "       No options will start a configuration wizzard and prompt for the most important configuration parameters"
 	echo ""
-    echo "       -b - Install the beta version if available"
-    echo "       -c - Install default config file in $CONFIG_FILE_ABS_FILE"
-    echo "       -k - Keep installscript after successful installation" 
-    echo "       -l - Install English (EN) or German (DE) version of the config file"
+	echo "       -U - Updates the local script version with the latest script version available (Current configuration file will not be modified)"
+	echo "       -b - Install the beta version if available"
+	echo "       -c - Install default config file in $CONFIG_FILE_ABS_FILE"
+	echo "       -k - Keep installscript after successful installation" 
+	echo "       -l - Install English (EN) or German (DE) version of the config file"
 	echo "       If -c is used without -l the current system language is used for the config file"
-    echo ""
-    echo "       -u - Uninstall raspiBackup.sh with it's configuration file and the installer"
+	echo ""
+	echo "       -u - Uninstall raspiBackup.sh with it's configuration file and the installer"
 }
 
 function usageDE() {
-    echo "$GIT_CODEVERSION"
-    echo ""
-    echo "Installiere und konfiguriere raspiBackup.sh"
-    echo ""
-    echo "Aufruf: sudo $0 [[-c] [-l DE | EN]] | [-u] | [-h]"
+	echo "$GIT_CODEVERSION"
+	echo ""
+	echo "Installiere und konfiguriere raspiBackup.sh"
+	echo ""
+	echo "Aufruf: sudo $0 [[-c] [-l DE | EN]] | [-u] | [-h]"
 	echo ""
 	echo "       Falls keine Optionen angegeben wurde werden die wichtigsten Konfigurationsparameter abgefragt"
 	echo ""
-    echo "       -b - Installiert eine Betaversion sofern verfügbar"
-    echo "       -c - Installiert die Standardkonfigurationsdatei in $CONFIG_FILE_ABS_FILE"
-    echo "       -k - Installationsscript wird am Ende der Installation nicht gelöscht"
-    echo "       -l - Installiert die englische (EN) oder Deutsche (DE) Version der Konfigurationsdatei"
+	echo "       -U - Ersetzt die lokale Scriptversion durch die neueste verfügbare Scriptversion (Die aktuelle Configurationsdatei wird nicht geändert)"
+	echo "       -b - Installiert eine Betaversion sofern verfügbar"
+	echo "       -c - Installiert die Standardkonfigurationsdatei in $CONFIG_FILE_ABS_FILE"
+	echo "       -k - Installationsscript wird am Ende der Installation nicht gelöscht"
+	echo "       -l - Installiert die englische (EN) oder Deutsche (DE) Version der Konfigurationsdatei"
 	echo "       Wenn -c ohne -l benutzt wird wird die Systemsprache für die Konfigurationsdatei benutzt"
 	echo ""
-    echo "       -l - Deinstalliert raspiBackup.sh mit seiner Konfigurationsdatei und dem Installer"
+	echo "       -l - Deinstalliert raspiBackup.sh mit seiner Konfigurationsdatei und dem Installer"
 }
 
 # Borrowed from http://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
 
 fn_exists() {
-  [ `type -t $1`"" == 'function' ]
+	[ `type -t $1`"" == 'function' ]
 }
 
 function checkIfBetaAvailable() {
@@ -557,7 +562,9 @@ function install() {
 	
 	INSTALLATION_STARTED=1
 
-	if (( $INSTALL_CONFIG )); then
+	if (( $REFRESH_SCRIPT )); then
+		downloadCode
+	elif (( $INSTALL_CONFIG )); then
 		downloadCode
 		downloadConfig
 	else
@@ -594,13 +601,15 @@ function uninstall() {
 		unrecoverableError
 	fi
 
-	writeToConsole $MSG_DELETE_FILE "$MYFILE"
-	if ! rm -f "$MYFILE" 2>>$LOG_FILE; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$MYFILE"
-		unrecoverableError
+	if (( ! $KEEP_INSTALL_SCRIPT )) ; then
+		writeToConsole $MSG_DELETE_FILE "$MYFILE"
+		if ! rm -f "$MYFILE" 2>>$LOG_FILE; then
+			writeToConsole $MSG_UNINSTALL_FAILED "$MYFILE"
+			unrecoverableError
+		fi
 	fi
 	
-	writeToConsole $MSG_INSTALLATION_FINISHED "$FILE_TO_INSTALL"
+	writeToConsole $MSG_UNINSTALL_FINISHED "$FILE_TO_INSTALL"
 
 }
 
@@ -610,14 +619,15 @@ INSTALL_CONFIG=0
 UNINSTALL=0
 BETA_INSTALL=0
 KEEP_INSTALL_SCRIPT=0
+REFRESH_SCRIPT=0
 
 trapWithArg cleanup SIGINT SIGTERM EXIT
 
-while getopts ":bckl:hu" opt; do
+while getopts ":bckl:huU" opt; do
    case $opt in 
 		b) 	BETA_INSTALL=1
 			;;
-		c)  INSTALL_CONFIG=1
+		c)  	INSTALL_CONFIG=1
 			;;
 		l) 	LANG_PRF=$(tr '[:lower:]' '[:upper:]' <<< "$OPTARG")
 			if [[ $LANG_PRF != "DE" && $LANG_PRF != "EN" ]]; then
@@ -629,10 +639,12 @@ while getopts ":bckl:hu" opt; do
 			;;
 		k) 	KEEP_INSTALL_SCRIPT=1
 			;;
-		h)  usage
+		h)  	usage
 			exit 0
 			;;
 		u)	UNINSTALL=1
+			;;
+		U)  	REFRESH_SCRIPT=1
 			;;
 		\?)	writeToConsole $MSG_INVALID_OPTION "-$OPTARG"
 			parameterError
@@ -679,3 +691,5 @@ if (( ! $UNINSTALL )); then
 else
 	uninstall
 fi
+
+# vim: set expandtab tabstop=8 shiftwidth=8 autoindent smartindent
