@@ -6,25 +6,29 @@
 #
 # (C) 2015-2017 - framp at linux-tips-and-tricks dot de
 
-#set -o pipefail -o nounset -o errexit
+# set -o pipefail -o nounset -o errexit
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.3.4"
+VERSION="0.3.5"
 
-MYFILE="$0"
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
-set +u; GIT_DATE="$Date: 2017-08-13 23:39:39 +0200$"; set -u
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+set +u; GIT_DATE="$Date: 2017-08-20 10:06:25 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE) 
-set +u; GIT_COMMIT="$Sha1: 63c1771$"; set -u
+set +u; GIT_COMMIT="$Sha1: 172272a$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
 FILE_TO_INSTALL="raspiBackup.sh"
+
+RASPIBACKUP_NAME=${FILE_TO_INSTALL%.*}
+
 FILE_TO_INSTALL_BETA="raspiBackup_beta.sh"
 LOG_FILE="./$MYNAME.log"
 URL="www.linux-tips-and-tricks.de"
@@ -62,23 +66,23 @@ YES="y|j|Y|J"
 NO="n|N"
 
 MSG_UNDEFINED=0
-MSG_EN[$MSG_UNDEFINED]="${MSG_PRF}0000E: Undefined messageid"
-MSG_DE[$MSG_UNDEFINED]="${MSG_PRF}0000E: Unbekannte Meldungsid"
+MSG_EN[$MSG_UNDEFINED]="${MSG_PRF}0000E: Undefined messageid."
+MSG_DE[$MSG_UNDEFINED]="${MSG_PRF}0000E: Unbekannte Meldungsid."
 MSG_VERSION=1
 MSG_EN[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DE[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_ASK_LANGUAGE=2
-MSG_EN[$MSG_ASK_LANGUAGE]="${MSG_PRF}0002I: Message language (en|de)"
-MSG_DE[$MSG_ASK_LANGUAGE]="${MSG_PRF}0002I: Sprache der Meldungen (de|en)"
+MSG_EN[$MSG_ASK_LANGUAGE]="${MSG_PRF}0002I: Message language (%1)"
+MSG_DE[$MSG_ASK_LANGUAGE]="${MSG_PRF}0002I: Sprache der Meldungen (%1)"
 MSG_ASK_MODE=3
-MSG_EN[$MSG_ASK_MODE]="${MSG_PRF}0003I: Normal or partitionorientierted mode (n|p)"
-MSG_DE[$MSG_ASK_MODE]="${MSG_PRF}0003I: Normaler oder partitionsorientierter Modus (n|p)"
+MSG_EN[$MSG_ASK_MODE]="${MSG_PRF}0003I: Normal or partitionorientierted mode (%1)"
+MSG_DE[$MSG_ASK_MODE]="${MSG_PRF}0003I: Normaler oder partitionsorientierter Modus (%1)"
 MSG_ASK_TYPE1=4
-MSG_EN[$MSG_ASK_TYPE1]="${MSG_PRF}0004I: Backuptype (dd|tar|rsync)"
-MSG_DE[$MSG_ASK_TYPE1]="${MSG_PRF}0004I: Backuptyp (dd|tar|rsync)"
+MSG_EN[$MSG_ASK_TYPE1]="${MSG_PRF}0004I: Backuptype (%1)"
+MSG_DE[$MSG_ASK_TYPE1]="${MSG_PRF}0004I: Backuptyp (%1)"
 MSG_ASK_TYPE2=5
-MSG_EN[$MSG_ASK_TYPE2]="${MSG_PRF}0004I: Backuptype (tar|rsync)"
-MSG_DE[$MSG_ASK_TYPE2]="${MSG_PRF}0004I: Backuptyp (tar|rsync)"
+MSG_EN[$MSG_ASK_TYPE2]="${MSG_PRF}0004I: Backuptype (%1)"
+MSG_DE[$MSG_ASK_TYPE2]="${MSG_PRF}0004I: Backuptyp (%1)"
 MSG_ASK_KEEP=6
 MSG_EN[$MSG_ASK_KEEP]="${MSG_PRF}0006I: Number of backups (1-52)"
 MSG_DE[$MSG_ASK_KEEP]="${MSG_PRF}0006I: Anzahl der Backups (1-52)"
@@ -86,56 +90,56 @@ MSG_ANSWER_CHARS_YES_NO=7
 MSG_EN[$MSG_ANSWER_CHARS_YES_NO]="y|n"
 MSG_DE[$MSG_ANSWER_CHARS_YES_NO]="j|n"
 MSG_ASK_DETAILS=8
-MSG_EN[$MSG_ASK_DETAILS]="${MSG_PRF}0008I: Verbose messages (y|n)"
-MSG_DE[$MSG_ASK_DETAILS]="${MSG_PRF}0008I: Ausführliche Meldungen (j|n)"
+MSG_EN[$MSG_ASK_DETAILS]="${MSG_PRF}0008I: Verbose messages (%1)"
+MSG_DE[$MSG_ASK_DETAILS]="${MSG_PRF}0008I: Ausführliche Meldungen (%1)"
 MSG_CONF_OK=9
-MSG_EN[$MSG_CONF_OK]="${MSG_PRF}0009I: Configuration OK (y|n)"
-MSG_DE[$MSG_CONF_OK]="${MSG_PRF}0009I: Konfiguration OK (j|n)"
+MSG_EN[$MSG_CONF_OK]="${MSG_PRF}0009I: Configuration OK (%1)"
+MSG_DE[$MSG_CONF_OK]="${MSG_PRF}0009I: Konfiguration OK (%1)"
 MSG_INVALID_MESSAGE=10
-MSG_EN[$MSG_INVALID_MESSAGE]="${MSG_PRF}0010E: Invalid language %1"
-MSG_DE[$MSG_INVALID_MESSAGE]="${MSG_PRF}0010E: Ungültige Sprache %1"
+MSG_EN[$MSG_INVALID_MESSAGE]="${MSG_PRF}0010E: Invalid language %1."
+MSG_DE[$MSG_INVALID_MESSAGE]="${MSG_PRF}0010E: Ungültige Sprache %1."
 MSG_INVALID_OPTION=11
-MSG_EN[$MSG_INVALID_OPTION]="${MSG_PRF}0011E: Invalid option %1"
-MSG_DE[$MSG_INVALID_OPTION]="${MSG_PRF}0011E: Ungültige Option %1"
+MSG_EN[$MSG_INVALID_OPTION]="${MSG_PRF}0011E: Invalid option %1."
+MSG_DE[$MSG_INVALID_OPTION]="${MSG_PRF}0011E: Ungültige Option %1."
 MSG_PARAMETER_EXPECTED=12
-MSG_EN[$MSG_PARAMETER_EXPECTED]="${MSG_PRF}0012E: Parameter expected for option %1"
-MSG_DE[$MSG_PARAMETER_EXPECTED]="${MSG_PRF}0012E: Parameter erwartet bei Option %1"
+MSG_EN[$MSG_PARAMETER_EXPECTED]="${MSG_PRF}0012E: Parameter expected for option %1."
+MSG_DE[$MSG_PARAMETER_EXPECTED]="${MSG_PRF}0012E: Parameter erwartet bei Option %1."
 MSG_SUDO_REQUIRED=13
-MSG_EN[$MSG_SUDO_REQUIRED]="${MSG_PRF}0013E: Script has to be invoked as root. Use 'sudo %1'"
-MSG_DE[$MSG_SUDO_REQUIRED]="${MSG_PRF}0013E: Das Script muss als root aufgerufen werden. Z.B. 'sudo %1'"
+MSG_EN[$MSG_SUDO_REQUIRED]="${MSG_PRF}0013E: Installation script needs root access. Try 'sudo %1'."
+MSG_DE[$MSG_SUDO_REQUIRED]="${MSG_PRF}0013E: Das Installationsscript benötigt root Rechte. Versuche es mit 'sudo %1'."
 MSG_DOWNLOADING=14
-MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0014I: Downloading %1"
-MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0014I: %1 wird aus dem Netz geladen"
+MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0014I: Downloading %1..."
+MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0014I: %1 wird aus dem Netz geladen..."
 MSG_DOWNLOAD_FAILED=15
-MSG_EN[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0015E: Download of %1 failed. HTTP code: %2"
-MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0015E: %1 kann nicht aus dem Netz geladen werden. HTTP code: %2"
+MSG_EN[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0015E: Download of %1 failed. HTTP code: %2."
+MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0015E: %1 kann nicht aus dem Netz geladen werden. HTTP code: %2."
 MSG_INSTALLATION_FAILED=16
-MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0016E: Installation of %1 failed"
-MSG_DE[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0016E: Installation von %1 fehlerhaft beendet"
+MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0016E: Installation of %1 failed. Check %2."
+MSG_DE[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0016E: Installation von %1 fehlerhaft beendet. Prüfe %2."
 MSG_SAVING_FILE=17
-MSG_EN[$MSG_SAVING_FILE]="${MSG_PRF}0017I: Existing file %1 saved as %2"
-MSG_DE[$MSG_SAVING_FILE]="${MSG_PRF}0017I: Existierende Datei %1 wurde als %2 gesichert"
+MSG_EN[$MSG_SAVING_FILE]="${MSG_PRF}0017I: Existing file %1 saved as %2."
+MSG_DE[$MSG_SAVING_FILE]="${MSG_PRF}0017I: Existierende Datei %1 wurde als %2 gesichert."
 MSG_CHMOD_FAILED=18
-MSG_EN[$MSG_CHMOD_FAILED]="${MSG_PRF}0018E: chmod of %1 failed"
-MSG_DE[$MSG_CHMOD_FAILED]="${MSG_PRF}0018E: chmod von %1 nicht möglich"
+MSG_EN[$MSG_CHMOD_FAILED]="${MSG_PRF}0018E: chmod of %1 failed."
+MSG_DE[$MSG_CHMOD_FAILED]="${MSG_PRF}0018E: chmod von %1 nicht möglich."
 MSG_MOVE_FAILED=19
-MSG_EN[$MSG_MOVE_FAILED]="${MSG_PRF}0019E: mv of %1 failed"
-MSG_DE[$MSG_MOVE_FAILED]="${MSG_PRF}0019E: mv von %1 nicht möglich"
+MSG_EN[$MSG_MOVE_FAILED]="${MSG_PRF}0019E: mv of %1 failed."
+MSG_DE[$MSG_MOVE_FAILED]="${MSG_PRF}0019E: mv von %1 nicht möglich."
 MSG_NO_BETA_AVAILABLE=20
-MSG_EN[$MSG_NO_BETA_AVAILABLE]="${MSG_PRF}0020I: No beta available right now"
-MSG_DE[$MSG_NO_BETA_AVAILABLE]="${MSG_PRF}0020I: Momentan kein Beta verfügbar"
+MSG_EN[$MSG_NO_BETA_AVAILABLE]="${MSG_PRF}0020I: No beta available right now."
+MSG_DE[$MSG_NO_BETA_AVAILABLE]="${MSG_PRF}0020I: Momentan kein Beta verfügbar."
 MSG_READ_LOG=21
-MSG_EN[$MSG_READ_LOG]="${MSG_PRF}0021I: See logfile %1 for details"
-MSG_DE[$MSG_READ_LOG]="${MSG_PRF}0021I: Siehe Logdatei %1 für weitere Details"
+MSG_EN[$MSG_READ_LOG]="${MSG_PRF}0021I: See logfile %1 for details."
+MSG_DE[$MSG_READ_LOG]="${MSG_PRF}0021I: Siehe Logdatei %1 für weitere Details."
 MSG_CLEANUP=22
-MSG_EN[$MSG_CLEANUP]="${MSG_PRF}0022I: Cleaning up"
-MSG_DE[$MSG_CLEANUP]="${MSG_PRF}0022I: Räume auf"
+MSG_EN[$MSG_CLEANUP]="${MSG_PRF}0022I: Cleaning up..."
+MSG_DE[$MSG_CLEANUP]="${MSG_PRF}0022I: Räume auf..."
 MSG_INSTALLATION_FINISHED=23
-MSG_EN[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0023I: Installation of %1 finished successfully"
-MSG_DE[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0023I: Installation von %1 erfolgreich beendet"
+MSG_EN[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0023I: Installation of %1 finished successfully."
+MSG_DE[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0023I: Installation von %1 erfolgreich beendet."
 MSG_UPDATING_CONFIG=24
-MSG_EN[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Updating configuration in %1"
-MSG_DE[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Konfigurationsdatei %1 wird angepasst"
+MSG_EN[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Updating configuration in %1."
+MSG_DE[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Konfigurationsdatei %1 wird angepasst."
 MSG_ASK_COMPRESS=25
 MSG_EN[$MSG_ASK_COMPRESS]="${MSG_PRF}0025I: Compress backup (y|n)"
 MSG_DE[$MSG_ASK_COMPRESS]="${MSG_PRF}0025I: Backup komprimieren (j|n)"
@@ -143,26 +147,26 @@ MSG_NEWLINE=26
 MSG_EN[$MSG_NEWLINE]="$NL"
 MSG_DE[$MSG_NEWLINE]="$NL"
 MSG_ASK_UNINSTALL=27
-MSG_EN[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Are you sure to uninstall (y|n)"
-MSG_DE[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Soll wirklich deinstalliert werden (j|n)"
+MSG_EN[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Are you sure to uninstall $RASPIBACKUP_NAME (y|n)."
+MSG_DE[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Soll $RASPIBACKUP_NAME wirklich deinstalliert werden (j|n)."
 MSG_DELETE_FILE=28
-MSG_EN[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Deleting %1"
-MSG_DE[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Lösche %1"
+MSG_EN[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Deleting %1..."
+MSG_DE[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Lösche %1..."
 MSG_UNINSTALL_FINISHED=29
-MSG_EN[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0029I: Uninstall of %1 finished successfully"
-MSG_DE[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0029I: Deinstallation von %1 erfolgreich beendet"
+MSG_EN[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0029I: Uninstall of %1 finished successfully."
+MSG_DE[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0029I: Deinstallation von %1 erfolgreich beendet."
 MSG_UNINSTALL_FAILED=30
-MSG_EN[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0030E: Delete of %1 failed"
-MSG_DE[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0030E: Löschen von %1 fehlerhaft beendet"
+MSG_EN[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0030E: Delete of %1 failed."
+MSG_DE[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0030E: Löschen von %1 fehlerhaft beendet."
 MSG_DOWNLOADING_BETA=31
-MSG_EN[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0031I: Downloading %1 beta"
-MSG_DE[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0031I: %1 beta wird aus dem Netz geladen"
+MSG_EN[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0031I: Downloading %1 beta..."
+MSG_DE[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0031I: %1 beta wird aus dem Netz geladen..."
 MSG_CHECKING_FOR_BETA=32
-MSG_EN[$MSG_CHECKING_FOR_BETA]="${MSG_PRF}0032I: Checking if there is a beta version available"
-MSG_DE[$MSG_CHECKING_FOR_BETA]="${MSG_PRF}0032I: Prüfung ob eine Betaversion verfügbar ist"
+MSG_EN[$MSG_CHECKING_FOR_BETA]="${MSG_PRF}0032I: Checking if there is a beta version available."
+MSG_DE[$MSG_CHECKING_FOR_BETA]="${MSG_PRF}0032I: Prüfung ob eine Betaversion verfügbar ist."
 MSG_BETAVERSION_AVAILABLE=33
-MSG_EN[$MSG_BETAVERSION_AVAILABLE]="${MSG_PRF}0033I: Beta version %1 is available"
-MSG_DE[$MSG_BETAVERSION_AVAILABLE]="${MSG_PRF}0033I: Beta Version %1 ist verfügbar"
+MSG_EN[$MSG_BETAVERSION_AVAILABLE]="${MSG_PRF}0033I: Beta version %1 is available."
+MSG_DE[$MSG_BETAVERSION_AVAILABLE]="${MSG_PRF}0033I: Beta Version %1 ist verfügbar."
 MSG_ASK_INSTALLBETA=34
 MSG_EN[$MSG_ASK_INSTALLBETA]="${MSG_PRF}0034I: Install beta version (y|n)"
 MSG_DE[$MSG_ASK_INSTALLBETA]="${MSG_PRF}0034I: Soll die Betaversion installiert werden (j|n)"
@@ -184,14 +188,26 @@ ${NL}!!! RBK0165W: Auf https://goo.gl/n5KH3I sind die neuen Features des Betas b
 ${NL}!!! RBK0165W: Falls es Fehler geben sollte bitte diese auf https://goo.gl/ycREog berichten. \
 ${NL}!!! RBK0165W: =========> HINWEIS <========="
 MSG_BETA_THANKYOU=36
-MSG_EN[$MSG_BETA_THANKYOU]="${MSG_PRF}0036I: Thank you very much for helping to test $FILE_TO_INSTALL %1"
-MSG_DE[$MSG_BETA_THANKYOU]="${MSG_PRF}0036I: Vielen Dank für die Hilfe beim Testen von $FILE_TO_INSTALL %1"
+MSG_EN[$MSG_BETA_THANKYOU]="${MSG_PRF}0036I: Thank you very much for helping to test $FILE_TO_INSTALL %1."
+MSG_DE[$MSG_BETA_THANKYOU]="${MSG_PRF}0036I: Vielen Dank für die Hilfe beim Testen von $FILE_TO_INSTALL %1."
 MSG_CODE_INSTALLED=37
-MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: Created %1"
-MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: %1 wurde erstellt"
+MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: Created %1."
+MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: %1 wurde erstellt."
 MSG_NO_INSTALLATION_FOUND=38
-MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: No installation to refresh detected"
-MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: Keine Installation für einen Update entdeckt"
+MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: No installation to refresh detected."
+MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: Keine Installation für einen Update entdeckt."
+MSG_CHOWN_FAILED=39
+MSG_EN[$MSG_CHOWN_FAILED]="${MSG_PRF}0039E: chown of %1 failed."
+MSG_DE[$MSG_CHOWN_FAILED]="${MSG_PRF}0039E: chown von %1 nicht möglich."
+MSG_ANSWER_CHARS_YES=40
+MSG_EN[$MSG_ANSWER_CHARS_YES]="y"
+MSG_DE[$MSG_ANSWER_CHARS_YES]="j"
+MSG_ANSWER_CHARS_NO=40
+MSG_EN[$MSG_ANSWER_CHARS_NO]="n"
+MSG_DE[$MSG_ANSWER_CHARS_NO]="n"
+MSG_CONFIG_INFO=41
+MSG_EN[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Default for all configuration parameters is the parameter in UPPERCASE."
+MSG_DE[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Bei keiner Eingabe wird der in GROSSBUCHSTABEN geschriebene Parameter benutzt." 
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -221,10 +237,11 @@ function cleanup() {
 			(( $CONFIG_INSTALLED )) && rm $CONFIG_FILE_ABS_FILE &>>$LOG_FILE || true
 			(( $SCRIPT_INSTALLED )) && rm $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE || true 
 			(( $SCRIPT_INSTALLED && ! $KEEP_INSTALL_SCRIPT )) && rm $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE || true 
-			writeToConsole $MSG_INSTALLATION_FAILED "$FILE_TO_INSTALL"
+			writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
 			rc=127
 		else
-			writeToConsole $MSG_INSTALLATION_FINISHED "$FILE_TO_INSTALL"
+			rm $MYDIR/$MYSELF &>/dev/null
+			writeToConsole $MSG_INSTALLATION_FINISHED "$RASPIBACKUP_NAME"
 			rm $LOG_FILE &>/dev/null || true
 		fi
 	else
@@ -267,7 +284,7 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
       p=${!i}
       let s=$i-2
       s="%$s"
-      msg="$( perl -p -e "s|$s|$p|" <<< "$msg" 2>/dev/null)"	  # have to use explicit command name 
+      msg="$( perl -p -e "s@$s@$p@" <<< "$msg" 2>/dev/null)"	  # have to use explicit command name 
     done
    
     msg="$( perl -p -e "s/%[0-9]+//g" <<< "$msg" 2>/dev/null)"     # delete trailing %n definitions
@@ -357,17 +374,30 @@ function downloadCode() {
 		unrecoverableError
 	fi
 
+	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
+
 	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
 		writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
 		unrecoverableError
 	fi
+	
+	if ! cp "$MYDIR/$MYSELF" $FILE_TO_INSTALL_ABS_PATH &>>$LOG_FILE; then
+		writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		unrecoverableError
+	fi
 
-	if (( ! $KEEP_INSTALL_SCRIPT )); then
-		rm "$MYFILE"  &>>$LOG_FILE	# silently ignore error
+	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+
+	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE; then
+		writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		unrecoverableError
 	fi
 	
-	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
-
+	if ! chown $(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed -z 's/\n//') $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE; then
+		writeToConsole $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		unrecoverableError
+	fi
+	
 }
 
 function downloadConfig() {
@@ -399,15 +429,30 @@ function downloadConfig() {
 
 }
 
-function askFor() { # message, options
+function askFor() { # message, options, default
 	
 	local ok=0
 	local reply v
+
+	local up finalMessage
+
+	if [[ $3 != "" ]]; then
+		up=${3^^*}
+		finalMessage=$(sed "s/$3/$up/" <<< "$2")
+	else
+		finalMessage=""
+	fi
 	
 	TAIL=1
 	while (( ! $ok )); do
-		writeToConsole "$1" "" "-n"
+		writeToConsole "$1" "$finalMessage" "-n"
 		read reply
+		if [[ -z $reply ]]; then
+			if [[ -n $3 ]]; then
+				reply="$3"
+				break
+			fi
+		fi
 		reply=${reply,,*}
 		for v in "$2"; do
 			if [[ $reply =~ $v ]]; then
@@ -423,36 +468,38 @@ function askFor() { # message, options
 function configWizzard() {
 
 	local done=0
-	
+
+	writeToConsole $MSG_CONFIG_INFO 
+
 	while (( ! $done )); do
-		askFor $MSG_ASK_LANGUAGE "de|en"
+		askFor $MSG_ASK_LANGUAGE "de|en" "en"
 		MESSAGE_LANGUAGE="$REPLY"
 
-		askFor $MSG_ASK_MODE "n|p"
+		askFor $MSG_ASK_MODE "n|p" "n"
 		CONFIG_BACKUPMODE=$REPLY
 
 		if [[ $CONFIG_BACKUPMODE == "n" ]]; then
-			askFor $MSG_ASK_TYPE1 "dd|tar|rsync"
+			askFor $MSG_ASK_TYPE1 "dd|tar|rsync" "rsync"
 		else
-			askFor $MSG_ASK_TYPE2 "tar|rsync"
+			askFor $MSG_ASK_TYPE2 "tar|rsync" "rsync"
 		fi
 		CONFIG_BACKUPTYPE=$REPLY
 		
 		regex="dd|tar"
 		if [[ $CONFIG_BACKUPTYPE =~ $regex ]]; then
-			askFor $MSG_ASK_COMPRESS $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO)
+			askFor $MSG_ASK_COMPRESS $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
 			CONFIG_COMPRESS=$REPLY
 		else
 			CONFIG_COMPRESS="n"
 		fi
 	
-		askFor $MSG_ASK_KEEP "[1-9]|[1-4][0-9]|[5][0-2]"
+		askFor $MSG_ASK_KEEP "[1-9]|[1-4][0-9]|[5][0-2]" ""
 		CONFIG_KEEP_BACKUPS=$REPLY
 	
-		askFor $MSG_ASK_DETAILS $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO)
+		askFor $MSG_ASK_DETAILS $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_YES)
 		CONFIG_DETAILED_MESSAGES=$REPLY
 		
-		askFor $MSG_CONF_OK $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO)
+		askFor $MSG_CONF_OK $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
 	
 		[[ $REPLY =~ $YES ]] && done=1
 	done
@@ -580,7 +627,7 @@ INSTALLATION_SUCCESSFULL=1
 
 function uninstall() {
 	
-	askFor $MSG_ASK_UNINSTALL $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO)
+	askFor $MSG_ASK_UNINSTALL $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
 	[[ ! $REPLY =~ $YES ]] && return
 
 	local pre=${CONFIG_FILE_ABS_FILE%%.*}	
@@ -601,15 +648,13 @@ function uninstall() {
 		unrecoverableError
 	fi
 
-	if (( ! $KEEP_INSTALL_SCRIPT )) ; then
-		writeToConsole $MSG_DELETE_FILE "$MYFILE"
-		if ! rm -f "$MYFILE" 2>>$LOG_FILE; then
-			writeToConsole $MSG_UNINSTALL_FAILED "$MYFILE"
-			unrecoverableError
-		fi
+	writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+	if ! rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE; then
+		writeToConsole $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		unrecoverableError
 	fi
 	
-	writeToConsole $MSG_UNINSTALL_FINISHED "$FILE_TO_INSTALL"
+	writeToConsole $MSG_UNINSTALL_FINISHED "$RASPIBACKUP_NAME"
 
 }
 
@@ -655,9 +700,11 @@ while getopts ":bckl:huU" opt; do
     esac
 done
 
+writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
+
 if (( $UID != 0 )); then
 	writeToConsole $MSG_SUDO_REQUIRED "$0 $passedOpts"
-	parameterError
+	exit 1
 fi
 
 rm $LOG_FILE &>/dev/null || true
@@ -669,7 +716,10 @@ case $MESSAGE_LANGUAGE in
 		;;
 esac
 
-writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
+if (( $UNINSTALL )); then
+	uninstall
+	exit 0
+fi
 
 writeToConsole $MSG_CHECKING_FOR_BETA
 beta=$(checkIfBetaAvailable)
@@ -677,7 +727,7 @@ if [[ -n "$beta" ]]; then
 	writeToConsole $MSG_BETAVERSION_AVAILABLE "$beta"
 	writeToConsole $MSG_BETA_MESSAGE "$beta"
 	if (( ! $BETA_INSTALL )); then
-		askFor $MSG_ASK_INSTALLBETA $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO)
+		askFor $MSG_ASK_INSTALLBETA $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_ye)
 		[[ $REPLY =~ $YES ]] && BETA_INSTALL=1
 	fi
 elif (( $BETA_INSTALL )); then
@@ -685,11 +735,7 @@ elif (( $BETA_INSTALL )); then
 	exit 0
 fi
 
-if (( ! $UNINSTALL )); then
-	install
-	(( $BETA_INSTALL && INSTALLATION_SUCCESSFULL )) && writeToConsole $MSG_BETA_THANKYOU "$beta"
-else
-	uninstall
-fi
+install
+(( $BETA_INSTALL && INSTALLATION_SUCCESSFULL )) && writeToConsole $MSG_BETA_THANKYOU "$beta"
 
 # vim: set expandtab tabstop=8 shiftwidth=8 autoindent smartindent
