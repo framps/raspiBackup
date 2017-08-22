@@ -57,11 +57,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2017-08-19 18:20:47 +0200$"
+GIT_DATE="$Date: 2017-08-22 21:19:04 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: c67e165$"
+GIT_COMMIT="$Sha1: 814d454$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1002,7 +1002,7 @@ function exitError() { # {rc}
 
 function executeCommand() { # command - rc's to accept
 	local rc i
-	if (( $VERBOSE )); then
+	if (( $VERBOSE )) || (( $PROGRESS )); then
 		eval "$1" 2>&1
 		rc=$?
 	else
@@ -2809,7 +2809,11 @@ function restore() {
 		$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
 
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DD ]]; then
-				cmd="dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE if=\"$ROOT_RESTOREFILE\" $DD_PARMS"
+				if (( $PROGRESS )); then
+					cmd="dd if=\"$ROOT_RESTOREFILE\" | pv -fs $(stat "$ROOT_RESTOREFILE" | grep -i size | awk ' { print $2 }') | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
+				else 
+					cmd="dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE if=\"$ROOT_RESTOREFILE\" $DD_PARMS"
+				fi
 			else
 				cmd="gunzip -c \"$ROOT_RESTOREFILE\" | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
 			fi
@@ -2922,7 +2926,11 @@ function restore() {
 			fi
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FIRST_PARTITION "$BOOT_PARTITION"
-			dd of=$BOOT_PARTITION if="$DD_FILE" bs=1M &>>"$LOG_FILE"
+			if (( $PROGRESS )); then
+				dd if="$DD_FILE" 2>> $LOG_FILE | pv -fs $(stat "$DD_FILE" | grep -i size | awk ' { print $2 }') | dd of=$BOOT_PARTITION bs=1M &>>"$LOG_FILE"
+			else
+				dd if="$DD_FILE" of=$BOOT_PARTITION bs=1M &>>"$LOG_FILE"
+			fi
 			rc=$?
 			if [ $rc != 0 ]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".img" "$rc"
@@ -2940,7 +2948,11 @@ function restore() {
 				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
 					pushd "$MNT_POINT" &>>"$LOG_FILE"
 					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
-					cmd="tar -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
+					if (( $PROGRESS )); then
+						cmd="pv -f $ROOT_RESTOREFILE | tar -x${verbose}${zip}f -"
+					else
+						cmd="tar -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
+					fi
 					logItem "$cmd"
 					executeCommand "$cmd"
 					rc=$?
@@ -2950,7 +2962,11 @@ function restore() {
 				$BACKUPTYPE_RSYNC)
 					local excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
-					cmd="rsync --numeric-ids -aHX$verbose $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					if (( $PROGRESS )); then
+						cmd="rsync --info=progress2 --numeric-ids -aHX$verbose $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					else 
+						cmd="rsync --numeric-ids -aHX$verbose $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					fi
 					logItem "$cmd"
 					executeCommand "$cmd"
 					rc=$?
@@ -3533,23 +3549,26 @@ function inspect4Restore() {
 #
 #/dev/sdb1 : start=          63, size=  1953520002, type=83
 
-	BACKUP_BOOT_DEVICE=$(grep "partition table" -m 1 "$SF_FILE" | cut -f 5 -d ' ' | sed 's#/dev/##')
-	if [[ -z $BACKUP_BOOT_DEVICE ]]; then
-		BACKUP_BOOT_DEVICE=$(grep "^device" -m 1 "$SF_FILE" | cut -f 2 -d ':' | sed 's#[[:space:]]*/dev/##')
-	fi
-
-	if [[ -z $BACKUP_BOOT_DEVICE ]]; then
-		logItem "$(cat $SF_FILE)"
-		assertionFailed $LINENO "Unable to discover boot device from $SF_FILE"
-	fi
+	if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
 	
-	logItem "BACKUP_BOOT_DEVICE: $BACKUP_BOOT_DEVICE"
+		BACKUP_BOOT_DEVICE=$(grep "partition table" -m 1 "$SF_FILE" | cut -f 5 -d ' ' | sed 's#/dev/##')
+		if [[ -z $BACKUP_BOOT_DEVICE ]]; then
+			BACKUP_BOOT_DEVICE=$(grep "^device" -m 1 "$SF_FILE" | cut -f 2 -d ':' | sed 's#[[:space:]]*/dev/##')
+		fi
 
-	BACKUP_BOOT_DEVICENAME="/dev/$BACKUP_BOOT_DEVICE"
-	logItem "BACKUP_BOOT_DEVICENAME: $BACKUP_BOOT_DEVICENAME"
+		if [[ -z $BACKUP_BOOT_DEVICE ]]; then
+			logItem "$(cat $SF_FILE)"
+			assertionFailed $LINENO "Unable to discover boot device from $SF_FILE"
+		fi
+	
+		logItem "BACKUP_BOOT_DEVICE: $BACKUP_BOOT_DEVICE"
 
-	BACKUP_BOOT_PARTITION_PREFIX="$(getPartitionPrefix $BACKUP_BOOT_DEVICE)"
-	logItem "BACKUP_BOOT_PARTITION_PREFIX: $BACKUP_BOOT_PARTITION_PREFIX"
+		BACKUP_BOOT_DEVICENAME="/dev/$BACKUP_BOOT_DEVICE"
+		logItem "BACKUP_BOOT_DEVICENAME: $BACKUP_BOOT_DEVICENAME"
+
+		BACKUP_BOOT_PARTITION_PREFIX="$(getPartitionPrefix $BACKUP_BOOT_DEVICE)"
+		logItem "BACKUP_BOOT_PARTITION_PREFIX: $BACKUP_BOOT_PARTITION_PREFIX"
+	fi
 
 	logExit "inspect4Restore"
 
@@ -4450,6 +4469,11 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
+	if (( $PROGRESS )) && [[ ! $(which pv) ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
+		exitError $RC_PARAMETER_ERROR
+	fi
+
 	if ! (( $FAKE )); then
 		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]$ ) && ! ( $RESTORE_DEVICE =~ "/dev/loop" ) ]]; then
 			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/[a-zA-Z]+$ ]] ; then
@@ -4520,7 +4544,9 @@ function doitRestore() {
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
-		synchronizeCmdlineAndfstab
+		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+			synchronizeCmdlineAndfstab
+		fi
 	else
 		restorePartitionBasedBackup
 	fi
@@ -4806,8 +4832,9 @@ BACKUP_DIRECTORY_NAME=""
 BACKUP_STARTED=0
 ROOT_PARTITION_DEFINED=0
 NEW_BACKUP_DIRECTORY_CREATED=0
+PROGRESS=0
 
-while getopts ":0159a:Ab:cd:D:e:E:FG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ" opt; do
+while getopts ":0159a:Ab:cd:D:e:E:FgG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ" opt; do
 
    case $opt in
 		0)	SKIP_SFDISK=1
@@ -4836,6 +4863,8 @@ while getopts ":0159a:Ab:cd:D:e:E:FG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ" 
 		E)	EMAIL_PARMS="$OPTARG"
 			;;
 		F) 	FAKE=1
+			;;
+		g)	PROGRESS=1
 			;;
 		G)	LANGUAGE="$OPTARG"
 			LANGUAGE=${LANGUAGE^^*}
