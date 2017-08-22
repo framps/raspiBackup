@@ -3,6 +3,7 @@
 ## Backup and restore your raspberry
 
 For detailed documentation and download of the latest version of raspiBackup and it's installation script [see here in English](https://www.linux-tips-and-tricks.de/en/backup) and [here in German](https://www.linux-tips-and-tricks.de/de/raspiBackup)
+For the list of all fixes and enhancemants of raspiBackup [see here in English](https://www.linux-tips-and-tricks.de/en/versionhistory) and [here in German](https://www.linux-tips-and-tricks.de/de/versionshistorie)
 
 ## Miscellaneous tools and utilities
 
