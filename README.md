@@ -20,6 +20,7 @@ For the list of all fixes and enhancemants of raspiBackup [see here in English](
 * Sample eMail extension
 * Sample extension which reports the memory usage before and after backup
 * Sample extension which reports the CPU temperatur before and after backup
+* Sample extension which reports the disk usage on the backup partition before and after backup and the absolute and relative change
 * Sample extension which initiates different actions depending on the return code of raspiBackup
 
 ## REST API Server proof of concept
