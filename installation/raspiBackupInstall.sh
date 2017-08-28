@@ -10,17 +10,17 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.3.5"
+VERSION="0.3.6"
 
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set +u; GIT_DATE="$Date: 2017-08-20 10:06:25 +0200$"; set -u
+set +u; GIT_DATE="$Date: 2017-08-27 20:38:56 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE) 
-set +u; GIT_COMMIT="$Sha1: 172272a$"; set -u
+set +u; GIT_COMMIT="$Sha1: dc3bf4a$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -38,6 +38,8 @@ CONFIG_FILE_ABS_PATH="/usr/local/etc"
 CONFIG_FILE_ABS_FILE="$CONFIG_FILE_ABS_PATH/$CONFIG_FILE"
 FILE_TO_INSTALL_ABS_PATH="/usr/local/bin"
 FILE_TO_INSTALL_ABS_FILE="$FILE_TO_INSTALL_ABS_PATH/$FILE_TO_INSTALL"
+SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
+
 TAIL=0
 
 PROPERTY_URL="/downloads/raspibackup0613-properties/download"
@@ -49,8 +51,10 @@ DOWNLOAD_RETRIES=3
 
 LANG_EXT=${LANG^^*}
 [[ -z $LANG_EXT ]] && LANG_EXT="EN"
-SYSTEM_LANGUAGE=${LANG_EXT:0:2}
-MESSAGE_LANGUAGE=$SYSTEM_LANGUAGE
+MESSAGE_LANGUAGE=${LANG_EXT:0:2}
+if [[ $MESSAGE_LANGUAGE != "DE" && $MESSAGE_LANGUAGE != "EN" ]]; then
+	MESSAGE_LANGUAGE="EN"
+fi	
 
 NL=$'\n'
 
@@ -75,7 +79,7 @@ MSG_ASK_LANGUAGE=2
 MSG_EN[$MSG_ASK_LANGUAGE]="${MSG_PRF}0002I: Message language (%1)"
 MSG_DE[$MSG_ASK_LANGUAGE]="${MSG_PRF}0002I: Sprache der Meldungen (%1)"
 MSG_ASK_MODE=3
-MSG_EN[$MSG_ASK_MODE]="${MSG_PRF}0003I: Normal or partitionorientierted mode (%1)"
+MSG_EN[$MSG_ASK_MODE]="${MSG_PRF}0003I: Normal or partition oriented mode (%1)"
 MSG_DE[$MSG_ASK_MODE]="${MSG_PRF}0003I: Normaler oder partitionsorientierter Modus (%1)"
 MSG_ASK_TYPE1=4
 MSG_EN[$MSG_ASK_TYPE1]="${MSG_PRF}0004I: Backuptype (%1)"
@@ -141,14 +145,14 @@ MSG_UPDATING_CONFIG=24
 MSG_EN[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Updating configuration in %1."
 MSG_DE[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Konfigurationsdatei %1 wird angepasst."
 MSG_ASK_COMPRESS=25
-MSG_EN[$MSG_ASK_COMPRESS]="${MSG_PRF}0025I: Compress backup (y|n)"
-MSG_DE[$MSG_ASK_COMPRESS]="${MSG_PRF}0025I: Backup komprimieren (j|n)"
+MSG_EN[$MSG_ASK_COMPRESS]="${MSG_PRF}0025I: Compress backup (%1)"
+MSG_DE[$MSG_ASK_COMPRESS]="${MSG_PRF}0025I: Backup komprimieren (%1)"
 MSG_NEWLINE=26
 MSG_EN[$MSG_NEWLINE]="$NL"
 MSG_DE[$MSG_NEWLINE]="$NL"
 MSG_ASK_UNINSTALL=27
-MSG_EN[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Are you sure to uninstall $RASPIBACKUP_NAME (y|n)."
-MSG_DE[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Soll $RASPIBACKUP_NAME wirklich deinstalliert werden (j|n)."
+MSG_EN[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Are you sure to uninstall $RASPIBACKUP_NAME (%1)"
+MSG_DE[$MSG_ASK_UNINSTALL]="${MSG_PRF}0027I: Soll $RASPIBACKUP_NAME wirklich deinstalliert werden (%1)"
 MSG_DELETE_FILE=28
 MSG_EN[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Deleting %1..."
 MSG_DE[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Lösche %1..."
@@ -170,23 +174,9 @@ MSG_DE[$MSG_BETAVERSION_AVAILABLE]="${MSG_PRF}0033I: Beta Version %1 ist verfüg
 MSG_ASK_INSTALLBETA=34
 MSG_EN[$MSG_ASK_INSTALLBETA]="${MSG_PRF}0034I: Install beta version (y|n)"
 MSG_DE[$MSG_ASK_INSTALLBETA]="${MSG_PRF}0034I: Soll die Betaversion installiert werden (j|n)"
-MSG_BETA_MESSAGE=35
-MSG_EN[$MSG_BETA_MESSAGE]="!!! RBK0035I: =========> NOTE  <========= \
-${NL}!!! RBK0165W: Please help to test the current beta version %1 of $FILE_TO_INSTALL ;-) \
-${NL}!!! RBK1065W: See the list of scenarios and their test status on https://goo.gl/lChZm9. \
-${NL}!!! RBK0165W: If you have executed any untested scenario successfully \
-${NL}!!! RBK0165W: please add a comment on this website and the table will be updated accordingly \
-${NL}!!! RBK0165W: See https://goo.gl/d3pkkO for new features in the beta. \
-${NL}!!! RBK0165W: If you detect any issues with the beta please report them on https://goo.gl/lChZm9. \
-${NL}!!! RBK0165W: =========> NOTE <========="
-MSG_DE[$MSG_BETA_MESSAGE]="!!! RBK0035I: =========> HINWEIS <========= \
-${NL}!!! RBK0165W: Bitte hilf beim Testen der aktuellen Beta version %1 von $FILE_TO_INSTALL ;-) \
-${NL}!!! RBK0165W: Auf https://goo.gl/ycREog sind die Szenarien sowie ihr Teststatus aufgelistet. \
-${NL}!!! RBK0165W: Wer ein dort noch nicht als getestet markiertes Szenario erfolgreich durchgeführt hat wird gebeten dieses in einem Kommentar \
-${NL}!!! RBK0165W: auf der Webseite zu melden damit die Tabelle aktualisiert werden kann \
-${NL}!!! RBK0165W: Auf https://goo.gl/n5KH3I sind die neuen Features des Betas beschrieben. \
-${NL}!!! RBK0165W: Falls es Fehler geben sollte bitte diese auf https://goo.gl/ycREog berichten. \
-${NL}!!! RBK0165W: =========> HINWEIS <========="
+#MSG_BETA_MESSAGE=35
+#MSG_EN[$MSG_BETA_MESSAGE]="!!! RBK0035I: =========> NOTE  <========= "
+#MSG_DE[$MSG_BETA_MESSAGE]="!!! RBK0035I: =========> HINWEIS <========="
 MSG_BETA_THANKYOU=36
 MSG_EN[$MSG_BETA_THANKYOU]="${MSG_PRF}0036I: Thank you very much for helping to test $FILE_TO_INSTALL %1."
 MSG_DE[$MSG_BETA_THANKYOU]="${MSG_PRF}0036I: Vielen Dank für die Hilfe beim Testen von $FILE_TO_INSTALL %1."
@@ -194,24 +184,43 @@ MSG_CODE_INSTALLED=37
 MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: Created %1."
 MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: %1 wurde erstellt."
 MSG_NO_INSTALLATION_FOUND=38
-MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: No installation to refresh detected."
-MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038E: Keine Installation für einen Update entdeckt."
+MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038W: No installation to refresh detected."
+MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038W: Keine Installation für einen Update entdeckt."
 MSG_CHOWN_FAILED=39
 MSG_EN[$MSG_CHOWN_FAILED]="${MSG_PRF}0039E: chown of %1 failed."
 MSG_DE[$MSG_CHOWN_FAILED]="${MSG_PRF}0039E: chown von %1 nicht möglich."
 MSG_ANSWER_CHARS_YES=40
 MSG_EN[$MSG_ANSWER_CHARS_YES]="y"
 MSG_DE[$MSG_ANSWER_CHARS_YES]="j"
-MSG_ANSWER_CHARS_NO=40
+MSG_ANSWER_CHARS_NO=41
 MSG_EN[$MSG_ANSWER_CHARS_NO]="n"
 MSG_DE[$MSG_ANSWER_CHARS_NO]="n"
-MSG_CONFIG_INFO=41
-MSG_EN[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Default for all configuration parameters is the parameter in UPPERCASE."
-MSG_DE[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Bei keiner Eingabe wird der in GROSSBUCHSTABEN geschriebene Parameter benutzt." 
+MSG_CONFIG_INFO=42
+MSG_EN[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Default for option is the parameter in UPPERCASE."
+MSG_DE[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Bei keiner Eingabe wird der in GROSSBUCHSTABEN geschriebene Parameter für die Option benutzt." 
+MSG_SELECTED_CONFIG_PARMS1=43
+MSG_EN[$MSG_SELECTED_CONFIG_PARMS1]="${MSG_PRF}0042I: Selected configuration: Message language: %1, Backupmode: %2, Backuptype: %3"
+MSG_DE[$MSG_SELECTED_CONFIG_PARMS1]="${MSG_PRF}0042I: Gewählte Konfiguration: Sprache der Meldungen: %1, Backupmodus: %2, Backuptype: %3"
+MSG_NORMAL_MODE=44
+MSG_EN[$MSG_NORMAL_MODE]="normal"
+MSG_DE[$MSG_NORMAL_MODE]="normal"
+MSG_PARTITION_MODE=45
+MSG_EN[$MSG_PARTITION_MODE]="partition oriented"
+MSG_DE[$MSG_PARTITION_MODE]="partitionsorientiert"
+MSG_SAMPLEEXTENSION_INSTALL_FAILED=46
+MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0046E: Sample extension installation failed. %1"
+MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0046E: Beispielserweiterungsinstallation fehlgeschlagen. %1"
+MSG_SAMPLEEXTENSION_INSTALL_SUCCESS=47
+MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0047I: Sample extensions successfully installed and enabled."
+MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0047I: Beispielserweiterungen erfolgreich installiert und eingeschaltet."
+MSG_SELECTED_CONFIG_PARMS2=48
+MSG_EN[$MSG_SELECTED_CONFIG_PARMS2]="${MSG_PRF}0048I: Selected configuration: Compress backups: %1, Number of backups: %2, Verbose messages: %3"
+MSG_DE[$MSG_SELECTED_CONFIG_PARMS2]="${MSG_PRF}0048I: Gewählte Konfiguration: Backup komprimieren: %1, Anzahl Backups: %2, Ausführliche Meldungen: %3"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
 INSTALLATION_SUCCESSFULL=0
+INSTALLATION_WARNING=0
 INSTALLATION_STARTED=0
 CONFIG_INSTALLED=0
 SCRIPT_INSTALLED=0
@@ -223,6 +232,10 @@ function trapWithArg() { # function trap1 trap2 ... trapn
     done
 }
 
+function extractVersionFromFile() { # fileName
+	echo $(grep "^VERSION=" "$1" | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")
+}
+
 function cleanup() {
 
 	trap '' SIGINT SIGTERM EXIT	
@@ -232,21 +245,23 @@ function cleanup() {
 	TAIL=0
 	if (( $INSTALLATION_STARTED )); then
 		if (( ! $INSTALLATION_SUCCESSFULL )); then
-			writeToConsole $MSG_NEWLINE
 			writeToConsole $MSG_CLEANUP
 			(( $CONFIG_INSTALLED )) && rm $CONFIG_FILE_ABS_FILE &>>$LOG_FILE || true
 			(( $SCRIPT_INSTALLED )) && rm $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE || true 
-			(( $SCRIPT_INSTALLED && ! $KEEP_INSTALL_SCRIPT )) && rm $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE || true 
 			writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
 			rc=127
 		else
-			rm $MYDIR/$MYSELF &>/dev/null
-			writeToConsole $MSG_INSTALLATION_FINISHED "$RASPIBACKUP_NAME"
+			if (( ! $INSTALLATION_WARNING )); then
+				writeToConsole $MSG_INSTALLATION_FINISHED "$RASPIBACKUP_NAME"
+			fi
 			rm $LOG_FILE &>/dev/null || true
 		fi
 	else
 		rm -f $LOG_FILE &>/dev/null || true
 	fi
+	
+	(( $INSTALL_EXTENSIONS )) && rm $SAMPLEEXTENSION_TAR_FILE &>>$LOG_FILE || true 
+	
 	exit $rc
 }
 	
@@ -339,6 +354,14 @@ function unrecoverableError() {
 	exit 127
 }
 
+function exitWarning() {
+	exit 1
+}
+
+function exitNormal() {
+	exit 0
+}
+
 function downloadCode() {
 
 	local oldversion newName
@@ -350,7 +373,8 @@ function downloadCode() {
 		mv $FILE_TO_INSTALL_ABS_FILE $newName
 	elif (( $REFRESH_SCRIPT )); then
 		writeToConsole $MSG_NO_INSTALLATION_FOUND
-		unrecoverableError
+		INSTALLATION_WARNING=1
+		return
 	fi
 
 	if (( $BETA_INSTALL )); then
@@ -369,21 +393,23 @@ function downloadCode() {
 		unrecoverableError
 	fi
 			
-	if ! mv $FILE_TO_INSTALL $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
-		writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		unrecoverableError
-	fi
+	if [[ $FILE_TO_INSTALL != $FILE_TO_INSTALL_ABS_FILE ]]; then
+		if ! mv $FILE_TO_INSTALL $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
+			writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+			unrecoverableError
+		fi
 
-	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
+		writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
 
-	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
-		writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		unrecoverableError
-	fi
-	
-	if ! cp "$MYDIR/$MYSELF" $FILE_TO_INSTALL_ABS_PATH &>>$LOG_FILE; then
-		writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		unrecoverableError
+		if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
+			writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+			unrecoverableError
+		fi
+
+		if ! cp -f "$MYDIR/$MYSELF" $FILE_TO_INSTALL_ABS_PATH &>>$LOG_FILE; then
+			writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+			unrecoverableError
+		fi
 	fi
 
 	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
@@ -397,7 +423,7 @@ function downloadCode() {
 		writeToConsole $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 		unrecoverableError
 	fi
-	
+
 }
 
 function downloadConfig() {
@@ -468,11 +494,12 @@ function askFor() { # message, options, default
 function configWizzard() {
 
 	local done=0
+	local ml=${MESSAGE_LANGUAGE,,*}
 
 	writeToConsole $MSG_CONFIG_INFO 
 
 	while (( ! $done )); do
-		askFor $MSG_ASK_LANGUAGE "de|en" "en"
+		askFor $MSG_ASK_LANGUAGE "de|en" "$ml"
 		MESSAGE_LANGUAGE="$REPLY"
 
 		askFor $MSG_ASK_MODE "n|p" "n"
@@ -499,6 +526,10 @@ function configWizzard() {
 		askFor $MSG_ASK_DETAILS $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_YES)
 		CONFIG_DETAILED_MESSAGES=$REPLY
 		
+		local m="$(getLocalizedMessage $MSG_NORMAL_MODE)"
+		[[ $CONFIG_BACKUPMODE == "p" ]] && m="$(getLocalizedMessage $MSG_PARTITION_MODE)"
+		writeToConsole $MSG_SELECTED_CONFIG_PARMS1 "$MESSAGE_LANGUAGE" "$m" "$CONFIG_BACKUPTYPE"
+		writeToConsole $MSG_SELECTED_CONFIG_PARMS2 "$CONFIG_COMPRESS" "$CONFIG_KEEP_BACKUPS" "$CONFIG_DETAILED_MESSAGES"
 		askFor $MSG_CONF_OK $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
 	
 		[[ $REPLY =~ $YES ]] && done=1
@@ -537,14 +568,15 @@ function usageEN() {
 	echo ""
 	echo "       No options will start a configuration wizzard and prompt for the most important configuration parameters"
 	echo ""
-	echo "       -U - Updates the local script version with the latest script version available (Current configuration file will not be modified)"
 	echo "       -b - Install the beta version if available"
 	echo "       -c - Install default config file in $CONFIG_FILE_ABS_FILE"
+	echo "       -e - Install and configure sampleextensions"
 	echo "       -k - Keep installscript after successful installation" 
 	echo "       -l - Install English (EN) or German (DE) version of the config file"
 	echo "       If -c is used without -l the current system language is used for the config file"
+	echo "       -r - Updates the local script version with the latest script version available (Current configuration file will not be modified)"
 	echo ""
-	echo "       -u - Uninstall raspiBackup.sh with it's configuration file and the installer"
+	echo "       -U - Uninstall raspiBackup.sh with it's configuration file and the installer"
 }
 
 function usageDE() {
@@ -556,14 +588,15 @@ function usageDE() {
 	echo ""
 	echo "       Falls keine Optionen angegeben wurde werden die wichtigsten Konfigurationsparameter abgefragt"
 	echo ""
-	echo "       -U - Ersetzt die lokale Scriptversion durch die neueste verfügbare Scriptversion (Die aktuelle Configurationsdatei wird nicht geändert)"
 	echo "       -b - Installiert eine Betaversion sofern verfügbar"
 	echo "       -c - Installiert die Standardkonfigurationsdatei in $CONFIG_FILE_ABS_FILE"
+	echo "       -e - Installiert und konfiguriert die Beispielerweiterungen"
 	echo "       -k - Installationsscript wird am Ende der Installation nicht gelöscht"
 	echo "       -l - Installiert die englische (EN) oder Deutsche (DE) Version der Konfigurationsdatei"
 	echo "       Wenn -c ohne -l benutzt wird wird die Systemsprache für die Konfigurationsdatei benutzt"
+	echo "       -r - Ersetzt die lokale Scriptversion durch die neueste verfügbare Scriptversion (Die aktuelle Configurationsdatei wird nicht geändert)"
 	echo ""
-	echo "       -l - Deinstalliert raspiBackup.sh mit seiner Konfigurationsdatei und dem Installer"
+	echo "       -U - Deinstalliert raspiBackup.sh mit seiner Konfigurationsdatei und dem Installer"
 }
 
 # Borrowed from http://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
@@ -625,6 +658,34 @@ INSTALLATION_SUCCESSFULL=1
 
 }
 
+function installExtensions() {
+
+	local extensions="mem temp disk"
+
+	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
+		
+	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -w %{http_code} -L "$MYHOMEURL/$SAMPLEEXTENSION_TAR_FILE" 2>>$LOG_FILE)
+	if [[ ${httpCode:0:1} != "2" ]]; then
+		writeToConsole $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode" 
+		unrecoverableError
+	fi
+		
+	if ! tar -xzf $SAMPLEEXTENSION_TAR_FILE -C $FILE_TO_INSTALL_ABS_PATH &>>$LOG_FILE; then
+		writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_FAILED "tar -x"
+		unrecoverableError
+	fi
+
+	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>$LOG_FILE; then
+		writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
+		unrecoverableError
+	fi
+
+	sed -i "s/^DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_FILE_ABS_FILE
+
+	writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_SUCCESS
+	
+}
+
 function uninstall() {
 	
 	askFor $MSG_ASK_UNINSTALL $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
@@ -633,18 +694,18 @@ function uninstall() {
 	local pre=${CONFIG_FILE_ABS_FILE%%.*}	
 	local post=${CONFIG_FILE_ABS_FILE##*.}
 
-	writeToConsole $MSG_DELETE_FILE "$pre*.$post"
-	if ! rm -f $pre*.$post &>>$LOG_FILE; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$pre*.$post"
+	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
+	if ! rm -f $pre*.$post* &>>$LOG_FILE; then
+		writeToConsole $MSG_UNINSTALL_FAILED "$pre*.$post*"
 		unrecoverableError
 	fi
 
 	pre=${FILE_TO_INSTALL_ABS_FILE%%.*}	
 	post=${FILE_TO_INSTALL_ABS_FILE##*.}
 	
-	writeToConsole $MSG_DELETE_FILE "$pre*.$post"
-	if ! rm -f $pre*.$post 2>>$LOG_FILE; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$pre*.$post"
+	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
+	if ! rm -f $pre*.$post* 2>>$LOG_FILE; then
+		writeToConsole $MSG_UNINSTALL_FAILED "$pre*.$post*"
 		unrecoverableError
 	fi
 
@@ -663,16 +724,18 @@ passedOpts="$@"
 INSTALL_CONFIG=0
 UNINSTALL=0
 BETA_INSTALL=0
-KEEP_INSTALL_SCRIPT=0
 REFRESH_SCRIPT=0
+INSTALL_EXTENSIONS=0
 
 trapWithArg cleanup SIGINT SIGTERM EXIT
 
-while getopts ":bckl:huU" opt; do
+while getopts ":bcel:hrU" opt; do
    case $opt in 
 		b) 	BETA_INSTALL=1
 			;;
-		c)  	INSTALL_CONFIG=1
+		c)  INSTALL_CONFIG=1
+			;;
+		e)	INSTALL_EXTENSIONS=1
 			;;
 		l) 	LANG_PRF=$(tr '[:lower:]' '[:upper:]' <<< "$OPTARG")
 			if [[ $LANG_PRF != "DE" && $LANG_PRF != "EN" ]]; then
@@ -682,14 +745,12 @@ while getopts ":bckl:huU" opt; do
 				MESSAGE_LANGUAGE=$LANG_PRF
 			fi
 			;;
-		k) 	KEEP_INSTALL_SCRIPT=1
-			;;
 		h)  	usage
-			exit 0
+			exitNormal
 			;;
-		u)	UNINSTALL=1
+		r)  	REFRESH_SCRIPT=1
 			;;
-		U)  	REFRESH_SCRIPT=1
+		U)	UNINSTALL=1
 			;;
 		\?)	writeToConsole $MSG_INVALID_OPTION "-$OPTARG"
 			parameterError
@@ -704,7 +765,7 @@ writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
 
 if (( $UID != 0 )); then
 	writeToConsole $MSG_SUDO_REQUIRED "$0 $passedOpts"
-	exit 1
+	exitWarning
 fi
 
 rm $LOG_FILE &>/dev/null || true
@@ -718,21 +779,25 @@ esac
 
 if (( $UNINSTALL )); then
 	uninstall
-	exit 0
+	exitNormal
+fi
+
+if (( $INSTALL_EXTENSIONS )); then
+	installExtensions
+	exitNormal
 fi
 
 writeToConsole $MSG_CHECKING_FOR_BETA
 beta=$(checkIfBetaAvailable)
 if [[ -n "$beta" ]]; then
 	writeToConsole $MSG_BETAVERSION_AVAILABLE "$beta"
-	writeToConsole $MSG_BETA_MESSAGE "$beta"
 	if (( ! $BETA_INSTALL )); then
 		askFor $MSG_ASK_INSTALLBETA $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_ye)
 		[[ $REPLY =~ $YES ]] && BETA_INSTALL=1
 	fi
 elif (( $BETA_INSTALL )); then
 	writeToConsole $MSG_NO_BETA_AVAILABLE
-	exit 0
+	exitNormal
 fi
 
 install
