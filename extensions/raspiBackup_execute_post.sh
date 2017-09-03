@@ -1,17 +1,33 @@
 #!/bin/bash
 
 #
-# extensionpoint for raspiBackup.sh
+# Plugin for raspiBackup.sh
 # called after a backup finished
 #
 # Function: Call another script
 #
 # See http://www.linux-tips-and-tricks.de/raspiBackup for additional information 
 #
-# (C) 2016 - framp at linux-tips-and-tricks dot de
-#
 # $1 has the return code of raspiBackup. If it equals 0 this signals success and failure otherwise
 #
+#######################################################################################################################
+#
+#    Copyright (C) 2016-2017 framp at linux-tips-and-tricks dot de
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.#
+#
+#######################################################################################################################
 
 if [[ -n $1 ]]; then											# was there a return code ? Should be :-)
 	if [[ "$1" == 0 ]]; then						
