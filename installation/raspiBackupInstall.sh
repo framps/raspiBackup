@@ -16,11 +16,11 @@ MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set +u; GIT_DATE="$Date: 2017-08-27 20:38:56 +0200$"; set -u
+set +u; GIT_DATE="$Date: 2017-09-03 21:55:30 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE) 
-set +u; GIT_COMMIT="$Sha1: dc3bf4a$"; set -u
+set +u; GIT_COMMIT="$Sha1: 3edd90b$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -49,8 +49,8 @@ STABLE_CODE_URL="$FILE_TO_INSTALL"
 DOWNLOAD_TIMEOUT=3 # seconds
 DOWNLOAD_RETRIES=3 
 
+[[ -z ${LANG+x} ]] && LANG="EN"
 LANG_EXT=${LANG^^*}
-[[ -z $LANG_EXT ]] && LANG_EXT="EN"
 MESSAGE_LANGUAGE=${LANG_EXT:0:2}
 if [[ $MESSAGE_LANGUAGE != "DE" && $MESSAGE_LANGUAGE != "EN" ]]; then
 	MESSAGE_LANGUAGE="EN"
@@ -419,7 +419,8 @@ function downloadCode() {
 		unrecoverableError
 	fi
 	
-	if ! chown $(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed -z 's/\n//') $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE; then
+	local chownArgs=$(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed 's/\n//')
+	if ! chown $chownArgs $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE; then
 		writeToConsole $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 		unrecoverableError
 	fi
