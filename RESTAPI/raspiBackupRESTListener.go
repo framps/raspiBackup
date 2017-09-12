@@ -12,7 +12,7 @@ package main
  and add lines in the format 'userid:password' to define access credetials.
 
  To invoke raspiBackup via REST use follwing command:
-     curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v0.1/backup
+     curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v1/raspiBackup
 
 (c) 2017 - framp at linux-tips-and-tricks dot de
 
@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/framps/raspiBackup/RESTAPI/handler"
 	"github.com/gin-gonic/gin"
 )
 
@@ -53,7 +54,7 @@ func BackupHandler(c *gin.Context) {
 		return
 	}
 
-	args := ""
+	var args string
 
 	if parm.Type != nil {
 		args = "-t " + *parm.Type
@@ -82,7 +83,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	api := gin.Default()
 
-	passwordSet := false
+	var passwordSet bool
 	var credentialMap = map[string]string{}
 
 	// read credentials
@@ -117,17 +118,17 @@ func main() {
 			if len(splitCredentials) == 2 {
 				uid, pwd := strings.TrimSpace(splitCredentials[0]), strings.TrimSpace(splitCredentials[1])
 				credentialMap[uid] = pwd
-				fmt.Printf("INFO: Line %v: Found credential definition for userid '%v'\n", i, uid)
+				fmt.Printf("INFO: Line %d: Found credential definition for userid '%s'\n", i, uid)
 				passwordSet = true
 			} else {
 				if len(line) > 0 {
-					fmt.Printf("WARNING: Line %v skipped. Found '%v' which is not a valid credential definition. Expected 'userid:password'\n", i, line)
+					fmt.Printf("WARNING: Line %d skipped. Found '%s' which is not a valid credential definition. Expected 'userid:password'\n", i, line)
 				}
 			}
 		}
 
 	} else {
-		fmt.Printf("WARNING: REST API not protected with basic auth. %v not found\n", passwordFile)
+		fmt.Printf("WARNING: REST API not protected with basic auth. %s not found\n", passwordFile)
 	}
 
 	var v1 *gin.RouterGroup
@@ -138,9 +139,8 @@ func main() {
 		v1 = api.Group("v1")
 	}
 
-	{
-		v1.POST("/backup", BackupHandler)
-	}
+	v1.POST("/raspiBackup", BackupHandler)
+	api.NoRoute(handler.NoRouteHandler)
 
 	api.Run(":8080")
 }
