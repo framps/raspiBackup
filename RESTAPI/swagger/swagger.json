@@ -1,0 +1,30 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "Proof of concept REST API to invoke raspiBackup",
+    "title": "raspiBackup API.",
+    "contact": {
+      "name": "framp",
+      "url": "http://www.linux-tips-and-tricks.de/raspibackup",
+      "email": "framp@linux.tips-and-tricks.de"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "http://opensource.org/licenses/MIT"
+    },
+    "version": "0.0.1"
+  },
+  "host": "localhost",
+  "basePath": "/v1",
+  "paths": {}
+}
