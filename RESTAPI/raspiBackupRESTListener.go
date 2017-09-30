@@ -7,7 +7,7 @@
 //     BasePath: /v1
 //     Version: 0.0.1
 //     License: MIT http://opensource.org/licenses/MIT
-//     Contact: framp <framp@linux.tips-and-tricks.de> http://www.linux-tips-and-tricks.de/raspibackup
+
 //
 //     Consumes:
 //     - application/json
