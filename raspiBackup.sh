@@ -37,7 +37,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.3-beta"
+VERSION="0.6.3"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -52,16 +52,18 @@ fi
 
 grep -iq beta <<< "$VERSION"
 IS_BETA=$((! $? ))
+grep -iq hotfix <<< "$VERSION"
+IS_HOTFIX=$((! $? ))
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2017-08-31 19:43:51 +0200$"
+GIT_DATE="$Date: 2017-10-03 20:02:24 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: a6683bd$"
+GIT_COMMIT="$Sha1: 9ee9900$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -80,6 +82,8 @@ SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 
 DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-sh/download"
 PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
+VERSION_URL_EN="$MYHOMEURL/en/versionhistory"
+VERSION_URL_DE="$MYHOMEURL/de/versionshistorie"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$MYNAME.properties"
 DOWNLOAD_TIMEOUT=3 # seconds
 DOWNLOAD_RETRIES=3
@@ -471,8 +475,8 @@ MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP=79
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z not allowed with backuptype %1."
 MSG_DE[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z ist für Backuptyp %1 nicht erlaubt."
 MSG_NEW_VERSION_AVAILABLE=80
-MSG_EN[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) There is an updated $MYNAME version %1 available for download. You are running version %2 and now can use option -U to upgrade your local version."
-MSG_DE[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) Es gibt eine neuere Version von $MYNAME %1 zum downloaden. Die momentan benutze Version ist %2 und es kann mit der Option -U die lokale Version aktualisiert werden."
+MSG_EN[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) There is a new version %1 of $MYNAME available for download. You are running version %2 and now can use option -U to upgrade your local version. Visit $VERSION_URL_EN to read the version changes"
+MSG_DE[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) Es gibt eine neue Version %1 von $MYNAME zum downloaden. Die momentan benutze Version ist %2 und es kann mit der Option -U die lokale Version aktualisiert werden. Besuche $VERSION_URL_DE um die Änderungen in der Version zu erfahren"
 MSG_BACKUP_TARGET=81
 MSG_EN[$MSG_BACKUP_TARGET]="RBK0081I: Creating backup of type %1 in %2."
 MSG_DE[$MSG_BACKUP_TARGET]="RBK0081I: Backup vom Typ %1 wird in %2 erstellt."
@@ -725,11 +729,11 @@ MSG_DE[$MSG_CTRLC_DETECTED]="RBK0163E: Scriptausführung mit CTRL C abgebrochen.
 MSG_HARDLINK_ERROR=164
 MSG_EN[$MSG_HARDLINK_ERROR]="RBK0164E: Unable to create hardlinks. RC %1."
 MSG_DE[$MSG_HARDLINK_ERROR]="RBK0164E: Es können keine Hardlinks erstellt werden. RC %1."
-MSG_INTRO_MESSAGE=165
-MSG_EN[$MSG_INTRO_MESSAGE]="RBK0165W: =========> NOTE  <========= \
+MSG_INTRO_BETA_MESSAGE=165
+MSG_EN[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> NOTE  <========= \
 ${NL}!!! RBK0165W: This is a betaversion and should not be used in production. \
 ${NL}!!! RBK0165W: =========> NOTE <========="
-MSG_DE[$MSG_INTRO_MESSAGE]="RBK0165W: =========> HINWEIS <========= \
+MSG_DE[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> HINWEIS <========= \
 ${NL}!!! RBK0165W: Dieses ist eine Betaversion welche nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0165W: =========> HINWEIS <========="
 MSG_UMOUNT_ERROR=166
@@ -753,6 +757,16 @@ MSG_DE[$MSG_NOPARTITIONS_TOBACKUP_FOUND]="RBK0171E: Es können keine zu sichernd
 MSG_UNABLE_TO_CREATE_DIRECTORY=172
 MSG_EN[$MSG_UNABLE_TO_CREATE_DIRECTORY]="RBK0172E: Unable to create directory %1."
 MSG_DE[$MSG_UNABLE_TO_CREATE_DIRECTORY]="RBK0172E: Verzeichnis %1 kann nicht erstellt werden."
+MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS=173
+MSG_EN[$MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS]="RBK0173E: rsync version %1 doesn't support progress information."
+MSG_DE[$MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS]="RBK0173E: rsync Version %1 unterstüzt keine Fortschirtsanzeige."
+MSG_INTRO_HOTFIX_MESSAGE=173
+MSG_EN[$MSG_INTRO_HOTFIX_MESSAGE]="RBK0173W: =========> NOTE  <========= \
+${NL}!!! RBK0173W: This is a temporary hotfix and should not be used in production. \
+${NL}!!! RBK0173W: =========> NOTE <========="
+MSG_DE[$MSG_INTRO_HOTFIX_MESSAGE]="RBK0173W: =========> HINWEIS <========= \
+${NL}!!! RBK0173W: Dieses ist ein temporärer Hotfix welcher nicht in Produktion benutzt werden sollte. \
+${NL}!!! RBK0173W: =========> HINWEIS <========="
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -866,7 +880,7 @@ function callExtensions() { # extensionplugpoint rc
 
 			if which $extensionFileName 2>&1 1>/dev/null; then
 				logItem "Calling $extensionFileName $2"
-				executeShellCommand "$extensionFileName $2"
+				executeShellCommand ". $extensionFileName $2"
 				local rc=$?
 				logItem "Extension RC: $rc"
 				if [[ $rc != 0 ]]; then
@@ -1508,7 +1522,7 @@ function stopServices() {
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_STOPPING_SERVICES "$STOPSERVICES"
 			logItem "$STOPSERVICES"
 			if (( ! $FAKE_BACKUPS )); then
-				executeShellCommand "$STOPSERVICES"
+				executeShellCommand ""
 				local rc=$?
 				if [[ $rc != 0 ]]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOP_SERVICES_FAILED "$rc"
@@ -3412,11 +3426,6 @@ function checksForPartitionBasedBackup() {
 
 	logEntry "checksForPartitionBasedBackup"
 
-	if [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP
-		exitError $RC_PARAMETER_ERROR
-	fi
-
 	collectPartitions
 
 	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[@]}"
@@ -3513,13 +3522,21 @@ function inspect4Backup() {
 
 	logItem "ls /dev/mmcblk*:${NL}$(ls -1 /dev/mmcblk* 2>/dev/null)"
 	logItem "ls /dev/sd*:${NL}$(ls -1 /dev/sd* 2>/dev/null)"
+	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
 
 	if (( $REGRESSION_TEST || $RESTORE )); then
 		BOOT_DEVICE="mmcblk0"
 	else
 		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x $d)" ] && echo $d && break; done)
 		logItem "part: $part"
-		if [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9])p ]]; then
+		if [ "$(mountpoint -d /boot)" == "$(mountpoint -d /)" ]; then	# /boot on same partition with root partition /
+			if [[ -b /dev/mmcblk0p1 ]]; then
+				BOOT_DEVICE="mmcblk0"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
+				exitError $RC_MISC_ERROR
+			fi					
+		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9])p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
@@ -3629,11 +3646,12 @@ function reportNews() {
 
 		isUpdatePossible
 
-		local betaVersion=$(isBetaAvailable)
-
-		if [[ -n $betaVersion && $VERSION != $betaVersion ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion" "oldVersion"
-			NEWS_AVAILABLE=1
+		if (( ! $IS_BETA )); then
+			local betaVersion=$(isBetaAvailable)
+			if [[ -n $betaVersion && $VERSION != $betaVersion ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion" "oldVersion"
+				NEWS_AVAILABLE=1
+			fi
 		fi
 	fi
 
@@ -3743,8 +3761,12 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( ! $FAKE )); then
-		if (( $PARTITIONBASED_BACKUP )); then
+	if (( $PARTITIONBASED_BACKUP )); then
+		if [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP
+			exitError $RC_PARAMETER_ERROR
+		fi
+		if (( ! $FAKE )); then
 			checksForPartitionBasedBackup
 		fi
 	fi
@@ -4215,7 +4237,7 @@ function getPartitionBootFilesystem() { # partition_no
 
 	local parted format
 	logItem "PARTED: $1 - $(parted -m $BOOT_DEVICENAME print 2>/dev/null)"
-	parted=$(grep "^$partitionNo" <(parted -m $BOOT_DEVICENAME print 2>/dev/null))
+	parted=$(grep "^${partitionNo}:" <(parted -m $BOOT_DEVICENAME print 2>/dev/null))
 	logItem "PARTED: $1 - $parted"
 
 	format=$(cut -d ":" -f 5 <<< $parted)
@@ -5021,7 +5043,8 @@ done
 shift $((OPTIND-1))
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY"
-(( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_MESSAGE
+(( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
+(( $IS_HOTFIX )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_HOTFIX_MESSAGE
 
 fileParameter="$1"
 if [[ -n "$1" ]]; then
