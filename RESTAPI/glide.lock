@@ -1,0 +1,34 @@
+hash: 52b9814a0875d12e83d33f4bbf85c825e99c1ab27e74c90174aac95159aa0824
+updated: 2017-09-13T00:02:55.881920398+02:00
+imports:
+- name: github.com/framps/raspiBackup
+  version: fd0dbf845391777c63483502221e8568cf598e68
+  subpackages:
+  - RESTAPI/handler
+  - RESTAPI/lib
+- name: github.com/gin-contrib/sse
+  version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
+- name: github.com/gin-gonic/gin
+  version: d459835d2b077e44f7c9b453505ee29881d5d12d
+  subpackages:
+  - binding
+  - render
+- name: github.com/golang/protobuf
+  version: 17ce1425424ab154092bbb43af630bd647f3bb0d
+  subpackages:
+  - proto
+- name: github.com/mattn/go-isatty
+  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+- name: github.com/ugorji/go
+  version: 8c0409fcbb70099c748d71f714529204975f6c3f
+  subpackages:
+  - codec
+- name: golang.org/x/sys
+  version: 804a9fee62e3fff93a822aac5f0a7a622da5341d
+  subpackages:
+  - unix
+- name: gopkg.in/go-playground/validator.v8
+  version: 5f1438d3fca68893a817e4a66806cea46a9e4ebf
+- name: gopkg.in/yaml.v2
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
+testImports: []
