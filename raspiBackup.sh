@@ -27,7 +27,7 @@
 #    GNU General Public License for more details.
 #
 #    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.#
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
 
@@ -59,11 +59,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2017-10-03 20:02:24 +0200$"
+GIT_DATE="$Date: 2017-10-08 21:49:56 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 9ee9900$"
+GIT_COMMIT="$Sha1: 7227b9f$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1331,9 +1331,9 @@ function bootedFromSD() {
 function getPartitionPrefix() { # device
 
 	logEntry "getPartitionPrefix: $1"
-	if [[ $1 =~ ^(mmcblk|sd[a-z]) ]]; then
+	if [[ $1 =~ ^(mmcblk|loop|sd[a-z]) ]]; then
 		local pref="$1"
-		[[ $1 =~ ^mmcblk ]] && pref="${1}p"
+		[[ $1 =~ ^(mmcblk|loop) ]] && pref="${1}p"
 	else
 		logItem "device: $1"
 		assertionFailed $LINENO "Unable to retrieve partition prefix for device $1"
@@ -1355,7 +1355,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "getPartitionNumber $1"
 	local id
-	if [[ $1 =~ ^/dev/mmcblk[0-9]+p([0-9]+) || $1 =~ ^/dev/sd[a-z]([0-9]+) ]]; then
+	if [[ $1 =~ ^/dev/(?:mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/sd[a-z]([0-9]+) ]]; then
 		id=${BASH_REMATCH[1]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -1522,7 +1522,7 @@ function stopServices() {
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_STOPPING_SERVICES "$STOPSERVICES"
 			logItem "$STOPSERVICES"
 			if (( ! $FAKE_BACKUPS )); then
-				executeShellCommand ""
+				executeShellCommand "$STOPSERVICES"
 				local rc=$?
 				if [[ $rc != 0 ]]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOP_SERVICES_FAILED "$rc"
@@ -2148,7 +2148,7 @@ function resizeRootFS() {
 	logItem "partitionLayout of $RESTORE_DEVICE"
 	logItem "$(fdisk -l $RESTORE_DEVICE)"
 
-	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '^/dev/(mmcblk[0-9]+p|sd[a-z]+)2' | awk '{ print $2; }')"
+	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '^/dev/((mmcblk|loop)[0-9]+p|sd[a-z]+)2' | awk '{ print $2; }')"
 
 	logItem "PartitionStart: $partitionStart"
 
@@ -2782,7 +2782,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 		bootPartitionBackup
 		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
-		excludeRoot=""
+		excludeRoot="/"
 	fi
 
 	logItem "LastBackupDir: $lastBackupDir"
@@ -3045,7 +3045,7 @@ function restore() {
 			logItem "parted $RESTORE_DEVICE print"
 			logItem "$(parted -s $RESTORE_DEVICE print 2>>$LOG_FILE)"
 
-			if [[ $RESTORE_DEVICE =~ /dev/mmcblk0 || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
+			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk0" || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
 				ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
 			else
 				ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
@@ -3736,6 +3736,12 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH"
 			exitError $RC_PARAMETER_ERROR
 		fi
+		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
+		logItem "rsync version: $rsyncVersion"
+		if (( $PROGRESS )) && [[ "$rsyncVersion" < "3.1" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
+			exitError $RC_PARAMETER_ERROR
+		fi
 	fi
 
 	if [[ -z "$STARTSERVICES" && -z "$STOPSERVICES" ]]; then
@@ -3756,7 +3762,7 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ ! $(which pv) ]]; then
+	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ ! $(which pv) ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 		exitError $RC_PARAMETER_ERROR
 	fi
@@ -4252,7 +4258,7 @@ function lastUsedPartitionByte() { # device
 
 	logEntry "lastUsedPartitionByte $1"
 
-	local partitionregex="/dev/.*[p]?([0-9]+).*start=[^0-9]*([0-9]+).*size=[^0-9]*([0-9]+).*Id=[^0-9a-z]*([0-9a-z]+)"
+	local partitionregex="/dev/.*[p]?([0-9]+).*start=[^0-9]*([0-9]+).*size=[^0-9]*([0-9]+).*(Id|type)=[^0-9a-z]*([0-9a-z]+)"
 	local lastUsedPartitionByte=0
 
 	while read line; do
@@ -4266,7 +4272,7 @@ function lastUsedPartitionByte() { # device
 			local p=${BASH_REMATCH[1]}
 			local start=${BASH_REMATCH[2]}
 			local size=${BASH_REMATCH[3]}
-			local id=${BASH_REMATCH[4]}
+			local id=${BASH_REMATCH[5]}
 
 			if [[ $id == 85 || $id == 5 ]]; then
 				continue
@@ -4553,7 +4559,7 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ ! $(which pv) ]]; then
+	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ ! $(which pv) ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 		exitError $RC_PARAMETER_ERROR
 	fi
@@ -4580,6 +4586,19 @@ function doitRestore() {
 	logItem "Backuptype: $BACKUPTYPE"
 	DATE=$(basename "$RESTOREFILE" | sed -r 's/.*-[A-Za-z]+-backup-([0-9]+-[0-9]+).*/\1/')
 	logItem "Date: $DATE"
+
+	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
+		if [[ ! $(which rsync) ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
+			exitError $RC_PARAMETER_ERROR
+		fi
+		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
+		logItem "rsync version: $rsyncVersion"
+		if (( $PROGRESS )) && [[ "$rsyncVersion" < "3.1" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
+			exitError $RC_PARAMETER_ERROR
+		fi
+	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		if ! $(which dosfslabel &>/dev/null); then
@@ -4628,7 +4647,7 @@ function doitRestore() {
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
-		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]] && (( $ROOT_PARTITION_DEFINED )); then
 			synchronizeCmdlineAndfstab
 		fi
 	else
@@ -4659,7 +4678,12 @@ function synchronizeCmdlineAndfstab() {
 
 	local CMDLINE FSTAB newPartUUID oldPartUUID root_partition BOOT_MP ROOT_MP
 
-	root_partition="${RESTORE_DEVICE}2"
+	if [[ $RESTORE_DEVICE =~ "/dev/mmcblk0" || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
+		root_partition=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
+	else
+		root_partition=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
+	fi
+
 	if (( $ROOT_PARTITION_DEFINED )); then
 		root_partition="$ROOT_PARTITION"
 	fi
