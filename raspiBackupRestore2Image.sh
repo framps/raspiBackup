@@ -31,18 +31,15 @@ MYNAME=${MYSELF%.*}
 # query invocation pams
 
 BACKUPPATH="$1"
-TARGET_DIRECTORY="$2"
-
-if [[ $IMAGE_DIRECTORY == "" ]]; then
-	IMAGE_DIRECTORY="."
-	IMAGE_FILENAME="raspiBackup.img"
-fi	
+IMAGE_DIRECTORY="${2:-.}"
+IMAGE_FILENAME="${3:-raspiBackup.img}"
 		
 IMAGE_ABSOLUT_FILENAME="$IMAGE_DIRECTORY/$IMAGE_FILENAME"
 
 function usage() {
-	echo "\$1: raspiBackup Backuppath"
+	echo "\$1: Path of backup directory"
 	echo "\$2: Image file directory (optional). Default is current directory"
+	echo "\$3: Image file name (optional). Default is raspiBackup.img"
 }	
 
 function calcSumSizeFromSFDISK() { # sfdisk filename
@@ -108,7 +105,12 @@ fi
 
 # cleanup
 
-rm "$IMAGE_ABSOLUT_FILENAME"
+if [[ ! -d "$BACKUPPATH" ]]; then
+	echo "??? $BACKUPPATH does not exist"
+	exit 1
+fi	
+
+rm "$IMAGE_ABSOLUT_FILENAME" &>/dev/null
 
 # calculate required image dis size
 
@@ -122,10 +124,19 @@ echo "===> Backup source disk size: $mb (MiB)"
 
 dd if=/dev/zero of="$IMAGE_ABSOLUT_FILENAME" bs=1024k seek=$(( $mb )) count=0
 losetup -f "$IMAGE_ABSOLUT_FILENAME"
-sfdisk -uSL /dev/loop0 < "$BACKUPPATH/jessie-small-backup.sfdisk"
+
+# prime partitions
+
+SFDISK_FILE=$(ls "$BACKUPPATH/*.sfdisk")
+if [[ -z $SFDISK_FILE ]]; then
+	echo "??? Incorrect backup path. .sfdisk file not found"
+	exit 1
+fi
+sfdisk -uSL /dev/loop0 < "$BACKUPPATH/$SFDISK_FILE"
 
 # restore backup into image
 
+echo "===> Restoring backup into $IMAGE_FILENAME"
 raspiBackup.sh -1 -Y -F -l debug -d /dev/loop0 "$BACKUPPATH"
 
 # cleanup
