@@ -18,8 +18,8 @@ swagger:
 	swagger generate spec -o ./swagger/swagger.json
 	swagger validate ./swagger/swagger.json
 
-run-linux: build
+run-linux: 
 	go run ${TARGET}.go
 
-build-raspi: build swagger
+build-raspi: 
 	OOS=linux GOARCH=arm GOARM=7 go build -o ${BIN_DIR}/${TARGET} ${TARGET}.go

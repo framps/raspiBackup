@@ -159,7 +159,7 @@ func main() {
 	}
 
 	api.LoadHTMLGlob("templates/*.html")
-	api.NoRoute(handler.NoRouteHandler)
+	// api.NoRoute(NoRouteHandler)
 
 	v1.POST("/raspiBackup", handler.BackupHandler)
 	v1.GET("/", handler.IndexHandler)
