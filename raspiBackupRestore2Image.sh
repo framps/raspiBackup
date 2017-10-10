@@ -103,6 +103,12 @@ if [[ ! $(which pishrink.sh) ]]; then
 	exit 1
 fi
 
+SFDISK_FILE=$(ls $BACKUPPATH/*.sfdisk)
+if [[ -z $SFDISK_FILE ]]; then
+	echo "??? Incorrect backup path. .sfdisk file not found"
+	exit 1
+fi
+
 # cleanup
 
 if [[ ! -d "$BACKUPPATH" ]]; then
@@ -114,7 +120,6 @@ rm "$IMAGE_ABSOLUT_FILENAME" &>/dev/null
 
 # calculate required image dis size
 
-SFDISK_FILE=$(ls $BACKUPPATH/*.sfdisk)
 SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK $SFDISK_FILE)
 
 mb=$(( $SOURCE_DISK_SIZE / 1024 / 1024 )) # calc MB
@@ -127,11 +132,6 @@ losetup -f "$IMAGE_ABSOLUT_FILENAME"
 
 # prime partitions
 
-SFDISK_FILE=$(ls "$BACKUPPATH/*.sfdisk")
-if [[ -z $SFDISK_FILE ]]; then
-	echo "??? Incorrect backup path. .sfdisk file not found"
-	exit 1
-fi
 sfdisk -uSL /dev/loop0 < "$BACKUPPATH/$SFDISK_FILE"
 
 # restore backup into image
