@@ -28,19 +28,30 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-# query invocation pams
+# query invocation parms
 
 BACKUPPATH="$1"
-IMAGE_DIRECTORY="${2:-.}"
-IMAGE_FILENAME="${3:-raspiBackup.img}"
-		
-IMAGE_ABSOLUT_FILENAME="$IMAGE_DIRECTORY/$IMAGE_FILENAME"
+IMAGE_DIRECTORY="${2:-$BACKUPPATH}"
+SFDISK_FILE="$(ls $BACKUPPATH/*.sfdisk)"
+if [[ -z "$SFDISK_FILE" ]]; then
+	echo "??? Incorrect backup path. .sfdisk file not found"
+	exit 1
+fi
+DEFAULT_IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
+IMAGE_FILENAME="${3:-$DEFAULT_IMAGE_FILENAME}"
+LOOP=$(losetup -f)
 
 function usage() {
 	echo "\$1: Path of backup directory"
-	echo "\$2: Image file directory (optional). Default is current directory"
+	echo "\$2: Image file directory (optional). Default is backup directory"
 	echo "\$3: Image file name (optional). Default is raspiBackup.img"
 }	
+
+function cleanup() {
+	echo "--- Cleaning up"
+	rm $IMAGE_FILENAME &>/dev/null
+	losetup -D $LOOP &>/dev/null
+}
 
 function calcSumSizeFromSFDISK() { # sfdisk filename
 
@@ -73,7 +84,7 @@ function calcSumSizeFromSFDISK() { # sfdisk filename
 			fi
 		fi
 
-	done < $file
+	done < "$file"
 
 	(( sumSize *= 512 ))
 
@@ -103,20 +114,16 @@ if [[ ! $(which pishrink.sh) ]]; then
 	exit 1
 fi
 
-SFDISK_FILE=$(ls $BACKUPPATH/*.sfdisk)
-if [[ -z $SFDISK_FILE ]]; then
-	echo "??? Incorrect backup path. .sfdisk file not found"
-	exit 1
-fi
-
-# cleanup
-
 if [[ ! -d "$BACKUPPATH" ]]; then
 	echo "??? $BACKUPPATH does not exist"
 	exit 1
 fi	
 
-rm "$IMAGE_ABSOLUT_FILENAME" &>/dev/null
+# cleanup
+
+trap cleanup SIGINT SIGTERM
+        
+rm "$IMAGE_FILENAME" &>/dev/null
 
 # calculate required image dis size
 
@@ -127,22 +134,32 @@ echo "===> Backup source disk size: $mb (MiB)"
 
 # create image file
 
-dd if=/dev/zero of="$IMAGE_ABSOLUT_FILENAME" bs=1024k seek=$(( $mb )) count=0
-losetup -f "$IMAGE_ABSOLUT_FILENAME"
+dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
+losetup -f $IMAGE_FILENAME
 
 # prime partitions
 
-sfdisk -uSL /dev/loop0 < "$BACKUPPATH/$SFDISK_FILE"
+sfdisk -uSL $LOOP < "$SFDISK_FILE"
+
+echo "===> Reloading new partition table"
+partprobe $LOOP
+udevadm settle
+sleep 3
 
 # restore backup into image
 
 echo "===> Restoring backup into $IMAGE_FILENAME"
-raspiBackup.sh -1 -Y -F -l debug -d /dev/loop0 "$BACKUPPATH"
+raspiBackup.sh -1 -Y -F -l debug -d $LOOP "$BACKUPPATH"
+RC=$?
 
 # cleanup
 
-losetup -d /dev/loop0
+losetup -d $LOOP
 
 # now shrink image
 
-pishrink.sh "$IMAGE_ABSOLUT_FILENAME"
+if (( ! $RC )); then
+	pishrink.sh "$IMAGE_FILENAME"
+else
+	echo "??? Restore error $RC received from raspiBackup"
+fi	
