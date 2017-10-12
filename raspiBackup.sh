@@ -59,11 +59,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2017-10-08 21:49:56 +0200$"
+GIT_DATE="$Date: 2017-10-12 22:59:59 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7227b9f$"
+GIT_COMMIT="$Sha1: 6c4af3d$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1121,44 +1121,44 @@ function logOptions() {
 	logItem "$(uname -a)"
 
 	logItem "Options: $INVOCATIONPARMS"
-	logItem "BACKUPPATH=$BACKUPPATH"
-	logItem "KEEPBACKUPS=$KEEPBACKUPS"
-	logItem "BACKUPTYPE=$BACKUPTYPE"
-	logItem "STOPSERVICES=$STOPSERVICES"
-	logItem "STARTSERVICES=$STARTSERVICES"
-	logItem "EMAIL=$EMAIL"
-	logItem "EMAIL_PARMS=$EMAIL_PARMS"
-	logItem "LOG_LEVEL=$LOG_LEVEL"
-	logItem "MSG_LEVEL=$MSG_LEVEL"
-	logItem "MAIL_PROGRAM=$EMAIL_PROGRAM"
+	logExit "logOptions"
 	logItem "APPEND_LOG=$APPEND_LOG"
- 	logItem "VERBOSE=$VERBOSE"
+	logItem "BACKUPPATH=$BACKUPPATH"
+	logItem "BACKUPTYPE=$BACKUPTYPE"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
- 	logItem "LOG_OUTPUT=$LOG_OUTPUT"
- 	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
+ 	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DEFAULT_DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
  	logItem "DD_BLOCKSIZE=$DD_BLOCKSIZE"
  	logItem "DD_PARMS=$DD_PARMS"
- 	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DEFAULT_DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
-	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
-	logItem "ROOT_PARTITION=$ROOT_PARTITION"
+	logItem "DEFAULT_DEPLOYMENT_HOSTS=$DEFAULT_DEPLOYMENT_HOSTS"
+	logItem "DEFAULT_YES_NO_RESTORE_DEVICE=$DEFAULT_YES_NO_RESTORE_DEVICE"
+	logItem "EMAIL=$EMAIL"
+	logItem "EMAIL_PARMS=$EMAIL_PARMS"
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
-	logItem "ZIP_BACKUP=$ZIP_BACKUP"
-	logItem "NOTIFY_UPDATE=$NOTIFY_UPDATE"
 	logItem "EXTENSIONS=$EXTENSIONS"
+	logItem "FAKE=$FAKE"
+	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
+	logItem "KEEPBACKUPS=$KEEPBACKUPS"
+	logItem "LANGUAGE=$LANGUAGE"
+	logItem "LINK_BOOTPARTITIONFILES=$DEFAULT_LINK_BOOTPARTITIONFILES"
+	logItem "LOG_LEVEL=$LOG_LEVEL"
+ 	logItem "LOG_OUTPUT=$LOG_OUTPUT"
+	logItem "MAIL_ON_ERROR_ONLY=$MAIL_ON_ERROR_ONLY"
+	logItem "MAIL_PROGRAM=$EMAIL_PROGRAM"
+	logItem "MSG_LEVEL=$MSG_LEVEL"
+	logItem "NOTIFY_UPDATE=$NOTIFY_UPDATE"
 	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
 	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
-	logItem "LANGUAGE=$LANGUAGE"
-	logItem "DEFAULT_YES_NO_RESTORE_DEVICE=$DEFAULT_YES_NO_RESTORE_DEVICE"
-	logItem "DEFAULT_DEPLOYMENT_HOSTS=$DEFAULT_DEPLOYMENT_HOSTS"
-	logItem "FAKE=$FAKE"
-	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
+	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
+	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-	logItem "TAR_BACKUP_OPTIONS=$TAR_BACKUP_OPTIONS"
+	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
+ 	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
+	logItem "STARTSERVICES=$STARTSERVICES"
+	logItem "STOPSERVICES=$STOPSERVICES"
 	logItem "TAR_BACKUP_ADDITIONAL_OPTIONS=$TAR_BACKUP_ADDITIONAL_OPTIONS"
-	logItem "MAIL_ON_ERROR_ONLY=$MAIL_ON_ERROR_ONLY"
-	logItem "LINK_BOOTPARTITIONFILES=$DEFAULT_LINK_BOOTPARTITIONFILES"
-	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
-	logExit "logOptions"
+	logItem "TAR_BACKUP_OPTIONS=$TAR_BACKUP_OPTIONS"
+ 	logItem "VERBOSE=$VERBOSE"
+	logItem "ZIP_BACKUP=$ZIP_BACKUP"
 
 }
 
@@ -3663,14 +3663,14 @@ function doitBackup() {
 
 	logEntry "doitBackup $PARTITIONBASED_BACKUP"
 
+	trapWithArg cleanup SIGINT SIGTERM EXIT
+
 	reportNews
 
 	getRootPartition
 	inspect4Backup
 
 	commonChecks
-
-	trapWithArg cleanup SIGINT SIGTERM EXIT
 
 	if [[ ! -d "$BACKUPPATH" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DIR_TO_BACKUP_DOESNOTEXIST "$BACKUPPATH"
@@ -4922,27 +4922,27 @@ LANGUAGE=$DEFAULT_LANGUAGE
 
 # misc other vars
 
-FAKE=0
-HELP=0
+BACKUP_DIRECTORY_NAME=""
 BACKUPFILE=""
+BACKUP_STARTED=0
 DEPLOY=0
 EXCLUDE_DD=0
-UPDATE_MYSELF=0
-REVERT=0
-NO_YES_QUESTION=0
-FORCE_SFDISK=0
-SKIP_SFDISK=0
-REGRESSION_TEST=0
+FAKE=0
 FAKE_BACKUPS=0
-SKIP_RSYNC_CHECK=0
+FORCE_SFDISK=0
 FORCE_UPDATE=0
+HELP=0
+NEW_BACKUP_DIRECTORY_CREATED=0
+NO_YES_QUESTION=0
+PROGRESS=0
+REGRESSION_TEST=0
 RESTORE=0
 RESTOREFILE=""
-BACKUP_DIRECTORY_NAME=""
-BACKUP_STARTED=0
+REVERT=0
 ROOT_PARTITION_DEFINED=0
-NEW_BACKUP_DIRECTORY_CREATED=0
-PROGRESS=0
+SKIP_RSYNC_CHECK=0
+SKIP_SFDISK=0
+UPDATE_MYSELF=0
 
 while getopts ":0159a:Ab:cd:D:e:E:FgG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ" opt; do
 
@@ -4961,7 +4961,7 @@ while getopts ":0159a:Ab:cd:D:e:E:FgG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ"
 			;;
 		b)	DD_BLOCKSIZE="$OPTARG"
 			;;
-		c)  SKIPLOCALCHECK=1
+		c)  SKIPLOCALCHECK=$(( ! $SKIPLOCALCHECK ))
 			;;
 		d) 	RESTORE_DEVICE="$OPTARG"
 			RESTORE=1
@@ -5011,7 +5011,7 @@ while getopts ":0159a:Ab:cd:D:e:E:FgG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ"
 	       	fi
             BACKUPPATH="$(readlink -f "$OPTARG")"
 			;;
-		P) 	PARTITIONBASED_BACKUP=1
+		P) 	PARTITIONBASED_BACKUP=$(( ! $PARTITIONBASED_BACKUP ))
 			;;
 		r) 	if [[ ! -d "$OPTARG" && ! -f "$OPTARG" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$OPTARG"
@@ -5038,7 +5038,7 @@ while getopts ":0159a:Ab:cd:D:e:E:FgG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ"
 			;;
 		U)	UPDATE_MYSELF=1
 			;;
-		v)	VERBOSE=1
+		v)	VERBOSE=$(( ! $VERBOSE ))
 			;;
 		V)	REVERT=1
 			;;
@@ -5048,7 +5048,7 @@ while getopts ":0159a:Ab:cd:D:e:E:FgG:hik:l:L:m:M:nN:o:p:Pr:R:s:St:T:u:UvVxyYzZ"
 			;;
 		Y)	NO_YES_QUESTION=1
 			;;
-		z)	ZIP_BACKUP=1
+		z)	ZIP_BACKUP=$(( ! $ZIP_BACKUP ))
 			;;
 		Z)	REGRESSION_TEST=1
 			;;
@@ -5094,83 +5094,84 @@ if [[ -n "$unusedParms" ]]; then
 	exitError $RC_PARAMETER_ERROR
 fi
 
+if (( $UID != 0 )); then
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
+	exitError $RC_MISC_ERROR
+fi
+
 if (( $DEPLOY )); then
     deployMyself
     exitNormal
+fi
 
-elif (( $REVERT )); then
+if (( $REVERT )); then
 	revertScriptVersion
 	exitNormal
-else
+fi
+	
+if (( $UPDATE_MYSELF )); then
+	downloadPropertiesFile FORCE
+	updateScript
+	exitNormal
+fi
 
-	if (( $NO_YES_QUESTION )); then				# dangerous option
-		if [[ ! $RESTORE_DEVICE =~ "$YES_NO_RESTORE_DEVICE" ]]; then	# make sure we're not killing a disk by accident
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH $RESTORE_DEVICE $YES_NO_RESTORE_DEVICE
-			exitError $RC_MISC_ERROR
-		fi
-	fi
-
-	substituteNumberArguments
-	checkAndCorrectImportantParameters	# no return if errors detected
-
-	if (( $RESTORE )) && [[ -n $fileParameter ]]; then
-		RESTOREFILE="$fileParameter"
-	elif (( ! $RESTORE )) && [[ -n $fileParameter ]]; then
-		BACKUPPATH="$fileParameter"
-	elif [[ -z "$RESTOREFILE" && -z "$BACKUPPATH" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_FILEPARAMETER
-		mentionHelp
-		exitError $RC_MISSING_FILES
-	fi
-
-	if (( $UID != 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
+if (( $NO_YES_QUESTION )); then				# dangerous option
+	if [[ ! $RESTORE_DEVICE =~ "$YES_NO_RESTORE_DEVICE" ]]; then	# make sure we're not killing a disk by accident
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH $RESTORE_DEVICE $YES_NO_RESTORE_DEVICE
 		exitError $RC_MISC_ERROR
 	fi
-
-	setupEnvironment
-	logOptions						# config parms already read
-
-	if (( ! $RESTORE )); then
-		lockingFramework
-		exlock_now
-		if (( $? )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
-			exitError $RC_MISC_ERROR
-		fi
-	fi		
-
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_LOGFILE "$LOG_FILE_FINAL"
-
-	if (( $ETC_CONFIG_FILE_INCLUDED )); then
-		logItem "/etc/config$NL$(cat $ETC_CONFIG_FILE)"
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE"
-	fi
-
-	if (( $HOME_CONFIG_FILE_INCLUDED )); then
-		logItem "/home/config$NL$(cat $HOME_CONFIG_FILE)"
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE"
-	fi
-	if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
-		logItem "./config$NL$(cat $CURRENTDIR_CONFIG_FILE)"
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE"
-	fi
-
-	if (( $UPDATE_MYSELF )); then
-		downloadPropertiesFile FORCE
-		updateScript
-		exitNormal
-	else
-		downloadPropertiesFile
-	fi
-
-	if isVersionDeprecated "$VERSION"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_DEPRECATED "$VERSION"
-		updateScript "RESTART"
-	fi
-
-	doit #	no return for backup
-	exit $rc
 fi
+
+substituteNumberArguments
+checkAndCorrectImportantParameters	# no return if errors detected
+
+if (( $RESTORE )) && [[ -n $fileParameter ]]; then
+	RESTOREFILE="$fileParameter"
+elif (( ! $RESTORE )) && [[ -n $fileParameter ]]; then
+	BACKUPPATH="$fileParameter"
+elif [[ -z "$RESTOREFILE" && -z "$BACKUPPATH" ]]; then
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_FILEPARAMETER
+	mentionHelp
+	exitError $RC_MISSING_FILES
+fi
+
+setupEnvironment
+logOptions						# config parms already read
+
+if (( ! $RESTORE )); then
+	lockingFramework
+	exlock_now
+	if (( $? )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
+		exitError $RC_MISC_ERROR
+	fi
+fi		
+
+writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_LOGFILE "$LOG_FILE_FINAL"
+
+if (( $ETC_CONFIG_FILE_INCLUDED )); then
+	logItem "/etc/config$NL$(cat $ETC_CONFIG_FILE)"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE"
+fi
+
+if (( $HOME_CONFIG_FILE_INCLUDED )); then
+	logItem "/home/config$NL$(cat $HOME_CONFIG_FILE)"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE"
+fi
+
+if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
+	logItem "./config$NL$(cat $CURRENTDIR_CONFIG_FILE)"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE"
+fi
+
+downloadPropertiesFile
+
+if isVersionDeprecated "$VERSION"; then
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_DEPRECATED "$VERSION"
+	updateScript "RESTART"
+fi
+
+doit #	no return for backup
+exit $rc
 
 # vim: set expandtab tabstop=8 shiftwidth=8 autoindent smartindent
