@@ -149,7 +149,7 @@ sleep 3
 # restore backup into image
 
 echo "===> Restoring backup into $IMAGE_FILENAME"
-#raspiBackup.sh -1 -Y -F -l debug -d $LOOP "$BACKUPPATH"
+raspiBackup.sh -1 -Y -F -l debug -d $LOOP "$BACKUPPATH"
 RC=$?
 
 # cleanup
