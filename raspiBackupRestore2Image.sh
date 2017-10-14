@@ -28,24 +28,55 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-# query invocation parms
+VERSION="v0.1.0"
 
-BACKUPPATH="$1"
-IMAGE_DIRECTORY="${2:-$BACKUPPATH}"
-SFDISK_FILE="$(ls $BACKUPPATH/*.sfdisk)"
-if [[ -z "$SFDISK_FILE" ]]; then
-	echo "??? Incorrect backup path. .sfdisk file not found"
-	exit 1
-fi
-DEFAULT_IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
-IMAGE_FILENAME="${3:-$DEFAULT_IMAGE_FILENAME}"
-LOOP=$(losetup -f)
+GIT_DATE="$Date: 2017-10-14 20:30:16 +0200$"
+GIT_DATE_ONLY=${GIT_DATE/: /}
+GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
+GIT_COMMIT="$Sha1: 0e61285$"
+GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
+
+GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
+
+echo "$GIT_CODEVERSION"
 
 function usage() {
-	echo "\$1: Path of backup directory"
-	echo "\$2: Image file directory (optional). Default is backup directory"
-	echo "\$3: Image file name (optional). Default is raspiBackup.img"
+	echo "Syntax: $MYSELF <BackupDirectory> [<ImageFileDirectory>]"
 }	
+
+# query invocation parms
+
+if [[ $# < 1 ]]; then
+	echo "??? Missing parameter Backupdirectory"
+	usage
+	exit 1
+fi	
+
+BACKUP_DIRECTORY="$1"
+
+if [[ ! -d $BACKUP_DIRECTORY ]]; then
+	echo "??? Backupdirectory $BACKUP_DIRECTORY not found"
+	usage
+	exit 1
+fi	
+
+IMAGE_DIRECTORY="${2:-$BACKUP_DIRECTORY}"
+
+if [[ ! -d $IMAGE_DIRECTORY ]]; then
+	echo "??? Imagedirectory $IMAGE_DIRECTORY not found"
+	usage
+	exit 1
+fi	
+
+SFDISK_FILE="$(ls $BACKUP_DIRECTORY/*.sfdisk 2>/dev/null)"
+if [[ -z "$SFDISK_FILE" ]]; then
+	echo "??? Incorrect backup path. .sfdisk file of backup not found"
+	usage
+	exit 1
+fi
+IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
+LOOP=$(losetup -f)
 
 function cleanup() {
 	echo "--- Cleaning up"
@@ -114,11 +145,6 @@ if [[ ! $(which pishrink.sh) ]]; then
 	exit 1
 fi
 
-if [[ ! -d "$BACKUPPATH" ]]; then
-	echo "??? $BACKUPPATH does not exist"
-	exit 1
-fi	
-
 # cleanup
 
 trap cleanup SIGINT SIGTERM
@@ -149,7 +175,7 @@ sleep 3
 # restore backup into image
 
 echo "===> Restoring backup into $IMAGE_FILENAME"
-#raspiBackup.sh -1 -Y -F -l debug -d $LOOP "$BACKUPPATH"
+raspiBackup.sh -1 -Y -F -l debug -d $LOOP "$BACKUP_DIRECTORY"
 RC=$?
 
 # cleanup
