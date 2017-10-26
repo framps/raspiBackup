@@ -103,7 +103,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	api := gin.Default()
 
-	listenAddress := flag.String("-a", ":8080", "Listen address of server. Default: :8080")
+	listenAddress := flag.String("a", ":8080", "Listen address of server. Default: :8080")
 	flag.Parse()
 
 	var passwordSet bool
