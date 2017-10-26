@@ -37,6 +37,7 @@ package main
 */
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -102,6 +103,9 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	api := gin.Default()
 
+	listenAddress := flag.String("-a", ":8080", "Listen address of server. Default: :8080")
+	flag.Parse()
+
 	var passwordSet bool
 	var credentialMap = map[string]string{}
 
@@ -164,5 +168,6 @@ func main() {
 	v1.POST("/raspiBackup", handler.BackupHandler)
 	v1.GET("/", handler.IndexHandler)
 
-	api.Run(":8080")
+	fmt.Printf("INFO: Server now listening on %s\n", *listenAddress)
+	api.Run(*listenAddress)
 }
