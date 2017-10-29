@@ -28,13 +28,13 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.0"
+VERSION="v0.1.1"
 
-GIT_DATE="$Date: 2017-10-14 20:30:16 +0200$"
+GIT_DATE="$Date: 2017-10-29 18:28:32 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 0e61285$"
+GIT_COMMIT="$Sha1: e1a06e2$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -143,6 +143,14 @@ fi
 if [[ ! $(which pishrink.sh) ]]; then
 	echo "pishrink.sh not found"
 	exit 1
+fi
+
+# wheezy does not discover more than one partition as default
+if grep -q "wheezy" /etc/os-release; then
+	if ! grep -q "loop.max_part=" /boot/cmdline.txt; then
+		echo "Add 'loop.max_part=15' in /boot/cmndline.txt first and reboot"
+		exit 1
+	fi
 fi
 
 # cleanup
