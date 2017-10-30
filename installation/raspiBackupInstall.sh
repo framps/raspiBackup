@@ -10,17 +10,17 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.3.6"
+VERSION="0.3.6.2"
 
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set +u; GIT_DATE="$Date: 2017-09-03 21:55:30 +0200$"; set -u
+set +u; GIT_DATE="$Date: 2017-10-30 19:22:09 +0100$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE) 
-set +u; GIT_COMMIT="$Sha1: 3edd90b$"; set -u
+set +u; GIT_COMMIT="$Sha1: 416bee0$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -196,8 +196,8 @@ MSG_ANSWER_CHARS_NO=41
 MSG_EN[$MSG_ANSWER_CHARS_NO]="n"
 MSG_DE[$MSG_ANSWER_CHARS_NO]="n"
 MSG_CONFIG_INFO=42
-MSG_EN[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Default for option is the parameter in UPPERCASE."
-MSG_DE[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Bei keiner Eingabe wird der in GROSSBUCHSTABEN geschriebene Parameter für die Option benutzt." 
+MSG_EN[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Default option is in UPPERCASE."
+MSG_DE[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Bei keiner Eingabe wird der Wert in GROSSBUCHSTABEN benutzt." 
 MSG_SELECTED_CONFIG_PARMS1=43
 MSG_EN[$MSG_SELECTED_CONFIG_PARMS1]="${MSG_PRF}0042I: Selected configuration: Message language: %1, Backupmode: %2, Backuptype: %3"
 MSG_DE[$MSG_SELECTED_CONFIG_PARMS1]="${MSG_PRF}0042I: Gewählte Konfiguration: Sprache der Meldungen: %1, Backupmodus: %2, Backuptype: %3"
@@ -364,7 +364,7 @@ function exitNormal() {
 
 function downloadCode() {
 
-	local oldversion newName
+	local newName
 
 	if [[ -f $FILE_TO_INSTALL_ABS_FILE ]]; then
 		oldVersion=$(grep "^VERSION=" $FILE_TO_INSTALL_ABS_FILE | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")	
@@ -429,10 +429,9 @@ function downloadCode() {
 
 function downloadConfig() {
 	
-	local oldversion newName http_code
+	local newName http_code
 
 	if [[ -f $CONFIG_FILE_ABS_FILE ]]; then
-		oldVersion=$(grep "^VERSION=" $FILE_TO_INSTALL_ABS_FILE | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")	
 		newName="$CONFIG_FILE_ABS_FILE.$oldVersion"
 		writeToConsole $MSG_SAVING_FILE "$CONFIG_FILE" "$newName"
 		mv $CONFIG_FILE_ABS_FILE $newName &>>$LOG_FILE
@@ -802,6 +801,6 @@ elif (( $BETA_INSTALL )); then
 fi
 
 install
-(( $BETA_INSTALL && INSTALLATION_SUCCESSFULL )) && writeToConsole $MSG_BETA_THANKYOU "$beta"
+(( $BETA_INSTALL && $INSTALLATION_SUCCESSFULL )) && writeToConsole $MSG_BETA_THANKYOU "$beta"
 
 # vim: set expandtab tabstop=8 shiftwidth=8 autoindent smartindent
