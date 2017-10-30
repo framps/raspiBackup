@@ -30,11 +30,11 @@ MYNAME=${MYSELF%.*}
 
 VERSION="v0.1.1"
 
-GIT_DATE="$Date: 2017-10-29 18:28:32 +0100$"
+GIT_DATE="$Date: 2017-10-28 09:30:01 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: e1a06e2$"
+GIT_COMMIT="$Sha1: 13cbb00$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -155,7 +155,7 @@ fi
 
 # cleanup
 
-trap cleanup SIGINT SIGTERM
+trap cleanup SIGINT SIGTERM EXIT
         
 rm "$IMAGE_FILENAME" &>/dev/null
 
@@ -169,11 +169,11 @@ echo "===> Backup source disk size: $mb (MiB)"
 # create image file
 
 dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
-losetup -f $IMAGE_FILENAME
+losetup $LOOP $IMAGE_FILENAME
 
 # prime partitions
 
-sfdisk -uSL $LOOP < "$SFDISK_FILE"
+sfdisk -uSL -f $LOOP < "$SFDISK_FILE"
 
 echo "===> Reloading new partition table"
 partprobe $LOOP
@@ -183,7 +183,7 @@ sleep 3
 # restore backup into image
 
 echo "===> Restoring backup into $IMAGE_FILENAME"
-raspiBackup.sh -1 -Y -F -l debug -d $LOOP "$BACKUP_DIRECTORY"
+raspiBackup.sh -1 -Y -l debug -d $LOOP "$BACKUP_DIRECTORY"
 RC=$?
 
 # cleanup
