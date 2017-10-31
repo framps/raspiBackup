@@ -30,11 +30,11 @@ MYNAME=${MYSELF%.*}
 
 VERSION="v0.1.1"
 
-GIT_DATE="$Date: 2017-10-28 09:30:01 +0200$"
+GIT_DATE="$Date: 2017-10-30 09:38:31 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 13cbb00$"
+GIT_COMMIT="$Sha1: c2393db$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -79,8 +79,9 @@ IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
 LOOP=$(losetup -f)
 
 function cleanup() {
+	local rc=$?
 	echo "--- Cleaning up"
-	rm $IMAGE_FILENAME &>/dev/null
+	(( $rc )) && rm $IMAGE_FILENAME &>/dev/null
 	losetup -D $LOOP &>/dev/null
 }
 
@@ -186,14 +187,18 @@ echo "===> Restoring backup into $IMAGE_FILENAME"
 raspiBackup.sh -1 -Y -l debug -d $LOOP "$BACKUP_DIRECTORY"
 RC=$?
 
-# cleanup
-
-losetup -d $LOOP
-
 # now shrink image
 
 if (( ! $RC )); then
 	pishrink.sh "$IMAGE_FILENAME"
+	RC=$?
+	if (( $RC )); then
+		echo "??? Error $RC received from piShrink"
+		exit 1
+	fi
 else
-	echo "??? Restore error $RC received from raspiBackup"
+	echo "??? Error $RC received from raspiBackup"
+	exit 1
 fi	
+
+exit 0
