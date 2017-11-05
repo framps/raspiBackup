@@ -37,7 +37,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.3"
+VERSION="0.6.3.1-beta"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -59,11 +59,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2017-10-12 22:59:59 +0200$"
+GIT_DATE="$Date: 2017-11-02 18:53:24 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 6c4af3d$"
+GIT_COMMIT="$Sha1: 158a160$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -175,6 +175,7 @@ declare -A mountPoints
 
 PRE_BACKUP_EXTENSION="pre"
 POST_BACKUP_EXTENSION="post"
+READY_BACKUP_EXTENSION="ready"
 EMAIL_EXTENSION="mail"
 
 EMAIL_EXTENSION_PROGRAM="mailext"
@@ -295,8 +296,8 @@ MSG_MISSING_START_STOP=19
 MSG_EN[$MSG_MISSING_START_STOP]="RBK0019E: Missing option -a and -o."
 MSG_DE[$MSG_MISSING_START_STOP]="RBK0019E: Option -a und -o nicht angegeben."
 MSG_FILESYSTEM_INCORRECT=20
-MSG_EN[$MSG_FILESYSTEM_INCORRECT]="??? RBK0020E: Filesystem of rsync backup directory %1 seems not to support hardlinks. Use option -5 to disable this check if you are sure hardlinks are supported."
-MSG_DE[$MSG_FILESYSTEM_INCORRECT]="??? RBK0020E: Dateisystem des rsync Backupverzeichnisses %1 scheint keine Hardlinks zu unterstützen. Mit der Option -5 kann diese Prüfung ausgeschaltet werden wenn Hardlinks doch unterstützt sind."
+MSG_EN[$MSG_FILESYSTEM_INCORRECT]="??? RBK0020E: Filesystem of rsync backup directory %1 seems not to support %2."
+MSG_DE[$MSG_FILESYSTEM_INCORRECT]="??? RBK0020E: Dateisystem des rsync Backupverzeichnisses %1 scheint keine %2 zu unterstützen."
 MSG_BACKUP_PROGRAM_ERROR=21
 MSG_EN[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Backupprogram for type %1 failed with RC %2."
 MSG_DE[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Backupprogramm des Typs %1 beendete sich mit RC %2."
@@ -307,8 +308,8 @@ MSG_KEEPBACKUP_INVALID=23
 MSG_EN[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Invalid parameter %1 for -k."
 MSG_DE[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Ungültiger Parameter %1 für -k."
 MSG_TOOL_ERROR=24
-MSG_EN[$MSG_TOOL_ERROR]="RBK0024E: Backup tool %1 received an error. $NL%2."
-MSG_DE[$MSG_TOOL_ERROR]="RBK0024E: Backupprogramm %1 hat einen Fehler bekommen. $NL%2."
+MSG_EN[$MSG_TOOL_ERROR]="RBK0024E: Backup tool %1 received error %2. Errormessages:$NL%3"
+MSG_DE[$MSG_TOOL_ERROR]="RBK0024E: Backupprogramm %1 hat einen Fehler %2 bekommen. Fehlermeldungen:$NL%3"
 MSG_DIR_TO_BACKUP_DOESNOTEXIST=25
 MSG_EN[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Backupdirectory %1 does not exist."
 MSG_DE[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Backupverzeichnis %1 existiert nicht."
@@ -326,7 +327,7 @@ MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to 
 MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden."
 MSG_IMG_DD_FAILED=30
 MSG_EN[$MSG_IMG_DD_FAILED]="RBK0030E: %1 file creation with dd failed with RC %2."
-MSG_DE[$MSG_IMG_DD_FAILED]="RBK0030E: %1 Datei Erzeugung mit dd endet fahlerhaft mit RC %2."
+MSG_DE[$MSG_IMG_DD_FAILED]="RBK0030E: %1 Datei Erzeugung mit dd endet fehlerhaft mit RC %2."
 MSG_CHECKING_FOR_NEW_VERSION=31
 MSG_EN[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Checking whether new version is available."
 MSG_DE[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Prüfe ob neue Version verfügbar ist."
@@ -569,7 +570,7 @@ MSG_EN[$MSG_UNABLE_TO_COLLECT_PARTITIONINFO]="RBK0110E: Unable to collect partit
 MSG_DE[$MSG_UNABLE_TO_COLLECT_PARTITIONINFO]="RBK0110E: Partitionsdaten können nicht mit %1 gesammelt werden. RC %2."
 MSG_UNABLE_TO_CREATE_PARTITIONS=111
 MSG_EN[$MSG_UNABLE_TO_CREATE_PARTITIONS]="RBK0111E: Error occured when partitions were created. RC %1${NL}%2."
-MSG_DE[$MSG_UNABLE_TO_CREATE_PARTITIONS]="RBK0111E: Fehler %1 beim Erstellen der Partitionen.RC %1 ${NL}%2."
+MSG_DE[$MSG_UNABLE_TO_CREATE_PARTITIONS]="RBK0111E: Fehler beim Erstellen der Partitionen. RC %1 ${NL}%2."
 MSG_PROCESSED_PARTITION=112
 MSG_EN[$MSG_PROCESSED_PARTITION]="RBK0112I: Partition %1 was saved."
 MSG_DE[$MSG_PROCESSED_PARTITION]="RBK0112I: Partition %1 wurde gesichert."
@@ -767,6 +768,12 @@ ${NL}!!! RBK0173W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_HOTFIX_MESSAGE]="RBK0173W: =========> HINWEIS <========= \
 ${NL}!!! RBK0173W: Dieses ist ein temporärer Hotfix welcher nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0173W: =========> HINWEIS <========="
+MSG_TOOL_ERROR_SKIP=174
+MSG_EN[$MSG_TOOL_ERROR_SKIP]="RBK0174I: Backup tool %1 error %2 ignored."
+MSG_DE[$MSG_TOOL_ERROR_SKIP]="RBK0174I: Backupprogramm %1 Fehler %2 wurde ignoriert."
+MSG_SCRIPT_UPDATE_NOT_REQUIRED=175
+MSG_EN[$MSG_SCRIPT_UPDATE_NOT_REQUIRED]="RBK0174I: %1 version %2 is newer than version %3."
+MSG_DE[$MSG_SCRIPT_UPDATE_NOT_REQUIRED]="RBK0174I: %1 Version %2 ist aktueller als Version %3."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1027,14 +1034,17 @@ function executeCommand() { # command - rc's to accept
 	fi
 	if (( $rc != 0 )); then
 		local error=1
-		for ((i=2; i<=$#; i++)); do
+		for i in ${@:2}; do
 			if (( $i == $rc )); then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
+				logItem "Skipping error $rc"
+				rc=0
 				error=0
 				break
 			fi
 		done
 		if (( $error )) && [[ -f $LOG_TOOL_FILE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR "$BACKUPTYPE" "$(< $LOG_TOOL_FILE)"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR "$BACKUPTYPE" $rc "$(< $LOG_TOOL_FILE)"
 		fi
 	fi
 	rm -f "$LOG_TOOL_FILE" &>>$LOG_FILE
@@ -1237,7 +1247,7 @@ DEFAULT_LINK_BOOTPARTITIONFILES=0
 # Change these options only if you know what you are doing !!!
 DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx"
 DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
-DEFAULT_TAR_BACKUP_OPTIONS="-cpi"
+DEFAULT_TAR_BACKUP_OPTIONS="-cpi --acls --xattrs --selinux"
 DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
 
 # Use with care !
@@ -1355,8 +1365,8 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "getPartitionNumber $1"
 	local id
-	if [[ $1 =~ ^/dev/(?:mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/sd[a-z]([0-9]+) ]]; then
-		id=${BASH_REMATCH[1]}
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/sd[a-z]([0-9]+) ]]; then
+		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
 	fi
@@ -1481,22 +1491,39 @@ function isNewVersionAvailable() {
 
 	local rc=2			# update not possible
 
+	local version="$VERSION"
+	local suffix=""
+	if [[ "$VERSION" =~ ^([^-]*)(-(.*))?$ ]]; then
+		version=${BASH_REMATCH[1]}
+		suffix=${BASH_REMATCH[3]}
+	fi	
+
+	logItem "Versionsplit: $version - $suffix"
+	
 	if (( $NEW_PROPERTIES_FILE )); then
 		properties=$(grep "^VERSION=" "$LATEST_TEMP_PROPERTY_FILE" 2>/dev/null)
 		logItem "Properties-Version: $properties"
 		local newVersion=""
 		[[ $properties =~ $PROPERTY_REGEX ]] && newVersion=${BASH_REMATCH[1]}
-		latestVersion=$(echo -e "$newVersion\n$VERSION" | sort -V | tail -1)
-		logItem "new: $newVersion runtime: $VERSION latest: $latestVersion"
+		latestVersion=$(echo -e "$newVersion\n$version" | sort -V | tail -1)
+		logItem "new: $newVersion runtime: $version latest: $latestVersion"
 
-		if [[ $VERSION != $newVersion ]]; then
-			if [[ $VERSION != $latestVersion ]]; then
-				rc=0	# new version available
+		if [[ $version < $newVersion ]]; then
+			rc=0	# new version available
+		elif [[ $version > $newVersion ]]; then
+			rc=4	# current version is a newer version
+		else	    # versions are identical
+			if [[ -z $suffix ]]; then	
+				rc=3	# no suffix, current version is latest version
 			else
-				rc=3	# current version is latest version
+				if (( $IS_BETA )); then
+					rc=0	# current is beta version, replace with final version
+				elif (( $IS_HOTFIX )); then
+					rc=4	# current version is hotfix, keep it until new version is available
+				else						
+					rc=1	# current version is latest version
+				fi
 			fi
-		else
-			rc=1		# no new version available
 		fi
 	fi
 
@@ -1624,6 +1651,8 @@ function updateScript() { # restart
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
 			elif [[ $rc == 3 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_UPLOADED "$SCRIPT_DIR/$MYSELF" "$latestVersion" "$newVersion"
+			elif [[ $rc == 4 ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_REQUIRED "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 			fi
@@ -1652,6 +1681,25 @@ function supportsHardlinks() {	# directory
 	rm -f /$1/$MYNAME.hlinklink &>/dev/null
 
 	logExit "supportsHardlinks: $result"
+
+	return $result
+}
+
+# 0 = yes, no otherwise
+
+function supportsSymlinks() {	# directory
+
+	logEntry "supportsSymlinks: $1"
+
+	touch /$1/$MYNAME.slinkfile
+	ln -s /$1/$MYNAME.slinkfile /$1/$MYNAME.slinklink
+	links=$(ls -la /$1/$MYNAME.slinkfile | wc -l)
+	logItem "Links: $links"
+	[[ $links == 2 ]] && result=0
+	rm -f /$1/$MYNAME.slinkfile &>/dev/null
+	rm -f /$1/$MYNAME.slinklink &>/dev/null
+
+	logExit "supportsSymlinks: $result"
 
 	return $result
 }
@@ -2148,12 +2196,12 @@ function resizeRootFS() {
 	logItem "partitionLayout of $RESTORE_DEVICE"
 	logItem "$(fdisk -l $RESTORE_DEVICE)"
 
-	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '^/dev/((mmcblk|loop)[0-9]+p|sd[a-z]+)2' | awk '{ print $2; }')"
+	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p|sd[a-z])2(\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
 
 	logItem "PartitionStart: $partitionStart"
 
 	if [[ -z "$partitionStart" ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS ""
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS "Partitionstart of second partition of ${RESTORE_DEVICE} not found"
 		exitError $RC_CREATE_PARTITIONS_FAILED
 	fi
 
@@ -2736,12 +2784,12 @@ function tarBackup() {
 	if (( $FAKE_BACKUPS )); then
 		fakecmd="touch $target"
 		executeCommand "$fakecmd"
+		rc=0
 	elif (( ! $FAKE )); then
 		executeCommand "${pvCmd}${cmd}" 1
 		rc=$?
-	else
-		rc=0
 	fi
+	
 	(( $PARTITIONBASED_BACKUP )) && popd &>>$LOG_FILE
 
 	if [[ $rc -eq 1 ]]; then		# some files changed during backup or vanished during backup
@@ -2831,11 +2879,10 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 	if (( $FAKE_BACKUPS )); then
 		executeCommand "$fakecmd"
+		rc=0
 	elif (( ! $FAKE )); then
 		executeCommand "$cmd" 23 24
 		rc=$?
-	else
-		rc=0
 	fi
 
 	if [[ $rc -eq 23 || $rc -eq 24 ]]; then		# some files changed during backup or vanished during backup
@@ -3006,12 +3053,14 @@ function restore() {
 			case $BACKUPTYPE in
 
 				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
+					local archiveFlags="--same-owner --same-permissions --numeric-owner --acls --xattrs"
+
 					pushd "$MNT_POINT" &>>"$LOG_FILE"
 					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
 					if (( $PROGRESS )); then
-						cmd="pv -f $ROOT_RESTOREFILE | tar -x${verbose}${zip}f -"
+						cmd="pv -f $ROOT_RESTOREFILE | tar ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						cmd="tar -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
+						cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
 					fi
 					executeCommand "$cmd"
 					rc=$?
@@ -3112,6 +3161,8 @@ function backup() {
 	logItem "Starting $BACKUPTYPE backup..."
 
 	rc=0
+
+	callExtensions $READY_BACKUP_EXTENSION $rc
 
 	BACKUP_STARTED=1
 
@@ -3732,9 +3783,15 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_PARAMETER_ERROR
 		fi
-		if (( ! $SKIP_RSYNC_CHECK )) && ! supportsHardlinks "$BACKUPPATH"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH"
-			exitError $RC_PARAMETER_ERROR
+		if (( ! $SKIP_RSYNC_CHECK )); then
+			if ! supportsHardlinks "$BACKUPPATH"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH" "hardlinks"
+				exitError $RC_PARAMETER_ERROR
+			fi
+			if ! supportsSymlinks "$BACKUPPATH"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH" "softlinks"
+				exitError $RC_PARAMETER_ERROR
+			fi
 		fi
 		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
@@ -4436,7 +4493,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
 					local archiveFlags=""
-					[[ -n $fatSize  ]] && archiveFlags="--no-same-owner --no-same-permissions --numeric-owner"	# fat32 doesn't know about this
+					[[ -n $fatSize  ]] && local archiveFlags="--same-owner --same-permissions --numeric-owner --acls --xattrs"	# fat32 doesn't know about this
 					pushd "$MNT_POINT" &>>"$LOG_FILE"
 					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""					
 					cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
