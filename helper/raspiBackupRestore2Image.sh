@@ -28,13 +28,13 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.1"
+VERSION="v0.1.2"
 
-GIT_DATE="$Date: 2017-10-30 09:38:31 +0100$"
+GIT_DATE="$Date: 2017-11-21 19:52:54 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: c2393db$"
+GIT_COMMIT="$Sha1: c9c53e1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -82,7 +82,7 @@ function cleanup() {
 	local rc=$?
 	echo "--- Cleaning up"
 	(( $rc )) && rm $IMAGE_FILENAME &>/dev/null
-	losetup -D $LOOP &>/dev/null
+	losetup -d $LOOP &>/dev/null
 }
 
 function calcSumSizeFromSFDISK() { # sfdisk filename
