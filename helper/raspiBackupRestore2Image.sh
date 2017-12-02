@@ -30,11 +30,11 @@ MYNAME=${MYSELF%.*}
 
 VERSION="v0.1.2"
 
-GIT_DATE="$Date: 2017-11-21 19:52:54 +0100$"
+GIT_DATE="$Date: 2017-11-28 20:32:35 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: c9c53e1$"
+GIT_COMMIT="$Sha1: 7d08a74$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -55,7 +55,7 @@ fi
 
 BACKUP_DIRECTORY="$1"
 
-if [[ ! -d $BACKUP_DIRECTORY ]]; then
+if [[ ! -d "$BACKUP_DIRECTORY" ]]; then
 	echo "??? Backupdirectory $BACKUP_DIRECTORY not found"
 	usage
 	exit 1
@@ -63,13 +63,13 @@ fi
 
 IMAGE_DIRECTORY="${2:-$BACKUP_DIRECTORY}"
 
-if [[ ! -d $IMAGE_DIRECTORY ]]; then
+if [[ ! -d "$IMAGE_DIRECTORY" ]]; then
 	echo "??? Imagedirectory $IMAGE_DIRECTORY not found"
 	usage
 	exit 1
 fi	
 
-SFDISK_FILE="$(ls $BACKUP_DIRECTORY/*.sfdisk 2>/dev/null)"
+SFDISK_FILE="$(ls "$BACKUP_DIRECTORY"/*.sfdisk 2>/dev/null)"
 if [[ -z "$SFDISK_FILE" ]]; then
 	echo "??? Incorrect backup path. .sfdisk file of backup not found"
 	usage
@@ -162,7 +162,7 @@ rm "$IMAGE_FILENAME" &>/dev/null
 
 # calculate required image dis size
 
-SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK $SFDISK_FILE)
+SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK "$SFDISK_FILE")
 
 mb=$(( $SOURCE_DISK_SIZE / 1024 / 1024 )) # calc MB
 echo "===> Backup source disk size: $mb (MiB)"
@@ -170,7 +170,7 @@ echo "===> Backup source disk size: $mb (MiB)"
 # create image file
 
 dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
-losetup $LOOP $IMAGE_FILENAME
+losetup $LOOP "$IMAGE_FILENAME"
 
 # prime partitions
 
