@@ -28,13 +28,24 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.2"
+VERSION="v0.1.3"
 
-GIT_DATE="$Date: 2017-11-28 20:32:35 +0100$"
+# add pathes if not already set (usually not set in crontab)
+
+if [[ -e /bin/grep ]]; then
+   PATHES="/bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin"
+   for p in $PATHES; do
+      if ! /bin/grep -E "[^:]$p[:$]" <<< $PATH -q; then
+         [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
+      fi
+   done
+fi
+
+GIT_DATE="$Date: 2017-12-19 12:22:31 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7d08a74$"
+GIT_COMMIT="$Sha1: 210f010$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -43,7 +54,7 @@ echo "$GIT_CODEVERSION"
 
 function usage() {
 	echo "Syntax: $MYSELF <BackupDirectory> [<ImageFileDirectory>]"
-}	
+}
 
 # query invocation parms
 
@@ -51,25 +62,25 @@ if [[ $# < 1 ]]; then
 	echo "??? Missing parameter Backupdirectory"
 	usage
 	exit 1
-fi	
+fi
 
 BACKUP_DIRECTORY="$1"
 
-if [[ ! -d "$BACKUP_DIRECTORY" ]]; then
+if [[ ! -d $BACKUP_DIRECTORY ]]; then
 	echo "??? Backupdirectory $BACKUP_DIRECTORY not found"
 	usage
 	exit 1
-fi	
+fi
 
 IMAGE_DIRECTORY="${2:-$BACKUP_DIRECTORY}"
 
-if [[ ! -d "$IMAGE_DIRECTORY" ]]; then
+if [[ ! -d $IMAGE_DIRECTORY ]]; then
 	echo "??? Imagedirectory $IMAGE_DIRECTORY not found"
 	usage
 	exit 1
-fi	
+fi
 
-SFDISK_FILE="$(ls "$BACKUP_DIRECTORY"/*.sfdisk 2>/dev/null)"
+SFDISK_FILE="$(ls $BACKUP_DIRECTORY/*.sfdisk 2>/dev/null)"
 if [[ -z "$SFDISK_FILE" ]]; then
 	echo "??? Incorrect backup path. .sfdisk file of backup not found"
 	usage
@@ -127,7 +138,7 @@ function calcSumSizeFromSFDISK() { # sfdisk filename
 if (( $# < 1 )); then
 	usage
 	exit 0
-fi	
+fi
 
 if (( $UID != 0 )); then
 	echo "$MYSELF has to be invoked via sudo"
@@ -157,12 +168,12 @@ fi
 # cleanup
 
 trap cleanup SIGINT SIGTERM EXIT
-        
+
 rm "$IMAGE_FILENAME" &>/dev/null
 
 # calculate required image dis size
 
-SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK "$SFDISK_FILE")
+SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK $SFDISK_FILE)
 
 mb=$(( $SOURCE_DISK_SIZE / 1024 / 1024 )) # calc MB
 echo "===> Backup source disk size: $mb (MiB)"
@@ -170,7 +181,7 @@ echo "===> Backup source disk size: $mb (MiB)"
 # create image file
 
 dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
-losetup $LOOP "$IMAGE_FILENAME"
+losetup $LOOP $IMAGE_FILENAME
 
 # prime partitions
 
@@ -199,6 +210,6 @@ if (( ! $RC )); then
 else
 	echo "??? Error $RC received from raspiBackup"
 	exit 1
-fi	
+fi
 
 exit 0
