@@ -35,17 +35,17 @@ VERSION="v0.1.3"
 if [[ -e /bin/grep ]]; then
    PATHES="/bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin"
    for p in $PATHES; do
-      if ! /bin/grep -E "[^:]$p[:$]" <<< $PATH -q; then
+      if ! /bin/grep -E -q "[^:]$p[:$]" <<< $PATH; then
          [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
       fi
    done
 fi
 
-GIT_DATE="$Date: 2017-12-19 12:22:31 +0100$"
+GIT_DATE="$Date: 2017-12-29 19:17:54 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 210f010$"
+GIT_COMMIT="$Sha1: 842a0ad$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
