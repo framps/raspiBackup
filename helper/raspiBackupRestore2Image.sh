@@ -52,6 +52,16 @@ GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_O
 
 echo "$GIT_CODEVERSION"
 
+MAIL_EXTENSION_AVAILABLE=0
+[[ $(which raspiImageMail.sh) ]] && MAIL_EXTENSION_AVAILABLE=1
+
+if (( $MAIL_EXTENSION_AVAILABLE )); then
+	# output redirection for email
+	MSG_FILE=/tmp/msg$$.txt
+	exec 1> >(stdbuf -i0 -o0 -e0 tee -a "$MSG_FILE" >&1)
+	exec 2> >(stdbuf -i0 -o0 -e0 tee -a "$MSG_FILE" >&2)
+fi
+
 function usage() {
 	echo "Syntax: $MYSELF <BackupDirectory> [<ImageFileDirectory>]"
 }
@@ -94,6 +104,7 @@ function cleanup() {
 	echo "--- Cleaning up"
 	(( $rc )) && rm $IMAGE_FILENAME &>/dev/null
 	losetup -d $LOOP &>/dev/null
+    rm -f $MSG_FILE &>/dev/null
 }
 
 function calcSumSizeFromSFDISK() { # sfdisk filename
@@ -200,16 +211,26 @@ RC=$?
 
 # now shrink image
 
+echo "===> Shrinking Image $IMAGE_FILENAME"
 if (( ! $RC )); then
 	pishrink.sh "$IMAGE_FILENAME"
 	RC=$?
 	if (( $RC )); then
 		echo "??? Error $RC received from piShrink"
-		exit 1
+    	RC=1
 	fi
 else
 	echo "??? Error $RC received from raspiBackup"
-	exit 1
+	RC=1
 fi
 
-exit 0
+if (( $MAIL_EXTENSION_AVAILABLE )); then
+    raspiImageMail.sh "raspiBackupRestore2Imange: ${IMAGE_FILENAME##*/}" "$(echo -e "$(cat $MSG_FILE)")"
+    if [[ $? = 0 ]]; then
+        echo "-- Send email succeeded!"
+        RC=0
+    fi
+fi
+
+exit $RC
+
