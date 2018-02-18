@@ -1,21 +1,3 @@
-// Package classification raspiBackup API.
-//
-// Proof of concept REST API to invoke raspiBackup
-//
-//     Schemes: http, https
-//     Host: localhost
-//     BasePath: /v1
-//     Version: 0.0.1
-//     License: MIT http://opensource.org/licenses/MIT
-//     Contact: framp <framp@linux.tips-and-tricks.de> http://www.linux-tips-and-tricks.de/raspibackup
-//
-//     Consumes:
-//     - application/json
-//
-//     Produces:
-//     - application/json
-//
-// swagger:meta
 package main
 
 /*
@@ -37,6 +19,7 @@ package main
 */
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -46,20 +29,28 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/framps/raspiBackup/RESTAPI/handler"
-	"github.com/framps/raspiBackup/RESTAPI/lib"
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	executable   = "/usr/local/bin/raspiBackup.sh"
-	passwordFile = "/usr/local/etc/raspiBackup.auth"
+	Executable   = "/usr/local/bin/raspiBackup.sh"
+	PasswordFile = "/usr/local/etc/raspiBackup.auth"
 )
 
 type parameter struct {
 	Target string  `json:"target" binding:"required"`
 	Type   *string `json:"type,omitempty"`
 	Keep   *int    `json:"keep,omitempty"`
+}
+
+// IndexHandler -
+func IndexHandler(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
+}
+
+// NoRouteHandler -
+func NoRouteHandler(c *gin.Context) {
+	c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
 }
 
 // BackupHandler - handles requests for raspiBackup
@@ -85,7 +76,7 @@ func BackupHandler(c *gin.Context) {
 
 	args += " " + parm.Target
 
-	command := "sudo " + executable
+	command := "sudo " + Executable
 	args = `"` + args + `"`
 	combined := command + " " + args
 	cmd := exec.Command("/bin/bash", "-c", combined)
@@ -99,6 +90,9 @@ func BackupHandler(c *gin.Context) {
 
 func main() {
 
+	listenAddress := flag.String("a", ":8080", "Listen address of server. Default: :8080")
+	flag.Parse()
+
 	gin.SetMode(gin.ReleaseMode)
 	api := gin.Default()
 
@@ -106,15 +100,15 @@ func main() {
 	var credentialMap = map[string]string{}
 
 	// read credentials
-	if _, err := os.Stat(lib.PasswordFile); err == nil {
-		fmt.Printf("INFO: Reading %v\n", lib.PasswordFile)
-		credentials, err := ioutil.ReadFile(lib.PasswordFile)
+	if _, err := os.Stat(PasswordFile); err == nil {
+		fmt.Printf("INFO: Reading %v\n", PasswordFile)
+		credentials, err := ioutil.ReadFile(PasswordFile)
 		if err != nil {
 			fmt.Printf("%+v", err)
 			os.Exit(42)
 		}
 
-		f, err := os.Open(lib.PasswordFile)
+		f, err := os.Open(PasswordFile)
 		defer f.Close()
 		if err != nil {
 			log.Fatal(err)
@@ -126,7 +120,7 @@ func main() {
 		}
 
 		if mode := fi.Mode(); mode&077 != 0 {
-			fmt.Printf("ERROR: %v not protected. %v\n", lib.PasswordFile, mode)
+			fmt.Printf("ERROR: %v not protected. %v\n", PasswordFile, mode)
 			os.Exit(42)
 		}
 
@@ -147,7 +141,7 @@ func main() {
 		}
 
 	} else {
-		fmt.Printf("WARNING: REST API not protected with basic auth. %s not found\n", lib.PasswordFile)
+		fmt.Printf("WARNING: REST API not protected with basic auth. %s not found\n", PasswordFile)
 	}
 
 	var v1 *gin.RouterGroup
@@ -159,10 +153,12 @@ func main() {
 	}
 
 	api.LoadHTMLGlob("templates/*.html")
-	api.NoRoute(handler.NoRouteHandler)
+	api.NoRoute(NoRouteHandler)
 
-	v1.POST("/raspiBackup", handler.BackupHandler)
-	v1.GET("/", handler.IndexHandler)
+	v1.POST("/raspiBackup", BackupHandler)
+	v1.GET("/", IndexHandler)
 
-	api.Run(":8080")
+	fmt.Printf("INFO: Server now listening on port %s\n", *listenAddress)
+
+	api.Run(*listenAddress)
 }
