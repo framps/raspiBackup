@@ -4,23 +4,23 @@
 #
 # See http://www.linux-tips-and-tricks.de/raspiBackup for details
 #
-# (C) 2015-2017 - framp at linux-tips-and-tricks dot de
+# (C) 2015-2018 - framp at linux-tips-and-tricks dot de
 
 # set -o pipefail -o nounset -o errexit
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.3.6"
+VERSION="0.3.6.5"
 
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set +u; GIT_DATE="$Date: 2017-09-03 21:55:30 +0200$"; set -u
+set +u; GIT_DATE="$Date: 2018-01-04 21:06:54 +0100$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE) 
-set +u; GIT_COMMIT="$Sha1: 3edd90b$"; set -u
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
+set +u; GIT_COMMIT="$Sha1: dbfcf04$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -29,6 +29,7 @@ FILE_TO_INSTALL="raspiBackup.sh"
 
 RASPIBACKUP_NAME=${FILE_TO_INSTALL%.*}
 
+NL=$'\n'
 FILE_TO_INSTALL_BETA="raspiBackup_beta.sh"
 LOG_FILE="./$MYNAME.log"
 URL="www.linux-tips-and-tricks.de"
@@ -39,6 +40,17 @@ CONFIG_FILE_ABS_FILE="$CONFIG_FILE_ABS_PATH/$CONFIG_FILE"
 FILE_TO_INSTALL_ABS_PATH="/usr/local/bin"
 FILE_TO_INSTALL_ABS_FILE="$FILE_TO_INSTALL_ABS_PATH/$FILE_TO_INSTALL"
 SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
+CRON_SAMPLE_FILE="/etc/cron.d/raspiBackup"
+read -r -d '' CRON_SAMPLE_CONTENTS <<-'EOF'
+#
+# Sample crontab entry for raspiBackup.sh
+#
+# (C) 2017-2018 framp at linux-tips-and-tricks dot de
+#
+# Create a backup once a week on Sunday morning at 5 am
+#
+#0 5 * * 0	root	PATH=\"$PATH:/usr/local/bin\"	raspiBackup.sh
+EOF
 
 TAIL=0
 
@@ -47,14 +59,14 @@ BETA_CODE_URL="/downloads/$FILE_TO_INSTALL_BETA/download"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
 DOWNLOAD_TIMEOUT=3 # seconds
-DOWNLOAD_RETRIES=3 
+DOWNLOAD_RETRIES=3
 
 [[ -z ${LANG+x} ]] && LANG="EN"
 LANG_EXT=${LANG^^*}
 MESSAGE_LANGUAGE=${LANG_EXT:0:2}
 if [[ $MESSAGE_LANGUAGE != "DE" && $MESSAGE_LANGUAGE != "EN" ]]; then
 	MESSAGE_LANGUAGE="EN"
-fi	
+fi
 
 NL=$'\n'
 
@@ -196,8 +208,8 @@ MSG_ANSWER_CHARS_NO=41
 MSG_EN[$MSG_ANSWER_CHARS_NO]="n"
 MSG_DE[$MSG_ANSWER_CHARS_NO]="n"
 MSG_CONFIG_INFO=42
-MSG_EN[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Default for option is the parameter in UPPERCASE."
-MSG_DE[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Bei keiner Eingabe wird der in GROSSBUCHSTABEN geschriebene Parameter für die Option benutzt." 
+MSG_EN[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Default option is in UPPERCASE."
+MSG_DE[$MSG_CONFIG_INFO]="${MSG_PRF}0041I: Bei keiner Eingabe wird der Wert in GROSSBUCHSTABEN benutzt."
 MSG_SELECTED_CONFIG_PARMS1=43
 MSG_EN[$MSG_SELECTED_CONFIG_PARMS1]="${MSG_PRF}0042I: Selected configuration: Message language: %1, Backupmode: %2, Backuptype: %3"
 MSG_DE[$MSG_SELECTED_CONFIG_PARMS1]="${MSG_PRF}0042I: Gewählte Konfiguration: Sprache der Meldungen: %1, Backupmodus: %2, Backuptype: %3"
@@ -216,6 +228,9 @@ MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0047I: Beispielserweiter
 MSG_SELECTED_CONFIG_PARMS2=48
 MSG_EN[$MSG_SELECTED_CONFIG_PARMS2]="${MSG_PRF}0048I: Selected configuration: Compress backups: %1, Number of backups: %2, Verbose messages: %3"
 MSG_DE[$MSG_SELECTED_CONFIG_PARMS2]="${MSG_PRF}0048I: Gewählte Konfiguration: Backup komprimieren: %1, Anzahl Backups: %2, Ausführliche Meldungen: %3"
+MSG_INSTALLING_CRON_TEMPLATE=49
+MSG_EN[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0049I: Creating sample cron file $CRON_SAMPLE_FILE"
+MSG_DE[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0049I: Beispieldatei für cron $CRON_SAMPLE_FILE wird erstellt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -238,16 +253,16 @@ function extractVersionFromFile() { # fileName
 
 function cleanup() {
 
-	trap '' SIGINT SIGTERM EXIT	
+	trap '' SIGINT SIGTERM EXIT
 
 	local rc=$?
-	
+
 	TAIL=0
 	if (( $INSTALLATION_STARTED )); then
 		if (( ! $INSTALLATION_SUCCESSFULL )); then
 			writeToConsole $MSG_CLEANUP
 			(( $CONFIG_INSTALLED )) && rm $CONFIG_FILE_ABS_FILE &>>$LOG_FILE || true
-			(( $SCRIPT_INSTALLED )) && rm $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE || true 
+			(( $SCRIPT_INSTALLED )) && rm $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE || true
 			writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
 			rc=127
 		else
@@ -259,16 +274,16 @@ function cleanup() {
 	else
 		rm -f $LOG_FILE &>/dev/null || true
 	fi
-	
-	(( $INSTALL_EXTENSIONS )) && rm $SAMPLEEXTENSION_TAR_FILE &>>$LOG_FILE || true 
-	
+
+	(( $INSTALL_EXTENSIONS )) && rm $SAMPLEEXTENSION_TAR_FILE &>>$LOG_FILE || true
+
 	exit $rc
 }
-	
+
 # Create message and substitute parameters
 
 function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
-    
+
     local msg p i s
 
 	if [[ $1 != "L" ]]; then
@@ -287,7 +302,7 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
 			if [[ -z ${!msgVar} ]]; then
 				echo "${MSG_EN[$MSG_UNDEFINED]}"	# unknown message id
 				return
-			else			
+			else
 				msg="${MSG_EN[$2]}";  	    	    # fallback into english
 			fi
 		fi
@@ -299,13 +314,13 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
       p=${!i}
       let s=$i-2
       s="%$s"
-      msg="$( perl -p -e "s@$s@$p@" <<< "$msg" 2>/dev/null)"	  # have to use explicit command name 
+      msg="$( sed "s#$s#$p#" <<< "$msg" 2>/dev/null )"	  # have to use explicit command name
     done
-   
-    msg="$( perl -p -e "s/%[0-9]+//g" <<< "$msg" 2>/dev/null)"     # delete trailing %n definitions
-	
+
+   	msg="$( sed "s#%[0-9]+##g" <<< "$msg" 2>/dev/null )"     # delete trailing %n definitions
+
 	local msgPref=${msg:0:3}
-	
+
 	if [[ $msgPref == "${MSG_PRF}" ]]; then
 		local severity=${msg:7:1}
 		if [[ "$severity" =~ [EWI] ]]; then
@@ -322,14 +337,14 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
 function getLocalizedMessage() { # messageNumber parm1 parm2
 
 	local msg
-	msg="$(getMessageText $MESSAGE_LANGUAGE "$@")"	
+	msg="$(getMessageText $MESSAGE_LANGUAGE "$@")"
 	echo "$msg"
 }
 
 function writeToConsole() {  # messagenumber messageparameters
-	
+
 	local msg tailer
-	
+
 	msg="$(getMessageText $MESSAGE_LANGUAGE "$@")"
 
 	if (( $TAIL )); then
@@ -364,10 +379,10 @@ function exitNormal() {
 
 function downloadCode() {
 
-	local oldversion newName
+	local newName
 
 	if [[ -f $FILE_TO_INSTALL_ABS_FILE ]]; then
-		oldVersion=$(grep "^VERSION=" $FILE_TO_INSTALL_ABS_FILE | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")	
+		oldVersion=$(grep "^VERSION=" $FILE_TO_INSTALL_ABS_FILE | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")
 		newName="$FILE_TO_INSTALL_ABS_FILE.$oldVersion.sh"
 		writeToConsole $MSG_SAVING_FILE "$FILE_TO_INSTALL" "$newName"
 		mv $FILE_TO_INSTALL_ABS_FILE $newName
@@ -384,15 +399,15 @@ function downloadCode() {
 		FILE_TO_INSTALL_URL="$STABLE_CODE_URL"
 		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 	fi
-	
+
 	SCRIPT_INSTALLED=1
-	
+
 	httpCode=$(curl -s -o $FILE_TO_INSTALL -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL_URL" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode" 
+		writeToConsole $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
 		unrecoverableError
 	fi
-			
+
 	if [[ $FILE_TO_INSTALL != $FILE_TO_INSTALL_ABS_FILE ]]; then
 		if ! mv $FILE_TO_INSTALL $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
 			writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
@@ -418,7 +433,7 @@ function downloadCode() {
 		writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 		unrecoverableError
 	fi
-	
+
 	local chownArgs=$(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed 's/\n//')
 	if ! chown $chownArgs $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>$LOG_FILE; then
 		writeToConsole $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
@@ -428,22 +443,22 @@ function downloadCode() {
 }
 
 function downloadConfig() {
-	
-	local oldversion newName http_code
+
+	local newName http_code
 
 	if [[ -f $CONFIG_FILE_ABS_FILE ]]; then
-		oldVersion=$(grep "^VERSION=" $FILE_TO_INSTALL_ABS_FILE | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")	
+		oldVersion=$(grep "^VERSION=" $FILE_TO_INSTALL_ABS_FILE | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")
 		newName="$CONFIG_FILE_ABS_FILE.$oldVersion"
 		writeToConsole $MSG_SAVING_FILE "$CONFIG_FILE" "$newName"
 		mv $CONFIG_FILE_ABS_FILE $newName &>>$LOG_FILE
 	fi
-	
+
 	writeToConsole $MSG_DOWNLOADING "$CONFIG_FILE"
 	CONFIG_INSTALLED=1
-	
+
 	httpCode=$(curl -s -o $CONFIG_FILE_ABS_FILE -w %{http_code} -L "https://$URL/$confFile" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode" 
+		writeToConsole $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode"
 		unrecoverableError
 	fi
 
@@ -457,7 +472,7 @@ function downloadConfig() {
 }
 
 function askFor() { # message, options, default
-	
+
 	local ok=0
 	local reply v
 
@@ -469,7 +484,7 @@ function askFor() { # message, options, default
 	else
 		finalMessage=""
 	fi
-	
+
 	TAIL=1
 	while (( ! $ok )); do
 		writeToConsole "$1" "$finalMessage" "-n"
@@ -497,7 +512,7 @@ function configWizzard() {
 	local done=0
 	local ml=${MESSAGE_LANGUAGE,,*}
 
-	writeToConsole $MSG_CONFIG_INFO 
+	writeToConsole $MSG_CONFIG_INFO
 
 	while (( ! $done )); do
 		askFor $MSG_ASK_LANGUAGE "de|en" "$ml"
@@ -512,7 +527,7 @@ function configWizzard() {
 			askFor $MSG_ASK_TYPE2 "tar|rsync" "rsync"
 		fi
 		CONFIG_BACKUPTYPE=$REPLY
-		
+
 		regex="dd|tar"
 		if [[ $CONFIG_BACKUPTYPE =~ $regex ]]; then
 			askFor $MSG_ASK_COMPRESS $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
@@ -520,30 +535,30 @@ function configWizzard() {
 		else
 			CONFIG_COMPRESS="n"
 		fi
-	
+
 		askFor $MSG_ASK_KEEP "[1-9]|[1-4][0-9]|[5][0-2]" ""
 		CONFIG_KEEP_BACKUPS=$REPLY
-	
+
 		askFor $MSG_ASK_DETAILS $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_YES)
 		CONFIG_DETAILED_MESSAGES=$REPLY
-		
+
 		local m="$(getLocalizedMessage $MSG_NORMAL_MODE)"
 		[[ $CONFIG_BACKUPMODE == "p" ]] && m="$(getLocalizedMessage $MSG_PARTITION_MODE)"
 		writeToConsole $MSG_SELECTED_CONFIG_PARMS1 "$MESSAGE_LANGUAGE" "$m" "$CONFIG_BACKUPTYPE"
 		writeToConsole $MSG_SELECTED_CONFIG_PARMS2 "$CONFIG_COMPRESS" "$CONFIG_KEEP_BACKUPS" "$CONFIG_DETAILED_MESSAGES"
 		askFor $MSG_CONF_OK $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
-	
+
 		[[ $REPLY =~ $YES ]] && done=1
 	done
-	
+
 }
 
 function updateConfig() {
-	
+
 	local rc msg
-	
+
 	writeToConsole $MSG_UPDATING_CONFIG "$CONFIG_FILE_ABS_FILE"
-	
+
 	msg=${MESSAGE_LANGUAGE^^*}
 	sed -i "s/^DEFAULT_LANGUAGE=.*\$/DEFAULT_LANGUAGE=\"$msg\"/" $CONFIG_FILE_ABS_FILE
 
@@ -553,10 +568,10 @@ function updateConfig() {
 
 	[[ $CONFIG_COMPRESS == "j" ]] && CONFIG_COMPRESS=1 || CONFIG_COMPRESS=0
 	sed -i "s/^DEFAULT_ZIP_BACKUP=.*\$/DEFAULT_ZIP_BACKUP=\"$CONFIG_COMPRESS\"/" $CONFIG_FILE_ABS_FILE
-	
+
 	sed -i "s/^DEFAULT_KEEPBACKUPS=.*\$/DEFAULT_KEEPBACKUPS=\"$CONFIG_KEEP_BACKUPS\"/" $CONFIG_FILE_ABS_FILE
-	
-	[[ $CONFIG_DETAILED_MESSAGES == "n" ]] && CONFIG_DETAILED_MESSAGES=0 || CONFIG_DETAILED_MESSAGES=1 
+
+	[[ $CONFIG_DETAILED_MESSAGES == "n" ]] && CONFIG_DETAILED_MESSAGES=0 || CONFIG_DETAILED_MESSAGES=1
 	sed -i "s/^DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_DETAILED_MESSAGES\"/" $CONFIG_FILE_ABS_FILE
 }
 
@@ -572,7 +587,7 @@ function usageEN() {
 	echo "       -b - Install the beta version if available"
 	echo "       -c - Install default config file in $CONFIG_FILE_ABS_FILE"
 	echo "       -e - Install and configure sampleextensions"
-	echo "       -k - Keep installscript after successful installation" 
+	echo "       -k - Keep installscript after successful installation"
 	echo "       -l - Install English (EN) or German (DE) version of the config file"
 	echo "       If -c is used without -l the current system language is used for the config file"
 	echo "       -r - Updates the local script version with the latest script version available (Current configuration file will not be modified)"
@@ -612,35 +627,35 @@ function checkIfBetaAvailable() {
 	local betaVersion=""
 
 	local tmpFile=$(mktemp)
-		
+
 	wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmpFile
 	local rc=$?
 	if [[ $rc == 0 ]]; then
 		properties=$(grep "^BETA=" "$tmpFile" 2>/dev/null)
 		local betaVersion=$(cut -d '=' -f 2 <<< $properties)
-		betaVersion=${betaVersion//\"/}			
+		betaVersion=${betaVersion//\"/}
 	fi
-	
-	rm $tmpFile	
+
+	rm $tmpFile
 	echo $betaVersion
 }
 
 function usage() {
-	
+
 	LANG_SUFF=$MESSAGE_LANGUAGE
 
 	local func="usage${LANG_SUFF}"
 
-	if ! fn_exists $func; then     
+	if ! fn_exists $func; then
 		func="usageEN"
 	fi
-	
+
 	$func
 
 }
 
 function install() {
-	
+
 	INSTALLATION_STARTED=1
 
 	if (( $REFRESH_SCRIPT )); then
@@ -653,10 +668,16 @@ function install() {
 		downloadCode
 		downloadConfig
 		updateConfig
+		createSampleCronfile
 fi
 
 INSTALLATION_SUCCESSFULL=1
 
+}
+
+function createSampleCronfile() {
+	writeToConsole $MSG_INSTALLING_CRON_TEMPLATE
+	echo "$CRON_SAMPLE_CONTENTS" > "$CRON_SAMPLE_FILE"
 }
 
 function installExtensions() {
@@ -664,13 +685,13 @@ function installExtensions() {
 	local extensions="mem temp disk"
 
 	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
-		
+
 	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -w %{http_code} -L "$MYHOMEURL/$SAMPLEEXTENSION_TAR_FILE" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode" 
+		writeToConsole $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode"
 		unrecoverableError
 	fi
-		
+
 	if ! tar -xzf $SAMPLEEXTENSION_TAR_FILE -C $FILE_TO_INSTALL_ABS_PATH &>>$LOG_FILE; then
 		writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_FAILED "tar -x"
 		unrecoverableError
@@ -684,15 +705,15 @@ function installExtensions() {
 	sed -i "s/^DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_FILE_ABS_FILE
 
 	writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_SUCCESS
-	
+
 }
 
 function uninstall() {
-	
+
 	askFor $MSG_ASK_UNINSTALL $(getLocalizedMessage $MSG_ANSWER_CHARS_YES_NO) $(getLocalizedMessage $MSG_ANSWER_CHARS_NO)
 	[[ ! $REPLY =~ $YES ]] && return
 
-	local pre=${CONFIG_FILE_ABS_FILE%%.*}	
+	local pre=${CONFIG_FILE_ABS_FILE%%.*}
 	local post=${CONFIG_FILE_ABS_FILE##*.}
 
 	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
@@ -701,9 +722,9 @@ function uninstall() {
 		unrecoverableError
 	fi
 
-	pre=${FILE_TO_INSTALL_ABS_FILE%%.*}	
+	pre=${FILE_TO_INSTALL_ABS_FILE%%.*}
 	post=${FILE_TO_INSTALL_ABS_FILE##*.}
-	
+
 	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
 	if ! rm -f $pre*.$post* 2>>$LOG_FILE; then
 		writeToConsole $MSG_UNINSTALL_FAILED "$pre*.$post*"
@@ -715,7 +736,13 @@ function uninstall() {
 		writeToConsole $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 		unrecoverableError
 	fi
-	
+
+	writeToConsole $MSG_DELETE_FILE "$CRON_SAMPLE_FILE"
+	if ! rm -f "$CRON_SAMPLE_FILE" 2>>$LOG_FILE; then
+		writeToConsole $MSG_UNINSTALL_FAILED "$CRON_SAMPLE_FILE"
+		unrecoverableError
+	fi
+
 	writeToConsole $MSG_UNINSTALL_FINISHED "$RASPIBACKUP_NAME"
 
 }
@@ -731,7 +758,7 @@ INSTALL_EXTENSIONS=0
 trapWithArg cleanup SIGINT SIGTERM EXIT
 
 while getopts ":bcel:hrU" opt; do
-   case $opt in 
+   case $opt in
 		b) 	BETA_INSTALL=1
 			;;
 		c)  INSTALL_CONFIG=1
@@ -802,6 +829,6 @@ elif (( $BETA_INSTALL )); then
 fi
 
 install
-(( $BETA_INSTALL && INSTALLATION_SUCCESSFULL )) && writeToConsole $MSG_BETA_THANKYOU "$beta"
+(( $BETA_INSTALL && $INSTALLATION_SUCCESSFULL )) && writeToConsole $MSG_BETA_THANKYOU "$beta"
 
 # vim: set expandtab tabstop=8 shiftwidth=8 autoindent smartindent

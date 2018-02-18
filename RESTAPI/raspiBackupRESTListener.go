@@ -135,13 +135,13 @@ func main() {
 				passwordSet = true
 			} else {
 				if len(line) > 0 {
-					fmt.Printf("WARNING: Line %d skipped. Found '%s' which is not a valid credential definition. Expected 'userid:password'\n", i, line)
+					fmt.Printf("WARN: Line %d skipped. Found '%s' which is not a valid credential definition. Expected 'userid:password'\n", i, line)
 				}
 			}
 		}
 
 	} else {
-		fmt.Printf("WARNING: REST API not protected with basic auth. %s not found\n", PasswordFile)
+		fmt.Printf("WARN: REST API not protected with basic auth. %s not found\n", PasswordFile)
 	}
 
 	var v1 *gin.RouterGroup

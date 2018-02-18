@@ -9,12 +9,13 @@ all: build-raspi
 
 setup:
 	curl -s https://glide.sh/get | sh 2>/dev/null
+	glide install
 
 build: setup
-	glide install
+	glide update
 
 run-linux: build
 	go run ${TARGET}.go
 
-build-raspi: build 
+build-raspi: build
 	OOS=linux GOARCH=arm GOARM=7 go build -o ${BIN_DIR}/${TARGET} ${TARGET}.go
