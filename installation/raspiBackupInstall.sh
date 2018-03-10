@@ -10,17 +10,17 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.3.6.7"
+VERSION="0.3.6.9"
 
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set +u; GIT_DATE="$Date: 2018-02-19 19:18:31 +0100$"; set -u
+set +u; GIT_DATE="$Date: 2018-03-10 20:01:10 +0100$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u; GIT_COMMIT="$Sha1: 8fbcd1a$"; set -u
+set +u; GIT_COMMIT="$Sha1: b94e4fb$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -584,7 +584,7 @@ function usageEN() {
 	echo ""
 	echo "Install and configure raspiBackup.sh"
 	echo ""
-	echo "Usage: sudo $0 [[-c] [-l DE | EN]] | [-u] | [-h]"
+	echo "Usage: sudo $0 [[-c] [-l DE | EN]] | [-U] | [-h]"
 	echo ""
 	echo "       No options will start a configuration wizzard and prompt for the most important configuration parameters"
 	echo ""
@@ -594,6 +594,7 @@ function usageEN() {
 	echo "       -C <directory> - Define the cron target directory"
 	echo "       -e - Install and configure sampleextensions"
 	echo "       -E <directory> - Define the etc target directory"
+	echo "       -h - Show this help text"
 	echo "       -k - Keep installscript after successful installation"
 	echo "       -l - Install English (EN) or German (DE) version of the config file"
 	echo "       If -c is used without -l the current system language is used for the config file"
@@ -607,7 +608,7 @@ function usageDE() {
 	echo ""
 	echo "Installiere und konfiguriere raspiBackup.sh"
 	echo ""
-	echo "Aufruf: sudo $0 [[-c] [-l DE | EN]] | [-u] | [-h]"
+	echo "Aufruf: sudo $0 [[-c] [-l DE | EN]] | [-U] | [-h]"
 	echo ""
 	echo "       Falls keine Optionen angegeben wurde werden die wichtigsten Konfigurationsparameter abgefragt"
 	echo ""
@@ -617,6 +618,7 @@ function usageDE() {
 	echo "       -C <directory> - Definiert das cron Zielverzeichnis"
 	echo "       -e - Installiert und konfiguriert die Beispielerweiterungen"
 	echo "       -E <directory> - Definiert das etc Zielverzeichnis"
+	echo "       -h - Anzeige dieses Hilfetextes"
 	echo "       -k - Installationsscript wird am Ende der Installation nicht gelöscht"
 	echo "       -l - Installiert die englische (EN) oder Deutsche (DE) Version der Konfigurationsdatei"
 	echo "       Wenn -c ohne -l benutzt wird wird die Systemsprache für die Konfigurationsdatei benutzt"
@@ -812,6 +814,7 @@ writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
 
 if (( $UID != 0 )); then
 	writeToConsole $MSG_SUDO_REQUIRED "$0 $passedOpts"
+	usage
 	exitWarning
 fi
 
