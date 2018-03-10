@@ -7,7 +7,7 @@
 #
 # See http://www.linux-tips-and-tricks.de/raspiBackup for additional information 
 #
-#######################################################################################################################
+# (C) 2015 - framp at linux-tips-and-tricks dot de
 #
 #    Copyright (C) 2015-2017 framp at linux-tips-and-tricks dot de
 #

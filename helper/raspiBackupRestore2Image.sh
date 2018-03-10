@@ -41,17 +41,18 @@ if [[ -e /bin/grep ]]; then
    done
 fi
 
-GIT_DATE="$Date: 2017-12-29 19:17:54 +0100$"
+GIT_DATE="$Date: 2018-03-07 20:10:59 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 842a0ad$"
+GIT_COMMIT="$Sha1: d510ba1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
 echo "$GIT_CODEVERSION"
 
+NL=$'\n'
 MAIL_EXTENSION_AVAILABLE=0
 [[ $(which raspiImageMail.sh) ]] && MAIL_EXTENSION_AVAILABLE=1
 
@@ -225,7 +226,15 @@ else
 fi
 
 if (( $MAIL_EXTENSION_AVAILABLE )); then
-    raspiImageMail.sh "raspiBackupRestore2Imange: ${IMAGE_FILENAME##*/}" "$(echo -e "$(cat $MSG_FILE)")"
+    IMAGE_FILENAME=${IMAGE_FILENAME##*/}
+    HOST_NAME=${IMAGE_FILENAME%%-*}
+    if (( $RC )); then
+        status="with errors finished"
+    else    
+        status="finished successfully"
+    fi  
+    BODY="raspiBackupRestore2Image.sh $IMAGE_FILENAME$NL$NL$(echo -e "$(cat $MSG_FILE)")"    
+    raspiImageMail.sh "$HOSTNAME - Restore $status"  "$BODY"
     if [[ $? = 0 ]]; then
         echo "-- Send email succeeded!"
         RC=0
@@ -233,4 +242,4 @@ if (( $MAIL_EXTENSION_AVAILABLE )); then
 fi
 
 exit $RC
-
+ 
