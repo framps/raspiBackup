@@ -56,11 +56,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-03-10 19:28:48 +0100$"
+GIT_DATE="$Date: 2018-03-11 08:35:59 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 82cc58d$"
+GIT_COMMIT="$Sha1: 81d74e1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1020,7 +1020,9 @@ function writeToConsole() {  # msglevel messagenumber message
 			echo $noNL -e "$timestamp$msg" >> "$LOG_FILE"
 		fi
 
-		echo $noNL -e "$timestamp$msg" >> "$LOG_MAIL_FILE"
+		if (( $UID == 0 )); then
+			echo $noNL -e "$timestamp$msg" >> "$LOG_MAIL_FILE"
+		fi
 		logIntoOutput $LOG_TYPE_MSG "$timestamp$msg"
 	fi
 	unset noNL
@@ -5491,7 +5493,7 @@ fi
 
 unusedParms="$@"
 
-if (( $HELP )) || [[ -z "$INVOCATIONPARMS" ]]; then
+if (( $HELP )); then
 	usage
 	exitNormal
 fi
