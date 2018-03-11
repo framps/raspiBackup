@@ -6,7 +6,13 @@ Any device which can be mounted on Linux can be used as backupspace (USB disk, U
 
 An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
 
+**Note:**
+* Everybody planning *to use* raspiBackup should read the [Installation and quickstart page](https://www.linux-tips-and-tricks.de/en/quickstart-rbk).
+* Everybody planning *to evaluate* raspiBackup should visit the [Users guide page](https://www.linux-tips-and-tricks.de/en/backup).
+
 ## Usage
+
+For the latest and actual list of options see [here](https://www.linux-tips-and-tricks.de/en/backup#parameters)
 
 ```
 pi@raspberry: $ raspiBackup.sh
