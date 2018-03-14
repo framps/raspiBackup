@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,14 +44,14 @@ type parameter struct {
 	Keep   *int    `json:"keep,omitempty"`
 }
 
-// IndexHandler -
-func IndexHandler(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", nil)
-}
-
 // NoRouteHandler -
 func NoRouteHandler(c *gin.Context) {
 	c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+}
+
+// IndexHandler -
+func IndexHandler(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
 }
 
 // BackupHandler - handles requests for raspiBackup
@@ -153,6 +154,7 @@ func main() {
 	}
 
 	api.LoadHTMLGlob("templates/*.html")
+	api.Use(static.Serve("/assets", static.LocalFile("assets", false)))
 	api.NoRoute(NoRouteHandler)
 
 	v1.POST("/raspiBackup", BackupHandler)
