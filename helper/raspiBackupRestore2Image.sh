@@ -23,12 +23,14 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#	 Kudos for kmbach who suggested to create this helper and who helped to improve its
+#
 #######################################################################################################################
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.3"
+VERSION="v0.1.4"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -104,7 +106,9 @@ function cleanup() {
 	local rc=$?
 	echo "--- Cleaning up"
 	(( $rc )) && rm $IMAGE_FILENAME &>/dev/null
-	losetup -d $LOOP &>/dev/null
+	if losetup $LOOP &>/dev/null; then
+		losetup -d "$LOOP"
+	fi
     rm -f $MSG_FILE &>/dev/null
 }
 
@@ -141,7 +145,7 @@ function calcSumSizeFromSFDISK() { # sfdisk filename
 
 	done < "$file"
 
-	(( sumSize *= 512 ))
+    (( sumSize = ((sumSize - 1)/8 + 1)*4096 ))	# align on 4096 boundary to speedup pishrink, kudos for kmbach
 
 	echo "$sumSize"
 
@@ -230,10 +234,10 @@ if (( $MAIL_EXTENSION_AVAILABLE )); then
     HOST_NAME=${IMAGE_FILENAME%%-*}
     if (( $RC )); then
         status="with errors finished"
-    else    
+    else
         status="finished successfully"
-    fi  
-    BODY="raspiBackupRestore2Image.sh $IMAGE_FILENAME$NL$NL$(echo -e "$(cat $MSG_FILE)")"    
+    fi
+    BODY="raspiBackupRestore2Image.sh $IMAGE_FILENAME$NL$NL$(echo -e "$(cat $MSG_FILE)")"
     raspiImageMail.sh "$HOSTNAME - Restore $status"  "$BODY"
     if [[ $? = 0 ]]; then
         echo "-- Send email succeeded!"
@@ -242,4 +246,4 @@ if (( $MAIL_EXTENSION_AVAILABLE )); then
 fi
 
 exit $RC
- 
+

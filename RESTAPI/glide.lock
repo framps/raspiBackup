@@ -1,8 +1,10 @@
 hash: 2134791ac2fb23d37dc383428265b970e9848a4b46f524977bf8e8c49f22d974
-updated: 2018-02-18T17:19:46.724468832+01:00
+updated: 2018-03-14T21:25:36.127363349+01:00
 imports:
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
+- name: github.com/gin-contrib/static
+  version: 73da7037e716e63aa2b0ffceb630dfa7be299086
 - name: github.com/gin-gonic/gin
   version: d459835d2b077e44f7c9b453505ee29881d5d12d
   subpackages:
