@@ -1,15 +1,18 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/framps/raspiBackup/go/tools"
+	"github.com/framps/raspiBackup/go/artefacts"
+	"github.com/framps/raspiBackup/go/commands"
 )
 
 func main() {
 
-	sourceDisk, _ := tools.NewDisk("sda")
+	sourceSystem := artefacts.NewSystem()
+	targetDirectory := artefacts.NewBackupDirectory("/backup")
+	commands.Backup(soureSystem, targetDirectory)
 
-	fmt.Println(sourceDisk)
+	targetSystem := artefacts.NewSystem("/dev/sda")
+	sourceDirectory := artefacts.NewBackupDirectory("/backup/20180328-22:34:01")
+	commands.Restore(sourceDirectory, targetSystem)
 
 }
