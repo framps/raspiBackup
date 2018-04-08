@@ -2,28 +2,28 @@
 #
 #######################################################################################################################
 #
-# Create an image file which can be restored with dd or win32diskimager from a tar or rsync backup created by raspiBackup
+# 	Create an image file which can be restored with dd or win32diskimager from a tar or rsync backup created by raspiBackup
 #
-# Visit http://www.linux-tips-and-tricks.de/raspiBackup to get more details about raspiBackup
+# 	Visit http://www.linux-tips-and-tricks.de/raspiBackup to get more details about raspiBackup
 #
 #######################################################################################################################
 #
-#    Copyright (C) 2017 framp at linux-tips-and-tricks dot de
+#   Copyright (C) 2017 framp at linux-tips-and-tricks dot de
 #
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#	 Kudos for kmbach who suggested to create this helper and who helped to improve its
+#	Kudos for kmbach who suggested to create this helper and who helped to improve its
 #
 #######################################################################################################################
 
@@ -43,11 +43,11 @@ if [[ -e /bin/grep ]]; then
    done
 fi
 
-GIT_DATE="$Date: 2018-03-07 20:10:59 +0100$"
+GIT_DATE="$Date: 2018-04-01 11:50:22 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: d510ba1$"
+GIT_COMMIT="$Sha1: 16524e0$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
