@@ -1,22 +1,41 @@
 #!/bin/bash
 
-# Sample script to wrap raspiBackup.sh in order
-# to mount and unmount the backup device
-# and start and stop services
+#######################################################################################################################
 #
-# Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
+# 	Sample script to wrap raspiBackup.sh in order to mount and unmount the backup device
+# 	and start and stop services
 #
-# (C) 2013,2016 - framp at linux-tips-and-tricks dot de
+# 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
+#
+#######################################################################################################################
+#
+#   Copyright # (C) 2013,2016 - framp at linux-tips-and-tricks dot de
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################################################################
+
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 VERSION="0.2.3"
 
-GIT_DATE="$Date: 2017-10-31 12:03:40 +0100$"
+GIT_DATE="$Date: 2017-09-05 19:55:44 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: ed54e5e$"
+GIT_COMMIT="$Sha1: af47c86$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
