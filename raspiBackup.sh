@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.3.2"	# -beta or -hotfix suffixes possible
+VERSION="0.6.3.2a"	# -beta, -hotfix or -dev suffixes allowed
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -49,6 +49,8 @@ fi
 
 grep -iq beta <<< "$VERSION"
 IS_BETA=$((! $? ))
+grep -iq dev <<< "$VERSION"
+IS_DEV=$((! $? ))
 grep -iq hotfix <<< "$VERSION"
 IS_HOTFIX=$((! $? ))
 
@@ -56,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-03-11 08:35:59 +0100$"
+GIT_DATE="$Date: 2018-04-14 20:38:33 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 81d74e1$"
+GIT_COMMIT="$Sha1: 73fc431$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -83,7 +85,7 @@ PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
 VERSION_URL_EN="$MYHOMEURL/en/versionhistory"
 VERSION_URL_DE="$MYHOMEURL/de/versionshistorie"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$MYNAME.properties"
-DOWNLOAD_TIMEOUT=3 # seconds
+DOWNLOAD_TIMEOUT=60 # seconds
 DOWNLOAD_RETRIES=3
 
 # debug option constants
@@ -143,6 +145,7 @@ POSSIBLE_LOG_LOCs=""
 for K in "${!LOG_OUTPUT_LOCs[@]}"; do
 	[[ -z $POSSIBLE_LOG_LOCs ]] && POSSIBLE_LOG_LOCs="${LOG_OUTPUTs[$K]}: ${LOG_OUTPUT_LOCs[$K]}" || POSSIBLE_LOG_LOCs="$POSSIBLE_LOG_LOCs | ${LOG_OUTPUTs[$K]}: ${LOG_OUTPUT_LOCs[$K]}"
 done
+POSSIBLE_LOG_LOCs="$POSSIBLE_LOG_LOCs | {logFilename}"
 
 # message option constants
 
@@ -833,6 +836,16 @@ MSG_DE[$MSG_ADJUSTING_DISABLED]="RBK0191E: Ziel %1 mit %2 ist kleiner als die Ba
 #MSG_TAR_EXT_OPT_RESTORE=191
 #MSG_EN[$MSG_TAR_EXT_OPT_RESTORE]="RBK0191I: Restoring extended attributes and acls with tar"
 #MSG_DE[$MSG_TAR_EXT_OPT_RESTORE]="RBK0191I: Extended Attribute und ACLs werden mit tar zurückgesichert"
+MSG_INTRO_DEV_MESSAGE=192
+MSG_EN[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> NOTE  <========= \
+${NL}!!! RBK0173W: This is a development version and should not be used in production. \
+${NL}!!! RBK0173W: =========> NOTE <========="
+MSG_DE[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> HINWEIS <========= \
+${NL}!!! RBK0173W: Dieses ist ein Entwicklerversion welcher nicht in Produktion benutzt werden sollte. \
+${NL}!!! RBK0173W: =========> HINWEIS <========="
+MSG_NO_HARDLINKS_USED=193
+MSG_EN[$MSG_NO_HARDLINKS_USED]="RBK0193W: No hardlinks supported on %1."
+MSG_DE[$MSG_NO_HARDLINKS_USED]="RBK0193W: %1 unterstützt keine Hardlinks."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1154,7 +1167,7 @@ function logIntoOutput() { # logtype message
 				echo "$dte: ${LOG_TYPEs[$type]} $indent $@" >> "$LOG_MAIL_FILE"
 				;;
 			*)
-				assertionFailed $LINENO "Invalid log destination $LOG_OUTPUT"
+				echo "$dte: ${LOG_TYPEs[$type]} $indent $@" >> "$LOG_FILE"
 				;;
 		esac
 	fi
@@ -1240,6 +1253,9 @@ function logOptions() {
 	logItem "ZIP_BACKUP=$ZIP_BACKUP"
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "TIMESTAMPS=$TIMESTAMPS"
+	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
+	logItem "TAR_IGNORE_ERRORS=$TAR_IGNORE_ERRORS"
+	logItem "USE_HARDLINKS=$USE_HARDLINKS"
 }
 
 LOG_MAIL_FILE="/tmp/${MYNAME}.maillog"
@@ -1313,6 +1329,8 @@ DEFAULT_DEPLOYMENT_HOSTS=""
 DEFAULT_YES_NO_RESTORE_DEVICE="loop"
 # Use hardlinks for partitionbootfiles
 DEFAULT_LINK_BOOTPARTITIONFILES=0
+# use hardlinks for rsync if possible
+DEFAULT_USE_HARDLINKS=1
 # save boot partition with tar
 DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
 # Change these options only if you know what you are doing !!!
@@ -1321,22 +1339,16 @@ DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
 DEFAULT_TAR_BACKUP_OPTIONS="-cpi"
 DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
 DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS=""
-
 # Use with care !
 DEFAULT_MAIL_ON_ERROR_ONLY=0
-
 # If version is marked as deprecated and buggy then update version
 DEFAULT_HANDLE_DEPRECATED=1
-
 # report uuid
 DEFAULT_USE_UUID=1
-
 # Check for back blocks when formating restore device (Will take a long time)
 DEFAULT_CHECK_FOR_BAD_BLOCKS=0
-
 # Resize root filesystem during restore
 DEFAULT_RESIZE_ROOTFS=1
-
 # add timestamps in front of messages
 DEFAULT_TIMESTAMPS=0
 
@@ -1382,7 +1394,7 @@ function substituteNumberArguments() {
 		fi
 	fi
 
-	if [[ $LOG_OUTPUT < 0 || $LOG_OUTPUT > ${#LOG_OUTPUT_LOCs[@]} ]]; then
+	if [[ "$LOG_OUTPUT" < 0 || "$LOG_OUTPUT" > ${#LOG_OUTPUT_LOCs[@]} ]]; then
 		lo=$(tr '[:lower:]' '[:upper:]'<<< $LOG_OUTPUT)
 		loa=$(tr '[:lower:]' '[:upper:]'<<< ${LOG_OUTPUT_ARGs[$lo]+abc})
 		if [[ $loa == "ABC" ]]; then
@@ -1644,8 +1656,8 @@ function isNewVersionAvailable() {
 			if [[ -z $suffix ]]; then
 				rc=1	# no suffix, current version is latest version
 			else
-				if (( $IS_BETA )); then
-					rc=0	# current is beta version, replace with final version
+				if (( $IS_BETA || $IS_DEV )); then
+					rc=0	# current is beta or development version, replace with final version
 				elif (( $IS_HOTFIX )); then
 					rc=2	# current version is hotfix, keep it until new version is available
 				else
@@ -1979,7 +1991,7 @@ function setupEnvironment() {
 			NEW_BACKUP_DIRECTORY_CREATED=1
 		fi
 
-		BACKUPPATH=$(sed -E 's@/+$@@g' <<< "$BACKUPPATH")
+		BACKUPPATH="$(sed -E 's@/+$@@g' <<< "$BACKUPPATH")"
 
 		if [[ ! -d "$BACKUPPATH" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$BACKUPPATH"
@@ -1994,12 +2006,12 @@ function setupEnvironment() {
 		fi
 
 	else
-		LOG_OUTPUT=$LOG_OUTPUT_HOME
+		LOG_OUTPUT="$LOG_OUTPUT_HOME"
 	fi
 
 	TMP_LOG_FILE="$HOSTNAME-$MYNAME.log"
 
-	if [[ $LOG_OUTPUT == $LOG_OUTPUT_VARLOG ]]; then
+	if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_VARLOG" ]]; then
 		LOG_BASE="/var/log/$MYNAME"
 		if [ ! -d ${LOG_BASE} ]; then
 		 if ! mkdir -p ${LOG_BASE}; then
@@ -2008,10 +2020,12 @@ function setupEnvironment() {
 		 fi
 		fi
 		LOG_FILE="$LOG_BASE/$HOSTNAME.log"
-	elif [[ $LOG_OUTPUT == $LOG_OUTPUT_HOME ]]; then
+	elif [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_HOME" ]]; then
 		LOG_FILE="$CURRENT_DIR/$MYNAME.log"
-	else
+	elif [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_SYSLOG" ]]; then
 		LOG_FILE="/var/log/syslog"
+	else
+		LOG_FILE=$LOG_OUTPUT
 	fi
 
 	LOG_FILE_FINAL="$LOG_FILE"
@@ -2369,7 +2383,7 @@ EOF
 }
 
 function extractVersionFromFile() { # fileName
-	echo $(grep "^VERSION=" "$1" | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")
+	echo $(grep "^VERSION=" "$1" | cut -f 2 -d = | sed  "s/\"//g" | sed "s/#.*//")
 }
 
 function revertScriptVersion() {
@@ -2542,9 +2556,16 @@ function checkAndCorrectImportantParameters() {
 		local invalidLogLevel=""
 		local invalidMsgLevel=""
 
-		if [[ $LOG_OUTPUT < 0 || $LOG_OUTPUT > ${#LOG_OUTPUT_LOCs[@]} ]]; then
-			invalidOutput=$LOG_OUTPUT
-			LOG_OUTPUT=$LOG_OUTPUT_SYSLOG
+		if [[ "$LOG_OUTPUT" =~ [0-9]+ ]]; then
+			if [[ $LOG_OUTPUT < 0 || $LOG_OUTPUT > ${#LOG_OUTPUT_LOCs[@]} ]]; then
+				invalidOutput=$LOG_OUTPUT
+				LOG_OUTPUT=$LOG_OUTPUT_SYSLOG
+			fi
+		else
+			if ! touch "$LOG_OUTPUT" &>/dev/null; then
+				invalidOutput="$LOG_OUTPUT"
+				LOG_OUTPUT=$LOG_OUTPUT_SYSLOG
+			fi
 		fi
 
 		if [[ $LOG_LEVEL < 0 || $LOG_LEVEL > ${#LOG_LEVELs[@]} ]]; then
@@ -2905,6 +2926,8 @@ function tarBackup() {
 		--warning=no-xdev \
 		--numeric-owner \
 		--exclude=\"$BACKUPPATH_PARAMETER/*\" \
+		--exclude=\"$LOG_FILE\" \
+		--exclude='.gvfs' \
 		--exclude=proc/* \
 		--exclude=lost+found/* \
 		--exclude=sys/* \
@@ -2924,7 +2947,7 @@ function tarBackup() {
 		executeCommand "$fakecmd"
 		rc=0
 	elif (( ! $FAKE )); then
-		executeCommand "${pvCmd}${cmd}"
+		executeCommand "${pvCmd}${cmd}" "$TAR_IGNORE_ERRORS"
 		rc=$?
 	fi
 
@@ -2968,10 +2991,9 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 	logItem "LastBackupDir: $lastBackupDir"
 
-	if  [[ -z "$lastBackupDir" ]]; then
-		LINK_DEST=""
-	else
-		LINK_DEST="--link-dest=\"$lastBackupDir\""
+	LINK_DEST=""
+	if (( $USE_HARDLINKS && $ROOT_HARDLINKS_SUPPORTED )); then
+		[[ -n "$lastBackupDir" ]] && LINK_DEST="--link-dest=\"$lastBackupDir\""
 	fi
 
 	logItem "LinkDest: $LINK_DEST"
@@ -2983,6 +3005,8 @@ function rsyncBackup() { # partition number (for partition based backup)
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER\" \
+			--exclude=\"$LOG_FILE\" \
+			--exclude='.gvfs' \
 			--exclude=$excludeRoot/proc/* \
 			--exclude=$excludeRoot/lost+found/* \
 			--exclude=$excludeRoot/sys/* \
@@ -3014,7 +3038,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 		executeCommand "$fakecmd"
 		rc=0
 	elif (( ! $FAKE )); then
-		executeCommand "$cmd"
+		executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"
 		rc=$?
 	fi
 
@@ -3974,8 +3998,12 @@ function doitBackup() {
 		fi
 		if (( ! $SKIP_RSYNC_CHECK )); then
 			if ! supportsHardlinks "$BACKUPPATH"; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH" "hardlinks"
-				exitError $RC_PARAMETER_ERROR
+				ROOT_HARDLINKS_SUPPORTED=0
+				if (( $USE_HARDLINKS )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_HARDLINKS_USED "$BACKUPPATH"
+				fi
+			else
+				ROOT_HARDLINKS_SUPPORTED=1
 			fi
 			if ! supportsSymlinks "$BACKUPPATH"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH" "softlinks"
@@ -5109,7 +5137,7 @@ function mentionHelp() {
 }
 
 function checkOptionParameter() { # option parameter
-	if [[ $2 =~ -+ || -z $2 ]]; then
+	if [[ "$2" =~ ^(\-|\+|\-\-|\+\+)[^=\s]+$ || -z $2 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
 		exitError $RC_PARAMETER_ERROR
 	fi
@@ -5183,6 +5211,7 @@ TAR_BOOT_PARTITION_ENABLED=$DEFAULT_TAR_BOOT_PARTITION_ENABLED
 CHECK_FOR_BAD_BLOCKS=$DEFAULT_CHECK_FOR_BAD_BLOCKS
 RESIZE_ROOTFS=$DEFAULT_RESIZE_ROOTFS
 TIMESTAMPS=$DEFAULT_TIMESTAMPS
+USE_HARDLINKS=$DEFAULT_USE_HARDLINKS
 
 if [[ -z $DEFAULT_LANGUAGE ]]; then
 	LANG_EXT=${LANG^^*}
@@ -5216,6 +5245,8 @@ ROOT_PARTITION_DEFINED=0
 SKIP_RSYNC_CHECK=0
 SKIP_SFDISK=0
 UPDATE_MYSELF=0
+ROOT_HARDLINKS_SUPPORTED=0
+USE_HARDLINKS=1
 
 PARAMS=""
 
@@ -5305,6 +5336,10 @@ while (( "$#" )); do
 
 	-h|--help)
 	  HELP=1; break
+	  ;;
+
+	--hardlinks|--hardlinks[+-])
+	  USE_HARDLINKS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
     -i|-i[-+])
@@ -5432,7 +5467,7 @@ while (( "$#" )); do
 	  ;;
 
     -V)
-	  REVERT=1
+	  REVERT=1; shift 1
 	  ;;
 
     -x|-x[-+])
@@ -5478,7 +5513,7 @@ set -- $PARAMS
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY"
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
-(( $IS_HOTFIX )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_HOTFIX_MESSAGE
+(( $IS_DEV )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_DEV_MESSAGE
 
 fileParameter="$1"
 if [[ -n "$1" ]]; then
