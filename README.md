@@ -1,14 +1,16 @@
-# raspiBackup - Backup and restore your running Raspberry
+# raspiBackup - Backup and restore your Raspberries
 
-raspiBackup helps to create backups of a running Raspberry with no shutdown or manual intervention by using cron. Important services will be stopped just before starting the backup and are started again when the backup finished.
+raspiBackup creates backups of a running Raspberry with no shutdown and manual intervention by using cron. Important services will be stopped just before starting the backup and are started again when the backup finished.
 
-Any device which can be mounted on Linux can be used as backupspace (USB disk, USB stick, nfs, samba, sshfs, ...). Standard Linux backup tools dd, tar and rsync using hardlinks are used to create the backup.
+Any device which can be mounted on Linux can be used as backupspace (USB disk, USB stick, nfs, samba, sshfs, ...). Standard Linux backup tools dd, tar and rsync using hardlinks can be used to create the backup.
 
 An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
 
-**Note:**
-* Everybody planning *to use* raspiBackup should read the [Installation and quickstart page](https://www.linux-tips-and-tricks.de/en/quickstart-rbk).
-* Everybody planning *to evaluate* raspiBackup should visit the [Users guide page](https://www.linux-tips-and-tricks.de/en/backup).
+## Documentation
+
+* [Quickstart](https://www.linux-tips-and-tricks.de/en/quickstart-rbk)
+* [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
+* [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
 
 ## Usage
 
@@ -59,9 +61,9 @@ usage: raspiBackup.sh [option]* {backupDirectory | backupFile}
 ```
 
 ## Detailed information
-* Installer, quickstart, FAQ, detailed description of all options, version history and more
- * [English](https://www.linux-tips-and-tricks.de/en/backup)
- * [German](https://www.linux-tips-and-tricks.de/de/raspiBackup)
+
+ * [English](https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy)
+ * [German](https://www.linux-tips-and-tricks.de/de/raspibackupcategoryy)
 
 # Miscellaneous tools and utilities
 
@@ -91,8 +93,3 @@ Allows to start a backup from a remote system or any web UI.
 3. Set file attributes for /usr/local/etc/raspiBackup.auth to 600
 4. Start the RESTAPI with ```sudo raspiBackupRESTAPIListener```. Option -a can be used to define another listening port than :8080.
 5. Use ```curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v0.1/backup``` to kick off a backup.
-
-## New features and bug fixes
-
-1. Missing feature - raspiBackup has a lot of features already but if you miss some functionality just create an issue or a PR. I suggest to create an issue first in order to discuss the missing feature before start coding.
-2. Bugfixes - Nobody is perfect. Either create an issue or just create a PR
