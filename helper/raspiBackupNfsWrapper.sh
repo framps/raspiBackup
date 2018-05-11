@@ -51,7 +51,14 @@ if ping -c1 -w3 $NFSSERVER &>/dev/null; then
 	if showmount -e $NFSSERVER | grep -q $NFSDIRECTORY; then
 		echo "Mouting $NFSSERVER:$NFSDIRECTORY to $MOUNTPOINT"
 		mount $NFSSERVER:$NFSDIRECTORY $MOUNTPOINT
-		raspiBackup.sh
+		. raspiBackup.sh
+		rc=$?
+		if (( $rc > 0 )); then
+			echo "raspiBackup failed with rc $rc"
+			exit $rc
+		fi
+#	now variable $BACKUPTARGET_DIR points to the new backup directory just created and can be used for further backup data processing
+		
 	else
 		echo "Server $NFSSERVER does not provide $NFSDIRECTORY"
 		exit 1
