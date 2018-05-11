@@ -1,4 +1,3 @@
 #!/bin/bash
 
-echo $(pwd)
-sudo ./raspiBackup.sh --version
+sudo ./raspiBackup.sh --help
