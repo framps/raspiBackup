@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-04-14 20:38:33 +0200$"
+GIT_DATE="$Date: 2018-05-11 21:59:42 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 73fc431$"
+GIT_COMMIT="$Sha1: 1c3e4ff$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -2501,7 +2501,7 @@ function cleanupBackup() { # trap
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 
-		if (( ! $MAIL_ON_ERROR_ONLY )); then
+		if (( ! $MAIL_ON_ERROR_ONLY || ( $NOTIFY_UPDATE && $NEWS_AVAILABLE ) )); then
 			msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
 			logItem "emailTitle: $msg"
 			if [ -n "$EMAIL" ]; then
