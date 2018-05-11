@@ -1,3 +1,4 @@
 language: bash
 script: make test
+sudo: required
 
