@@ -1,3 +1,4 @@
 #!/bin/bash
 
-sudo raspiBackup.sh --version
+echo $(pwd)
+sudo ./raspiBackup.sh --version
