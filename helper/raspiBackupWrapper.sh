@@ -9,7 +9,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright # (C) 2013,2016 - framp at linux-tips-and-tricks dot de
+#   Copyright # (C) 2013,2018 - framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -29,13 +29,13 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.3"
+VERSION="0.2.4"
 
-GIT_DATE="$Date: 2018-04-07 23:55:15 +0200$"
+GIT_DATE="$Date: 2018-05-11 21:59:42 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7b1f3b5$"
+GIT_COMMIT="$Sha1: 1c3e4ff$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -81,6 +81,54 @@ function cleanup() { # trap
 	fi
 }
 
+function readVars() {
+	if [[ -f /tmp/raspiBackup.vars ]]; then
+		source /tmp/raspiBackup.vars						# retrieve some variables from raspiBackup for further processing
+# now following variables are available for further backup processing
+# BACKUP_TARGETDIR refers to the backupdirectory just created
+# BACKUP_TARGETFILE refers to the dd backup file just created
+	else
+		echo "/tmp/raspiBackup.vars not found"
+		exit 42
+	fi
+}
+
+function raspiBackupRestore2Image() {
+	if which raspiBackupRestore2Image.sh 2>&1 1>/dev/null; then
+
+		raspiBackupRestore2Image.sh $BACKUP_TARGETDIR
+		rc=$?
+
+		if (( $rc == 0 )); then
+			echo "raspiBackupRestore2Image.sh succeeded :-)"					# do whatever has to be done in case of success
+		else
+			echo "raspiBackupRestore2Image.sh failed with rc $rc :-("			# do whatever has to be done in case of backup failure
+			exit $rc
+		fi
+	else
+		echo "raspiBackupRestore2Image.sh not found :-("
+		exit 42
+	fi
+}
+
+function pishrink() {
+	if which pishrink.sh 2>&1 1>/dev/null; then
+		readVars
+		pishrink.sh $BACKUP_TARGETFILE
+		rc=$?
+
+		if (( $rc == 0 )); then
+			echo "pishrink succeeded :-)"					# do whatever has to be done in case of success
+		else
+			echo "pishrink failed with rc $rc :-("			# do whatever has to be done in case of backup failure
+			exit $rc
+		fi
+	else
+		echo "pishrink not found :-("
+		exit 42
+	fi
+}
+
 # main program
 
 trapWithArg cleanup SIGINT SIGTERM EXIT
@@ -91,7 +139,7 @@ if ! isMounted $BACKUP_MOUNT_POINT; then
 	echo "--- Mounting $BACKUP_MOUNT_POINT"
 	mount $BACKUP_MOUNT_POINT	# no, mount it
 	if (( $? > 0 )); then
-		echo "Unable to mount $BACKUP_MOUNT_POINT"
+		echo "Mount of $BACKUP_MOUNT_POINT failed"
 		exit 42
 	fi
 else
@@ -118,9 +166,16 @@ service apache2 start
 service samba start
 service nfs-kernel-server start
 
-if [[ $rc == 0 ]]; then
+# $BACKUP_MOUNT_POINT unmounted when script terminates only if it was mounted by this script
+
+if (( $rc == 0 )); then
 	echo "Backup succeeded :-)"						# do whatever has to be done in case of success
 else
 	echo "Backup failed with rc $rc :-("			# do whatever has to be done in case of backup failure
 	exit $rc
 fi
+
+# enable on of the following line if you want to have pishrink or raspiBackupRestore2Image to postprocess the backup
+
+#pishrink
+#raspiBackupRestore2Image

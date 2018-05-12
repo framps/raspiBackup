@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-05-11 21:59:42 +0200$"
+GIT_DATE="$Date: 2018-05-12 17:14:41 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 1c3e4ff$"
+GIT_COMMIT="$Sha1: 1015c57$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -85,6 +85,7 @@ PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
 VERSION_URL_EN="$MYHOMEURL/en/versionhistory"
 VERSION_URL_DE="$MYHOMEURL/de/versionshistorie"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$MYNAME.properties"
+VARS_FILE="/tmp/$MYNAME.vars"
 DOWNLOAD_TIMEOUT=60 # seconds
 DOWNLOAD_RETRIES=3
 
@@ -1082,14 +1083,21 @@ function assertionFailed() { # lineno message
 	exit 127
 }
 
-function exitNormal() { #
+function exitNormal() {
+	saveVars
 	rc=0
 	exit 0
+}
+
+function saveVars() {
+	echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
+	echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
 }
 
 function exitError() { # {rc}
 
 	logEntry "exitError $1"
+	saveVars
 	if [[ -n "$1" ]]; then
 		rc="$1"
 	else
@@ -2299,6 +2307,7 @@ function cleanup() { # trap
 #		no return
 	else
 		logItem "Terminate now with rc $rc"
+		(( $rc == 0 )) && saveVars
 		exit $rc
 	fi
 
@@ -3358,11 +3367,15 @@ function backup() {
 	logItem "df -h:$NL$(df -h)"
 	logItem "blkid:$NL$(blkid)"
 
-	logItem "fdisk -l $BOOT_DEVICENAME"
-	logItem "$(fdisk -l $BOOT_DEVICENAME)"
+	if [[ -f $BOOT_DEVICENAME ]]; then
+		logItem "fdisk -l $BOOT_DEVICENAME"
+		logItem "$(fdisk -l $BOOT_DEVICENAME)"
+	fi
 
-	logItem "/boot/cmdline.txt"
-	logItem "$(cat /boot/cmdline.txt)"
+	if [[ -f "/boot/cmdline.txt" ]]; then
+		logItem "/boot/cmdline.txt"
+		logItem "$(cat /boot/cmdline.txt)"
+	fi
 
 	logItem "/etc/fstab"
 	logItem "$(cat /etc/fstab)"
@@ -5511,6 +5524,15 @@ done
 # set positional arguments in argument list $@
 set -- $PARAMS
 
+if (( ! $RESTORE )); then
+	lockingFramework
+	exlock_now
+	if (( $? )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
+		exitError $RC_MISC_ERROR
+	fi
+fi
+
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY"
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
 (( $IS_DEV )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_DEV_MESSAGE
@@ -5583,15 +5605,6 @@ fi
 setupEnvironment
 logOptions						# config parms already read
 
-if (( ! $RESTORE )); then
-	lockingFramework
-	exlock_now
-	if (( $? )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
-		exitError $RC_MISC_ERROR
-	fi
-fi
-
 writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_LOGFILE "$LOG_FILE_FINAL"
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
@@ -5617,4 +5630,3 @@ if isVersionDeprecated "$VERSION"; then
 fi
 
 doit #	no return for backup
-exit $rc
