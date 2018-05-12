@@ -90,6 +90,10 @@ if ! isMounted $BACKUP_MOUNT_POINT; then
 	WAS_MOUNTED=0
 	echo "--- Mounting $BACKUP_MOUNT_POINT"
 	mount $BACKUP_MOUNT_POINT	# no, mount it
+	if (( $? > 0 )); then
+		echo "Unable to mount $BACKUP_MOUNT_POINT"
+		exit 42
+	fi
 else
 	# was already mounted, don't unmount it at script end
 	WAS_MOUNTED=1
@@ -104,7 +108,7 @@ service apache2 stop
 service mysql stop
 
 # create backup
-. raspiBackup.sh -a ":" -o ":" $BACKUP_PATH     	  # ===> insert all additional parameters or use /usr/local/etc/raspiBackup.conf to pass all parameters
+raspiBackup.sh -a ":" -o ":" $BACKUP_PATH     	  # ===> insert all additional parameters or use /usr/local/etc/raspiBackup.conf to pass all parameters
 rc=$?
 
 # now start all services again in reverse order 	===> adapt to your environment
@@ -114,13 +118,9 @@ service apache2 start
 service samba start
 service nfs-kernel-server start
 
-# $BACKUP_MOUNT_POINT unmounted when script terminates only if it was mounted by this script
-
 if [[ $rc == 0 ]]; then
 	echo "Backup succeeded :-)"						# do whatever has to be done in case of success
 else
 	echo "Backup failed with rc $rc :-("			# do whatever has to be done in case of backup failure
 	exit $rc
 fi
-
-# now variable $BACKUPTARGET_DIR refers to the new backupdirectory and can be used for further backup data processing 
