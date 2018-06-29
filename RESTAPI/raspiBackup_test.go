@@ -37,7 +37,7 @@ func TestRouterGroupGETNoRootExistsRouteOK(t *testing.T) {
 	json.NewEncoder(&buf).Encode(&postPayload)
 
 	// RUN
-	w := PerformRequest(t, r, "POST", "/v1/raspiBackup?test", &buf)
+	w := PerformRequest(t, r, "POST", "/v1/raspiBackup?test=1", &buf)
 
 	// TEST
 	if w.StatusCode != http.StatusOK {

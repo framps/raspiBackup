@@ -65,6 +65,9 @@ func BackupHandler(c *gin.Context) {
 		return
 	}
 
+	test := c.DefaultQuery("test", "0")
+	testEnabled := test == "1"
+
 	var args string
 
 	if parm.Type != nil {
@@ -82,20 +85,43 @@ func BackupHandler(c *gin.Context) {
 	combined := command + " " + args
 	cmd := exec.Command("/bin/bash", "-c", combined)
 
-	stdoutStderr, err := cmd.CombinedOutput()
-	if err != nil {
-		msg := fmt.Sprintf("%+v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": msg, "output": string(stdoutStderr[:])})
+	if !testEnabled {
+		stdoutStderr, err := cmd.CombinedOutput()
+		if err != nil {
+			msg := fmt.Sprintf("%+v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": msg, "output": string(stdoutStderr[:])})
+		}
 	}
+	c.JSON(http.StatusOK, "")
+}
+
+func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
+
+	gin.SetMode(gin.ReleaseMode)
+	api := gin.Default()
+
+	var v1 *gin.RouterGroup
+
+	if passwordSet {
+		v1 = api.Group("v1", gin.BasicAuth(credentialMap))
+	} else {
+		v1 = api.Group("v1")
+	}
+
+	api.LoadHTMLGlob("templates/*.html")
+	api.Use(static.Serve("/assets", static.LocalFile("assets", false)))
+	api.NoRoute(NoRouteHandler)
+
+	v1.POST("/raspiBackup", BackupHandler)
+	v1.GET("/", IndexHandler)
+
+	return api
 }
 
 func main() {
 
 	listenAddress := flag.String("a", ":8080", "Listen address of server. Default: :8080")
 	flag.Parse()
-
-	gin.SetMode(gin.ReleaseMode)
-	api := gin.Default()
 
 	var passwordSet bool
 	var credentialMap = map[string]string{}
@@ -145,22 +171,9 @@ func main() {
 		fmt.Printf("WARN: REST API not protected with basic auth. %s not found\n", PasswordFile)
 	}
 
-	var v1 *gin.RouterGroup
-
-	if passwordSet {
-		v1 = api.Group("v1", gin.BasicAuth(credentialMap))
-	} else {
-		v1 = api.Group("v1")
-	}
-
-	api.LoadHTMLGlob("templates/*.html")
-	api.Use(static.Serve("/assets", static.LocalFile("assets", false)))
-	api.NoRoute(NoRouteHandler)
-
-	v1.POST("/raspiBackup", BackupHandler)
-	v1.GET("/", IndexHandler)
-
 	fmt.Printf("INFO: Server now listening on port %s\n", *listenAddress)
+
+	api := NewEngine(passwordSet, credentialMap)
 
 	api.Run(*listenAddress)
 }
