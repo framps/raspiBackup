@@ -1,5 +1,19 @@
 package main
 
+/*
+
+ Test skeleton to test REST prototype for raspiBackup
+
+ Test can be executed as unit test using the gin engine or as a system test by using a real running server.
+ Export variable HOST with the real server (e.g. http://localhost:8080) to use the server running on localhost or any other server
+
+ See https://www.linux-tips-and-tricks.de/en/backup for details about raspiBackup
+
+ If there is any requirement for a full blown REST API please contact the author
+
+ (c) 2018 - framp at linux-tips-and-tricks dot de
+
+*/
 import (
 	"bytes"
 	"encoding/json"
@@ -26,16 +40,16 @@ type Performer interface {
 	PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error)
 }
 
-type LocalPerformer struct {
+type UnittestHTTPClient struct {
 	Engine *gin.Engine
 }
 
-type RemotePerformer struct {
+type SystemtestHTTPCLient struct {
 	Host   string
 	Client *http.Client
 }
 
-func (p *LocalPerformer) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
+func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
 	t.Logf("Performing local call %s %s", requestType, path)
 	req, err := http.NewRequest(requestType, path, body)
 	if err != nil {
@@ -46,7 +60,7 @@ func (p *LocalPerformer) PerformRequest(t *testing.T, requestType string, path s
 	return w.Result(), nil
 }
 
-func (p *RemotePerformer) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
+func (p *SystemtestHTTPCLient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
 	path = "http://" + p.Host + path
 	t.Logf("Performing remote call %s %s", requestType, path)
 	req, err := http.NewRequest(requestType, path, body)
@@ -76,14 +90,13 @@ func TestRaspiBackup(t *testing.T) {
 
 	var performer Performer
 	var r *gin.Engine
-	var w *http.Response
 
 	if unitTest {
 		// SETUP
 		r = NewEngine(false, nil)
-		performer = &LocalPerformer{r}
+		performer = &UnittestHTTPClient{r}
 	} else {
-		performer = &RemotePerformer{host, &http.Client{}}
+		performer = &SystemtestHTTPCLient{host, &http.Client{}}
 	}
 
 	var buf bytes.Buffer
