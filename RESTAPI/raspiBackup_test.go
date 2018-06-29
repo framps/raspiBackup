@@ -10,13 +10,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const local = true
+
 type PostPayload struct {
 	Target string `json:"target"`
 	Tpe    string `json:"type"`
 	Keep   int    `json:"keep"`
 }
 
-func PerformRequest(t *testing.T, r *gin.Engine, requestType string, path string, body *bytes.Buffer) *http.Response {
+type Performer interface {
+	PerformRequest(t *testing.T, r *gin.Engine, requestType string, path string, body *bytes.Buffer) *http.Response
+}
+
+type LocalPerformer struct {
+	Dummy bool
+}
+
+func (p *LocalPerformer) PerformRequest(t *testing.T, r *gin.Engine, requestType string, path string, body *bytes.Buffer) *http.Response {
 
 	req, _ := http.NewRequest(requestType, path, body)
 	w := httptest.NewRecorder()
@@ -29,19 +39,26 @@ func PerformRequest(t *testing.T, r *gin.Engine, requestType string, path string
 }
 
 func TestRouterGroupGETNoRootExistsRouteOK(t *testing.T) {
-	// SETUP
-	r := NewEngine(false, nil)
+
+	var performer Performer
+	var r *gin.Engine
+	var w *http.Response
+
+	if local {
+		// SETUP
+		r = NewEngine(false, nil)
+		performer = &LocalPerformer{}
+	}
 
 	var buf bytes.Buffer
 	postPayload := PostPayload{Target: "/backup", Tpe: "rsync", Keep: 3}
 	json.NewEncoder(&buf).Encode(&postPayload)
 
 	// RUN
-	w := PerformRequest(t, r, "POST", "/v1/raspiBackup?test=1", &buf)
+	w = performer.PerformRequest(t, r, "POST", "/v1/raspiBackup?test=1", &buf)
 
 	// TEST
 	if w.StatusCode != http.StatusOK {
-		// If this fails, it's because httprouter needs to be updated to at least f78f58a0db
 		t.Errorf("Status code should be %v, was %d.", http.StatusNotFound, w.StatusCode)
 	}
 }
