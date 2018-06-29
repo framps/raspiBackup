@@ -91,8 +91,10 @@ func BackupHandler(c *gin.Context) {
 			msg := fmt.Sprintf("%+v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": msg, "output": string(stdoutStderr[:])})
 		}
+		c.JSON(http.StatusOK, "")
+	} else {
+		c.JSON(http.StatusOK, gin.H{"payload": parm})
 	}
-	c.JSON(http.StatusOK, "")
 }
 
 func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
