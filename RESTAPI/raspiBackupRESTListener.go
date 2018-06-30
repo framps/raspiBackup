@@ -93,10 +93,11 @@ func BackupHandler(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, "")
 	} else {
-		c.JSON(http.StatusOK, gin.H{"payload": parm})
+		c.JSON(http.StatusOK, parm)
 	}
 }
 
+// NewEngine - Return a new gine engine
 func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
 
 	gin.SetMode(gin.ReleaseMode)

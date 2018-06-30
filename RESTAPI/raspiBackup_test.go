@@ -17,12 +17,15 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -44,7 +47,7 @@ type UnittestHTTPClient struct {
 	Engine *gin.Engine
 }
 
-type SystemtestHTTPCLient struct {
+type SystemtestHTTPClient struct {
 	Host   string
 	Client *http.Client
 }
@@ -60,7 +63,7 @@ func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, pa
 	return w.Result(), nil
 }
 
-func (p *SystemtestHTTPCLient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
+func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
 	path = "http://" + p.Host + path
 	t.Logf("Performing remote call %s %s", requestType, path)
 	req, err := http.NewRequest(requestType, path, body)
@@ -96,22 +99,28 @@ func TestRaspiBackup(t *testing.T) {
 		r = NewEngine(false, nil)
 		performer = &UnittestHTTPClient{r}
 	} else {
-		performer = &SystemtestHTTPCLient{host, &http.Client{}}
+		performer = &SystemtestHTTPClient{host, &http.Client{}}
 	}
 
-	var buf bytes.Buffer
+	var sendBuffer bytes.Buffer
 	postPayload := PostPayload{Target: "/backup", Tpe: "rsync", Keep: 3}
-	json.NewEncoder(&buf).Encode(&postPayload)
+	json.NewEncoder(&sendBuffer).Encode(&postPayload)
 
 	// RUN
-	w, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", &buf)
-	if err != nil {
-		t.Errorf("Error occured: %s", err)
-		return
-	}
+	w, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", &sendBuffer)
+	require.NoError(t, err, "POST failed")
+
+	resultBuffer, err := ioutil.ReadAll(w.Body)
+	require.NoError(t, err, "POST readall failed")
+	t.Logf("HTTP body received: %+v", string(resultBuffer))
+	defer w.Body.Close()
 
 	// TEST
-	if w.StatusCode != http.StatusOK {
-		t.Errorf("Status code should be %v, was %d.", http.StatusOK, w.StatusCode)
-	}
+	var responsePayload PostPayload
+	err = json.Unmarshal(resultBuffer, &responsePayload)
+	require.NoError(t, err, "POST decode failed")
+
+	t.Logf("JSON Response: %+v", responsePayload)
+	assert.Equal(t, http.StatusOK, w.StatusCode)
+	assert.Equal(t, postPayload, responsePayload)
 }
