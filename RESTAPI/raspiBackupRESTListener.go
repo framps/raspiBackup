@@ -38,10 +38,19 @@ const (
 	PasswordFile = "/usr/local/etc/raspiBackup.auth"
 )
 
-type parameter struct {
+var (
+	defaultKeep = 3
+	defaultType = "rsync"
+)
+
+type Parameters struct {
 	Target string  `json:"target" binding:"required"`
 	Type   *string `json:"type,omitempty"`
 	Keep   *int    `json:"keep,omitempty"`
+}
+
+func logf(format string, a ...interface{}) {
+	fmt.Printf("SERVER --- "+format, a...)
 }
 
 // NoRouteHandler -
@@ -57,7 +66,7 @@ func IndexHandler(c *gin.Context) {
 // BackupHandler - handles requests for raspiBackup
 func BackupHandler(c *gin.Context) {
 
-	var parm parameter
+	var parm Parameters
 	err := c.BindJSON(&parm)
 	if err != nil {
 		msg := fmt.Sprintf("%+v", err)
@@ -68,8 +77,15 @@ func BackupHandler(c *gin.Context) {
 	test := c.DefaultQuery("test", "0")
 	testEnabled := test == "1"
 
+	logf("Request received: %+v\n", parm)
 	var args string
 
+	if parm.Keep == nil {
+		parm.Keep = &defaultKeep
+	}
+	if parm.Type == nil {
+		parm.Type = &defaultType
+	}
 	if parm.Type != nil {
 		args = "-t " + *parm.Type
 	}
@@ -83,6 +99,9 @@ func BackupHandler(c *gin.Context) {
 	command := "sudo " + Executable
 	args = `"` + args + `"`
 	combined := command + " " + args
+
+	logf("Executing command: %s\n", combined)
+
 	cmd := exec.Command("/bin/bash", "-c", combined)
 
 	if !testEnabled {
@@ -131,10 +150,10 @@ func main() {
 
 	// read credentials
 	if _, err := os.Stat(PasswordFile); err == nil {
-		fmt.Printf("INFO: Reading %v\n", PasswordFile)
+		logf("INFO: Reading %v\n", PasswordFile)
 		credentials, err := ioutil.ReadFile(PasswordFile)
 		if err != nil {
-			fmt.Printf("%+v", err)
+			logf("%+v", err)
 			os.Exit(42)
 		}
 
@@ -150,7 +169,7 @@ func main() {
 		}
 
 		if mode := fi.Mode(); mode&077 != 0 {
-			fmt.Printf("ERROR: %v not protected. %v\n", PasswordFile, mode)
+			logf("ERROR: %v not protected. %v\n", PasswordFile, mode)
 			os.Exit(42)
 		}
 
@@ -161,20 +180,20 @@ func main() {
 			if len(splitCredentials) == 2 {
 				uid, pwd := strings.TrimSpace(splitCredentials[0]), strings.TrimSpace(splitCredentials[1])
 				credentialMap[uid] = pwd
-				fmt.Printf("INFO: Line %d: Found credential definition for userid '%s'\n", i, uid)
+				logf("INFO: Line %d: Found credential definition for userid '%s'\n", i, uid)
 				passwordSet = true
 			} else {
 				if len(line) > 0 {
-					fmt.Printf("WARN: Line %d skipped. Found '%s' which is not a valid credential definition. Expected 'userid:password'\n", i, line)
+					logf("WARN: Line %d skipped. Found '%s' which is not a valid credential definition. Expected 'userid:password'\n", i, line)
 				}
 			}
 		}
 
 	} else {
-		fmt.Printf("WARN: REST API not protected with basic auth. %s not found\n", PasswordFile)
+		logf("WARN: REST API not protected with basic auth. %s not found\n", PasswordFile)
 	}
 
-	fmt.Printf("INFO: Server now listening on port %s\n", *listenAddress)
+	logf("INFO: Server now listening on port %s\n", *listenAddress)
 
 	api := NewEngine(passwordSet, credentialMap)
 

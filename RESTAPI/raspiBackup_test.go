@@ -7,6 +7,16 @@ package main
  Test can be executed as unit test using the gin engine or as a system test by using a real running server.
  Export variable HOST with the real server (e.g. http://localhost:8080) to use the server running on localhost or any other server
 
+ Run unit test with
+    go test . -v
+
+ Run system test with
+    Window1:
+        go run raspiBacupRESTListener.go
+    Window2:
+        export HOST="http://localhost:8080"
+        go test . -v
+
  See https://www.linux-tips-and-tricks.de/en/backup for details about raspiBackup
 
  If there is any requirement for a full blown REST API please contact the author
@@ -32,12 +42,6 @@ var (
 	unitTest bool   // execute test locally in ein engine
 	host     string // host to use for tests (http://localhost:8080 or http://raspibackup.remote.com)
 )
-
-type PostPayload struct {
-	Target string `json:"target"`
-	Tpe    string `json:"type"`
-	Keep   int    `json:"keep"`
-}
 
 // Performer - executes a http request and returns the response
 type Performer interface {
@@ -65,6 +69,7 @@ func NewPerformerFactory() Performer {
 	return &SystemtestHTTPClient{host, &http.Client{}}
 }
 
+// PerformRequest - performer implementation for unit tests using gin engine directly
 func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
 	t.Logf("Performing local call %s %s", requestType, path)
 	req, err := http.NewRequest(requestType, path, body)
@@ -76,6 +81,7 @@ func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, pa
 	return w.Result(), nil
 }
 
+// PerformRequest - performer implementation for system test using real server
 func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
 	path = p.Host + path
 	t.Logf("Performing remote call %s %s", requestType, path)
@@ -90,17 +96,19 @@ func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, 
 	return w, nil
 }
 
-func TestRaspiBackup(t *testing.T) {
+// TestRaspiBackupDefaults - Test whether api uses correct default values for keep and type
+func TestRaspiBackupDefaults(t *testing.T) {
 
 	// SETUP test
 	performer := NewPerformerFactory()
 
-	var sendBuffer bytes.Buffer
-	postPayload := PostPayload{Target: "/backup", Tpe: "rsync", Keep: 3}
-	json.NewEncoder(&sendBuffer).Encode(&postPayload)
+	// ENCODE request
+	requestPayload := Parameters{Target: "/backup"}
+	sendBytes, err := json.Marshal(requestPayload)
+	require.NoError(t, err, "POST marshal failed")
 
 	// RUN test
-	w, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", &sendBuffer)
+	w, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", bytes.NewBuffer(sendBytes))
 	require.NoError(t, err, "POST failed")
 
 	// READ response
@@ -110,12 +118,14 @@ func TestRaspiBackup(t *testing.T) {
 	defer w.Body.Close()
 
 	// DECODE response
-	var responsePayload PostPayload
+	var responsePayload Parameters
 	err = json.Unmarshal(resultBuffer, &responsePayload)
 	require.NoError(t, err, "POST decode failed")
 
-	// TEST results
+	// TEST response
 	t.Logf("JSON Response: %+v", responsePayload)
 	assert.Equal(t, http.StatusOK, w.StatusCode)
-	assert.Equal(t, postPayload, responsePayload)
+	requestPayload.Keep = &defaultKeep
+	requestPayload.Type = &defaultType
+	assert.Equal(t, requestPayload, responsePayload)
 }
