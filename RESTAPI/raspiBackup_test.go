@@ -2,7 +2,7 @@ package main
 
 /*
 
- Test skeleton to test REST prototype for raspiBackup
+ Test skeleton to test REST prototype for raspiBackup (sample code how to test REST apis with gin locally or remote)
 
  Test can be executed as unit test using the gin engine or as a system test by using a real running server.
  Export variable HOST with the real server (e.g. http://localhost:8080) to use the server running on localhost or any other server
@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	unitTest bool   // execute test locally
-	host     string // host to use for tests
+	unitTest bool   // execute test locally in ein engine
+	host     string // host to use for tests (http://localhost:8080 or http://raspibackup.remote.com)
 )
 
 type PostPayload struct {
@@ -39,17 +39,30 @@ type PostPayload struct {
 	Keep   int    `json:"keep"`
 }
 
+// Performer - executes a http request and returns the response
 type Performer interface {
 	PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error)
 }
 
+// UnittestHTTPClient - performer which uses gin engine directly. No real server used
 type UnittestHTTPClient struct {
 	Engine *gin.Engine
 }
 
+// SystemtestHTTPClient - performer which uses a http client to contact a real running server
 type SystemtestHTTPClient struct {
 	Host   string
 	Client *http.Client
+}
+
+// NewPerformerFactory - returns a performer depending on the environment variable HOST set or not set
+func NewPerformerFactory() Performer {
+	hostVar := os.Getenv("HOST")
+	if len(hostVar) == 0 {
+		r := NewEngine(false, nil)
+		return &UnittestHTTPClient{r}
+	}
+	return &SystemtestHTTPClient{host, &http.Client{}}
 }
 
 func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
@@ -64,7 +77,7 @@ func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, pa
 }
 
 func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
-	path = "http://" + p.Host + path
+	path = p.Host + path
 	t.Logf("Performing remote call %s %s", requestType, path)
 	req, err := http.NewRequest(requestType, path, body)
 	if err != nil {
@@ -77,49 +90,31 @@ func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, 
 	return w, nil
 }
 
-func setup() {
-	hostVar := os.Getenv("HOST")
-	if len(hostVar) == 0 {
-		unitTest = true
-	} else {
-		host = hostVar
-		unitTest = false
-	}
-}
-
 func TestRaspiBackup(t *testing.T) {
 
-	setup()
-
-	var performer Performer
-	var r *gin.Engine
-
-	if unitTest {
-		// SETUP
-		r = NewEngine(false, nil)
-		performer = &UnittestHTTPClient{r}
-	} else {
-		performer = &SystemtestHTTPClient{host, &http.Client{}}
-	}
+	// SETUP test
+	performer := NewPerformerFactory()
 
 	var sendBuffer bytes.Buffer
 	postPayload := PostPayload{Target: "/backup", Tpe: "rsync", Keep: 3}
 	json.NewEncoder(&sendBuffer).Encode(&postPayload)
 
-	// RUN
+	// RUN test
 	w, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", &sendBuffer)
 	require.NoError(t, err, "POST failed")
 
+	// READ response
 	resultBuffer, err := ioutil.ReadAll(w.Body)
 	require.NoError(t, err, "POST readall failed")
 	t.Logf("HTTP body received: %+v", string(resultBuffer))
 	defer w.Body.Close()
 
-	// TEST
+	// DECODE response
 	var responsePayload PostPayload
 	err = json.Unmarshal(resultBuffer, &responsePayload)
 	require.NoError(t, err, "POST decode failed")
 
+	// TEST results
 	t.Logf("JSON Response: %+v", responsePayload)
 	assert.Equal(t, http.StatusOK, w.StatusCode)
 	assert.Equal(t, postPayload, responsePayload)
