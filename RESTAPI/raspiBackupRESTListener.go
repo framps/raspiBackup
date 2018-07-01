@@ -34,7 +34,9 @@ import (
 )
 
 const (
-	Executable   = "/usr/local/bin/raspiBackup.sh"
+	// Executable - path to executable
+	Executable = "/usr/local/bin/raspiBackup.sh"
+	// PasswordFile - path to passwordfile
 	PasswordFile = "/usr/local/etc/raspiBackup.auth"
 )
 
@@ -77,7 +79,7 @@ func BackupHandler(c *gin.Context) {
 	err := c.BindJSON(&parm)
 	if err != nil {
 		msg := fmt.Sprintf("%+v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"Invalid payload received": msg})
+		c.JSON(http.StatusBadRequest, ErrorResponse{"Invalid payload received", msg})
 		return
 	}
 
@@ -107,21 +109,27 @@ func BackupHandler(c *gin.Context) {
 	args = `"` + args + `"`
 	combined := command + " " + args
 
+	if testEnabled {
+		c.JSON(http.StatusOK, parm)
+		return
+	}
+
+	if _, err2 := os.Stat(Executable); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{fmt.Sprintf("%s", err2), ""})
+		return
+	}
+
 	logf("Executing command: %s\n", combined)
 
 	cmd := exec.Command("/bin/bash", "-c", combined)
 
-	if !testEnabled {
-		stdoutStderr, err := cmd.CombinedOutput()
-		if err != nil {
-			msg := fmt.Sprintf("%+v", err)
-			c.JSON(http.StatusBadRequest, ErrorResponse{msg, string(stdoutStderr[:])})
-			return
-		}
-		c.JSON(http.StatusOK, "")
-	} else {
-		c.JSON(http.StatusOK, parm)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		msg := fmt.Sprintf("%+v", err)
+		c.JSON(http.StatusBadRequest, ErrorResponse{msg, string(stdoutStderr[:])})
+		return
 	}
+	c.JSON(http.StatusOK, "")
 }
 
 // NewEngine - Return a new gine engine

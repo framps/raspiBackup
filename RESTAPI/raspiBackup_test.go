@@ -115,7 +115,7 @@ func TestDefaults(t *testing.T) {
 	require.NoError(t, err, "POST marshal failed")
 
 	// CALL endpoint
-	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", bytes.NewBuffer(sendBytes))
+	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup", bytes.NewBuffer(sendBytes))
 	require.NoError(t, err, "POST failed")
 
 	// DECODE response
