@@ -2,7 +2,7 @@ package main
 
 /*
 
- Test skeleton to test REST prototype for raspiBackup (sample code how to test REST apis with gin locally or remote)
+ Test skeleton to test REST prototype for raspiBackup (sample code how to test REST apis with gin locally or with a remote server)
 
  Test can be executed as unit test using the gin engine or as a system test by using a real running server.
  Export variable HOST with the real server (e.g. http://localhost:8080) to use the server running on localhost or any other server
@@ -95,6 +95,7 @@ func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, 
 		return nil, nil, err
 	}
 	b, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		return nil, nil, err
 	}
