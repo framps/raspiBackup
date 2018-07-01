@@ -115,7 +115,7 @@ func TestDefaults(t *testing.T) {
 	require.NoError(t, err, "POST marshal failed")
 
 	// CALL endpoint
-	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup", bytes.NewBuffer(sendBytes))
+	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", bytes.NewBuffer(sendBytes))
 	require.NoError(t, err, "POST failed")
 
 	// DECODE response
@@ -131,13 +131,14 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, requestPayload, responsePayload)
 }
 
+// TestErrors - assumtion: raspiBackup installed but there does not exist the backup path /bkup
 func TestErrors(t *testing.T) {
 
 	// SETUP test
 	performer := NewPerformerFactory(t)
 
 	// ENCODE request
-	requestPayload := ParameterPayload{Target: "/backup"}
+	requestPayload := ParameterPayload{Target: "/bkup"}
 	sendBytes, err := json.Marshal(requestPayload)
 	require.NoError(t, err, "POST marshal failed")
 
