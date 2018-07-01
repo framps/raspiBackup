@@ -2,9 +2,12 @@
 TARGET=raspiBackupRESTListener
 BIN_DIR=bin
 MYFILES=$(shell go list ./... | grep -v /vendor/)
+GLIDE := $(shell command -v glide 2> /dev/null)
 
 setup:
+ifndef GLIDE
 	curl -s https://glide.sh/get | sh 2>/dev/null
+endif
 
 vendor: setup
 	glide install

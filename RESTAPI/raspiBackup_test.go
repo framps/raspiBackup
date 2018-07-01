@@ -24,6 +24,7 @@ package main
  (c) 2018 - framp at linux-tips-and-tricks dot de
 
 */
+
 import (
 	"bytes"
 	"encoding/json"
@@ -60,10 +61,10 @@ func NewPerformerFactory(t *testing.T) Performer {
 	if len(hostVar) == 0 {
 		t.Logf("Calling local gin engine")
 		r := NewEngine(false, nil)
-		return &UnittestHTTPClient{r}
+		return &UnittestHTTPClient{Engine: r}
 	}
 	t.Logf("Calling remote server at %s", hostVar)
-	return &SystemtestHTTPClient{hostVar, &http.Client{}}
+	return &SystemtestHTTPClient{Host: hostVar, Client: &http.Client{}}
 }
 
 // PerformRequest - performer implementation for unit tests using local gin engine
@@ -102,14 +103,14 @@ func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, 
 	return r, &b, nil
 }
 
-// TestRaspiBackupDefaults - Test whether api uses correct default values for keep and type
-func TestRaspiBackupDefaults(t *testing.T) {
+// TestDefaults - Test whether api uses correct default values for keep and type
+func TestDefaults(t *testing.T) {
 
 	// SETUP test
 	performer := NewPerformerFactory(t)
 
 	// ENCODE request
-	requestPayload := Parameters{Target: "/backup"}
+	requestPayload := ParameterPayload{Target: "/backup"}
 	sendBytes, err := json.Marshal(requestPayload)
 	require.NoError(t, err, "POST marshal failed")
 
@@ -118,7 +119,7 @@ func TestRaspiBackupDefaults(t *testing.T) {
 	require.NoError(t, err, "POST failed")
 
 	// DECODE response
-	var responsePayload Parameters
+	var responsePayload ParameterPayload
 	err = json.Unmarshal(*body, &responsePayload)
 	require.NoError(t, err, "POST decode failed")
 
@@ -128,4 +129,31 @@ func TestRaspiBackupDefaults(t *testing.T) {
 	requestPayload.Keep = &defaultKeep
 	requestPayload.Type = &defaultType
 	assert.Equal(t, requestPayload, responsePayload)
+}
+
+func TestErrors(t *testing.T) {
+
+	// SETUP test
+	performer := NewPerformerFactory(t)
+
+	// ENCODE request
+	requestPayload := ParameterPayload{Target: "/backup"}
+	sendBytes, err := json.Marshal(requestPayload)
+	require.NoError(t, err, "POST marshal failed")
+
+	// CALL endpoint
+	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup", bytes.NewBuffer(sendBytes))
+	require.NoError(t, err, "POST failed")
+
+	// DECODE response
+	var responsePayload ErrorResponse
+	err = json.Unmarshal(*body, &responsePayload)
+	t.Logf("Payload received: %s", string(*body))
+	require.NoError(t, err, "POST decode failed")
+
+	// TEST response
+	expectedResponse := ErrorResponse{Message: "exit status 107", Output: ""}
+	t.Logf("JSON Response: %+v", responsePayload)
+	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
+	assert.Equal(t, expectedResponse, responsePayload)
 }

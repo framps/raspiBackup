@@ -43,7 +43,14 @@ var (
 	defaultType = "rsync"
 )
 
-type Parameters struct {
+// ErrorResponse - Response returned in case of error
+type ErrorResponse struct {
+	Message string
+	Output  string
+}
+
+// ParameterPayload - payload with all the invocation parameters
+type ParameterPayload struct {
 	Target string  `json:"target" binding:"required"`
 	Type   *string `json:"type,omitempty"`
 	Keep   *int    `json:"keep,omitempty"`
@@ -55,7 +62,7 @@ func logf(format string, a ...interface{}) {
 
 // NoRouteHandler -
 func NoRouteHandler(c *gin.Context) {
-	c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+	c.JSON(http.StatusNotFound, ErrorResponse{"PAGE_NOT_FOUND", ""})
 }
 
 // IndexHandler -
@@ -66,7 +73,7 @@ func IndexHandler(c *gin.Context) {
 // BackupHandler - handles requests for raspiBackup
 func BackupHandler(c *gin.Context) {
 
-	var parm Parameters
+	var parm ParameterPayload
 	err := c.BindJSON(&parm)
 	if err != nil {
 		msg := fmt.Sprintf("%+v", err)
@@ -108,7 +115,8 @@ func BackupHandler(c *gin.Context) {
 		stdoutStderr, err := cmd.CombinedOutput()
 		if err != nil {
 			msg := fmt.Sprintf("%+v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": msg, "output": string(stdoutStderr[:])})
+			c.JSON(http.StatusBadRequest, ErrorResponse{msg, string(stdoutStderr[:])})
+			return
 		}
 		c.JSON(http.StatusOK, "")
 	} else {
