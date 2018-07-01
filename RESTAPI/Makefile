@@ -1,11 +1,7 @@
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := run
 TARGET=raspiBackupRESTListener
 BIN_DIR=bin
 MYFILES=$(shell go list ./... | grep -v /vendor/)
-
-default: run-linux
-
-all: build-raspi
 
 setup:
 	curl -s https://glide.sh/get | sh 2>/dev/null
@@ -13,10 +9,10 @@ setup:
 vendor: setup
 	glide install
 
-run-linux: vendor unit-test
+run:
 	go run ${TARGET}.go
 
-build-raspi: vendor unit-test
+build: vendor unit-test
 	OOS=linux GOARCH=arm GOARM=7 go build -o ${BIN_DIR}/${TARGET} ${TARGET}.go
 
 unit-test:

@@ -38,14 +38,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	unitTest bool   // execute test locally in ein engine
-	host     string // host to use for tests (http://localhost:8080 or http://raspibackup.remote.com)
-)
-
 // Performer - executes a http request and returns the response
 type Performer interface {
-	PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error)
+	PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, *[]byte, error)
 }
 
 // UnittestHTTPClient - performer which uses gin engine directly. No real server used
@@ -60,47 +55,61 @@ type SystemtestHTTPClient struct {
 }
 
 // NewPerformerFactory - returns a performer depending on the environment variable HOST set or not set
-func NewPerformerFactory() Performer {
+func NewPerformerFactory(t *testing.T) Performer {
 	hostVar := os.Getenv("HOST")
 	if len(hostVar) == 0 {
+		t.Logf("Calling local gin engine")
 		r := NewEngine(false, nil)
 		return &UnittestHTTPClient{r}
 	}
-	return &SystemtestHTTPClient{host, &http.Client{}}
+	t.Logf("Calling remote server at %s", hostVar)
+	return &SystemtestHTTPClient{hostVar, &http.Client{}}
 }
 
-// PerformRequest - performer implementation for unit tests using gin engine directly
-func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
+// PerformRequest - performer implementation for unit tests using local gin engine
+func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, *[]byte, error) {
 	t.Logf("Performing local call %s %s", requestType, path)
 	req, err := http.NewRequest(requestType, path, body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	w := httptest.NewRecorder()
-	p.Engine.ServeHTTP(w, req)
-	return w.Result(), nil
+	r := httptest.NewRecorder()
+	p.Engine.ServeHTTP(r, req)
+
+	if r == nil {
+		return nil, nil, err
+	}
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+	return r.Result(), &b, nil
 }
 
 // PerformRequest - performer implementation for system test using real server
-func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, error) {
+func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, path string, body *bytes.Buffer) (*http.Response, *[]byte, error) {
 	path = p.Host + path
 	t.Logf("Performing remote call %s %s", requestType, path)
 	req, err := http.NewRequest(requestType, path, body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	w, err := p.Client.Do(req)
+	r, err := p.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return w, nil
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+	return r, &b, nil
 }
 
 // TestRaspiBackupDefaults - Test whether api uses correct default values for keep and type
 func TestRaspiBackupDefaults(t *testing.T) {
 
 	// SETUP test
-	performer := NewPerformerFactory()
+	performer := NewPerformerFactory(t)
 
 	// ENCODE request
 	requestPayload := Parameters{Target: "/backup"}
@@ -108,18 +117,12 @@ func TestRaspiBackupDefaults(t *testing.T) {
 	require.NoError(t, err, "POST marshal failed")
 
 	// RUN test
-	w, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", bytes.NewBuffer(sendBytes))
+	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", bytes.NewBuffer(sendBytes))
 	require.NoError(t, err, "POST failed")
-
-	// READ response
-	resultBuffer, err := ioutil.ReadAll(w.Body)
-	require.NoError(t, err, "POST readall failed")
-	t.Logf("HTTP body received: %+v", string(resultBuffer))
-	defer w.Body.Close()
 
 	// DECODE response
 	var responsePayload Parameters
-	err = json.Unmarshal(resultBuffer, &responsePayload)
+	err = json.Unmarshal(*body, &responsePayload)
 	require.NoError(t, err, "POST decode failed")
 
 	// TEST response
