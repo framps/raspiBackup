@@ -95,6 +95,7 @@ func (p *SystemtestHTTPClient) PerformRequest(t *testing.T, requestType string, 
 		return nil, nil, err
 	}
 	b, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		return nil, nil, err
 	}
