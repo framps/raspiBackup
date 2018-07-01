@@ -75,13 +75,9 @@ func (p *UnittestHTTPClient) PerformRequest(t *testing.T, requestType string, pa
 	}
 	r := httptest.NewRecorder()
 	p.Engine.ServeHTTP(r, req)
-
-	if r == nil {
-		return nil, nil, err
-	}
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, nil, err
+	b, err2 := ioutil.ReadAll(r.Body)
+	if err2 != nil {
+		return nil, nil, err2
 	}
 	return r.Result(), &b, nil
 }
@@ -116,7 +112,7 @@ func TestRaspiBackupDefaults(t *testing.T) {
 	sendBytes, err := json.Marshal(requestPayload)
 	require.NoError(t, err, "POST marshal failed")
 
-	// RUN test
+	// CALL endpoint
 	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup?test=1", bytes.NewBuffer(sendBytes))
 	require.NoError(t, err, "POST failed")
 
