@@ -121,22 +121,20 @@ func BackupHandler(c *gin.Context) {
 
 	logf("Executing command: %s\n", combined)
 
-	cmd := exec.Command("/bin/bash", "-c", combined)
-
-	stdoutStderr, err := cmd.CombinedOutput()
+	out, err := exec.Command("bash", "-c", combined).CombinedOutput()
 	if err != nil {
-		msg := fmt.Sprintf("%+v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{msg, string(stdoutStderr[:])})
+		c.JSON(http.StatusBadRequest, ErrorResponse{err.Error(), string(out)})
 		return
 	}
-	c.JSON(http.StatusOK, "")
+	c.JSON(http.StatusOK, string(out))
+
 }
 
 // NewEngine - Return a new gine engine
 func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
 
 	gin.SetMode(gin.ReleaseMode)
-	api := gin.Default()
+	api := gin.New()
 
 	var v1 *gin.RouterGroup
 
