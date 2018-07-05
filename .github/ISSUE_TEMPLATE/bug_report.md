@@ -1,35 +1,9 @@
----
-name: Bug report
-about: Create a report to help us improve
+Before opening a big issue please check
 
----
+* [ ] Did you check whether your message was listed on the messages page and the suggested action fixes your issue? [English](https://linux-tips-and-tricks.de.www289.your-server.de/en/rmessages) - [German](https://linux-tips-and-tricks.de.www289.your-server.de/de/fehlermeldungen)
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+If this doesn't help please provide following detailes:
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+* [ ] Which operating system do you use? Provide the contents of /etc/os-release
+* [ ] Provide all messages written by raspiBackup
+* [ ] Attach the debug log to the issue which will be created by raspiBackup with option `-l debug`
