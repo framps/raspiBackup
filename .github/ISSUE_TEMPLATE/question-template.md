@@ -1,6 +1,6 @@
 ---
-name: Question template
-about: Answer a question
+name: Question 
+about: Ask a question about raspiBackup
 
 ---
 
