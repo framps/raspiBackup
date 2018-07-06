@@ -1,6 +1,6 @@
 ---
 name: Problem report
-about: Report an issue
+about: Create an issue for raspiBackup
 
 ---
 
