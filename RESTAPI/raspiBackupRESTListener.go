@@ -51,6 +51,10 @@ type ErrorResponse struct {
 	Output  string
 }
 
+type ExecutionResponse struct {
+	Output string
+}
+
 // ParameterPayload - payload with all the invocation parameters
 type ParameterPayload struct {
 	Target string  `json:"target" binding:"required"`
@@ -126,7 +130,7 @@ func BackupHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{err.Error(), string(out)})
 		return
 	}
-	c.JSON(http.StatusOK, string(out))
+	c.JSON(http.StatusOK, ExecutionResponse{Output: string(out)})
 
 }
 

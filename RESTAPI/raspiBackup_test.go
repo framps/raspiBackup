@@ -35,6 +35,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -156,5 +157,53 @@ func TestErrors(t *testing.T) {
 	expectedResponse := ErrorResponse{Message: "exit status 107", Output: ""}
 	t.Logf("JSON Response: %+v", responsePayload)
 	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
+	assert.Equal(t, expectedResponse, responsePayload)
+}
+
+// TestMock -
+func TestMock(t *testing.T) {
+
+	type response struct {
+		Msg string
+	}
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	rsp := ExecutionResponse{Output: "Done"}
+
+	httpmock.RegisterResponder("POST", "/v1/raspiBackup",
+		func(req *http.Request) (*http.Response, error) {
+			resp, err := httpmock.NewJsonResponse(200, rsp)
+			if err != nil {
+				return httpmock.NewJsonResponse(500, ErrorResponse{Message: "Failure", Output: "???"})
+			}
+			return resp, nil
+		},
+	)
+
+	// SETUP test
+	performer := NewPerformerFactory(t)
+
+	// ENCODE request
+	requestPayload := ParameterPayload{Target: "/bkup"}
+	sendBytes, err := json.Marshal(requestPayload)
+	require.NoError(t, err, "POST marshal failed")
+
+	// CALL endpoint
+	w, body, err := performer.PerformRequest(t, "POST", "/v1/raspiBackup", bytes.NewBuffer(sendBytes))
+	require.NoError(t, err, "POST failed")
+
+	// DECODE response
+	var responsePayload ExecutionResponse
+	t.Logf("Payload: %s", string(*body))
+	err = json.Unmarshal(*body, &responsePayload)
+	t.Logf("Payload received: %s", string(*body))
+	require.NoError(t, err, "POST decode failed")
+
+	// TEST response
+	assert.Equal(t, http.StatusOK, w.StatusCode)
+	expectedResponse := ExecutionResponse{Output: "Done"}
+	t.Logf("JSON Response: %+v", responsePayload)
 	assert.Equal(t, expectedResponse, responsePayload)
 }
