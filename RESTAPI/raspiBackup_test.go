@@ -195,7 +195,9 @@ func TestMock(t *testing.T) {
 	}
 
 	// mock only works if a http client is used
+	oldHost := os.Getenv("HOST")
 	os.Setenv("HOST", "http://localhost:8080")
+	defer os.Setenv("HOST", oldHost)
 
 	httpmock.Activate()
 	httpmock.RegisterNoResponder(httpmock.InitialTransport.RoundTrip) // non mocked urls are passed through

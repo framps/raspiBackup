@@ -19,7 +19,7 @@ GET /v1/raspiBackup - returns version in json
 POST /v1/raspiBackup&test=1 - returns the payload passed in with defaults set in json
 GET / - returns a nice welcome html page
 
-(c) 2017 - framp at linux-tips-and-tricks dot de
+(c) 2017-2018 - framp at linux-tips-and-tricks dot de
 
 */
 
@@ -116,6 +116,18 @@ func VersionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, VersionResponse{versionParts[1], versionParts[3], versionParts[5], versionParts[7]})
 }
 
+// QueryHandler -
+func QueryHandler(c *gin.Context) {
+
+	value, exists := c.GetQuery("value")
+
+	if !exists {
+		c.JSON(400, gin.H{"value": "", "exists": false})
+		return
+	}
+	c.JSON(200, gin.H{"value": value, "exists": true})
+}
+
 // BackupHandler - handles requests for raspiBackup
 func BackupHandler(c *gin.Context) {
 
@@ -158,7 +170,7 @@ func BackupHandler(c *gin.Context) {
 		return
 	}
 
-	if _, err := os.Stat(Executable); err != nil {
+	if _, err = os.Stat(Executable); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{fmt.Sprintf("%s", err), ""})
 		return
 	}
@@ -195,6 +207,7 @@ func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
 	root.GET("/", IndexHandler)
 	v1.POST("/raspiBackup", BackupHandler)
 	v1.GET("/raspiBackup", VersionHandler)
+	v1.GET("/raspiBackup/query", QueryHandler)
 
 	return api
 }
