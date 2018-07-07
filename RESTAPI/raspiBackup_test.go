@@ -241,3 +241,55 @@ func TestMock(t *testing.T) {
 	t.Logf("JSON Response: %+v", responsePayload)
 	assert.Equal(t, expectedResponse, responsePayload)
 }
+
+// TestParam -
+func TestParam(t *testing.T) {
+
+	type response struct {
+		Msg string
+	}
+
+	// mock only works if a http client is used
+	oldHost := os.Getenv("HOST")
+	os.Setenv("HOST", "http://localhost:8080")
+	defer os.Setenv("HOST", oldHost)
+
+	httpmock.Activate()
+	httpmock.RegisterNoResponder(httpmock.InitialTransport.RoundTrip) // non mocked urls are passed through
+	defer httpmock.DeactivateAndReset()
+
+	httpmock.RegisterResponder("GET", "/v1/raspiBackup/param/10",
+		func(req *http.Request) (*http.Response, error) {
+			t.Logf("MOCKED REQUEST served: %s", req.URL)
+			resp, err := httpmock.NewJsonResponse(200, nil)
+			if err != nil {
+				return httpmock.NewJsonResponse(500, ErrorResponse{Message: "Failure", Output: "???"})
+			}
+			return resp, nil
+		},
+	)
+
+	// SETUP test
+	performer := NewPerformerFactory(t)
+
+	// CALL endpoint
+	var b []byte
+	w, body, err := performer.PerformRequest(t, "GET", "/v1/raspiBackup/param/11", bytes.NewBuffer(b))
+	require.NoError(t, err, "GET failed")
+
+	// DECODE response
+	type parmResponse struct {
+		value  string
+		exists bool
+	}
+
+	var r parmResponse
+	t.Logf("Payload: %s", string(*body))
+	err = json.Unmarshal(*body, &r)
+	t.Logf("Payload received: %s", string(*body))
+	require.NoError(t, err, "GET decode failed")
+
+	// TEST response
+	assert.Equal(t, http.StatusOK, w.StatusCode)
+	t.Logf("JSON Response: %+v", r)
+}
