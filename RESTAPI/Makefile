@@ -1,8 +1,10 @@
-.DEFAULT_GOAL := run
+.DEFAULT_GOAL := all
 TARGET=raspiBackupRESTListener
 BIN_DIR=bin
 MYFILES=$(shell go list ./... | grep -v /vendor/)
 GLIDE := $(shell command -v glide 2> /dev/null)
+
+all: setup vendor build unit-test run
 
 setup:
 ifndef GLIDE
