@@ -14,6 +14,11 @@ package main
  To invoke raspiBackup via REST use follwing command:
      curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v1/raspiBackup
 
+Other endpoints:
+GET /v1/raspiBackup - returns version in json
+POST /v1/raspiBackup&test=1 - returns the payload passed in with defaults set in json
+GET / - returns a nice welcome html page
+
 (c) 2017 - framp at linux-tips-and-tricks dot de
 
 */
@@ -45,12 +50,22 @@ var (
 	defaultType = "rsync"
 )
 
+// VersionResponse -
+// Version: 0.6.4-beta CommitSHA: d2a3b68 CommitDate: 2018-06-30 CommitTime: 15:39:24
+type VersionResponse struct {
+	Version    string
+	CommitSHA  string
+	CommitDate string
+	CommitTime string
+}
+
 // ErrorResponse - Response returned in case of error
 type ErrorResponse struct {
 	Message string
 	Output  string
 }
 
+// ExecutionResponse -
 type ExecutionResponse struct {
 	Output string
 }
@@ -74,6 +89,31 @@ func NoRouteHandler(c *gin.Context) {
 // IndexHandler -
 func IndexHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
+}
+
+// VersionHandler -
+func VersionHandler(c *gin.Context) {
+
+	if _, err := os.Stat(Executable); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{fmt.Sprintf("%s", err), ""})
+		return
+	}
+
+	command := "sudo " + Executable + " --version"
+	logf("Executing command: %s\n", command)
+
+	out, err := exec.Command("bash", "-c", command).CombinedOutput()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{err.Error(), string(out)})
+		return
+	}
+	s := strings.Replace(string(out), "\n", "", -1)
+	versionParts := strings.Split(s, " ")
+	if len(versionParts) != 8 {
+		c.JSON(500, ErrorResponse{"Unexpected version string", string(out)})
+		return
+	}
+	c.JSON(http.StatusOK, VersionResponse{versionParts[1], versionParts[3], versionParts[5], versionParts[7]})
 }
 
 // BackupHandler - handles requests for raspiBackup
@@ -118,8 +158,8 @@ func BackupHandler(c *gin.Context) {
 		return
 	}
 
-	if _, err2 := os.Stat(Executable); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{fmt.Sprintf("%s", err2), ""})
+	if _, err := os.Stat(Executable); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{fmt.Sprintf("%s", err), ""})
 		return
 	}
 
@@ -137,9 +177,9 @@ func BackupHandler(c *gin.Context) {
 // NewEngine - Return a new gine engine
 func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
 
-	gin.SetMode(gin.ReleaseMode)
 	api := gin.New()
 
+	root := api.Group("")
 	var v1 *gin.RouterGroup
 
 	if passwordSet {
@@ -152,8 +192,9 @@ func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
 	api.Use(static.Serve("/assets", static.LocalFile("assets", false)))
 	api.NoRoute(NoRouteHandler)
 
+	root.GET("/", IndexHandler)
 	v1.POST("/raspiBackup", BackupHandler)
-	v1.GET("/", IndexHandler)
+	v1.GET("/raspiBackup", VersionHandler)
 
 	return api
 }

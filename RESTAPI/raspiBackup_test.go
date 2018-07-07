@@ -160,6 +160,33 @@ func TestErrors(t *testing.T) {
 	assert.Equal(t, expectedResponse, responsePayload)
 }
 
+// TestVersion -
+func TestVersion(t *testing.T) {
+
+	// SETUP test
+	performer := NewPerformerFactory(t)
+
+	// CALL endpoint
+	var buffer bytes.Buffer
+	w, body, err := performer.PerformRequest(t, "GET", "/v1/raspiBackup", &buffer)
+	require.NoError(t, err, "GET failed")
+
+	// DECODE response
+	var responsePayload VersionResponse
+	t.Logf("Payload: %s", string(*body))
+	err = json.Unmarshal(*body, &responsePayload)
+	t.Logf("Payload received: %s", string(*body))
+	require.NoError(t, err, "GET decode failed")
+
+	// TEST response
+	assert.Equal(t, http.StatusOK, w.StatusCode)
+	t.Logf("JSON Response: %+v", responsePayload)
+	assert.NotZero(t, responsePayload.CommitDate)
+	assert.NotZero(t, responsePayload.CommitTime)
+	assert.NotZero(t, responsePayload.CommitSHA)
+	assert.NotZero(t, responsePayload.Version)
+}
+
 // TestMock -
 func TestMock(t *testing.T) {
 
@@ -167,13 +194,18 @@ func TestMock(t *testing.T) {
 		Msg string
 	}
 
+	// mock only works if a http client is used
+	os.Setenv("HOST", "http://localhost:8080")
+
 	httpmock.Activate()
+	httpmock.RegisterNoResponder(httpmock.InitialTransport.RoundTrip) // non mocked urls are passed through
 	defer httpmock.DeactivateAndReset()
 
 	rsp := ExecutionResponse{Output: "Done"}
 
 	httpmock.RegisterResponder("POST", "/v1/raspiBackup",
 		func(req *http.Request) (*http.Response, error) {
+			t.Logf("MOCKED REQUEST served")
 			resp, err := httpmock.NewJsonResponse(200, rsp)
 			if err != nil {
 				return httpmock.NewJsonResponse(500, ErrorResponse{Message: "Failure", Output: "???"})
