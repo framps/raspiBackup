@@ -17,6 +17,8 @@ package main
 Other endpoints:
 GET /v1/raspiBackup - returns version in json
 POST /v1/raspiBackup&test=1 - returns the payload passed in with defaults set in json
+GET /v1/raspiBackup/query?value=n - return a payload telling whether a query parm 'value' was passed and what's the value
+GET /v1/raspiBackup/param/:param - return a payload telling whether param was passed and what's the value
 GET / - returns a nice welcome html page
 
 (c) 2017-2018 - framp at linux-tips-and-tricks dot de
@@ -128,6 +130,18 @@ func QueryHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"value": value, "exists": true})
 }
 
+// ParamHandler -
+func ParamHandler(c *gin.Context) {
+
+	param := c.Param("param")
+
+	if len(param) == 0 {
+		c.JSON(400, gin.H{"param": param, "exists": false})
+		return
+	}
+	c.JSON(200, gin.H{"param": param, "exists": true})
+}
+
 // BackupHandler - handles requests for raspiBackup
 func BackupHandler(c *gin.Context) {
 
@@ -208,6 +222,7 @@ func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
 	v1.POST("/raspiBackup", BackupHandler)
 	v1.GET("/raspiBackup", VersionHandler)
 	v1.GET("/raspiBackup/query", QueryHandler)
+	v1.GET("/raspiBackup/param/:param", ParamHandler)
 
 	return api
 }
