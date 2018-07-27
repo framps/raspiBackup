@@ -134,12 +134,15 @@ func QueryHandler(c *gin.Context) {
 func ParamHandler(c *gin.Context) {
 
 	param := c.Param("param")
+	optional := c.Param("optional")
+
+	fmt.Printf("Param: %s Optional: %s\n", param, optional)
 
 	if len(param) == 0 {
-		c.JSON(400, gin.H{"param": param, "exists": false})
+		c.JSON(400, gin.H{"param": param, "exists": false, "optional": optional})
 		return
 	}
-	c.JSON(200, gin.H{"param": param, "exists": true})
+	c.JSON(200, gin.H{"param": param, "exists": true, "optional": optional})
 }
 
 // BackupHandler - handles requests for raspiBackup
@@ -222,7 +225,7 @@ func NewEngine(passwordSet bool, credentialMap gin.Accounts) *gin.Engine {
 	v1.POST("/raspiBackup", BackupHandler)
 	v1.GET("/raspiBackup", VersionHandler)
 	v1.GET("/raspiBackup/query", QueryHandler)
-	v1.GET("/raspiBackup/param/:param", ParamHandler)
+	v1.GET("/raspiBackup/param/:param/*optional", ParamHandler)
 
 	return api
 }
