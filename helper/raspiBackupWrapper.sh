@@ -3,7 +3,7 @@
 #######################################################################################################################
 #
 # 	Sample script to wrap raspiBackup.sh in order to mount and unmount the backup device
-# 	and start and stop services
+# 	and start postprocessing programs like pishrink or raspiBackupRestore2Image
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
@@ -29,13 +29,13 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.4"
+VERSION="0.2.4.1"
 
-GIT_DATE="$Date: 2018-05-11 21:59:42 +0200$"
+GIT_DATE="$Date: 2018-05-04 11:20:20 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 1c3e4ff$"
+GIT_COMMIT="$Sha1: 0e667bb$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -148,23 +148,9 @@ else
 	echo "--- $BACKUP_MOUNT_POINT already mounted"
 fi
 
-# now stop all active services  					===> adapt to your environment
-
-service nfs-kernel-server stop
-service samba stop
-service apache2 stop
-service mysql stop
-
 # create backup
-raspiBackup.sh -a ":" -o ":" $BACKUP_PATH     	  # ===> insert all additional parameters or use /usr/local/etc/raspiBackup.conf to pass all parameters
+raspiBackup.sh      	  # ===> configure all options in /usr/local/etc/raspiBackup.conf. Don't forget -a and -o options
 rc=$?
-
-# now start all services again in reverse order 	===> adapt to your environment
-
-service mysql start
-service apache2 start
-service samba start
-service nfs-kernel-server start
 
 # $BACKUP_MOUNT_POINT unmounted when script terminates only if it was mounted by this script
 
