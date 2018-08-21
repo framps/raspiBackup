@@ -2,7 +2,7 @@
 #
 #######################################################################################################################
 #
-# Send an email using the functions from raspiBackup, based of version 0.6.3.1
+# Send an email using the functions from raspiBackup, based of version 0.6.4
 # Written by kmbach 2017
 #
 # Using: raspiImageMail.sh <msgTitle> <msg> [<attach>]
@@ -39,7 +39,7 @@
 # will be sent in an eMail.
 #
 # Base:
-# raspiBackup.sh VERSION="0.6.3.1"
+# raspiBackup.sh VERSION="0.6.4"
 #
 # Prerequisites:
 # -  raspiImageMail.sh, raspiBackup.sh, raspiBackupRestore2Image.sh and pishrink.sh
