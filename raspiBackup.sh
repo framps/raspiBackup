@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-08-21 21:03:50 +0200$"
+GIT_DATE="$Date: 2018-08-22 20:17:30 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 8f3b75d$"
+GIT_COMMIT="$Sha1: 3452782$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -235,6 +235,7 @@ RC_NATIVE_RESTORE_FAILED=117
 RC_DEVICES_NOTFOUND=118
 RC_CREATE_ERROR=119
 RC_MISSING_COMMANDS=120
+RC_NO_BOOT_FOUND=121
 
 LOGGING_ENABLED=0
 
@@ -883,6 +884,9 @@ MSG_DE[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot und root auf dems
 MSG_RESTORETEST_REQUIRED=202
 MSG_EN[$MSG_RESTORETEST_REQUIRED]="RBK0202W: Friendly reminder: Execute now a restore test. You will be reminded %s times again."
 MSG_DE[$MSG_RESTORETEST_REQUIRED]="RBK0201W: Freundlicher Hinweis: Führe einen Restoretest durch. Du wirst noch %s mal erinnert werden."
+MSG_NO_BOOT_DEVICE_DISOVERED=203
+MSG_EN[$MSG_NO_BOOT_DEVICE_DISOVERED]="RBK0203E: Unable to discover boot device. Please report this issue with a debug log created with option '-l debug'."
+MSG_DE[$MSG_NO_BOOT_DEVICE_DISOVERED]="RBK0203E: Boot device kann nicht erkannt werden. Bitte das Problem mit einem Debuglog welches mit Option '-l debug' erstellt wird berichten."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3890,6 +3894,7 @@ function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3, returns 0:de
 		r="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
 	fi
 
+	echo "$r"
 	logExit "deviceInfo: $r"
 }
 
@@ -3968,6 +3973,11 @@ function inspect4Backup() {
 
 			logItem "boot: ${boot[@]}"
 			logItem "root: ${root[@]}"
+
+			if [[  -z "$boot" || -z "$root" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
+				exitError $RC_NO_BOOT_FOUND
+			fi
 
 			BOOT_DEVICE="${boot[0]}"
 			local rootDevice="${root[0]}"
