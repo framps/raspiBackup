@@ -62,8 +62,8 @@ usage: raspiBackup.sh [option]* {backupDirectory | backupFile}
 
 ## Detailed information
 
- * [English](https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy)
- * [German](https://www.linux-tips-and-tricks.de/de/raspibackupcategoryy)
+ * [English](https://www.linux-tips-and-tricks.de/en/raspibackup)
+ * [German](https://www.linux-tips-and-tricks.de/en/backup)
 
 # Miscellaneous tools and utilities
 
