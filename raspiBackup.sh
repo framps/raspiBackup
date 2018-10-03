@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-08-22 20:17:30 +0200$"
+GIT_DATE="$Date: 2018-10-03 11:42:54 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 3452782$"
+GIT_COMMIT="$Sha1: 10a37b4$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -209,8 +209,17 @@ SHARED_BOOT_DIRECTORY=0
 BOOT_TAR_EXT="tmg"
 BOOT_DD_EXT="img"
 
+# Commands used by raspiBackup and which have to be available
 # [command]=package
-declare -A REQUIRED_COMMANDS=( ["parted"]="parted" ["fsck.vfat"]="dosfstools" ["e2label"]="e2fsprogs" ["dosfslabel"]="dosfstools" ["fdisk"]="util-linux" ["blkid"]="util-linux" ["sfdisk"]="util-linux" )
+declare -A REQUIRED_COMMANDS=( \
+		["parted"]="parted" \
+		["fsck.vfat"]="dosfstools" \
+		["e2label"]="e2fsprogs" \
+		["dosfslabel"]="dosfstools" \
+		["fdisk"]="util-linux" \
+		["blkid"]="util-linux" \
+		["sfdisk"]="util-linux" \
+		)
 # ["btrfs"]="btrfs-tools"
 
 # possible script exit codes
@@ -528,8 +537,8 @@ MSG_UNKNOWN_OPTION=89
 MSG_EN[$MSG_UNKNOWN_OPTION]="RBK0089E: Unknown option %s."
 MSG_DE[$MSG_UNKNOWN_OPTION]="RBK0089E: Unbekannte Option %s."
 MSG_OPTION_REQUIRES_PARAMETER=90
-MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s requires a parameter."
-MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s erwartet ein Argument."
+MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %1 requires a parameter. Prefix an existing parameter with \\."
+MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %1 erwartet einen Parameter. Stelle einem existierenden Parameter \\ voran."
 MSG_MENTION_HELP=91
 MSG_EN[$MSG_MENTION_HELP]="RBK0091I: Invoke '%s -h' to get more detailed information of all script invocation parameters."
 MSG_DE[$MSG_MENTION_HELP]="RBK0091I: '%s -h' liefert eine detailierte Beschreibung aller Scriptaufrufoptionen."
@@ -852,14 +861,14 @@ MSG_EN[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> NOTE  <========= \
 ${NL}!!! RBK0173W: This is a development version and should not be used in production. \
 ${NL}!!! RBK0173W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> HINWEIS <========= \
-${NL}!!! RBK0173W: Dieses ist ein Entwicklerversion welcher nicht in Produktion benutzt werden sollte. \
+${NL}!!! RBK0173W: Dieses ist eine Entwicklerversion welcher nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0173W: =========> HINWEIS <========="
 MSG_MISSING_COMMANDS=193
 MSG_EN[$MSG_MISSING_COMMANDS]="RBK0193E: Missing required commands '%s'."
 MSG_DE[$MSG_MISSING_COMMANDS]="RBK0193E: Erforderliche Befehle '%s' nicht vorhanden."
 MSG_MISSING_PACKAGES=194
-MSG_EN[$MSG_MISSING_PACKAGES]="RBK0194E: Missing required packages '%s'."
-MSG_DE[$MSG_MISSING_PACKAGES]="RBK0194E: Erforderliche Pakete '%s' nicht installiert."
+MSG_EN[$MSG_MISSING_PACKAGES]="RBK0194E: Missing required packages. Install them with 'sudo apt-get install %1'."
+MSG_DE[$MSG_MISSING_PACKAGES]="RBK0194E: Erforderliche Pakete nicht installiert. Installiere sie mit 'sudo apt-get install %1'"
 MSG_SAVE_LOGFILE=195
 MSG_EN[$MSG_SAVE_LOGFILE]="RBK0195I: Logfile saved in %s."
 MSG_DE[$MSG_SAVE_LOGFILE]="RBK0195I: Logdatei wird in %s gesichert."
@@ -876,11 +885,11 @@ MSG_MISSING_RESTOREDEVICE_OPTION=199
 MSG_EN[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -R requires also option -d."
 MSG_DE[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -r benötigt auch Option -d."
 MSG_SHARED_BOOT_DEVICE=200
-MSG_EN[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot and root located on same device %s."
-MSG_DE[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot und root befinden sich auf demselben Gerät %s."
+MSG_EN[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot and / located on same device %s."
+MSG_DE[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot und / befinden sich auf demselben Gerät %s."
 MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED=201
-MSG_EN[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot and root located on same device and right now not supported with backuptype %s. Use dd"
-MSG_DE[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot und root auf demselben Gerät sind vorläufig nicht unterstützt bei dem Backuptyp %s. Benutze dd"
+MSG_EN[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot and / located on same device and right now not supported with backuptype %s. Use dd"
+MSG_DE[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot und / auf demselben Gerät sind vorläufig nicht unterstützt bei dem Backuptyp %s. Benutze dd"
 MSG_RESTORETEST_REQUIRED=202
 MSG_EN[$MSG_RESTORETEST_REQUIRED]="RBK0202W: Friendly reminder: Execute now a restore test. You will be reminded %s times again."
 MSG_DE[$MSG_RESTORETEST_REQUIRED]="RBK0201W: Freundlicher Hinweis: Führe einen Restoretest durch. Du wirst noch %s mal erinnert werden."
@@ -1054,12 +1063,22 @@ function writeToConsole() {  # msglevel messagenumber message
 	if [[ ( $level -le $MSG_LEVEL ) ]]; then
 		msg="$(getMessageText $LANGUAGE "$@")"
 
+# --- RBK0105I: Deleting new backup directory /backup/obelix/obelix-rsync-backup-20180912-215541.
+# ??? RBK0005E: Backup failed. Check previous error messages for details.
+
+		local msgNumber=$(cut -f 2 -d ' ' <<< "$msg")
+		local msgSev=${msgNumber:7:1}
+
 		if (( $TIMESTAMPS )); then
 			timestamp="$(date +'%m-%d-%Y %T') "
 		fi
 
 		if (( $INTERACTIVE )); then
-			echo $noNL -e "$timestamp$msg" > /dev/tty
+			if [[ $msgSev == "E" ]]; then
+				echo $noNL -e "$timestamp$msg" >&2
+			else
+				echo $noNL -e "$timestamp$msg" >&1
+			fi
 		else
 			echo $noNL -e "$timestamp$msg" >> "$LOG_FILE"
 		fi
@@ -1120,8 +1139,10 @@ function exitNormal() {
 }
 
 function saveVars() {
-	echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
-	echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
+	if (( $UID == 0 )); then
+		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
+		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
+	fi
 }
 
 function exitError() { # {rc}
@@ -1249,8 +1270,12 @@ function logSystemStatus() {
 	logEntry "logSystemStatus"
 
 	if (( $SYSTEMSTATUS )); then
-		logItem "service --status-all$NL$(service --status-all 2>&1)"
-		logItem "lsof$NL$(lsof / | awk 'NR==1 || $4~/[0-9][uw]/' 2>&1)"
+	    if ! which lsof &>/dev/null; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
+			else
+				logItem "service --status-all$NL$(service --status-all 2>&1)"
+				logItem "lsof$NL$(lsof / | awk 'NR==1 || $4~/[0-9][uw]/' 2>&1)"
+			fi
 	fi
 
 	logExit "logSystemStatus"
@@ -1286,8 +1311,8 @@ DEFAULT_SENDER_EMAIL=""
 # Additional parameters for email program (optional)
 DEFAULT_EMAIL_PARMS=""
 # log level  (0 = none, 1 = debug)
-DEFAULT_LOG_LEVEL=0
-# log output ( 0 = syslog, 1 = /var/log, 2 = backuppath)
+DEFAULT_LOG_LEVEL=2
+# log output ( 0 = syslog, 1 = /var/log, 2 = backuppath, 3 = ./raspiBackup.log, <somefilename>)
 DEFAULT_LOG_OUTPUT=1
 # msg level (0 = minimal, 1 = detailed)
 DEFAULT_MSG_LEVEL=0
@@ -1331,7 +1356,7 @@ DEFAULT_USE_HARDLINKS=1
 # save boot partition with tar
 DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
 # Change these options only if you know what you are doing !!!
-DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAxX"
+DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx"
 DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
 DEFAULT_TAR_BACKUP_OPTIONS="-cpi"
 DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -2140,7 +2165,8 @@ function setupEnvironment() {
 	exec 1> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&1)
 	exec 2> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&2)
 
-	logItem "$GIT_CODEVERSION"
+	local v=$(getLocalizedMessage $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY")
+	logItem "$v"
 
 	logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 	logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
@@ -3725,6 +3751,7 @@ function collectPartitions() {
 		backupAllPartitions=1
 		PARTITIONS_TO_BACKUP=()
 	else
+		PARTITIONS_TO_BACKUP=($PARTITIONS_TO_BACKUP)
 		backupAllPartitions=0
 	fi
 
@@ -3925,11 +3952,10 @@ function inspect4Backup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
-
-			if [[ $BACKUPTYPE != $BACKUPTYPE_DD  && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED  "$BACKUPTYPE"
-				exitError $RC_PARAMETER_ERROR
-			fi
+#			if [[ $BACKUPTYPE != $BACKUPTYPE_DD  && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+#				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED  "$BACKUPTYPE"
+#				exitError $RC_PARAMETER_ERROR
+#			fi
 		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9])p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
 		else
@@ -3985,10 +4011,6 @@ function inspect4Backup() {
 			if [[ "$BOOT_DEVICE" == "$rootDevice" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 				SHARED_BOOT_DIRECTORY=1
-				if [[ $BACKUPTYPE != $BACKUPTYPE_DD  && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED  "$BACKUPTYPE"
-					exitError $RC_PARAMETER_ERROR
-				fi
 			fi
 		fi
 	fi
@@ -4222,7 +4244,7 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ ! $(which pv &>/dev/null) ]]; then
+	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ $(which pv &>/dev/null) ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 		exitError $RC_MISSING_COMMANDS
 	fi
@@ -4981,9 +5003,9 @@ function doitRestore() {
 
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logItem "ls: of $RESTOREFILE"
-	logItem $(ls -1 "$RESTOREFILE"* 2>/dev/null)
+	logItem "$(ls -1 "$RESTOREFILE"* 2>/dev/null)"
 
-	if [[ -n $(ls -1 "$RESTOREFILE"* | egrep "^(sd|mmcblk).*" 2>/dev/null) ]]; then
+	if  ls -1 "$RESTOREFILE"* | egrep "^(sd[a-z]([0-9]+)|mmcblk[0-9]+p[0-9]+).*" 2>/dev/null ; then
 		PARTITIONBASED_BACKUP=1
 	else
 		PARTITIONBASED_BACKUP=0
@@ -4996,7 +5018,7 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ ! $(which pv &>/dev/null) ]]; then
+	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ $(which pv &>/dev/null) ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 		exitError $RC_PARAMETER_ERROR
 	fi
@@ -5318,7 +5340,6 @@ function usageEN() {
     echo "-G {message language} (EN or DE) (default: $DEFAULT_LANGUAGE)"
     echo "-h display this help text"
     echo "-l {log level} ($POSSIBLE_LOG_LEVELs) (default: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
-    echo "-L {log location} ($POSSIBLE_LOG_LOCs) (default: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
     echo "-m {message level} ($POSSIBLE_MSG_LEVELs) (default: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
     echo "-M {backup description}"
     echo "-n notification if there is a newer scriptversion available for download (default: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
@@ -5367,7 +5388,6 @@ function usageDE() {
     echo "-G {Meldungssprache} (DE oder EN) (Standard: $DEFAULT_LANGUAGE)"
     echo "-h Anzeige dieses Hilfstextes"
     echo "-l {log Genauigkeit} ($POSSIBLE_LOG_LEVELs) (Standard: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
-    echo "-L {log Ausgabeort} ($POSSIBLE_LOG_LOCs) (Standard: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
     echo "-m {Meldungsgenauigkeit} ($POSSIBLE_MSG_LEVELs) (Standard: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
     echo "-M {Backup Beschreibung}"
     echo "-n Benachrichtigung wenn eine aktuellere Scriptversion zum download verfügbar ist. (Standard: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
@@ -5403,9 +5423,14 @@ function mentionHelp() {
 }
 
 function checkOptionParameter() { # option parameter
-	if [[ "$2" =~ ^(\-|\+|\-\-|\+\+)[^=\s]+$ || -z $2 ]]; then
+	if [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z $2 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
 		exitError $RC_PARAMETER_ERROR
+	fi
+	if [[ ${2:0:1} == "\\" ]]; then
+		echo "${2:1}"
+	else
+		echo "$2"
 	fi
 }
 
@@ -5550,8 +5575,8 @@ while (( "$#" )); do
 	  ;;
 
     -a)
-	  checkOptionParameter "$1" "$2"
-      STARTSERVICES="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+      STARTSERVICES="$o"; shift 2
       ;;
 
     -A|-A[-+])
@@ -5559,8 +5584,8 @@ while (( "$#" )); do
 	  ;;
 
     -b)
-	  checkOptionParameter "$1" "$2"
-      DD_BLOCKSIZE="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+      DD_BLOCKSIZE="$o"; shift 2
       ;;
 
     -B|-B[-+])
@@ -5576,23 +5601,23 @@ while (( "$#" )); do
 	  ;;
 
     -d)
-	  checkOptionParameter "$1" "$2"
-      RESTORE_DEVICE="$2"; RESTORE=1; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+      RESTORE_DEVICE="$o"; RESTORE=1; shift 2
       ;;
 
     -D)
-	  checkOptionParameter "$1" "$2"
-      DD_PARMS="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+      DD_PARMS="$o"; shift 2
       ;;
 
     -e)
-	  checkOptionParameter "$1" "$2"
-      EMAIL="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+      EMAIL="$o"; shift 2
       ;;
 
     -E)
-	  checkOptionParameter "$1" "$2"
-      EMAIL_PARMS="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+      EMAIL_PARMS="$o"; shift 2
       ;;
 
     -F|-F[-+])
@@ -5604,8 +5629,8 @@ while (( "$#" )); do
 	  ;;
 
     -G)
-	  checkOptionParameter "$1" "$2"
-      LANGUAGE="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+      LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
 	  msgVar="MSG_${LANGUAGE}"
 	  if [[ -z ${!msgVar} ]]; then
@@ -5627,28 +5652,28 @@ while (( "$#" )); do
 	  ;;
 
     -k)
-	  checkOptionParameter "$1" "$2"
-	  KEEPBACKUPS="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
     -l)
-	  checkOptionParameter "$1" "$2"
-	  LOG_LEVEL="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  LOG_LEVEL="$o"; shift 2
 	  ;;
 
     -L)
-	  checkOptionParameter "$1" "$2"
-	  LOG_OUTPUT="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  LOG_OUTPUT="$o"; shift 2
 	  ;;
 
     -m)
-	  checkOptionParameter "$1" "$2"
-	  MSG_LEVEL="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  MSG_LEVEL="$o"; shift 2
 	  ;;
 
     -M)
-	  checkOptionParameter "$1" "$2"
-	  BACKUP_DIRECTORY_NAME="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\:\.\-]/_}
   	  ;;
 
@@ -5657,18 +5682,18 @@ while (( "$#" )); do
 	  ;;
 
     -N)
-	  checkOptionParameter "$1" "$2"
-	  EXTENSIONS="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  EXTENSIONS="$o"; shift 2
 	  ;;
 
     -o)
-	  checkOptionParameter "$1" "$2"
-	  STOPSERVICES="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  STOPSERVICES="$o"; shift 2
 	  ;;
 
     -p)
-	  checkOptionParameter "$1" "$2"
-	  BACKUPPATH="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  BACKUPPATH="$o"; shift 2
 	  if [[ ! -d "$BACKUPPATH" ]]; then
 	      writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$BACKUPPATH"
           exitError $RC_MISSING_FILES
@@ -5681,8 +5706,8 @@ while (( "$#" )); do
 	  ;;
 
     -r)
-	  checkOptionParameter "$1" "$2"
-	  RESTOREFILE="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  RESTOREFILE="$o"; shift 2
       if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
 		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
 		  exitError $RC_MISSING_FILES
@@ -5691,8 +5716,8 @@ while (( "$#" )); do
 	  ;;
 
     -R)
-	  checkOptionParameter "$1" "$2"
-	  ROOT_PARTITION="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  ROOT_PARTITION="$o"; shift 2
       ROOT_PARTITION_DEFINED=1
   	  ;;
 
@@ -5701,8 +5726,8 @@ while (( "$#" )); do
 	  ;;
 
     -s)
-	  checkOptionParameter "$1" "$2"
-	  EMAIL_PROGRAM="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  EMAIL_PROGRAM="$o"; shift 2
 	  ;;
 
     -S|-S[-+])
@@ -5718,8 +5743,8 @@ while (( "$#" )); do
 	  ;;
 
     -t)
-	  checkOptionParameter "$1" "$2"
-	  BACKUPTYPE="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  BACKUPTYPE="$o"; shift 2
 	  ;;
 
 	--timestamps|--timestamps[+-])
@@ -5729,16 +5754,11 @@ while (( "$#" )); do
     -T)
 	  checkOptionParameter "$1" "$2"
 	  PARTITIONS_TO_BACKUP="$2"; shift 2
-	  if [[ "$PARTITIONS_TO_BACKUP" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-		  PARTITIONS_TO_BACKUP=("$PARTITIONS_TO_BACKUP")
-	  else
-		  PARTITIONS_TO_BACKUP=($PARTITIONS_TO_BACKUP)
-	  fi
 	  ;;
 
     -u)
-	  checkOptionParameter "$1" "$2"
-	  EXCLUDE_LIST="$2"; shift 2
+	  o=$(checkOptionParameter "$1" "$2")
+	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
 
     -U)
@@ -5891,17 +5911,17 @@ logSystem
 writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_LOGFILE "$LOG_FILE_FINAL"
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
-	logItem "/etc/config$NL$(cat $ETC_CONFIG_FILE)"
+	logItem "/etc/config$NL$(egrep -v '^\s*$|^#' $ETC_CONFIG_FILE)"
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE"
 fi
 
 if (( $HOME_CONFIG_FILE_INCLUDED )); then
-	logItem "/home/config$NL$(cat $HOME_CONFIG_FILE)"
+	logItem "/home/config$NL$(egrep -v '^\s*$|^#' $HOME_CONFIG_FILE)"
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE"
 fi
 
 if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
-	logItem "./config$NL$(cat $CURRENTDIR_CONFIG_FILE)"
+	logItem "./config$NL$(egrep -v '^\s*$|^#' $CURRENTDIR_CONFIG_FILE)"
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE"
 fi
 
