@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-10-05 22:52:10 +0200$"
+GIT_DATE="$Date: 2018-10-07 18:24:05 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 3a3abff$"
+GIT_COMMIT="$Sha1: 6763ac3$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -70,12 +70,16 @@ GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_O
 # some general constants
 
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
-
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
 CURRENT_DIR=$(pwd)
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
+
+# Smiley used in eMail subject to notify about news/events
+SMILEY_UPDATE_POSSIBLE=";-)"
+SMILEY_BETA_AVAILABLE=":-D"
+SMILEY_RESTORETEST_REQUIRED="8-)"
 
 # URLs and temp filenames used
 
@@ -1443,10 +1447,9 @@ DEFAULT_RESIZE_ROOTFS=1
 DEFAULT_TIMESTAMPS=0
 # add system status in debug log (Attention: may expose sensible information)
 DEFAULT_SYSTEMSTATUS=0
-
 # reminder to test restore (unit: months)
 DEFAULT_RESTORE_REMINDER_INTERVAL=6
-# Number of time the restore reminder bothers you
+# Number of times restore reminder bothers you
 DEFAULT_RESTORE_REMINDER_REPEAT=3
 
 ############# End default config section #############
@@ -2356,13 +2359,13 @@ function sendEMail() { # content subject
 		local smiley=""
 		if (( $NOTIFY_UPDATE && $NEWS_AVAILABLE )); then
 			if (( $UPDATE_POSSIBLE )); then
-				smiley=";-) ${smiley}"
+				smiley="$SMILEY_UPDATE_POSSIBLE ${smiley}"
 			fi
 			if (( $BETA_AVAILABLE )); then
-				smiley=":-D ${smiley}"
+				smiley="$SMILEY_BETA_AVAILABLE ${smiley}"
 			fi
 			if (( $RESTORETEST_REQUIRED )); then
-				smiley="8-) ${smiley}"
+				smiley="$SMILEY_RESTORETEST_REQUIRED ${smiley}"
 			fi
 		fi
 
@@ -3112,15 +3115,15 @@ function tarBackup() {
 		--warning=no-xdev \
 		--numeric-owner \
 		--exclude=\"$BACKUPPATH_PARAMETER/*\" \
-		--exclude=\"$log_file\" \
+		--exclude=\"$source/$log_file\" \
 		--exclude='.gvfs' \
-		--exclude=proc/* \
-		--exclude=lost+found/* \
-		--exclude=sys/* \
-		--exclude=dev/* \
-		--exclude=tmp/* \
-		--exclude=boot/* \
-		--exclude=run/* \
+		--exclude=$source/proc \
+		--exclude=$source/lost+found \
+		--exclude=$source/sys \
+		--exclude=$source/dev \
+		--exclude=$source/tmp \
+		--exclude=$source/boot \
+		--exclude=$source/run \
 		$EXCLUDE_LIST \
 		$source"
 
