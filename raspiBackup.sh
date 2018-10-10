@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.4.1-dev"	# -beta, -hotfix or -dev suffixes allowed
+VERSION="0.6.4.1-beta"	# -beta, -hotfix or -dev suffixes possible
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-10-03 11:42:54 +0200$"
+GIT_DATE="$Date: 2018-10-10 19:08:06 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 10a37b4$"
+GIT_COMMIT="$Sha1: 896a1e7$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -70,12 +70,16 @@ GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_O
 # some general constants
 
 MYHOMEURL="https://www.linux-tips-and-tricks.de"
-
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
 CURRENT_DIR=$(pwd)
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
+
+# Smiley used in eMail subject to notify about news/events
+SMILEY_UPDATE_POSSIBLE=";-)"
+SMILEY_BETA_AVAILABLE=":-D"
+SMILEY_RESTORETEST_REQUIRED="8-)"
 
 # URLs and temp filenames used
 
@@ -344,9 +348,9 @@ MSG_DE[$MSG_TOOL_ERROR]="RBK0024E: Backupprogramm %s hat einen Fehler %s bekomme
 MSG_DIR_TO_BACKUP_DOESNOTEXIST=25
 MSG_EN[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Backupdirectory %s does not exist."
 MSG_DE[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Backupverzeichnis %s existiert nicht."
-MSG_SAVING_LOG=26
-MSG_EN[$MSG_SAVING_LOG]="RBK0026I: Saving logfile in %s."
-MSG_DE[$MSG_SAVING_LOG]="RBK0026I: Logdatei wird in %s gesichert."
+MSG_SAVED_LOG=26
+MSG_EN[$MSG_SAVED_LOG]="RBK0026I: Logfile saved in %s."
+MSG_DE[$MSG_SAVED_LOG]="RBK0026I: Logdatei wurde in %s gesichert."
 MSG_NO_DEVICEMOUNTED=27
 MSG_EN[$MSG_NO_DEVICEMOUNTED]="RBK0027E: No external device mounted on %s. SD card would be used for backup."
 MSG_DE[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Kein externes Gerät an %s verbunden. Die SD Karte würde für das Backup benutzt werden."
@@ -444,7 +448,7 @@ MSG_INVALID_MSG_LEVEL=58
 MSG_EN[$MSG_INVALID_MSG_LEVEL]="RBK0058W: Invalid parameter %s for -m detected. Using %s."
 MSG_DE[$MSG_INVALID_MSG_LEVEL]="RBK0058W: Ungültiger Parameter %s für -m eingegeben. Es wird %s benutzt."
 MSG_INVALID_LOG_OUTPUT=59
-MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Invalid parameter % for -L detected. Using %s."
+MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Invalid parameter %s for -L detected. Using %s."
 MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Ungültiger Parameter %s für -L eingegeben. Es wird %s benutzt."
 MSG_NO_YES=60
 MSG_EN[$MSG_NO_YES]="no yes"
@@ -537,8 +541,8 @@ MSG_UNKNOWN_OPTION=89
 MSG_EN[$MSG_UNKNOWN_OPTION]="RBK0089E: Unknown option %s."
 MSG_DE[$MSG_UNKNOWN_OPTION]="RBK0089E: Unbekannte Option %s."
 MSG_OPTION_REQUIRES_PARAMETER=90
-MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %1 requires a parameter. Prefix an existing parameter with \\."
-MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %1 erwartet einen Parameter. Stelle einem existierenden Parameter \\ voran."
+MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s requires a parameter. Prefix an existing parameter with \\."
+MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s erwartet einen Parameter. Stelle einem existierenden Parameter \\ voran."
 MSG_MENTION_HELP=91
 MSG_EN[$MSG_MENTION_HELP]="RBK0091I: Invoke '%s -h' to get more detailed information of all script invocation parameters."
 MSG_DE[$MSG_MENTION_HELP]="RBK0091I: '%s -h' liefert eine detailierte Beschreibung aller Scriptaufrufoptionen."
@@ -867,11 +871,11 @@ MSG_MISSING_COMMANDS=193
 MSG_EN[$MSG_MISSING_COMMANDS]="RBK0193E: Missing required commands '%s'."
 MSG_DE[$MSG_MISSING_COMMANDS]="RBK0193E: Erforderliche Befehle '%s' nicht vorhanden."
 MSG_MISSING_PACKAGES=194
-MSG_EN[$MSG_MISSING_PACKAGES]="RBK0194E: Missing required packages. Install them with 'sudo apt-get install %1'."
-MSG_DE[$MSG_MISSING_PACKAGES]="RBK0194E: Erforderliche Pakete nicht installiert. Installiere sie mit 'sudo apt-get install %1'"
-MSG_SAVE_LOGFILE=195
-MSG_EN[$MSG_SAVE_LOGFILE]="RBK0195I: Logfile saved in %s."
-MSG_DE[$MSG_SAVE_LOGFILE]="RBK0195I: Logdatei wird in %s gesichert."
+MSG_EN[$MSG_MISSING_PACKAGES]="RBK0194E: Missing required packages. Install them with 'sudo apt-get install %s'."
+MSG_DE[$MSG_MISSING_PACKAGES]="RBK0194E: Erforderliche Pakete nicht installiert. Installiere sie mit 'sudo apt-get install %s'"
+#MSG_SAVE_LOGFILE=195
+#MSG_EN[$MSG_SAVE_LOGFILE]="RBK0195I: Logfile saved in %s."
+#MSG_DE[$MSG_SAVE_LOGFILE]="RBK0195I: Logdatei wird in %s gesichert."
 MSG_NO_HARDLINKS_USED=196
 MSG_EN[$MSG_NO_HARDLINKS_USED]="RBK0196W: No hardlinks supported on %s."
 MSG_DE[$MSG_NO_HARDLINKS_USED]="RBK0196W: %s unterstützt keine Hardlinks."
@@ -1282,6 +1286,74 @@ function logSystemStatus() {
 
 }
 
+function logOptions() {
+
+	logEntry "logOptions"
+
+	logItem "$(uname -a)"
+
+	logItem "Options: $INVOCATIONPARMS"
+	logExit "logOptions"
+	logItem "APPEND_LOG=$APPEND_LOG"
+	logItem "APPEND_LOG_OPTION=$APPEND_LOG_OPTION"
+	logItem "BACKUPPATH=$BACKUPPATH"
+	logItem "BACKUPTYPE=$BACKUPTYPE"
+	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
+ 	logItem "CONFIG_FILE=$CONFIG_FILE"
+ 	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DEFAULT_DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
+ 	logItem "DD_BLOCKSIZE=$DD_BLOCKSIZE"
+ 	logItem "DD_PARMS=$DD_PARMS"
+	logItem "DEFAULT_DEPLOYMENT_HOSTS=$DEFAULT_DEPLOYMENT_HOSTS"
+	logItem "DEFAULT_YES_NO_RESTORE_DEVICE=$DEFAULT_YES_NO_RESTORE_DEVICE"
+	logItem "EMAIL=$EMAIL"
+	logItem "EMAIL_PARMS=$EMAIL_PARMS"
+	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
+	logItem "EXTENSIONS=$EXTENSIONS"
+	logItem "FAKE=$FAKE"
+	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
+	logItem "KEEPBACKUPS=$KEEPBACKUPS"
+	logItem "LANGUAGE=$LANGUAGE"
+	logItem "LINK_BOOTPARTITIONFILES=$DEFAULT_LINK_BOOTPARTITIONFILES"
+	logItem "LOG_LEVEL=$LOG_LEVEL"
+ 	logItem "LOG_OUTPUT=$LOG_OUTPUT"
+	logItem "MAIL_ON_ERROR_ONLY=$MAIL_ON_ERROR_ONLY"
+	logItem "MAIL_PROGRAM=$EMAIL_PROGRAM"
+	logItem "MSG_LEVEL=$MSG_LEVEL"
+	logItem "NOTIFY_UPDATE=$NOTIFY_UPDATE"
+	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
+	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
+	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
+	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
+	logItem "ROOT_PARTITION=$ROOT_PARTITION"
+	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
+	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
+	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
+	logItem "SENDER_EMAIL=$SENDER_EMAIL"
+ 	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
+	logItem "STARTSERVICES=$STARTSERVICES"
+	logItem "STOPSERVICES=$STOPSERVICES"
+	logItem "SYSTEMSTATUS=$SYSTEMSTATUS"
+	logItem "TAR_BACKUP_ADDITIONAL_OPTIONS=$TAR_BACKUP_ADDITIONAL_OPTIONS"
+	logItem "TAR_BACKUP_OPTIONS=$TAR_BACKUP_OPTIONS"
+	logItem "TAR_BOOT_PARTITION_ENABLED=$TAR_BOOT_PARTITION_ENABLED"
+	logItem "TAR_IGNORE_ERRORS=$TAR_IGNORE_ERRORS"
+	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
+	logItem "TIMESTAMPS=$TIMESTAMPS"
+	logItem "USE_HARDLINKS=$USE_HARDLINKS"
+	logItem "VERBOSE=$VERBOSE"
+	logItem "ZIP_BACKUP=$ZIP_BACKUP"
+
+}
+
+LOG_MAIL_FILE="/tmp/${MYNAME}.maillog"
+LOG_TOOL_FILE="/tmp/${MYNAME}_$$.log"
+#logItem "Removing maillog file ${LOG_MAIL_FILE}"
+rm -f "$LOG_MAIL_FILE" &>/dev/null
+LOG_FILE_NAME="${MYNAME}.log"
+LOG_FILE="$CURRENT_DIR/$LOG_FILE_NAME"
+#logItem "Removing log file ${LOG_FILE}"
+rm -f "$LOG_FILE" &>/dev/null
+
 function initializeDefaultConfig() {
 
 ############# Begin default config section #############
@@ -1375,10 +1447,9 @@ DEFAULT_RESIZE_ROOTFS=1
 DEFAULT_TIMESTAMPS=0
 # add system status in debug log (Attention: may expose sensible information)
 DEFAULT_SYSTEMSTATUS=0
-
 # reminder to test restore (unit: months)
 DEFAULT_RESTORE_REMINDER_INTERVAL=6
-# Number of time the restore reminder bothers you
+# Number of times restore reminder bothers you
 DEFAULT_RESTORE_REMINDER_REPEAT=3
 
 ############# End default config section #############
@@ -2068,7 +2139,6 @@ function readConfigParameters() {
 function setupEnvironment() {
 
 	if (( ! $RESTORE )); then
-
 		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_TAR ]]; then
@@ -2089,14 +2159,12 @@ function setupEnvironment() {
 
 		BACKUPTARGET_DIR="$BACKUPTARGET_ROOT/$BACKUPFILE"
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
-		BACKUPTARGET_LOG_FILE="$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE"
 
 		if [ ! -d "${BACKUPTARGET_DIR}" ] && (( ! $FAKE )); then
 			if ! mkdir -p "${BACKUPTARGET_DIR}"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPTARGET_DIR}"
 				exitError $RC_CREATE_ERROR
 			fi
-
 			NEW_BACKUP_DIRECTORY_CREATED=1
 		fi
 
@@ -2114,40 +2182,37 @@ function setupEnvironment() {
 			rm -f "$BACKUPPATH/$MYNAME.tmp" &>/dev/null
 		fi
 
-	else
+		if (( $FAKE )); then
+			LOG_OUTPUT=$LOG_OUTPUT_HOME
+		fi
+
+	else # restore
 		LOG_OUTPUT="$LOG_OUTPUT_HOME"
 	fi
 
-	TMP_LOG_FILE="$HOSTNAME-$MYNAME.log"
-
-	if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_VARLOG" ]]; then
-		LOG_BASE="/var/log/$MYNAME"
-		if [ ! -d ${LOG_BASE} ] && (( ! $FAKE )); then
-		 if ! mkdir -p ${LOG_BASE}; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
-			exitError $RC_CREATE_ERROR
-		 fi
-		fi
-		LOG_FILE="$LOG_BASE/$HOSTNAME.log"
-	elif [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_HOME" ]]; then
-		LOG_FILE="$CURRENT_DIR/$MYNAME.log"
-	elif [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_SYSLOG" ]]; then
-		LOG_FILE="/var/log/syslog"
-	else
-		LOG_FILE="$LOG_OUTPUT"
-	fi
-
-	LOG_FILE_FINAL="$LOG_FILE"
-
-	if [[ $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC ]]; then
-		local user=$(findUser)
-		LOG_FILE="/home/$user/$TMP_LOG_FILE"
-		if [[ $user == "root" ]]; then
-			LOG_FILE="/root/$TMP_LOG_FILE"
-		fi
-		TARGET_LOG_FILE="$BACKUPTARGET_LOG_FILE.log"
-		LOG_FILE_FINAL="$TARGET_LOG_FILE"
-	fi
+	case $LOG_OUTPUT in
+		$LOG_OUTPUT_VARLOG)
+			LOG_BASE="/var/log/$MYNAME"
+			if [ ! -d ${LOG_BASE} ]; then
+				if ! mkdir -p ${LOG_BASE}; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
+					exitError $RC_CREATE_ERROR
+				fi
+			fi
+			LOG_FILE="$LOG_BASE/$HOSTNAME.log"
+			;;
+		$LOG_OUTPUT_HOME)
+			LOG_FILE="$CURRENT_DIR/$LOG_FILE_NAME"
+			;;
+		$LOG_OUTPUT_SYSLOG)
+			LOG_FILE="/var/log/syslog"
+			;;
+		$LOG_OUTPUT_BACKUPLOC)
+			LOG_FILE="$BACKUPTARGET_DIR/$LOG_FILE_NAME"
+			;;
+		*)
+			LOG_FILE="$LOG_OUTPUT"
+	esac
 
 	if [[ $LOG_OUTPUT != $LOG_OUTPUT_SYSLOG ]]; then	# keep syslog :-)
 		rm -rf "$LOG_FILE" &>/dev/null
@@ -2162,8 +2227,10 @@ function setupEnvironment() {
 		assertionFailed $LINENO "Invalid log file $LOG_FILE"
 	fi
 
-	exec 1> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&1)
-	exec 2> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&2)
+	3>&1 # clone stdio/err file descriptors
+	4>&2
+	exec 3> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&1)
+	exec 4> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&2)
 
 	local v=$(getLocalizedMessage $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY")
 	logItem "$v"
@@ -2180,8 +2247,8 @@ function deployMyself() {
 
     for hostLogon in $DEPLOYMENT_HOSTS; do
 
-		host=$(echo $hostLogon | cut -d '@' -f 2)
-		user=$(echo $hostLogon | cut -d '@' -f 1)
+		host=$(cut -d '@' -f 2 <<< $hostLogon)
+		user=$(cut -d '@' -f 1 <<< $hostLogon)
 
 		if [[ -z "$host" || -z "$user" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYMENT_PARMS_ERROR
@@ -2296,13 +2363,13 @@ function sendEMail() { # content subject
 		local smiley=""
 		if (( $NOTIFY_UPDATE && $NEWS_AVAILABLE )); then
 			if (( $UPDATE_POSSIBLE )); then
-				smiley=";-) ${smiley}"
+				smiley="$SMILEY_UPDATE_POSSIBLE ${smiley}"
 			fi
 			if (( $BETA_AVAILABLE )); then
-				smiley=":-D ${smiley}"
+				smiley="$SMILEY_BETA_AVAILABLE ${smiley}"
 			fi
 			if (( $RESTORETEST_REQUIRED )); then
-				smiley="8-) ${smiley}"
+				smiley="$SMILEY_RESTORETEST_REQUIRED ${smiley}"
 			fi
 		fi
 
@@ -2370,38 +2437,44 @@ function cleanupBackupDirectory() {
 	logEntry "cleanupBackupDirectory"
 
 	if [[ $rc != 0 ]] || (( $FAKE_BACKUPS )); then
+
+		if (( $LOGGING_ENABLED )) && [[ $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC ]]; then
+			# save log in current directory because backup directory will be deleted
+			if [[ -f $LOG_FILE ]]; then
+				local user=$(findUser)
+				[[ $user == "root" ]] && TARGET_LOG_FILE="/root/$LOG_FILE_NAME" || TARGET_LOG_FILE="/home/$user/$LOG_FILE_NAME"
+				cp "$LOG_FILE" "$TARGET_LOG_FILE"
+				LOG_FILE="$TARGET_LOG_FILE"
+				if [[ $user != "root" ]]; then
+					chown --reference=/home/$user "$TARGET_LOG_FILE"
+				fi
+			fi
+		fi
+
 		logItem "BackupDir created: $NEW_BACKUP_DIRECTORY_CREATED"
+
 		if (( $NEW_BACKUP_DIRECTORY_CREATED )); then
 
 			if [[ -z "$BACKUPPATH" || -z "$BACKUPFILE" || -z "$BACKUPTARGET_DIR" || "$BACKUPFILE" == *"*"* || "$BACKUPPATH" == *"*"* || "$BACKUPTARGET_DIR" == *"*"* ]]; then
 				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
 			fi
 
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_SAVING_LOG "$LOG_FILE"
 			if (( $BACKUP_STARTED )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
 			fi
-			if [[ $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVE_LOGFILE "$LOG_FILE"
-			fi
 			if [[ -d "$BACKUPTARGET_DIR" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_BACKUPDIRECTORY "$BACKUPTARGET_DIR"
-				rm -fr "$BACKUPTARGET_DIR" # remove incomplete backupdir if it exists
-			fi
-		fi
-	else
-		if [[ $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC ]]; then
-			logItem "Moving $LOG_FILE to $TARGET_LOG_FILE"
-			mv "$LOG_FILE" "$TARGET_LOG_FILE"
-			local user=$(findUser)
-			if [[ $user != "root" ]]; then
-				chown --reference=/home/$user "$TARGET_LOG_FILE"
+				logItem "$(ls -la $BACKUPTARGET_DIR)"
+				exec 3>&- # close stdout/err redirection into file
+				exec 4>&- # otherwise rm will fail
+				rm -rf $BACKUPTARGET_DIR # remove incomplete backupdir if it exists
 			fi
 		fi
 	fi
 
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_SAVED_LOG "$LOG_FILE"
 
-#	logExit "cleanupBackupDirectory" --- doesn't work any more
+	logExit "cleanupBackupDirectory"
 }
 
 function cleanup() { # trap
@@ -3046,15 +3119,15 @@ function tarBackup() {
 		--warning=no-xdev \
 		--numeric-owner \
 		--exclude=\"$BACKUPPATH_PARAMETER/*\" \
-		--exclude=\"$log_file\" \
+		--exclude=\"$source/$log_file\" \
 		--exclude='.gvfs' \
-		--exclude=proc/* \
-		--exclude=lost+found/* \
-		--exclude=sys/* \
-		--exclude=dev/* \
-		--exclude=tmp/* \
-		--exclude=boot/* \
-		--exclude=run/* \
+		--exclude=$source/proc \
+		--exclude=$source/lost+found \
+		--exclude=$source/sys \
+		--exclude=$source/dev \
+		--exclude=$source/tmp \
+		--exclude=$source/boot \
+		--exclude=$source/run \
 		$EXCLUDE_LIST \
 		$source"
 
@@ -5908,7 +5981,7 @@ setupEnvironment
 logOptions						# config parms already read
 logSystem
 
-writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_LOGFILE "$LOG_FILE_FINAL"
+writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_LOGFILE "$LOG_FILE"
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
 	logItem "/etc/config$NL$(egrep -v '^\s*$|^#' $ETC_CONFIG_FILE)"
