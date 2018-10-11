@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.4.1-beta"	# -beta, -hotfix or -dev suffixes allowed
+VERSION="0.6.4.1-beta"	# -beta, -hotfix or -dev suffixes possible
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-10-07 18:24:05 +0200$"
+GIT_DATE="$Date: 2018-10-11 22:43:16 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 6763ac3$"
+GIT_COMMIT="$Sha1: f1d79b9$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -340,8 +340,8 @@ MSG_UNKNOWN_BACKUPTYPE=22
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unknown backuptype %s."
 MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backtyp %s."
 MSG_KEEPBACKUP_INVALID=23
-MSG_EN[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Invalid parameter %s for -k."
-MSG_DE[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Ungültiger Parameter %s für -k."
+MSG_EN[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Invalid parameter %s for -k detected."
+MSG_DE[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Ungültiger Parameter %s für -k eingegeben."
 MSG_TOOL_ERROR=24
 MSG_EN[$MSG_TOOL_ERROR]="RBK0024E: Backup tool %s received error %s. Errormessages:$NL%s"
 MSG_DE[$MSG_TOOL_ERROR]="RBK0024E: Backupprogramm %s hat einen Fehler %s bekommen. Fehlermeldungen:$NL%s"
@@ -367,11 +367,11 @@ MSG_CHECKING_FOR_NEW_VERSION=31
 MSG_EN[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Checking whether a new version of $MYSELF is available."
 MSG_DE[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Prüfe ob eine neue Version von $MYSELF verfügbar ist."
 MSG_INVALID_LOG_LEVEL=32
-MSG_EN[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Invalid parameter %s for -l detected. Using %s."
-MSG_DE[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Ungültiger Parameter %s für -l eingegeben. Es wird %s benutzt."
-MSG_INVALID_LOG_OUTPUT=33
-MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0033W: Invalid parameter %s for -L detected. Using %s."
-MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0032W: Ungültiger Parameter %s für -L eingegeben. Es wird %s benutzt."
+MSG_EN[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Invalid parameter '%s' for option -l detected. Using default parameter '%s'."
+MSG_DE[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Ungültiger Parameter '%s' für Option -l eingegeben. Es wird Standardparameter '%s' genommen."
+#MSG_INVALID_LOG_OUTPUT=33
+#MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0033W: Invalid parameter %s for -L detected. Using %s."
+#MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0032W: Ungültiger Parameter %s für -L eingegeben. Es wird %s benutzt."
 MSG_FILE_NOT_FOUND=34
 MSG_EN[$MSG_FILE_NOT_FOUND]="RBK0034E: File %s not found."
 MSG_DE[$MSG_FILE_NOT_FOUND]="RBK0034E: Datei %s nicht gefunden."
@@ -445,11 +445,11 @@ MSG_DOWNLOADING=57
 MSG_EN[$MSG_DOWNLOADING]="RBK0057I: Downloading file %s from %s."
 MSG_DE[$MSG_DOWNLOADING]="RBK0057I: Datei %s wird von %s downloaded."
 MSG_INVALID_MSG_LEVEL=58
-MSG_EN[$MSG_INVALID_MSG_LEVEL]="RBK0058W: Invalid parameter %s for -m detected. Using %s."
-MSG_DE[$MSG_INVALID_MSG_LEVEL]="RBK0058W: Ungültiger Parameter %s für -m eingegeben. Es wird %s benutzt."
+MSG_EN[$MSG_INVALID_MSG_LEVEL]="RBK0058W: Invalid parameter '%s' for option -m detected. Using default parameter '%s'."
+MSG_DE[$MSG_INVALID_MSG_LEVEL]="RBK0058W: Ungültiger Parameter '%s' für Option -m eingegeben. Es wird Standardparameter '%s' benutzt."
 MSG_INVALID_LOG_OUTPUT=59
-MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Invalid parameter % for -L detected. Using %s."
-MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Ungültiger Parameter %s für -L eingegeben. Es wird %s benutzt."
+MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Invalid parameter '%s' for option -L detected. Using default parameter '%s'."
+MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Ungültiger Parameter '%s' für Option -L eingegeben. Es wird Standardparameter '%s' benutzt."
 MSG_NO_YES=60
 MSG_EN[$MSG_NO_YES]="no yes"
 MSG_DE[$MSG_NO_YES]="nein ja"
@@ -1559,7 +1559,7 @@ function findUser() {
 function substituteNumberArguments() {
 
 	local ll lla lo lloa ml mla
-	if [[ $LOG_LEVEL < 0 || $LOG_LEVEL > ${#LOG_LEVELs[@]} ]]; then
+	if [[ ! "$LOG_LEVEL" =~ ^[0-9]$ ]]; then
 		ll=$(tr '[:lower:]' '[:upper:]'<<< $LOG_LEVEL)
 		lla=$(tr '[:lower:]' '[:upper:]'<<< ${LOG_LEVEL_ARGs[$ll]+abc})
 		if [[ $lla == "ABC" ]]; then
@@ -1567,7 +1567,7 @@ function substituteNumberArguments() {
 		fi
 	fi
 
-	if [[ "$LOG_OUTPUT" < 0 || "$LOG_OUTPUT" > ${#LOG_OUTPUT_LOCs[@]} ]]; then
+	if [[ ! "$LOG_OUTPUT" =~ ^[0-9]$ ]]; then
 		lo=$(tr '[:lower:]' '[:upper:]'<<< $LOG_OUTPUT)
 		loa=$(tr '[:lower:]' '[:upper:]'<<< ${LOG_OUTPUT_ARGs[$lo]+abc})
 		if [[ $loa == "ABC" ]]; then
@@ -1575,7 +1575,7 @@ function substituteNumberArguments() {
 		fi
 	fi
 
-	if [[ $MSG_LEVEL < 0 || $MSG_LEVEL > ${#MSG_LEVELs[@]} ]]; then
+	if [[ ! "$MSG_LEVEL" =~ ^[0-9]$ ]]; then
 		ml=$(tr '[:lower:]' '[:upper:]'<<< $MSG_LEVEL)
 		mla=$(tr '[:lower:]' '[:upper:]'<<< ${MSG_LEVEL_ARGs[$ml]+abc})
 		if [[ $mla == "ABC" ]]; then
@@ -2182,7 +2182,11 @@ function setupEnvironment() {
 			rm -f "$BACKUPPATH/$MYNAME.tmp" &>/dev/null
 		fi
 
-	else # ! restore
+		if (( $FAKE )); then
+			LOG_OUTPUT=$LOG_OUTPUT_HOME
+		fi
+
+	else # restore
 		LOG_OUTPUT="$LOG_OUTPUT_HOME"
 	fi
 
@@ -2744,32 +2748,42 @@ function checkAndCorrectImportantParameters() {
 		local invalidLogLevel=""
 		local invalidMsgLevel=""
 
-		if [[ "$LOG_OUTPUT" =~ [0-9]+ ]]; then
-			if [[ $LOG_OUTPUT < 0 || $LOG_OUTPUT > ${#LOG_OUTPUT_LOCs[@]} ]]; then
-				invalidOutput=$LOG_OUTPUT
-				LOG_OUTPUT=$LOG_OUTPUT_SYSLOG
+		if [[ "$LOG_OUTPUT" =~ ^[0-9]$ ]]; then
+			if (( $LOG_OUTPUT < 0 || $LOG_OUTPUT > ${#LOG_OUTPUT_LOCs[@]} )); then
+				invalidOutput="$LOG_OUTPUT"
+				LOG_OUTPUT=$LOG_OUTPUT_BACKUPLOC
 			fi
 		else
 			if ! touch "$LOG_OUTPUT" &>/dev/null; then
 				invalidOutput="$LOG_OUTPUT"
-				LOG_OUTPUT=$LOG_OUTPUT_SYSLOG
+				LOG_OUTPUT=$LOG_OUTPUT_BACKUPLOC
 			fi
 		fi
 
-		if [[ $LOG_LEVEL < 0 || $LOG_LEVEL > ${#LOG_LEVELs[@]} ]]; then
-			invalidLogLevel=$LOG_LEVEL
-			LOG_LEVEL=$LOG_NONE
+		if [[ "$LOG_LEVEL" =~ ^[0-9]$ ]]; then
+			if (( $LOG_LEVEL < 0 || $LOG_LEVEL > ${#LOG_LEVELs[@]} )); then
+				invalidLogLevel="$LOG_LEVEL"
+				LOG_LEVEL=$LOG_DEBUG
+			fi
+		else
+			invalidLogLevel="$LOG_LEVEL"
+			LOG_LEVEL=$LOG_DEBUG
 		fi
 
 		[[ $LOG_LEVEL == $LOG_TYPE_DEBUG ]] && MSG_LEVEL=$MSG_LEVEL_DETAILED
 
-		if [[ $MSG_LEVEL < 0 || $MSG_LEVEL > ${#MSG_LEVELs[@]} ]]; then
-			invalidMsgLevel=$MSG_LEVEL
-			MSG_LEVEL=$MSG_LEVEL_MINIMAL
+		if [[ "$MSG_LEVEL" =~ ^[0-9]$ ]]; then
+			if (( $MSG_LEVEL < 0 || $MSG_LEVEL > ${#MSG_LEVELs[@]} )); then
+				invalidMsgLevel="$MSG_LEVEL"
+				MSG_LEVEL=$MSG_LEVEL_DETAILED
+			fi
+		else
+			invalidMsgLevel="$MSG_LEVEL"
+			MSG_LEVEL=$MSG_LEVEL_DETAILED
 		fi
 
 		if [[ ! $LANGUAGE =~ $MSG_SUPPORTED_REGEX ]]; then
-			invalidLanguage=$LANGUAGE
+			invalidLanguage="$LANGUAGE"
 			LANGUAGE=$MSG_FALLBACK
 		fi
 
