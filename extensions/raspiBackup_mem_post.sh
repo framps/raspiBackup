@@ -31,8 +31,8 @@ ext_freememory_post=( $(getMemoryFree) )
 
 # set any messages and prefix message name with ext_ and some unique prefix to use a different namespace than the script
 MSG_EXT_DISK_FREE="ext_freememory_1"
-MSG_EN[$MSG_EXT_DISK_FREE]="--- RBK1001I: Memory usage - Pre backup - Used: %s MB Free: %s MB - Post backup - Used: %s MB Free: %s MB"
-MSG_DE[$MSG_EXT_DISK_FREE]="--- RBK1001I: Speicherauslastung - Vor dem Backup - Belegt: %s MB Frei: %s MB - Nach dem Backup: Belegt: %s MB Frei: %s MB"
+MSG_EN[$MSG_EXT_DISK_FREE]="RBK1001I: Memory usage - Pre backup - Used: %s MB Free: %s MB - Post backup - Used: %s MB Free: %s MB"
+MSG_DE[$MSG_EXT_DISK_FREE]="RBK1001I: Speicherauslastung - Vor dem Backup - Belegt: %s MB Frei: %s MB - Nach dem Backup: Belegt: %s MB Frei: %s MB"
 
 # now write message to console and log and email
 # $MSG_LEVEL_MINIMAL will write message all the time

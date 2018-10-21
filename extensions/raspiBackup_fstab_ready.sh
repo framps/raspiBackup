@@ -13,8 +13,8 @@
 
 # set any messages and prefix message name with ext_ and some unique prefix to use a different namespace than the script
 MSG_EXT_FSTAB_COPY="ext_fstab_copy"
-MSG_EN[$MSG_EXT_FSTAB_COPY]="--- RBK1005I: Copy %s to %s"
-MSG_DE[$MSG_EXT_FSTAB_COPY]="--- RBK1005I: Kopiere %s in %s"
+MSG_EN[$MSG_EXT_FSTAB_COPY]="RBK1005I: Copy %s to %s"
+MSG_DE[$MSG_EXT_FSTAB_COPY]="RBK1005I: Kopiere %s in %s"
 
 FSTAB_FILENAME="/etc/fstab"
 FSTAB_TARGET_DIR="raspiBackup/extensionSaveArea"
