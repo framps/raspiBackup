@@ -30,7 +30,7 @@
 # use local for all variables used so the script namespace is not poluted
 
 function getMemoryFree() {
-	local temp=$(free -m | grep "buffers/cache" | cut -d ':' -f 2)
+	local temp=$(free -m | grep "Mem:" | awk '{print $2,$3}')
 	echo "$(echo $temp)"
 }
 
