@@ -51,12 +51,12 @@ if ! which bc &>/dev/null; then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE4
 else
 
-	[[ -n ${ext_diskUsage_pre[2]} ]] && usagePre=$( bc <<< "${ext_diskUsage_pre[2]} * 1024" ) || usagePre=0
-	[[ -n ${ext_diskUsage_post[2]} ]] && usagePost=$( bc <<< "${ext_diskUsage_post[2]} * 1024" ) || usagePost=0
-	[[ -n ${ext_diskUsage_pre[3]} ]] && freePre=$( bc <<< "${ext_diskUsage_pre[3]} * 1024" ) || freePre=0
-	[[ -n ${ext_diskUsage_post[3]} ]] && freePost=$( bc <<< "${ext_diskUsage_post[3]} * 1024" ) || freePost=0
-	[[ -n ${ext_diskUsage_pre[4]} ]] && percentUsedPre=${ext_diskUsage_pre[4]} || percentUsedPre=0
-	[[ -n ${ext_diskUsage_post[4]} ]] && percentUsedPost=${ext_diskUsage_post[4]} || percentUsedPost=0
+	usagePre=$( bc <<< "${ext_diskUsage_pre[2]} * 1024" )
+	usagePost=$( bc <<< "${ext_diskUsage_post[2]} * 1024" )
+	freePre=$( bc <<< "${ext_diskUsage_pre[3]} * 1024" )
+	freePost=$( bc <<< "${ext_diskUsage_post[3]} * 1024" )
+	percentUsedPre=${ext_diskUsage_pre[4]}
+	percentUsedPost=${ext_diskUsage_post[4]}
 
 	freeChange=$( bc <<< "$freePost - $freePre" )
 
