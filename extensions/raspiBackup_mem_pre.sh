@@ -35,7 +35,7 @@
 
 function getMemoryFree() {
 	eval set -- "$(free -m |grep -i 'Mem:')"
-	echo "$(echo $3 $4)"
+	echo "$3 $4"
 }
 
 ext_freememory_pre=( $(getMemoryFree) )
