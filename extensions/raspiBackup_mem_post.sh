@@ -38,6 +38,3 @@ MSG_DE[$MSG_EXT_DISK_FREE]="RBK1001I: Speicherauslastung - Vor dem Backup - Bele
 # $MSG_LEVEL_MINIMAL will write message all the time
 # $MSG_LEVEL_DETAILED will write message only if -m 1 parameter was used
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_FREE "${ext_freememory_pre[0]}" "${ext_freememory_pre[1]}" "${ext_freememory_post[0]}" "${ext_freememory_post[1]}"
-
-
-
