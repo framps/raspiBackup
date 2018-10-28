@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-10-11 22:43:16 +0200$"
+GIT_DATE="$Date: 2018-10-28 09:45:36 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: f1d79b9$"
+GIT_COMMIT="$Sha1: 4fd677b$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -213,6 +213,8 @@ SHARED_BOOT_DIRECTORY=0
 BOOT_TAR_EXT="tmg"
 BOOT_DD_EXT="img"
 
+CTRLC_DETECTED=0
+
 # Commands used by raspiBackup and which have to be available
 # [command]=package
 declare -A REQUIRED_COMMANDS=( \
@@ -252,8 +254,7 @@ RC_NO_BOOT_FOUND=121
 
 LOGGING_ENABLED=0
 
-tty -s
-INTERACTIVE=!$?
+[[ -t 0 || -p /dev/stdin ]] && INTERACTIVE=1 || INTERACTIVE=0
 
 #################################################################################
 # --- Messages in English and German
@@ -369,9 +370,9 @@ MSG_DE[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Prüfe ob eine neue Version von
 MSG_INVALID_LOG_LEVEL=32
 MSG_EN[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Invalid parameter '%s' for option -l detected. Using default parameter '%s'."
 MSG_DE[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Ungültiger Parameter '%s' für Option -l eingegeben. Es wird Standardparameter '%s' genommen."
-#MSG_INVALID_LOG_OUTPUT=33
-#MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0033W: Invalid parameter %s for -L detected. Using %s."
-#MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0032W: Ungültiger Parameter %s für -L eingegeben. Es wird %s benutzt."
+MSG_CLEANING_UP=33
+MSG_EN[$MSG_CLEANING_UP]="RBK0033I: Please wait until cleanup has finished."
+MSG_DE[$MSG_CLEANING_UP]="RBK0032I: Bitte warten bis aufgeräumt wurde."
 MSG_FILE_NOT_FOUND=34
 MSG_EN[$MSG_FILE_NOT_FOUND]="RBK0034E: File %s not found."
 MSG_DE[$MSG_FILE_NOT_FOUND]="RBK0034E: Datei %s nicht gefunden."
@@ -487,8 +488,8 @@ MSG_QUERY_CHARS_YES_NO=71
 MSG_EN[$MSG_QUERY_CHARS_YES_NO]="y/N"
 MSG_DE[$MSG_QUERY_CHARS_YES_NO]="j/N"
 MSG_SCRIPT_UPDATE_OK=72
-MSG_EN[$MSG_SCRIPT_UPDATE_OK]="RBK0072I: %s updated from version %s to version %s. Previous version saved as %s.${NL}RBK0072I: Don't forget to test backup and restore with the new version now."
-MSG_DE[$MSG_SCRIPT_UPDATE_OK]="RBK0072I: %s von Version %s durch die aktuelle Version %s ersetzt. Die vorherige Verion wurde als %s gesichert.${NL}RBK0072I: Nicht vergessen den Backup und Restore mit der neuen Version zu testen."
+MSG_EN[$MSG_SCRIPT_UPDATE_OK]="RBK0072I: %s updated from version %s to version %s. Previous version saved as %s. Don't forget to test backup and restore with the new version now."
+MSG_DE[$MSG_SCRIPT_UPDATE_OK]="RBK0072I: %s von Version %s durch die aktuelle Version %s ersetzt. Die vorherige Version wurde als %s gesichert. Nicht vergessen den Backup und Restore mit der neuen Version zu testen."
 MSG_SCRIPT_UPDATE_NOT_NEEDED=73
 MSG_EN[$MSG_SCRIPT_UPDATE_NOT_NEEDED]="RBK0073I: %s already current with version %s."
 MSG_DE[$MSG_SCRIPT_UPDATE_NOT_NEEDED]="RBK0073I: %s bereits auf der aktuellen Version %s."
@@ -504,15 +505,15 @@ MSG_DE[$MSG_RESTORE_OK]="RBK0076I: Restore erfolgreich beendet."
 MSG_RESTORE_FAILED=77
 MSG_EN[$MSG_RESTORE_FAILED]="RBK0077E: Restore failed with RC %s. Check previous error messages."
 MSG_DE[$MSG_RESTORE_FAILED]="RBK0077E: Restore wurde fehlerhaft mit RC %s beendet. Siehe vorhergehende Fehlermeldungen."
-#MSG_SCRIPT_UPDATE_NOT_UPLOADED=78
-#MSG_EN[$MSG_SCRIPT_UPDATE_NOT_UPLOADED]="RBK0078I: %s with version %s is newer than uploaded version %s."
-#MSG_DE[$MSG_SCRIPT_UPDATE_NOT_UPLOADED]="RBK0078I: %s mit der Version %s ist neuer als die uploaded Version %s."
+MSG_BACKUP_TIME=78
+MSG_EN[$MSG_BACKUP_TIME]="RBK0078I: Backup time: %s hours, %s minutes and %s seconds."
+MSG_DE[$MSG_BACKUP_TIME]="RBK0078I: Backup Zeit: %s Stunden, %s Minuten und %s Sekunden."
 MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP=79
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z not allowed with backuptype %s."
 MSG_DE[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z ist für Backuptyp %s nicht erlaubt."
 MSG_NEW_VERSION_AVAILABLE=80
-MSG_EN[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) There is a new version %s of $MYNAME available for download. You are running version %s and now can use option -U to upgrade your local version. Visit $VERSION_URL_EN to read the version changes"
-MSG_DE[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: ;-) Es gibt eine neue Version %s von $MYNAME zum downloaden. Die momentan benutze Version ist %s und es kann mit der Option -U die lokale Version aktualisiert werden. Besuche $VERSION_URL_DE um die Änderungen in der Version zu erfahren"
+MSG_EN[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE There is a new version %s of $MYNAME available for download. You are running version %s and now can use option -U to upgrade your local version."
+MSG_DE[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE Es gibt eine neue Version %s von $MYNAME zum downloaden. Die momentan benutze Version ist %s und es kann mit der Option -U die lokale Version aktualisiert werden."
 MSG_BACKUP_TARGET=81
 MSG_EN[$MSG_BACKUP_TARGET]="RBK0081I: Creating backup of type %s in %s."
 MSG_DE[$MSG_BACKUP_TARGET]="RBK0081I: Backup vom Typ %s wird in %s erstellt."
@@ -779,8 +780,8 @@ MSG_DE[$MSG_UMOUNT_ERROR]="RBK0166E: Umount für %s fehlerhaft. RC %s. Vielleich
 #MSG_EN[$MSG_ALREADY_ACTIVE]="RBK0167E: $MYSELF already up and running"
 #MSG_DE[$MSG_ALREADY_ACTIVE]="RBK0167E: $MYSELF ist schon gestartet"
 MSG_BETAVERSION_AVAILABLE=168
-MSG_EN[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $MYSELF beta version %s is available. Any help to test this beta is appreciated. Just upgrade to the new beta version with option -U. Restore to the previous version with option -V"
-MSG_DE[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $MYSELF Beta Version %s ist verfügbar. Hilfe beim Testen dieser Beta ist sehr willkommen. Einfach auf die neue Beta Version mit der Option -U upgraden. Die vorhergehende Version kann mit der Option -V wiederhergestellt werden"
+MSG_EN[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $SMILEY_BETA_AVAILABLE $MYSELF beta version %s is available. Any help to test this beta is appreciated. Just upgrade to the new beta version with option -U. Restore to the previous version with option -V"
+MSG_DE[$MSG_BETAVERSION_AVAILABLE]="RBK0168I: $SMILEY_BETA_AVAILABLE $MYSELF Beta Version %s ist verfügbar. Hilfe beim Testen dieser Beta ist sehr willkommen. Einfach auf die neue Beta Version mit der Option -U upgraden. Die vorhergehende Version kann mit der Option -V wiederhergestellt werden"
 MSG_ROOT_PARTITION_NOT_FOUND=169
 MSG_EN[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Target root partition %s does not exist."
 MSG_DE[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Ziel Rootpartition %s existiert nicht."
@@ -882,9 +883,9 @@ MSG_DE[$MSG_NO_HARDLINKS_USED]="RBK0196W: %s unterstützt keine Hardlinks."
 MSG_EMAIL_SEND_FAILED=197
 MSG_EN[$MSG_EMAIL_SEND_FAILED]="RBK0197W: eMail send command %s failed with RC %s."
 MSG_DE[$MSG_EMAIL_SEND_FAILED]="RBK0197W: eMail mit %s versenden endet fehlerhaft mit RC %s."
-MSG_NO_HARDLINKS_USED=198
-MSG_EN[$MSG_NO_HARDLINKS_USED]="RBK0198W: No hardlinks supported on %s."
-MSG_DE[$MSG_NO_HARDLINKS_USED]="RBK0198W: %s unterstützt keine Hardlinks."
+#MSG_NO_HARDLINKS_USED=198
+#MSG_EN[$MSG_NO_HARDLINKS_USED]="RBK0198W: No hardlinks supported on %s."
+#MSG_DE[$MSG_NO_HARDLINKS_USED]="RBK0198W: %s unterstützt keine Hardlinks."
 MSG_MISSING_RESTOREDEVICE_OPTION=199
 MSG_EN[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -R requires also option -d."
 MSG_DE[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -r benötigt auch Option -d."
@@ -895,8 +896,8 @@ MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED=201
 MSG_EN[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot and / located on same device and right now not supported with backuptype %s. Use dd"
 MSG_DE[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot und / auf demselben Gerät sind vorläufig nicht unterstützt bei dem Backuptyp %s. Benutze dd"
 MSG_RESTORETEST_REQUIRED=202
-MSG_EN[$MSG_RESTORETEST_REQUIRED]="RBK0202W: Friendly reminder: Execute now a restore test. You will be reminded %s times again."
-MSG_DE[$MSG_RESTORETEST_REQUIRED]="RBK0201W: Freundlicher Hinweis: Führe einen Restoretest durch. Du wirst noch %s mal erinnert werden."
+MSG_EN[$MSG_RESTORETEST_REQUIRED]="RBK0202W: $SMILEY_RESTORETEST_REQUIRED Friendly reminder: Execute now a restore test. You will be reminded %s times again."
+MSG_DE[$MSG_RESTORETEST_REQUIRED]="RBK0201W: $SMILEY_RESTORETEST_REQUIRED Freundlicher Hinweis: Führe einen Restoretest durch. Du wirst noch %s mal erinnert werden."
 MSG_NO_BOOT_DEVICE_DISOVERED=203
 MSG_EN[$MSG_NO_BOOT_DEVICE_DISOVERED]="RBK0203E: Unable to discover boot device. Please report this issue with a debug log created with option '-l debug'."
 MSG_DE[$MSG_NO_BOOT_DEVICE_DISOVERED]="RBK0203E: Boot device kann nicht erkannt werden. Bitte das Problem mit einem Debuglog welches mit Option '-l debug' erstellt wird berichten."
@@ -936,9 +937,9 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
 
 	printf -v msg "$msg" "${@:3}"
 
-	local msgPref=${msg:0:3}
+	local msgPref="${msg:0:3}"
 	if [[ $msgPref == "RBK" ]]; then								# RBK0001E
-		local severity=${msg:7:1}
+		local severity="${msg:7:1}"
 		if [[ "$severity" =~ [EWI] ]]; then
 			local msgHeader=${MSG_HEADER[$severity]}
 			echo "$msgHeader $msg"
@@ -1077,7 +1078,7 @@ function writeToConsole() {  # msglevel messagenumber message
 			timestamp="$(date +'%m-%d-%Y %T') "
 		fi
 
-		if (( $INTERACTIVE )); then
+		if (( $INTERACTIVE || $CTRLC_DETECTED )); then
 			if [[ $msgSev == "E" ]]; then
 				echo $noNL -e "$timestamp$msg" >&2
 			else
@@ -1166,29 +1167,20 @@ function executeCommand() { # command - rc's to accept
 	local rc i
 	logItem "Command executed:$NL$1"
 	logItem "Skips: $2"
-	if (( $VERBOSE )) || (( $PROGRESS )); then
-		eval "$1" 2>&1
-		rc=$?
-	else
-		eval "$1" &>"$LOG_TOOL_FILE"
-		rc=$?
-	fi
+
+	eval "$1"
+	rc=$?
 	if (( $rc != 0 )); then
 		local error=1
 		for i in ${@:2}; do
 			if (( $i == $rc )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
-				logItem "$(< $LOG_TOOL_FILE)"
 				rc=0
 				error=0
 				break
 			fi
 		done
-		if (( $error )) && [[ -f $LOG_TOOL_FILE ]]; then
-			echo "$(< $LOG_TOOL_FILE)"
-		fi
 	fi
-	rm -f "$LOG_TOOL_FILE" &>>$LOG_FILE
 	logItem "Result $rc"
 	return $rc
 }
@@ -1196,13 +1188,8 @@ function executeCommand() { # command - rc's to accept
 function executeShellCommand() { # command
 
 	logEntry "executeShellCommand: $@"
-	eval "$* 1>/dev/null 2>\"$LOG_TOOL_FILE\"" &>> "$LOG_FILE"
+	eval "$*"
     local rc=$?
-	cat "$LOG_TOOL_FILE" >> "$LOG_FILE"
-	if (( $rc != 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHELL_ERROR "$1" "$(< $LOG_TOOL_FILE)"
-		rm -f "$LOG_TOOL_FILE"  &>>$LOG_FILE
-	fi
 	logExit "executeShellCommand: $rc"
 	return $rc
 }
@@ -1286,6 +1273,20 @@ function logSystemStatus() {
 
 }
 
+# calculate time difference, return array with days, hours, minutes and seconds
+function duration() { # startTime endTime
+	factors=(86400 3600 60 1)
+	local diff=$(( $2 - $1 ))
+	local d i
+	i=0
+	for f in "${factors[@]}"; do
+		d[i]=$(( diff / f ))
+		diff=$(( diff - d[i] * f ))
+		((i++))
+	done
+	echo "${d[@]}"
+}
+
 function logOptions() {
 
 	logEntry "logOptions"
@@ -1346,12 +1347,9 @@ function logOptions() {
 }
 
 LOG_MAIL_FILE="/tmp/${MYNAME}.maillog"
-LOG_TOOL_FILE="/tmp/${MYNAME}_$$.log"
-#logItem "Removing maillog file ${LOG_MAIL_FILE}"
 rm -f "$LOG_MAIL_FILE" &>/dev/null
 LOG_FILE_NAME="${MYNAME}.log"
 LOG_FILE="$CURRENT_DIR/$LOG_FILE_NAME"
-#logItem "Removing log file ${LOG_FILE}"
 rm -f "$LOG_FILE" &>/dev/null
 
 function initializeDefaultConfig() {
@@ -1650,9 +1648,9 @@ function isUpdatePossible() {
 	if [[ $version_rc == 0 ]]; then
 		NEWS_AVAILABLE=1
 		UPDATE_POSSIBLE=1
-		latestVersion=${versions[0]}
-		newVersion=${versions[1]}
-		oldVersion=${versions[2]}
+		latestVersion="${versions[0]}"
+	  newVersion="${versions[1]}"
+		oldVersion="${versions[2]}"
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getLocalizedMessage $MSG_VERSION_HISTORY_PAGE)"
@@ -2227,10 +2225,9 @@ function setupEnvironment() {
 		assertionFailed $LINENO "Invalid log file $LOG_FILE"
 	fi
 
-	3>&1 # clone stdio/err file descriptors
-	4>&2
-	exec 3> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&1)
-	exec 4> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&2)
+	# see https://stackoverflow.com/questions/3173131/redirect-copy-of-stdout-to-log-file-from-within-bash-script-itself
+	exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
+	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 	local v=$(getLocalizedMessage $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY")
 	logItem "$v"
@@ -2465,8 +2462,6 @@ function cleanupBackupDirectory() {
 			if [[ -d "$BACKUPTARGET_DIR" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_BACKUPDIRECTORY "$BACKUPTARGET_DIR"
 				logItem "$(ls -la $BACKUPTARGET_DIR)"
-				exec 3>&- # close stdout/err redirection into file
-				exec 4>&- # otherwise rm will fail
 				rm -rf $BACKUPTARGET_DIR # remove incomplete backupdir if it exists
 			fi
 		fi
@@ -2479,13 +2474,19 @@ function cleanupBackupDirectory() {
 
 function cleanup() { # trap
 
-	logEntry "cleanup"
+	if [[ $1 == "SIGINT" ]]; then
+		# ignore CTRL-C now
+		trap '' SIGINT SIGTERM EXIT
+		CTRLC_DETECTED=1
+		rc=$RC_CTRLC
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
+	fi
 
-	trap noop SIGINT SIGTERM EXIT	# disable all interupts
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
+
+	CLEANUP_RC=$rc
 
 	(( $STOPPED_SERVICES )) && startServices
-
-	# no logging any more
 
 	if (( $RESTORE )); then
 		cleanupRestore $1
@@ -2499,10 +2500,12 @@ function cleanup() { # trap
 		_no_more_locking
 	fi
 
-	logItem "Terminate now with rc $rc"
-	(( $rc == 0 )) && saveVars
+	logItem "Terminate now with rc $CLEANUP_RC"
+	(( $CLEANUP_RC == 0 )) && saveVars
 
-	exit $rc
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
+
+	exit $CLEANUP_RC
 
 }
 
@@ -2514,10 +2517,6 @@ function cleanupRestore() { # trap
 
 	logItem "Got trap $1"
 	logItem "rc: $rc"
-	if [[ $1 == "SIGINT" ]]; then
-		rc=$RC_CTRLC
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
-	fi
 
 	rm $$.sfdisk &>/dev/null
 
@@ -2675,11 +2674,6 @@ function cleanupBackup() { # trap
 
 	logItem "Got trap $1"
 	logItem "rc: $rc"
-
-	if [[ $1 == "SIGINT" ]]; then
-		rc=$RC_CTRLC
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
-	fi
 
 	if (( $rc !=  0 )); then
 
@@ -3586,6 +3580,7 @@ function backup() {
 	callExtensions $READY_BACKUP_EXTENSION $rc
 
 	BACKUP_STARTED=1
+	START_TIME=$(date +%s)
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
 
@@ -3611,6 +3606,11 @@ function backup() {
 	else
 		backupPartitions
 	fi
+	END_TIME=$(date +%s)
+
+	BACKUP_TIME=($(duration $START_TIME $END_TIME))
+	logItem "Backuptime: $BACKUP_TIME"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
 
 	logItem "Syncing"
 	sync
@@ -3673,8 +3673,6 @@ function backup() {
 
 	callExtensions $POST_BACKUP_EXTENSION $rc
 	startServices
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
 
 	logger -t $MYSELF "Backup finished"
 	logExit "backup"
@@ -4203,7 +4201,8 @@ function reportNews() {
 		if (( ! $IS_BETA )); then
 			local betaVersion=$(isBetaAvailable)
 			if [[ -n $betaVersion && $VERSION != $betaVersion ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion" "oldVersion"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getLocalizedMessage $MSG_VERSION_HISTORY_PAGE)"
 				NEWS_AVAILABLE=1
 				BETA_AVAILABLE=1
 			fi
@@ -4217,10 +4216,6 @@ function reportNews() {
 function doitBackup() {
 
 	logEntry "doitBackup $PARTITIONBASED_BACKUP"
-
-	trapWithArg cleanup SIGINT SIGTERM EXIT
-
-	reportNews
 
 	getRootPartition
 	inspect4Backup
@@ -5045,8 +5040,6 @@ function doitRestore() {
 
 	commonChecks
 
-	trapWithArg cleanup SIGINT SIGTERM EXIT
-
 	if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
@@ -5189,8 +5182,6 @@ function doitRestore() {
 			fi
 		fi
 	fi
-
-	reportNews
 
 	rc=0
 
@@ -5987,6 +5978,9 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	exitError $RC_PARAMETER_ERROR
 fi
 
+logItem "Enabling trap handler"
+trapWithArg cleanup SIGINT SIGTERM EXIT
+
 setupEnvironment
 logOptions						# config parms already read
 logSystem
@@ -6019,5 +6013,7 @@ updateRestoreReminder
 if (( $RESTORE_REMINDER )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_REMINDER "$RESTORE_REMINDER_INTERVAL"
 fi
+
+reportNews
 
 doit #	no return for backup
