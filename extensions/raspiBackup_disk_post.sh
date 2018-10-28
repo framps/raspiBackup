@@ -31,20 +31,17 @@ ext_diskUsage_post=( $(getDiskUsage) )
 
 # set any messages and prefix message name with ext_ and some unique prefix to use a different namespace than the script
 MSG_EXT_DISK_USAGE="ext_diskusage_2"
-MSG_EN[$MSG_EXT_DISK_USAGE]="--- RBK1002I: Disk usage pre backup: Used: %1 Free: %2"
-MSG_DE[$MSG_EXT_DISK_USAGE]="--- RBK1002I: Partitionsauslastung vor dem Backup: Belegt: %1 Frei: %2"
+MSG_EN[$MSG_EXT_DISK_USAGE]="RBK1002I: Disk usage pre backup: Used: %s Free: %s"
+MSG_DE[$MSG_EXT_DISK_USAGE]="RBK1002I: Partitionsauslastung vor dem Backup: Belegt: %s Frei: %s"
 MSG_EXT_DISK_USAGE2="ext_diskusage_3"
-MSG_EN[$MSG_EXT_DISK_USAGE2]="--- RBK1003I: Disk usage post backup: Used: %1 Free: %2"
-MSG_DE[$MSG_EXT_DISK_USAGE2]="--- RBK1003I: Partitionsauslastung nach dem Backup: Belegt: %1 Frei: %2"
+MSG_EN[$MSG_EXT_DISK_USAGE2]="RBK1003I: Disk usage post backup: Used: %s Free: %s"
+MSG_DE[$MSG_EXT_DISK_USAGE2]="RBK1003I: Partitionsauslastung nach dem Backup: Belegt: %s Frei: %s"
 MSG_EXT_DISK_USAGE3="ext_diskusage_4"
-MSG_EN[$MSG_EXT_DISK_USAGE3]="--- RBK1004I: Free change: %1 (%2 %)"
-MSG_DE[$MSG_EXT_DISK_USAGE3]="--- RBK1004I: Änderung freier Platz: %1 (%2 %)"
+MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1004I: Free change: %s (%s %%)"
+MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1004I: Änderung freier Platz: %s (%s %%)"
 MSG_EXT_DISK_USAGE4="ext_diskusage_5"
-MSG_EN[$MSG_EXT_DISK_USAGE4]="--- RBK1005E: bc not found. Please install bc first."
-MSG_DE[$MSG_EXT_DISK_USAGE4]="--- RBK1004E: bc nicht gefunden. bc muss installiert werden."
-MSG_EXT_DISK_USAGE5="ext_diskusage_6"
-MSG_EN[$MSG_EXT_DISK_USAGE4]="--- RBK1006E: Error retrieving data."
-MSG_DE[$MSG_EXT_DISK_USAGE4]="--- RBK1006E: Fehler beim Datensammeln."
+MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1005E: bc not found. Please install bc first."
+MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert werden."
 
 # now write message to console and log and email
 # $MSG_LEVEL_MINIMAL will write message all the time
@@ -54,24 +51,24 @@ if ! which bc &>/dev/null; then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE4
 else
 
-	[[ -n ${ext_diskUsage_pre[2]} ]] && usagePre=$( bc <<< "${ext_diskUsage_pre[2]} * 1024" ) || usagePre=0
-	[[ -n ${ext_diskUsage_post[2]} ]] && usagePost=$( bc <<< "${ext_diskUsage_post[2]} * 1024" ) || usagePost=0
-	[[ -n ${ext_diskUsage_pre[3]} ]] && freePre=$( bc <<< "${ext_diskUsage_pre[3]} * 1024" ) || freePre=0
-	[[ -n ${ext_diskUsage_post[3]} ]] && freePost=$( bc <<< "${ext_diskUsage_post[3]} * 1024" ) || freePost=0
-	[[ -n ${ext_diskUsage_pre[4]} ]] && percentUsedPre=${ext_diskUsage_pre[4]} || percentUsedPre=0
-	[[ -n ${ext_diskUsage_post[4]} ]] && percentUsedPost=${ext_diskUsage_post[4]} || percentUsedPost=0
+#	Filesystem     	1K-blocks    	Used 	Available 	Use% 	Mounted on
+#	/dev/root 		15122316 		6400128 7930972 	45% 	/
+
+	usagePre=$( bc <<< "${ext_diskUsage_pre[2]} * 1024" )
+	usagePost=$( bc <<< "${ext_diskUsage_post[2]} * 1024" )
+	freePre=$( bc <<< "${ext_diskUsage_pre[3]} * 1024" )
+	freePost=$( bc <<< "${ext_diskUsage_post[3]} * 1024" )
+	percentUsedPre=${ext_diskUsage_pre[4]}
+	percentUsedPost=${ext_diskUsage_post[4]}
 
 	freeChange=$( bc <<< "$freePost - $freePre" )
 
-	if (( $freePre == 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE4
-	else
+	# Use bytesToHuman from raspiBackup which displays a number in a human readable form
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE "$(bytesToHuman $usagePre)" "$(bytesToHuman $freePre)"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE2 "$(bytesToHuman $usagePost)" "$(bytesToHuman $freePost)"
 
+	if (( $freePre != 0 )); then
 		freeChangePercent=$( printf "%3.2f" $(bc <<<"( $freePost - $freePre ) * 100 / $freePre") )
-
-		# Use bytesToHuman from raspiBackup which displays a number in a human readable form
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE "$(bytesToHuman $usagePre)" "$(bytesToHuman $freePre)"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE2 "$(bytesToHuman $usagePost)" "$(bytesToHuman $freePost)"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE3 "$(bytesToHuman $freeChange)" "$freeChangePercent"
 	fi
 fi

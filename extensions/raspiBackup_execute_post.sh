@@ -6,13 +6,13 @@
 #
 # Function: Call another script
 #
-# See http://www.linux-tips-and-tricks.de/raspiBackup for additional information 
+# See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
 #
 # $1 has the return code of raspiBackup. If it equals 0 this signals success and failure otherwise
 #
 #######################################################################################################################
 #
-#    Copyright (C) 2016-2017 framp at linux-tips-and-tricks dot de
+#    Copyright (C) 2016-2018 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #######################################################################################################################
 
 if [[ -n $1 ]]; then											# was there a return code ? Should be :-)
-	if [[ "$1" == 0 ]]; then						
+	if [[ "$1" == 0 ]]; then
 		wall <<< "Extension detected ${0##*/} succeeded :-)"
 	else
 		wall <<< "Extension detected ${0##*/} failed :-("
@@ -38,7 +38,7 @@ if [[ -n $1 ]]; then											# was there a return code ? Should be :-)
 else
 	wall <<< "Extension detected ${0##*/} didn't receive a return code :-("
 fi
-	
-		
-		
+
+
+
 
