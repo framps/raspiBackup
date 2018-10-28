@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-10-28 09:45:36 +0100$"
+GIT_DATE="$Date: 2018-10-28 13:36:07 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 4fd677b$"
+GIT_COMMIT="$Sha1: 5138333$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -542,8 +542,8 @@ MSG_UNKNOWN_OPTION=89
 MSG_EN[$MSG_UNKNOWN_OPTION]="RBK0089E: Unknown option %s."
 MSG_DE[$MSG_UNKNOWN_OPTION]="RBK0089E: Unbekannte Option %s."
 MSG_OPTION_REQUIRES_PARAMETER=90
-MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s requires a parameter. Prefix an existing parameter with \\."
-MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s erwartet einen Parameter. Stelle einem existierenden Parameter \\ voran."
+MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s requires a parameter. If parameter starts with '-' use ' -' instead."
+MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s erwartet einen Parameter. Falls der Parameter mit '-' beginnt benutze ' -' dafür."
 MSG_MENTION_HELP=91
 MSG_EN[$MSG_MENTION_HELP]="RBK0091I: Invoke '%s -h' to get more detailed information of all script invocation parameters."
 MSG_DE[$MSG_MENTION_HELP]="RBK0091I: '%s -h' liefert eine detailierte Beschreibung aller Scriptaufrufoptionen."
@@ -5496,16 +5496,29 @@ function mentionHelp() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
 }
 
+# there is an issue when a parameter starts with "-" which may a new option
+# Workaround1: if parameter contains at least one space it's considered as a parameter and not an option even the string starts with '-'
+# Workaround2: prefix parameter with \
+
 function checkOptionParameter() { # option parameter
+
+	local nospaces="${2/ /}"
+	if [[ "$nospaces" != "$2" ]]; then
+		echo "$2"
+		return 0
+	fi
 	if [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z $2 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
-		exitError $RC_PARAMETER_ERROR
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
+		echo ""
+		return 1
 	fi
-	if [[ ${2:0:1} == "\\" ]]; then
+	if [[ "${2:0:1}" == "\\" ]]; then
 		echo "${2:1}"
 	else
 		echo "$2"
 	fi
+	return 0
 }
 
 # -x and -x+ enables, -x- disables flag
@@ -5650,6 +5663,7 @@ while (( "$#" )); do
 
     -a)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       STARTSERVICES="$o"; shift 2
       ;;
 
@@ -5659,6 +5673,7 @@ while (( "$#" )); do
 
     -b)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       DD_BLOCKSIZE="$o"; shift 2
       ;;
 
@@ -5676,22 +5691,27 @@ while (( "$#" )); do
 
     -d)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       RESTORE_DEVICE="$o"; RESTORE=1; shift 2
       ;;
 
     -D)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       DD_PARMS="$o"; shift 2
       ;;
 
     -e)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       EMAIL="$o"; shift 2
       ;;
 
     -E)
-	  o=$(checkOptionParameter "$1" "$2")
+	  o=$(checkOptionParameter "$1" "$2");
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       EMAIL_PARMS="$o"; shift 2
+
       ;;
 
     -F|-F[-+])
@@ -5704,6 +5724,7 @@ while (( "$#" )); do
 
     -G)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
 	  msgVar="MSG_${LANGUAGE}"
@@ -5727,26 +5748,31 @@ while (( "$#" )); do
 
     -k)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
     -l)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
 	  ;;
 
     -L)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
 	  ;;
 
     -m)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
 	  ;;
 
     -M)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\:\.\-]/_}
   	  ;;
@@ -5757,16 +5783,19 @@ while (( "$#" )); do
 
     -N)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXTENSIONS="$o"; shift 2
 	  ;;
 
     -o)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
     -p)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPPATH="$o"; shift 2
 	  if [[ ! -d "$BACKUPPATH" ]]; then
 	      writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$BACKUPPATH"
@@ -5781,16 +5810,18 @@ while (( "$#" )); do
 
     -r)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTOREFILE="$o"; shift 2
       if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
 		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
 		  exitError $RC_MISSING_FILES
 	  fi
-	  RESTOREFILE="$(readlink -f "$OPTARG")"
+	  RESTOREFILE="$(readlink -f "$RESTOREFILE")"
 	  ;;
 
     -R)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  ROOT_PARTITION="$o"; shift 2
       ROOT_PARTITION_DEFINED=1
   	  ;;
@@ -5801,6 +5832,7 @@ while (( "$#" )); do
 
     -s)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PROGRAM="$o"; shift 2
 	  ;;
 
@@ -5818,6 +5850,7 @@ while (( "$#" )); do
 
     -t)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
 
@@ -5827,11 +5860,13 @@ while (( "$#" )); do
 
     -T)
 	  checkOptionParameter "$1" "$2"
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  PARTITIONS_TO_BACKUP="$2"; shift 2
 	  ;;
 
     -u)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
 
