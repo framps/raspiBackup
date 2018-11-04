@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-10-01 19:58:59 +0200$"
+GIT_DATE="$Date: 2018-10-29 19:34:33 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 18e2448$"
+GIT_COMMIT="$Sha1: 1706596$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -213,6 +213,8 @@ SHARED_BOOT_DIRECTORY=0
 BOOT_TAR_EXT="tmg"
 BOOT_DD_EXT="img"
 
+CTRLC_DETECTED=0
+
 # Commands used by raspiBackup and which have to be available
 # [command]=package
 declare -A REQUIRED_COMMANDS=( \
@@ -252,8 +254,7 @@ RC_NO_BOOT_FOUND=121
 
 LOGGING_ENABLED=0
 
-tty -s
-INTERACTIVE=!$?
+[[ -t 0 || -p /dev/stdin ]] && INTERACTIVE=1 || INTERACTIVE=0
 
 #################################################################################
 # --- Messages in English and German
@@ -369,9 +370,9 @@ MSG_DE[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Prüfe ob eine neue Version von
 MSG_INVALID_LOG_LEVEL=32
 MSG_EN[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Invalid parameter '%s' for option -l detected. Using default parameter '%s'."
 MSG_DE[$MSG_INVALID_LOG_LEVEL]="RBK0032W: Ungültiger Parameter '%s' für Option -l eingegeben. Es wird Standardparameter '%s' genommen."
-#MSG_INVALID_LOG_OUTPUT=33
-#MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0033W: Invalid parameter %s for -L detected. Using %s."
-#MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0032W: Ungültiger Parameter %s für -L eingegeben. Es wird %s benutzt."
+MSG_CLEANING_UP=33
+MSG_EN[$MSG_CLEANING_UP]="RBK0033I: Please wait until cleanup has finished."
+MSG_DE[$MSG_CLEANING_UP]="RBK0032I: Bitte warten bis aufgeräumt wurde."
 MSG_FILE_NOT_FOUND=34
 MSG_EN[$MSG_FILE_NOT_FOUND]="RBK0034E: File %s not found."
 MSG_DE[$MSG_FILE_NOT_FOUND]="RBK0034E: Datei %s nicht gefunden."
@@ -541,8 +542,8 @@ MSG_UNKNOWN_OPTION=89
 MSG_EN[$MSG_UNKNOWN_OPTION]="RBK0089E: Unknown option %s."
 MSG_DE[$MSG_UNKNOWN_OPTION]="RBK0089E: Unbekannte Option %s."
 MSG_OPTION_REQUIRES_PARAMETER=90
-MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s requires a parameter. Prefix an existing parameter with \\."
-MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s erwartet einen Parameter. Stelle einem existierenden Parameter \\ voran."
+MSG_EN[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s requires a parameter. If parameter starts with '-' start with '\-' instead."
+MSG_DE[$MSG_OPTION_REQUIRES_PARAMETER]="RBK0090E: Option %s erwartet einen Parameter. Falls der Parameter mit '-' beginnt beginne stattdessen mit '\-'."
 MSG_MENTION_HELP=91
 MSG_EN[$MSG_MENTION_HELP]="RBK0091I: Invoke '%s -h' to get more detailed information of all script invocation parameters."
 MSG_DE[$MSG_MENTION_HELP]="RBK0091I: '%s -h' liefert eine detailierte Beschreibung aller Scriptaufrufoptionen."
@@ -1077,7 +1078,7 @@ function writeToConsole() {  # msglevel messagenumber message
 			timestamp="$(date +'%m-%d-%Y %T') "
 		fi
 
-		if (( $INTERACTIVE )); then
+		if (( $INTERACTIVE || $CTRLC_DETECTED )); then
 			if [[ $msgSev == "E" ]]; then
 				echo $noNL -e "$timestamp$msg" >&2
 			else
@@ -1166,29 +1167,20 @@ function executeCommand() { # command - rc's to accept
 	local rc i
 	logItem "Command executed:$NL$1"
 	logItem "Skips: $2"
-	if (( $VERBOSE )) || (( $PROGRESS )); then
-		eval "$1" 2>&1
-		rc=$?
-	else
-		eval "$1" &>"$LOG_TOOL_FILE"
-		rc=$?
-	fi
+
+	eval "$1"
+	rc=$?
 	if (( $rc != 0 )); then
 		local error=1
 		for i in ${@:2}; do
 			if (( $i == $rc )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
-				logItem "$(< $LOG_TOOL_FILE)"
 				rc=0
 				error=0
 				break
 			fi
 		done
-		if (( $error )) && [[ -f $LOG_TOOL_FILE ]]; then
-			echo "$(< $LOG_TOOL_FILE)"
-		fi
 	fi
-	rm -f "$LOG_TOOL_FILE" &>>$LOG_FILE
 	logItem "Result $rc"
 	return $rc
 }
@@ -1196,13 +1188,8 @@ function executeCommand() { # command - rc's to accept
 function executeShellCommand() { # command
 
 	logEntry "executeShellCommand: $@"
-	eval "$* 1>/dev/null 2>\"$LOG_TOOL_FILE\"" &>> "$LOG_FILE"
+	eval "$*"
     local rc=$?
-	cat "$LOG_TOOL_FILE" >> "$LOG_FILE"
-	if (( $rc != 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHELL_ERROR "$1" "$(< $LOG_TOOL_FILE)"
-		rm -f "$LOG_TOOL_FILE"  &>>$LOG_FILE
-	fi
 	logExit "executeShellCommand: $rc"
 	return $rc
 }
@@ -1360,12 +1347,9 @@ function logOptions() {
 }
 
 LOG_MAIL_FILE="/tmp/${MYNAME}.maillog"
-LOG_TOOL_FILE="/tmp/${MYNAME}_$$.log"
-#logItem "Removing maillog file ${LOG_MAIL_FILE}"
 rm -f "$LOG_MAIL_FILE" &>/dev/null
 LOG_FILE_NAME="${MYNAME}.log"
 LOG_FILE="$CURRENT_DIR/$LOG_FILE_NAME"
-#logItem "Removing log file ${LOG_FILE}"
 rm -f "$LOG_FILE" &>/dev/null
 
 function initializeDefaultConfig() {
@@ -2241,10 +2225,9 @@ function setupEnvironment() {
 		assertionFailed $LINENO "Invalid log file $LOG_FILE"
 	fi
 
-	3>&1 # clone stdio/err file descriptors
-	4>&2
-	exec 3> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&1)
-	exec 4> >(stdbuf -i0 -o0 -e0 tee -a "$LOG_FILE" >&2)
+	# see https://stackoverflow.com/questions/3173131/redirect-copy-of-stdout-to-log-file-from-within-bash-script-itself
+	exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
+	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 	local v=$(getLocalizedMessage $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY")
 	logItem "$v"
@@ -2479,8 +2462,6 @@ function cleanupBackupDirectory() {
 			if [[ -d "$BACKUPTARGET_DIR" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_BACKUPDIRECTORY "$BACKUPTARGET_DIR"
 				logItem "$(ls -la $BACKUPTARGET_DIR)"
-				exec 3>&- # close stdout/err redirection into file
-				exec 4>&- # otherwise rm will fail
 				rm -rf $BACKUPTARGET_DIR # remove incomplete backupdir if it exists
 			fi
 		fi
@@ -2493,13 +2474,19 @@ function cleanupBackupDirectory() {
 
 function cleanup() { # trap
 
-	logEntry "cleanup"
+	if [[ $1 == "SIGINT" ]]; then
+		# ignore CTRL-C now
+		trap '' SIGINT SIGTERM EXIT
+		CTRLC_DETECTED=1
+		rc=$RC_CTRLC
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
+	fi
 
-	trap noop SIGINT SIGTERM EXIT	# disable all interupts
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
+
+	CLEANUP_RC=$rc
 
 	(( $STOPPED_SERVICES )) && startServices
-
-	# no logging any more
 
 	if (( $RESTORE )); then
 		cleanupRestore $1
@@ -2513,10 +2500,12 @@ function cleanup() { # trap
 		_no_more_locking
 	fi
 
-	logItem "Terminate now with rc $rc"
-	(( $rc == 0 )) && saveVars
+	logItem "Terminate now with rc $CLEANUP_RC"
+	(( $CLEANUP_RC == 0 )) && saveVars
 
-	exit $rc
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
+
+	exit $CLEANUP_RC
 
 }
 
@@ -2528,10 +2517,6 @@ function cleanupRestore() { # trap
 
 	logItem "Got trap $1"
 	logItem "rc: $rc"
-	if [[ $1 == "SIGINT" ]]; then
-		rc=$RC_CTRLC
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
-	fi
 
 	rm $$.sfdisk &>/dev/null
 
@@ -2689,11 +2674,6 @@ function cleanupBackup() { # trap
 
 	logItem "Got trap $1"
 	logItem "rc: $rc"
-
-	if [[ $1 == "SIGINT" ]]; then
-		rc=$RC_CTRLC
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
-	fi
 
 	if (( $rc !=  0 )); then
 
@@ -3694,8 +3674,6 @@ function backup() {
 	callExtensions $POST_BACKUP_EXTENSION $rc
 	startServices
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
-
 	logger -t $MYSELF "Backup finished"
 	logExit "backup"
 
@@ -4238,8 +4216,6 @@ function reportNews() {
 function doitBackup() {
 
 	logEntry "doitBackup $PARTITIONBASED_BACKUP"
-
-	trapWithArg cleanup SIGINT SIGTERM EXIT
 
 	getRootPartition
 	inspect4Backup
@@ -5064,8 +5040,6 @@ function doitRestore() {
 
 	commonChecks
 
-	trapWithArg cleanup SIGINT SIGTERM EXIT
-
 	if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
@@ -5522,16 +5496,29 @@ function mentionHelp() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
 }
 
+# there is an issue when a parameter starts with "-" which may a new option
+# Workaround1: if parameter contains at least one space it's considered as a parameter and not an option even the string starts with '-'
+# Workaround2: prefix parameter with \
+
 function checkOptionParameter() { # option parameter
+
+	local nospaces="${2/ /}"
+	if [[ "$nospaces" != "$2" ]]; then
+		echo "$2"
+		return 0
+	fi
 	if [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z $2 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
-		exitError $RC_PARAMETER_ERROR
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
+		echo ""
+		return 1
 	fi
-	if [[ ${2:0:1} == "\\" ]]; then
+	if [[ "${2:0:1}" == "\\" ]]; then
 		echo "${2:1}"
 	else
 		echo "$2"
 	fi
+	return 0
 }
 
 # -x and -x+ enables, -x- disables flag
@@ -5676,6 +5663,7 @@ while (( "$#" )); do
 
     -a)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       STARTSERVICES="$o"; shift 2
       ;;
 
@@ -5685,6 +5673,7 @@ while (( "$#" )); do
 
     -b)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       DD_BLOCKSIZE="$o"; shift 2
       ;;
 
@@ -5702,22 +5691,27 @@ while (( "$#" )); do
 
     -d)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       RESTORE_DEVICE="$o"; RESTORE=1; shift 2
       ;;
 
     -D)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       DD_PARMS="$o"; shift 2
       ;;
 
     -e)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       EMAIL="$o"; shift 2
       ;;
 
     -E)
-	  o=$(checkOptionParameter "$1" "$2")
+	  o=$(checkOptionParameter "$1" "$2");
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       EMAIL_PARMS="$o"; shift 2
+
       ;;
 
     -F|-F[-+])
@@ -5730,6 +5724,7 @@ while (( "$#" )); do
 
     -G)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
       LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
 	  msgVar="MSG_${LANGUAGE}"
@@ -5753,26 +5748,31 @@ while (( "$#" )); do
 
     -k)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
     -l)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
 	  ;;
 
     -L)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
 	  ;;
 
     -m)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
 	  ;;
 
     -M)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\:\.\-]/_}
   	  ;;
@@ -5783,16 +5783,19 @@ while (( "$#" )); do
 
     -N)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXTENSIONS="$o"; shift 2
 	  ;;
 
     -o)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
     -p)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPPATH="$o"; shift 2
 	  if [[ ! -d "$BACKUPPATH" ]]; then
 	      writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$BACKUPPATH"
@@ -5807,16 +5810,18 @@ while (( "$#" )); do
 
     -r)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTOREFILE="$o"; shift 2
       if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
 		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
 		  exitError $RC_MISSING_FILES
 	  fi
-	  RESTOREFILE="$(readlink -f "$OPTARG")"
+	  RESTOREFILE="$(readlink -f "$RESTOREFILE")"
 	  ;;
 
     -R)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  ROOT_PARTITION="$o"; shift 2
       ROOT_PARTITION_DEFINED=1
   	  ;;
@@ -5827,6 +5832,7 @@ while (( "$#" )); do
 
     -s)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PROGRAM="$o"; shift 2
 	  ;;
 
@@ -5844,6 +5850,7 @@ while (( "$#" )); do
 
     -t)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
 
@@ -5853,11 +5860,13 @@ while (( "$#" )); do
 
     -T)
 	  checkOptionParameter "$1" "$2"
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  PARTITIONS_TO_BACKUP="$2"; shift 2
 	  ;;
 
     -u)
 	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
 
@@ -6003,6 +6012,9 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_RESTOREDEVICE_OPTION
 	exitError $RC_PARAMETER_ERROR
 fi
+
+logItem "Enabling trap handler"
+trapWithArg cleanup SIGINT SIGTERM EXIT
 
 setupEnvironment
 logOptions						# config parms already read
