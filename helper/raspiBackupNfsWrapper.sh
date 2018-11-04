@@ -28,7 +28,7 @@ NFSSERVER="raspifix"
 NFSDIRECTORY="/disks/silver/backup"
 MOUNTPOINT="/backup"
 
-VERSION="0.0.3"
+VERSION="0.0.4"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -47,19 +47,21 @@ function cleanup() {
 
 trap cleanup SIGINT SIGTERM EXIT
 
+# nfs server online ?
 if ping -c1 -w3 $NFSSERVER &>/dev/null; then
+	# does nfs server export directory ?
 	if showmount -e $NFSSERVER | grep -q $NFSDIRECTORY; then
-		echo "Mouting $NFSSERVER:$NFSDIRECTORY to $MOUNTPOINT"
-		mount $NFSSERVER:$NFSDIRECTORY $MOUNTPOINT
-		if (( $? > 0 )); then
-			echo "Failed to mount $NFSSERVER:$NFSDIRECTORY"
-			exit 42
-		fi
-		raspiBackup.sh
-		rc=$?
-		if (( $rc > 0 )); then
-			echo "raspiBackup failed with rc $rc"
-			exit $rc
+		# is directory not mounted already ?
+		if ! mount | grep -q $MOUNTPOINT; then
+			echo "Mouting $NFSSERVER:$NFSDIRECTORY to $MOUNTPOINT"
+			mount $NFSSERVER:$NFSDIRECTORY $MOUNTPOINT
+			. raspiBackup.sh
+			rc=$?
+			if (( $rc > 0 )); then
+				echo "raspiBackup failed with rc $rc"
+				exit $rc
+			fi
+			#	now variable $BACKUPTARGET_DIR points to the new backup directory just created and can be used for further backup data processing
 		fi
 	else
 		echo "Server $NFSSERVER does not provide $NFSDIRECTORY"
