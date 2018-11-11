@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-10-29 19:34:33 +0100$"
+GIT_DATE="$Date: 2018-11-10 15:31:46 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 1706596$"
+GIT_COMMIT="$Sha1: abe0490$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -275,8 +275,8 @@ MSG_UNDEFINED=0
 MSG_EN[$MSG_UNDEFINED]="RBK0000E: Undefined messageid"
 MSG_DE[$MSG_UNDEFINED]="RBK0000E: Unbekannte Meldungsid"
 MSG_ASSERTION_FAILED=1
-MSG_EN[$MSG_ASSERTION_FAILED]="RBK0001E: Unexpected program error occured. Git commit: %s, Linenumber: %s, Error: %s."
-MSG_DE[$MSG_ASSERTION_FAILED]="RBK0001E: Unerwarteter Programmfehler trat auf. Git commit: %s, Zeile: %s, Fehler: %s."
+MSG_EN[$MSG_ASSERTION_FAILED]="RBK0001E: Unexpected program error occured. (%s), Linenumber: %s, Error: %s."
+MSG_DE[$MSG_ASSERTION_FAILED]="RBK0001E: Unerwarteter Programmfehler trat auf. (%s), Zeile: %s, Fehler: %s."
 MSG_RUNASROOT=2
 MSG_EN[$MSG_RUNASROOT]="RBK0002E: $MYSELF has to be started as root. Try 'sudo %s%s'."
 MSG_DE[$MSG_RUNASROOT]="RBK0002E: $MYSELF muss als root gestartet werden. Benutze 'sudo %s%s'."
@@ -300,10 +300,10 @@ MSG_EN[$MSG_STOPPING_SERVICES]="RBK0008I: Stopping services: '%s'."
 MSG_DE[$MSG_STOPPING_SERVICES]="RBK0008I: Services werden gestoppt: '%s'."
 MSG_STARTED=9
 MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) started at %s."
-MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) um %s gestartet."
+MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) %s gestartet."
 MSG_STOPPED=10
 MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) stopped at %s."
-MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) um %s beendet."
+MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) %s beendet."
 MSG_NO_BOOT_PARTITION=11
 MSG_EN[$MSG_NO_BOOT_PARTITION]="RBK0011E: No boot partition ${BOOT_PARTITION_PREFIX}1 found."
 MSG_DE[$MSG_NO_BOOT_PARTITION]="RBK0011E: Keine boot Partition ${BOOT_PARTITION_PREFIX}1 gefunden."
@@ -506,8 +506,8 @@ MSG_RESTORE_FAILED=77
 MSG_EN[$MSG_RESTORE_FAILED]="RBK0077E: Restore failed with RC %s. Check previous error messages."
 MSG_DE[$MSG_RESTORE_FAILED]="RBK0077E: Restore wurde fehlerhaft mit RC %s beendet. Siehe vorhergehende Fehlermeldungen."
 MSG_BACKUP_TIME=78
-MSG_EN[$MSG_BACKUP_TIME]="RBK0078I: Backup time: %s hours, %s minutes and %s seconds."
-MSG_DE[$MSG_BACKUP_TIME]="RBK0078I: Backup Zeit: %s Stunden, %s Minuten und %s Sekunden."
+MSG_EN[$MSG_BACKUP_TIME]="RBK0078I: Backup time: %s:%s:%s."
+MSG_DE[$MSG_BACKUP_TIME]="RBK0078I: Backupzeit: %s:%s:%s."
 MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP=79
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z not allowed with backuptype %s."
 MSG_DE[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z ist für Backuptyp %s nicht erlaubt."
@@ -1280,7 +1280,7 @@ function duration() { # startTime endTime
 	local d i
 	i=0
 	for f in "${factors[@]}"; do
-		d[i]=$(( diff / f ))
+		d[i]=$(printf "%02d" $(( diff / f )))
 		diff=$(( diff - d[i] * f ))
 		((i++))
 	done
@@ -1629,7 +1629,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "getPartitionNumber $1"
 	local id
-	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/sd[a-z]([0-9]+) ]]; then
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) ]]; then
 		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -2229,7 +2229,7 @@ function setupEnvironment() {
 	exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-	local v=$(getLocalizedMessage $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$(date)" "$GIT_COMMIT_ONLY")
+	local v=$(getLocalizedMessage $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)")
 	logItem "$v"
 
 	logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
@@ -2260,14 +2260,11 @@ function deployMyself() {
 			fi
 			if [[ $? == 0 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYED_HOST "$host" "$user"
-				exitError $RC_PARAMETER_ERROR
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYMENT_FAILED "$host" "$user"
-				exitError $RC_PARAMETER_ERROR
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYING_HOST_OFFLINE "$host"
-			exitError $RC_PARAMETER_ERROR
 		fi
     done
 
