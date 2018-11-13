@@ -1,10 +1,11 @@
-# raspiBackup - Backup and restore your Raspberries
+# raspiBackup - Backup and restore your running Raspberries
 
-raspiBackup creates backups of a running Raspberry with no shutdown and manual intervention by using cron. Important services will be stopped just before starting the backup and are started again when the backup finished.
-
-Any device which can be mounted on Linux can be used as backupspace (USB disk, USB stick, nfs, samba, sshfs, ...). Standard Linux backup tools dd, tar and rsync using hardlinks can be used to create the backup.
-
-An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
+* Fully system backup will be created unattended with no shutdown of the system or other manual intervention just by starting raspiBackup using cron. Important services will be stopped just before starting the backup and are started again when the backup finished.
+* Any device mountable on Linux can be used as backupspace (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
+* Standard Linux backup tools dd, tar and rsync can be used to create the backup.
+* An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
+* Status eMail sent when backup finished
+* Much more useful features ... (See doc below)
 
 ## Documentation
 
