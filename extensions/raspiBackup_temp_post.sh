@@ -1,6 +1,7 @@
 #!/bin/bash
+#######################################################################################################################
 #
-# Plugin for raspiBackup.sh
+# Sample plugin for raspiBackup.sh
 # called after a backup finished
 #
 # Function: Display CPU temperature

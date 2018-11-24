@@ -1,6 +1,7 @@
 #!/bin/bash
+#######################################################################################################################
 #
-# Plugin for raspiBackup.sh
+# Sample plugin for raspiBackup.sh
 # called before a backup is started
 #
 # Function: Display disk usage and % of disk usage change before and after backup

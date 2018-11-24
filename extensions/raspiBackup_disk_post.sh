@@ -1,6 +1,7 @@
 #!/bin/bash
+#######################################################################################################################
 #
-# Plugin for raspiBackup.sh
+# Sample plugin for raspiBackup.sh
 # called after a backup finished
 #
 # Function: Display disk usage and % of disk usage change before and after backup
@@ -37,8 +38,8 @@ MSG_EXT_DISK_USAGE2="ext_diskusage_3"
 MSG_EN[$MSG_EXT_DISK_USAGE2]="RBK1003I: Disk usage post backup: Used: %s Free: %s"
 MSG_DE[$MSG_EXT_DISK_USAGE2]="RBK1003I: Partitionsauslastung nach dem Backup: Belegt: %s Frei: %s"
 MSG_EXT_DISK_USAGE3="ext_diskusage_4"
-MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1004I: Free change: %s (%s %s)"
-MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1004I: Änderung freier Platz: %s (%s %s)"
+MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1004I: Free change: %s (%s %%)"
+MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1004I: Änderung freier Platz: %s (%s %%)"
 MSG_EXT_DISK_USAGE4="ext_diskusage_5"
 MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1005E: bc not found. Please install bc first."
 MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert werden."
@@ -50,6 +51,9 @@ MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert w
 if ! which bc &>/dev/null; then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE4
 else
+
+#	Filesystem     	1K-blocks    	Used 	Available 	Use% 	Mounted on
+#	/dev/root 		15122316 		6400128 7930972 	45% 	/
 
 	usagePre=$( bc <<< "${ext_diskUsage_pre[2]} * 1024" )
 	usagePost=$( bc <<< "${ext_diskUsage_post[2]} * 1024" )
