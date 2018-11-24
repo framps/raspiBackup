@@ -1,6 +1,7 @@
 #!/bin/bash
+#######################################################################################################################
 #
-# Plugin for raspiBackup.sh
+# Sample plugin for raspiBackup.sh
 # called before a backup is started
 #
 # Function: Display memory free and used in MB

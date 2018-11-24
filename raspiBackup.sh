@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-11-10 15:31:46 +0100$"
+GIT_DATE="$Date: 2018-11-21 20:01:20 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: abe0490$"
+GIT_COMMIT="$Sha1: 5f3cff3$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -5616,6 +5616,7 @@ FAKE_BACKUPS=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
 HELP=0
+INCLUDE_ONLY=0
 NEW_BACKUP_DIRECTORY_CREATED=0
 NO_YES_QUESTION=0
 PROGRESS=0
@@ -5741,6 +5742,10 @@ while (( "$#" )); do
 
     -i|-i[-+])
 	  USE_UUID=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
+	--include|--include[+-])
+	  INCLUDE_ONLY=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
     -k)
@@ -5922,6 +5927,8 @@ while (( "$#" )); do
   esac
 done
 
+if (( ! $INCLUDE_ONLY )); then
+
 # set positional arguments in argument list $@
 set -- $PARAMS
 
@@ -6049,3 +6056,5 @@ fi
 reportNews
 
 doit #	no return for backup
+
+fi # INCLUDE_ONLY
