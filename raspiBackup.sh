@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-11-24 13:50:17 +0100$"
+GIT_DATE="$Date: 2018-11-25 20:50:02 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 36310f6$"
+GIT_COMMIT="$Sha1: 758744e$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1169,7 +1169,11 @@ function executeCommand() { # command - rc's to accept
 	logItem "Command executed:$NL$1"
 	logItem "Skips: $2"
 
-	eval "$1"
+	if (( $INTERACTIVE )); then
+		eval "$1"
+	else
+		eval "$1" >> $LOG_FILE
+	fi
 	rc=$?
 	if (( $rc != 0 )); then
 		local error=1
@@ -1189,8 +1193,12 @@ function executeCommand() { # command - rc's to accept
 function executeShellCommand() { # command
 
 	logEntry "executeShellCommand: $@"
-	eval "$*"
-    local rc=$?
+	if (( $INTERACTIVE )); then
+		eval "$1"
+	else
+		eval "$1" >> $LOG_FILE
+	fi
+	local rc=$?
 	logExit "executeShellCommand: $rc"
 	return $rc
 }
@@ -1429,7 +1437,7 @@ DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
 # Change these options only if you know what you are doing !!!
 DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx"
 DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
-DEFAULT_TAR_BACKUP_OPTIONS="-cpi"
+DEFAULT_TAR_BACKUP_OPTIONS="-cpi --one-file-system"
 DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
 DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS=""
 # Send email only in case of errors. Use with care !
@@ -3117,7 +3125,6 @@ function tarBackup() {
 		${zip} \
 		${verbose} \
 		-f $target \
-		--one-file-system \
 		--warning=no-xdev \
 		--numeric-owner \
 		--exclude=\"$BACKUPPATH_PARAMETER/*\" \
@@ -6058,4 +6065,4 @@ reportNews
 
 doit #	no return for backup
 
-fi # INCLUDE_ONLY 
+fi # INCLUDE_ONLY
