@@ -17,11 +17,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set +u; GIT_DATE="$Date: 2018-11-17 21:03:28 +0100$"; set -u
+set +u; GIT_DATE="$Date: 2018-11-28 20:44:17 +0100$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u; GIT_COMMIT="$Sha1: 93c6921$"; set -u
+set +u; GIT_COMMIT="$Sha1: e0366e8$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
