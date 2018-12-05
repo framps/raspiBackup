@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-12-02 17:11:10 +0100$"
+GIT_DATE="$Date: 2018-12-05 20:44:10 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 145158f$"
+GIT_COMMIT="$Sha1: 7605e5c$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1286,11 +1286,12 @@ function logSystemStatus() {
 function duration() { # startTime endTime
 	factors=(86400 3600 60 1)
 	local diff=$(( $2 - $1 ))
-	local d i
+	local d i q
 	i=0
 	for f in "${factors[@]}"; do
-		d[i]=$(printf "%02d" $(( diff / f )))
-		diff=$(( diff - d[i] * f ))
+		q=$(( diff / f ))
+		diff=$(( diff - q * f ))
+		d[i]=$(printf "%02d" q) # add leading zero
 		((i++))
 	done
 	echo "${d[@]}"
@@ -3111,7 +3112,7 @@ function tarBackup() {
 		target="\"${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}\""
 	else
 		bootPartitionBackup
-		source="/"
+		source=""
 		target="\"$BACKUPTARGET_FILE\""
 	fi
 
