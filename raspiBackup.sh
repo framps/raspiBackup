@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-12-05 20:44:10 +0100$"
+GIT_DATE="$Date: 2018-12-08 10:00:39 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7605e5c$"
+GIT_COMMIT="$Sha1: 3d6c08a$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1291,7 +1291,7 @@ function duration() { # startTime endTime
 	for f in "${factors[@]}"; do
 		q=$(( diff / f ))
 		diff=$(( diff - q * f ))
-		d[i]=$(printf "%02d" q) # add leading zero
+		d[i]=$(printf "%02d" $q)
 		((i++))
 	done
 	echo "${d[@]}"
