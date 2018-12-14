@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-12-08 10:00:39 +0100$"
+GIT_DATE="$Date: 2018-12-13 21:33:50 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 3d6c08a$"
+GIT_COMMIT="$Sha1: ad7e2a0$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -3096,7 +3096,7 @@ function ddBackup() {
 
 function tarBackup() {
 
-	local verbose zip cmd partition source target fakecmd excludeRoot sourceDir partSize
+	local verbose zip cmd partition source target fakecmd devroot sourceDir
 
 	logEntry  "tarBackup"
 
@@ -3108,11 +3108,13 @@ function tarBackup() {
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		source="."
+		devroot="."
 		sourceDir="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
 		target="\"${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}\""
 	else
 		bootPartitionBackup
-		source=""
+		source="/"
+		devroot=""
 		target="\"$BACKUPTARGET_FILE\""
 	fi
 
@@ -3131,13 +3133,13 @@ function tarBackup() {
 		--exclude=\"$BACKUPPATH_PARAMETER/*\" \
 		--exclude=\"$source/$log_file\" \
 		--exclude='.gvfs' \
-		--exclude=$source/proc \
-		--exclude=$source/lost+found \
-		--exclude=$source/sys \
-		--exclude=$source/dev \
-		--exclude=$source/tmp \
-		--exclude=$source/boot \
-		--exclude=$source/run \
+		--exclude=$devroot/proc \
+		--exclude=$devroot/lost+found \
+		--exclude=$devroot/sys \
+		--exclude=$devroot/dev \
+		--exclude=$devroot/tmp \
+		--exclude=$devroot/boot \
+		--exclude=$devroot/run \
 		$EXCLUDE_LIST \
 		$source"
 
