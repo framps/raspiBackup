@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-12-13 21:33:50 +0100$"
+GIT_DATE="$Date: 2018-12-22 17:29:23 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: ad7e2a0$"
+GIT_COMMIT="$Sha1: 6fc4542$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -356,9 +356,9 @@ MSG_DE[$MSG_SAVED_LOG]="RBK0026I: Logdatei wurde in %s gesichert."
 MSG_NO_DEVICEMOUNTED=27
 MSG_EN[$MSG_NO_DEVICEMOUNTED]="RBK0027E: No external device mounted on %s. SD card would be used for backup."
 MSG_DE[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Kein externes Gerät an %s verbunden. Die SD Karte würde für das Backup benutzt werden."
-MSG_SHELL_ERROR=28
-MSG_EN[$MSG_SHELL_ERROR]="RBK0028E: Command '%s' received an error. $NL%s."
-MSG_DE[$MSG_SHELL_ERROR]="RBK0028E: Befehl '%s' hat einen Fehler bekommen. $NL %s."
+MSG_RESTORE_DIRECTORY_NO_DIRECTORY=28
+MSG_EN[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s is no backup directory of $MYNAME."
+MSG_DE[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ist kein Wiederherstellungsverzeichnis von $MYNAME."
 MSG_MPACK_NOT_INSTALLED=29
 MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to send emails. No log can be attached to the eMail."
 MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden."
@@ -533,9 +533,9 @@ MSG_DE[$MSG_BACKUP_STARTED]="RBK0085I: Backuperstellung vom Typ %s gestartet. Bi
 MSG_RESTOREDEVICE_IS_PARTITION=86
 MSG_EN[$MSG_RESTOREDEVICE_IS_PARTITION]="RBK0086E: Restore device cannot be a partition."
 MSG_DE[$MSG_RESTOREDEVICE_IS_PARTITION]="RBK0086E: Wiederherstellungsgerät darf keine Partition sein."
-MSG_RESTORE_FILE_INVALID=87
-MSG_EN[$MSG_RESTORE_FILE_INVALID]="RBK0087E: Invalid restore file or directory %s."
-MSG_DE[$MSG_RESTORE_FILE_INVALID]="RBK0087E: Wiederherstellungsdatei %s ist ungültig."
+MSG_RESTORE_DIRECTORY_INVALID=87
+MSG_EN[$MSG_RESTORE_DIRECTORY_INVALID]="RBK0087E: Restore directory %s was not created by $MYNAME."
+MSG_DE[$MSG_RESTORE_DIRECTORY_INVALID]="RBK0087E: Wiederherstellungsverzeichnis %s wurde nicht von $MYNAME erstellt."
 MSG_RESTORE_DEVICE_NOT_VALID=88
 MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0088E: -R option not supported for partitionbased backup."
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0088E: Option -R wird nicht beim partitionbasierten Backup unterstützt."
@@ -893,9 +893,9 @@ MSG_DE[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -r benötigt auch Op
 MSG_SHARED_BOOT_DEVICE=200
 MSG_EN[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot and / located on same device %s."
 MSG_DE[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot und / befinden sich auf demselben Gerät %s."
-MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED=201
-MSG_EN[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot and / located on same device and right now not supported with backuptype %s. Use dd"
-MSG_DE[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot und / auf demselben Gerät sind vorläufig nicht unterstützt bei dem Backuptyp %s. Benutze dd"
+#MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED=201
+#MSG_EN[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot and / located on same device and right now not supported with backuptype %s. Use dd"
+#MSG_DE[$MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED]="RBK0201E: /boot und / auf demselben Gerät sind vorläufig nicht unterstützt bei dem Backuptyp %s. Benutze dd"
 MSG_RESTORETEST_REQUIRED=202
 MSG_EN[$MSG_RESTORETEST_REQUIRED]="RBK0202W: $SMILEY_RESTORETEST_REQUIRED Friendly reminder: Execute now a restore test. You will be reminded %s times again."
 MSG_DE[$MSG_RESTORETEST_REQUIRED]="RBK0201W: $SMILEY_RESTORETEST_REQUIRED Freundlicher Hinweis: Führe einen Restoretest durch. Du wirst noch %s mal erinnert werden."
@@ -1735,24 +1735,6 @@ function parsePropertiesFile() {
 
 }
 
-function isVersionDeprecated() { # versionNumber
-
-	logEntry "isVersionDeprecated $1"
-
-	local rc=1	# no/failure
-	local properties=""
-	local deprecated=""
-
-	if (( $NEW_PROPERTIES_FILE && $HANDLE_DEPRECATED )); then
-		local deprecatedVersions=( $DEPRECATED_PROPERTY )
-		containsElement "$1" "${deprecatedVersions[@]}"
-		(( $? )) && rc=0
-	fi
-
-	logExit "isVersionDeprecated $rc"
-	return $rc
-}
-
 function shouldRenewDownloadPropertiesFile() { # FORCE
 
 	logEntry "shouldDownloadPropertiesFile"
@@ -1915,7 +1897,7 @@ function startServices() { # noexit
 
 # update script with latest version
 
-function updateScript() { # restart
+function updateScript() {
 
 	logEntry "updateScript"
 
@@ -1942,26 +1924,22 @@ function updateScript() { # restart
 			fi
 		fi
 
-		if [[ "$1" != "RESTART" ]]; then
-			local betaVersion=$(isBetaAvailable)
+		local betaVersion=$(isBetaAvailable)
 
-			if [[ -n $betaVersion && "${betaVersion}-beta" > $oldVersion ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
-				if askYesNo; then
-					DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
-					updateNow=1
-				fi
-			fi
-
-			if [[ $rc == 0 ]] && (( ! $updateNow )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_VERSION "$oldVersion" "$newVersion"
-				if ! askYesNo; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_ABORTED
-					exitNormal
-				fi
+		if [[ -n $betaVersion && "${betaVersion}-beta" > $oldVersion ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
+			if askYesNo; then
+				DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
 				updateNow=1
 			fi
-		else
+		fi
+
+		if [[ $rc == 0 ]] && (( ! $updateNow )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_VERSION "$oldVersion" "$newVersion"
+			if ! askYesNo; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_ABORTED
+				exitNormal
+			fi
 			updateNow=1
 		fi
 
@@ -1976,11 +1954,6 @@ function updateScript() { # restart
 				chown --reference=$newName $SCRIPT_DIR/$MYSELF
 				chmod --reference=$newName $SCRIPT_DIR/$MYSELF
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
-
-				if [[ "$1" == "RESTART" ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_RESTART "$newVersion"
-					exec "$(which bash)" --noprofile "$0" "${invocationParms[@]}"
-				fi
 			fi
 		else
 			rm $MYSELF~ &>/dev/null
@@ -4041,10 +4014,6 @@ function inspect4Backup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
-#			if [[ $BACKUPTYPE != $BACKUPTYPE_DD  && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
-#				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE_NOT_SUPPORTED  "$BACKUPTYPE"
-#				exitError $RC_PARAMETER_ERROR
-#			fi
 		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9])p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
 		else
@@ -5048,8 +5017,8 @@ function doitRestore() {
 
 	commonChecks
 
-	if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
+	if [[ ! -d "$RESTOREFILE" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_NO_DIRECTORY "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
 	fi
 
@@ -5064,7 +5033,7 @@ function doitRestore() {
 	logItem "regex: $regex"
 
 	if [[ ! $(basename "$RESTOREFILE") =~ $regex ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_FILE_INVALID "$RESTOREFILE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
 	fi
 
@@ -5546,11 +5515,9 @@ function getEnableDisableOption() { # option
 ##### Now do your job
 
 INVOCATIONPARMS=""			# save passed opts for logging
-invocationParms=()			# and restart
 for (( i=1; i<=$#; i++ )); do
 	p=${!i}
 	INVOCATIONPARMS="$INVOCATIONPARMS $p"
-	invocationParms+=("$p")
 done
 
 # setup defaults for parameters
@@ -6053,11 +6020,6 @@ if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
 fi
 
 downloadPropertiesFile
-
-if isVersionDeprecated "$VERSION"; then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_DEPRECATED "$VERSION"
-	updateScript "RESTART"
-fi
 
 updateRestoreReminder
 if (( $RESTORE_REMINDER )); then
