@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2018-12-22 17:29:23 +0100$"
+GIT_DATE="$Date: 2018-11-28 20:44:17 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 6fc4542$"
+GIT_COMMIT="$Sha1: e0366e8$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -936,6 +936,10 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
 		 msg="${MSG_EN[$2]}"      	      	        # fallback into english
      fi
 
+	# backward compatibility: change extension messages with old message format of 0.6.4 using %1, %2 ... to new 0.6.4.1 format using %s only
+	if [[ "$msg" =~ ^- ]]; then
+		msg=$(sed -e 's/--- //' -e 's/%[0-9]/%s/g' -e 's/\\%/%%/' <<< "$msg")
+	fi
 	printf -v msg "$msg" "${@:3}"
 
 	local msgPref="${msg:0:3}"
