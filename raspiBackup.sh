@@ -2281,36 +2281,25 @@ function sendEMail() { # content subject
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
-				$EMAIL_SSMTP_PROGRAM)
-					if (( $APPEND_LOG )); then
-						logItem "Sending email with mpack"
-						echo "$content" > /tmp/$$
-						mpack -s "$subject" -d /tmp/$$ "$LOG_FILE" "$EMAIL"
-						rm /tmp/$$ &>/dev/null
-					else
-						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
-						logItem "Sendig email with ssmtp"
-						logItem "echo -e To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content | $EMAIL_PROGRAM $EMAIL"
-						echo -e "To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content" | "$EMAIL_PROGRAM" "$EMAIL"
-						rc=$?
-						logItem "$EMAIL_PROGRAM: RC: $rc"
-					fi
-					;;
-          $EMAIL_MSMTP_PROGRAM)
-  					if (( $APPEND_LOG )); then
-  						logItem "Sending email with mpack"
-  						echo "$content" > /tmp/$$
-  						mpack -s "$subject" -d /tmp/$$ "$LOG_FILE" "$EMAIL"
-  						rm /tmp/$$ &>/dev/null
-  					else
-  						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
-  						logItem "Sendig email with msmtp"
-  						logItem "echo -e To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content | $EMAIL_PROGRAM $EMAIL"
-  						echo -e "To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content" | "$EMAIL_PROGRAM" -a default "$EMAIL"
-  						rc=$?
-  						logItem "$EMAIL_PROGRAM: RC: $rc"
-  					fi
-  					;;
+          $EMAIL_SSMTP_PROGRAM|$EMAIL_MSMTP_PROGRAM)
+              local msmtp_default=""
+                  if [[ $EMAIL_PROGRAM == $EMAIL_MSMTP_PROGRAM ]]; then
+                         msmtp_default="-a default"
+                  fi
+                  if (( $APPEND_LOG )); then
+                          logItem "Sending email with mpack"
+                          echo "$content" > /tmp/$$
+                          mpack -s "$subject" -d /tmp/$$ "$LOG_FILE" "$EMAIL"
+                          rm /tmp/$$ &>/dev/null
+                  else
+                          local sender=${SENDER_EMAIL:-root@$(hostname -f)}
+                          logItem "Sendig email with s/msmtp"
+                          logItem "echo -e To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content | $EMAIL_PROGRAM $EMAIL"
+                          echo -e "To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
+                          rc=$?
+                          logItem "$EMAIL_PROGRAM: RC: $rc"
+                  fi
+                  ;;
 				$EMAIL_EXTENSION_PROGRAM)
 					local append=""
 					(( $APPEND_LOG )) && append="$LOG_FILE"
