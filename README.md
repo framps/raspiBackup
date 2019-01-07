@@ -37,7 +37,7 @@ usage: raspiBackup.sh [option]* {backupDirectory | backupFile}
 -m {message level} (Minimal | Detailed) (default: Minimal)
 -M {backup description}
 -n notification if there is a newer scriptversion available for download (default: yes)
--s {email program to use} (mail,ssmtp,sendEmail,mailext) (default: mail)
+-s {email program to use} (mail,ssmtp,msmtp,sendEmail,mailext) (default: mail)
 -u "{excludeList}" List of directories to exclude from tar and rsync backup
 -U current script version will be replaced by the actual version. Current version will be saved and can be restored with parameter -V
 -v verbose output of backup tools (default: no)
