@@ -2294,7 +2294,7 @@ function sendEMail() { # content subject
                   else
                           local sender=${SENDER_EMAIL:-root@$(hostname -f)}
                           logItem "Sendig email with s/msmtp"
-                          logItem "echo -e To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content | $EMAIL_PROGRAM $EMAIL"
+                          logItem "echo -e To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
                           echo -e "To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
                           rc=$?
                           logItem "$EMAIL_PROGRAM: RC: $rc"
