@@ -1,12 +1,13 @@
 #!/bin/bash
+#######################################################################################################################
 #
-# Sample implementation for email plugin for raspiBackup.sh
+# Sample email plugin for raspiBackup.sh
 #
 # Function: Send success/failure email
 #
 # Enable with 'mailext' as parameter to -s
 #
-# See http://www.linux-tips-and-tricks.de/raspiBackup for additional information 
+# See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
 #
 #######################################################################################################################
 #

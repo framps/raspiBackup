@@ -1,18 +1,13 @@
 #!/bin/bash
-#######################################################################################################################
+########################################################################################################################
 #
-# Sample plugin for raspiBackup.sh
-# called after a backup finished
-#
-# Function: Call another script
+# Function: Invoke all sample plugins. Helps to debug and develop plugins
 #
 # See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
 #
-# $1 has the return code of raspiBackup. If it equals 0 this signals success and failure otherwise
+########################################################################################################################
 #
-#######################################################################################################################
-#
-#    Copyright (C) 2016-2018 framp at linux-tips-and-tricks dot de
+#    Copyright (C) 2018 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -29,16 +24,17 @@
 #
 #######################################################################################################################
 
-if [[ -n $1 ]]; then											# was there a return code ? Should be :-)
-	if [[ "$1" == 0 ]]; then
-		wall <<< "Extension detected ${0##*/} succeeded :-)"
-	else
-		wall <<< "Extension detected ${0##*/} failed :-("
-	fi
+if [[ -f ../raspiBackup.sh ]]; then
+	. ../raspiBackup.sh --include
 else
-	wall <<< "Extension detected ${0##*/} didn't receive a return code :-("
+	. raspiBackup.sh --include
 fi
 
+. raspiBackup_disk_pre.sh
+. raspiBackup_disk_post.sh
 
+. raspiBackup_mem_pre.sh
+. raspiBackup_mem_post.sh
 
-
+. raspiBackup_temp_pre.sh
+. raspiBackup_temp_post.sh

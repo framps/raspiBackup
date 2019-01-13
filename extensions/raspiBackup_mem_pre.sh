@@ -1,6 +1,7 @@
 #!/bin/bash
+#######################################################################################################################
 #
-# Plugin for raspiBackup.sh
+# Sample plugin for raspiBackup.sh
 # called before a backup is started
 #
 # Function: Display memory free and used in MB
@@ -29,11 +30,15 @@
 # define functions needed
 # use local for all variables used so the script namespace is not poluted
 
+#              total        used        free      shared  buff/cache   available
+#Mem:            481          55          34           8         391         353
+#Swap:            99          83          16
+
 function getMemoryFree() {
-	local temp=$(free -m | grep "^-" | cut -d ':' -f 2)
-	echo "$(echo $temp)"
+	eval set -- "$(free -m |grep -i 'Mem:')"
+	echo "$3 $4"
 }
 
-# set any variables and prefix all names with ext_ and some unique prefix to use a different namespace than the script
 ext_freememory_pre=( $(getMemoryFree) )
+# set any variables and prefix all names with ext_ and some unique prefix to use a different namespace than the script
 

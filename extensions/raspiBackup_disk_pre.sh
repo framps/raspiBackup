@@ -1,11 +1,12 @@
 #!/bin/bash
+#######################################################################################################################
 #
-# Plugin for raspiBackup.sh
+# Sample plugin for raspiBackup.sh
 # called before a backup is started
 #
 # Function: Display disk usage and % of disk usage change before and after backup
 #
-# See http://www.linux-tips-and-tricks.de/raspiBackup for additional information 
+# See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
 #
 #######################################################################################################################
 #
@@ -26,11 +27,14 @@
 #
 #######################################################################################################################
 
-# define functions needed 
+# define functions needed
 # use local for all variables used so the script namespace is not poluted
 
+#	Filesystem     	1K-blocks    	Used 	Available 	Use% 	Mounted on
+#	/dev/root 		15122316 		6400128 7930972 	45% 	/
+
 function getDiskUsage() {
-	local diskUsage=$(df $BACKUPPATH | grep "/dev")
+	local diskUsage=$(df $BACKUPPATH | tail -n+2)
 	echo "$(echo $diskUsage)"
 }
 
