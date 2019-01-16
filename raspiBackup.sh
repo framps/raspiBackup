@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.4.1"	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.4.1a"	# -beta, -hotfix or -dev suffixes possible
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2019-01-13 00:40:30 +0100$"
+GIT_DATE="$Date: 2019-01-15 19:05:43 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: fc71f93$"
+GIT_COMMIT="$Sha1: e513a3b$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -194,8 +194,9 @@ EMAIL_EXTENSION="mail"
 EMAIL_EXTENSION_PROGRAM="mailext"
 EMAIL_MAILX_PROGRAM="mail"
 EMAIL_SSMTP_PROGRAM="ssmtp"
+EMAIL_MSMTP_PROGRAM="msmtp"
 EMAIL_SENDEMAIL_PROGRAM="sendEmail"
-SUPPORTED_EMAIL_PROGRAM_REGEX="^($EMAIL_MAILX_PROGRAM|$EMAIL_SSMTP_PROGRAM|$EMAIL_SENDEMAIL_PROGRAM|$EMAIL_EXTENSION_PROGRAM)$"
+SUPPORTED_EMAIL_PROGRAM_REGEX="^($EMAIL_MAILX_PROGRAM|$EMAIL_SSMTP_PROGRAM|$EMAIL_MSMTP_PROGRAM|$EMAIL_SENDEMAIL_PROGRAM|$EMAIL_EXTENSION_PROGRAM)$"
 SUPPORTED_MAIL_PROGRAMS=$(echo $SUPPORTED_EMAIL_PROGRAM_REGEX | sed 's:^..\(.*\)..$:\1:' | sed 's/|/,/g')
 
 PARTITIONS_TO_BACKUP_ALL="*"
@@ -932,9 +933,9 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
 				msg="${MSG_EN[$2]}"  	    	    # fallback into english
 			fi
 		fi
-     else
+	 else
 		 msg="${MSG_EN[$2]}"      	      	        # fallback into english
-     fi
+	 fi
 
 	# backward compatibility: change extension messages with old message format of 0.6.4 using %1, %2 ... to new 0.6.4.1 format using %s only
 	if [[ "$msg" =~ ^- ]]; then
@@ -5647,21 +5648,21 @@ while (( "$#" )); do
 	  ALTERNATE_DISCOVERY=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -a)
+	-a)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-      STARTSERVICES="$o"; shift 2
-      ;;
+	  STARTSERVICES="$o"; shift 2
+	  ;;
 
 	-A|-A[-+])
 	  APPEND_LOG=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -b)
+	-b)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-      DD_BLOCKSIZE="$o"; shift 2
-      ;;
+	  DD_BLOCKSIZE="$o"; shift 2
+	  ;;
 
 	-B|-B[-+])
 	  TAR_BOOT_PARTITION_ENABLED=$(getEnableDisableOption "$1"); shift 1
@@ -5675,30 +5676,30 @@ while (( "$#" )); do
 	  CHECK_FOR_BAD_BLOCKS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -d)
+	-d)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-      RESTORE_DEVICE="$o"; RESTORE=1; shift 2
-      ;;
+	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
+	  ;;
 
-    -D)
+	-D)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-      DD_PARMS="$o"; shift 2
-      ;;
+	  DD_PARMS="$o"; shift 2
+	  ;;
 
-    -e)
+	-e)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-      EMAIL="$o"; shift 2
-      ;;
+	  EMAIL="$o"; shift 2
+	  ;;
 
-    -E)
+	-E)
 	  o=$(checkOptionParameter "$1" "$2");
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-      EMAIL_PARMS="$o"; shift 2
+	  EMAIL_PARMS="$o"; shift 2
 
-      ;;
+	  ;;
 
 	-F|-F[-+])
 	  FAKE=$(getEnableDisableOption "$1"); shift 1
@@ -5708,10 +5709,10 @@ while (( "$#" )); do
 	  PROGRESS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -G)
+	-G)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-      LANGUAGE="$o"; shift 2
+	  LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
 	  msgVar="MSG_${LANGUAGE}"
 	  if [[ -z ${!msgVar} ]]; then
@@ -5736,31 +5737,31 @@ while (( "$#" )); do
 	  INCLUDE_ONLY=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -k)
+	-k)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
-    -l)
+	-l)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
 	  ;;
 
-    -L)
+	-L)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
 	  ;;
 
-    -m)
+	-m)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
 	  ;;
 
-    -M)
+	-M)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
@@ -5771,19 +5772,19 @@ while (( "$#" )); do
 	  NOTIFY_UPDATE=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -N)
+	-N)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXTENSIONS="$o"; shift 2
 	  ;;
 
-    -o)
+	-o)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
-    -p)
+	-p)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPPATH="$o"; shift 2
@@ -5798,29 +5799,29 @@ while (( "$#" )); do
 	  PARTITIONBASED_BACKUP=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -r)
+	-r)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTOREFILE="$o"; shift 2
-      if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
+	  if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
 		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
 		  exitError $RC_MISSING_FILES
 	  fi
 	  RESTOREFILE="$(readlink -f "$RESTOREFILE")"
 	  ;;
 
-    -R)
+	-R)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  ROOT_PARTITION="$o"; shift 2
-      ROOT_PARTITION_DEFINED=1
+	  ROOT_PARTITION_DEFINED=1
   	  ;;
 
 	--resizeRootFS|--resizeRootFS[+-])
 	  RESIZE_ROOTFS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-    -s)
+	-s)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PROGRAM="$o"; shift 2
@@ -5838,7 +5839,7 @@ while (( "$#" )); do
 	  fi
 	  ;;
 
-    -t)
+	-t)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPTYPE="$o"; shift 2
@@ -5854,7 +5855,7 @@ while (( "$#" )); do
 	  PARTITIONS_TO_BACKUP="$2"; shift 2
 	  ;;
 
-    -u)
+	-u)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXCLUDE_LIST="$o"; shift 2
