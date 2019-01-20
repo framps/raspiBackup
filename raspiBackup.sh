@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.4.1a"	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.4.2"	# -beta, -hotfix or -dev suffixes possible
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -58,11 +58,19 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
+<<<<<<< HEAD
 GIT_DATE="$Date: 2019-01-15 19:05:43 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
 GIT_COMMIT="$Sha1: e513a3b$"
+=======
+GIT_DATE="$Date: 2019-01-19 21:03:33 +0100$"
+GIT_DATE_ONLY=${GIT_DATE/: /}
+GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
+GIT_COMMIT="$Sha1: 67129a2$"
+>>>>>>> d522ef225fcd4a0925b82277412b27b65ee06322
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1372,7 +1380,7 @@ function initializeDefaultConfig() {
 ############# Begin default config section #############
 
 # Part or whole of the following section can be put into
-# /usr/local/etc/raspiBackup.conf or ~/.raspiBackup.conf
+# /usr/local/etc/raspiBackup.conf, ~/.raspiBackup.conf or $(pwd)/.raspiBackup.conf
 # and will take precedence over the following default definitions
 
 # path to store the backupfile
@@ -2119,7 +2127,6 @@ function readConfigParameters() {
 			CURRENTDIR_CONFIG_FILE_INCLUDED=1
 		fi
 	fi
-
 }
 
 function setupEnvironment() {
@@ -3117,13 +3124,13 @@ function tarBackup() {
 		--exclude=\"$BACKUPPATH_PARAMETER/*\" \
 		--exclude=\"$source/$log_file\" \
 		--exclude='.gvfs' \
-		--exclude=$devroot/proc \
-		--exclude=$devroot/lost+found \
-		--exclude=$devroot/sys \
-		--exclude=$devroot/dev \
-		--exclude=$devroot/tmp \
-		--exclude=$devroot/boot \
-		--exclude=$devroot/run \
+		--exclude=$devroot/proc/* \
+		--exclude=$devroot/lost+found/* \
+		--exclude=$devroot/sys/* \
+		--exclude=$devroot/dev/* \
+		--exclude=$devroot/tmp/* \
+		--exclude=$devroot/boot/* \
+		--exclude=$devroot/run/* \
 		$EXCLUDE_LIST \
 		$source"
 
@@ -5398,6 +5405,7 @@ function usageEN() {
 	echo "-e {email address} (default: $DEFAULT_EMAIL)"
 	[ -z "$DEFAULT_EMAIL_PARMS" ] && DEFAULT_EMAIL_PARMS="no"
 	echo "-E \"{additional email call parameters}\" (default: $DEFAULT_EMAIL_PARMS)"
+	echo "-f {config filename}"
 	echo "-g Display progress bar"
 	echo "-G {message language} (EN or DE) (default: $DEFAULT_LANGUAGE)"
 	echo "-h display this help text"
@@ -5446,6 +5454,7 @@ function usageDE() {
 	echo "-e {eMail Addresse} (Standard: $DEFAULT_EMAIL)"
 	[ -z "$DEFAULT_EMAIL_PARMS" ] && DEFAULT_EMAIL_PARMS="nein"
 	echo "-E \"{Zusätzliche eMail Aufrufparameter}\" (Standard: $DEFAULT_EMAIL_PARMS)"
+	echo "-f {Konfig Dateiname}"
 	echo "-g Anzeige des Fortschritts"
 	echo "-G {Meldungssprache} (DE oder EN) (Standard: $DEFAULT_LANGUAGE)"
 	echo "-h Anzeige dieses Hilfstextes"
@@ -5535,53 +5544,6 @@ done
 # 0 is false, true otherwise
 
 readConfigParameters		# overwrite defaults with settings in config files
-
-APPEND_LOG=$DEFAULT_APPEND_LOG
-APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
-BACKUPPATH="$DEFAULT_BACKUPPATH"
-BACKUPTYPE=$DEFAULT_BACKUPTYPE
-CHECK_FOR_BAD_BLOCKS=$DEFAULT_CHECK_FOR_BAD_BLOCKS
-DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DEFAULT_DD_BACKUP_SAVE_USED_PARTITIONS_ONLY
-DD_BLOCKSIZE="$DEFAULT_DD_BLOCKSIZE"
-DD_PARMS="$DEFAULT_DD_PARMS"
-DEPLOYMENT_HOSTS="$DEFAULT_DEPLOYMENT_HOSTS"
-EMAIL="$DEFAULT_EMAIL"
-EMAIL_PARMS="$DEFAULT_EMAIL_PARMS"
-EMAIL_PROGRAM="$DEFAULT_MAIL_PROGRAM"
-EMAIL_SENDER="$DEFAULT_EMAIL_SENDER"
-EXCLUDE_LIST="$DEFAULT_EXCLUDE_LIST"
-EXTENSIONS="$DEFAULT_EXTENSIONS"
-HANDLE_DEPRECATED=$DEFAULT_HANDLE_DEPRECATED
-KEEPBACKUPS=$DEFAULT_KEEPBACKUPS
-LINK_BOOTPARTITIONFILES=$DEFAULT_LINK_BOOTPARTITIONFILES
-LOG_LEVEL=$DEFAULT_LOG_LEVEL
-LOG_OUTPUT="$DEFAULT_LOG_OUTPUT"
-MAIL_ON_ERROR_ONLY=$DEFAULT_MAIL_ON_ERROR_ONLY
-MSG_LEVEL=$DEFAULT_MSG_LEVEL
-NOTIFY_UPDATE=$DEFAULT_NOTIFY_UPDATE
-PARTITIONBASED_BACKUP=$DEFAULT_PARTITIONBASED_BACKUP
-PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
-RESIZE_ROOTFS=$DEFAULT_RESIZE_ROOTFS
-RESTORE_DEVICE=$DEFAULT_RESTORE_DEVICE
-RESTORE_REMINDER_INTERVAL=$DEFAULT_RESTORE_REMINDER_INTERVAL
-RESTORE_REMINDER_REPEAT=$DEFAULT_RESTORE_REMINDER_REPEAT
-RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
-SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
-SKIPLOCALCHECK=$DEFAULT_SKIPLOCALCHECK
-STARTSERVICES="$DEFAULT_STARTSERVICES"
-STOPSERVICES="$DEFAULT_STOPSERVICES"
-SYSTEMSTATUS=$DEFAULT_SYSTEMSTATUS
-TAR_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS"
-TAR_BACKUP_OPTIONS="$DEFAULT_TAR_BACKUP_OPTIONS"
-TAR_BOOT_PARTITION_ENABLED=$DEFAULT_TAR_BOOT_PARTITION_ENABLED
-TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
-TIMESTAMPS=$DEFAULT_TIMESTAMPS
-USE_HARDLINKS=$DEFAULT_USE_HARDLINKS
-USE_UUID=$DEFAULT_USE_UUID
-VERBOSE=$DEFAULT_VERBOSE
-YES_NO_RESTORE_DEVICE=$DEFAULT_YES_NO_RESTORE_DEVICE
-ZIP_BACKUP=$DEFAULT_ZIP_BACKUP
 
 if [[ -z $DEFAULT_LANGUAGE ]]; then
 	LANG_EXT=${LANG^^*}
@@ -5697,11 +5659,27 @@ while (( "$#" )); do
 	-E)
 	  o=$(checkOptionParameter "$1" "$2");
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
+<<<<<<< HEAD
 	  EMAIL_PARMS="$o"; shift 2
 
 	  ;;
+=======
+      EMAIL_PARMS="$o"; shift 2
+      ;;
+>>>>>>> d522ef225fcd4a0925b82277412b27b65ee06322
 
-	-F|-F[-+])
+    -f)
+	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  CUSTOM_CONFIG_FILE="$o"; shift 2
+	  if [[ ! -f "$CUSTOM_CONFIG_FILE" ]]; then
+	      writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$CUSTOM_CONFIG_FILE"
+          exitError $RC_MISSING_FILES
+	  fi
+	  CUSTOM_CONFIG_FILE="$(readlink -f "$CUSTOM_CONFIG_FILE")"
+	  ;;
+
+    -F|-F[-+])
 	  FAKE=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
@@ -5921,14 +5899,72 @@ if (( ! $INCLUDE_ONLY )); then
 	# set positional arguments in argument list $@
 	set -- $PARAMS
 
-	if (( ! $RESTORE )); then
-		lockingFramework
-		exlock_now
-		if (( $? )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
-			exitError $RC_MISC_ERROR
-		fi
+# Override default parms with parms in custom config file
+
+if [[ -n "$CUSTOM_CONFIG_FILE" && -f "$CUSTOM_CONFIG_FILE" ]]; then
+	CUSTOM_CONFIG_FILE_INCLUDED=0
+	set -e
+	. "$CUSTOM_CONFIG_FILE"
+	set +e
+	CUSTOM_CONFIG_FILE_INCLUDED=1
+fi
+
+# initialize options with defaults from configs if no command line arg was passed
+[[ -z "$APPEND_LOG" ]] && APPEND_LOG="$DEFAULT_APPEND_LOG"
+[[ -z "$APPEND_LOG_OPTION" ]] && APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
+[[ -z "$BACKUPPATH" ]] && BACKUPPATH="$DEFAULT_BACKUPPATH"
+[[ -z "$BACKUPTYPE" ]] && BACKUPTYPE="$DEFAULT_BACKUPTYPE"
+[[ -z "$CHECK_FOR_BAD_BLOCKS" ]] && CHECK_FOR_BAD_BLOCKS="$DEFAULT_CHECK_FOR_BAD_BLOCKS"
+[[ -z "$DD_BACKUP_SAVE_USED_PARTITIONS_ONLY" ]] && DD_BACKUP_SAVE_USED_PARTITIONS_ONLY="$DEFAULT_DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
+[[ -z "$DD_BLOCKSIZE" ]] && DD_BLOCKSIZE="$DEFAULT_DD_BLOCKSIZE"
+[[ -z "$DD_PARMS" ]] && DD_PARMS="$DEFAULT_DD_PARMS"
+[[ -z "$DEPLOYMENT_HOSTS" ]] && DEPLOYMENT_HOSTS="$DEFAULT_DEPLOYMENT_HOSTS"
+[[ -z "$EMAIL" ]] && EMAIL="$DEFAULT_EMAIL"
+[[ -z "$EMAIL_PARMS" ]] && EMAIL_PARMS="$DEFAULT_EMAIL_PARMS"
+[[ -z "$EMAIL_PROGRAM" ]] && EMAIL_PROGRAM="$DEFAULT_MAIL_PROGRAM"
+[[ -z "$EMAIL_SENDER" ]] && EMAIL_SENDER="$DEFAULT_EMAIL_SENDER"
+[[ -z "$EXCLUDE_LIST" ]] && EXCLUDE_LIST="$DEFAULT_EXCLUDE_LIST"
+[[ -z "$EXTENSIONS" ]] && EXTENSIONS="$DEFAULT_EXTENSIONS"
+[[ -z "$HANDLE_DEPRECATED" ]] && HANDLE_DEPRECATED="$DEFAULT_HANDLE_DEPRECATED"
+[[ -z "$KEEPBACKUPS" ]] && KEEPBACKUPS="$DEFAULT_KEEPBACKUPS"
+[[ -z "$LINK_BOOTPARTITIONFILES" ]] && LINK_BOOTPARTITIONFILES="$DEFAULT_LINK_BOOTPARTITIONFILES"
+[[ -z "$LOG_LEVEL" ]] && LOG_LEVEL="$DEFAULT_LOG_LEVEL"
+[[ -z "$LOG_OUTPUT" ]] && LOG_OUTPUT="$DEFAULT_LOG_OUTPUT"
+[[ -z "$MAIL_ON_ERROR_ONLY" ]] && MAIL_ON_ERROR_ONLY="$DEFAULT_MAIL_ON_ERROR_ONLY"
+[[ -z "$MSG_LEVEL" ]] && MSG_LEVEL="$DEFAULT_MSG_LEVEL"
+[[ -z "$NOTIFY_UPDATE" ]] && NOTIFY_UPDATE="$DEFAULT_NOTIFY_UPDATE"
+[[ -z "$PARTITIONBASED_BACKUP" ]] && PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
+[[ -z "$PARTITIONS_TO_BACKUP" ]] && PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
+[[ -z "$RESIZE_ROOTFS" ]] && RESIZE_ROOTFS="$DEFAULT_RESIZE_ROOTFS"
+[[ -z "$RESTORE_DEVICE" ]] && RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
+[[ -z "$RESTORE_REMINDER_INTERVAL" ]] && RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
+[[ -z "$RESTORE_REMINDER_REPEAT" ]] && RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
+[[ -z "$RSYNC_BACKUP_ADDITIONAL_OPTIONS" ]] && RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
+[[ -z "$RSYNC_BACKUP_OPTIONS" ]] && RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
+[[ -z "$SENDER_EMAIL" ]] && SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
+[[ -z "$SKIPLOCALCHECK" ]] && SKIPLOCALCHECK="$DEFAULT_SKIPLOCALCHECK"
+[[ -z "$STARTSERVICES" ]] && STARTSERVICES="$DEFAULT_STARTSERVICES"
+[[ -z "$STOPSERVICES" ]] && STOPSERVICES="$DEFAULT_STOPSERVICES"
+[[ -z "$SYSTEMSTATUS" ]] && SYSTEMSTATUS="$DEFAULT_SYSTEMSTATUS"
+[[ -z "$TAR_BACKUP_ADDITIONAL_OPTIONS" ]] && TAR_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS"
+[[ -z "$TAR_BACKUP_OPTIONS" ]] && TAR_BACKUP_OPTIONS="$DEFAULT_TAR_BACKUP_OPTIONS"
+[[ -z "$TAR_BOOT_PARTITION_ENABLED" ]] && TAR_BOOT_PARTITION_ENABLED="$DEFAULT_TAR_BOOT_PARTITION_ENABLED"
+[[ -z "$TAR_RESTORE_ADDITIONAL_OPTIONS" ]] && TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
+[[ -z "$TIMESTAMPS" ]] && TIMESTAMPS="$DEFAULT_TIMESTAMPS"
+[[ -z "$USE_HARDLINKS" ]] && USE_HARDLINKS="$DEFAULT_USE_HARDLINKS"
+[[ -z "$USE_UUID" ]] && USE_UUID="$DEFAULT_USE_UUID"
+[[ -z "$VERBOSE" ]] && VERBOSE="$DEFAULT_VERBOSE"
+[[ -z "$YES_NO_RESTORE_DEVICE" ]] && YES_NO_RESTORE_DEVICE="$DEFAULT_YES_NO_RESTORE_DEVICE"
+[[ -z "$ZIP_BACKUP" ]] && ZIP_BACKUP="$DEFAULT_ZIP_BACKUP"
+
+if (( ! $RESTORE )); then
+	lockingFramework
+	exlock_now
+	if (( $? )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
+		exitError $RC_MISC_ERROR
 	fi
+fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
 	(( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
@@ -6019,15 +6055,17 @@ if (( ! $INCLUDE_ONLY )); then
 		logItem "/etc/config$NL$(egrep -v '^\s*$|^#' $ETC_CONFIG_FILE)"
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE"
 	fi
-
 	if (( $HOME_CONFIG_FILE_INCLUDED )); then
 		logItem "/home/config$NL$(egrep -v '^\s*$|^#' $HOME_CONFIG_FILE)"
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE"
 	fi
-
 	if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
 		logItem "./config$NL$(egrep -v '^\s*$|^#' $CURRENTDIR_CONFIG_FILE)"
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE"
+	fi
+	if (( $CUSTOM_CONFIG_FILE_INCLUDED )); then
+		logItem "custom config$NL$(egrep -v '^\s*$|^#' $CUSTOM_CONFIG_FILE)"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CUSTOM_CONFIG_FILE"
 	fi
 
 	downloadPropertiesFile
