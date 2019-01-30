@@ -58,19 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-<<<<<<< HEAD
-GIT_DATE="$Date: 2019-01-15 19:05:43 +0100$"
+GIT_DATE="$Date: 2019-01-30 20:07:17 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: e513a3b$"
-=======
-GIT_DATE="$Date: 2019-01-19 21:03:33 +0100$"
-GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 67129a2$"
->>>>>>> d522ef225fcd4a0925b82277412b27b65ee06322
+GIT_COMMIT="$Sha1: 2a842c9$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1185,7 +1177,7 @@ function executeCommand() { # command - rc's to accept
 	if (( $INTERACTIVE )); then
 		eval "$1"
 	else
-		eval "$1" >> $LOG_FILE
+		eval "$1 &>> $LOG_FILE"
 	fi
 	rc=$?
 	if (( $rc != 0 )); then
@@ -1209,7 +1201,7 @@ function executeShellCommand() { # command
 	if (( $INTERACTIVE )); then
 		eval "$1"
 	else
-		eval "$1" >> $LOG_FILE
+		eval "$1 &>> $LOG_FILE"
 	fi
 	local rc=$?
 	logExit "executeShellCommand: $rc"
@@ -2845,9 +2837,9 @@ function bootPartitionBackup() {
 					touch "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				else
 					if (( $TAR_BOOT_PARTITION_ENABLED )); then
-						cmd="tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" /boot &>>$LOG_FILE"
+						cmd="tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" /boot"
 					else
-						cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=1M &>>$LOG_FILE"
+						cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=1M"
 					fi
 
 					executeCommand "$cmd"
@@ -5659,14 +5651,8 @@ while (( "$#" )); do
 	-E)
 	  o=$(checkOptionParameter "$1" "$2");
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-<<<<<<< HEAD
-	  EMAIL_PARMS="$o"; shift 2
-
-	  ;;
-=======
       EMAIL_PARMS="$o"; shift 2
       ;;
->>>>>>> d522ef225fcd4a0925b82277412b27b65ee06322
 
     -f)
 	  o=$(checkOptionParameter "$1" "$2")
