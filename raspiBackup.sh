@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2019-02-08 20:26:58 +0100$"
+GIT_DATE="$Date: 2019-02-11 21:53:59 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: e2151c9$"
+GIT_COMMIT="$Sha1: 2184fa5$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1169,15 +1169,27 @@ function exitError() { # {rc}
 	exit $rc
 }
 
+# write stdout and stderr into log
 function executeCommand() { # command - rc's to accept
+	executeCmd "$1" "&" "$2"
+	return $rc
+}
+
+# gzip writes it's output into stdout thus don't redirect stdout into log, only stderr
+function executeCommandNoStdoutRedirect() { # command - rc's to accept
+	executeCmd "$1" "2" "$2"
+	return $rc
+}
+
+function executeCmd() { # command - redirects - rc's to accept
 	local rc i
-	logItem "Command executed:$NL$1"
-	logItem "Skips: $2"
+	logEntry "Command: $1"
+	logItem "Redirect: $2 - Skips: $3"
 
 	if (( $INTERACTIVE )); then
 		eval "$1"
 	else
-		eval "$1 &>> $LOG_FILE"
+		eval "$1 $2>> $LOG_FILE"
 	fi
 	rc=$?
 	if (( $rc != 0 )); then
@@ -1191,7 +1203,7 @@ function executeCommand() { # command - rc's to accept
 			fi
 		done
 	fi
-	logItem "Result $rc"
+	logExit "$rc"
 	return $rc
 }
 
@@ -3005,7 +3017,11 @@ function ddBackup() {
 		if (( $FAKE_BACKUPS )); then
 			executeCommand "$fakecmd"
 		elif (( ! $FAKE)); then
-			executeCommand "$cmd"
+			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+				executeCommandNoStdoutRedirect "$cmd"
+			else
+				executeCommand "$cmd"
+			fi
 			rc=$?
 		else
 			rc=0
