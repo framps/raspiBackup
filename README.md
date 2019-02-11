@@ -1,3 +1,5 @@
+![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat)
+
 # raspiBackup - Backup and restore your running Raspberries
 
 * A full system backup will be created unattended with no shutdown of the system or other manual intervention just by starting raspiBackup using cron. Important services will be stopped just before starting the backup and are started again when the backup finished.
