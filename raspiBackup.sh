@@ -560,7 +560,7 @@ MSG_EN[$MSG_PARTITION_NUMBER_INVALID]="RBK0094E: Parameter '%s' specified in opt
 MSG_DE[$MSG_PARTITION_NUMBER_INVALID]="RBK0094E: Angegebener Parameter '%s' der Option -T ist keine Zahl."
 MSG_RESTORING_PARTITIONFILE=95
 MSG_EN[$MSG_RESTORING_PARTITIONFILE]="RBK0095I: Restoring partition %s."
-MSG_DE[$MSG_RESTORING_PARTITIONFILE]="RBK0095I: Backup wird auf partition %s zurückgespielt."
+MSG_DE[$MSG_RESTORING_PARTITIONFILE]="RBK0095I: Backup wird auf Partition %s zurückgespielt."
 MSG_LANGUAGE_NOT_SUPPORTED=96
 MSG_EN[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096E: Language %s not supported."
 MSG_DE[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096E: Die Sprache %s wird nicht unterstützt."
@@ -662,7 +662,7 @@ MSG_EN[$MSG_USING_LOGFILE]="RBK0128I: Using logfile %s."
 MSG_DE[$MSG_USING_LOGFILE]="RBK0128I: Logdatei ist %s."
 MSG_EMAIL_EXTENSION_NOT_FOUND=129
 MSG_EN[$MSG_EMAIL_EXTENSION_NOT_FOUND]="RBK0129E: email extension %s not found."
-MSG_DE[$MSG_EMAIL_EXTENSION_NOT_FOUND]="RBK0129E: email Erweiterung %s nicht gefunden."
+MSG_DE[$MSG_EMAIL_EXTENSION_NOT_FOUND]="RBK0129E: Email Erweiterung %s nicht gefunden."
 MSG_MISSING_FILEPARAMETER=130
 MSG_EN[$MSG_MISSING_FILEPARAMETER]="RBK0130E: Missing backup- or restorepath parameter."
 MSG_DE[$MSG_MISSING_FILEPARAMETER]="RBK0130E: Backup- oder Restorepfadparameter fehlt."
@@ -743,10 +743,10 @@ MSG_EN[$MSG_INVALID_RESTORE_ROOT_PARTITION]="RBK0155E: Restore root partition %s
 MSG_DE[$MSG_INVALID_RESTORE_ROOT_PARTITION]="RBK0155E: Ziel Rootpartition %s ist keine Partition."
 MSG_SKIP_STARTING_SERVICES=156
 MSG_EN[$MSG_SKIP_STARTING_SERVICES]="RBK0156W: No services to start."
-MSG_DE[$MSG_SKIP_STARTING_SERVICES]="RBK0156W: Keine Services sind zu starten."
+MSG_DE[$MSG_SKIP_STARTING_SERVICES]="RBK0156W: Keine Systemd Services sind zu starten."
 MSG_SKIP_STOPPING_SERVICES=157
 MSG_EN[$MSG_SKIP_STOPPING_SERVICES]="RBK0157W: No services to stop."
-MSG_DE[$MSG_SKIP_STOPPING_SERVICES]="RBK0157W: Keine Services sind zu stoppen."
+MSG_DE[$MSG_SKIP_STOPPING_SERVICES]="RBK0157W: Keine Systemd Services sind zu stoppen."
 MSG_MAIN_BACKUP_PROGRESSING=158
 MSG_EN[$MSG_MAIN_BACKUP_PROGRESSING]="RBK0158I: Creating native %s backup %s."
 MSG_DE[$MSG_MAIN_BACKUP_PROGRESSING]="RBK0158I: %s Backup %s wird erstellt."
@@ -773,7 +773,7 @@ MSG_EN[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> NOTE  <========= \
 ${NL}!!! RBK0165W: This is a betaversion and should not be used in production. \
 ${NL}!!! RBK0165W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> HINWEIS <========= \
-${NL}!!! RBK0165W: Dieses ist eine Betaversion welche nicht in Produktion benutzt werden sollte. \
+${NL}!!! RBK0165W: Dies ist eine Betaversion, welche nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0165W: =========> HINWEIS <========="
 MSG_UMOUNT_ERROR=166
 MSG_EN[$MSG_UMOUNT_ERROR]="RBK0166E: Umount for %s failed. RC %s. Maybe mounted somewhere else?"
@@ -789,7 +789,7 @@ MSG_EN[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Target root partition %s does n
 MSG_DE[$MSG_ROOT_PARTITION_NOT_FOUND]="RBK0169E: Ziel Rootpartition %s existiert nicht."
 MSG_MISSING_R_OPTION=170
 MSG_EN[$MSG_MISSING_R_OPTION]="RBK0170E: Backup uses an external root partition. -R option missing."
-MSG_DE[$MSG_MISSING_R_OPTION]="RBK0170E: Backup benutzt eine externe root partition. Die Option -R fehlt."
+MSG_DE[$MSG_MISSING_R_OPTION]="RBK0170E: Backup benutzt eine externe root Partition. Die Option -R fehlt."
 MSG_NOPARTITIONS_TOBACKUP_FOUND=171
 MSG_EN[$MSG_NOPARTITIONS_TOBACKUP_FOUND]="RBK0171E: Unable to detect any partitions to backup."
 MSG_DE[$MSG_NOPARTITIONS_TOBACKUP_FOUND]="RBK0171E: Es können keine zu sichernde Partitionen gefunden werden."
@@ -804,7 +804,7 @@ MSG_EN[$MSG_INTRO_HOTFIX_MESSAGE]="RBK0173W: =========> NOTE  <========= \
 ${NL}!!! RBK0173W: This is a temporary hotfix and has to be upgraded to next available version as soon as one is available. \
 ${NL}!!! RBK0173W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_HOTFIX_MESSAGE]="RBK0173W: =========> HINWEIS <========= \
-${NL}!!! RBK0173W: Dieses ist ein temporärer Hotfix der auf die nächste Version upgraded werden muss sobald eine verfügbar ist. \
+${NL}!!! RBK0173W: Dies ist ein temporärer Hotfix, der auf die nächste Version upgraded werden muss, sobald eine verfügbar ist. \
 ${NL}!!! RBK0173W: =========> HINWEIS <========="
 MSG_TOOL_ERROR_SKIP=174
 MSG_EN[$MSG_TOOL_ERROR_SKIP]="RBK0174I: Backup tool %s error %s ignored. For errormessages see log file."
@@ -868,7 +868,7 @@ MSG_EN[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> NOTE  <========= \
 ${NL}!!! RBK0173W: This is a development version and should not be used in production. \
 ${NL}!!! RBK0173W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> HINWEIS <========= \
-${NL}!!! RBK0173W: Dieses ist eine Entwicklerversion welcher nicht in Produktion benutzt werden sollte. \
+${NL}!!! RBK0173W: Dies ist eine Entwicklungsversion, welche nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0173W: =========> HINWEIS <========="
 MSG_MISSING_COMMANDS=193
 MSG_EN[$MSG_MISSING_COMMANDS]="RBK0193E: Missing required commands '%s'."
