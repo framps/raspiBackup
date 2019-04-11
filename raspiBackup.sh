@@ -58,11 +58,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 MYPID=$$
 
-GIT_DATE="$Date: 2019-02-11 21:53:59 +0100$"
+GIT_DATE="$Date: 2019-04-11 21:40:22 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 2184fa5$"
+GIT_COMMIT="$Sha1: d324635$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -773,7 +773,7 @@ MSG_EN[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> NOTE  <========= \
 ${NL}!!! RBK0165W: This is a betaversion and should not be used in production. \
 ${NL}!!! RBK0165W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> HINWEIS <========= \
-${NL}!!! RBK0165W: Dies ist eine Betaversion, welche nicht in Produktion benutzt werden sollte. \
+${NL}!!! RBK0165W: Dieses ist eine Betaversion welche nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0165W: =========> HINWEIS <========="
 MSG_UMOUNT_ERROR=166
 MSG_EN[$MSG_UMOUNT_ERROR]="RBK0166E: Umount for %s failed. RC %s. Maybe mounted somewhere else?"
@@ -804,7 +804,7 @@ MSG_EN[$MSG_INTRO_HOTFIX_MESSAGE]="RBK0173W: =========> NOTE  <========= \
 ${NL}!!! RBK0173W: This is a temporary hotfix and has to be upgraded to next available version as soon as one is available. \
 ${NL}!!! RBK0173W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_HOTFIX_MESSAGE]="RBK0173W: =========> HINWEIS <========= \
-${NL}!!! RBK0173W: Dies ist ein temporärer Hotfix, der auf die nächste Version upgraded werden muss, sobald eine verfügbar ist. \
+${NL}!!! RBK0173W: Dieses ist ein temporärer Hotfix der auf die nächste Version upgraded werden muss sobald eine verfügbar ist. \
 ${NL}!!! RBK0173W: =========> HINWEIS <========="
 MSG_TOOL_ERROR_SKIP=174
 MSG_EN[$MSG_TOOL_ERROR_SKIP]="RBK0174I: Backup tool %s error %s ignored. For errormessages see log file."
@@ -868,7 +868,7 @@ MSG_EN[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> NOTE  <========= \
 ${NL}!!! RBK0173W: This is a development version and should not be used in production. \
 ${NL}!!! RBK0173W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> HINWEIS <========= \
-${NL}!!! RBK0173W: Dies ist eine Entwicklungsversion, welche nicht in Produktion benutzt werden sollte. \
+${NL}!!! RBK0173W: Dieses ist eine Entwicklerversion welcher nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0173W: =========> HINWEIS <========="
 MSG_MISSING_COMMANDS=193
 MSG_EN[$MSG_MISSING_COMMANDS]="RBK0193E: Missing required commands '%s'."
@@ -1172,13 +1172,13 @@ function exitError() { # {rc}
 # write stdout and stderr into log
 function executeCommand() { # command - rc's to accept
 	executeCmd "$1" "&" "$2"
-	return $rc
+	return $?
 }
 
 # gzip writes it's output into stdout thus don't redirect stdout into log, only stderr
 function executeCommandNoStdoutRedirect() { # command - rc's to accept
 	executeCmd "$1" "2" "$2"
-	return $rc
+	return $?
 }
 
 function executeCmd() { # command - redirects - rc's to accept
@@ -1194,7 +1194,7 @@ function executeCmd() { # command - redirects - rc's to accept
 	rc=$?
 	if (( $rc != 0 )); then
 		local error=1
-		for i in ${@:2}; do
+		for i in ${@:3}; do
 			if (( $i == $rc )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
 				rc=0
