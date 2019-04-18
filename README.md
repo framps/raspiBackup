@@ -7,6 +7,7 @@
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
 * An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
 * Status eMail sent when backup finished
+* UI installer configures all major options to get raspiBackup up and running in 5 minutes
 * Much more features ... (See doc below)
 
 ## Documentation
