@@ -9,7 +9,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright # (C) 2013,2018 - framp at linux-tips-and-tricks dot de
+#   Copyright # (C) 2013,2019 - framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -26,22 +26,26 @@
 #
 #######################################################################################################################
 
+set -euf -o pipefail
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.4.1"
+VERSION="0.2.5"
 
-GIT_DATE="$Date: 2018-11-28 19:42:13 +0100$"
+set +u;GIT_DATE="$Date: 2019-04-22 10:42:48 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: b9014bd$"
+set +u;GIT_COMMIT="$Sha1: 16d273c$";set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
 BACKUP_MOUNT_POINT="/remote/backup"							 # ===> adapt to your environment
 BACKUP_PATH="$BACKUP_MOUNT_POINT/myraspberries"              # ===> adapt to your environment
+
+#LOOP_DISK_NAME="myacl.img" 								 # ===> uncomment and adapt to your environment if you use a loop device as backup parition to save ACLs
+LOOP_MOUNTED=0
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -79,6 +83,11 @@ function cleanup() { # trap
 		echo "--- Unmounting $BACKUP_MOUNT_POINT"
 		umount $BACKUP_MOUNT_POINT
 	fi
+	if (( $LOOP_MOUNTED )); then
+		losetup -d $LOOP_DEVICE
+		umount $LOOP_DEVICE
+		rmdir $LOOP_MOUNT_POINT
+	fi
 }
 
 function readVars() {
@@ -91,6 +100,27 @@ function readVars() {
 		echo "/tmp/raspiBackup.vars not found"
 		exit 42
 	fi
+}
+
+# store backup in ext4 image on mounted partition to save ACLs
+# See http://cintrabatista.net/nfs_with_posix_acl.html for details
+#
+# create image with following commands
+# create myacl.img with 100M*10=1G (change 10 to 200, for example, if you want 20G)
+#    sudo dd if=/dev/zero of=myacl.img bs=100M count=10
+#    sudo mkfs.ext4 ./myacl.img
+#
+# mount the backup ext4 image for a restore to /restore_image
+#    sudo losetup /dev/loop0 ./myacl.img
+#    sudo mkdir /restore_image
+#    sudo mount /dev/loop0 /restore_image
+function mountLoopDevice() {
+	echo "--- Using image $BACKUP_PATH/$LOOP_DISK_NAME via loop device as backup partition"
+	LOOP_DEVICE=$(losetup -f) # retrieve free loop devices
+	LOOP_MOUNT_POINT=$(mktemp -d) # create a mountpoint for loop device
+	losetup "$LOOP_DEVICE" "$BACKUP_PATH/$LOOP_DISK_NAME"
+	mount "$LOOP_DEVICE" "$LOOP_MOUNT_POINT"
+	LOOP_MOUNTED=1
 }
 
 function raspiBackupRestore2Image() {
@@ -139,7 +169,7 @@ if ! isMounted $BACKUP_MOUNT_POINT; then
 	echo "--- Mounting $BACKUP_MOUNT_POINT"
 	mount $BACKUP_MOUNT_POINT	# no, mount it
 	if (( $? > 0 )); then
-		echo "Mount of $BACKUP_MOUNT_POINT failed"
+		echo "??? Mount of $BACKUP_MOUNT_POINT failed"
 		exit 42
 	fi
 else
@@ -148,9 +178,16 @@ else
 	echo "--- $BACKUP_MOUNT_POINT already mounted"
 fi
 
-# create backup
-raspiBackup.sh      	  # ===> configure all options in /usr/local/etc/raspiBackup.conf. Don't forget -a and -o options
-rc=$?
+if [[ -n $LOOP_DISK_NAME ]]; then
+	# store backup in ext4 image on mounted partition to save ACLs
+	mountLoopDevice
+	raspiBackup.sh "$LOOP_MOUNT_POINT"   			# ===> configure all options in /usr/local/etc/raspiBackup.conf. Don't forget -a and -o options
+	rc=$?
+else
+	# create backup on BACKUP_MOUNT_POINT
+	raspiBackup.sh      	 						# ===> configure all options in /usr/local/etc/raspiBackup.conf. Don't forget -a and -o options
+	rc=$?
+fi
 
 # $BACKUP_MOUNT_POINT unmounted when script terminates only if it was mounted by this script
 
@@ -161,7 +198,7 @@ else
 	exit $rc
 fi
 
-# enable on of the following line if you want to have pishrink or raspiBackupRestore2Image to postprocess the backup
+# enable one of the following two lines if you want to have pishrink or raspiBackupRestore2Image to postprocess the backup
 
 #pishrink
 #raspiBackupRestore2Image

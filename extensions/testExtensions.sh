@@ -24,7 +24,11 @@
 #
 #######################################################################################################################
 
-. raspiBackup.sh --include
+if [[ -f ../raspiBackup.sh ]]; then
+	. ../raspiBackup.sh --include
+else
+	. raspiBackup.sh --include
+fi
 
 . raspiBackup_disk_pre.sh
 . raspiBackup_disk_post.sh

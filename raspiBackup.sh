@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-04-22 10:49:17 +0200$"
+GIT_DATE="$Date: 2019-04-27 22:19:10 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 1d02a5c$"
+GIT_COMMIT="$Sha1: f9ed6de$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1328,8 +1328,8 @@ function logOptions() {
  	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
  	logItem "DD_BLOCKSIZE=$DD_BLOCKSIZE"
  	logItem "DD_PARMS=$DD_PARMS"
-	logItem "DEPLOYMENT_HOSTS=$DEFAULT_DEPLOYMENT_HOSTS"
-	logItem "YES_NO_RESTORE_DEVICE=$DEFAULT_YES_NO_RESTORE_DEVICE"
+	logItem "DEPLOYMENT_HOSTS=$DEPLOYMENT_HOSTS"
+	logItem "YES_NO_RESTORE_DEVICE=$YES_NO_RESTORE_DEVICE"
 	logItem "EMAIL=$EMAIL"
 	logItem "EMAIL_PARMS=$EMAIL_PARMS"
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
@@ -1955,10 +1955,7 @@ function updateScript() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
 			if askYesNo; then
 				DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
-<<<<<<< HEAD
 				newVersion="${betaVersion}-beta"
-=======
->>>>>>> 23812253211ff1af145447bfdfd2445c034b4b59
 				updateNow=1
 			fi
 		fi
