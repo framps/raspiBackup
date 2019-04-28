@@ -1,10 +1,14 @@
-# raspiBackup - Backup and restore your Raspberries
+![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat)
 
-raspiBackup creates backups of a running Raspberry with no shutdown and manual intervention by using cron. Important services will be stopped just before starting the backup and are started again when the backup finished.
+# raspiBackup - Backup and restore your running Raspberries
 
-Any device which can be mounted on Linux can be used as backupspace (USB disk, USB stick, nfs, samba, sshfs, ...). Standard Linux backup tools dd, tar and rsync using hardlinks can be used to create the backup.
-
-An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
+* Create a full system backup unattended with no shutdown of the system or other manual intervention just by starting raspiBackup using cron. Important services can be stopped before starting the backup and are started again when the backup finished.
+* Any device mountable on Linux can be used as backupspace (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
+* Standard Linux backup tools dd, tar and rsync can be used to create the backup.
+* An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
+* Status eMail sent when backup finished
+* UI installer configures all major options to get raspiBackup up and running in 5 minutes
+* Much more features ... (See doc below)
 
 ## Documentation
 
@@ -18,9 +22,9 @@ For the latest and actual list of options see [here](https://www.linux-tips-and-
 
 ```
 pi@raspberry: $ raspiBackup.sh
+raspiBackup.sh 0.6.4, 2019-01-07/20:47:27 - 0530211
 
-raspiBackup.sh 0.6.3.1-, 2018-02-21/19:17:52 - 7f9d77a
-usage: raspiBackup.sh [option]* {backupDirectory | backupFile}
+Usage: raspiBackup.sh [option]* {backupDirectory}
 
 -General options-
 -A append logfile to eMail (default: no)
@@ -32,16 +36,15 @@ usage: raspiBackup.sh [option]* {backupDirectory | backupFile}
 -G {message language} (EN or DE) (default: EN)
 -h display this help text
 -l {log level} (Off | Debug) (default: Off)
--L {log location} (Syslog: /var/log/syslog | Varlog: /var/log/raspiBackup/<hostname>.log | Backup: <backupPath> | Current: ~/raspiBackup.log) (default: Varlog)
 -m {message level} (Minimal | Detailed) (default: Minimal)
 -M {backup description}
 -n notification if there is a newer scriptversion available for download (default: yes)
 -s {email program to use} (mail,ssmtp,sendEmail,mailext) (default: mail)
+--timestamps Prefix messages with timestampes (default: no)
 -u "{excludeList}" List of directories to exclude from tar and rsync backup
 -U current script version will be replaced by the actual version. Current version will be saved and can be restored with parameter -V
 -v verbose output of backup tools (default: no)
 -V restore a previous version
--X extended attributes and ACLs are handled by tar (default: no)
 -z compress backup file with gzip (default: no)
 
 -Backup options-
@@ -50,7 +53,7 @@ usage: raspiBackup.sh [option]* {backupDirectory | backupFile}
 -k {backupsToKeep} (default: 3)
 -o "{commands to execute before Backup}" (default: no)
 -P use dedicated partitionbackup mode (default: no)
--t {backupType} (dd|rsync|tar) (default: dd)
+-t {backupType} (dd|rsync|tar) (default: rsync)
 -T "{List of partitions to save}" (Partition numbers, e.g. "1 2 3"). Only valid with parameter -P (default: *)
 
 -Restore options-

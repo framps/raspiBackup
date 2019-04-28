@@ -1955,7 +1955,10 @@ function updateScript() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
 			if askYesNo; then
 				DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
+<<<<<<< HEAD
 				newVersion="${betaVersion}-beta"
+=======
+>>>>>>> 23812253211ff1af145447bfdfd2445c034b4b59
 				updateNow=1
 			fi
 		fi
