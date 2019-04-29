@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-04-27 22:19:10 +0200$"
+GIT_DATE="$Date: 2019-04-28 21:54:07 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: f9ed6de$"
+GIT_COMMIT="$Sha1: 74e3e4a$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -5598,16 +5598,14 @@ function checkOptionParameter() { # option parameter
 		echo "$2"
 		return 0
 	fi
+	if [[ "${2:0:1}" == "\\" ]]; then
+		2="${2:1}"
+	fi
 	if [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z $2 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
 		echo ""
 		return 1
-	fi
-	if [[ "${2:0:1}" == "\\" ]]; then
-		echo "${2:1}"
-	else
-		echo "$2"
 	fi
 	return 0
 }
