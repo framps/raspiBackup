@@ -38,11 +38,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 VERSION="0.1"
 
-set +u;GIT_DATE="$Date: 2019-04-28 14:17:11 +0200$"; set -u
+set +u;GIT_DATE="$Date: 2019-04-28 22:27:00 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1: 75a64da$";set -u
+set +u;GIT_COMMIT="$Sha1: 7897617$";set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -87,7 +87,10 @@ function listYearlyBackups() {
 function listMonthlyBackups() {
 	if (( $MONTHLY > 0 )); then
 		for i in $(seq 0 $(($MONTHLY-1)) ); do
-			ls ${BACKUPDIR} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
+			# ... error in date ... see http://bashworkz.com/linux-date-problem-1-month-ago-date-bug/
+			# ls ${BACKUPDIR} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
+			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m)
+			ls ${BACKUPDIR} | egrep "\-backup\-$d[0-9]{2}" | sort -u | head -n 1
 		done
 	fi
 }
@@ -137,9 +140,10 @@ c=$((365 * 6))
 
 # create just daily backup directories as raspiBackup will do
 today=$(date +"%Y-%m-%d")
+echo "Creating fake backups..."
 for i in $(seq 0 $c); do
 	n="raspberry-rsync-backup-"$(date -d "$today -$i days" +%Y%m%d-%H%M%S)
-	echo "Creating fake backup dir $n"
+	#echo "Creating fake backup dir $n"
 	mkdir $DIR/$n
 done;
 
@@ -151,8 +155,8 @@ if (( $rc == 0 )); then
 	#readVars
 	BACKUPDIR="$SCRIPT_DIR/$DIR"
 	cd ${BACKUPDIR}
-	echo "--- Existing backups ---"
-	ls -1
+	#echo "--- Existing backups ---"
+	#ls -1
 	echo "Execute backup strategy"
 	listBackupsToDelete | while read file_to_delete; do
 		rm -rf ${file_to_delete}
