@@ -79,7 +79,8 @@ function readVars() {
 function listYearlyBackups() {
 	if (( $YEARLY > 0 )); then
 		for i in $(seq 0 $(( $YEARLY-1)) ); do
-			ls ${BACKUPDIR} | egrep "\-backup\-$(date +%Y -d "${i} year ago")[0-9]{2}[0-9]{2}" | sort -u | head -n 1
+			f_d=$(ls | egrep "\-backup\-$(date +%Y -d "${i} year ago")[0-9]{2}[0-9]{2}" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each year
+			ls | egrep "\-backup\-$f_d" | sort -ur | head -n 1 # and use the last made backup (includig time sort !) from that day
 		done
 	fi
 }
@@ -90,7 +91,8 @@ function listMonthlyBackups() {
 			# ... error in date ... see http://bashworkz.com/linux-date-problem-1-month-ago-date-bug/
 			# ls ${BACKUPDIR} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
 			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m)
-			ls ${BACKUPDIR} | egrep "\-backup\-$d[0-9]{2}" | sort -u | head -n 1
+			f_d=$(ls ${BACKUPDIR} | egrep "\-backup\-$d[0-9]{2}" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each month
+			ls | egrep "\-backup\-$f_d" | sort -ur | head -n 1 # and use the last made backup (includig time sort !) from that day
 		done
 	fi
 }
@@ -98,7 +100,8 @@ function listMonthlyBackups() {
 function listWeeklyBackups() {
 	if (( $WEEKLY > 0 )); then
 		for i in $(seq 0 $(( $WEEKLY-1)) ); do
-			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "last monday -${i} weeks")"
+			f_d=$(ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "last monday -${i} weeks")" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each week
+			ls | egrep "\-backup\-$f_d" | sort -ur | head -n 1 # and use the last made backup (includig time sort !) from that day
 		done
 	fi
 }
@@ -106,7 +109,7 @@ function listWeeklyBackups() {
 function listDailyBackups() {
 	if (( $DAILY > 0 )); then
 		for i in $(seq 0 $(( $DAILY-1)) ); do
-			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "-${i} day")"
+			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "-${i} day")" # in daily backups we keep them all - cleaning comes later in weeks/months/year
 		done
 	fi
 }
@@ -140,12 +143,22 @@ c=$((365 * 6))
 
 # create just daily backup directories as raspiBackup will do
 today=$(date +"%Y-%m-%d")
-echo "Creating fake backups..."
 for i in $(seq 0 $c); do
-	n="raspberry-rsync-backup-"$(date -d "$today -$i days" +%Y%m%d-%H%M%S)
-	#echo "Creating fake backup dir $n"
-	mkdir $DIR/$n
+F_D=$(shuf -i 1-5 -n 1)
+for y in $(seq 0 $F_D); do		# added rnd loop to make 1-5 backups each day - warning LOG/CONSOLE SPAM ! call test with echo to file
+F_HR=$(shuf -i 0-12 -n 1)
+F_MI=$(shuf -i 0-60 -n 1)
+F_SI=$(shuf -i 0-60 -n 1)
+printf -v F_HR "%02d" $F_HR
+printf -v F_MI "%02d" $F_MI
+printf -v F_SI "%02d" $F_SI
+        h="raspberry-rsync-backup-"$(date -d "$today -$i days" +%Y%m%d-)
+        n="$h$F_HR$F_MI$F_SI"
+	echo "Creating fake backup dir $n"
+	mkdir -p $DIR/$n
 done;
+done;
+ 
 
 #raspiBackup.sh -k \\-1     	 						# ===> keep all backups (option -k \\-1), configure all other options in /usr/local/etc/raspiBackup.conf. Don't forget -a and -o options
 rc=0
