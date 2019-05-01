@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-04-30 09:59:00 +0200$"
+GIT_DATE="$Date: 2019-05-01 10:29:49 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 063036b$"
+GIT_COMMIT="$Sha1: f9df3c1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -5593,7 +5593,7 @@ function mentionHelp() {
 
 # there is an issue when a parameter starts with "-" which may a new option
 # Workaround1: if parameter contains at least one space it's considered as a parameter and not an option even the string starts with '-'
-# Workaround2: prefix parameter with \
+# Workaround2: prefix parameter with \ (has to be \\ in bash commandline)
 
 function checkOptionParameter() { # option parameter
 
@@ -5605,12 +5605,14 @@ function checkOptionParameter() { # option parameter
 
 	if [[ "${2:0:1}" == "\\" ]]; then
 		echo "${2:1}"
+		return 0
 	elif [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z $2 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
 		echo ""
 		return 1
 	fi
+	echo "$2"
 	return 0
 }
 
