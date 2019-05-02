@@ -47,7 +47,7 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
-# number of backups to keep and if the first or the last daily will be kept
+# number of backups to keep
 DAILY=7
 WEEKLY=4
 MONTHLY=12
