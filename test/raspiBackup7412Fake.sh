@@ -47,7 +47,7 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
-# number of backups to keep
+# number of backups to keep and if the first or the last daily will be kept
 DAILY=7
 WEEKLY=4
 MONTHLY=12
@@ -109,7 +109,7 @@ function listWeeklyBackups() {
 function listDailyBackups() {
 	if (( $DAILY > 0 )); then
 		for i in $(seq 0 $(( $DAILY-1)) ); do
-			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "-${i} day")" # in daily backups we keep them all - cleaning comes later in weeks/months/year
+			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "-${i} day")" | sort -ur | head -n 1 # use latest Backup that was made each day
 		done
 	fi
 }
@@ -146,9 +146,9 @@ today=$(date +"%Y-%m-%d")
 for i in $(seq 0 $c); do
 F_D=$(shuf -i 1-5 -n 1)
 for y in $(seq 0 $F_D); do		# added rnd loop to make 1-5 backups each day - warning LOG/CONSOLE SPAM ! call test with echo to file
-F_HR=$(shuf -i 0-12 -n 1)
-F_MI=$(shuf -i 0-60 -n 1)
-F_SI=$(shuf -i 0-60 -n 1)
+F_HR=$(shuf -i 0-24 -n 1)
+F_MI=$(shuf -i 0-59 -n 1)
+F_SI=$(shuf -i 0-59 -n 1)
 printf -v F_HR "%02d" $F_HR
 printf -v F_MI "%02d" $F_MI
 printf -v F_SI "%02d" $F_SI
