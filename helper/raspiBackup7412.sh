@@ -79,7 +79,8 @@ function readVars() {
 function listYearlyBackups() {
 	if (( $YEARLY > 0 )); then
 		for i in $(seq 0 $(( $YEARLY-1)) ); do
-			ls ${BACKUPDIR} | egrep "\-backup\-$(date +%Y -d "${i} year ago")[0-9]{2}[0-9]{2}" | sort -u | head -n 1
+			f_d=$(ls | egrep "\-backup\-$(date +%Y -d "${i} year ago")[0-9]{2}[0-9]{2}" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each year
+			ls | egrep "\-backup\-$f_d" | sort -ur | head -n 1 # and use the last made backup (includig time sort !) from that day
 		done
 	fi
 }
@@ -90,7 +91,8 @@ function listMonthlyBackups() {
 			# ... error in date ... see http://bashworkz.com/linux-date-problem-1-month-ago-date-bug/
 			# ls ${BACKUPDIR} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
 			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m)
-			ls ${BACKUPDIR} | egrep "\-backup\-$d[0-9]{2}" | sort -u | head -n 1
+			f_d=$(ls ${BACKUPDIR} | egrep "\-backup\-$d[0-9]{2}" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each month
+			ls | egrep "\-backup\-$f_d" | sort -ur | head -n 1 # and use the last made backup (includig time sort !) from that day
 		done
 	fi
 }
@@ -98,7 +100,8 @@ function listMonthlyBackups() {
 function listWeeklyBackups() {
 	if (( $WEEKLY > 0 )); then
 		for i in $(seq 0 $(( $WEEKLY-1)) ); do
-			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "last monday -${i} weeks")"
+			f_d=$(ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "last monday -${i} weeks")" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each week
+			ls | egrep "\-backup\-$f_d" | sort -ur | head -n 1 # and use the last made backup (includig time sort !) from that day
 		done
 	fi
 }
@@ -106,7 +109,7 @@ function listWeeklyBackups() {
 function listDailyBackups() {
 	if (( $DAILY > 0 )); then
 		for i in $(seq 0 $(( $DAILY-1)) ); do
-			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "-${i} day")"
+			ls ${BACKUPDIR} | grep "\-backup\-$(date +%Y%m%d -d "-${i} day")" | sort -ur | head -n 1 # use latest Backup that was made each day
 		done
 	fi
 }

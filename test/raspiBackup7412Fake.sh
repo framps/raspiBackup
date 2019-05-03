@@ -143,22 +143,28 @@ c=$((365 * 6))
 
 # create just daily backup directories as raspiBackup will do
 today=$(date +"%Y-%m-%d")
+echo "Creating fake backups in dir $DIR"
+TICKS=100
+t=$TICKS
 for i in $(seq 0 $c); do
-F_D=$(shuf -i 1-5 -n 1)
-for y in $(seq 0 $F_D); do		# added rnd loop to make 1-5 backups each day - warning LOG/CONSOLE SPAM ! call test with echo to file
-F_HR=$(shuf -i 0-24 -n 1)
-F_MI=$(shuf -i 0-59 -n 1)
-F_SI=$(shuf -i 0-59 -n 1)
-printf -v F_HR "%02d" $F_HR
-printf -v F_MI "%02d" $F_MI
-printf -v F_SI "%02d" $F_SI
+	F_D=$(shuf -i 1-5 -n 1)
+	for y in $(seq 0 $F_D); do		# added rnd loop to make 1-5 backups each day - warning LOG/CONSOLE SPAM ! call test with echo to file
+		F_HR=$(shuf -i 0-24 -n 1)
+		F_MI=$(shuf -i 0-59 -n 1)
+		F_SI=$(shuf -i 0-59 -n 1)
+		printf -v F_HR "%02d" $F_HR
+		printf -v F_MI "%02d" $F_MI
+		printf -v F_SI "%02d" $F_SI
         h="raspberry-rsync-backup-"$(date -d "$today -$i days" +%Y%m%d-)
         n="$h$F_HR$F_MI$F_SI"
-	echo "Creating fake backup dir $n"
-	mkdir -p $DIR/$n
-done;
-done;
- 
+		mkdir -p $DIR/$n
+		if (( --t == 0 )); then
+			echo "Next $TICKS ... $n ..."
+			t=$TICKS
+		fi
+	done
+done
+
 
 #raspiBackup.sh -k \\-1     	 						# ===> keep all backups (option -k \\-1), configure all other options in /usr/local/etc/raspiBackup.conf. Don't forget -a and -o options
 rc=0
