@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.4.3-beta"	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.4.4-dev"	# -beta, -hotfix or -dev suffixes possible
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-05-01 10:25:56 +0200$"
+GIT_DATE="$Date: 2019-05-01 10:29:49 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: c042ea1$"
+GIT_COMMIT="$Sha1: f9df3c1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -812,9 +812,9 @@ MSG_DE[$MSG_SCRIPT_UPDATE_NOT_REQUIRED]="RBK0175I: %s Version %s ist aktueller a
 MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS=176
 MSG_EN[$MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS]="RBK0173E: rsync version %s doesn't support progress information."
 MSG_DE[$MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS]="RBK0173E: rsync Version %s unterstüzt keine Fortschrittsanzeige."
-#MSG_TAR_EXT_OPT_SAVE=177
-#MSG_EN[$MSG_TAR_EXT_OPT_SAVE]="RBK0177I: Saving extended attributes and acls with tar"
-#MSG_DE[$MSG_TAR_EXT_OPT_SAVE]="RBK0177I: Extended Attribute und ACLs werden mit tar gesichert"
+MSG_ALL_BACKUPS_KEPT=177
+MSG_EN[$MSG_ALL_BACKUPS_KEPT]="RBK0177W: All backups kept for backup type %s."
+MSG_DE[$MSG_ALL_BACKUPS_KEPT]="RBK0177W: Alle Backups werden für den Backuptyp %s aufbewahrt."
 MSG_IMG_BOOT_BACKUP_FAILED=178
 MSG_EN[$MSG_IMG_BOOT_BACKUP_FAILED]="RBK0178E: Creation of %s failed with RC %s."
 MSG_DE[$MSG_IMG_BOOT_BACKUP_FAILED]="RBK0178E: Erzeugung von %s Datei endet fehlerhaft mit RC %s."
@@ -3682,64 +3682,68 @@ function backup() {
 
 	logItem "Backup created with return code: $rc"
 
+	logItem "Current directory: $(pwd)"
+	if [[ -z $BACKUPPATH || "$BACKUPPATH" == *"*"* ]]; then
+		assertionFailed $LINENO "Unexpected backup path $BACKUPPATH"
+	fi
+
 	if [[ $rc -eq 0 ]]; then
-		logItem "Deleting oldest directory in $BACKUPPATH"
-		logItem "Current directory: $(pwd)"
-		if [[ -z $BACKUPPATH || "$BACKUPPATH" == *"*"* ]]; then
-			assertionFailed $LINENO "Unexpected backup path $BACKUPPATH"
-		fi
 
 		local bt="${BACKUPTYPE^^}"
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
 
 		local keepBackups=$KEEPBACKUPS
-		(( $keepOverwrite > 0 )) && keepBackups=$keepOverwrite
+		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
-
-		if (( ! $FAKE )); then
-
+		if (( $keepBackups != -1 )); then
+			logItem "Deleting oldest directory in $BACKUPPATH"
 			logItem "pre - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
-			pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "\.{log|msg}$" | head -n -$KEEPBACKUPS | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
 
-			local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
-			local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
-			pushd "$BACKUPPATH" 1>/dev/null
-			for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
+			if (( ! $FAKE )); then
+				pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "\.{log|msg}$" | head -n -$KEEPBACKUPS | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
 
-				if [[ $imgFile =~ $regexDD ]]; then
-					logItem "Skipping DD file $imgFile"
-					continue
-				fi
+				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
+				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
 
-				if [[ ! $imgFile =~ $regex ]]; then
-					logItem "Skipping $imgFile"
-					continue
-				else
-					logItem "Processing $imgFile"
-				fi
+				pushd "$BACKUPPATH" 1>/dev/null
+				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
 
-				local date=${BASH_REMATCH[1]}
-				logItem "Extracted date: $date"
+					if [[ $imgFile =~ $regexDD ]]; then
+						logItem "Skipping DD file $imgFile"
+						continue
+					fi
 
-				if [[ -z $date ]]; then
-					assert $LINENO "Unable to extract date from backup files"
-				fi
-				local file=$(ls -d *-*-backup-$date* 2>/dev/null| egrep -v "\.(log|msg|img|mbr|sfdisk)$");
+					if [[ ! $imgFile =~ $regex ]]; then
+						logItem "Skipping $imgFile"
+						continue
+					else
+						logItem "Processing $imgFile"
+					fi
 
-				if [[ -n $file ]];  then
-					logItem "Found backup for $imgFile"
-				else
-					logItem "Found NO backup for $imgFile - removing"
-					rm -f $imgFile &>>"$LOG_FILE"
-				fi
-			done
-			popd > /dev/null
+					local date=${BASH_REMATCH[1]}
+					logItem "Extracted date: $date"
 
-			logItem "post - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
+					if [[ -z $date ]]; then
+						assert $LINENO "Unable to extract date from backup files"
+					fi
+					local file=$(ls -d *-*-backup-$date* 2>/dev/null| egrep -v "\.(log|msg|img|mbr|sfdisk)$");
 
+					if [[ -n $file ]];  then
+						logItem "Found backup for $imgFile"
+					else
+						logItem "Found NO backup for $imgFile - removing"
+						rm -f $imgFile &>>"$LOG_FILE"
+					fi
+				done
+				popd > /dev/null
+
+				logItem "post - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ALL_BACKUPS_KEPT "$BACKUPTYPE"
 		fi
 
 	fi
@@ -4331,7 +4335,7 @@ function doitBackup() {
 		exitError $RC_MISC_ERROR
 	fi
 
-	if [[ ! "$KEEPBACKUPS" =~ ^[0-9]+$ || $KEEPBACKUPS -lt 1 || $KEEPBACKUPS -gt 365 ]]; then
+	if [[ ! "$KEEPBACKUPS" =~ ^-?[0-9]+$ ]] || (( $KEEPBACKUPS < -1 || $KEEPBACKUPS > 365 || $KEEPBACKUPS == 0 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_KEEPBACKUP_INVALID "$KEEPBACKUPS" "-k"
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
@@ -4344,7 +4348,7 @@ function doitBackup() {
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
 
-		if [[ ! $keepOverwrite =~ ^[0-9]+$ || $keepOverwrite -lt 0 || $keepOverwrite -gt 365 ]]; then
+		if [[ ! $keepOverwrite =~ ^-?[0-9]+$ ]] || (( $keepOverwrite < -1 || $keepOverwrite > 365 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_KEEPBACKUP_INVALID "$keepOverwrite" "$v"
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
