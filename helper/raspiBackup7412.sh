@@ -79,7 +79,7 @@ function readVars() {
 function listYearlyBackups() {
 	if (( $YEARLY > 0 )); then
 		for i in $(seq 0 $(( $YEARLY-1)) ); do
-			f_d=$(ls | egrep "\-backup\-$(date +%Y -d "${i} year ago")[0-9]{2}[0-9]{2}" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each year
+			f_d=$(ls ${BACKUPDIR} | egrep "\-backup\-$(date +%Y -d "${i} year ago")[0-9]{2}[0-9]{2}" | sort -u | head -n 1 | cut -d'-' -f 4) # grab datefield (cut) for the first day for each year
 			ls | egrep "\-backup\-$f_d" | sort -ur | head -n 1 # and use the last made backup (includig time sort !) from that day
 		done
 	fi
