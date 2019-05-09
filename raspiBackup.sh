@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-04-21 22:40:53 +0200$"
+GIT_DATE="$Date: 2019-05-09 09:45:17 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 4b891fe$"
+GIT_COMMIT="$Sha1: ea4f227$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -693,9 +693,9 @@ MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Bootbackup %s wird benutzt."
 MSG_FORCING_CREATING_PARTITIONS=139
 MSG_EN[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partition creation ignores errors."
 MSG_DE[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partitionserstellung ignoriert Fehler."
-MSG_SCRIPT_RESTART=140
-MSG_EN[$MSG_SCRIPT_RESTART]="RBK0140I: Restarting with new version %s."
-MSG_DE[$MSG_SCRIPT_RESTART]="RBK0140I: Neustart mit neuer Version %s."
+#MSG_SCRIPT_RESTART=140
+#MSG_EN[$MSG_SCRIPT_RESTART]="RBK0140I: Restarting with new version %s."
+#MSG_DE[$MSG_SCRIPT_RESTART]="RBK0140I: Neustart mit neuer Version %s."
 MSG_SAVING_USED_PARTITIONS_ONLY=141
 MSG_EN[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Saving space of defined partitions only."
 MSG_DE[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Nur der von den definierten Partitionen belegte Speicherplatz wird gesichert."
@@ -812,9 +812,9 @@ MSG_DE[$MSG_SCRIPT_UPDATE_NOT_REQUIRED]="RBK0175I: %s Version %s ist aktueller a
 MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS=176
 MSG_EN[$MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS]="RBK0173E: rsync version %s doesn't support progress information."
 MSG_DE[$MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS]="RBK0173E: rsync Version %s unterstüzt keine Fortschrittsanzeige."
-#MSG_TAR_EXT_OPT_SAVE=177
-#MSG_EN[$MSG_TAR_EXT_OPT_SAVE]="RBK0177I: Saving extended attributes and acls with tar"
-#MSG_DE[$MSG_TAR_EXT_OPT_SAVE]="RBK0177I: Extended Attribute und ACLs werden mit tar gesichert"
+MSG_ALL_BACKUPS_KEPT=177
+MSG_EN[$MSG_ALL_BACKUPS_KEPT]="RBK0177W: All backups kept for backup type %s."
+MSG_DE[$MSG_ALL_BACKUPS_KEPT]="RBK0177W: Alle Backups werden für den Backuptyp %s aufbewahrt."
 MSG_IMG_BOOT_BACKUP_FAILED=178
 MSG_EN[$MSG_IMG_BOOT_BACKUP_FAILED]="RBK0178E: Creation of %s failed with RC %s."
 MSG_DE[$MSG_IMG_BOOT_BACKUP_FAILED]="RBK0178E: Erzeugung von %s Datei endet fehlerhaft mit RC %s."
@@ -857,9 +857,6 @@ MSG_DE[$MSG_UPDATE_TO_VERSION]="RBK0190I: Es wird $MYSELF von Version %s auf Ver
 MSG_ADJUSTING_DISABLED=191
 MSG_EN[$MSG_ADJUSTING_DISABLED]="RBK0191E: Target %s with %s is smaller than backup source with %s. root partition resizing is disabled."
 MSG_DE[$MSG_ADJUSTING_DISABLED]="RBK0191E: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Verkleinern der root Partition ist ausgeschaltet."
-#MSG_TAR_EXT_OPT_RESTORE=191
-#MSG_EN[$MSG_TAR_EXT_OPT_RESTORE]="RBK0191I: Restoring extended attributes and acls with tar"
-#MSG_DE[$MSG_TAR_EXT_OPT_RESTORE]="RBK0191I: Extended Attribute und ACLs werden mit tar zurückgesichert"
 MSG_INTRO_DEV_MESSAGE=192
 MSG_EN[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> NOTE  <========= \
 ${NL}!!! RBK0192W: This is a development version and should not be used in production. \
@@ -1328,8 +1325,8 @@ function logOptions() {
  	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
  	logItem "DD_BLOCKSIZE=$DD_BLOCKSIZE"
  	logItem "DD_PARMS=$DD_PARMS"
-	logItem "DEPLOYMENT_HOSTS=$DEFAULT_DEPLOYMENT_HOSTS"
-	logItem "YES_NO_RESTORE_DEVICE=$DEFAULT_YES_NO_RESTORE_DEVICE"
+	logItem "DEPLOYMENT_HOSTS=$DEPLOYMENT_HOSTS"
+	logItem "YES_NO_RESTORE_DEVICE=$YES_NO_RESTORE_DEVICE"
 	logItem "EMAIL=$EMAIL"
 	logItem "EMAIL_PARMS=$EMAIL_PARMS"
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
@@ -1955,6 +1952,7 @@ function updateScript() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
 			if askYesNo; then
 				DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
+				newVersion="${betaVersion}-beta"
 				updateNow=1
 			fi
 		fi
@@ -2591,8 +2589,10 @@ function cleanupRestore() { # trap
 		rmdir $MNT_POINT &>>"$LOG_FILE"
 	fi
 
-	umount $BOOT_PARTITION &>>"$LOG_FILE"
-	umount $ROOT_PARTITION &>>"$LOG_FILE"
+	if (( ! $PARTITIONBASED_BACKUP )); then
+		umount $BOOT_PARTITION &>>"$LOG_FILE"
+		umount $ROOT_PARTITION &>>"$LOG_FILE"
+	fi
 
 	if (( rc != 0 )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_FAILED $rc
@@ -3681,64 +3681,68 @@ function backup() {
 
 	logItem "Backup created with return code: $rc"
 
+	logItem "Current directory: $(pwd)"
+	if [[ -z $BACKUPPATH || "$BACKUPPATH" == *"*"* ]]; then
+		assertionFailed $LINENO "Unexpected backup path $BACKUPPATH"
+	fi
+
 	if [[ $rc -eq 0 ]]; then
-		logItem "Deleting oldest directory in $BACKUPPATH"
-		logItem "Current directory: $(pwd)"
-		if [[ -z $BACKUPPATH || "$BACKUPPATH" == *"*"* ]]; then
-			assertionFailed $LINENO "Unexpected backup path $BACKUPPATH"
-		fi
 
 		local bt="${BACKUPTYPE^^}"
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
 
 		local keepBackups=$KEEPBACKUPS
-		(( $keepOverwrite > 0 )) && keepBackups=$keepOverwrite
+		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
-
-		if (( ! $FAKE )); then
-
+		if (( $keepBackups != -1 )); then
+			logItem "Deleting oldest directory in $BACKUPPATH"
 			logItem "pre - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
-			pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "\.{log|msg}$" | head -n -$KEEPBACKUPS | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
 
-			local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
-			local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
-			pushd "$BACKUPPATH" 1>/dev/null
-			for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
+			if (( ! $FAKE )); then
+				pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "\.{log|msg}$" | head -n -$KEEPBACKUPS | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
 
-				if [[ $imgFile =~ $regexDD ]]; then
-					logItem "Skipping DD file $imgFile"
-					continue
-				fi
+				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
+				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
 
-				if [[ ! $imgFile =~ $regex ]]; then
-					logItem "Skipping $imgFile"
-					continue
-				else
-					logItem "Processing $imgFile"
-				fi
+				pushd "$BACKUPPATH" 1>/dev/null
+				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
 
-				local date=${BASH_REMATCH[1]}
-				logItem "Extracted date: $date"
+					if [[ $imgFile =~ $regexDD ]]; then
+						logItem "Skipping DD file $imgFile"
+						continue
+					fi
 
-				if [[ -z $date ]]; then
-					assert $LINENO "Unable to extract date from backup files"
-				fi
-				local file=$(ls -d *-*-backup-$date* 2>/dev/null| egrep -v "\.(log|msg|img|mbr|sfdisk)$");
+					if [[ ! $imgFile =~ $regex ]]; then
+						logItem "Skipping $imgFile"
+						continue
+					else
+						logItem "Processing $imgFile"
+					fi
 
-				if [[ -n $file ]];  then
-					logItem "Found backup for $imgFile"
-				else
-					logItem "Found NO backup for $imgFile - removing"
-					rm -f $imgFile &>>"$LOG_FILE"
-				fi
-			done
-			popd > /dev/null
+					local date=${BASH_REMATCH[1]}
+					logItem "Extracted date: $date"
 
-			logItem "post - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
+					if [[ -z $date ]]; then
+						assert $LINENO "Unable to extract date from backup files"
+					fi
+					local file=$(ls -d *-*-backup-$date* 2>/dev/null| egrep -v "\.(log|msg|img|mbr|sfdisk)$");
 
+					if [[ -n $file ]];  then
+						logItem "Found backup for $imgFile"
+					else
+						logItem "Found NO backup for $imgFile - removing"
+						rm -f $imgFile &>>"$LOG_FILE"
+					fi
+				done
+				popd > /dev/null
+
+				logItem "post - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ALL_BACKUPS_KEPT "$BACKUPTYPE"
 		fi
 
 	fi
@@ -4330,7 +4334,7 @@ function doitBackup() {
 		exitError $RC_MISC_ERROR
 	fi
 
-	if [[ ! "$KEEPBACKUPS" =~ ^[0-9]+$ || $KEEPBACKUPS -lt 1 || $KEEPBACKUPS -gt 365 ]]; then
+	if [[ ! "$KEEPBACKUPS" =~ ^-?[0-9]+$ ]] || (( $KEEPBACKUPS < -1 || $KEEPBACKUPS > 365 || $KEEPBACKUPS == 0 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_KEEPBACKUP_INVALID "$KEEPBACKUPS" "-k"
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
@@ -4343,7 +4347,7 @@ function doitBackup() {
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
 
-		if [[ ! $keepOverwrite =~ ^[0-9]+$ || $keepOverwrite -lt 0 || $keepOverwrite -gt 365 ]]; then
+		if [[ ! $keepOverwrite =~ ^-?[0-9]+$ ]] || (( $keepOverwrite < -1 || $keepOverwrite > 365 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_KEEPBACKUP_INVALID "$keepOverwrite" "$v"
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
@@ -4674,26 +4678,22 @@ function restorePartitionBasedBackup() {
 		logItem "$(mount | grep $RESTORE_DEVICE)"
 	fi
 
-	local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-	local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
-	logItem "SourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
+	if (( ! $SKIP_SFDISK )); then
+		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
+		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+		logItem "SourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
-	if (( targetSDSize < sourceSDSize )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_TOO_SMALL "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
-		exitError $RC_MISC_ERROR
-	elif (( targetSDSize > sourceSDSize )); then
-		local unusedSpace=$(( targetSDSize - sourceSDSize ))
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_BIGGER "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)" "$(bytesToHuman $unusedSpace)"
-	fi
-
-	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
-
-	if (( $SKIP_SFDISK )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_CREATING_PARTITIONS
-	else
+		if (( targetSDSize < sourceSDSize )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_TOO_SMALL "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+			exitError $RC_MISC_ERROR
+		elif (( targetSDSize > sourceSDSize )); then
+			local unusedSpace=$(( targetSDSize - sourceSDSize ))
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_BIGGER "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)" "$(bytesToHuman $unusedSpace)"
+		fi
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING $RESTORE_DEVICE
 	fi
 
+	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE" "$current_partition_table"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
 
@@ -5073,9 +5073,11 @@ function restorePartitionBasedPartition() { # restorefile
 				$BACKUPTYPE_RSYNC)
 					local archiveFlags="aH"						# -a <=> -rlptgoD, H = preserve hardlinks
 					[[ -n $fatSize  ]] && archiveFlags="rltD"	# no Hopg flags for fat fs
-					cmd="rsync --numeric-ids -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
+					cmdParms="--numeric-ids -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
 					if (( $PROGRESS )); then
 						cmd="rsync --info=progress2 $cmdParms"
+					else
+						cmd="rsync $cmdParms"
 					fi
 					executeCommand "$cmd"
 					rc=$?
@@ -5588,7 +5590,7 @@ function mentionHelp() {
 
 # there is an issue when a parameter starts with "-" which may a new option
 # Workaround1: if parameter contains at least one space it's considered as a parameter and not an option even the string starts with '-'
-# Workaround2: prefix parameter with \
+# Workaround2: prefix parameter with \ (has to be \\ in bash commandline)
 
 function checkOptionParameter() { # option parameter
 
@@ -5597,17 +5599,17 @@ function checkOptionParameter() { # option parameter
 		echo "$2"
 		return 0
 	fi
-	if [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z $2 ]]; then
+
+	if [[ "${2:0:1}" == "\\" ]]; then
+		echo "${2:1}"
+		return 0
+	elif [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z $2 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
 		echo ""
 		return 1
 	fi
-	if [[ "${2:0:1}" == "\\" ]]; then
-		echo "${2:1}"
-	else
-		echo "$2"
-	fi
+	echo "$2"
 	return 0
 }
 
@@ -6242,9 +6244,6 @@ fi
 downloadPropertiesFile
 
 updateRestoreReminder
-if (( $RESTORE_REMINDER )); then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_REMINDER "$RESTORE_REMINDER_INTERVAL"
-fi
 
 reportNews
 
