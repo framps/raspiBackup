@@ -2,7 +2,7 @@
 #
 #######################################################################################################################
 #
-# Send an email using the functions from raspiBackup, based of version 0.6.4
+# Send an email using the functions from raspiBackup, based of version 0.6.3.1
 # Written by kmbach 2017
 #
 # Using: raspiImageMail.sh <msgTitle> <msg> [<attach>]
@@ -39,7 +39,7 @@
 # will be sent in an eMail.
 #
 # Base:
-# raspiBackup.sh VERSION="0.6.4"
+# raspiBackup.sh VERSION="0.6.3.1"
 #
 # Prerequisites:
 # -  raspiImageMail.sh, raspiBackup.sh, raspiBackupRestore2Image.sh and pishrink.sh
@@ -62,7 +62,7 @@
 # raspiBackupRestore2Image.sh werden in einer eMail verschickt.
 #
 # Basis:
-# raspiBackup.sh VERSION="0.6.4"
+# raspiBackup.sh VERSION="0.6.3.1"
 #
 # Voraussetzungen:
 # -  raspiImageMail.sh muss sich, zusammen mit den Programmen
@@ -80,7 +80,7 @@
 
 MYSELF=${0##*/}
 
-VERSION="0.1.1"
+VERSION="0.1"
 
 if [[ ! $(which raspiBackup.sh) ]]; then
 	echo "raspiBackup.sh not found"
@@ -113,7 +113,6 @@ LOG_FILE=""
 APPEND_LOG=0
 MYNAME="raspiBackup"
 MYNAME_ABS="$(dirname $0)""/""$MYNAME"".sh"
-MAIL_ON_ERROR_ONLY=0
 
 # other defines
 NL=$'\n'
@@ -152,7 +151,7 @@ fi
 
 # mail parameters are defined in .conf
 if [[ -n $EMAIL ]]; then
-    sendEMail "$MSG" "$MSG_TITLE" 1>/dev/null
+    sendEMail "$MSG" "$MSG_TITLE" &>/dev/null
     RC=$?
 else
     RC=1
