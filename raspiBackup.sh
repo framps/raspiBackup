@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-05-09 09:45:17 +0200$"
+GIT_DATE="$Date: 2019-05-27 21:00:17 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: ea4f227$"
+GIT_COMMIT="$Sha1: d7939ff$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -140,6 +140,7 @@ LOG_OUTPUT_SYSLOG=0
 LOG_OUTPUT_VARLOG=1
 LOG_OUTPUT_BACKUPLOC=2
 LOG_OUTPUT_HOME=3
+LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX="[$LOG_OUTPUT_SYSLOG$LOG_OUTPUT_VARLOG$LOG_OUTPUT_BACKUPLOC$LOG_OUTPUT_HOME]"
 declare -A LOG_OUTPUT_LOCs=( [$LOG_OUTPUT_SYSLOG]="/var/log/syslog" [$LOG_OUTPUT_VARLOG]="/var/log/raspiBackup/<hostname>.log" [$LOG_OUTPUT_BACKUPLOC]="<backupPath>" [$LOG_OUTPUT_HOME]="~/raspiBackup.log")
 
 declare -A LOG_OUTPUTs=( [$LOG_OUTPUT_SYSLOG]="Syslog" [$LOG_OUTPUT_VARLOG]="Varlog" [$LOG_OUTPUT_BACKUPLOC]="Backup" [$LOG_OUTPUT_HOME]="Current")
@@ -693,9 +694,9 @@ MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Bootbackup %s wird benutzt."
 MSG_FORCING_CREATING_PARTITIONS=139
 MSG_EN[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partition creation ignores errors."
 MSG_DE[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partitionserstellung ignoriert Fehler."
-#MSG_SCRIPT_RESTART=140
-#MSG_EN[$MSG_SCRIPT_RESTART]="RBK0140I: Restarting with new version %s."
-#MSG_DE[$MSG_SCRIPT_RESTART]="RBK0140I: Neustart mit neuer Version %s."
+MSG_LABELS_NOT_SUPPORTED=140
+MSG_EN[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL definitions in /etc/fstab not supported."
+MSG_DE[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL Definitionen sind in /etc/fstab nicht unterstützt."
 MSG_SAVING_USED_PARTITIONS_ONLY=141
 MSG_EN[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Saving space of defined partitions only."
 MSG_DE[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Nur der von den definierten Partitionen belegte Speicherplatz wird gesichert."
@@ -886,8 +887,8 @@ MSG_MISSING_RESTOREDEVICE_OPTION=199
 MSG_EN[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -R requires also option -d."
 MSG_DE[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -r benötigt auch Option -d."
 MSG_SHARED_BOOT_DEVICE=200
-MSG_EN[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot and / located on same device %s."
-MSG_DE[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot und / befinden sich auf demselben Gerät %s."
+MSG_EN[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot and / located on same partition %s."
+MSG_DE[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot und / befinden sich auf derselben Partition %s."
 MSG_BEFORE_STOP_SERVICES_FAILED=201
 MSG_EN[$MSG_BEFORE_STOP_SERVICES_FAILED]="RBK0201E: Post backup commands failed with %s."
 MSG_DE[$MSG_BEFORE_STOP_SERVICES_FAILED]="RBK0201E: Fehler in nach dem Backup ausgeführten Befehlen %s."
@@ -1272,6 +1273,7 @@ function logSystem() {
 	logEntry
 	[[ -f /etc/os-release ]] &&	logItem "$(cat /etc/os-release)"
 	[[ -f /etc/debian_version ]] &&	logItem "$(cat /etc/debian_version)"
+	[[ -f /etc/fstab ]] &&	logItem "$(cat /etc/fstab)"
 	logExit
 }
 
@@ -1332,7 +1334,7 @@ function logOptions() {
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "FAKE=$FAKE"
-	logItem "SKIP_DEPRECATED=$SKIP_DEPRECATED"
+	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "KEEPBACKUPS=$KEEPBACKUPS"
 	logItem "KEEPBACKUPS_DD=$KEEPBACKUPS_DD"
 	logItem "KEEPBACKUPS_DDZ=$KEEPBACKUPS_DDZ"
@@ -1420,7 +1422,7 @@ function initializeDefaultConfig() {
 	# Additional parameters for email program (optional)
 	DEFAULT_EMAIL_PARMS=""
 	# log level  (0 = none, 1 = debug)
-	DEFAULT_LOG_LEVEL=1
+	DEFAULT_LOG_LEVEL=2
 	# log output ( 0 = syslog, 1 = /var/log, 2 = backuppath, 3 = ./raspiBackup.log, <somefilename>)
 	DEFAULT_LOG_OUTPUT=2
 	# msg level (0 = minimal, 1 = detailed)
@@ -1526,7 +1528,7 @@ function substituteNumberArguments() {
 
 	logEntry
 
-	local ll lla lo ml mla
+	local ll lla lo loa ml mla
 	if [[ ! "$LOG_LEVEL" =~ ^[0-9]$ ]]; then
 		ll=$(tr '[:lower:]' '[:upper:]'<<< $LOG_LEVEL)
 		lla=$(tr '[:lower:]' '[:upper:]'<<< ${LOG_LEVEL_ARGs[$ll]+abc})
@@ -2203,7 +2205,7 @@ function setupEnvironment() {
 
 		logItem "Current logfiles: L: $LOG_FILE M: $MSG_FILE"
 
-		if (( $FAKE )); then
+		if (( $FAKE )) && [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
 		fi
 
@@ -2646,10 +2648,6 @@ function extractVersionFromFile() { # fileName
 	echo $(grep "^VERSION=" "$1" | cut -f 2 -d = | sed  -e "s/\"//g" -e "s/#.*//")
 }
 
-function extractSHAFromFile() { # fileName
-	echo $(grep "^GIT_COMMIT=" "$1" | cut -f 2 -d ' ' | sed  -e "s/[\"\$]//g")
-}
-
 function revertScriptVersion() {
 
 	logEntry
@@ -2763,7 +2761,10 @@ function cleanupBackup() { # trap
 		fi
 
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
+
+		if (( ! $MAIL_ON_ERROR_ONLY )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
+		fi
 
 		if [[ $rc != $RC_CTRLC ]]; then
 			msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
@@ -3777,7 +3778,7 @@ function mountSDPartitions() { # sourcePath
 
 function umountSDPartitions() { # sourcePath
 
-	local partitionName
+	local partitionName partition
 	logEntry
 	if (( ! $FAKE )); then
 		logItem "BEFORE: mount $(mount)"
@@ -3997,7 +3998,6 @@ function checksForPartitionBasedBackup() {
 
 	error=0
 
-
 	logItem "mountPoints: $(echo "${mountPoints[@]}")"
 	logItem "mountPoints - keys: $(echo "${!mountPoints[@]}")"
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
@@ -4161,13 +4161,12 @@ function inspect4Backup() {
 				exitError $RC_NO_BOOT_FOUND
 			fi
 
-			BOOT_DEVICE="${boot[0]}"
-			local rootDevice="${root[0]}"
-
-			if [[ "$BOOT_DEVICE" == "$rootDevice" ]]; then
+			if [[ "${boot[@]}" == "${root[@]}" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 				SHARED_BOOT_DIRECTORY=1
 			fi
+
+			BOOT_DEVICE="${boot[0]}"
 		fi
 	fi
 
@@ -4436,6 +4435,11 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_USE_HARDLINKS "$BACKUPPATH" "$rc"
 			exitError $RC_LINK_FILE_FAILED
 		fi
+	fi
+
+	if grep "LABEL=" /etc/fstab; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELS_NOT_SUPPORTED
+		exitError $RC_MISC_ERROR
 	fi
 
 	# just inform about enabled config options
