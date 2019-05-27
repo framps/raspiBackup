@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.4.4-dev"	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.4.3-beta"	# -beta, -hotfix or -dev suffixes possible
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-05-01 10:29:49 +0200$"
+GIT_DATE="$Date: 2019-05-27 11:04:23 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: f9df3c1$"
+GIT_COMMIT="$Sha1: 7faf82e$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -140,6 +140,7 @@ LOG_OUTPUT_SYSLOG=0
 LOG_OUTPUT_VARLOG=1
 LOG_OUTPUT_BACKUPLOC=2
 LOG_OUTPUT_HOME=3
+LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX="[$LOG_OUTPUT_SYSLOG$LOG_OUTPUT_VARLOG$LOG_OUTPUT_BACKUPLOC$LOG_OUTPUT_HOME]"
 declare -A LOG_OUTPUT_LOCs=( [$LOG_OUTPUT_SYSLOG]="/var/log/syslog" [$LOG_OUTPUT_VARLOG]="/var/log/raspiBackup/<hostname>.log" [$LOG_OUTPUT_BACKUPLOC]="<backupPath>" [$LOG_OUTPUT_HOME]="~/raspiBackup.log")
 
 declare -A LOG_OUTPUTs=( [$LOG_OUTPUT_SYSLOG]="Syslog" [$LOG_OUTPUT_VARLOG]="Varlog" [$LOG_OUTPUT_BACKUPLOC]="Backup" [$LOG_OUTPUT_HOME]="Current")
@@ -693,9 +694,9 @@ MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Bootbackup %s wird benutzt."
 MSG_FORCING_CREATING_PARTITIONS=139
 MSG_EN[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partition creation ignores errors."
 MSG_DE[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partitionserstellung ignoriert Fehler."
-MSG_SCRIPT_RESTART=140
-MSG_EN[$MSG_SCRIPT_RESTART]="RBK0140I: Restarting with new version %s."
-MSG_DE[$MSG_SCRIPT_RESTART]="RBK0140I: Neustart mit neuer Version %s."
+#MSG_SCRIPT_RESTART=140
+#MSG_EN[$MSG_SCRIPT_RESTART]="RBK0140I: Restarting with new version %s."
+#MSG_DE[$MSG_SCRIPT_RESTART]="RBK0140I: Neustart mit neuer Version %s."
 MSG_SAVING_USED_PARTITIONS_ONLY=141
 MSG_EN[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Saving space of defined partitions only."
 MSG_DE[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Nur der von den definierten Partitionen belegte Speicherplatz wird gesichert."
@@ -857,9 +858,6 @@ MSG_DE[$MSG_UPDATE_TO_VERSION]="RBK0190I: Es wird $MYSELF von Version %s auf Ver
 MSG_ADJUSTING_DISABLED=191
 MSG_EN[$MSG_ADJUSTING_DISABLED]="RBK0191E: Target %s with %s is smaller than backup source with %s. root partition resizing is disabled."
 MSG_DE[$MSG_ADJUSTING_DISABLED]="RBK0191E: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Verkleinern der root Partition ist ausgeschaltet."
-#MSG_TAR_EXT_OPT_RESTORE=191
-#MSG_EN[$MSG_TAR_EXT_OPT_RESTORE]="RBK0191I: Restoring extended attributes and acls with tar"
-#MSG_DE[$MSG_TAR_EXT_OPT_RESTORE]="RBK0191I: Extended Attribute und ACLs werden mit tar zurückgesichert"
 MSG_INTRO_DEV_MESSAGE=192
 MSG_EN[$MSG_INTRO_DEV_MESSAGE]="RBK0192W: =========> NOTE  <========= \
 ${NL}!!! RBK0192W: This is a development version and should not be used in production. \
@@ -889,8 +887,8 @@ MSG_MISSING_RESTOREDEVICE_OPTION=199
 MSG_EN[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -R requires also option -d."
 MSG_DE[$MSG_MISSING_RESTOREDEVICE_OPTION]="RBK0199E: Option -r benötigt auch Option -d."
 MSG_SHARED_BOOT_DEVICE=200
-MSG_EN[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot and / located on same device %s."
-MSG_DE[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot und / befinden sich auf demselben Gerät %s."
+MSG_EN[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot and / located on same partition %s."
+MSG_DE[$MSG_SHARED_BOOT_DEVICE]="RBK0200I: /boot und / befinden sich auf derselben Partition %s."
 MSG_BEFORE_STOP_SERVICES_FAILED=201
 MSG_EN[$MSG_BEFORE_STOP_SERVICES_FAILED]="RBK0201E: Post backup commands failed with %s."
 MSG_DE[$MSG_BEFORE_STOP_SERVICES_FAILED]="RBK0201E: Fehler in nach dem Backup ausgeführten Befehlen %s."
@@ -1275,6 +1273,7 @@ function logSystem() {
 	logEntry
 	[[ -f /etc/os-release ]] &&	logItem "$(cat /etc/os-release)"
 	[[ -f /etc/debian_version ]] &&	logItem "$(cat /etc/debian_version)"
+	[[ -f /etc/fstab ]] &&	logItem "$(cat /etc/fstab)"
 	logExit
 }
 
@@ -1335,7 +1334,7 @@ function logOptions() {
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "FAKE=$FAKE"
-	logItem "SKIP_DEPRECATED=$SKIP_DEPRECATED"
+	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "KEEPBACKUPS=$KEEPBACKUPS"
 	logItem "KEEPBACKUPS_DD=$KEEPBACKUPS_DD"
 	logItem "KEEPBACKUPS_DDZ=$KEEPBACKUPS_DDZ"
@@ -1423,7 +1422,7 @@ function initializeDefaultConfig() {
 	# Additional parameters for email program (optional)
 	DEFAULT_EMAIL_PARMS=""
 	# log level  (0 = none, 1 = debug)
-	DEFAULT_LOG_LEVEL=1
+	DEFAULT_LOG_LEVEL=2
 	# log output ( 0 = syslog, 1 = /var/log, 2 = backuppath, 3 = ./raspiBackup.log, <somefilename>)
 	DEFAULT_LOG_OUTPUT=2
 	# msg level (0 = minimal, 1 = detailed)
@@ -1529,7 +1528,7 @@ function substituteNumberArguments() {
 
 	logEntry
 
-	local ll lla lo ml mla
+	local ll lla lo loa ml mla
 	if [[ ! "$LOG_LEVEL" =~ ^[0-9]$ ]]; then
 		ll=$(tr '[:lower:]' '[:upper:]'<<< $LOG_LEVEL)
 		lla=$(tr '[:lower:]' '[:upper:]'<<< ${LOG_LEVEL_ARGs[$ll]+abc})
@@ -2206,7 +2205,7 @@ function setupEnvironment() {
 
 		logItem "Current logfiles: L: $LOG_FILE M: $MSG_FILE"
 
-		if (( $FAKE )); then
+		if (( $FAKE )) && [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
 		fi
 
@@ -2592,8 +2591,10 @@ function cleanupRestore() { # trap
 		rmdir $MNT_POINT &>>"$LOG_FILE"
 	fi
 
-	umount $BOOT_PARTITION &>>"$LOG_FILE"
-	umount $ROOT_PARTITION &>>"$LOG_FILE"
+	if (( ! $PARTITIONBASED_BACKUP )); then
+		umount $BOOT_PARTITION &>>"$LOG_FILE"
+		umount $ROOT_PARTITION &>>"$LOG_FILE"
+	fi
 
 	if (( rc != 0 )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_FAILED $rc
@@ -2645,10 +2646,6 @@ EOF
 
 function extractVersionFromFile() { # fileName
 	echo $(grep "^VERSION=" "$1" | cut -f 2 -d = | sed  -e "s/\"//g" -e "s/#.*//")
-}
-
-function extractSHAFromFile() { # fileName
-	echo $(grep "^GIT_COMMIT=" "$1" | cut -f 2 -d ' ' | sed  -e "s/[\"\$]//g")
 }
 
 function revertScriptVersion() {
@@ -2764,7 +2761,10 @@ function cleanupBackup() { # trap
 		fi
 
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
+
+		if (( ! $MAIL_ON_ERROR_ONLY )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
+		fi
 
 		if [[ $rc != $RC_CTRLC ]]; then
 			msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
@@ -3778,7 +3778,7 @@ function mountSDPartitions() { # sourcePath
 
 function umountSDPartitions() { # sourcePath
 
-	local partitionName
+	local partitionName partition
 	logEntry
 	if (( ! $FAKE )); then
 		logItem "BEFORE: mount $(mount)"
@@ -3998,7 +3998,6 @@ function checksForPartitionBasedBackup() {
 
 	error=0
 
-
 	logItem "mountPoints: $(echo "${mountPoints[@]}")"
 	logItem "mountPoints - keys: $(echo "${!mountPoints[@]}")"
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
@@ -4162,13 +4161,12 @@ function inspect4Backup() {
 				exitError $RC_NO_BOOT_FOUND
 			fi
 
-			BOOT_DEVICE="${boot[0]}"
-			local rootDevice="${root[0]}"
-
-			if [[ "$BOOT_DEVICE" == "$rootDevice" ]]; then
+			if [[ "${boot[@]}" == "${root[@]}" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 				SHARED_BOOT_DIRECTORY=1
 			fi
+
+			BOOT_DEVICE="${boot[0]}"
 		fi
 	fi
 
@@ -4679,26 +4677,22 @@ function restorePartitionBasedBackup() {
 		logItem "$(mount | grep $RESTORE_DEVICE)"
 	fi
 
-	local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-	local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
-	logItem "SourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
+	if (( ! $SKIP_SFDISK )); then
+		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
+		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+		logItem "SourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
-	if (( targetSDSize < sourceSDSize )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_TOO_SMALL "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
-		exitError $RC_MISC_ERROR
-	elif (( targetSDSize > sourceSDSize )); then
-		local unusedSpace=$(( targetSDSize - sourceSDSize ))
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_BIGGER "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)" "$(bytesToHuman $unusedSpace)"
-	fi
-
-	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
-
-	if (( $SKIP_SFDISK )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_CREATING_PARTITIONS
-	else
+		if (( targetSDSize < sourceSDSize )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_TOO_SMALL "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+			exitError $RC_MISC_ERROR
+		elif (( targetSDSize > sourceSDSize )); then
+			local unusedSpace=$(( targetSDSize - sourceSDSize ))
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_BIGGER "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)" "$(bytesToHuman $unusedSpace)"
+		fi
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING $RESTORE_DEVICE
 	fi
 
+	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE" "$current_partition_table"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
 
@@ -5078,9 +5072,11 @@ function restorePartitionBasedPartition() { # restorefile
 				$BACKUPTYPE_RSYNC)
 					local archiveFlags="aH"						# -a <=> -rlptgoD, H = preserve hardlinks
 					[[ -n $fatSize  ]] && archiveFlags="rltD"	# no Hopg flags for fat fs
-					cmd="rsync --numeric-ids -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
+					cmdParms="--numeric-ids -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
 					if (( $PROGRESS )); then
 						cmd="rsync --info=progress2 $cmdParms"
+					else
+						cmd="rsync $cmdParms"
 					fi
 					executeCommand "$cmd"
 					rc=$?
@@ -6247,9 +6243,6 @@ fi
 downloadPropertiesFile
 
 updateRestoreReminder
-if (( $RESTORE_REMINDER )); then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_REMINDER "$RESTORE_REMINDER_INTERVAL"
-fi
 
 reportNews
 
