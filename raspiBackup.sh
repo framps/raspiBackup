@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-05-27 11:04:23 +0200$"
+GIT_DATE="$Date: 2019-06-01 21:02:08 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7faf82e$"
+GIT_COMMIT="$Sha1: 1d93513$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -255,6 +255,7 @@ RC_MISSING_COMMANDS=120
 RC_NO_BOOT_FOUND=121
 RC_BEFORE_START_SERVICES_ERROR=122
 RC_BEFORE_STOP_SERVICES_ERROR=123
+RC_EMAILPROG_ERROR=124
 
 tty -s
 INTERACTIVE=!$?
@@ -694,9 +695,9 @@ MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Bootbackup %s wird benutzt."
 MSG_FORCING_CREATING_PARTITIONS=139
 MSG_EN[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partition creation ignores errors."
 MSG_DE[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partitionserstellung ignoriert Fehler."
-#MSG_SCRIPT_RESTART=140
-#MSG_EN[$MSG_SCRIPT_RESTART]="RBK0140I: Restarting with new version %s."
-#MSG_DE[$MSG_SCRIPT_RESTART]="RBK0140I: Neustart mit neuer Version %s."
+MSG_LABELS_NOT_SUPPORTED=140
+MSG_EN[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL definitions in /etc/fstab not supported. Use PARTUUID instead."
+MSG_DE[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL Definitionen sind in /etc/fstab nicht unterstützt. Benutze stattdessen PARTUUID."
 MSG_SAVING_USED_PARTITIONS_ONLY=141
 MSG_EN[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Saving space of defined partitions only."
 MSG_DE[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Nur der von den definierten Partitionen belegte Speicherplatz wird gesichert."
@@ -2139,7 +2140,7 @@ function readConfigParameters() {
 
 	# Override default parms with parms in current directory config file
 
-	if [[ "$HOME_CONFIG_FILE" != "$CURRENTDIR_CONFIG_FILE " ]]; then
+	if [[ "$HOME_CONFIG_FILE" != "$CURRENTDIR_CONFIG_FILE" ]]; then
 		CURRENTDIR_CONFIG_FILE_INCLUDED=0
 		if [ -f "$CURRENTDIR_CONFIG_FILE" ]; then
 			set -e
@@ -2754,7 +2755,7 @@ function cleanupBackup() { # trap
 			executeAfterStartServices "noexit"
 		fi
 
-		if [[ $rc != $RC_CTRLC ]]; then
+		if [[ $rc != $RC_CTRLC && $rc != $RC_EMAILPROG_ERROR ]]; then
 			msg=$(getLocalizedMessage $MSG_BACKUP_FAILED)
 			msgTitle=$(getLocalizedMessage $MSG_TITLE_ERROR $HOSTNAME)
 			sendEMail "$msg" "$msgTitle"
@@ -2766,10 +2767,8 @@ function cleanupBackup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
 
-		if [[ $rc != $RC_CTRLC ]]; then
-			msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
-			sendEMail "" "$msg"
-		fi
+		msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
+		sendEMail "" "$msg"
 	fi
 
 	logExit
@@ -3622,6 +3621,7 @@ function backup() {
 		logItem "mount:$NL$(mount)"
 		logItem "df -h:$NL$(df -h)"
 		logItem "blkid:$NL$(blkid)"
+	fi
 
 	if [[ -f $BOOT_DEVICENAME ]]; then
 		logItem "fdisk -l $BOOT_DEVICENAME"
@@ -3631,10 +3631,6 @@ function backup() {
 	if [[ -f "/boot/cmdline.txt" ]]; then
 		logItem "/boot/cmdline.txt"
 		logItem "$(cat /boot/cmdline.txt)"
-	fi
-
-		logItem "/etc/fstab"
-		logItem "$(cat /etc/fstab)"
 	fi
 
 	logItem "Starting $BACKUPTYPE backup..."
@@ -4030,11 +4026,11 @@ function commonChecks() {
 	if [[ -n "$EMAIL" ]]; then
 		if [[ ! $EMAIL_PROGRAM =~ $SUPPORTED_EMAIL_PROGRAM_REGEX ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EMAIL_PROG_NOT_SUPPORTED "$EMAIL_PROGRAM" "$SUPPORTED_MAIL_PROGRAMS"
-			exitError $RC_PARAMETER_ERROR
+			exitError $RC_EMAILPROG_ERROR
 		fi
 		if [[ ! $(which $EMAIL_PROGRAM) && ( $EMAIL_PROGRAM != $EMAIL_EXTENSION_PROGRAM ) ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED $EMAIL_PROGRAM
-			exitError $RC_MISSING_COMMANDS
+			exitError $RC_EMAILPROG_ERROR
 		fi
 		if [[ (( "$MAIL_PROGRAM" == $EMAIL_SSMTP_PROGRAM || "$MAIL_PROGRAM" == $EMAIL_MSMTP_PROGRAM )) && (( $APPEND_LOG )) ]]; then
 			if ! which mpack &>/dev/null; then
@@ -4337,7 +4333,7 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_KEEPBACKUP_INVALID "$KEEPBACKUPS" "-k"
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
-		fi
+	fi
 
 	local t
 	local keepBackups
@@ -4435,6 +4431,13 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_USE_HARDLINKS "$BACKUPPATH" "$rc"
 			exitError $RC_LINK_FILE_FAILED
 		fi
+	fi
+
+	local mps
+	mps=$(grep "^LABEL=" /etc/fstab | cut -f 2)
+	if grep -E "^/(boot)?[[:space:]]" <<< $p; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELS_NOT_SUPPORTED
+		exitError $RC_MISC_ERROR
 	fi
 
 	# just inform about enabled config options
