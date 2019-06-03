@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-01 21:02:08 +0200$"
+GIT_DATE="$Date: 2019-06-03 19:42:59 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 1d93513$"
+GIT_COMMIT="$Sha1: 371d2b8$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -2089,15 +2089,17 @@ function isPathMounted() {
 	local rc=1
 	path=$1
 
-	while [[ "$path" != "" ]]; do
-		logItem "Path: $path"
-		if mountpoint -q "$path"; then
-			rc=0
-			break
-		fi
-		path=${path%/*}
-	done
-
+	# backup path has to be mount point of the file system (second field fs_file in /etc/fstab) and NOT fs_spec otherwise test algorithm will create endless loop
+	if [[ "${1:0:1}" == "/" ]]; then
+		while [[ "$path" != "" ]]; do
+			logItem "Path: $path"
+			if mountpoint -q "$path"; then
+				rc=0
+				break
+			fi
+			path=${path%/*}
+		done
+	fi
 	logExit "$rc"
 
 	return $rc
@@ -4301,7 +4303,6 @@ function doitBackup() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAX_4GB_LIMIT "$BACKUPPATH"
 	fi
 
-
 	if (( ! $EXCLUDE_DD )); then
 
 		if [[ ! -b $BOOT_DEVICENAME ]]; then
@@ -4742,7 +4743,7 @@ function restorePartitionBasedBackup() {
 
 	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT/${MYNAME}"
 
-	if ( isMounted "$MNT_POINT" ); then
+	if isMounted "$MNT_POINT"; then
 		logItem "$MNT_POINT mounted - unmouting"
 		umount -f "$MNT_POINT" &>>$LOG_FILE
 		if [ $? -ne 0 ]; then
