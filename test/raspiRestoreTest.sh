@@ -152,7 +152,7 @@ for backup in $BACKUPS_TO_RESTORE; do
 
 			echo "Starting restore of $image"
 
-			/home/peter/raspiBackup/raspiBackup.sh -d $LOOP $OPTS -Y "$image"
+			../raspiBackup.sh -d $LOOP $OPTS -Y "$image"
 			rc=$?
 
 			if [[ $rc != 0 ]]; then
