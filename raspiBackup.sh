@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-05-05 17:06:29 +0200$"
+GIT_DATE="$Date: 2019-05-29 19:22:03 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 0884c1a$"
+GIT_COMMIT="$Sha1: 9572c44$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -4436,7 +4436,7 @@ function doitBackup() {
 
 	local mps
 	mps=$(grep "^LABEL=" /etc/fstab | cut -f 2)
-	if grep -E "^/(boot)?[[:space:]]" <<< $p; then
+	if grep -E "^/(boot)?[[:space:]]" <<< $mps; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELS_NOT_SUPPORTED
 		exitError $RC_MISC_ERROR
 	fi
