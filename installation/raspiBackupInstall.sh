@@ -1,10 +1,30 @@
 #!/bin/bash
-
-# Simple script to download, install and configure and uninstall raspiBackup.sh
+#######################################################################################################################
+#   Simple script to download, install and configure and uninstall raspiBackup.sh
 #
-# See http://www.linux-tips-and-tricks.de/raspiBackup for details
+#   Script is deprecated. Please use raspiBackupInstallUI.sh.
 #
-# (C) 2015-2018 - framp at linux-tips-and-tricks dot de
+#   See http://www.linux-tips-and-tricks.de/raspiBackup for details
+#
+#   (C) 2015-2019 - framp at linux-tips-and-tricks dot de
+#######################################################################################################################
+#
+#    Copyright (C) 2015-2019 framp at linux-tips-and-tricks dot de
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################################################################
 
 # set -o pipefail -o nounset -o errexit
 
@@ -17,11 +37,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-set +u; GIT_DATE="$Date$"; set -u
+set +u; GIT_DATE="$Date: 2019-06-03 19:42:59 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u; GIT_COMMIT="$Sha1$"; set -u
+set +u; GIT_COMMIT="$Sha1: 371d2b8$"; set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -40,11 +60,11 @@ read -r -d '' CRON_SAMPLE_CONTENTS <<-'EOF'
 #
 # Sample crontab entry for raspiBackup.sh
 #
-# (C) 2017-2018 framp at linux-tips-and-tricks dot de
+# (C) 2017-2019 framp at linux-tips-and-tricks dot de
 #
 # Create a backup once a week on Sunday morning at 5 am
 #
-#0 5 * * 0	root	PATH=\"$PATH:/usr/local/bin\"	raspiBackup.sh
+#0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
 TAIL=0
@@ -471,7 +491,7 @@ function downloadConfig() {
 		oldVersion=$(grep "^VERSION=" $FILE_TO_INSTALL_ABS_FILE | cut -f 2 -d = | sed  "s/\"//g" | sed "s/ .*#.*//")
 		newName="$CONFIG_FILE_ABS_FILE.$oldVersion"
 		writeToConsole $MSG_SAVING_FILE "$CONFIG_FILE" "$newName"
-		[[ "$FILE_TO_INSTALL_ABS_FILE" != "$newName" ]] && mv $CONFIG_FILE $newName &>>$LOG_FILE
+		[[ "$FILE_TO_INSTALL_ABS_FILE" != "$newName" ]] && mv $CONFIG_FILE_ABS_FILE $newName &>>$LOG_FILE
 	fi
 
 	writeToConsole $MSG_DOWNLOADING "$CONFIG_FILE"
@@ -790,6 +810,18 @@ function uninstall() {
 		unrecoverableError
 	fi
 
+	writeToConsole $MSG_DELETE_FILE "$CONFIG_FILE_ABS_FILE"
+	if ! rm -f "$CONFIG_FILE_ABS_FILE" 2>>$LOG_FILE; then
+		writeToConsole $MSG_UNINSTALL_FAILED "$CONFIG_FILE_ABS_FILE"
+		unrecoverableError
+	fi
+
+	writeToConsole $MSG_DELETE_FILE "$VAR_DIR/$MYSELF"
+	if ! rm -f "$VAR_DIR/$MYSELF" 2>>$LOG_FILE; then
+		writeToConsole $MSG_UNINSTALL_FAILED "$VAR_DIR/$MYSELF"
+		unrecoverableError
+	fi
+
 	writeToConsole $MSG_DELETE_FILE "$CRON_SAMPLE_FILE"
 	if ! rm -f "$CRON_SAMPLE_FILE" 2>>$LOG_FILE; then
 		writeToConsole $MSG_UNINSTALL_FAILED "$CRON_SAMPLE_FILE"
@@ -810,6 +842,7 @@ INSTALL_EXTENSIONS=0
 BIN_DIR="/usr/local/bin"
 ETC_DIR="/usr/local/etc"
 CRON_DIR="/etc/cron.d"
+VAR_DIR="/var/lib"
 LOG_FILE="$MYNAME.log"
 
 trapWithArg cleanup SIGINT SIGTERM EXIT
