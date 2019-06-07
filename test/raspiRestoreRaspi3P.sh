@@ -1,8 +1,7 @@
 #!/bin/bash
-
 #######################################################################################################################
 #
-# raspiBackup backup restore regression test
+# raspiBackup restore test
 #
 #######################################################################################################################
 #
@@ -34,19 +33,14 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 CURRENT_DIR=$(pwd)
 
-GIT_DATE="$Date: 2017-08-25 22:01:55 +0200$"
+GIT_DATE="$Date: 2019-05-05 17:06:29 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 9d2b368$"
+GIT_COMMIT="$Sha1: 0884c1a$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
-
-function sshexec() { # cmd
-	echo "Executing $@"
-	ssh root@$VM_IP "$@"
-}
 
 function log() { # text
 	if (( $DEBUG )); then
@@ -71,15 +65,10 @@ DEBUG=0
 
 VMs=~/vmware/kvm
 
-BACKUP1="/disks/bigdata/raspibackupTest_P/raspberrypi"
-BACKUP2="/disks/bigdata/raspibackupTest_N/raspberrypi"
-BACKUP3="/disks/bigdata/raspibackupTest_0.6.1.1_N/raspibackup"
-BACKUP4="/disks/bigdata/raspibackupTest_0.6.1.1_P/raspibackup"
-BACKUP5="/disks/bigdata/raspibackupTest_0.5.15.9_N/raspibackup"
+BACKUP1="/disks/bigdata/raspibackup/raspibackup-tar-backup-20161212-200654"
+BACKUP2="/disks/bigdata/raspibackup/raspibackup-rsync-backup-20161031-205418"
 
-#BACKUPS_TO_RESTORE="$BACKUP2 $BACKUP3 $BACKUP5"
-#BACKUPS_TO_RESTORE="$BACKUP1 $BACKUP2 $BACKUP3 $BACKUP4 $BACKUP5"
-BACKUPS_TO_RESTORE="$BACKUP1 $BACKUP2"
+BACKUPS_TO_RESTORE="$BACKUP2"
 
 #RESTORE_DISK_SIZE=$((1024*1024*1024*2-1024*1024*250))
 RESTORE_DISK_SIZE=4G
@@ -89,29 +78,27 @@ echo "---> Restore disk size: $RESTORE_DISK_SIZE"
 OLDIFS="$IFS"
 IFS=$'\n'
 
-LOOP=$(losetup -f)
+RESTORE_DEVICE="/dev/loop0"
+#RESTORE_DEVICE="/dev/sdf"
 
 OPTS="-m 1 -l 1 -Z"
 
-DEPLOYED_IP="192.168.0.135"
+DEPLOYED_IP="192.168.0.100"
 
 IFS="$OLDIFS"
 
 failures=0
 
-umount ${LOOP}p2 &>/dev/null || true
-umount ${LOOP}p1 &>/dev/null || true
+umount /dev/loop0p2 &>/dev/null || true
+umount /dev/loop0p1 &>/dev/null || true
 
 for backup in $BACKUPS_TO_RESTORE; do
 
 	echo "Processing backup $backup ..."
 
-	IMAGES_TO_RESTORE=( $(ls -d "$backup/raspberrypi-"*"-backup-"* | grep -v ".log$") )
-#	IMAGES_TO_RESTORE=( $(ls -d "$backup/raspibackup-"*"-backup-"* | grep -v ".log$") )
+	IMAGES_TO_RESTORE=( $BACKUPS_TO_RESTORE )
 #	IMAGES_TO_RESTORE=( $(ls -d "$backup/raspibackup-tar-backup-"* "$backup/raspibackup-rsync-backup-"* | grep -v ".log$") )
-#	IMAGES_TO_RESTORE=( $(ls -d "$backup/raspberrypi-dd-backup-"* | grep -v ".log$") )
-#	IMAGES_TO_RESTORE=( $(ls -d "$backup/raspberrypi-tar-backup-"* | grep -v ".log$") )
-#	IMAGES_TO_RESTORE=( $(ls -d "$backup/raspberrypi-rsync-backup-"* | grep -v ".log$") )
+#	IMAGES_TO_RESTORE=( $(ls -d "$backup/raspibackup-dd-backup-"* | grep -v ".log$") )
 
 	log "Number of images: ${#IMAGES_TO_RESTORE[@]}"
 	i=1
@@ -147,25 +134,37 @@ for backup in $BACKUPS_TO_RESTORE; do
 			echo "Creating image of size $RESTORE_DISK_SIZE"
 			qemu-img create -f raw $VMs/raspiBackupRestore.img $RESTORE_DISK_SIZE
 
-			log "mounting image"
-			sudo losetup $LOOP $VMs/raspiBackupRestore.img
+			if [[ $RESTORE_DEVICE = "/dev/loop0" ]]; then
+				log "mounting image"
+				sudo losetup -d /dev/loop0 || true
+				sudo losetup /dev/loop0 $VMs/raspiBackupRestore.img
+				# kpartx -av /dev/loop0
+#			log "Restoring mbr from $MBR_FILE"
+#			dd of=$RESTORE_DEVICE if="$MBR_FILE" count=1
+#			sync
+#			parted /dev/loop0 print
+			fi
 
 			echo "Starting restore of $image"
+#		rm -rf trace.log
+#		mount > trace.log
+#		ps -ef >> trace.log
 
-			../raspiBackup.sh -d $LOOP $OPTS -Y "$image"
+			../raspiBackup.sh -d $RESTORE_DEVICE $OPTS -Y "$image"
 			rc=$?
+#		echo "-----------" >> trace.log
+#		mount >> trace.log
+#		ps -ef >> trace.log
+#		echo "===========" >> trace.log
 
 			if [[ $rc != 0 ]]; then
 				echo "Error running script: $rc"
 				exit 127
 			fi
 
-			losetup -D
-
-			LOOP=$(losetup -f)
-			losetup $LOOP "$VMs/raspiBackupRestore.img"
+			kpartx -av /dev/loop0
 			log "Updating fake-hwclock on restored image"
-			mount ${LOOP}p2 /mnt
+			mount /dev/mapper/loop0p2 /mnt
 			echo $(date +"%Y-%m-%d %T") > /mnt/etc/fake-hwclock.data
 			log "Adding my key"
 			cat /root/.ssh/id_rsa.pub >> /mnt/root/.ssh/authorized_keys
@@ -184,7 +183,8 @@ for backup in $BACKUPS_TO_RESTORE; do
 			done
 			log "Done"
 
-			losetup -d $LOOP
+			log "kpartx -d"
+			kpartx -dv /dev/loop0
 			log "Syncing"
 			sync
 			sleep 3
@@ -192,18 +192,15 @@ for backup in $BACKUPS_TO_RESTORE; do
 			echo "Starting restored vm"
 			$VMs/start.sh raspiBackupRestore.img &
 			pid=$!
-			echo "Qemu pid: $pid"
 
-			log "Waiting for $pid"
 			while ! ps -p $pid &>/dev/null; do
-				sleep 1
 				log "Waiting for $pid"
+				sleep 1
 			done
 
 			log "Waiting for VM $DEPLOYED_IP to come up"
 			RETRY=0
 			while ! ping -c 1 $DEPLOYED_IP &>/dev/null; do
-				echo -n "."
 				if ! ps -p $pid &>/dev/null; then
 					echo "@@@ Retry $retry"
 					(( retry-- ))
@@ -215,7 +212,6 @@ for backup in $BACKUPS_TO_RESTORE; do
 			if (( ! $RETRY )); then
 				break
 			fi
-			echo
 		done
 
 		if (( $retry == 0 )); then
@@ -262,67 +258,20 @@ for backup in $BACKUPS_TO_RESTORE; do
 			fi
 		fi
 
-		if (( ! $error )); then
-			echo "ping 8.8.8.8 as user pi ..."
-			ssh $DEPLOYED_IP 'su - pi -l -c "ping 8.8.8.8 -c 3 -w 3"'
-			rc=$?
-			if [[ $rc != 0  ]]; then
-				echo "ping failed with rc $rc"
-				error=1
-			fi
-		fi
-
-		if (( ! $error )); then
-			echo "service --status-all as user pi ..."
-			ssh $DEPLOYED_IP 'su - pi -l -c "service --status-all | grep "+" | wc -l > /tmp/srvrces.num"'
-			scp root@$DEPLOYED_IP:/tmp/srvrces.num .
-			if [[ $(cat srvrces.num) != 15 ]]; then
-				echo "Missing active services. Expected 15. Detected $(cat srvrces.num)"
-				error=1
-			else
-				echo "Active services detected: $(cat srvrces.num)"
-			fi
-			rm ./srvrces.num &>/dev/null || true
-		fi
-
 		if (( error )); then
-			echo "@@@@@ Restore of $image failed"
+			echo "Restore of $image failed"
 			(( failures+=error ))
 		else
-			echo "@@@@@ Restore successfull"
+			echo "Restore successfull"
 		fi
 
-		echo "Shutdown VM pid $pid waiting ..."
+#		echo "Aborting"
+#		exit 42
 
-		PID=$pid
-		# get firstly created child process id, which is running all tasks
-		PID_CHILD=$(pgrep -o -P $pid)
-		PID_CHILD2=$(pgrep -o -P $PID_CHILD)
+		pkill -TERM -P $pid
+		log "Waiting for VM to terminate. PID: $pid"
+		wait $pid
 
-		kill -9 $PID_CHILD2
-
-		#kill -- -$(ps -o pgid= $pid | grep -o [0-9]*)
-
-		#echo "Shutting down vm..."
-		#sshexec "shutdown -h now"
-
-		#p=$(pgrep start.sh)
-		#sudo kill -9 -${p}
-
-		#sudo pkill -P -{$pid}
-
-		#kill -KILL $(($pid + 1))
-		#ppid=$(pgrep -P $pid)
-		#kill -- -"$pid"
-		#p1=$(( ppid+1 ))
-		#pkill -KILL $p1
-
-		#( sleep 3;sudo kill -TERM $(pgrep -P $pid) ) &
-		#ssh root@$DEPLOYED_IP shutdown -h now
-		#log "Waiting for VM to terminate. PID: $pid"
-		#read
-		#wait $p1
-		#wait $(pgrep -P $pid)
 	done
 
 done
