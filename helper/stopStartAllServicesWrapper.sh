@@ -9,7 +9,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright # (C) 2018 - framp at linux-tips-and-tricks dot de
+#   Copyright # (C) 2018-2019 - framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #
 #######################################################################################################################
 
-VERSION="v0.1"
+VERSION="v0.2"
 
 trap startAllServices EXIT ERR
 
@@ -55,9 +55,8 @@ function retrieveAllActiveServices() {
 
 declare -a SERVICES
 
-shutdownAllServices
-raspiBackup.sh -a : -o :
-trap
-startAllServices
+shutdownAllServices # stop all services
+trap # make sure all services are started at the end of script execution
+raspiBackup.sh -a : -o : # now create backup
 
 
