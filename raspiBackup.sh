@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-07 18:02:19 +0200$"
+GIT_DATE="$Date: 2019-06-09 18:57:34 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 144ab23$"
+GIT_COMMIT="$Sha1: f49ace1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1423,7 +1423,7 @@ function initializeDefaultConfig() {
 	# Additional parameters for email program (optional)
 	DEFAULT_EMAIL_PARMS=""
 	# log level  (0 = none, 1 = debug)
-	DEFAULT_LOG_LEVEL=2
+	DEFAULT_LOG_LEVEL=1
 	# log output ( 0 = syslog, 1 = /var/log, 2 = backuppath, 3 = ./raspiBackup.log, <somefilename>)
 	DEFAULT_LOG_OUTPUT=2
 	# msg level (0 = minimal, 1 = detailed)
@@ -2206,11 +2206,8 @@ function setupEnvironment() {
 			rm -f "$BACKUPPATH/$MYNAME.tmp" &>/dev/null
 		fi
 
-<<<<<<< HEAD
-=======
 		logItem "Current logfiles: L: $LOG_FILE M: $MSG_FILE"
 
->>>>>>> beta
 		if (( $FAKE )) && [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
 		fi
@@ -2767,13 +2764,6 @@ function cleanupBackup() { # trap
 		fi
 
 	else
-<<<<<<< HEAD
-
-		if (( ! $MAIL_ON_ERROR_ONLY )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
-		fi
-=======
->>>>>>> beta
 
 		if (( ! $MAIL_ON_ERROR_ONLY )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
