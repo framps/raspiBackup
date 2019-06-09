@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-09 18:57:34 +0200$"
+GIT_DATE="$Date: 2019-06-09 22:16:34 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: f49ace1$"
+GIT_COMMIT="$Sha1: 4b8c1b5$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1240,9 +1240,6 @@ function logIntoOutput() { # logtype prefix message
 			$LOG_OUTPUT_VARLOG | $LOG_OUTPUT_BACKUPLOC | $LOG_OUTPUT_HOME)
 				echo "$dte $m" >> "$LOG_FILE"
 				;;
-			$LOG_OUTPUT_MAIL)
-				echo "$dte: ${LOG_TYPEs[$type]} $indent $@" >> "$LOG_MAIL_FILE"
-				;;
 			*)
 				echo "$dte $m" >> "$LOG_FILE"
 				;;
@@ -2267,6 +2264,8 @@ function setupEnvironment() {
 	logItem "Using logfile $LOG_FILE"
 	logItem "Using msgfile $MSG_FILE"
 
+	# save file descriptors, see https://unix.stackexchange.com/questions/80988/how-to-stop-redirection-in-bash
+	exec 3>&1 4>&2
 	# see https://stackoverflow.com/questions/3173131/redirect-copy-of-stdout-to-log-file-from-within-bash-script-itself
 	exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
@@ -2509,7 +2508,6 @@ function cleanupBackupDirectory() {
 		logItem "BackupDir created: $NEW_BACKUP_DIRECTORY_CREATED"
 
 		if (( $NEW_BACKUP_DIRECTORY_CREATED )); then
-
 			if [[ -z "$BACKUPPATH" || -z "$BACKUPFILE" || -z "$BACKUPTARGET_DIR" || "$BACKUPFILE" == *"*"* || "$BACKUPPATH" == *"*"* || "$BACKUPTARGET_DIR" == *"*"* ]]; then
 				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
 			fi
@@ -2520,7 +2518,11 @@ function cleanupBackupDirectory() {
 			if [[ -d "$BACKUPTARGET_DIR" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_BACKUPDIRECTORY "$BACKUPTARGET_DIR"
 				logItem "$(ls -la $BACKUPTARGET_DIR)"
-				rm -rf $BACKUPTARGET_DIR # remove incomplete backupdir if it exists
+				exec >&3 2>&4 # free logfile in backup dir
+				rm -rf $BACKUPTARGET_DIR # delete incomplete backupdir
+				# resume logging of output into log file now residing in home directory
+				exec 1>> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
+				exec 2>> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 			fi
 		fi
 	fi
