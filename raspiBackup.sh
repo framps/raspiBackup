@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-09 22:16:34 +0200$"
+GIT_DATE="$Date: 2019-06-10 11:33:35 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 4b8c1b5$"
+GIT_COMMIT="$Sha1: a4ef6b8$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -590,9 +590,9 @@ MSG_DE[$MSG_UNABLE_TO_WRITE]="RBK0103E: Ein Backup kann nicht auf %s erstellt we
 MSG_LABELING=104
 MSG_EN[$MSG_LABELING]="RBK0104I: Labeling partition %s with label %s."
 MSG_DE[$MSG_LABELING]="RBK0104I: Partition %s erhält das Label %s."
-MSG_CLEANING_BACKUPDIRECTORY=105
-MSG_EN[$MSG_CLEANING_BACKUPDIRECTORY]="RBK0105I: Deleting new backup directory %s."
-MSG_DE[$MSG_CLEANING_BACKUPDIRECTORY]="RBK0105I: Neues Backupverzeichnis %s wird gelöscht."
+MSG_REMOVING_BACKUP_FAILED=105
+MSG_EN[$MSG_REMOVING_BACKUP_FAILED]="RBK0105E: Removing incomplete backup in %s failed with RC %s. Directory has to be cleaned up manually."
+MSG_DE[$MSG_REMOVING_BACKUP_FAILED]="RBK0105E: Löschen des unvollständigen Backups in %s schlug fehl mit RC: %s. Das Verzeichnis muss manuell gelöscht werden."
 MSG_DEPLOYMENT_FAILED=106
 MSG_EN[$MSG_DEPLOYMENT_FAILED]="RBK0106E: Installation of $MYNAME failed on server %s for user %s."
 MSG_DE[$MSG_DEPLOYMENT_FAILED]="RBK0106E: Installation von $MYNAME auf Server %s für Benutzer %s fehlgeschlagen."
@@ -2186,7 +2186,6 @@ function setupEnvironment() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPTARGET_DIR}"
 				exitError $RC_CREATE_ERROR
 			fi
-			NEW_BACKUP_DIRECTORY_CREATED=1
 		fi
 
 		BACKUPPATH="$(sed -E 's@/+$@@g' <<< "$BACKUPPATH")"
@@ -2505,25 +2504,21 @@ function cleanupBackupDirectory() {
 			fi
 		fi
 
-		logItem "BackupDir created: $NEW_BACKUP_DIRECTORY_CREATED"
-
-		if (( $NEW_BACKUP_DIRECTORY_CREATED )); then
+		if [[ -d "$BACKUPTARGET_DIR" ]]; then
 			if [[ -z "$BACKUPPATH" || -z "$BACKUPFILE" || -z "$BACKUPTARGET_DIR" || "$BACKUPFILE" == *"*"* || "$BACKUPPATH" == *"*"* || "$BACKUPTARGET_DIR" == *"*"* ]]; then
 				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
 			fi
-
-			if (( $BACKUP_STARTED )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
+			logItem "$(ls -la $BACKUPTARGET_DIR)"
+			exec >&3 2>&4 # free logfile in backup dir
+			rm -rf $BACKUPTARGET_DIR # delete incomplete backupdir
+			local rmrc=$?
+			if (( $rmrc != 0 )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_DIR" "$rmrc"
 			fi
-			if [[ -d "$BACKUPTARGET_DIR" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_BACKUPDIRECTORY "$BACKUPTARGET_DIR"
-				logItem "$(ls -la $BACKUPTARGET_DIR)"
-				exec >&3 2>&4 # free logfile in backup dir
-				rm -rf $BACKUPTARGET_DIR # delete incomplete backupdir
-				# resume logging of output into log file now residing in home directory
-				exec 1>> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
-				exec 2>> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
-			fi
+			# resume logging of output into log file now residing in home directory
+			exec 1>> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
+			exec 2>> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 		fi
 	fi
 
@@ -3643,7 +3638,6 @@ function backup() {
 
 	callExtensions $READY_BACKUP_EXTENSION $rc
 
-	BACKUP_STARTED=1
 	START_TIME=$(date +%s)
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
@@ -5713,7 +5707,6 @@ LANGUAGE=$DEFAULT_LANGUAGE
 
 BACKUP_DIRECTORY_NAME=""
 BACKUPFILE=""
-BACKUP_STARTED=0
 DEPLOY=0
 EXCLUDE_DD=0
 FAKE=0
@@ -5722,7 +5715,6 @@ FORCE_SFDISK=0
 FORCE_UPDATE=0
 HELP=0
 INCLUDE_ONLY=0
-NEW_BACKUP_DIRECTORY_CREATED=0
 NO_YES_QUESTION=0
 PROGRESS=0
 REGRESSION_TEST=0
