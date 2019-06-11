@@ -34,6 +34,7 @@ trap startAllServices EXIT ERR
 
 function shutdownAllServices () {
 	[[ -z $SERVICE ]] && retrieveAllActiveServices
+	echo "Shutdown all services..."
 	for (( idx=${#SERVICES[@]}-1 ; idx>=0 ; idx-- )); do
 		echo "service ${SERVICES[idx]} stop &>/dev/null"
 	done
@@ -41,6 +42,7 @@ function shutdownAllServices () {
 
 function startAllServices () {
 	[[ -z $SERVICE ]] && retrieveAllActiveServices
+	echo "Start all services..."
 	for SERVICE in ${SERVICES[@]}; do
 		echo "service $SERVICE start &>/dev/null"
 	done
@@ -56,7 +58,7 @@ function retrieveAllActiveServices() {
 declare -a SERVICES
 
 shutdownAllServices # stop all services
-trap # make sure all services are started at the end of script execution
-raspiBackup.sh -a : -o : # now create backup
+raspiBackup.sh -a : -o : -F # now create backup
+trap - EXIT ERR # turn off exit traps (already called when exiting raspiBackup)
 
 
