@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-10 11:33:35 +0200$"
+GIT_DATE="$Date: 2019-06-12 11:17:39 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: a4ef6b8$"
+GIT_COMMIT="$Sha1: 816e395$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -3870,7 +3870,6 @@ function doit() {
 		if (( $FAKE )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FAKE_MODE_ON
 		fi
-
 		doitBackup
 	fi
 
@@ -6135,9 +6134,6 @@ if (( ! $RESTORE )); then
 	fi
 fi
 
-logItem "Enabling trap handler"
-trapWithArg cleanup SIGINT SIGTERM EXIT
-
 fileParameter="$1"
 if [[ -n "$1" ]]; then
 	shift 1
@@ -6153,7 +6149,6 @@ writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" 
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
 (( $IS_DEV )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_DEV_MESSAGE
 (( $IS_HOTFIX )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_HOTFIX_MESSAGE
-
 
 unusedParms="$@"
 
@@ -6200,11 +6195,15 @@ substituteNumberArguments
 checkAndCorrectImportantParameters	# no return if errors detected
 check4RequiredCommands
 
-if (( $RESTORE )) && [[ -n $fileParameter ]]; then
-	RESTOREFILE="$(readlink -f "$fileParameter")"
-elif (( ! $RESTORE )) && [[ -n $fileParameter ]]; then
-	BACKUPPATH="$(readlink -f "$fileParameter")"
-elif [[ -z "$RESTOREFILE" && -z "$BACKUPPATH" ]]; then
+logItem "RESTORE: $RESTORE - fileParameter: $fileParameter"
+if [[ -n $fileParameter ]]; then
+	if (( $RESTORE )); then
+		RESTOREFILE="$(readlink -f "$fileParameter")"
+	else
+		BACKUPPATH="$(readlink -f "$fileParameter")"
+	fi
+fi
+if ( (( $RESTORE )) && [[ -z "$RESTOREFILE" ]] ) || ( (( ! $RESTORE )) && [[ -z "$BACKUPPATH" ]] ); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_FILEPARAMETER
 	mentionHelp
 	exitError $RC_MISSING_FILES
@@ -6214,6 +6213,9 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_RESTOREDEVICE_OPTION
 	exitError $RC_PARAMETER_ERROR
 fi
+
+logItem "Enabling trap handler"
+trapWithArg cleanup SIGINT SIGTERM EXIT
 
 setupEnvironment
 logOptions						# config parms already read
