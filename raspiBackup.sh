@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-17 20:10:20 +0200$"
+GIT_DATE="$Date: 2019-06-17 18:52:36 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 2d927a2$"
+GIT_COMMIT="$Sha1: 032e490$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1380,12 +1380,6 @@ function logOptions() {
 
 }
 
-LOG_MAIL_FILE="/tmp/${MYNAME}.maillog"
-rm -f "$LOG_MAIL_FILE" &>/dev/null
-LOG_FILE_NAME="${MYNAME}.log"
-LOG_FILE="$CURRENT_DIR/$LOG_FILE_NAME"
-rm -f "$LOG_FILE" &>/dev/null
-
 function initializeDefaultConfig() {
 
 	############# Begin default config section #############
@@ -2228,10 +2222,14 @@ function setupEnvironment() {
 			fi
 			LOG_FILE="$LOG_BASE/$HOSTNAME.log"
 			MSG_FILE="$LOG_BASE/$HOSTNAME.msg"
+			echo "--- $(date)" >> $LOG_FILE # separate new log from previous logs
+			echo "--- $(date)" >> $MSG_FILE
 			;;
 		$LOG_OUTPUT_HOME)
 			LOG_FILE="$CURRENT_DIR/$LOG_FILE_NAME"
 			MSG_FILE="$CURRENT_DIR/$MSG_FILE_NAME"
+			rm -f $LOG_FILE &>/dev/null
+			rm -f $MSG_FILE &>/dev/null
 			;;
 		$LOG_OUTPUT_SYSLOG)
 			LOG_FILE="/var/log/syslog"
@@ -2244,6 +2242,8 @@ function setupEnvironment() {
 		*)
 			LOG_FILE="$LOG_OUTPUT"
 			MSG_FILE="${LOG_OUTPUT}.msg"
+			rm -f $LOG_FILE &>/dev/null
+			rm -f $MSG_FILE &>/dev/null
 	esac
 
 	if [[ -z "$LOG_FILE" || "$LOG_FILE" == *"*"* ]]; then
@@ -2378,7 +2378,7 @@ function sendEMail() { # content subject
 
 	logEntry
 
-	if [[ -n "$EMAIL" && rc != $RC_CTRLC ]]; then
+	if [[ -n "$EMAIL" && rc != $RC_CTRLC ]] && (( ! $INTERACTIVE )); then
 		local attach content subject
 
 		local attach=""
