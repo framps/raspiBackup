@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-12 11:17:39 +0200$"
+GIT_DATE="$Date: 2019-06-17 20:10:20 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 816e395$"
+GIT_COMMIT="$Sha1: 2d927a2$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -899,6 +899,9 @@ MSG_DE[$MSG_RESTORETEST_REQUIRED]="RBK0201W: $SMILEY_RESTORETEST_REQUIRED Freund
 MSG_NO_BOOT_DEVICE_DISOVERED=203
 MSG_EN[$MSG_NO_BOOT_DEVICE_DISOVERED]="RBK0203E: Unable to discover boot device. Please report this issue with a debug log created with option '-l debug'."
 MSG_DE[$MSG_NO_BOOT_DEVICE_DISOVERED]="RBK0203E: Boot device kann nicht erkannt werden. Bitte das Problem mit einem Debuglog welches mit Option '-l debug' erstellt wird berichten."
+MSG_TRUNCATING_ERROR=204
+MSG_EN[$MSG_TRUNCATING_ERROR]="RBK0204E: Unable to calculate truncation backup size."
+MSG_DE[$MSG_TRUNCATING_ERROR]="RBK0204E: Verkleinerte Backupgröße kann nicht berechnet werden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1093,6 +1096,7 @@ function writeToConsole() {  # msglevel messagenumber message
 		echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
 	fi
 
+	local line
 	while IFS= read -r line; do
 		logIntoOutput $LOG_TYPE_MSG "$line"
 	done <<< "$msg"
@@ -1231,6 +1235,7 @@ function logIntoOutput() { # logtype prefix message
 	local indent=$(printf '%*s' "$LOG_INDENT")
 	local m
 
+	local line
 	while IFS= read -r line; do
 		printf -v m "%s %04d: %s %s %s" "$type" "$lineno" "$indent" "$prefix" "$line"
 		case $LOG_OUTPUT in
@@ -2336,6 +2341,7 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 	local lineNo=0
 	local sumSize=0
 
+	local line
 	while IFS="" read line; do
 		(( lineNo++ ))
 		if [[ -z $line ]]; then
@@ -3088,8 +3094,12 @@ function ddBackup() {
 				fi
 			fi
 		else
-			logItem "$(fdisk -l $BOOT_DEVICENAME)"
+			logItem "fdisk$NL$(fdisk -l $BOOT_DEVICENAME)"
 			local lastByte=$(lastUsedPartitionByte $BOOT_DEVICENAME)
+			if (( lastByte == 0 )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TRUNCATING_ERROR "$sdcardSizeHuman" "$spaceUsedHuman"
+				exitError $RC_MISC_ERROR
+			fi
 			local spaceUsedHuman=$(bytesToHuman $lastByte)
 			local sdcardSize=$(blockdev --getsize64 $BOOT_DEVICENAME)
 			local sdcardSizeHuman=$(bytesToHuman $sdcardSize)
@@ -3912,6 +3922,7 @@ function collectPartitions() {
 	logItem "backupAllPartitions: $backupAllPartitions"
 
 	local mountLine partition size type
+	local line
 	while read line; do
 		if [[ $line =~ $regexPartitionLine ]]; then
 			partition=${BASH_REMATCH[1]}
@@ -4672,6 +4683,7 @@ function restorePartitionBasedBackup() {
 	if mount | grep -q $RESTORE_DEVICE; then
 		logItem "Umounting partitions on $RESTORE_DEVICE"
 		logItem "$(mount | grep $RESTORE_DEVICE)"
+		local dev
 		while read dev; do echo $dev | cut -d ' ' -f 1; done < <(mount | grep $RESTORE_DEVICE)  | xargs umount
 		logItem "$(mount | grep $RESTORE_DEVICE)"
 	fi
@@ -4878,6 +4890,7 @@ function lastUsedPartitionByte() { # device
 	local partitionregex="/dev/.*[p]?([0-9]+).*start=[^0-9]*([0-9]+).*size=[^0-9]*([0-9]+).*(Id|type)=[^0-9a-z]*([0-9a-z]+)"
 	local lastUsedPartitionByte=0
 
+	local line
 	while read line; do
 		if [[ -z $line ]]; then
 			continue
@@ -4891,6 +4904,7 @@ function lastUsedPartitionByte() { # device
 			local size=${BASH_REMATCH[3]}
 			local id=${BASH_REMATCH[5]}
 
+			logItem "$p - $start - $size - $id"
 			if [[ $id == 85 || $id == 5 ]]; then
 				continue
 			fi
