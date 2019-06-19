@@ -23,6 +23,8 @@ An installer [(Code)](https://github.com/framps/raspiBackup/blob/master/installa
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
 
+![Installationdemo]https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif
+
 ## Usage
 
 For the latest and actual list of options see [here](https://www.linux-tips-and-tricks.de/en/backup#parameters)
