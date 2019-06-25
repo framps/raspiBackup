@@ -27,7 +27,7 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.1" 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.2-dev" 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -39,11 +39,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2019-01-19 20:05:20 +0100$"
+GIT_DATE="$Date: 2019-06-25 16:41:46 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: a49bc8a$"
+GIT_COMMIT="$Sha1: 5eab7ab$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -96,13 +96,15 @@ INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
 
 PROPERTY_REGEX='.*="([^"]*)"'
 
-[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
-LANG_EXT="${LANG,,*}"
-LANG_SYSTEM="${LANG_EXT:0:2}"
-if [[ $LANG_SYSTEM != "de" && $LANG_SYSTEM != "en" ]]; then
-	LANG_SYSTEM="en"
+if [[ -z "${LANG}" ]]; then # no language defined
+	LANG="en_GB.UTF-8" # default language on Raspbian
+	export LANG="$LANG" # pass language to whiptail
 fi
-MESSAGE_LANGUAGE="${LANG_SYSTEM^^*}"
+LANG_EXT="${LANG^^*}"	# need language ID in upper case
+LANG_SYSTEM="${LANG_EXT:0:2}"
+if [[ $LANG_SYSTEM != "DE" && $LANG_SYSTEM != "EN" ]]; then
+	LANG_SYSTEM="EN"
+fi
 
 # default configs
 CONFIG_LANGUAGE="${LANG_SYSTEM^^*}"

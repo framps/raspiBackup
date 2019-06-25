@@ -31,7 +31,7 @@ if [ ! -n "$BASH" ] ;then
    exit 127
 fi
 
-VERSION="0.6.4.3"	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.4.4-dev"	# -beta, -hotfix or -dev suffixes possible
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-06-17 18:52:36 +0200$"
+GIT_DATE="$Date: 2019-06-25 16:41:46 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 032e490$"
+GIT_COMMIT="$Sha1: 5eab7ab$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -2378,7 +2378,7 @@ function sendEMail() { # content subject
 
 	logEntry
 
-	if [[ -n "$EMAIL" && rc != $RC_CTRLC ]] && (( ! $INTERACTIVE )); then
+	if [[ -n "$EMAIL" && rc != $RC_CTRLC ]] && (( ! $INTERACTIVE || $FAKE )); then
 		local attach content subject
 
 		local attach=""
