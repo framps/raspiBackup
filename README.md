@@ -90,6 +90,8 @@ Usage: raspiBackup.sh [option]* {backupDirectory}
   * raspiBackup Installation
   * Extension sample installation
 
+* Wrapper script which keeps backup versions of the last 7 days, last 4 weeks and last 12 months if raspiBackup is called every day ([Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackup7412.sh)
+
 ## Sample extensions [(Code)](https://github.com/framps/raspiBackup/tree/master/extensions)
 * Sample eMail extension
 * Sample pre/post extension which reports the memory usage before and after backup
