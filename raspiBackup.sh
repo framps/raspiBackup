@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-08-08 19:46:18 +0200$"
+GIT_DATE="$Date: 2019-08-24 12:28:42 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 3e0d997$"
+GIT_COMMIT="$Sha1: 798a5ab$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1464,7 +1464,7 @@ function initializeDefaultConfig() {
 	# save boot partition with tar
 	DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
 	# Change these options only if you know what you are doing !!!
-	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx"
+	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete"
 	DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
 	DEFAULT_TAR_BACKUP_OPTIONS="-cpi --one-file-system"
 	DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -5399,7 +5399,7 @@ function updateRestoreReminder() {
 	diffMonths=$(calculateMonthDiff $now ${rf[0]} )
 
 	# check if reminder should be send
-	if (( $diffMonths >= $RESTORE_REMINDER_INTERVAL )); then
+	if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
 		if (( ${rf[1]} < $RESTORE_REMINDER_REPEAT )); then
 			# update reminder state
 			local nr=$(( ${rf[1]} + 1 ))
