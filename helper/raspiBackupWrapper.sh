@@ -30,13 +30,13 @@ set -euf -o pipefail
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.5"
+VERSION="0.2.6"
 
-set +u;GIT_DATE="$Date: 2019-08-09 20:03:06 +0200$"; set -u
+set +u;GIT_DATE="$Date: 2019-08-29 11:09:42 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1: 2f6831f$";set -u
+set +u;GIT_COMMIT="$Sha1: a009fd8$";set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -127,7 +127,7 @@ function mountLoopDevice() {
 function raspiBackupRestore2Image() {
 	if which raspiBackupRestore2Image.sh 2>&1 1>/dev/null; then
 
-		raspiBackupRestore2Image.sh $BACKUP_TARGETDIR
+		sudo raspiBackupRestore2Image.sh $BACKUP_TARGETDIR
 		rc=$?
 
 		if (( $rc == 0 )); then
@@ -145,7 +145,7 @@ function raspiBackupRestore2Image() {
 function pishrink() {
 	if which pishrink.sh 2>&1 1>/dev/null; then
 		readVars
-		pishrink.sh $BACKUP_TARGETFILE
+		sudo pishrink.sh $BACKUP_TARGETFILE
 		rc=$?
 
 		if (( $rc == 0 )); then
@@ -201,5 +201,5 @@ fi
 
 # enable one of the following two lines if you want to have pishrink or raspiBackupRestore2Image to postprocess the backup
 
-#sudo pishrink
-#sudo raspiBackupRestore2Image
+#pishrink
+#raspiBackupRestore2Image
