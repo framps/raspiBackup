@@ -12,6 +12,7 @@
 
 ## Documentation
 
+* [Youtube Video](https://youtu.be/dICqS0cXbBQ) (Introduction and installation)
 * [Installation](https://www.linux-tips-and-tricks.de/en/quickstart-rbk)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
