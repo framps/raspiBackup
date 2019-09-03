@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-08-24 12:28:42 +0200$"
+GIT_DATE="$Date: 2019-09-03 16:51:10 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 798a5ab$"
+GIT_COMMIT="$Sha1: b967a1c$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -405,8 +405,8 @@ MSG_TITLE_ERROR=42
 MSG_EN[$MSG_TITLE_ERROR]="%s: Backup failed !!!."
 MSG_DE[$MSG_TITLE_ERROR]="%s: Backup nicht erfolgreich !!!."
 MSG_REMOVING_BACKUP=43
-MSG_EN[$MSG_REMOVING_BACKUP]="RBK0043I: Removing incomplete backup in %s. This will take some time. Please be patient."
-MSG_DE[$MSG_REMOVING_BACKUP]="RBK0043I: Unvollständiges Backup %s in wird gelöscht. Das wird etwas dauern. Bitte Geduld."
+MSG_EN[$MSG_REMOVING_BACKUP]="RBK0043I: Removing incomplete backup in %s. This may take some time. Please be patient."
+MSG_DE[$MSG_REMOVING_BACKUP]="RBK0043I: Unvollständiges Backup %s in wird gelöscht. Das kann etwas dauern. Bitte Geduld."
 MSG_CREATING_BOOT_BACKUP=44
 MSG_EN[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: Creating backup of boot partition in %s."
 MSG_DE[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: Backup der Bootpartition wird in %s erstellt."
@@ -902,6 +902,9 @@ MSG_DE[$MSG_NO_BOOT_DEVICE_DISOVERED]="RBK0203E: Boot device kann nicht erkannt 
 MSG_TRUNCATING_ERROR=204
 MSG_EN[$MSG_TRUNCATING_ERROR]="RBK0204E: Unable to calculate truncation backup size."
 MSG_DE[$MSG_TRUNCATING_ERROR]="RBK0204E: Verkleinerte Backupgröße kann nicht berechnet werden."
+MSG_CLEANUP_BACKUP_VERSION=205
+MSG_EN[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Deleting oldest backup in %s. This may take some time. Please be patient."
+MSG_DE[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Ältestes Backup %s in wird gelöscht. Das kann etwas dauern. Bitte Geduld."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3286,7 +3289,7 @@ function tarBackup() {
 
 function rsyncBackup() { # partition number (for partition based backup)
 
-	local verbose partition target source fakecmd faketarget excludeRoot cmd cmdParms
+	local verbose partition target source fakecmd faketarget excludeRoot cmd cmdParms excludeMeta
 
 	logEntry
 
@@ -3313,6 +3316,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 		bootPartitionBackup
 		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
+		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
 
 	logItem "LastBackupDir: $lastBackupDir"
@@ -3344,6 +3348,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 			--exclude=$excludeRoot/boot/* \
 			--exclude=$excludeRoot/tmp/* \
 			--exclude=$excludeRoot/run/* \
+			$excludeMeta \
 			$EXCLUDE_LIST \
 			$LINK_DEST \
 			--numeric-ids \
@@ -3767,6 +3772,7 @@ function backup() {
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
 			if (( ! $FAKE )); then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
 				pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "\.{log|msg}$" | head -n -$KEEPBACKUPS | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
 
 				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
