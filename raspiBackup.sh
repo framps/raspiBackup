@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-09-03 16:51:10 +0200$"
+GIT_DATE="$Date: 2019-09-06 18:59:14 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: b967a1c$"
+GIT_COMMIT="$Sha1: 097c432$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -3448,7 +3448,23 @@ function restore() {
 				exitError $RC_MISC_ERROR
 			fi
 
-			if (( ! $SKIP_SFDISK || $FORCE_SFDISK )); then
+			if (( $FORCE_SFDISK )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
+				sfdisk -f $RESTORE_DEVICE < "$SF_FILE"
+				sync
+				sleep 3
+				logItem "--- partprobe ---"
+				partprobe $RESTORE_DEVICE &>>$LOG_FILE
+				sleep 3
+				logItem "--- udevadm ---"
+				udevadm settle &>>$LOG_FILE
+
+			elif (( $SKIP_SFDISK )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
+
+			else
+
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
 
 				cp "$SF_FILE" $$.sfdisk
 				logItem ".sfdisk: $(cat $$.sfdisk)"
@@ -3459,16 +3475,6 @@ function restore() {
 				if [ $rc != 0 ]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".mbr" "$rc"
 					exitError $RC_NATIVE_RESTORE_FAILED
-				fi
-
-				sync
-
-				if (( $FORCE_SFDISK )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
-				elif (( $SKIP_SFDISK )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
-				else
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
 				fi
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )); then
@@ -3507,6 +3513,8 @@ function restore() {
 
 						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $$.sfdisk
 
+						logItem "Updated sfdisk$NL$(cat $$.sfdisk)"
+
 						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
 							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
 						fi
@@ -3514,14 +3522,19 @@ function restore() {
 						resizeRootFS
 					fi
 
+					sync
+					sleep 3
 					logItem "--- partprobe ---"
 					partprobe $RESTORE_DEVICE &>>$LOG_FILE
+					sleep 3
 					logItem "--- udevadm ---"
 					udevadm settle &>>$LOG_FILE
 					rm $$.sfdisk &>/dev/null
-				fi
 
+				fi
 			fi
+
+			logItem "Targetpartitionlayout$NL$(fdisk -l $RESTORE_DEVICE)"
 
 			if [[ -e $TAR_FILE ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_FIRST_PARTITION "$BOOT_PARTITION"
@@ -4754,7 +4767,7 @@ function restorePartitionBasedBackup() {
 		logItem "$(mount | grep $RESTORE_DEVICE)"
 	fi
 
-	if (( ! $SKIP_SFDISK )); then
+	if (( ! $SKIP_SFDISK && ! $FORCE_SFDISK )); then
 		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
 		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
 		logItem "SourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
