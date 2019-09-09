@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-09-06 18:59:14 +0200$"
+GIT_DATE="$Date: 2019-09-09 18:29:58 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 097c432$"
+GIT_COMMIT="$Sha1: cd2b5f7$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -905,6 +905,12 @@ MSG_DE[$MSG_TRUNCATING_ERROR]="RBK0204E: Verkleinerte Backupgröße kann nicht b
 MSG_CLEANUP_BACKUP_VERSION=205
 MSG_EN[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Deleting oldest backup in %s. This may take some time. Please be patient."
 MSG_DE[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Ältestes Backup %s in wird gelöscht. Das kann etwas dauern. Bitte Geduld."
+MSG_UPDATING_PARTUUID=206
+MSG_EN[$MSG_UPDATING_PARTUUID]="RBK0206I: Creating new PARTUUID %s on %s."
+MSG_DE[$MSG_UPDATING_PARTUUID]="RBK0206I: Erzeuge neue PARTUUID %s auf %s."
+MSG_UPDATING_UUID=207
+MSG_EN[$MSG_UPDATING_UUID]="RBK0207I: Creating new UUID %s on %s."
+MSG_DE[$MSG_UPDATING_UUID]="RBK0207I: Erzeuge neue UUID %s auf %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1375,6 +1381,7 @@ function logOptions() {
 	logItem "TAR_IGNORE_ERRORS=$TAR_IGNORE_ERRORS"
 	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
 	logItem "TIMESTAMPS=$TIMESTAMPS"
+	logItem "UPDATE_UUIDS=$UPDATE_UUIDS"
 	logItem "USE_HARDLINKS=$USE_HARDLINKS"
 	logItem "VERBOSE=$VERBOSE"
 	logItem "ZIP_BACKUP=$ZIP_BACKUP"
@@ -1490,6 +1497,8 @@ function initializeDefaultConfig() {
 	DEFAULT_RESTORE_REMINDER_INTERVAL=6
 	# Number of times restore reminder bothers you
 	DEFAULT_RESTORE_REMINDER_REPEAT=3
+	# update device UUIDs
+	DEFAULT_UPDATE_UUIDS=0
 
 	############# End default config section #############
 
@@ -1547,6 +1556,7 @@ function initializeConfig() {
 	[[ -z "$TAR_BOOT_PARTITION_ENABLED" ]] && TAR_BOOT_PARTITION_ENABLED="$DEFAULT_TAR_BOOT_PARTITION_ENABLED"
 	[[ -z "$TAR_RESTORE_ADDITIONAL_OPTIONS" ]] && TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
 	[[ -z "$TIMESTAMPS" ]] && TIMESTAMPS="$DEFAULT_TIMESTAMPS"
+	[[ -z "$UPDATE_UUIDS" ]] && UPDATE_UUIDS="$DEFAULT_UPDATE_UUIDS"
 	[[ -z "$USE_HARDLINKS" ]] && USE_HARDLINKS="$DEFAULT_USE_HARDLINKS"
 	[[ -z "$USE_UUID" ]] && USE_UUID="$DEFAULT_USE_UUID"
 	[[ -z "$VERBOSE" ]] && VERBOSE="$DEFAULT_VERBOSE"
@@ -2710,6 +2720,7 @@ w
 q
 EOF
 
+	waitForPartitionDefsChanged
 	logExit
 }
 
@@ -2998,6 +3009,7 @@ function bootPartitionBackup() {
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
 					exitError $RC_COLLECT_PARTITIONS_FAILED
 				fi
+
 				logItem "sfdisk"
 				logItem $(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")
 
@@ -3287,6 +3299,62 @@ function tarBackup() {
 	return $rc
 }
 
+
+function waitForPartitionDefsChanged {
+	logEntry
+	sync
+	sleep 3
+	logItem "--- partprobe ---"
+	partprobe $RESTORE_DEVICE &>>$LOG_FILE
+	sleep 3
+	logItem "--- udevadm ---"
+	udevadm settle &>>$LOG_FILE
+	logExit
+}
+
+function updateUUIDs() {
+	logEntry
+	if (( $UPDATE_UUIDS && ! $SKIP_SFDISK )); then
+		logItem "Old blkid${NL}$(blkid)"
+		updatePartUUID
+		updateUUID
+		logItem "blkid after UUID update${NL}$(blkid)"
+	fi
+	logExit
+}
+
+function updatePartUUID() {
+	logEntry
+	if (( $UPDATE_UUIDS && ! $SKIP_SFDISK )); then
+		local newUUID=$(od -A n -t x -N 4 /dev/urandom | tr -d " ")
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_PARTUUID "$newUUID" "$RESTORE_DEVICE"
+		echo -ne "x\ni\n0x$newUUID\nr\nw\nq\n" | fdisk "$RESTORE_DEVICE" &>> "$LOG_FILE"
+		waitForPartitionDefsChanged
+	fi
+	logExit
+}
+
+function updateUUID() {
+	logEntry
+	if (( $UPDATE_UUIDS && ! $SKIP_SFDISK )); then
+		local newUUID
+		if (( ! $SHARED_BOOT_DIRECTORY )); then
+			newUUID="$(od -A n -t x -N 4 /dev/urandom | tr -d " " | sed -r 's/(.{4})/\1-/')"
+			newUUID="${newUUID^^*}"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "$newUUID" "$BOOT_PARTITION"
+			printf "\x${newUUID:7:2}\x${newUUID:5:2}\x${newUUID:2:2}\x${newUUID:0:2}" \
+				| dd bs=1 seek=39 count=4 conv=notrunc of=$BOOT_PARTITION &>>"$LOG_FILE" # 39 for fat16, 67 for fat32
+			waitForPartitionDefsChanged
+		fi
+		newUUID="$(</proc/sys/kernel/random/uuid)"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "$newUUID" "$ROOT_PARTITION"
+		e2fsck -y -f $ROOT_PARTITION &>> "$LOG_FILE"
+		tune2fs -U "$newUUID" $ROOT_PARTITION &>>"$LOG_FILE"
+		waitForPartitionDefsChanged
+	fi
+	logExit
+}
+
 function rsyncBackup() { # partition number (for partition based backup)
 
 	local verbose partition target source fakecmd faketarget excludeRoot cmd cmdParms excludeMeta
@@ -3451,13 +3519,6 @@ function restore() {
 			if (( $FORCE_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
 				sfdisk -f $RESTORE_DEVICE < "$SF_FILE"
-				sync
-				sleep 3
-				logItem "--- partprobe ---"
-				partprobe $RESTORE_DEVICE &>>$LOG_FILE
-				sleep 3
-				logItem "--- udevadm ---"
-				udevadm settle &>>$LOG_FILE
 
 			elif (( $SKIP_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
@@ -3522,15 +3583,7 @@ function restore() {
 						resizeRootFS
 					fi
 
-					sync
-					sleep 3
-					logItem "--- partprobe ---"
-					partprobe $RESTORE_DEVICE &>>$LOG_FILE
-					sleep 3
-					logItem "--- udevadm ---"
-					udevadm settle &>>$LOG_FILE
 					rm $$.sfdisk &>/dev/null
-
 				fi
 			fi
 
@@ -3633,8 +3686,11 @@ function restore() {
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
 
+			umount $ROOT_PARTITION &>> "$LOG_FILE"
+
+			updateUUIDs
+
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_ROOT_CHECK_STARTED
-			umount $ROOT_PARTITION &>>$LOG_FILE
 			fsck -av $ROOT_PARTITION &>>$LOG_FILE
 			rc=$?
 			if (( $rc > 1 )); then # 1: => Filesystem errors corrected
@@ -4814,11 +4870,8 @@ function restorePartitionBasedBackup() {
 			exitError $RC_CREATE_PARTITIONS_FAILED
 		fi
 
-		logItem "partprobe"
-		partprobe $RESTORE_DEVICE
-		udevadm settle
-		logItem "Syncing filesystems"
-		sync
+		waitForPartitionDefsChanged
+
 	else
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_SKIPPING_CREATING_PARTITIONS
 	fi
@@ -4846,7 +4899,7 @@ function restorePartitionBasedBackup() {
 		restorePartitionBasedPartition "$partitionBackupFile"
 	done
 
-	sync
+	updateUUIDs
 
 	logItem "fdisk of $RESTORE_DEVICE"
 	logItem "$(fdisk -l $RESTORE_DEVICE)"
@@ -6047,6 +6100,10 @@ while (( "$#" )); do
 
 	-U)
 	  UPDATE_MYSELF=1; shift 1
+	  ;;
+
+	--updateUUIDs|--updateUUIDs[+-])
+	  UPDATE_UUIDS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	-v|-v[-+])
