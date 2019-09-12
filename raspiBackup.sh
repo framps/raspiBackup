@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -57,11 +58,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-09-09 18:29:58 +0200$"
+GIT_DATE="$Date: 2019-09-12 20:53:26 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: cd2b5f7$"
+GIT_COMMIT="$Sha1: d241066$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -256,6 +257,8 @@ RC_NO_BOOT_FOUND=121
 RC_BEFORE_START_SERVICES_ERROR=122
 RC_BEFORE_STOP_SERVICES_ERROR=123
 RC_EMAILPROG_ERROR=124
+RC_MISSING_PARTITION=125
+RC_UUIDS_NOT_UNIQUE=126
 
 tty -s
 INTERACTIVE=!$?
@@ -581,9 +584,9 @@ MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Gerät %s wird
 MSG_VERSION_HISTORY_PAGE=101
 MSG_EN[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/en/versionhistory/"
 MSG_DE[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/de/versionshistorie/"
-MSG_UPDATING_CMDLINE=102
-MSG_EN[$MSG_UPDATING_CMDLINE]="RBK0102I: Detected PARTUUID usage in /boot/cmdline.txt. Changing PARTUUID from %s to %s."
-MSG_DE[$MSG_UPDATING_CMDLINE]="RBK0102I: Benutzung von PARTUUID in /boot/cmdline.txt erkannt. PARTUUID %s wird auf %s geändert."
+MSG_UPDATING_UUID=102
+MSG_EN[$MSG_UPDATING_UUID]="RBK0102I: Updating %s from %s to %s in %s."
+MSG_DE[$MSG_UPDATING_UUID]="RBK0102I: %s wird von %s auf %s in %s geändert."
 MSG_UNABLE_TO_WRITE=103
 MSG_EN[$MSG_UNABLE_TO_WRITE]="RBK0103E: Unable to create backup on %s because of missing write permission."
 MSG_DE[$MSG_UNABLE_TO_WRITE]="RBK0103E: Ein Backup kann nicht auf %s erstellt werden da die Schreibberechtigung fehlt."
@@ -671,9 +674,9 @@ MSG_DE[$MSG_MISSING_FILEPARAMETER]="RBK0130E: Backup- oder Restorepfadparameter 
 MSG_MISSING_INSTALLED_FILE=131
 MSG_EN[$MSG_MISSING_INSTALLED_FILE]="RBK0131E: Program %s not found. Use 'sudo apt-get update; sudo apt-get install %s' to install the missing program."
 MSG_DE[$MSG_MISSING_INSTALLED_FILE]="RBK0131E: Programm %s nicht gefunden. Mit 'sudo apt-get update; sudo apt-get install %s' wird das fehlende Programm installiert."
-MSG_UPDATING_FSTAB=132
-MSG_EN[$MSG_UPDATING_FSTAB]="RBK0132I: Detected PARTUUID usage in /etc/fstab. Changing PARTUUID from %s to %s."
-MSG_DE[$MSG_UPDATING_FSTAB]="RBK0132I: Benutzung von PARTUUID in /etc/fstab erkannt. PARTUUID %s wird auf %s geändert."
+MSG_SKIPPING_CREATING_PARTITIONS=132
+MSG_EN[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: No partitions are created. Reusing existing patritions."
+MSG_DE[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: Es werden keine Partitionen erstellt sondern die existierenden Partitionen benutzt."
 MSG_HARDLINK_DIRECTORY_USED=133
 MSG_EN[$MSG_HARDLINK_DIRECTORY_USED]="RBK0133I: Using directory %s for hardlinks."
 MSG_DE[$MSG_HARDLINK_DIRECTORY_USED]="RBK0133I: Verzeichnis %s wird für Hardlinks benutzt."
@@ -905,12 +908,18 @@ MSG_DE[$MSG_TRUNCATING_ERROR]="RBK0204E: Verkleinerte Backupgröße kann nicht b
 MSG_CLEANUP_BACKUP_VERSION=205
 MSG_EN[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Deleting oldest backup in %s. This may take some time. Please be patient."
 MSG_DE[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Ältestes Backup %s in wird gelöscht. Das kann etwas dauern. Bitte Geduld."
-MSG_UPDATING_PARTUUID=206
-MSG_EN[$MSG_UPDATING_PARTUUID]="RBK0206I: Creating new PARTUUID %s on %s."
-MSG_DE[$MSG_UPDATING_PARTUUID]="RBK0206I: Erzeuge neue PARTUUID %s auf %s."
-MSG_UPDATING_UUID=207
-MSG_EN[$MSG_UPDATING_UUID]="RBK0207I: Creating new UUID %s on %s."
-MSG_DE[$MSG_UPDATING_UUID]="RBK0207I: Erzeuge neue UUID %s auf %s."
+MSG_CREATING_UUID=206
+MSG_EN[$MSG_CREATING_UUID]="RBK0206I: Creating new %s %s on %s."
+MSG_DE[$MSG_CREATING_UUID]="RBK0206I: Erzeuge neue %s %s auf %s."
+MSG_MISSING_PARTITION=207
+MSG_EN[$MSG_MISSING_PARTITION]="RBK0207E: Missing partitions on %s."
+MSG_DE[$MSG_MISSING_PARTITION]="RBK0207E: Keine Partitionen auf %s gefunden."
+MSG_NO_UUID_SYNCHRONIZED=208
+MSG_EN[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: No UUID updated in %s for %s. Backup may not boot correctly."
+MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Es konnte keine UUID in %s für %s erneuert werden. Das Backup könnte nicht starten."
+MSG_UUIDS_NOT_UNIQUE=209
+MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209E: UUIDs are not unique on devices and/or partitions. Check with 'sudo blkid' and make them unique."
+MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209E: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen. Mit 'sudo blkid' überprüfen und dann eindeutig machen."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1347,6 +1356,7 @@ function logOptions() {
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "FAKE=$FAKE"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
+	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
 	logItem "KEEPBACKUPS=$KEEPBACKUPS"
 	logItem "KEEPBACKUPS_DD=$KEEPBACKUPS_DD"
 	logItem "KEEPBACKUPS_DDZ=$KEEPBACKUPS_DDZ"
@@ -1499,6 +1509,8 @@ function initializeDefaultConfig() {
 	DEFAULT_RESTORE_REMINDER_REPEAT=3
 	# update device UUIDs
 	DEFAULT_UPDATE_UUIDS=0
+	# ignore partitions > 2 in normal mode
+	DEFAULT_IGNORE_ADDITIONAL_PARTITIONS=0
 
 	############# End default config section #############
 
@@ -1526,6 +1538,7 @@ function initializeConfig() {
 	[[ -z "$EMAIL_SENDER" ]] && EMAIL_SENDER="$DEFAULT_EMAIL_SENDER"
 	[[ -z "$EXCLUDE_LIST" ]] && EXCLUDE_LIST="$DEFAULT_EXCLUDE_LIST"
 	[[ -z "$EXTENSIONS" ]] && EXTENSIONS="$DEFAULT_EXTENSIONS"
+	[[ -z "$IGNORE_ADDITIONAL_PARTITIONS" ]] && IGNORE_ADDITIONAL_PARTITIONS="$DEFAULT_IGNORE_ADDITIONAL_PARTITIONS"
 	[[ -z "$KEEPBACKUPS" ]] && KEEPBACKUPS="$DEFAULT_KEEPBACKUPS"
 	[[ -z "$KEEPBACKUPS_DD" ]] && KEEPBACKUPS_DD="$DEFAULT_KEEPBACKUPS_DD"
 	[[ -z "$KEEPBACKUPS_DDZ" ]] && KEEPBACKUPS_DDZ="$DEFAULT_KEEPBACKUPS_DDZ"
@@ -2329,12 +2342,12 @@ function setupEnvironment() {
 	if [[ -f $PREVIOUS_LOG_FILE && $PREVIOUS_LOG_FILE != $LOG_FILE ]] || (( $FAKE )) ; then
 		cp $PREVIOUS_LOG_FILE $LOG_FILE &>/dev/null
 		if [[ $LOG_OUTPUT != $LOG_OUTPUT_SYSLOG ]]; then	# keep syslog :-)
-			(( ! $FAKE )) && rm $PREVIOUS_LOG_FILE
+			(( ! $FAKE )) && rm $PREVIOUS_LOG_FILE &>>$LOG_FILE
 		fi
 	fi
 	if [[ $PREVIOUS_MSG_FILE != $MSG_FILE || (( $FAKE )) ]]; then
 		cp $PREVIOUS_MSG_FILE $MSG_FILE &>/dev/null
-		(( ! $FAKE )) && rm $PREVIOUS_MSG_FILE
+		(( ! $FAKE )) && rm $PREVIOUS_MSG_FILE &>>$LOG_FILE
 	fi
 
 	logItem "LOG_OUTPUT: $LOG_OUTPUT"
@@ -3327,7 +3340,7 @@ function updatePartUUID() {
 	logEntry
 	if (( $UPDATE_UUIDS && ! $SKIP_SFDISK )); then
 		local newUUID=$(od -A n -t x -N 4 /dev/urandom | tr -d " ")
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_PARTUUID "$newUUID" "$RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "PARTUUID" "$newUUID" "$RESTORE_DEVICE"
 		echo -ne "x\ni\n0x$newUUID\nr\nw\nq\n" | fdisk "$RESTORE_DEVICE" &>> "$LOG_FILE"
 		waitForPartitionDefsChanged
 	fi
@@ -3341,13 +3354,13 @@ function updateUUID() {
 		if (( ! $SHARED_BOOT_DIRECTORY )); then
 			newUUID="$(od -A n -t x -N 4 /dev/urandom | tr -d " " | sed -r 's/(.{4})/\1-/')"
 			newUUID="${newUUID^^*}"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "$newUUID" "$BOOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "UUID" "$newUUID" "$BOOT_PARTITION"
 			printf "\x${newUUID:7:2}\x${newUUID:5:2}\x${newUUID:2:2}\x${newUUID:0:2}" \
 				| dd bs=1 seek=39 count=4 conv=notrunc of=$BOOT_PARTITION &>>"$LOG_FILE" # 39 for fat16, 67 for fat32
 			waitForPartitionDefsChanged
 		fi
 		newUUID="$(</proc/sys/kernel/random/uuid)"
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "$newUUID" "$ROOT_PARTITION"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "UUID" "$newUUID" "$ROOT_PARTITION"
 		e2fsck -y -f $ROOT_PARTITION &>> "$LOG_FILE"
 		tune2fs -U "$newUUID" $ROOT_PARTITION &>>"$LOG_FILE"
 		waitForPartitionDefsChanged
@@ -3449,6 +3462,52 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 }
 
+function areDevicesUnique() {
+
+	logEntry
+
+	local -A UUID
+	local -A PARTUUID
+	local line
+	local unique=0
+
+	while read line; do
+		if grep -q ID_FS_UUID= <<< "$line"; then
+			local uuid="$(cut -f2 -d= <<< "$line")"
+			if [[ ${UUID[$uuid]}+abc != "+abc" ]]; then
+				logItem "UUID $uuid is not unique"
+				unique=1
+			else
+				UUID[$uuid]=1
+			fi
+		elif grep -q ID_FS_PARTUUID= <<< "$line"; then
+			local partuuid="$(cut -f2 -d= <<< "$line")"
+			if [[ ${PARTUUID[$partuuid]}+abc != "+abc" ]]; then
+				logItem "PARTUUID $partuuid is not unique"
+				unique=1
+			else
+				PARTUUID[$partuuid]=1
+			fi
+		fi
+
+	done < <(blkid -o udev)
+
+	logExit $unique
+	return $unique
+
+}
+
+
+function logSystemDiskState() {
+	logEntry
+
+	logItem "--- System disk state restore ---"
+	logItem "blkid${NL}$(blkid)"
+	logItem "fdisk${NL}$(fdisk -l)"
+
+	logExit
+}
+
 function restore() {
 
 	logEntry
@@ -3462,6 +3521,8 @@ function restore() {
 	logItem "$(ls -la $RESTOREFILE)"
 
 	rc=$RC_NATIVE_RESTORE_FAILED
+
+	logSystemDiskState
 
 	case $BACKUPTYPE in
 
@@ -3494,7 +3555,7 @@ function restore() {
 
 			if ( isMounted "$MNT_POINT" ); then
 				logItem "$MNT_POINT mounted - unmouting"
-				umount "$MNT_POINT"
+				umount "$MNT_POINT" &>> "$LOG_FILE"
 			else
 				logItem "$MNT_POINT not mounted"
 			fi
@@ -3613,7 +3674,7 @@ function restore() {
 			else
 				ext=$BOOT_TAR_EXT
 				logItem "Restoring boot partition from $TAR_FILE to $BOOT_PARTITION"
-				mount $BOOT_PARTITION "$MNT_POINT/boot"
+				mount $BOOT_PARTITION "$MNT_POINT/boot" &>>"$LOG_FILE"
 				pushd "$MNT_POINT" &>>"$LOG_FILE"
 				if (( $PROGRESS )); then
 					cmd="pv -f $TAR_FILE | tar -xf -"
@@ -3646,7 +3707,7 @@ function restore() {
 			fi
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
-			mount $ROOT_PARTITION "$MNT_POINT"
+			mount $ROOT_PARTITION "$MNT_POINT" &>> "$LOG_FILE"
 
 			case $BACKUPTYPE in
 
@@ -3728,6 +3789,8 @@ function restore() {
 		logItem "Umount $MNT_POINT"
 		umount $MNT_POINT >> "$LOG_FILE"
 	fi
+
+	logSystemDiskState
 
 	logExit "$rc"
 
@@ -4607,15 +4670,27 @@ function doitBackup() {
 function getPartitionTable() { # device
 
 	logEntry "$1"
-	logItem "$(IFS='' parted $1 unit MB p 2>>$LOG_FILE)"
-	local table="$(IFS='' parted $1 unit MB p 2>>$LOG_FILE | sed -r '/^($|[MSDP])/d')"
+	local result
 
-	if [[ $(wc -l <<< "$table") < 2 ]]; then
-		table=""
+	# Possible results of partprobe
+	# See https://stackoverflow.com/questions/26873289/how-to-check-a-disk-for-partitions-for-use-in-a-script-in-linux
+	# /dev/sdb: gpt partitions 1 -> partition table exists and one partition
+	# /dev/sdb: gpt partitions -> partition table exists but no partition
+	# <empty> -> no partition table
+
+	if [[ -n "$(partprobe -d -s $1 | cut -f 4 -d ' ')" ]]; then
+		local table="$(IFS='' parted $1 unit MB p 2>>$LOG_FILE | sed -r '/^($|[MSDP])/d')"
+		if [[ $(wc -l <<< "$table") < 2 ]]; then
+			result=""
+		else
+			result="$table"
+		fi
+	else
+		result=""
 	fi
-	echo "$table"
+	echo "$result"
 
-	logExit
+	logExit "$result"
 }
 
 function checkAndSetBootPartitionFiles() { # directory extension
@@ -4744,16 +4819,22 @@ function restoreNonPartitionBasedBackup() {
 
 	if (( ! $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING $RESTORE_DEVICE
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 	fi
 
 	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
-	if [[ -n $current_partition_table ]]; then
+	if [[ -n "$current_partition_table" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE" "$current_partition_table"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
+		if (( $SKIP_SFDISK )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITION "$RESTORE_DEVICE"
+			exitError $RC_MISSING_PARTITION
+		fi
 	fi
 
-	if (( ! $ROOT_PARTITION_DEFINED )); then
+	if (( ! $ROOT_PARTITION_DEFINED && ! $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN $RESTORE_DEVICE
 	else
 		if [[ $ROOT_DEVICE =~ /dev/mmcblk0 || $ROOT_DEVICE =~ "/dev/loop" ]]; then
@@ -4762,12 +4843,20 @@ function restoreNonPartitionBasedBackup() {
 			ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
 		fi
 
-		current_partition_table="$(getPartitionTable $ROOT_DEVICE)"
-		if [[ -N $current_partition_table ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE" "$current_partition_table"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$ROOT_DEVICE"
+		if [[ $ROOT_DEVICE != $RESTORE_DEVICE ]]; then
+			current_partition_table="$(getPartitionTable $ROOT_DEVICE)"
+			if [[ -n $current_partition_table ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE" "$current_partition_table"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$ROOT_DEVICE"
+				if (( $SKIP_SFDISK )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITION "$ROOT_DEVICE"
+					exitError $RC_MISSING_PARTITION
+				fi
+			fi
 		fi
+	fi
+	if (( ! $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_BOOT_PARTITION_OVERWRITTEN $BOOT_PARTITION
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_ROOT_PARTITION_OVERWRITTEN $ROOT_PARTITION
 	fi
@@ -4898,8 +4987,6 @@ function restorePartitionBasedBackup() {
 	for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
 		restorePartitionBasedPartition "$partitionBackupFile"
 	done
-
-	updateUUIDs
 
 	logItem "fdisk of $RESTORE_DEVICE"
 	logItem "$(fdisk -l $RESTORE_DEVICE)"
@@ -5308,6 +5395,11 @@ function doitRestore() {
 		fi
 	fi
 
+	if ! areDevicesUnique; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
+		exitError $RC_UUIDS_NOT_UNIQUE
+	fi
+
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logItem "ls: of $RESTOREFILE"
 	logItem "$(ls -1 "$RESTOREFILE"* 2>/dev/null)"
@@ -5418,7 +5510,7 @@ function doitRestore() {
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
-		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]] && (( $ROOT_PARTITION_DEFINED )); then
+		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
 			synchronizeCmdlineAndfstab
 		fi
 	else
@@ -5495,85 +5587,137 @@ function remount() { # device mountpoint
 
 	if ( isMounted "$1" ); then
 		logItem "$1 mounted - unmouting"
-		umount "$1"
+		umount "$1" &>>"$LOG_FILE"
 	else
 		logItem "$1 not mounted"
 	fi
 
 	logItem "Creating mountpoint $2"
 	mkdir -p $2
-	mount "$1" "$2"
+	mount "$1" "$2" &>>"$LOG_FILE"
 
 }
 
 function synchronizeCmdlineAndfstab() {
+
 	logEntry
 
-	local CMDLINE FSTAB newPartUUID oldPartUUID root_partition BOOT_MP ROOT_MP
+	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION
 
-	if [[ $RESTORE_DEVICE =~ "/dev/mmcblk0" || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
-		root_partition=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
+	if [[ $RESTORE_DEVICE =~ /dev/mmcblk0 || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
+		BOOT_PARTITION="${RESTORE_DEVICE}p1"
 	else
-		root_partition=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
+		BOOT_PARTITION="${RESTORE_DEVICE}1"
 	fi
 
-	if (( $ROOT_PARTITION_DEFINED )); then
-		root_partition="$ROOT_PARTITION"
-	fi
-
-	BOOT_PARTITION=${RESTORE_DEVICE}1
 	ROOT_MP="$TEMPORARY_MOUNTPOINT_ROOT/root"
 	BOOT_MP="$TEMPORARY_MOUNTPOINT_ROOT/boot"
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	CMDLINE="$BOOT_MP/cmdline.txt"
-	FSTAB="$ROOT_MP/etc/fstab"
+	local cmdline="/cmdline.txt"
+	CMDLINE="$BOOT_MP/$cmdline" # absolute path in mount
+	cmdline="/boot$cmdline" # path for message
+	local fstab="/etc/fstab" # path for message
+	FSTAB="$ROOT_MP$fstab" # absolute path in mount
 
-	logItem "Org $CMDLINE"
-	logItem "$(cat $CMDLINE)"
+	logItem "BOOT_PARTITION: $BOOT_PARTITION"
+	logItem "ROOT_PARTITION: $ROOT_PARTITION"
 
-	logItem "Org $FSTAB"
-	logItem "$(cat $FSTAB)"
+	if [[ -f "$CMDLINE" ]]; then
 
-	if [[ -f "$CMDLINE" && $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
-		oldPartUUID=${BASH_REMATCH[1]}
-		newPartUUID=$(blkid -o udev $root_partition | grep PARTUUID | cut -d= -f2)
-		if [[ $oldPartUUID != $newPartUUID ]]; then
-			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_CMDLINE "$oldPartUUID" "$newPartUUID"
-			sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> LOG_FILE
+		logItem "Org $CMDLINE"
+		logItem "$(cat $CMDLINE)"
+
+		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
+			oldPartUUID=${BASH_REMATCH[1]}
+			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			if [[ $oldPartUUID != $newPartUUID ]]; then
+				logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> LOG_FILE
+			fi
+		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
+			oldUUID=${BASH_REMATCH[1]}
+			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			if [[ $oldUUID != $newUUID ]]; then
+				logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
+				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> LOG_FILE
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "root=" "$cmdline"
 		fi
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "root=" "$cmdline"
 	fi
 
-	if [[ -f "$FSTAB" && $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-		oldPartUUID=${BASH_REMATCH[1]}
-		newPartUUID=$(blkid -o udev $root_partition | grep PARTUUID | cut -d= -f2)
-		if [[ $oldPartUUID != $newPartUUID ]]; then
-			logItem "FSTAB root - newBootPartUUID: $newPartUUID, oldBootPartUUID: $oldPartUUID"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_FSTAB "$oldPartUUID" "$newPartUUID"
-			sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
+	if [[ -f "$FSTAB" ]]; then
+		logItem "Org $FSTAB"
+		logItem "$(cat $FSTAB)"
+
+		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+			oldPartUUID=${BASH_REMATCH[1]}
+			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			if [[ $oldPartUUID != $newPartUUID ]]; then
+				logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
+			fi
+		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+			oldUUID=${BASH_REMATCH[1]}
+			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			if [[ $oldUUID != $newUUID ]]; then
+				logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
+				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/" "$fstab"
 		fi
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/" "$fstab"
 	fi
 
-	if [[ -f "$FSTAB" && $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
-		oldPartUUID=${BASH_REMATCH[1]}
-		newPartUUID=$(blkid -o udev $BOOT_PARTITION | grep PARTUUID | cut -d= -f2)
-		if [[ $oldPartUUID != $newPartUUID ]]; then
-			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_FSTAB "$oldPartUUID" "$newPartUUID"
-			sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
+	if [[ -f "$FSTAB" ]]; then
+		logItem "Org $FSTAB"
+		logItem "$(cat $FSTAB)"
+
+		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
+			oldPartUUID=${BASH_REMATCH[1]}
+			newPartUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			if [[ $oldPartUUID != $newPartUUID ]]; then
+				logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
+			fi
+		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
+			oldUUID=${BASH_REMATCH[1]}
+			newUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			if [[ $oldUUID != $newUUID ]]; then
+				logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
+				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/boot" "$fstab"
 		fi
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/boot" "$fstab"
 	fi
 
-	logItem "Upd $CMDLINE"
-	logItem "$(cat $CMDLINE)"
+	if [[ -f "$CMDLINE" ]]; then
+		logItem "Upd $CMDLINE"
+		logItem "$(cat $CMDLINE)"
+	fi
 
-	logItem "Upd $FSTAB"
-	logItem "$(cat $FSTAB)"
+	if [[ -f "$FSTAB" ]]; then
+		logItem "Upd $FSTAB"
+		logItem "$(cat $FSTAB)"
+	fi
 
-	umount $BOOT_MP
-	umount $ROOT_MP
+	umount $BOOT_MP &>>"$LOG_FILE"
+	umount $ROOT_MP &>>"$LOG_FILE"
 
 	logExit
 }
@@ -5938,6 +6082,10 @@ while (( "$#" )); do
 
 	-i|-i[-+])
 	  USE_UUID=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
+	--ignoreAdditionalPartitions|--ignoreAdditionalPartitions[+-])
+	  IGNORE_ADDITIONAL_PARTITIONS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	--include|--include[+-])
