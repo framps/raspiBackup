@@ -58,11 +58,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-09-12 20:53:26 +0200$"
+GIT_DATE="$Date: 2019-09-13 18:56:15 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: d241066$"
+GIT_COMMIT="$Sha1: 16797c4$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -309,8 +309,8 @@ MSG_STARTED=9
 MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) started at %s."
 MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) %s gestartet."
 MSG_STOPPED=10
-MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) stopped at %s."
-MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) %s beendet."
+MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) stopped at %s with rc %s."
+MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) %s beendet mit Returncode %s."
 MSG_NO_BOOT_PARTITION=11
 MSG_EN[$MSG_NO_BOOT_PARTITION]="RBK0011E: No boot partition ${BOOT_PARTITION_PREFIX}1 found."
 MSG_DE[$MSG_NO_BOOT_PARTITION]="RBK0011E: Keine boot Partition ${BOOT_PARTITION_PREFIX}1 gefunden."
@@ -1228,7 +1228,6 @@ function executeCmd() { # command - redirects - rc's to accept
 }
 
 function executeShellCommand() { # command
-
 	logEntry "$@"
 	if (( $INTERACTIVE )); then
 		eval "$1"
@@ -1240,15 +1239,17 @@ function executeShellCommand() { # command
 	return $rc
 }
 
-function logIntoOutput() { # logtype prefix message
+function logIntoOutput() { # logtype prefix lineno message
 
 	[[ $LOG_DEBUG != $LOG_LEVEL ]] && return
 
-	local type=${LOG_TYPEs[$1]}
+	local type="${LOG_TYPEs[$1]}"
 	shift
 	local prefix="$1"
 	shift
-	local lineno=${BASH_LINENO[1]}
+	local lineno="$1"
+	shift
+	[[ -z $lineno ]] && lineno=${BASH_LINENO[1]}
 	local dte=$(date +%Y%m%d-%H%M%S)
 	local indent=$(printf '%*s' "$LOG_INDENT")
 	local m
@@ -1258,7 +1259,7 @@ function logIntoOutput() { # logtype prefix message
 		printf -v m "%s %04d: %s %s %s" "$type" "$lineno" "$indent" "$prefix" "$line"
 		case $LOG_OUTPUT in
 			$LOG_OUTPUT_SYSLOG)
-				logger -t $MYSELF -- "$m"
+				logger -t $MYNAME -- "$m"
 				;;
 			$LOG_OUTPUT_VARLOG | $LOG_OUTPUT_BACKUPLOC | $LOG_OUTPUT_HOME)
 				echo "$dte $m" >> "$LOG_FILE"
@@ -1276,43 +1277,51 @@ function repeat() { # char num
 	echo $s
 }
 
+LOG_INDENT_INC=4
+
 function logItem() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "--" "$1"
+	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$1"
 }
 
 function logEntry() { # message
-	(( LOG_INDENT+=3 ))
-	logIntoOutput $LOG_TYPE_DEBUG "->" "${FUNCNAME[1]} $@"
+	(( LOG_INDENT+=LOG_INDENT_INC ))
+	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $@"
 }
 
 function logExit() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "<-" "${FUNCNAME[1]} $@"
-	(( LOG_INDENT-=3 ))
+	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $@"
+	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
 
 function logSystem() {
 	logEntry
-	[[ -f /etc/os-release ]] &&	logItem "$(cat /etc/os-release)"
-	[[ -f /etc/debian_version ]] &&	logItem "$(cat /etc/debian_version)"
-	[[ -f /etc/fstab ]] &&	logItem "$(cat /etc/fstab)"
+	logCommand "uname -a"
+	[[ -f /etc/os-release ]] &&	logCommand "cat /etc/os-release"
+	[[ -f /etc/debian_version ]] &&	logCommand "cat /etc/debian_version"
+	[[ -f /etc/fstab ]] &&	logCommand "cat /etc/fstab"
 	logExit
 }
 
-function logSystemStatus() {
+function logCommand() { # command
+	(( LOG_INDENT+=LOG_INDENT_INC ))
+	local callerLineNo=${BASH_LINENO[0]}
+	logIntoOutput $LOG_TYPE_DEBUG "***" $callerLineNo "$1"
+	local r=$($1 2>&1)
+	logIntoOutput $LOG_TYPE_DEBUG "   " $callerLineNo "$r"
+	(( LOG_INDENT-=LOG_INDENT_INC ))
+}
 
+function logSystemServices() {
 	logEntry
-
 	if (( $SYSTEMSTATUS )); then
 		if ! which lsof &>/dev/null; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
 			else
-				logItem "service --status-all$NL$(service --status-all 2>&1)"
-				logItem "lsof$NL$(lsof / | awk 'NR==1 || $4~/[0-9][uw]/' 2>&1)"
+				logCommand "service --status-all 2>&1"
+				logCommand "lsof / | awk 'NR==1 || $4~/[0-9][uw]/'"
 			fi
 	fi
-
 	logExit
-
 }
 
 # calculate time difference, return array with days, hours, minutes and seconds
@@ -1333,8 +1342,6 @@ function duration() { # startTime endTime
 function logOptions() {
 
 	logEntry
-
-	logItem "$(uname -a)"
 
 	logItem "Options: $INVOCATIONPARMS"
 	logItem "APPEND_LOG=$APPEND_LOG"
@@ -1934,7 +1941,7 @@ function stopServices() {
 			fi
 		fi
 	fi
-	logSystemStatus
+	logSystemServices
 	logExit
 }
 
@@ -1960,7 +1967,7 @@ function startServices() {
 
 	logEntry
 
-	logSystemStatus
+	logSystemServices
 
 	if [[ -n "$STARTSERVICES" ]]; then
 		if [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
@@ -2131,7 +2138,7 @@ function isMounted() { # dir
 	local rc
 	logEntry "$1"
 	if [[ -n "$1" ]]; then
-		logItem "$(cat /proc/mounts)"
+		logCommand "cat /proc/mounts"
 		grep -qs "$1" /proc/mounts
 		rc=$?
 	else
@@ -2417,7 +2424,7 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 
 	local file="$1"
 
-	logItem "File: $(cat $file)"
+	logCommand "cat $file"
 
 # /dev/mmcblk0p1 : start=     8192, size=    83968, Id= c
 # or
@@ -2510,17 +2517,16 @@ function sendEMail() { # content subject
 			logItem "Sending eMail with program $EMAIL_PROGRAM and parms '$EMAIL_PARMS'"
 			logItem "Parm1:$1 Parm2:$subject"
 			logItem "Content: $content"
+			logItem "$EMAIL_PROGRAM $EMAIL_PARMS -s $subject $attach $EMAIL"
 
 			local rc
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -s $subject $attach $EMAIL"
 					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -s "$subject" $attach "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				$EMAIL_SENDEMAIL_PROGRAM)
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject $attach -t $EMAIL"
 					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" $attach -t "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
@@ -2538,7 +2544,6 @@ function sendEMail() { # content subject
 					else
 						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
 						logItem "Sendig email with s/msmtp"
-						logItem "echo -e To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
 						echo -e "To: $EMAIL\nFrom: $sender\nSubject: $subject\n$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
 						rc=$?
 						logItem "$EMAIL_PROGRAM: RC: $rc"
@@ -2601,7 +2606,7 @@ function cleanupBackupDirectory() {
 				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
 			fi
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
-			logItem "$(ls -la $BACKUPTARGET_DIR)"
+			logCommand "ls -la $BACKUPTARGET_DIR"
 			exec >&3 2>&4 # free logfile in backup dir
 			rm -rf $BACKUPTARGET_DIR # delete incomplete backupdir
 			local rmrc=$?
@@ -2654,7 +2659,8 @@ function cleanup() { # trap
 	logItem "Terminate now with rc $CLEANUP_RC"
 	(( $CLEANUP_RC == 0 )) && saveVars
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
+	logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 	exit $CLEANUP_RC
 
@@ -2708,7 +2714,7 @@ function resizeRootFS() {
 	logItem "ROOT_PARTITION: $ROOT_PARTITION"
 
 	logItem "partitionLayout of $RESTORE_DEVICE"
-	logItem "$(fdisk -l $RESTORE_DEVICE)"
+	logCommand "fdisk -l $RESTORE_DEVICE"
 
 	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p|sd[a-z])2(\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
 
@@ -3023,8 +3029,7 @@ function bootPartitionBackup() {
 					exitError $RC_COLLECT_PARTITIONS_FAILED
 				fi
 
-				logItem "sfdisk"
-				logItem $(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")
+				logCommand $(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")
 
 				if (( $LINK_BOOTPARTITIONFILES )); then
 					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
@@ -3182,7 +3187,7 @@ function ddBackup() {
 				fi
 			fi
 		else
-			logItem "fdisk$NL$(fdisk -l $BOOT_DEVICENAME)"
+			logCommand "fdisk -l $BOOT_DEVICENAME"
 			local lastByte=$(lastUsedPartitionByte $BOOT_DEVICENAME)
 			if (( lastByte == 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TRUNCATING_ERROR "$sdcardSizeHuman" "$spaceUsedHuman"
@@ -3328,7 +3333,8 @@ function waitForPartitionDefsChanged {
 function updateUUIDs() {
 	logEntry
 	if (( $UPDATE_UUIDS && ! $SKIP_SFDISK )); then
-		logItem "Old blkid${NL}$(blkid)"
+		logItem "Old blkid"
+		logCommand "blkid"
 		updatePartUUID
 		updateUUID
 		logItem "blkid after UUID update${NL}$(blkid)"
@@ -3378,7 +3384,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 
-	logItem "ls $(ls $BACKUPTARGET_ROOT)"
+	logCommand "ls $BACKUPTARGET_ROOT"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
@@ -3500,11 +3506,10 @@ function areDevicesUnique() {
 
 function logSystemDiskState() {
 	logEntry
-
-	logItem "--- System disk state restore ---"
-	logItem "blkid${NL}$(blkid)"
-	logItem "fdisk${NL}$(fdisk -l)"
-
+	logCommand "blkid"
+	logCommand "fdisk -l"
+	logCommand "mount"
+	logCommand "df -h"
 	logExit
 }
 
@@ -3512,13 +3517,16 @@ function restore() {
 
 	logEntry
 
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
+	logger -t $MYNAME "Started $VERSION ($GIT_COMMIT_ONLY)"
+
 	rc=0
 	local verbose zip
 
 	(( $VERBOSE )) && verbose="v" || verbose=""
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE "$RESTOREFILE"
-	logItem "$(ls -la $RESTOREFILE)"
+	logCommand "ls -la $RESTOREFILE"
 
 	rc=$RC_NATIVE_RESTORE_FAILED
 
@@ -3589,7 +3597,7 @@ function restore() {
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
 
 				cp "$SF_FILE" $$.sfdisk
-				logItem ".sfdisk: $(cat $$.sfdisk)"
+				logCommand "cat $$.sfdisk"
 
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_MBR "$MBR_FILE" "$RESTORE_DEVICE"
 				dd of=$RESTORE_DEVICE if="$MBR_FILE" count=1 &>>"$LOG_FILE"
@@ -3616,7 +3624,7 @@ function restore() {
 
 						local sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
 						if [[ ${#sourceValues[@]} != 4 ]]; then
-							logItem "$(cat $SF_FILE)"
+							logCommand "cat $SF_FILE"
 							assertionFailed $LINENO "Expected 4 partitions in $SF_FILE"
 						fi
 
@@ -3635,7 +3643,7 @@ function restore() {
 
 						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $$.sfdisk
 
-						logItem "Updated sfdisk$NL$(cat $$.sfdisk)"
+						logCommand "cat $$.sfdisk"
 
 						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
 							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
@@ -3766,8 +3774,7 @@ function restore() {
 			logItem "Force fsck on reboot"
 			touch $MNT_POINT/forcefsck
 
-			logItem "parted $RESTORE_DEVICE print"
-			logItem "$(parted -s $RESTORE_DEVICE print 2>>$LOG_FILE)"
+			logCommand "parted -s $RESTORE_DEVICE print"
 
 			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk0" || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
 				ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
@@ -3776,8 +3783,7 @@ function restore() {
 			fi
 
 			if [[ $ROOT_DEVICE != $RESTORE_DEVICE ]]; then
-				logItem "parted $ROOT_DEVICE print"
-				logItem "$(parted -s $ROOT_DEVICE print 2>/dev/null)"
+				logCommand "parted -s $ROOT_DEVICE print"
 			fi
 
 	esac
@@ -3800,7 +3806,7 @@ function backup() {
 
 	logEntry
 
-	logger -t $MYSELF "Starting backup..."
+	logSystemDiskState
 
 	executeBeforeStopServices
 	stopServices
@@ -3823,20 +3829,12 @@ function backup() {
 
 	logItem "Storing backup in backuppath $BACKUPPATH"
 
-	if (( ! $REGRESSION_TEST )) ; then
-		logItem "mount:$NL$(mount)"
-		logItem "df -h:$NL$(df -h)"
-		logItem "blkid:$NL$(blkid)"
-	fi
-
 	if [[ -f $BOOT_DEVICENAME ]]; then
-		logItem "fdisk -l $BOOT_DEVICENAME"
-		logItem "$(fdisk -l $BOOT_DEVICENAME)"
+		logCommand "fdisk -l $BOOT_DEVICENAME"
 	fi
 
 	if [[ -f "/boot/cmdline.txt" ]]; then
-		logItem "/boot/cmdline.txt"
-		logItem "$(cat /boot/cmdline.txt)"
+		logCommand "cat /boot/cmdline.txt"
 	fi
 
 	logItem "Starting $BACKUPTYPE backup..."
@@ -3899,7 +3897,7 @@ function backup() {
 
 		if (( $keepBackups != -1 )); then
 			logItem "Deleting oldest directory in $BACKUPPATH"
-			logItem "pre - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
+			logCommand "ls -d $BACKUPPATH/*"
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
@@ -3954,7 +3952,8 @@ function backup() {
 	startServices
 	executeAfterStartServices
 
-	logger -t $MYSELF "Backup finished"
+	logSystemDiskState
+
 	logExit
 
 }
@@ -4069,8 +4068,8 @@ function doit() {
 
 	local msg
 	logItem "Startingdirectory: $(pwd)"
-	logItem "fdisk -l$NL$(fdisk -l | grep -v "^$" 2>/dev/null)"
-	logItem "mount$NL$(mount 2>/dev/null)"
+	logCommand "fdisk -l | grep -v "^$""
+	logCommand "mount"
 
 	if (( $RESTORE )); then
 		doitRestore
@@ -4257,7 +4256,7 @@ function getRootPartition() {
 #	dma.dmachans=0x7f35 bcm2708_fb.fbwidth=656 bcm2708_fb.fbheight=416 bcm2708.boardrev=0xf bcm2708.serial=0x3f3c9490 smsc95xx.macaddr=B8:27:EB:3C:94:90 bcm2708_fb.fbswap=1 sdhci-bcm2708.emmc_clock_freq=250000000 vc_mem.mem_base=0x1fa00000 vc_mem.mem_size=0x20000000  dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait
 
 	local cmdline=$(cat /proc/cmdline)
-	logItem "cat /proc/cmdline$NL$(cat /proc/cmdline)"
+	logCommand "cat /proc/cmdline"
 	if [[ $cmdline =~ .*(imgpart|root)=([^ ]+) ]]; then
 		ROOT_PARTITION=${BASH_REMATCH[2]}
 		logItem "RootPartition: $ROOT_PARTITION"
@@ -4291,8 +4290,8 @@ function inspect4Backup() {
 
 	logEntry
 
-	logItem "ls /dev/mmcblk*:${NL}$(ls -1 /dev/mmcblk* 2>/dev/null)"
-	logItem "ls /dev/sd*:${NL}$(ls -1 /dev/sd* 2>/dev/null)"
+	logCommand "ls -1 /dev/mmcblk*"
+	logCommand "ls -1 /dev/sd*"
 	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
 
 	if (( $REGRESSION_TEST || $RESTORE )); then
@@ -4449,7 +4448,7 @@ function inspect4Restore() {
 		fi
 
 		if [[ -z $BACKUP_BOOT_DEVICE ]]; then
-			logItem "$(cat $SF_FILE)"
+			logCommand"cat $SF_FILE"
 			assertionFailed $LINENO "Unable to discover boot device from $SF_FILE"
 		fi
 
@@ -4936,8 +4935,6 @@ function restorePartitionBasedBackup() {
 		exitError $RC_RESTORE_FAILED
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
-
 	if (( ! $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_PARTITIONING_SDCARD "$RESTORE_DEVICE"
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
@@ -4988,8 +4985,7 @@ function restorePartitionBasedBackup() {
 		restorePartitionBasedPartition "$partitionBackupFile"
 	done
 
-	logItem "fdisk of $RESTORE_DEVICE"
-	logItem "$(fdisk -l $RESTORE_DEVICE)"
+	logCommand "fdisk -l $RESTORE_DEVICE"
 
 	logExit
 
@@ -5401,8 +5397,7 @@ function doitRestore() {
 	fi
 
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
-	logItem "ls: of $RESTOREFILE"
-	logItem "$(ls -1 "$RESTOREFILE"* 2>/dev/null)"
+	logCommand "ls -1 $RESTOREFILE*"
 
 	if  ls -1 "$RESTOREFILE"* | egrep "^(sd[a-z]([0-9]+)|mmcblk[0-9]+p[0-9]+).*" 2>/dev/null ; then
 		PARTITIONBASED_BACKUP=1
@@ -5627,7 +5622,7 @@ function synchronizeCmdlineAndfstab() {
 	if [[ -f "$CMDLINE" ]]; then
 
 		logItem "Org $CMDLINE"
-		logItem "$(cat $CMDLINE)"
+		logCommand "cat $CMDLINE"
 
 		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
 			oldPartUUID=${BASH_REMATCH[1]}
@@ -5708,12 +5703,12 @@ function synchronizeCmdlineAndfstab() {
 
 	if [[ -f "$CMDLINE" ]]; then
 		logItem "Upd $CMDLINE"
-		logItem "$(cat $CMDLINE)"
+		logCommand "cat $CMDLINE"
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Upd $FSTAB"
-		logItem "$(cat $FSTAB)"
+		logCommand "cat $FSTAB"
 	fi
 
 	umount $BOOT_MP &>>"$LOG_FILE"
@@ -6412,6 +6407,8 @@ trapWithArg cleanup SIGINT SIGTERM EXIT
 setupEnvironment
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
+logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
+
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
 (( $IS_DEV )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_DEV_MESSAGE
 (( $IS_HOTFIX )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_HOTFIX_MESSAGE
@@ -6453,4 +6450,4 @@ if isVersionDeprecated "$VERSION"; then
 	NEWS_AVAILABLE=1
 fi
 
-doit #	no return for backup
+doit
