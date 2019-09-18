@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -58,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-09-13 18:56:15 +0200$"
+GIT_DATE="$Date: 2019-09-18 19:59:48 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 16797c4$"
+GIT_COMMIT="$Sha1: 98a95b6$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -920,6 +919,9 @@ MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Es konnte keine UUID in %s für %s 
 MSG_UUIDS_NOT_UNIQUE=209
 MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209E: UUIDs are not unique on devices and/or partitions. Check with 'sudo blkid' and make them unique."
 MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209E: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen. Mit 'sudo blkid' überprüfen und dann eindeutig machen."
+MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY=210
+MSG_EN[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: More than two partitions detected. Only first two partitions are saved."
+MSG_DE[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Es existieren mehr als zwei Partitionen. Nur die ersten beiden Partitionen werden gesichert."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3022,19 +3024,22 @@ function bootPartitionBackup() {
 
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
-				sfdisk -d $BOOT_DEVICENAME > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk" 2>>$LOG_FILE
+				local stripMultiple
+				if (( $IGNORE_ADDITIONAL_PARTITIONS )); then
+					logItem "Stripping partitions > 2"
+					stripMultiple='| grep -v -E "[3-9] :"'
+				fi
+				eval "sfdisk -d $BOOT_DEVICENAME $stripMultiple" > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk" 2>>$LOG_FILE
 				local rc=$?
 				if [ $rc != 0 ]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
 					exitError $RC_COLLECT_PARTITIONS_FAILED
 				fi
-
 				logCommand $(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")
 
 				if (( $LINK_BOOTPARTITIONFILES )); then
 					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
 				fi
-
 			else
 				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk ..."
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
@@ -3587,7 +3592,7 @@ function restore() {
 
 			if (( $FORCE_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
-				sfdisk -f $RESTORE_DEVICE < "$SF_FILE"
+				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
 
 			elif (( $SKIP_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
@@ -3595,17 +3600,18 @@ function restore() {
 			else
 
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
+				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
 
 				cp "$SF_FILE" $$.sfdisk
 				logCommand "cat $$.sfdisk"
 
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_MBR "$MBR_FILE" "$RESTORE_DEVICE"
-				dd of=$RESTORE_DEVICE if="$MBR_FILE" count=1 &>>"$LOG_FILE"
-				rc=$?
-				if [ $rc != 0 ]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".mbr" "$rc"
-					exitError $RC_NATIVE_RESTORE_FAILED
-				fi
+				#writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_MBR "$MBR_FILE" "$RESTORE_DEVICE"
+				#dd of=$RESTORE_DEVICE if="$MBR_FILE" count=1 &>>"$LOG_FILE"
+				#rc=$?
+				#if [ $rc != 0 ]; then
+				#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".mbr" "$rc"
+				#	exitError $RC_NATIVE_RESTORE_FAILED
+				#fi
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
@@ -4521,9 +4527,12 @@ function doitBackup() {
 		local partitionsFound=$(fdisk -l $BOOT_DEVICENAME | grep "^/dev/$BOOT_PARTITION_PREFIX" | wc -l)
 		logItem "Found partitions on $BOOT_DEVICENAME: $partitionsFound"
 		if [[ (( $partitionsFound > 2 )) && ( "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ) ]]; then
-			if ! (( $PARTITIONBASED_BACKUP )); then
+			if ! (( $PARTITIONBASED_BACKUP || $IGNORE_ADDITIONAL_PARTITIONS )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MULTIPLE_PARTITIONS_FOUND
 				exitError $RC_SDCARD_ERROR
+			fi
+			if (( $IGNORE_ADDITIONAL_PARTITIONS && ! $PARTITIONBASED_BACKUP )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY
 			fi
 		fi
 	fi
