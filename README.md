@@ -27,6 +27,10 @@ An installer [(Code)](https://github.com/framps/raspiBackup/blob/master/installa
 ### Installer demo
 ![Installationdemo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
+### Donations
+
+If raspiBackup solves your issue with backups of your Raspberry a [donation](https://www.linux-tips-and-tricks.de/en/backup/#donation) is greatly appreciated.
+
 ## Usage
 
 For the latest and actual list of options see [here](https://www.linux-tips-and-tricks.de/en/backup#parameters)
