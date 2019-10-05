@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-09-18 19:59:48 +0200$"
+GIT_DATE="$Date: 2019-10-05 22:14:57 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 98a95b6$"
+GIT_COMMIT="$Sha1: b8da1cb$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -917,8 +917,8 @@ MSG_NO_UUID_SYNCHRONIZED=208
 MSG_EN[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: No UUID updated in %s for %s. Backup may not boot correctly."
 MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Es konnte keine UUID in %s für %s erneuert werden. Das Backup könnte nicht starten."
 MSG_UUIDS_NOT_UNIQUE=209
-MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209E: UUIDs are not unique on devices and/or partitions. Check with 'sudo blkid' and make them unique."
-MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209E: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen. Mit 'sudo blkid' überprüfen und dann eindeutig machen."
+MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs are not unique on devices and/or partitions an may cause issues. In case of error messages check them with 'sudo blkid' and make them unique."
+MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen und kann Probleme bereiten. Falls Fehlermeldungen auftreten sollten sie mit 'sudo blkid' überprüft und dann eindeutig gemacht werden."
 MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY=210
 MSG_EN[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: More than two partitions detected. Only first two partitions are saved."
 MSG_DE[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Es existieren mehr als zwei Partitionen. Nur die ersten beiden Partitionen werden gesichert."
@@ -4305,6 +4305,10 @@ function inspect4Backup() {
 
 	else
 
+		if ! areDevicesUnique; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
+		fi
+
 		logItem "Legacy boot discovery"
 
 		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x $d)" ] && echo $d && break; done)
@@ -5398,11 +5402,6 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ROOT_PARTITION_NOT_FOUND "$ROOT_PARTITION"
 			exitError $RC_DEVICES_NOTFOUND
 		fi
-	fi
-
-	if ! areDevicesUnique; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
-		exitError $RC_UUIDS_NOT_UNIQUE
 	fi
 
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
