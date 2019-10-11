@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-10-05 22:14:57 +0200$"
+GIT_DATE="$Date: 2019-10-11 14:10:06 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: b8da1cb$"
+GIT_COMMIT="$Sha1: e0e51fd$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -2723,7 +2723,7 @@ function resizeRootFS() {
 	logItem "PartitionStart: $partitionStart"
 
 	if [[ -z "$partitionStart" ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS "Partitionstart of second partition of ${RESTORE_DEVICE} not found"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS "42" "Partitionstart of second partition of ${RESTORE_DEVICE} not found"
 		exitError $RC_CREATE_PARTITIONS_FAILED
 	fi
 
@@ -3328,7 +3328,7 @@ function waitForPartitionDefsChanged {
 	sync
 	sleep 3
 	logItem "--- partprobe ---"
-	partprobe $RESTORE_DEVICE &>>$LOG_FILE
+	partprobe -s &>>$LOG_FILE
 	sleep 3
 	logItem "--- udevadm ---"
 	udevadm settle &>>$LOG_FILE
@@ -3367,7 +3367,7 @@ function updateUUID() {
 			newUUID="${newUUID^^*}"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "UUID" "$newUUID" "$BOOT_PARTITION"
 			printf "\x${newUUID:7:2}\x${newUUID:5:2}\x${newUUID:2:2}\x${newUUID:0:2}" \
-				| dd bs=1 seek=39 count=4 conv=notrunc of=$BOOT_PARTITION &>>"$LOG_FILE" # 39 for fat16, 67 for fat32
+				| dd bs=1 seek=67 count=4 conv=notrunc of=$BOOT_PARTITION &>>"$LOG_FILE" # 39 for fat16, 67 for fat32
 			waitForPartitionDefsChanged
 		fi
 		newUUID="$(</proc/sys/kernel/random/uuid)"
@@ -3522,9 +3522,6 @@ function restore() {
 
 	logEntry
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
-	logger -t $MYNAME "Started $VERSION ($GIT_COMMIT_ONLY)"
-
 	rc=0
 	local verbose zip
 
@@ -3593,14 +3590,24 @@ function restore() {
 			if (( $FORCE_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
 				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
+				if (( $rc )); then
+					writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+					exitError $RC_CREATE_PARTITIONS_FAILED
+				fi
 
 			elif (( $SKIP_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
 			else
-
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
 				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
+				rc=$?
+				if (( $rc )); then
+					writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+					exitError $RC_CREATE_PARTITIONS_FAILED
+				fi
+
+				waitForPartitionDefsChanged
 
 				cp "$SF_FILE" $$.sfdisk
 				logCommand "cat $$.sfdisk"
@@ -3719,6 +3726,8 @@ function restore() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
+
+			waitForPartitionDefsChanged
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
 			mount $ROOT_PARTITION "$MNT_POINT" &>> "$LOG_FILE"
@@ -5635,24 +5644,24 @@ function synchronizeCmdlineAndfstab() {
 		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
 			oldPartUUID=${BASH_REMATCH[1]}
 			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ $oldPartUUID != $newPartUUID ]]; then
-				logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
 				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> LOG_FILE
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
 			oldUUID=${BASH_REMATCH[1]}
 			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ $oldUUID != $newUUID ]]; then
-				logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
 				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> LOG_FILE
 			fi
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "root=" "$cmdline"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "root=" "$cmdline"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
@@ -5662,24 +5671,24 @@ function synchronizeCmdlineAndfstab() {
 		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldPartUUID=${BASH_REMATCH[1]}
 			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ $oldPartUUID != $newPartUUID ]]; then
-				logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldUUID=${BASH_REMATCH[1]}
 			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ $oldUUID != $newUUID ]]; then
-				logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
 				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
 			fi
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/" "$fstab"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/" "$fstab"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
@@ -5689,24 +5698,24 @@ function synchronizeCmdlineAndfstab() {
 		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			oldPartUUID=${BASH_REMATCH[1]}
 			newPartUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ $oldPartUUID != $newPartUUID ]]; then
-				logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			oldUUID=${BASH_REMATCH[1]}
 			newUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ $oldUUID != $newUUID ]]; then
-				logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
 				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
 			fi
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/boot" "$fstab"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 		fi
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "/boot" "$fstab"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 	fi
 
 	if [[ -f "$CMDLINE" ]]; then
@@ -5811,6 +5820,7 @@ function usageEN() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="no"
 	echo "-a \"{commands to execute after Backup}\" (default: $DEFAULT_STARTSERVICES)"
 	echo "-B Save bootpartition in tar file (Default: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
+ 	echo "-F Backup is simulated"
 	echo "-k {backupsToKeep} (default: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
 	echo "-o \"{commands to execute before Backup}\" (default: $DEFAULT_STOPSERVICES)"
@@ -5819,6 +5829,8 @@ function usageEN() {
 	echo "-T \"{List of partitions to save}\" (Partition numbers, e.g. \"1 2 3\"). Only valid with parameter -P (default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo ""
 	echo "-Restore options-"
+	echo "-0 SD card will not be formatted"
+	echo "-1 Formatting errors on SD card will be ignored"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="no"
 	echo "-C Formating of the restorepartitions will check for badblocks (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {restoreDevice} (default: $DEFAULT_RESTORE_DEVICE) (Example: /dev/sda)"
@@ -5860,6 +5872,7 @@ function usageDE() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="keine"
 	echo "-a \"{Befehle die nach dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STARTSERVICES)"
 	echo "-B Sicherung der Bootpartition als tar file (Standard: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
+  	echo "-F Backup wird nur simuliert"
 	echo "-k {Anzahl Backups} (Standard: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="keine"
 	echo "-o \"{Befehle die vor dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STOPSERVICES)"
@@ -5868,6 +5881,8 @@ function usageDE() {
 	echo "-T \"Liste der Partitionen die zu Sichern sind}\" (Partitionsnummern, z.B. \"1 2 3\"). Nur gültig zusammen mit Parameter -P (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo ""
 	echo "-Restore Optionen-"
+	echo "-0 Keine Formatierung der SD Karte"
+	echo "-1 Fehler bei der Formatierung der SD Karte werden ignoriert"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="keiner"
 	echo "-C Beim Formatieren der Restorepartitionen wird auf Badblocks geprüft (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {restoreGerät} (Standard: $DEFAULT_RESTORE_DEVICE) (Beispiel: /dev/sda)"
