@@ -39,11 +39,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2019-01-19 20:05:20 +0100$"
+GIT_DATE="$Date: 2019-10-21 19:47:00 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: a49bc8a$"
+GIT_COMMIT="$Sha1: a46c949$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -139,80 +139,83 @@ MSG_VERSION=$((SCNT++))
 MSG_EN[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DE[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DOWNLOADING=$((SCNT++))
-MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0014I: Downloading %1..."
-MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0014I: %1 wird aus dem Netz geladen..."
+MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Downloading %1..."
+MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0002I: %1 wird aus dem Netz geladen..."
 MSG_DOWNLOAD_FAILED=$((SCNT++))
-MSG_EN[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0015E: Download of %1 failed. HTTP code: %2."
-MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0015E: %1 kann nicht aus dem Netz geladen werden. HTTP code: %2."
+MSG_EN[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Download of %1 failed. HTTP code: %2."
+MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: %1 kann nicht aus dem Netz geladen werden. HTTP code: %2."
 MSG_INSTALLATION_FAILED=$((SCNT++))
-MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0016E: Installation of %1 failed. Check %2."
-MSG_DE[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0016E: Installation von %1 fehlerhaft beendet. Prüfe %2."
+MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation of %1 failed. Check %2."
+MSG_DE[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation von %1 fehlerhaft beendet. Prüfe %2."
 MSG_SAVING_FILE=$((SCNT++))
-MSG_EN[$MSG_SAVING_FILE]="${MSG_PRF}0017I: Existing file %1 saved as %2."
-MSG_DE[$MSG_SAVING_FILE]="${MSG_PRF}0017I: Existierende Datei %1 wurde als %2 gesichert."
+MSG_EN[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Existing file %1 saved as %2."
+MSG_DE[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Existierende Datei %1 wurde als %2 gesichert."
 MSG_CHMOD_FAILED=$((SCNT++))
-MSG_EN[$MSG_CHMOD_FAILED]="${MSG_PRF}0018E: chmod of %1 failed."
-MSG_DE[$MSG_CHMOD_FAILED]="${MSG_PRF}0018E: chmod von %1 nicht möglich."
+MSG_EN[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod of %1 failed."
+MSG_DE[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod von %1 nicht möglich."
 MSG_MOVE_FAILED=$((SCNT++))
-MSG_EN[$MSG_MOVE_FAILED]="${MSG_PRF}0019E: mv of %1 failed."
-MSG_DE[$MSG_MOVE_FAILED]="${MSG_PRF}0019E: mv von %1 nicht möglich."
+MSG_EN[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv of %1 failed."
+MSG_DE[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv von %1 nicht möglich."
 MSG_CLEANUP=$((SCNT++))
-MSG_EN[$MSG_CLEANUP]="${MSG_PRF}0022I: Cleaning up..."
-MSG_DE[$MSG_CLEANUP]="${MSG_PRF}0022I: Räume auf..."
+MSG_EN[$MSG_CLEANUP]="${MSG_PRF}0008I: Cleaning up..."
+MSG_DE[$MSG_CLEANUP]="${MSG_PRF}0008I: Räume auf..."
 MSG_INSTALLATION_FINISHED=$((SCNT++))
-MSG_EN[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0023I: Installation of %1 finished successfully."
-MSG_DE[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0023I: Installation von %1 erfolgreich beendet."
+MSG_EN[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation of %1 finished successfully."
+MSG_DE[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation von %1 erfolgreich beendet."
 MSG_UPDATING_CONFIG=$((SCNT++))
-MSG_EN[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Updating configuration in %1."
-MSG_DE[$MSG_UPDATING_CONFIG]="${MSG_PRF}0024I: Konfigurationsdatei %1 wird angepasst."
+MSG_EN[$MSG_UPDATING_CONFIG]="${MSG_PRF}0010I: Updating configuration in %1."
+MSG_DE[$MSG_UPDATING_CONFIG]="${MSG_PRF}0010I: Konfigurationsdatei %1 wird angepasst."
 MSG_DELETE_FILE=$((SCNT++))
-MSG_EN[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Deleting %1..."
-MSG_DE[$MSG_DELETE_FILE]="${MSG_PRF}0028I: Lösche %1..."
+MSG_EN[$MSG_DELETE_FILE]="${MSG_PRF}0011I: Deleting %1..."
+MSG_DE[$MSG_DELETE_FILE]="${MSG_PRF}0011I: Lösche %1..."
 MSG_UNINSTALL_FINISHED=$((SCNT++))
-MSG_EN[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0029I: Uninstall of %1 finished successfully."
-MSG_DE[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0029I: Deinstallation von %1 erfolgreich beendet."
+MSG_EN[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0012I: Uninstall of %1 finished successfully."
+MSG_DE[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0012I: Deinstallation von %1 erfolgreich beendet."
 MSG_UNINSTALL_FAILED=$((SCNT++))
-MSG_EN[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0030E: Delete of %1 failed."
-MSG_DE[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0030E: Löschen von %1 fehlerhaft beendet."
+MSG_EN[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0013E: Delete of %1 failed."
+MSG_DE[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0013E: Löschen von %1 fehlerhaft beendet."
 MSG_DOWNLOADING_BETA=$((SCNT++))
-MSG_EN[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0031I: Downloading %1 beta..."
-MSG_DE[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0031I: %1 beta wird aus dem Netz geladen..."
+MSG_EN[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: Downloading %1 beta..."
+MSG_DE[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: %1 beta wird aus dem Netz geladen..."
 MSG_CODE_INSTALLED=$((SCNT++))
-MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: Created %1."
+MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: Created %1."
 MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: %1 wurde erstellt."
 MSG_NO_INSTALLATION_FOUND=$((SCNT++))
-MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038W: No installation to refresh detected."
-MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0038W: Keine Installation für einen Update entdeckt."
+MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0016W: No installation to refresh detected."
+MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0016W: Keine Installation für einen Update entdeckt."
 MSG_CHOWN_FAILED=$((SCNT++))
-MSG_EN[$MSG_CHOWN_FAILED]="${MSG_PRF}0039E: chown of %1 failed."
-MSG_DE[$MSG_CHOWN_FAILED]="${MSG_PRF}0039E: chown von %1 nicht möglich."
+MSG_EN[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown of %1 failed."
+MSG_DE[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown von %1 nicht möglich."
 MSG_SAMPLEEXTENSION_INSTALL_FAILED=$((SCNT++))
-MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0046E: Sample extension installation failed. %1"
-MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0046E: Beispielserweiterungsinstallation fehlgeschlagen. %1"
+MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Sample extension installation failed. %1"
+MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Beispielserweiterungsinstallation fehlgeschlagen. %1"
 MSG_SAMPLEEXTENSION_INSTALL_SUCCESS=$((SCNT++))
-MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0047I: Sample extensions successfully installed and enabled."
-MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0047I: Beispielserweiterungen erfolgreich installiert und eingeschaltet."
+MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Sample extensions successfully installed and enabled."
+MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Beispielserweiterungen erfolgreich installiert und eingeschaltet."
 MSG_INSTALLING_CRON_TEMPLATE=$((SCNT++))
-MSG_EN[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0049I: Creating cron file %1."
-MSG_DE[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0049I: Crondatei %1 wird erstellt."
+MSG_EN[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: Creating cron file %1."
+MSG_DE[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: Crondatei %1 wird erstellt."
 MSG_NO_INTERNET_CONNECTION_FOUND=$((SCNT++))
-MSG_EN[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0056E: Unable to connect to internet. wget RC: %1"
-MSG_DE[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0056E: Es existiert keine Internetverbindung. wget RC: %1"
+MSG_EN[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Unable to connect to internet. wget RC: %1"
+MSG_DE[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Es existiert keine Internetverbindung. wget RC: %1"
 MSG_CHECK_INTERNET_CONNECTION=$((SCNT++))
-MSG_EN[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0057I: Checking internet connection."
-MSG_DE[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0057I: Teste Internetverbindung."
+MSG_EN[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Checking internet connection."
+MSG_DE[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Teste Internetverbindung."
 MSG_SAMPLEEXTENSION_UNINSTALL_FAILED=$((SCNT++))
-MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0058E: Sample extension uninstallation failed. %1"
-MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0058E: Beispielserweiterungsdeinstallation fehlgeschlagen. %1"
+MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Sample extension uninstallation failed. %1"
+MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Beispielserweiterungsdeinstallation fehlgeschlagen. %1"
 MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS=$((SCNT++))
-MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0059I: Sample extensions successfully uninstalled and disenabled."
-MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0059I: Beispielserweiterungen erfolgreich deinstalliert und ausgeschaltet."
+MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Sample extensions successfully uninstalled and disenabled."
+MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Beispielserweiterungen erfolgreich deinstalliert und ausgeschaltet."
 MSG_UNINSTALLING_CRON_TEMPLATE=$((SCNT++))
-MSG_EN[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0060I: Deleting cron file %1."
-MSG_DE[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0060I: Crondatei %1 wird gelöscht."
+MSG_EN[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0025I: Deleting cron file %1."
+MSG_DE[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0025I: Crondatei %1 wird gelöscht."
 MSG_UPDATING_CRON=$((SCNT++))
-MSG_EN[$MSG_UPDATING_CRON]="${MSG_PRF}0062I: Updating cron configuration in %1."
-MSG_DE[$MSG_UPDATING_CRON]="${MSG_PRF}0062I: Cron Konfigurationsdatei %1 wird angepasst."
+MSG_EN[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Updating cron configuration in %1."
+MSG_DE[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Cron Konfigurationsdatei %1 wird angepasst."
+MSG_MISSING_DIRECTORY=$((SCNT++))
+MSG_EN[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Missing required directory %1."
+MSG_DE[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Erforderliches Verzeichnis %1 existiert nicht."
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
 MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${VERSION}"
@@ -290,7 +293,7 @@ MSG_DOWNLOADING_PROPERTYFILE=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING_PROPERTYFILE]="Downloading version information."
 MSG_DE[$MSG_DOWNLOADING_PROPERTYFILE]="Versionsinformationen werden runtergeladen."
 MSG_CHECKING_INTERNET=$((SCNT++))
-MSG_EN[$MSG_CHECKING_INTERNET]="Checking for an existing internet connection."
+MSG_EN[$MSG_CHECKING_INTERNET]="Check for an existing internet connection."
 MSG_DE[$MSG_CHECKING_INTERNET]="Teste auf eine existierende Internetverbindung."
 MSG_INVALID_KEEP=$((SCNT++))
 MSG_EN[$MSG_INVALID_KEEP]="Invalid number '%1'. Number has to be between 1 and 52."
@@ -489,7 +492,7 @@ Nächsten Schritte:${NL}
 5) Besuche die Optionsseite und konfiguriere $RASPIBACKUP_NAME genau nach Deinen Vorstellungen${NL}\
    https://www.linux-tips-and-tricks.de/de/raspibackup#parameters${NL}\
 6) Schalte den wöchentlichen Backup mit dem Installer ein${NL}\
-7) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailierte Informationen zu $RASPIBACKUP_NAME zu erhalten"
+7) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten"
 MSG_HELP=$((SCNT++))
 MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAME just use one of the following pathes to get help${NL}
 1) Read the FAQ page https://www.linux-tips-and-tricks.de/en/faq${NL}\
@@ -499,7 +502,7 @@ MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAM
 5) Visit $RASPIBACKUP_NAME on Facebook"
 MSG_DE[$MSG_HELP]="Falls es irgendwelche Fragen oder Probleme zu $RASPIBACKUP_NAME gibt bestehen folgende Möglichkeiten Hilfe zu bekommen${NL}
 1) Lies die FAQ Seite https://www.linux-tips-and-tricks.de/de/faq${NL}\
-2) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailierte Informationen zu $RASPIBACKUP_NAME zu erhalten${NL}\
+2) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten${NL}\
 3) Erstelle einen Fehlerbericht auf github https://github.com/framps/raspiBackup/issues. Gerne auch in Deutsch. Das ist meine Präferenz.${NL} \
 4) Erstelle einen Kommentar auf jeder Webseite zu $RASPIBACKUP_NAME auf $MYHOMEDOMAIN${NL}\
 5) Besuche $RASPIBACKUP_NAME auf Facebook"
@@ -650,11 +653,25 @@ CONFIG_INSTALLED=0
 SCRIPT_INSTALLED=0
 EXTENSIONS_INSTALLED=0
 CRON_INSTALLED=0
+PROGRESSBAR_DO=0
 
 INSTALL_EXTENSIONS=0
 BETA_INSTALL=0
 REFRESH_SCRIPT=0
 CRONTAB_ENABLED="undefined"
+
+function checkRequiredDirectories() {
+
+	local dirs=( "$BIN_DIR" "$ETC_DIR" "$CRON_DIR")
+
+	for d in "${dirs[@]}"; do
+		logItem "Checking for $d"
+		if [[ ! -d $d ]]; then
+			unrecoverableError $MSG_MISSING_DIRECTORY "$d"
+			return
+		fi
+	done
+}
 
 # Create message and substitute parameters
 
@@ -675,6 +692,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 			if [[ -z ${!msgVar} ]]; then
 				echo "${MSG_EN[$MSG_UNDEFINED]}" # unknown message id
 				logStack
+				logExit "$1"
 				return
 			else
 				msg="${MSG_EN[$1]}" # fallback into english
@@ -707,11 +725,10 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	else
 		echo "$msg"
 	fi
+
 }
 
 function getMenuText() { # menutextnumber varname
-
-	# logEntry "Menunum: $1 - varname: $2"
 
 	local menu varname
 
@@ -737,14 +754,12 @@ function getMenuText() { # menutextnumber varname
 
 	eval "varname=( ${menu[@]} )"
 
-	# logExit "${varname[@]}"
-
 }
 
 function writeToConsole() {
 	local msg="$(getMessageText "$@")"
 	echo "MSG: $msg" >>"$LOG_FILE"
-	if (( MODE_UNATTENDED )); then
+	if (( $MODE_UNATTENDED )); then
 		echo "$msg"
 	fi
 }
@@ -870,13 +885,13 @@ function code_download_execute() {
 
 	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
-		unrecoverableError
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
+		return
 	fi
 
 	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		return
 	fi
 
 	SCRIPT_INSTALLED=1
@@ -884,15 +899,15 @@ function code_download_execute() {
 	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
 
 	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
-		writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		return
 	fi
 
 	if [[ "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
 		if [[ -n $RASPIBACKUP_INSTALL_DEBUG ]]; then
 			if ! mv -f "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
-				writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-				unrecoverableError
+				unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+				return
 			fi
 		else
 			cp "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"
@@ -901,15 +916,15 @@ function code_download_execute() {
 
 	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 
-	if ! chmod 755 "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		unrecoverableError
+	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		return
 	fi
 
 	local chownArgs=$(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed 's/\n//')
 	if ! chown $chownArgs "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		unrecoverableError
+		unrecoverableError $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		return
 	fi
 
 	logExit
@@ -929,23 +944,22 @@ function update_script_execute() {
 		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
 	fi
 
-
 	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
-		unrecoverableError
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
+		return
 	fi
 
 	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		return
 	fi
 
 	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
 
 	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
-		writeToConsole $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		return
 	fi
 
 	logExit
@@ -967,20 +981,20 @@ function update_installer_execute() {
 
 	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$INSTALLER_DOWNLOAD_URL" 2>>"$LOG_FILE")
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
-		unrecoverableError
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
+		return
 	fi
 
 	if ! mv "/tmp/$MYSELF" "$INSTALLER_ABS_FILE" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_MOVE_FAILED "$INSTALLER_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_MOVE_FAILED "$INSTALLER_ABS_FILE"
+		return
 	fi
 
 	writeToConsole $MSG_CODE_INSTALLED "$INSTALLER_ABS_FILE"
 
 	if ! chmod 755 $INSTALLER_ABS_FILE &>>$LOG_FILE; then
-		writeToConsole $MSG_CHMOD_FAILED "$INSTALLER_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_CHMOD_FAILED "$INSTALLER_ABS_FILE"
+		return
 	fi
 
 	logExit
@@ -1018,13 +1032,13 @@ function config_download_execute() {
 
 	httpCode=$(curl -s -o $CONFIG_ABS_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$confFile" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode"
-		unrecoverableError
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode"
+		return
 	fi
 
 	if ! chmod 644 $CONFIG_ABS_FILE &>>$LOG_FILE; then
-		writeToConsole $MSG_CHMOD_FAILED "$CONFIG_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_CHMOD_FAILED "$CONFIG_ABS_FILE"
+		return
 	fi
 
 	writeToConsole $MSG_CODE_INSTALLED "$CONFIG_ABS_FILE"
@@ -1072,23 +1086,23 @@ function extensions_install_execute() {
 
 	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$SAMPLEEXTENSION_TAR_FILE" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
-		writeToConsole $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode"
-		unrecoverableError
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode"
+		return
 	fi
 
 	if ! tar -xzf "$SAMPLEEXTENSION_TAR_FILE" -C "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_FAILED "tar -x"
-		unrecoverableError
+		unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "tar -x"
+		return
 	fi
 
 	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-		writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
-		unrecoverableError
+		unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
+		return
 	fi
 
 	if ! rm -f "$SAMPLEEXTENSION_TAR_FILE" 2>>"$LOG_FILE"; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$SAMPLEEXTENSION_TAR_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_UNINSTALL_FAILED "$SAMPLEEXTENSION_TAR_FILE"
+		return
 	fi
 
 	sed -i "s/^DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_ABS_FILE
@@ -1128,8 +1142,8 @@ function extensions_uninstall_execute() {
 	local extensions="mem temp disk"
 
 	if ! rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-		writeToConsole $MSG_SAMPLEEXTENSION_UNINSTALL_FAILED "rm extensions"
-		unrecoverableError
+		unrecoverableError $MSG_SAMPLEEXTENSION_UNINSTALL_FAILED "rm extensions"
+		return
 	fi
 
 	if [[ -f CONFIG_ABS_FILE ]]; then
@@ -1343,8 +1357,8 @@ function cron_uninstall_execute() {
 
 	writeToConsole $MSG_UNINSTALLING_CRON_TEMPLATE "$CRON_ABS_FILE"
 	if ! rm -f "$CRON_ABS_FILE" 2>>"$LOG_FILE"; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$CRON_ABS_FILE"
-		unrecoverableError
+		unrecoverableError $MSG_UNINSTALL_FAILED "$CRON_ABS_FILE"
+		return
 	fi
 	CRON_INSTALLED=0
 	logExit
@@ -1360,8 +1374,8 @@ function config_uninstall_execute() {
 
 	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
 	if ! rm -f $pre*.$post* &>>"$LOG_FILE"; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$pre*.$post*"
-		unrecoverableError
+		unrecoverableError $MSG_UNINSTALL_FAILED "$pre*.$post*"
+		return
 	fi
 	logExit
 }
@@ -1375,14 +1389,14 @@ function uninstall_script_execute() {
 
 	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
 	if ! rm -f $pre*.$post* 2>>"$LOG_FILE"; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$pre*.$post*"
-		unrecoverableError
+		unrecoverableError $MSG_UNINSTALL_FAILED "$pre*.$post*"
+		return
 	fi
 
 	writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 	if ! rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		unrecoverableError
+		unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		return
 	fi
 	INSTALLATION_SUCCESSFULL=0
 	logExit
@@ -1394,8 +1408,8 @@ function uninstall_execute() {
 
 	writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 	if ! rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE; then
-		writeToConsole $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		unrecoverableError
+		unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		return
 	fi
 
 	[[ -f "$LATEST_TEMP_PROPERTY_FILE" ]] && rm -f "$LATEST_TEMP_PROPERTY_FILE" 2>>$LOG_FILE
@@ -1406,13 +1420,43 @@ function uninstall_execute() {
 
 }
 
-function unrecoverableError() {
+# NOTE: make sure to return just after calling this function in order to terminate when first error occurs
+function unrecoverableError() { # messagenumber messageparms
+
+	logEntry "$@"
+
+	if (( $PROGRESSBAR_DO )); then
+		logItem "Progressbar error occured $@"
+		echo "$@"
+		return
+	fi
+
+	clear
+	calc_wt_size
+
 	logStack
 	local tt="$(getMessageText $TITLE_ERROR)"
 	local d="$(getMessageText $DESCRIPTION_ERROR)"
 
-	local t=$(center $(($WINDOW_COLS * 2)) "$d")
-	whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX 2
+	local id="$1"
+	shift
+
+	logItem "Id: $id"
+	logItem "Msg: $@"
+
+	if (( $MODE_UNATTENDED )); then
+		echo
+		d="$(getMessageText $id $@ )${NL}${NL}$d"
+		logItem "$d"
+		echo "$d"
+	else
+		local m="$(getMessageText $id $@ )${NL}${NL}$d"
+		logItem "$m"
+		local t=$(center $(($WINDOW_COLS * 2)) "$m")
+		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $(($WINDOW_COLS * 2)) 1
+	fi
+	logExit
+
 	exit 1
 }
 
@@ -2242,6 +2286,9 @@ function progressbar_do() { # <name of description array> <menu title> <funcs to
 	local idx=0
 	local counter=0
 	local desc
+	PROGRESSBAR_DO=1
+	rm /tmp/$MYSELF.err &>/dev/null
+	local ERROR_FILE="/tmp/$MYSELF.err"
 	(
 		while
 			:
@@ -2256,7 +2303,12 @@ $desc
 XXX
 EOF
 			if ((idx < num_todo)); then
-				${todo[$idx]}
+				e="$(${todo[$idx]})"
+				if [[ -n "$e" ]]; then
+					logItem "Progressbar detected error $e"
+					echo "$e" > $ERROR_FILE
+					break
+				fi
 			else
 				break
 			fi
@@ -2268,6 +2320,16 @@ EOF
 		whiptail --title "$title" --gauge "Please wait" 6 70 0
 	logExit
 
+	PROGRESSBAR_DO=0
+	if [[ -f /tmp/$MYSELF.err ]]; then
+		m="$(<$ERROR_FILE)"
+		logItem "Detected error $m"
+		rm $ERROR_FILE &>/dev/null
+		local id="$(cut -f1 -d' ' <<< $m)"
+		local msg="$(cut -f2- -d' ' <<< $m)"
+		logItem "Rethrowing error from progressbar id: $id - msg: $msg"
+		unrecoverableError "$id" "$msg"
+	fi
 }
 
 function uninstall_menu() {
@@ -2804,6 +2866,7 @@ function logStack() {
 	local i=0
 	local FRAMES=${#BASH_LINENO[@]}
 	# FRAMES-2 skips main, the last one in arrays
+	echo >>"$LOG_FILE"
 	for ((i = FRAMES - 2; i >= 0; i--)); do
 		echo '  File' \"${BASH_SOURCE[i + 1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i + 1]} >>"$LOG_FILE"
 		# Grab the source code of the line
@@ -3160,7 +3223,9 @@ rm $LOG_FILE &>/dev/null
 logItem "$GIT_CODEVERSION"
 logItem "whiptail version: $(whiptail -v)"
 
-if (( MODE_UNATTENDED )); then
+checkRequiredDirectories
+
+if (( $MODE_UNATTENDED )); then
 	unattendedInstall
 else
 	uiInstall
