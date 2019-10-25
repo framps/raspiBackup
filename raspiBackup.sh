@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-10-11 14:10:06 +0200$"
+GIT_DATE="$Date: 2019-10-25 19:46:23 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: e0e51fd$"
+GIT_COMMIT="$Sha1: 0b2ff0c$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -697,9 +697,9 @@ MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Bootbackup %s wird benutzt."
 MSG_FORCING_CREATING_PARTITIONS=139
 MSG_EN[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partition creation ignores errors."
 MSG_DE[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partitionserstellung ignoriert Fehler."
-MSG_LABELS_NOT_SUPPORTED=140
-MSG_EN[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL definitions in /etc/fstab not supported. Use PARTUUID instead."
-MSG_DE[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL Definitionen sind in /etc/fstab nicht unterstützt. Benutze stattdessen PARTUUID."
+#MSG_LABELS_NOT_SUPPORTED=140
+#MSG_EN[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL definitions in /etc/fstab not supported. Use PARTUUID instead."
+#MSG_DE[$MSG_LABELS_NOT_SUPPORTED]="RBK0140E: LABEL Definitionen sind in /etc/fstab nicht unterstützt. Benutze stattdessen PARTUUID."
 MSG_SAVING_USED_PARTITIONS_ONLY=141
 MSG_EN[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Saving space of defined partitions only."
 MSG_DE[$MSG_SAVING_USED_PARTITIONS_ONLY]="RBK0141I: Nur der von den definierten Partitionen belegte Speicherplatz wird gesichert."
@@ -3035,7 +3035,7 @@ function bootPartitionBackup() {
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
 					exitError $RC_COLLECT_PARTITIONS_FAILED
 				fi
-				logCommand $(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")
+				logCommand "$(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")"
 
 				if (( $LINK_BOOTPARTITIONFILES )); then
 					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
@@ -3408,7 +3408,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 		bootPartitionBackup
 		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
-		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
+		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
 
 	logItem "LastBackupDir: $lastBackupDir"
@@ -4231,6 +4231,13 @@ function checksForPartitionBasedBackup() {
 		fi
 	done
 
+	# check there is no external root partition used if it's a standard raspbian
+
+	# /etc/fstab
+	# PARTUUID=d888a167-02  /           vfat    defaults          0       2
+	# blkid for PARTUUID has to be
+	# /dev/mmcblk0p2: UUID="ea98d3bf-9345-4bd7-b365-5cc7c543079f" TYPE="ext4" PARTUUID="d888a167-02"
+
 	if (( $error )); then
 		exitError $RC_PARAMETER_ERROR
 	fi
@@ -4657,13 +4664,6 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_USE_HARDLINKS "$BACKUPPATH" "$rc"
 			exitError $RC_LINK_FILE_FAILED
 		fi
-	fi
-
-	local mps
-	mps=$(grep "^LABEL=" /etc/fstab | cut -f 2)
-	if grep -E "^/(boot)?[[:space:]]" <<< $mps; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELS_NOT_SUPPORTED
-		exitError $RC_MISC_ERROR
 	fi
 
 	# just inform about enabled config options
@@ -5657,6 +5657,14 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
 				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> LOG_FILE
 			fi
+		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
+			oldLABEL=${BASH_REMATCH[1]}
+			newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
+			logItem "CMDLINE - newLABEL: $newLABEL, oldLABEL: $oldLABEL"
+			if [[ $oldLABEL != $newLABEL ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$cmdline"
+				sed -i "s/$oldLABEL/$newLABEL/" $CMDLINE &>> LOG_FILE
+			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
@@ -5684,6 +5692,14 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
 				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
 			fi
+		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+			oldLABEL=${BASH_REMATCH[1]}
+			newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
+			logItem "FSTAB root - newRootLABEL: $newLABEL, oldRootLABEL: $oldLABEL"
+			if [[ $oldLABEL != $newLABEL ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
+				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> LOG_FILE
+			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
@@ -5710,6 +5726,14 @@ function synchronizeCmdlineAndfstab() {
 			if [[ $oldUUID != $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
 				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
+			fi
+		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
+			oldLABEL=${BASH_REMATCH[1]}
+			newLABEL=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
+			logItem "FSTAB boot - newBootLABEL: $newLABEL, oldBootLABEL: $oldLABEL"
+			if [[ $oldLABEL != $newLABEL ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
+				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> LOG_FILE
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
