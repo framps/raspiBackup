@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-10-25 19:46:23 +0200$"
+GIT_DATE="$Date: 2019-10-28 19:48:40 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 0b2ff0c$"
+GIT_COMMIT="$Sha1: d1ffc9f$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -922,6 +922,12 @@ MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs sind nicht eindeutig auf den GerÃ
 MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY=210
 MSG_EN[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: More than two partitions detected. Only first two partitions are saved."
 MSG_DE[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Es existieren mehr als zwei Partitionen. Nur die ersten beiden Partitionen werden gesichert."
+MSG_EXTERNAL_PARTITION_NOT_SAVED=211
+MSG_EN[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: External partition %s mounted on %s will not be saved with option -P."
+MSG_DE[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Externe Partition %s die an %s gemounted ist wird mit Option -P nicht gesichert."
+MSG_BACKUP_WARNING=212
+MSG_EN[$MSG_BACKUP_WARNING]="RBK0212W: Backup finished with warnings. Check previous warning messages for details."
+MSG_DE[$MSG_BACKUP_WARNING]="RBK0212W: Backup endete mit Warnungen. Siehe vorhergehende Warnmeldungen."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4101,6 +4107,56 @@ function doit() {
 
 }
 
+# blkid
+# /dev/mmcblk0p2: UUID="ea98d3bf-9345-4bd7-b365-5cc7c543079f" TYPE="ext4" PARTUUID="d888a167-02"
+
+# Args: /dev/mmcblk0p2, /PARTUUID=xxxxx, LABEL=xxxxx or UUID=xxxxxx
+# Result: $1, /dev/sda1, /dev/mmcblk0p1, /dev/sdb1 or "" if not found in blkid
+
+function getPartitionName() { # /etc/fstab first col
+
+	logEntry "$1"
+
+	local prfx="$(cut -f 1 -d '=' <<< $1)"
+	local id="$(cut -f 2 -d '=' <<< $1)"
+
+	local b="$(blkid)"
+
+	local match="$(grep "$prfx=\"$id\"" <<< "$b")"
+	local result="$1"
+
+	if [[ -n "$match" ]]; then
+		result="$(cut -f 1 -d ":" <<< $match)"
+	fi
+
+	echo "$result"
+
+	logExit "$result"
+
+}
+
+# check there is no external root partition used if it's a standard raspbian
+
+# /etc/fstab
+# PARTUUID=d888a167-02  /           vfat    defaults          0       2
+
+function extractBootAndRootPartitionNames() {
+
+	logEntry
+
+	local pre="$(grep -E "^[^#]+\s(/|/boot)\s.*" /etc/fstab | xargs -I {} bash -c "echo {} | cut -f 1 -d ' '")"
+	logItem "$pre"
+	local p part
+	local result
+	for p in ${pre[@]}; do
+		part="$(getPartitionName $p)"
+		result="$result $p $part"
+	done
+	echo "$result"
+
+	logExit "$result"
+}
+
 function collectPartitions() {
 
 	logEntry
@@ -4231,12 +4287,16 @@ function checksForPartitionBasedBackup() {
 		fi
 	done
 
-	# check there is no external root partition used if it's a standard raspbian
-
-	# /etc/fstab
-	# PARTUUID=d888a167-02  /           vfat    defaults          0       2
-	# blkid for PARTUUID has to be
-	# /dev/mmcblk0p2: UUID="ea98d3bf-9345-4bd7-b365-5cc7c543079f" TYPE="ext4" PARTUUID="d888a167-02"
+	local pn=( $(extractBootAndRootPartitionNames) )
+	local i
+	for ((i=0;i<${#pn[@]};i+=2)); do
+		local p=${pn[i]}
+		local d=${pn[$((i+1))]}
+		if [[ $d =~ /dev/sd ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_PARTITION_NOT_SAVED "$p" "$d"
+			error=1
+		fi
+	done
 
 	if (( $error )); then
 		exitError $RC_PARAMETER_ERROR
