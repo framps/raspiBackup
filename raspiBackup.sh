@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-10-28 19:48:40 +0100$"
+GIT_DATE="$Date: 2019-11-08 15:23:17 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: d1ffc9f$"
+GIT_COMMIT="$Sha1: fb0ea03$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -928,6 +928,9 @@ MSG_DE[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Externe Partition %s die an
 MSG_BACKUP_WARNING=212
 MSG_EN[$MSG_BACKUP_WARNING]="RBK0212W: Backup finished with warnings. Check previous warning messages for details."
 MSG_DE[$MSG_BACKUP_WARNING]="RBK0212W: Backup endete mit Warnungen. Siehe vorhergehende Warnmeldungen."
+MSG_MOUNT_ERROR=213
+MSG_EN[$MSG_MOUNT_ERROR]="RBK0213E: Mount %s to %s failed. RC %s."
+MSG_DE[$MSG_MOUNT_ERROR]="RBK0213E: Mount von %s an %s ist fehlerhaft."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2067,7 +2070,7 @@ function updateScript() {
 			updateNow=1
 		fi
 
-		if (( !$updateNow )); then
+		if [[ $rc == 0 ]] && (( !$updateNow )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCE_UPDATE "$oldVersion"
 			if askYesNo; then
 				updateNow=1
@@ -3701,7 +3704,7 @@ function restore() {
 			else
 				ext=$BOOT_TAR_EXT
 				logItem "Restoring boot partition from $TAR_FILE to $BOOT_PARTITION"
-				mount $BOOT_PARTITION "$MNT_POINT/boot" &>>"$LOG_FILE"
+				mountAndCheck $BOOT_PARTITION "$MNT_POINT/boot"
 				pushd "$MNT_POINT" &>>"$LOG_FILE"
 				if (( $PROGRESS )); then
 					cmd="pv -f $TAR_FILE | tar -xf -"
@@ -3736,7 +3739,7 @@ function restore() {
 			waitForPartitionDefsChanged
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
-			mount $ROOT_PARTITION "$MNT_POINT" &>> "$LOG_FILE"
+			mountAndCheck $ROOT_PARTITION "$MNT_POINT"
 
 			case $BACKUPTYPE in
 
@@ -3787,7 +3790,7 @@ function restore() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_FAILED "$rc"
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
-			mount $ROOT_PARTITION $MNT_POINT &>>$LOG_FILE
+			mountAndCheck $ROOT_PARTITION $MNT_POINT
 
 			logItem "Updating hw clock"
 			echo $(date -u +"%Y-%m-%d %T") > $MNT_POINT/etc/fake-hwclock.data
@@ -3991,7 +3994,7 @@ function mountSDPartitions() { # sourcePath
 			logItem "mkdir $1/$partitionName"
 			mkdir "$1/$partitionName" &>>"$LOG_FILE"
 			logItem "mount /dev/$partitionName to $1/$partitionName"
-			mount "/dev/$partitionName" "$1/$partitionName" &>>"$LOG_FILE"
+			mountAndCheck "/dev/$partitionName" "$1/$partitionName"
 		done
 		logItem "AFTER: mount $(mount)"
 	fi
@@ -5655,7 +5658,22 @@ function updateRestoreReminder() {
 
 }
 
+function mountAndCheck() { # device mountpoint
+	logEntry "$1 - $2"
+	mount "$1" "$2" &>>"$LOG_FILE"
+	local rc=$?
+	if (( ! $rc )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOUNT_ERROR "$1" "$2" "$rc"
+		logExit $rc
+		exitError $RC_MISC_ERROR
+	fi
+	logCommand "mount | grep $2"
+	logExit $rc
+}
+
 function remount() { # device mountpoint
+
+	logEntry "$1 - $2"
 
 	if ( isMounted "$1" ); then
 		logItem "$1 mounted - unmouting"
@@ -5666,7 +5684,8 @@ function remount() { # device mountpoint
 
 	logItem "Creating mountpoint $2"
 	mkdir -p $2
-	mount "$1" "$2" &>>"$LOG_FILE"
+	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
+	logExit $rc
 
 }
 
