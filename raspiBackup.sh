@@ -57,11 +57,11 @@ IS_HOTFIX=$((! $? ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2019-11-09 20:00:45 +0100$"
+GIT_DATE="$Date: 2019-11-13 16:51:26 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 1415486$"
+GIT_COMMIT="$Sha1: 90d7de3$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1317,7 +1317,7 @@ function logCommand() { # command
 	(( LOG_INDENT+=LOG_INDENT_INC ))
 	local callerLineNo=${BASH_LINENO[0]}
 	logIntoOutput $LOG_TYPE_DEBUG "***" $callerLineNo "$1"
-	local r=$($1 2>&1)
+	local r="$($1 2>&1)"
 	logIntoOutput $LOG_TYPE_DEBUG "   " $callerLineNo "$r"
 	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
@@ -2360,12 +2360,12 @@ function setupEnvironment() {
 	if [[ -f $PREVIOUS_LOG_FILE && $PREVIOUS_LOG_FILE != $LOG_FILE ]] || (( $FAKE )) ; then
 		cp $PREVIOUS_LOG_FILE $LOG_FILE &>/dev/null
 		if [[ $LOG_OUTPUT != $LOG_OUTPUT_SYSLOG ]]; then	# keep syslog :-)
-			(( ! $FAKE )) && rm $PREVIOUS_LOG_FILE &>> "$LOG_FILE"
+			(( ! $FAKE )) && rm $PREVIOUS_LOG_FILE &>>$LOG_FILE
 		fi
 	fi
 	if [[ $PREVIOUS_MSG_FILE != $MSG_FILE || (( $FAKE )) ]]; then
 		cp $PREVIOUS_MSG_FILE $MSG_FILE &>/dev/null
-		(( ! $FAKE )) && rm $PREVIOUS_MSG_FILE &>> "$LOG_FILE"
+		(( ! $FAKE )) && rm $PREVIOUS_MSG_FILE &>>$LOG_FILE
 	fi
 
 	logItem "LOG_OUTPUT: $LOG_OUTPUT"
@@ -3580,7 +3580,7 @@ function restore() {
 			fi
 
 			logItem "Creating mountpoint $MNT_POINT"
-			mkdir -p $MNT_POINT/boot
+			mkdir -p $MNT_POINT
 
 			logItem "Umounting partitions"
 			umount $BOOT_PARTITION &>>"$LOG_FILE"
@@ -3621,16 +3621,13 @@ function restore() {
 				cp "$SF_FILE" $$.sfdisk
 				logCommand "cat $$.sfdisk"
 
-				if (( $REGRESSION_TEST )); then # have to prime loop device with partition defs first
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_MBR "$MBR_FILE" "$RESTORE_DEVICE"
-					dd of=$RESTORE_DEVICE if="$MBR_FILE" count=1 &>>"$LOG_FILE"
-					rc=$?
-					if [ $rc != 0 ]; then
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".mbr" "$rc"
-						exitError $RC_NATIVE_RESTORE_FAILED
-					fi
-					waitForPartitionDefsChanged
-				fi
+				#writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_MBR "$MBR_FILE" "$RESTORE_DEVICE"
+				#dd of=$RESTORE_DEVICE if="$MBR_FILE" count=1 &>>"$LOG_FILE"
+				#rc=$?
+				#if [ $rc != 0 ]; then
+				#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".mbr" "$rc"
+				#	exitError $RC_NATIVE_RESTORE_FAILED
+				#fi
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
@@ -5665,12 +5662,12 @@ function mountAndCheck() { # device mountpoint
 	logEntry "$1 - $2"
 	mount "$1" "$2" &>>"$LOG_FILE"
 	local rc=$?
-	if (( $rc )); then
+	if (( ! $rc )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOUNT_ERROR "$1" "$2" "$rc"
 		logExit $rc
 		exitError $RC_MISC_ERROR
 	fi
-	logCommand "mount | grep $2"
+	logCommand "findmnt $2"
 	logExit $rc
 }
 
@@ -5729,7 +5726,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ $oldPartUUID != $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> "$LOG_FILE"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> LOG_FILE
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
 			oldUUID=${BASH_REMATCH[1]}
@@ -5737,7 +5734,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ $oldUUID != $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
-				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> "$LOG_FILE"
+				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> LOG_FILE
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
@@ -5745,7 +5742,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "CMDLINE - newLABEL: $newLABEL, oldLABEL: $oldLABEL"
 			if [[ $oldLABEL != $newLABEL ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$cmdline"
-				sed -i "s/$oldLABEL/$newLABEL/" $CMDLINE &>> "$LOG_FILE"
+				sed -i "s/$oldLABEL/$newLABEL/" $CMDLINE &>> LOG_FILE
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -5764,7 +5761,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ $oldPartUUID != $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldUUID=${BASH_REMATCH[1]}
@@ -5772,7 +5769,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ $oldUUID != $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
-				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
@@ -5780,7 +5777,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB root - newRootLABEL: $newLABEL, oldRootLABEL: $oldLABEL"
 			if [[ $oldLABEL != $newLABEL ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
-				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> LOG_FILE
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
@@ -5799,7 +5796,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ $oldPartUUID != $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> LOG_FILE
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			oldUUID=${BASH_REMATCH[1]}
@@ -5807,7 +5804,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ $oldUUID != $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
-				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> LOG_FILE
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
@@ -5815,7 +5812,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB boot - newBootLABEL: $newLABEL, oldBootLABEL: $oldLABEL"
 			if [[ $oldLABEL != $newLABEL ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
-				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> LOG_FILE
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
