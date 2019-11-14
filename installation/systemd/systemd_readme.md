@@ -17,14 +17,14 @@ If the installation path is different, it must be corrected in the `raspiBackup.
 
 The execution start is defined in raspiBackup.timer. Currently the backup is 
 started every Sunday at 05.00 o'clock (as in the manual).
-Für weitere Anpassungsmöglichkeiten siehe [hier](https://www.freedesktop.org/software/systemd/man/systemd.timer.html#)
+For further customization options see [here](https://www.freedesktop.org/software/systemd/man/systemd.timer.html#)
 
 If you changes the files, execute: `systemctl daemon-reload`
 
 
 ## Enable
 
-Check if raspiBackup manuell run with the Service Unit
+Check if raspiBackup is executed with the service unit
 
     systemctl start raspiBackup.service
     
@@ -35,4 +35,5 @@ if successful
     
 ## Other
 
-Remember to disable any other automatic executions you may have set up (e.g. /etc/cron.d/raspiBackup).
+Delete /etc/cron.d/raspiBackup or remove any entry in /etc/crontab to start raspiBackup to disable any other 
+automatic start of raspiBackup. Keep in mind you cannot change the backup time any more with the raspiBackup installer.
