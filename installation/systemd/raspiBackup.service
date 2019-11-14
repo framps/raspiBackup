@@ -1,0 +1,10 @@
+[Unit]
+Description=Creation of a SD card backup with raspiBackup
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/raspiBackup.sh
+# For Use with Wrapper Script: ExecStart=/usr/local/bin/raspiBackupWrapper.sh
+
+[Install]
+WantedBy=multi-user.target

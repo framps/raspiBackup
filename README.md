@@ -95,6 +95,11 @@ Usage: raspiBackup.sh [option]* {backupDirectory}
 * Sample pre/post extension which initiates different actions depending on the return code of raspiBackup
 * Sample ready extension which copies /etc/fstab into the backup directory
 
+## Start with Systemd
+
+To start raspiBackup with Systemd see 
+[here](https://github.com/framps/raspiBackup/tree/development/systemd/systemd_readme.md)
+
 # REST API Server proof of concept
 
 Allows to start a backup from a remote system or any web UI.
