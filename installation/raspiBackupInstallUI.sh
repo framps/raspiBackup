@@ -27,7 +27,7 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.1" 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.2" 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -39,11 +39,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2019-10-21 19:47:00 +0200$"
+GIT_DATE="$Date: 2019-11-24 20:26:47 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: a46c949$"
+GIT_COMMIT="$Sha1: f53ff96$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -114,7 +114,7 @@ CONFIG_PARTITIONBASED_BACKUP="0"
 CONFIG_ZIP_BACKUP="0"
 CONFIG_CRON_HOUR="5"
 CONFIG_CRON_MINUTE="0"
-CONFIG_CRON_DAY="0"
+CONFIG_CRON_DAY="1" # Sun
 CONFIG_MAIL_PROGRAM="mail"
 CONFIG_EMAIL=""
 
@@ -337,9 +337,9 @@ $FILE_TO_INSTALL bietet auch eine Option an mit der ein dd Backup verkleinert we
 https://www.linux-tips-and-tricks.de/de/faq#a16."
 DESCRIPTION_CRON=$((SCNT++))
 MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
-Configure when the backup should be created every week. For other backup intervals you have to modify /etc/cron.d/raspiBackup manually."
+Configure the backup to be created daily or weekly. For other backup intervals you have to modify /etc/cron.d/raspiBackup manually."
 MSG_DE[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME sollte regelmäßig gestartet werden wenn die initiale Konfiguration sowie Backup und Restore Tests beendet sind. \
-Konfiguriere wann jede Woche ein Backup erstellt werden soll. Für andere Intervalle muss die Datei /etc/cron.d/raspiBackup manuell geändert werden."
+Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Intervalle muss die Datei /etc/cron.d/raspiBackup manuell geändert werden."
 DESCRIPTION_MESSAGEDETAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME can either be very verbose with messages or just write the most important. \
 Usually it makes sense to turn it on when installing $RASPIBACKUP_NAME the first time to get additional messages which may help to isolate configuration issue. \
@@ -481,7 +481,7 @@ Next steps:${NL}
 4) Read the FAQ page https://www.linux-tips-and-tricks.de/en/faq${NL}\
 5) Visit the options page and fine tune $RASPIBACKUP_NAME${NL}\
    https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
-6) Enable weekly backup with the installer${NL}\
+6) Enable regular backup with the installer${NL}\
 7) Visit https://www.linux-tips-and-tricks.de/en/backup for a lot more information about $RASPIBACKUP_NAME"
 MSG_DE[$MSG_FIRST_STEPS]="Herzlichen Glückwunsch! $RASPIBACKUP_NAME wurde erfolgreich installiert.${NL}${NL}\
 Nächsten Schritte:${NL}
@@ -491,7 +491,7 @@ Nächsten Schritte:${NL}
 4) Lies die FAQ Seite https://www.linux-tips-and-tricks.de/de/faq${NL}\
 5) Besuche die Optionsseite und konfiguriere $RASPIBACKUP_NAME genau nach Deinen Vorstellungen${NL}\
    https://www.linux-tips-and-tricks.de/de/raspibackup#parameters${NL}\
-6) Schalte den wöchentlichen Backup mit dem Installer ein${NL}\
+6) Schalte den regelmäßigen Backup mit dem Installer ein${NL}\
 7) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten"
 MSG_HELP=$((SCNT++))
 MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAME just use one of the following pathes to get help${NL}
@@ -532,18 +532,18 @@ MENU_DE[$MENU_UPDATE]='"M5" "Aktualisiere Komponenten"'
 MENU_ABOUT=$((MCNT++))
 MENU_EN[$MENU_ABOUT]='"M9" "About and useful links"'
 MENU_DE[$MENU_ABOUT]='"M9" "About und hilfreiche Links"'
-MENU_WEEKLYBACKUP_ENABLE=$((MCNT++))
-MENU_EN[$MENU_WEEKLYBACKUP_ENABLE]='"R1" "Enable weekly backup"'
-MENU_DE[$MENU_WEEKLYBACKUP_ENABLE]='"R1" "Wöchentliches Backup einschalten"'
-MENU_WEEKLYBACKUP_DISABLE=$((MCNT++))
-MENU_EN[$MENU_WEEKLYBACKUP_DISABLE]='"R1" "Disable weekly backup"'
-MENU_DE[$MENU_WEEKLYBACKUP_DISABLE]='"R1" "Wöchentliches Backup auschalten"'
+MENU_REGULARBACKUP_ENABLE=$((MCNT++))
+MENU_EN[$MENU_REGULARBACKUP_ENABLE]='"R1" "Enable regular backup"'
+MENU_DE[$MENU_REGULARBACKUP_ENABLE]='"R1" "Regelmäßiges Backup einschalten"'
+MENU_REGULARBACKUP_DISABLE=$((MCNT++))
+MENU_EN[$MENU_REGULARBACKUP_DISABLE]='"R1" "Disable regular backup"'
+MENU_DE[$MENU_REGULARBACKUP_DISABLE]='"R1" "Regelmäßiges Backup auschalten"'
 MENU_CONFIG_DAY=$((MCNT++))
-MENU_EN[$MENU_CONFIG_DAY]='"R2" "Weekday of weekly backup"'
-MENU_DE[$MENU_CONFIG_DAY]='"R2" "Wochentag des wöchentlichen Backups"'
+MENU_EN[$MENU_CONFIG_DAY]='"R2" "Weekday of regular backup"'
+MENU_DE[$MENU_CONFIG_DAY]='"R2" "Wochentag des regelmäßigen Backups"'
 MENU_CONFIG_TIME=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TIME]='"R3" "Time of weekly backup"'
-MENU_DE[$MENU_CONFIG_TIME]='"R3" "Zeit des wöchentlichen Backups"'
+MENU_EN[$MENU_CONFIG_TIME]='"R3" "Time of regular backup"'
+MENU_DE[$MENU_CONFIG_TIME]='"R3" "Zeit des regelmäßigen Backups"'
 MENU_CONFIG_LANGUAGE_EN=$((MCNT++))
 MENU_EN[$MENU_CONFIG_LANGUAGE_EN]='"en" "English"'
 MENU_DE[$MENU_CONFIG_LANGUAGE_EN]='"en" "Englisch"'
@@ -632,11 +632,11 @@ MENU_CONFIG_COMPRESS_ON=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "Compress $CONFIG_BACKUPTYPE backup"'
 MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "Komprimiere den $CONFIG_BACKUPTYPE Backup"'
 MENU_DAYS_SHORT=$((MCNT++))
-MENU_EN[$MENU_DAYS_SHORT]='"Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
-MENU_DE[$MENU_DAYS_SHORT]='"So" "Mo" "Di" "Mi" "Do" "Fr" "Sa"'
+MENU_EN[$MENU_DAYS_SHORT]='"Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
+MENU_DE[$MENU_DAYS_SHORT]='"" "So" "Mo" "Di" "Mi" "Do" "Fr" "Sa"'
 MENU_DAYS_LONG=$((MCNT++))
-MENU_EN[$MENU_DAYS_LONG]='"Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday"'
-MENU_DE[$MENU_DAYS_LONG]='"Sonntag" "Montag" "Dienstag" "Mittwoch" "Donnerstag" "Freitag" "Samstag"'
+MENU_EN[$MENU_DAYS_LONG]='"Daily" "Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday"'
+MENU_DE[$MENU_DAYS_LONG]=' "Täglich" "Sonntag" "Montag" "Dienstag" "Mittwoch" "Donnerstag" "Freitag" "Samstag"'
 MENU_UPDATE_SCRIPT=$((MCNT++))
 MENU_EN[$MENU_UPDATE_SCRIPT]='"P1" "Update $FILE_TO_INSTALL"'
 MENU_DE[$MENU_UPDATE_SCRIPT]='"P1" "Aktualisiere $FILE_TO_INSTALL"'
@@ -1307,7 +1307,9 @@ function cron_update_execute() {
 	if ! isCrontabEnabled; then
 		disabled="#"
 	fi
-	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$CONFIG_CRON_DAY ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
+	local cron_day=$(( $CONFIG_CRON_DAY - 1 ))
+	(( $cron_day < 0 )) && cron_day="*"
+	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
 	logItem "cron update: $v"
 	local t=$(mktemp)
 	head -n -1 "$CRON_ABS_FILE" > $t
@@ -1331,7 +1333,9 @@ function cron_activate_execute() {
 		disabled="#"
 		logItem "Disabled cron"
 	fi
-	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$CONFIG_CRON_DAY ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
+	local cron_day=$(( $CONFIG_CRON_DAY - 1 ))
+	(( $cron_day < 0 )) && cron_day="*"
+	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
 	local t=$(mktemp)
 	head -n -1 "$CRON_ABS_FILE" > $t
 	echo "$v" >> $t
@@ -1625,7 +1629,8 @@ function config_menu() {
 		CONFIG_CRON_MINUTE="$(cut -f 1 -d ' ' <<< $v)"
 		[[ ${CONFIG_CRON_MINUTE:0:1} == "#" ]] && CONFIG_CRON_MINUTE="${CONFIG_CRON_MINUTE:1}"
 		CONFIG_CRON_HOUR="$(cut -f 2 -d ' ' <<< $v)"
-		CONFIG_CRON_DAY="$(cut -f 3 -d ' ' <<< $v)"
+		CONFIG_CRON_DAY=$(cut -f 3 -d ' ' <<< $v)
+		[[ "$CONFIG_CRON_DAY" == "*" ]] && CONFIG_CRON_DAY=0 || (( CONFIG_CRON_DAY ++ )) # 0 = Daily, 1 = Sun, 2 = Mon, ...
 		logItem "parsed hour: $CONFIG_CRON_HOUR"
 		logItem "parsed minute: $CONFIG_CRON_MINUTE"
 		logItem "parsed day: $CONFIG_CRON_DAY"
@@ -2186,12 +2191,13 @@ function config_cronday_do() {
 
 	logEntry "$old"
 
-	local days_=(off off off off off off off)
+	local days_=(off off off off off off off off)
+
 	getMenuText $MENU_DAYS_SHORT s
 	getMenuText $MENU_DAYS_LONG l
 	getMenuText $MENU_CONFIG_DAY tt
 
-	days_[$CONFIG_CRON_DAY]=on
+	days_[$CONFIG_CRON_DAY]=on # 0 = Daily, 1 = Sun, 2 = Mon ...
 
 	ANSWER=$(whiptail --notags --radiolist "" --title "${tt[1]}" $WT_HEIGHT $(($WT_WIDTH/2)) 5 \
 		"${s[0]}" "${l[0]}" "${days_[0]}" \
@@ -2201,6 +2207,7 @@ function config_cronday_do() {
 		"${s[4]}" "${l[4]}" "${days_[4]}" \
 		"${s[5]}" "${l[5]}" "${days_[5]}" \
 		"${s[6]}" "${l[6]}" "${days_[6]}" \
+		"${s[7]}" "${l[7]}" "${days_[7]}" \
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
@@ -2442,17 +2449,17 @@ function cron_menu() {
 		local t=$(center $WINDOW_COLS "$m")
 		local d="$(getMessageText $DESCRIPTION_CRON)"
 
-		getMenuText $MENU_WEEKLYBACKUP_ENABLE ct
+		getMenuText $MENU_REGULARBACKUP_ENABLE ct
 		getMenuText $MENU_CONFIG_DAY m1
 		getMenuText $MENU_CONFIG_TIME m2
 		getMenuText $MENU_CONFIG_CRON tt
 
 		if isCrontabEnabled; then
-			getMenuText $MENU_WEEKLYBACKUP_DISABLE ct
+			getMenuText $MENU_REGULARBACKUP_DISABLE ct
 			local s1="${m1[0]}"
 			local s2="${m2[0]}"
 		else
-			getMenuText $MENU_WEEKLYBACKUP_ENABLE ct
+			getMenuText $MENU_REGULARBACKUP_ENABLE ct
 			m1=(" " " ")
 			m2=(" " " ")
 		fi
@@ -2696,9 +2703,9 @@ function cron_activate_do() {
 	fi
 
 	if isCrontabEnabled; then
-		UPDATE_DESCRIPTION=("Enabling $RASPIBACKUP_NAME weekly backup ...")
+		UPDATE_DESCRIPTION=("Enabling $RASPIBACKUP_NAME regular backup ...")
 	else
-		UPDATE_DESCRIPTION=("Disabling $RASPIBACKUP_NAME weekly backup ...")
+		UPDATE_DESCRIPTION=("Disabling $RASPIBACKUP_NAME regular backup ...")
 	fi
 
 	progressbar_do "UPDATE_DESCRIPTION" "Updating cron configuration" cron_activate_execute
