@@ -9,6 +9,7 @@
 * Status eMail sent when backup finished
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
 * Much more features ... (See doc below)
+* Used all over the world [(List of countries)](https://www.linux-tips-and-tricks.de/en/user-countries/)
 
 ## Documentation
 
