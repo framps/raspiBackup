@@ -39,11 +39,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2019-11-24 20:26:47 +0100$"
+GIT_DATE="$Date: 2019-12-21 14:17:06 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: f53ff96$"
+GIT_COMMIT="$Sha1: e457b00$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -633,7 +633,7 @@ MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "Compress $CONFIG_BACKUPTYPE backup"'
 MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "Komprimiere den $CONFIG_BACKUPTYPE Backup"'
 MENU_DAYS_SHORT=$((MCNT++))
 MENU_EN[$MENU_DAYS_SHORT]='"Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
-MENU_DE[$MENU_DAYS_SHORT]='"" "So" "Mo" "Di" "Mi" "Do" "Fr" "Sa"'
+MENU_DE[$MENU_DAYS_SHORT]='"Täglich" "So" "Mo" "Di" "Mi" "Do" "Fr" "Sa"'
 MENU_DAYS_LONG=$((MCNT++))
 MENU_EN[$MENU_DAYS_LONG]='"Daily" "Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday"'
 MENU_DE[$MENU_DAYS_LONG]=' "Täglich" "Sonntag" "Montag" "Dienstag" "Mittwoch" "Donnerstag" "Freitag" "Samstag"'
