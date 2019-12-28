@@ -28,12 +28,10 @@ An installer [(Code)](https://github.com/framps/raspiBackup/blob/master/installa
 ### Installer demo
 ![Installationdemo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
-### Donations
-
-If raspiBackup solves your issue with backups of your Raspberry a [donation](https://www.linux-tips-and-tricks.de/en/backup/#donation) is greatly appreciated.
+## Donations
+If raspiBackup helps you to sleep well all night because you know a crash of your Raspberry can easily be recovered please consider to donate some money to raspiBackup development. Just visit [this page](https://www.linux-tips-and-tricks.de/en/backup#donation) for donation details.
 
 ## Usage
-
 For the latest and actual list of options see [here](https://www.linux-tips-and-tricks.de/en/backup#parameters)
 
 ```
@@ -109,7 +107,11 @@ Usage: raspiBackup.sh [option]* {backupDirectory}
 ## Start with Systemd
 
 To start raspiBackup with Systemd see
+<<<<<<< Updated upstream
 [here](installation/systemd/README.md)
+=======
+[here](systemd/systemd_readme.md)
+>>>>>>> Stashed changes
 
 # REST API Server proof of concept
 
