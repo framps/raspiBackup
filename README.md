@@ -29,7 +29,7 @@ An installer [(Code)](https://github.com/framps/raspiBackup/blob/master/installa
 ![Installationdemo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
 ## Donations
-If raspiBackup helps you to sleep well all night because you know a crash of your Raspberry can easily be recovered please consider to donate some money to raspiBackup development. Just visit [this page](https://www.linux-tips-and-tricks.de/en/backup#donation) for donation details.
+If raspiBackup helps you to sleep well all night because you know a crash of your Raspberry can easily be recovered please consider to donate to raspiBackup development. Just visit [this page](https://www.linux-tips-and-tricks.de/en/backup#donation) for donation details.
 
 ## Usage
 For the latest and actual list of options see [here](https://www.linux-tips-and-tricks.de/en/backup#parameters)
