@@ -2,8 +2,8 @@
 
 #######################################################################################################################
 #
-# 	Sample script which checks whether a nfsserver is available and exports a specific directory
-# 	and then starts raspiBackup
+# 	Sample script which checks whether a nfsserver is available and exports a specific directory,
+# 	mounts that exported directory and then starts raspiBackup
 #
 #######################################################################################################################
 #
