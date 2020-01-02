@@ -107,11 +107,7 @@ Usage: raspiBackup.sh [option]* {backupDirectory}
 ## Start with Systemd
 
 To start raspiBackup with Systemd see
-<<<<<<< Updated upstream
 [here](installation/systemd/README.md)
-=======
-[here](systemd/systemd_readme.md)
->>>>>>> Stashed changes
 
 # REST API Server proof of concept
 
