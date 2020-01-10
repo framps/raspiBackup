@@ -55,7 +55,11 @@ if ping -c1 -w3 $NFSSERVER &>/dev/null; then
 		if ! mount | grep -q $MOUNTPOINT; then
 			echo "Mouting $NFSSERVER:$NFSDIRECTORY to $MOUNTPOINT"
 			mount $NFSSERVER:$NFSDIRECTORY $MOUNTPOINT
-			source raspiBackup.sh -f /usr/local/etc/raspiBackup.conf
+			if (( $? > 0 )); then
+				echo "Failed to mount $NFSSERVER:$NFSDIRECTORY"
+				exit 42
+			fi
+			raspiBackup.sh
 			rc=$?
 			if (( $rc > 0 )); then
 				echo "raspiBackup failed with rc $rc"
