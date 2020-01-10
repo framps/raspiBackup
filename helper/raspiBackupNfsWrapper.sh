@@ -2,8 +2,8 @@
 
 #######################################################################################################################
 #
-# 	Sample script which checks whether a nfsserver is available and exports a specific directory,
-# 	mounts that exported directory and then starts raspiBackup
+#      Sample script which checks whether a nfsserver is available and exports a specific directory,
+#      mounts that exported directory and then starts raspiBackup
 #
 #######################################################################################################################
 #
@@ -28,7 +28,7 @@ NFSSERVER="raspifix"
 NFSDIRECTORY="/disks/silver/backup"
 MOUNTPOINT="/backup"
 
-VERSION="0.0.4"
+VERSION="0.0.5"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -55,7 +55,7 @@ if ping -c1 -w3 $NFSSERVER &>/dev/null; then
 		if ! mount | grep -q $MOUNTPOINT; then
 			echo "Mouting $NFSSERVER:$NFSDIRECTORY to $MOUNTPOINT"
 			mount $NFSSERVER:$NFSDIRECTORY $MOUNTPOINT
-			source raspiBackup.sh
+			source raspiBackup.sh -f /usr/local/etc/raspiBackup.conf
 			rc=$?
 			if (( $rc > 0 )); then
 				echo "raspiBackup failed with rc $rc"
