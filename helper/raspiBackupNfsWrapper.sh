@@ -7,7 +7,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright # (C) 2017,2018 - framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2017-2020 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -28,7 +28,10 @@ NFSSERVER="raspifix"
 NFSDIRECTORY="/disks/silver/backup"
 MOUNTPOINT="/backup"
 
-VERSION="0.0.5"
+VERSION="0.0.6"
+
+GIT_DATE="$Date: 2019-06-17 20:10:20 +0200$"
+GIT_COMMIT="$Sha1: 2d927a2$"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -59,13 +62,12 @@ if ping -c1 -w3 $NFSSERVER &>/dev/null; then
 				echo "Failed to mount $NFSSERVER:$NFSDIRECTORY"
 				exit 42
 			fi
-			raspiBackup.sh
-			rc=$?
-			if (( $rc > 0 )); then
-				echo "raspiBackup failed with rc $rc"
-				exit $rc
-			fi
-			#	now variable $BACKUPTARGET_DIR points to the new backup directory just created and can be used for further backup data processing
+		fi
+		raspiBackup.sh
+		rc=$?
+		if (( $rc > 0 )); then
+			echo "raspiBackup failed with rc $rc"
+			exit $rc
 		fi
 	else
 		echo "Server $NFSSERVER does not provide $NFSDIRECTORY"
