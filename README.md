@@ -50,8 +50,9 @@ An installer [(Code)](https://github.com/framps/raspiBackup/blob/master/installa
 
 ## Systemd
 
-To start raspiBackup with Systemd see
+How to start raspiBackup with Systemd see
 [here](installation/systemd)
+
 (thx [Hofei](https://github.com/Hofei90))
 
 # REST API Server proof of concept
