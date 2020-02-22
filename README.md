@@ -2,11 +2,11 @@
 
 # raspiBackup - Backup and restore your running Raspberries
 
-* Create a full system backup unattended with no shutdown of the system or other manual intervention just by starting raspiBackup using cron. Important services can be stopped before starting the backup and are started again when the backup finished.
+* Create an unattended full system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron. Important services can be stopped before starting the backup and are started again when the backup finished.
 * Any device mountable on Linux can be used as backupspace (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
 * An external rootpartition, Raspberry 3 USB boot images and NOOBS images are supported.
-* Status eMail sent when backup finished
+* Status eMail sent when backup finished (Telegram prototype exists already)
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
 * Much more features ... (See doc below)
 
@@ -16,29 +16,32 @@
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
 
-## Installer
-An installer [(Code)](https://github.com/framps/raspiBackup/blob/master/installation/raspiBackupInstallUI.sh) uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
+## Installer [(Code)](https://github.com/framps/raspiBackup/tree/master/installation)
+
+An installer uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
 
 ![Screenshot1](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-1.png)
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
 
-## Detailed information
+## All nitty gritty details documented on website
 
- * [English](https://www.linux-tips-and-tricks.de/en/backup)
- * [German](https://www.linux-tips-and-tricks.de/de/raspibackup)
+ * [in English](https://www.linux-tips-and-tricks.de/en/backup)
+ * [in German](https://www.linux-tips-and-tricks.de/de/raspibackup)
 
-# Miscellaneous tools and utilities
+## Social media channels
 
-* Wrapper script for raspiBackup to add any activities before and after backup [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupWrapper.sh)
+ * [Youtube videos](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg)
+ * [Twitter](https://twitter.com/linuxframp)
+ * [Facebook](https://www.facebook.com/raspiBackup)
 
-* Wrapper script which checks whether a nfsserver is online, mounts one exported directory and invokes raspiBackup. If the nfsserver is not online no backup is started. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupNfsWrapper.sh)
+# Miscellaneous tools and utilities [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
+
+* Sample wrapper scripts to add any activities before and after backup [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupWrapper.sh)
+
+* Sample wrapper script which checks whether a nfsserver is online, mounts one exported directory and invokes raspiBackup. If the nfsserver is not online no backup is started. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupNfsWrapper.sh)
 
 * Script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
-
-* Installation scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/installation)
-  * raspiBackup Installation
-  * Extension sample installation
 
 ## Sample extensions [(Code)](https://github.com/framps/raspiBackup/tree/master/extensions)
 * Sample eMail extension
@@ -50,12 +53,11 @@ An installer [(Code)](https://github.com/framps/raspiBackup/blob/master/installa
 
 ## Systemd
 
-How to start raspiBackup with Systemd see
-[here](installation/systemd) (thx [Hofei](https://github.com/Hofei90))
+Instead of cron systemd can be used to start raspiBackup. See [here](installation/systemd) (thx [Hofei](https://github.com/Hofei90)) for details.
 
 # REST API Server proof of concept
 
-Allows to start a backup from a remote system or any web UI.
+Allows to start raspiBackup from a remote system or any web UI.
 1. Download executable from [RESTAPI directory](https://github.com/framps/raspiBackup/tree/master/RESTAPI)
 2. Create a file /usr/local/etc/raspiBackup.auth and define access credentials for the API. For every user create a line userid:password
 3. Set file attributes for /usr/local/etc/raspiBackup.auth to 600
