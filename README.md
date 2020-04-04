@@ -10,11 +10,17 @@
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
 * Much more features ... (See doc below)
 
-## Documentation (English and German)
+## Documentation
 
+### English
 * [Installation](https://www.linux-tips-and-tricks.de/en/quickstart-rbk)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
+
+### German
+* [Installation](https://www.linux-tips-and-tricks.de/de/schnellstart-rbk/)
+* [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/backup)
+* [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
 
 ## Installer [(Code)](https://github.com/framps/raspiBackup/tree/master/installation)
 
@@ -24,7 +30,7 @@ An installer uses menus, checklists and radiolists similar to raspi-config and h
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
 
-## Nitty gritty details (English and German)
+## Nitty gritty details
 
  * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
  * [German](https://www.linux-tips-and-tricks.de/de/alles-ueber-raspibackup/)
@@ -33,7 +39,7 @@ An installer uses menus, checklists and radiolists similar to raspi-config and h
 
  * [Youtube](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg) - Videos
  * [Twitter](https://twitter.com/linuxframp) - News and announcements
- * [Facebook](https://www.facebook.com/raspiBackup) - News and misc background information
+ * [Facebook](https://www.facebook.com/raspiBackup) - News, discussions, announcements and misc background information
 
 ## Miscellaneous tools and utilities [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
 
