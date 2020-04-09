@@ -28,13 +28,13 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.1"
+VERSION="0.1.1"
 
-set +u;GIT_DATE="$Date: 2020-04-07 20:48:34 +0200$"; set -u
+set +u;GIT_DATE="$Date: 2020-04-09 20:59:13 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1: 5a6e009$";set -u
+set +u;GIT_COMMIT="$Sha1: 587d5d8$";set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -46,16 +46,6 @@ MERGED_CONFIG="/usr/local/etc/raspiBackup.conf.merged"
 
 PRFX="# >>>>> OLD OPTION <<<<< "
 
-if (( $# < 1 )); then
-	echo "Missing config file language (en or de)"
-	exit 1
-fi
-
-if [[ "$1" != "de" && "$1" != "en" ]]; then
-	echo "Invalid language. Has to be either en or de"
-	exit 1
-fi
-
 if (( $UID != 0 )); then
 	echo "Call script as root with 'sudo $0 $@'"
 	exit 1
@@ -66,9 +56,16 @@ echo "Merges a new config file with the current local config file and creates a 
 
 rm -f $MERGED_CONFIG &>/dev/null
 
+# detect language the config file is in
+lang="en"
+l=$(grep -e ^VERSION_.*CONF "$ORIG_CONFIG")
+if [[ "$l" =~ _DE ]]; then
+	lang="de"
+fi
+
 # download new config file
 echo "Downloading new config file"
-curl -sSL https://www.linux-tips-and-tricks.de/downloads/raspibackup-$1-conf/download > "$NEW_CONFIG"
+curl -sSL https://www.linux-tips-and-tricks.de/downloads/raspibackup-$lang-conf/download > "$NEW_CONFIG"
 if (( $? )); then
 	echo "Download of config file failed"
 	exit 42
@@ -88,7 +85,7 @@ while read line; do
 
 		[[ "$KW" =~ VERSION_.*CONF ]] && continue
 
-		NC="$(grep "$KW=" $ORIG_CONFIG)"
+		NC="$(grep "^$KW=" $ORIG_CONFIG)"
 		if (( $? == 0 )); then
 			if [[ "$line" != "$NC" ]]; then
 				NC="$(cut -d= -f2- <<< "$NC" )"
