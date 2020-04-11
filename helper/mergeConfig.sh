@@ -40,21 +40,22 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
 ORIG_CONFIG="/usr/local/etc/raspiBackup.conf"
-BACKUP_CONFIG="/usr/local/etc/raspiBackup.conf.bak"
 NEW_CONFIG="/usr/local/etc/raspiBackup.conf.new"
-MERGED_CONFIG="/usr/local/etc/raspiBackup.conf.merged"
 
 PRFX="# >>>>> OLD OPTION <<<<< "
 
 if (( $UID != 0 )); then
-	echo "Call script as root with 'sudo $0 $@'"
+	echo "??? Please call script as root with 'sudo $0 $@'"
 	exit 1
 fi
 
-echo "--- raspiBackup config merge helper ---"
-echo "Merges a new config file with the current local config file and creates a new config file which has to be manually updated"
-
-rm -f $MERGED_CONFIG &>/dev/null
+if (( $# >= 1 )); then
+	if [[ ! -f "$1" ]]; then
+		echo "??? Old config file $1 not found"
+		exit 42
+	fi
+	ORIG_CONFIG="$1"
+fi
 
 # detect language the config file is in
 lang="en"
@@ -63,20 +64,35 @@ if [[ "$l" =~ _DE ]]; then
 	lang="de"
 fi
 
-# download new config file
-echo "Downloading new config file"
-curl -sSL https://www.linux-tips-and-tricks.de/downloads/raspibackup-$lang-conf/download > "$NEW_CONFIG"
-if (( $? )); then
-	echo "Download of config file failed"
-	exit 42
+downloadURL="https://www.linux-tips-and-tricks.de/downloads/raspibackup-$lang-conf/download"
+
+if (( $# >= 2 )); then
+	if [[ ! -f "$2" ]]; then
+		echo "??? New config file $1 not found"
+		exit 42
+	fi
+	NEW_CONFIG="$2"
+else
+	# download new config file
+	echo "--- Downloading new raspiBackup config file from $downloadURL"
+	curl -sSL $downloadURL > "$NEW_CONFIG"
+	if (( $? )); then
+		echo "??? Download of config file from $downloadURL failed"
+		exit 42
+	fi
 fi
 
+CONFIG_DIR=$( cd $( dirname $ORIG_CONFIG); pwd | xargs readlink -f)
+MERGED_CONFIG="$CONFIG_DIR/raspiBackup.conf.merged"
+BACKUP_CONFIG="$CONFIG_DIR/raspiBackup.conf.bak"
+rm -f $MERGED_CONFIG &>/dev/null
+
 # save old config
-echo "Saving old config $ORIG_CONFIG in $BACKUP_CONFIG"
+echo "--- Saving old config $ORIG_CONFIG in $BACKUP_CONFIG"
 cp $ORIG_CONFIG $BACKUP_CONFIG
 
 # process NEW CONFIG FILE
-echo "Merging local config $ORIG_CONFIG and new config $NEW_CONFIG"
+echo "--- Merging local config $ORIG_CONFIG and new config $NEW_CONFIG"
 merges=0
 while read line; do
 	if [[ -n "$line" && ! "$line" =~ ^# ]]; then
@@ -104,11 +120,9 @@ echo "" >> $MERGED_CONFIG
 echo "# GENERATED - DO NOT DELETE" >> $MERGED_CONFIG
 echo "$UUID" >> $MERGED_CONFIG
 
-echo "Merged config files"
-
-echo "New config file: $NEW_CONFIG"
-echo "Backup of local config file: $BACKUP_CONFIG"
-echo "Merged config file: $MERGED_CONFIG"
-echo "Config options which have to be manually merged: $merges"
-echo "Now edit $MERGED_CONFIG and copy it to $ORIG_CONFIG"
+echo ">>> New config file: $NEW_CONFIG"
+echo ">>> Backup of local config file: $BACKUP_CONFIG"
+echo ">>> Merged config file: $MERGED_CONFIG"
+echo ">>> Number of config options which have to be merged manually: $merges"
+echo ">>> Now edit $MERGED_CONFIG and copy it to $ORIG_CONFIG"
 
