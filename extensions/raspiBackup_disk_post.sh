@@ -10,7 +10,7 @@
 #
 ########################################################################################################################
 #
-#    Copyright (C) 2017-2018 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2017-2018 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,6 +27,9 @@
 #
 #######################################################################################################################
 
+GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"
+GIT_COMMIT="$Sha1: 0730e99$"
+
 # set any variables and prefix all names with ext_ and some unique prefix to use a different namespace than the script
 ext_diskUsage_post=( $(getDiskUsage) )
 
@@ -41,8 +44,8 @@ MSG_EXT_DISK_USAGE3="ext_diskusage_4"
 MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1004I: Free change: %s (%s %%)"
 MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1004I: Änderung freier Platz: %s (%s %%)"
 MSG_EXT_DISK_USAGE4="ext_diskusage_5"
-MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1005E: bc not found. Please install bc first."
-MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert werden."
+MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1005E: bc not found. Please install bc first with with 'sudo apt-get install bc'."
+MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert werden mit 'sudo apt-get install bc'."
 
 # now write message to console and log and email
 # $MSG_LEVEL_MINIMAL will write message all the time

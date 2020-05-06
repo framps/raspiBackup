@@ -8,7 +8,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (C) 2017 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2017-2020 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.4"
+VERSION="v0.1.5"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -43,11 +43,11 @@ if [[ -e /bin/grep ]]; then
    done
 fi
 
-GIT_DATE="$Date: 2019-05-01 10:29:49 +0200$"
+GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: f9df3c1$"
+GIT_COMMIT="$Sha1: 0730e99$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -211,8 +211,18 @@ sleep 3
 # restore backup into image
 
 echo "===> Restoring backup into $IMAGE_FILENAME"
-raspiBackup.sh -1 -Y -l debug -d $LOOP "$BACKUP_DIRECTORY"
+raspiBackup.sh -1 -Y -d $LOOP "$BACKUP_DIRECTORY"
 RC=$?
+
+# The disk identifier is the Partition UUID (PTUUID displayed in blkid) and is stored just prior to the partition table in the MBR
+# The PARTUUID's aren't actually stored anywhere, they're simply PTUUID-01 for partition 1 and PTUUID-02 for partition 2
+# You can change PTUUID on a live system with fdisk
+# Extract from https://www.raspberrypi.org/forums/viewtopic.php?t=191775
+
+mount ${LOOP}p2 /mnt
+PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
+umount /mnt
+losetup -d $LOOP
 
 # now shrink image
 
@@ -244,6 +254,16 @@ if (( $MAIL_EXTENSION_AVAILABLE )); then
         RC=0
     fi
 fi
+
+# pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
+
+LOOP=$(losetup -f)
+losetup -P $LOOP $IMAGE_FILENAME
+printf "x\ni\n0x$PTUUID\nr\nw\nq\n" | fdisk $LOOP
+partprobe $LOOP
+udevadm settle
+sleep 3
+
 
 exit $RC
 

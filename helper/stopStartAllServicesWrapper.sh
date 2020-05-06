@@ -9,7 +9,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright # (C) 2018-2019 - framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2018-2019 - framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -29,6 +29,9 @@
 #######################################################################################################################
 
 VERSION="v0.2"
+
+GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"
+GIT_COMMIT="$Sha1: 0730e99$"
 
 trap startAllServices EXIT ERR
 
