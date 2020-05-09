@@ -10,6 +10,6 @@ Before opening a big issue please check
 
 If this doesn't help please provide following detailed information:
 
-1. Provide first line of output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh --version`
-2. Provide the contents of /etc/os-release
-3. Attach the raspiBackup debug log
+* [ ] Provide first line from output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh --version`
+* [ ] Provide the contents of /etc/os-release
+* [ ] Attach the raspiBackup debug log
