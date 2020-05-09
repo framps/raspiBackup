@@ -10,6 +10,6 @@ Before opening a big issue please check
 
 If this doesn't help please provide following detailed information:
 
-* [ ] Which operating system do you use? Provide the contents of /etc/os-release
-* [ ] Provide all messages written by raspiBackup
-* [ ] Attach the debug log to the issue which will be created by raspiBackup with option `-l debug`
+1. Provide first line of output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh --version`
+2. Provide the contents of /etc/os-release
+3. Attach the raspiBackup debug log
