@@ -8,6 +8,6 @@ Before opening a big issue please
 
 * [ ] Check whether your message was listed on the messages page and the suggested action fixes your issue? [English](https://linux-tips-and-tricks.de/en/rmessages) - [German](https://linux-tips-and-tricks.de/de/fehlermeldungen)
 
-* [ ] Provide first line from output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh --version`
+* [ ] Provide first line from output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh -h`
 * [ ] Provide the contents of /etc/os-release
 * [ ] Attach the raspiBackup debug log
