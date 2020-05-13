@@ -34,7 +34,7 @@ if [ ! -n "$BASH" ] ;then
 	exit 127
 fi
 
-VERSION="0.6.5"														# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.5-hotfix"												# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"										# required config version for script
 
 VERSION_VARNAME="VERSION"											# has to match above var names
@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"
+GIT_DATE="$Date: 2020-05-13 15:58:30 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 0730e99$"
+GIT_COMMIT="$Sha1: 151f0f8$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -2035,9 +2035,9 @@ function downloadPropertiesFile() { # FORCE
 			local keep=$KEEPBACKUPS
 			local func="B"; (( $RESTORE )) && func="R"
 			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
-			local sr=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="?sr=$srOptions"
+			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
 			local uuid="?"; [[ -n $UUID ]]  && (( $USE_UUID )) && uuid="?uuid=$UUID&"
-			local downloadURL="$PROPERTY_URL${uuid}version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func${srs}"
+			local downloadURL="$PROPERTY_URL${uuid}version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
 
 			wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
 			local rc=$?
@@ -2961,6 +2961,7 @@ function sendEMail() { # content subject
 
 		local attach=""
 		local subject="$2"
+		local coloring=()
 
 		local smiley=""
 		if (( $NOTIFY_UPDATE && $NEWS_AVAILABLE )); then
@@ -2984,7 +2985,7 @@ function sendEMail() { # content subject
 		subject="$smiley$subject"
 
 		if [[ "$COLORING" =~ $COLORING_MAIL ]]; then
-			subject=$(echo -e "$subject\nContent-Type: text/html")
+			coloring=(-a 'Content-Type: text/html')
 		fi
 
 		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $NOTIFY_UPDATE && $NEWS_AVAILABLE ) ) ) )); then
@@ -3003,7 +3004,7 @@ function sendEMail() { # content subject
 			if [[ "$COLORING" =~ $COLORING_MAIL ]]; then
 				content="$(colorAnnotation $COLOR_TYPE_HTML "$content")"
 			fi
-
+			
 			logItem "Sending eMail with program $EMAIL_PROGRAM and parms '$EMAIL_PARMS'"
 			logItem "Parm1:$1 Parm2:$subject"
 			logItem "Content: $content"
@@ -3012,8 +3013,8 @@ function sendEMail() { # content subject
 			local rc
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
-					logItem "$EMAIL_PROGRAM $EMAIL_PARMS -s "$subject" $attach $EMAIL <<< $content"
-					"$EMAIL_PROGRAM" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
+					logItem "$EMAIL_PROGRAM ${coloring[@]} $EMAIL_PARMS -s "$subject" $attach $EMAIL <<< $content"
+					"$EMAIL_PROGRAM" ${coloring[@]} $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
