@@ -34,7 +34,7 @@ if [ ! -n "$BASH" ] ;then
 	exit 127
 fi
 
-VERSION="0.6.5-hotfix"												# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.5"														# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"										# required config version for script
 
 VERSION_VARNAME="VERSION"											# has to match above var names
@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-05-13 16:24:08 +0200$"
+GIT_DATE="$Date: 2020-05-14 10:14:06 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 5eb5d77$"
+GIT_COMMIT="$Sha1: 0f3ac44$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -224,6 +224,11 @@ EMAIL_MSMTP_PROGRAM="msmtp"
 EMAIL_SENDEMAIL_PROGRAM="sendEmail"
 SUPPORTED_EMAIL_PROGRAM_REGEX="^($EMAIL_MAILX_PROGRAM|$EMAIL_SSMTP_PROGRAM|$EMAIL_MSMTP_PROGRAM|$EMAIL_SENDEMAIL_PROGRAM|$EMAIL_EXTENSION_PROGRAM)$"
 SUPPORTED_MAIL_PROGRAMS=$(echo $SUPPORTED_EMAIL_PROGRAM_REGEX | sed 's:^..\(.*\)..$:\1:' | sed 's/|/,/g')
+
+EMAIL_COLORING_SUBJECT="SUBJECT"
+EMAIL_COLORING_OPTION="OPTION"
+SUPPORTED_EMAIL_COLORING_REGEX="^($EMAIL_COLORING_OPTION|$EMAIL_COLORING_SUBJECT)$"
+SUPPORTED_EMAIL_COLORING=$(echo $SUPPORTED_EMAIL_COLORING_REGEX | sed 's:^..\(.*\)..$:\1:' | sed 's/|/,/g')
 
 PARTITIONS_TO_BACKUP_ALL="*"
 MASQUERADE_STRING="@@@@"
@@ -1087,6 +1092,9 @@ MSG_DE[$MSG_CONFIG_BACKUP_FAILED]="RBK0250E: Backuperstellung von %s fehlerhaft.
 MSG_CHMOD_FAILED=251
 MSG_EN[$MSG_CHMOD_FAILED]="RBK0251E: chmod of %1 failed."
 MSG_DE[$MSG_CHMOD_FAILED]="RBK0251E: chmod von %1 nicht möglich."
+MSG_EMAIL_COLORING_NOT_SUPPORTED=252
+MSG_EN[$MSG_EMAIL_COLORING_NOT_SUPPORTED]="RBK0252E: Invalid eMail coloring %s. Using $EMAIL_COLORING_SUBJECT. Supported are %s."
+MSG_DE[$MSG_EMAIL_COLORING_NOT_SUPPORTED]="RBK0252E: Ungültige eMailKolorierung %s. Benutze $EMAIL_COLORING_SUBJECT. Unterstützt sind %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1779,6 +1787,8 @@ function initializeDefaultConfig() {
 	DEFAULT_TELEGRAM_NOTIFICATIONS="F"
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
+	# mail coloring scheme (SUBJECT or OPTION)
+	DEFAULT_EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 
 	############# End default config section #############
 
@@ -1804,6 +1814,7 @@ function initializeConfig() {
 	[[ -z "$DD_PARMS" ]] && DD_PARMS="$DEFAULT_DD_PARMS"
 	[[ -z "$DEPLOYMENT_HOSTS" ]] && DEPLOYMENT_HOSTS="$DEFAULT_DEPLOYMENT_HOSTS"
 	[[ -z "$EMAIL" ]] && EMAIL="$DEFAULT_EMAIL"
+	[[ -z "$EMAIL_COLORING" ]] && EMAIL_COLORING="$DEFAULT_EMAIL_COLORING"
 	[[ -z "$EMAIL_PARMS" ]] && EMAIL_PARMS="$DEFAULT_EMAIL_PARMS"
 	[[ -z "$EMAIL_PROGRAM" ]] && EMAIL_PROGRAM="$DEFAULT_MAIL_PROGRAM"
 	[[ -z "$EMAIL_SENDER" ]] && EMAIL_SENDER="$DEFAULT_EMAIL_SENDER"
@@ -2961,7 +2972,7 @@ function sendEMail() { # content subject
 
 		local attach=""
 		local subject="$2"
-		local coloring=()
+		local coloringOption=""
 
 		local smiley=""
 		if (( $NOTIFY_UPDATE && $NEWS_AVAILABLE )); then
@@ -2985,7 +2996,19 @@ function sendEMail() { # content subject
 		subject="$smiley$subject"
 
 		if [[ "$COLORING" =~ $COLORING_MAIL ]]; then
-			coloring=(-a 'Content-Type: text/html')
+			if [[ ! $EMAIL_COLORING =~ $SUPPORTED_EMAIL_COLORING_REGEX ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EMAIL_COLORING_NOT_SUPPORTED "$EMAIL_COLORING" "$SUPPORTED_EMAIL_COLORING"
+				EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
+			else 
+				if [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_SUBJECT" ]]; then
+					subject=$(echo -e "$subject\nContent-Type: text/html")
+				elif [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_OPTION" ]]; then
+					coloringOption="-a 'Content-Type: text/html'"
+				else
+					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
+				fi
+				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: "$subject"${NL}coloring: $coloringOption"
+			fi
 		fi
 
 		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $NOTIFY_UPDATE && $NEWS_AVAILABLE ) ) ) )); then
@@ -3004,7 +3027,7 @@ function sendEMail() { # content subject
 			if [[ "$COLORING" =~ $COLORING_MAIL ]]; then
 				content="$(colorAnnotation $COLOR_TYPE_HTML "$content")"
 			fi
-			
+
 			logItem "Sending eMail with program $EMAIL_PROGRAM and parms '$EMAIL_PARMS'"
 			logItem "Parm1:$1 Parm2:$subject"
 			logItem "Content: $content"
@@ -3013,8 +3036,8 @@ function sendEMail() { # content subject
 			local rc
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
-					logItem "$EMAIL_PROGRAM ${coloring[@]} $EMAIL_PARMS -s "$subject" $attach $EMAIL <<< $content"
-					"$EMAIL_PROGRAM" ${coloring[@]} $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
+					logItem "$EMAIL_PROGRAM $coloringOption $EMAIL_PARMS -s "$subject" $attach $EMAIL <<< $content"
+					"$EMAIL_PROGRAM" "$coloringOption" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
@@ -7234,6 +7257,12 @@ while (( "$#" )); do
 	  o=$(checkOptionParameter "$1" "$2");
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PARMS="$o"; shift 2
+	  ;;
+
+	--eMailColoring)
+	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  EMAIL_COLORING="${o^^}"; shift 2
 	  ;;
 
 	-f)
