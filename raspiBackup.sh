@@ -34,11 +34,11 @@ if [ ! -n "$BASH" ] ;then
 	exit 127
 fi
 
-VERSION="0.6.5-hotfix"														# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.5-hotfix"												# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"										# required config version for script
 
 VERSION_VARNAME="VERSION"											# has to match above var names
-VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"							# used to lookup VERSION_CONFIG in config files
+VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"						# used to lookup VERSION_CONFIG in config files
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-05-14 11:14:09 +0200$"
+GIT_DATE="$Date: 2020-05-14 20:31:22 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 669382b$"
+GIT_COMMIT="$Sha1: 27ac20b$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1523,7 +1523,7 @@ function repeat() { # char num
 LOG_INDENT_INC=4
 
 function logItem() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$1"
+	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$@"
 }
 
 function logEntry() { # message
@@ -1602,6 +1602,7 @@ function logOptions() {
 	logItem "DEPLOYMENT_HOSTS=$DEPLOYMENT_HOSTS"
 	logItem "YES_NO_RESTORE_DEVICE=$YES_NO_RESTORE_DEVICE"
 	logItem "EMAIL=$EMAIL"
+	logItem "EMAIL_COLORING=$EMAIL_COLORING"
 	logItem "EMAIL_PARMS=$EMAIL_PARMS"
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
 	logItem "EXTENSIONS=$EXTENSIONS"
@@ -2849,7 +2850,7 @@ function colorOff() { # colortype color
 
 function colorAnnotation() { # colortype text
 
-	logEntry "$@"
+	logEntry "$1"
 
 	colorType="$1"
 	shift
@@ -2973,6 +2974,7 @@ function sendEMail() { # content subject
 		local attach=""
 		local subject="$2"
 		local coloringOption=""
+		local contentType=""
 
 		local smiley=""
 		if (( $NOTIFY_UPDATE && $NEWS_AVAILABLE )); then
@@ -3001,7 +3003,7 @@ function sendEMail() { # content subject
 				EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 			else 
 				if [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_SUBJECT" ]]; then
-					subject=$(echo -e "$subject\nContent-Type: text/html")
+					contentType="${NL}Content-Type: text/html"
 				elif [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_OPTION" ]]; then
 					coloringOption="-a 'Content-Type: text/html'"
 				else
@@ -3028,15 +3030,19 @@ function sendEMail() { # content subject
 				content="$(colorAnnotation $COLOR_TYPE_HTML "$content")"
 			fi
 
-			logItem "Sending eMail with program $EMAIL_PROGRAM and parms '$EMAIL_PARMS'"
-			logItem "Parm1:$1 Parm2:$subject"
-			logItem "Content: $content"
-			logItem "$EMAIL_PROGRAM $EMAIL_PARMS -s $subject $attach $EMAIL"
+			subject="$subject$contentType"
 
+			logItem "eMail: $EMAIL"
+			logItem "eMail Program: $EMAIL_PROGRAM"
+			logItem "Subject: ${subject[0]}"
+			logItem "ColoringOption: ${coloringOption}"
+			logItem "ContentType: $contentType"
+			logItem "Parms: $EMAIL_PARMS"
+		
 			local rc
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
-					logItem "$EMAIL_PROGRAM $coloringOption $EMAIL_PARMS -s "$subject" $attach $EMAIL <<< $content"
+					logItem "$EMAIL_PROGRAM $coloringOption $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\"
 					"$EMAIL_PROGRAM" "$coloringOption" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
