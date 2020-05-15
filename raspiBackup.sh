@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-05-14 22:43:53 +0200$"
+GIT_DATE="$Date: 2020-05-15 14:31:14 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 377a483$"
+GIT_COMMIT="$Sha1: 92352d3$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -2831,7 +2831,7 @@ COLOR_TYPE_HTML=0
 COLOR_TYPE_VT100=1
 
 COLOR_ON=("<span style="color:\%s">" "\e[1;%sm")
-COLOR_OFF=("</span></br>" "\e[0m")
+COLOR_OFF=("</span><br/>" "\e[0m")
 
 function colorOn() { # colortype color
 	local on="${COLOR_ON[$1]}"
@@ -2868,7 +2868,7 @@ function colorAnnotation() { # colortype text
 			echo
 		else
 			if [[ $colorType == "$COLOR_TYPE_HTML" ]]; then
-				echo "$line</br>"
+				echo "$line<br/>"
 			else
 				echo "$line"
 			fi
