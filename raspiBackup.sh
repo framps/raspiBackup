@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-05-15 16:59:39 +0200$"
+GIT_DATE="$Date: 2020-05-15 18:36:42 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 04dd423$"
+GIT_COMMIT="$Sha1: 0c927f6$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -3001,11 +3001,11 @@ function sendEMail() { # content subject
 			if [[ ! $EMAIL_COLORING =~ $SUPPORTED_EMAIL_COLORING_REGEX ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EMAIL_COLORING_NOT_SUPPORTED "$EMAIL_COLORING" "$SUPPORTED_EMAIL_COLORING"
 				EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
-			else 
+			else
 				if [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_SUBJECT" ]]; then
 					contentType="${NL}MIME-Version: 1.0${NL}Content-Type: text/html; charset=utf-8"
 				elif [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_OPTION" ]]; then
-					coloringOption=(-a "'Content-Type: text/html'")
+					coloringOption=(-a "Content-Type: text/html")
 				else
 					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
 				fi
@@ -3038,11 +3038,11 @@ function sendEMail() { # content subject
 			logItem "ColoringOption: ${coloringOption[@]}"
 			logItem "ContentType: $contentType"
 			logItem "Parms: $EMAIL_PARMS"
-		
+
 			local rc
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
-					logItem "$EMAIL_PROGRAM ${coloringOption[@]} $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\"
+					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
 					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
