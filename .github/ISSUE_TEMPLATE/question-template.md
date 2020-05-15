@@ -4,8 +4,6 @@ about: Ask a question about raspiBackup
 
 ---
 
-If you have a question about raspiBackup please 
+If you have a question about raspiBackup please check whether following resources answer your question first before opening an issue :
 
-* [ ] Read the raspiBackup FAQ's which answer a lot of common questions [English](https://www.linux-tips-and-tricks.de/en/faq) - [German](https://www.linux-tips-and-tricks.de/de/faq)
-
-* [ ] Provide first line of output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh --version`
+* [ ] Did you read the raspiBackup FAQ's first which answer a lot of common questions ? [English](https://www.linux-tips-and-tricks.de/en/faq) - [German](https://www.linux-tips-and-tricks.de/de/faq)
