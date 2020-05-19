@@ -4,7 +4,7 @@ about: Create an issue for raspiBackup
 
 ---
 
-Don't forget to select all items below when you finished your problem report to confirm you executed all items.
+Don't forget to select all items below when you finished your problem report to check and confirm you followed all steps.
 
 * [ ] I checked whether my message was listed on the messages page and the suggested action fixes your issue? [English](https://linux-tips-and-tricks.de/en/rmessages) - [German](https://linux-tips-and-tricks.de/de/fehlermeldungen)
 * [ ] I provided first line from output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh -h`
