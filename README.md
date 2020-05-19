@@ -6,7 +6,8 @@
 * Any device mountable on Linux can be used as backupspace (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
 * An external rootpartition and Raspberry 3 USB boot images are supported.
-* Status eMail sent when backup finished (Telegram prototype exists already)
+* Status of backup run can be sent via eMail or to Telegram
+* Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
 * Much more features ... (See doc below)
 

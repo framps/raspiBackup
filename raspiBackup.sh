@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"
+GIT_DATE="$Date: 2020-05-19 09:58:55 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 0730e99$"
+GIT_COMMIT="$Sha1: f822b75$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -2035,9 +2035,9 @@ function downloadPropertiesFile() { # FORCE
 			local keep=$KEEPBACKUPS
 			local func="B"; (( $RESTORE )) && func="R"
 			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
-			local sr=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="?sr=$srOptions"
+			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
 			local uuid="?"; [[ -n $UUID ]]  && (( $USE_UUID )) && uuid="?uuid=$UUID&"
-			local downloadURL="$PROPERTY_URL${uuid}version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func${srs}"
+			local downloadURL="$PROPERTY_URL${uuid}version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
 
 			wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
 			local rc=$?
@@ -3210,7 +3210,7 @@ function masqueradeSensitiveInfoInLog() {
 
 	# any non local IPs used somewhere (mounts et al)
 
-	logItem "Masquerading non local IPs"
+	logItem "Masquerading sensitive non local IPs"
 	masqueradeNonlocalIPs $LOG_FILE
 
 	# now delete console color annotation ESC sequences
@@ -3221,33 +3221,39 @@ function masqueradeSensitiveInfoInLog() {
 
 }
 
-function masqueradeNonlocalIPs() { # file
+function masqueradeNonlocalIPs() {
 
-	if which perl &>/dev/null; then
+	local masq=1
+	local f=mktemp
 
-		perl -pi -ne '
-			my $IP_ADDRESS = qr /(([\d]{1,3}\.){3}[\d]{1,3})/;
-			my $line;
+	while (( $masq )); do
 
-			$line=$_;
-			while ($line =~ /($IP_ADDRESS)/g ) {
-				my $ip = $1;
+		masq=0
+		cp $1 $f
 
-				if ( $1 !~ /^192\.167\./
-					&& $1 !~ /^127\./
-					&& $1 !~ /0\.0\.0\.0/
-					&& $1 !~ /255\.{1,3}(255)?/
-					&& $1 !~ /^169\./
-					&& $1 !~ /^10\./
-					&& $1 !~ /^172\.([1][6-9]|2[1-9]|3[0-1])/ ) {
-						my $privateIp = $ip;
-						$privateIp =~ s/\d+\.\d+/%%%.%%%/;
-						s/$ip/$privateIp/;
-				}
-			 }
+		while read line; do
+				if [[ $line =~ ([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3}) ]]; then
+					local n1=${BASH_REMATCH[1]}
+					local n2=${BASH_REMATCH[2]}
+					local n3=${BASH_REMATCH[3]}
+					local n4=${BASH_REMATCH[4]}
 
-		' "$1" 2>/dev/null
-	fi
+					local ip="$n1.$n2.$n3.$n4"
+					local masquip="%%%.%%%.$n3.$n4"
+
+					(( $n1 == 192 && $n2 == 168 )) \
+						|| (( $n1 == 10 )) \
+						|| (( $n1 == 127 )) \
+						|| (( $n1 == 0 )) \
+						|| (( $n1 == 255 )) \
+						|| ( (( $n1 == 172 )) && [[ $line =~ 172\.(1[6-9]|2[1-9]|3[0-1]) ]] ) && continue
+
+					sed -i "s/$ip/$masquip/g" "$1"
+					masq=1
+				fi
+		done < $f
+	done
+	rm $f
 }
 
 function cleanup() { # trap
@@ -5031,7 +5037,7 @@ function commonChecks() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED $EMAIL_PROGRAM
 			exitError $RC_EMAILPROG_ERROR
 		fi
-		if [[ (( "$EMAIL_PROGRAM" == $EMAIL_SSMTP_PROGRAM || "$EMAIL_PROGRAM" == $EMAIL_MSMTP_PROGRAM )) && (( $APPEND_LOG )) ]]; then
+		if [[ "$EMAIL_PROGRAM" == "$EMAIL_SSMTP_PROGRAM" || "$EMAIL_PROGRAM" == "$EMAIL_MSMTP_PROGRAM" ]] && (( $APPEND_LOG )); then
 			if ! which mpack &>/dev/null; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MPACK_NOT_INSTALLED
 				APPEND_LOG=0
