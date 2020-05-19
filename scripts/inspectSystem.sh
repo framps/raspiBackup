@@ -20,7 +20,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (C) 2018 framp at linux-tips-and-tricks dot de
+#    Copyright (C) 2018-2020 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -36,6 +36,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
+
+GIT_DATE="$Date: 2020-05-19 09:58:55 +0200$"
+GIT_DATE_ONLY=${GIT_DATE/: /}
+GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
+GIT_COMMIT="$Sha1: f822b75$"
+GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 LANG_EXT=${LANG^^*}
 LANG_SUFF=${LANG_EXT:0:2}
