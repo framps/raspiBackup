@@ -39,11 +39,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"
+GIT_DATE="$Date: 2020-05-22 20:05:36 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: 0730e99$"
+GIT_COMMIT="$Sha1: dd8d846$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -178,7 +178,7 @@ MSG_EN[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: Downloading %1 beta..."
 MSG_DE[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: %1 beta wird aus dem Netz geladen..."
 MSG_CODE_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: Created %1."
-MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0037I: %1 wurde erstellt."
+MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: %1 wurde erstellt."
 MSG_NO_INSTALLATION_FOUND=$((SCNT++))
 MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0016W: No installation to refresh detected."
 MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0016W: Keine Installation für einen Update entdeckt."
@@ -215,6 +215,9 @@ MSG_DE[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Cron Konfigurationsdatei %1 wird an
 MSG_MISSING_DIRECTORY=$((SCNT++))
 MSG_EN[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Missing required directory %1."
 MSG_DE[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Erforderliches Verzeichnis %1 existiert nicht."
+MSG_CODE_UPDATED=$((SCNT++))
+MSG_EN[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: Updated %1 with latest available release."
+MSG_DE[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 wurde mit dem letzen aktuellen Release erneuert."
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
 MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${VERSION}"
@@ -728,10 +731,10 @@ function logItem() { # message
 function isInternetAvailable() {
 
 	logEntry
-		
+
 	wget -q --spider $MYHOMEDOMAIN
    local rc=$?
-   
+
 	logExit $rc
    return $rc
 }
@@ -797,6 +800,59 @@ function isRaspiBackupInstalled() {
 function isStartStopDefined() {
 	[[ ! -z $CONFIG_STOPSERVICES  ]] && [[ "$CONFIG_STOPSERVICES" != "$IGNORE_START_STOP_CHAR" ]]
 	return
+}
+
+function installer_code_download_execute() {
+
+	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
+	local rc=$?
+	if (( $rc )); then
+		unrecoverableError $MSG_NO_INTERNET_CONNECTION_FOUND "$rc"
+		return
+	fi
+	if [[ ${httpCode:0:1} != "2" ]]; then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
+		return
+	fi
+
+	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		return
+	fi
+
+	SCRIPT_INSTALLED=1
+
+	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
+
+	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
+		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		return
+	fi
+
+	if [[ "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
+		if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
+			if ! mv -f "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
+				unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+				return
+			fi
+		else
+			cp "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"
+		fi
+	fi
+
+	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+
+	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		return
+	fi
+
+	local chownArgs=$(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed 's/\n//')
+	if ! chown $chownArgs "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		return
+	fi
+
 }
 
 function code_download_execute() {
@@ -919,13 +975,6 @@ function update_installer_execute() {
 
 	local newName
 
-	if [[ -f "$INSTALLER_ABS_FILE" ]]; then
-		oldVersion=$(grep -o -E "^VERSION=\".+\"" "$INSTALLER_ABS_FILE" | sed -e "s/VERSION=//" -e "s/\"//g")
-		newName="$INSTALLER_ABS_PATH/${MYNAME}.${oldVersion}.sh"
-		writeToConsole $MSG_SAVING_FILE "$MYSELF" "$newName"
-		mv "$INSTALLER_ABS_FILE" "$newName" &>>"$LOG_FILE"
-	fi
-
 	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$INSTALLER_DOWNLOAD_URL" 2>>"$LOG_FILE")
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
@@ -937,7 +986,11 @@ function update_installer_execute() {
 		return
 	fi
 
-	writeToConsole $MSG_CODE_INSTALLED "$INSTALLER_ABS_FILE"
+	if (( MODE_UPDATE )); then
+		writeToConsole $MSG_CODE_UPDATED "$INSTALLER_ABS_FILE"
+	else
+		writeToConsole $MSG_CODE_INSTALLED "$INSTALLER_ABS_FILE"
+	fi
 
 	if ! chmod 755 $INSTALLER_ABS_FILE &>>$LOG_FILE; then
 		unrecoverableError $MSG_CHMOD_FAILED "$INSTALLER_ABS_FILE"
@@ -2435,7 +2488,7 @@ function install_menu() {
 
 	isInternetAvailable
 	local rc=$?
-	if (( $rc )); then	
+	if (( $rc )); then
 		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
 		whiptail --msgbox "$a" --title "Error" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
@@ -3054,6 +3107,8 @@ function unattendedInstall() {
 		if (( MODE_EXTENSIONS )); then
 			extensions_install_execute
 		fi
+	elif (( MODE_UPDATE )); then
+		update_installer_execute
 	else
 		extensions_uninstall_execute
 		cron_uninstall_execute
@@ -3100,9 +3155,10 @@ trapWithArg cleanup SIGINT SIGTERM EXIT
 MODE_UNATTENDED=0
 MODE_UNINSTALL=0
 MODE_INSTALL=0
+MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 
-while getopts "h?uei" opt; do
+while getopts "h?uUei" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -3112,6 +3168,9 @@ while getopts "h?uei" opt; do
 		MODE_UNATTENDED=1
         ;;
     e)  MODE_EXTENSIONS=1
+		MODE_UNATTENDED=1
+		;;
+    U)  MODE_UPDATE=1
 		MODE_UNATTENDED=1
 		;;
     u)  MODE_UNINSTALL=1
