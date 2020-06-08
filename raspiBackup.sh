@@ -34,7 +34,7 @@ if [ ! -n "$BASH" ] ;then
 	exit 127
 fi
 
-VERSION="0.6.5.1"												# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.5.1"											# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"									# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-06-01 22:01:13 +0200$"
+GIT_DATE="$Date: 2020-06-08 15:28:45 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: d66749e$"
+GIT_COMMIT="$Sha1: a056338$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -3014,7 +3014,7 @@ function sendEMail() { # content subject
 				if [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_SUBJECT" ]]; then
 					contentType="${NL}MIME-Version: 1.0${NL}Content-Type: text/html; charset=utf-8"
 				elif [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_OPTION" ]]; then
-					coloringOption=(-a "Content-Type: text/html")
+					coloringOption='-a "Content-Type: text/html"'
 				else
 					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
 				fi
@@ -3052,7 +3052,7 @@ function sendEMail() { # content subject
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
 					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
-					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
+					"$EMAIL_PROGRAM" ${coloringOption[@]} $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
@@ -6388,22 +6388,22 @@ function doitRestore() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_SFDISK "$RESTORE_DEVICE"
 	fi
 
-	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ]]; then
-		local sdSize="$(fdisk -l "$RESTORE_DEVICE" | grep "Disk.*${RESTORE_DEVICE}" | cut -d ' ' -f 5)"
-		local imgSize="$(stat -c "%s" "$ROOT_RESTOREFILE")"
-		if [[ $sdSize < $imgSize ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SD_TOO_SMALL "$RESTORE_DEVICE" "$sdSize" "$imgSize"
-			exitError $RC_RESTORE_FAILED
-		fi
-	elif [[ "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
-		local c
-		read c sdSize r < <(gzip -l "$RESTOREFILE" | tail -n 1)
-		imgSize="$(stat -c "%s" "$ROOT_RESTOREFILE")"
-		if [[ $sdSize < $imgSize ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SD_TOO_SMALL "$RESTORE_DEVICE" "$sdSize" "$imgSize"
-			exitError $RC_RESTORE_FAILED
-		fi
-	fi
+	#if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ]]; then
+	#	local sdSize="$(fdisk -l "$RESTORE_DEVICE" | grep "Disk.*${RESTORE_DEVICE}" | cut -d ' ' -f 5)"
+	#	local imgSize="$(stat -c "%s" "$ROOT_RESTOREFILE")"
+	#	if [[ $sdSize < $imgSize ]]; then
+	#		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SD_TOO_SMALL "$RESTORE_DEVICE" "$sdSize" "$imgSize"
+	#		exitError $RC_RESTORE_FAILED
+	#	fi
+	#elif [[ "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
+	#	local c
+	#	read c sdSize r < <(gzip -l "$RESTOREFILE" | tail -n 1)
+	#	imgSize="$(stat -c "%s" "$ROOT_RESTOREFILE")"
+	#	if [[ $sdSize < $imgSize ]]; then
+	#		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SD_TOO_SMALL "$RESTORE_DEVICE" "$sdSize" "$imgSize"
+	#		exitError $RC_RESTORE_FAILED
+	#	fi
+	#fi
 
 	# adjust partition for tar and rsync backup in normal mode
 
