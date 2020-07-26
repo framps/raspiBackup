@@ -11,4 +11,5 @@ If you have a question about raspiBackup please
 * [ ] Provide first line of output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh --version`
 * [ ] I provided the output of `cat /etc/os-release`
 
+## Note 
 If any checkbox was not checked the question is rejected.
