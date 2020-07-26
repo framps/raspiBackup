@@ -4,10 +4,9 @@ about: Create an issue for raspiBackup
 
 ---
 
-Don't forget to select all items below when you finished your problem report to check and confirm you followed all steps.
+Please execute all following actions first and provide all requested information:
 
-* [ ] I checked whether my message was listed on the messages page and the suggested action fixes my issue. [English](https://linux-tips-and-tricks.de/en/rmessages) - [German](https://linux-tips-and-tricks.de/de/fehlermeldungen)
-* [ ] I attached raspiBackup debug log
+* Check whether my error messages were listed on the messages page and all suggested actions don't fixes my issue. [English](https://linux-tips-and-tricks.de/en/rmessages) - [German](https://linux-tips-and-tricks.de/de/fehlermeldungen)
+* Attached raspiBackup debug log
 
-## Note 
-If any checkbox was not checked the issue will be rejected.
+If any action was not executed or any requested information was not provided the issue will be rejected.
