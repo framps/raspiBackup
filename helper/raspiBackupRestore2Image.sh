@@ -30,14 +30,14 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.5"
+VERSION="v0.1.6"
 
 # add pathes if not already set (usually not set in crontab)
 
 if [[ -e /bin/grep ]]; then
    PATHES="/bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin"
    for p in $PATHES; do
-      if ! /bin/grep -E -q "[^:]$p[:$]" <<< $PATH; then
+      if ! /bin/grep -E -q "[\^:]$p[:$]" <<< $PATH; then
          [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
       fi
    done

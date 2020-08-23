@@ -30,7 +30,7 @@ set -euf -o pipefail
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.6"
+VERSION="0.2.7"
 
 set +u;GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
@@ -53,7 +53,7 @@ LOOP_MOUNTED=0
 if [[ -e /bin/grep ]]; then
    PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
    for p in $PATHES; do
-      if ! /bin/grep -E -q "[^:]$p[:$]" <<< $PATH; then
+      if ! /bin/grep -E -q "[\^:]$p[:$]" <<< $PATH; then
          [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
       fi
    done
