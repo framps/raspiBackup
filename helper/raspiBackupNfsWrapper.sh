@@ -28,7 +28,7 @@ NFSSERVER="raspifix"
 NFSDIRECTORY="/disks/silver/backup"
 MOUNTPOINT="/backup"
 
-VERSION="0.0.6"
+VERSION="0.0.7"
 
 GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"
 GIT_COMMIT="$Sha1: 0730e99$"
@@ -38,7 +38,7 @@ GIT_COMMIT="$Sha1: 0730e99$"
 if [[ -e /bin/grep ]]; then
    PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
    for p in $PATHES; do
-      if ! /bin/grep -E -q "[^:]$p[:$]" <<< $PATH; then
+      if ! /bin/grep -E -q "[\^:]$p[:$]" <<< $PATH; then
          [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
       fi
    done
