@@ -51,7 +51,7 @@ LOOP_MOUNTED=0
 # add pathes if not already set (usually not set in crontab)
 
 if [[ -e /bin/grep ]]; then
-   PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
+   PATHES="/bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin"
    for p in $PATHES; do
       if ! /bin/grep -E -q "[\^:]$p[:$]" <<< $PATH; then
          [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
