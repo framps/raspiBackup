@@ -30,13 +30,13 @@ set -euf -o pipefail
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.6"
+VERSION="0.2.7"
 
-set +u;GIT_DATE="$Date: 2020-05-06 20:19:52 +0200$"; set -u
+set +u;GIT_DATE="$Date: 2020-08-24 20:04:16 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1: 0730e99$";set -u
+set +u;GIT_COMMIT="$Sha1: fe73e9e$";set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -51,9 +51,9 @@ LOOP_MOUNTED=0
 # add pathes if not already set (usually not set in crontab)
 
 if [[ -e /bin/grep ]]; then
-   PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
+   PATHES="/bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin"
    for p in $PATHES; do
-      if ! /bin/grep -E -q "[^:]$p[:$]" <<< $PATH; then
+      if ! /bin/grep -E -q "[\^:]$p[:$]" <<< $PATH; then
          [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
       fi
    done
