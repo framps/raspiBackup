@@ -31,6 +31,10 @@ An installer uses menus, checklists and radiolists similar to raspi-config and h
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
 
+In order to install and configure raspiBackup.sh just execute following command:
+
+`curl https://raspibackup.linux-tips-and-tricks.de/install | sudo bash`
+
 ## Nitty gritty details
 
  * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
