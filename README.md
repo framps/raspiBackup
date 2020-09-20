@@ -25,15 +25,15 @@
 
 ## Installer [(Code)](https://github.com/framps/raspiBackup/tree/master/installation)
 
-An installer uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
+The installer uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
+
+Kick off the installation with
+
+`curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
 
 ![Screenshot1](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-1.png)
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
-
-In order to install and configure raspiBackup.sh just execute following command:
-
-`curl https://raspibackup.linux-tips-and-tricks.de/install | sudo bash`
 
 ## Nitty gritty details
 
