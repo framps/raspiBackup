@@ -27,23 +27,28 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.3.2" 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.3.4" 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
 	exit 1
 fi
 
+if ! which whiptail &>/dev/null; then
+	echo "$MYSELF depends on whiptail. Please install whiptail first."
+	exit 1
+fi	
+
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2020-06-01 22:01:13 +0200$"
+GIT_DATE="$Date: 2020-10-03 13:04:11 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: d66749e$"
+GIT_COMMIT="$Sha1: 2a271d2$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -93,6 +98,7 @@ FILE_TO_INSTALL_ABS_FILE="$FILE_TO_INSTALL_ABS_PATH/$FILE_TO_INSTALL"
 CRON_ABS_FILE="$CRON_DIR/$RASPIBACKUP_NAME"
 INSTALLER_ABS_PATH="$BIN_DIR"
 INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
+VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 
 PROPERTY_REGEX='.*="([^"]*)"'
 
@@ -1371,13 +1377,40 @@ function config_uninstall_execute() {
 
 	logEntry
 
+	# all config files starting with raspiBackup
+	
 	local pre=${CONFIG_ABS_FILE%%.*}
-	local post=${CONFIG_ABS_FILE##*.}
-
-	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
-	if ! rm -f $pre*.$post* &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$pre*.$post*"
+	writeToConsole $MSG_DELETE_FILE "$pre*"
+	if ! rm -f $pre* &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_UNINSTALL_FAILED "$pre*"
 		return
+	fi
+	logExit
+}
+
+function misc_uninstall_execute() {
+
+	logEntry
+		
+	# tmp files
+	writeToConsole $MSG_DELETE_FILE "/tmp/$RASPIBACKUP_NAME*"
+	if ! rm -f /tmp/$RASPIBACKUP_NAME* &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_UNINSTALL_FAILED "/tmp/$RASPIBACKUP_NAME*"
+		return
+	fi
+
+	# reminder status file
+	writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY/*"
+	if ! rm -f $VAR_LIB_DIRECTORY/* &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY/*"
+		return
+	fi
+	if [[ -d $VAR_LIB_DIRECTORY ]]; then
+		writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY"
+		if ! rmdir $VAR_LIB_DIRECTORY &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY"
+			return
+		fi
 	fi
 	logExit
 }
@@ -1569,6 +1602,9 @@ function cleanup() {
 
 	local signal="$1"
 
+	logItem "Signal: $signal"
+	logItem "rc: $rc"
+
 	TAIL=0
 	if (($INSTALLATION_STARTED)); then
 		if ((!$INSTALLATION_SUCCESSFULL)); then
@@ -1577,8 +1613,10 @@ function cleanup() {
 			(($SCRIPT_INSTALLED)) && rm $FILE_TO_INSTALL_ABS_FILE &>>"$LOG_FILE" || true
 			(($CRON_INSTALLED)) && rm $CRON_ABS_FILE &>>"$LOG_FILE" || true
 			(($EXTENSIONS_INSTALLED)) && rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE" || true
-			if [[ "$signal" == "SIGINT" ]]; then
-				rm $LOG_FILE &>/dev/null || true
+			if [[ "$signal" == "EXIT" ]]; then
+				if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
+					rm -f $LOG_FILE &>/dev/null || true
+				fi
 			else
 				writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
 			fi
@@ -1586,9 +1624,6 @@ function cleanup() {
 		else
 			if ((!$INSTALLATION_WARNING)); then
 				writeToConsole $MSG_INSTALLATION_FINISHED "$RASPIBACKUP_NAME"
-			fi
-			if (( ! $RASPIBACKUP_INSTALL_DEBUG )) ; then
-				rm $LOG_FILE &>/dev/null || true
 			fi
 		fi
 	fi
@@ -2408,8 +2443,8 @@ function uninstall_do() {
 		return
 	fi
 
-	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
-	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute uninstall_script_execute uninstall_execute
+	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
+	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute
 
 	logExit
 
