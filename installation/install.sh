@@ -26,18 +26,18 @@
 #######################################################################################################################
 
 MYSELF="install"
-VERSION="0.1"
+VERSION="0.1.1"
 
 URL="https://www.linux-tips-and-tricks.de"
 INSTALLER="raspiBackupInstallUI.sh"
 INSTALLER_DOWNLOAD_URL="$URL/$INSTALLER"
-INSTALLED="raspiBackup.sh"
+TO_BE_INSTALLED="raspiBackup.sh"
 
-GIT_DATE="$Date: 2020-09-19 19:36:41 +0200$"
+GIT_DATE="$Date: 2020-10-09 21:41:20 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: d5791cb$"
+GIT_COMMIT="$Sha1: adca021$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -53,8 +53,8 @@ if [[ $# == 1 && ( $1 == "-v" || $1 == "--version" ) ]]; then
 	exit 0
 fi
 
-if (( $UID != 0 )); then
-	echo "Root access required to install $INSTALLED. Please use 'sudo ~/$MYSELF'."
+if (( $UID != 0 )) && [[ $1 != "-h" ]]; then
+	echo "Root access required to install $TO_BE_INSTALLED. Please use 'sudo ./$MYSELF'."
 	exit 1
 fi
 
@@ -64,4 +64,4 @@ trap cleanup SIGINT SIGTERM EXIT
 
 cd ~
 # download and invoke installer
-curl -sLO "$INSTALLER_DOWNLOAD_URL" && sudo bash "./$INSTALLER"
+curl -sLO "$INSTALLER_DOWNLOAD_URL" && sudo bash "./$INSTALLER" "$1"

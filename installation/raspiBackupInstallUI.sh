@@ -37,18 +37,18 @@ fi
 if ! which whiptail &>/dev/null; then
 	echo "$MYSELF depends on whiptail. Please install whiptail first."
 	exit 1
-fi	
+fi
 
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2020-10-03 13:04:11 +0200$"
+GIT_DATE="$Date: 2020-10-04 10:43:24 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: 2a271d2$"
+GIT_COMMIT="$Sha1: a0fcb37$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -185,9 +185,9 @@ MSG_DE[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: %1 beta wird aus dem Netz gelade
 MSG_CODE_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: Created %1."
 MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: %1 wurde erstellt."
-MSG_NO_INSTALLATION_FOUND=$((SCNT++))
-MSG_EN[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0016W: No installation to refresh detected."
-MSG_DE[$MSG_NO_INSTALLATION_FOUND]="${MSG_PRF}0016W: Keine Installation für einen Update entdeckt."
+MSG_NOT_INSTALLED=$((SCNT++))
+MSG_EN[$MSG_NOT_INSTALLED]="${MSG_PRF}0016I: %1 not installed."
+MSG_DE[$MSG_NOT_INSTALLED]="${MSG_PRF}0016I: %1 nicht installiert."
 MSG_CHOWN_FAILED=$((SCNT++))
 MSG_EN[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown of %1 failed."
 MSG_DE[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown von %1 nicht möglich."
@@ -210,8 +210,8 @@ MSG_SAMPLEEXTENSION_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Sample extension uninstall failed. %1"
 MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Beispielserweiterungsdeinstallation fehlgeschlagen. %1"
 MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS=$((SCNT++))
-MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Sample extensions successfully uninstalled and disenabled."
-MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Beispielserweiterungen erfolgreich deinstalliert und ausgeschaltet."
+MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Sample extensions successfully deleted."
+MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Beispielserweiterungen erfolgreich gelöscht."
 MSG_UNINSTALLING_CRON_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0025I: Deleting cron file %1."
 MSG_DE[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0025I: Crondatei %1 wird gelöscht."
@@ -603,7 +603,6 @@ MENU_DE[$MENU_UPDATE_INSTALLER]='"P2" "Aktualisiere $MYSELF"'
 declare -A MSG_HEADER=(['I']="---" ['W']="!!!" ['E']="???")
 
 INSTALLATION_SUCCESSFULL=0
-INSTALLATION_WARNING=0
 INSTALLATION_STARTED=0
 CONFIG_INSTALLED=0
 SCRIPT_INSTALLED=0
@@ -613,7 +612,6 @@ PROGRESSBAR_DO=0
 
 INSTALL_EXTENSIONS=0
 BETA_INSTALL=0
-REFRESH_SCRIPT=0
 CRONTAB_ENABLED="undefined"
 
 function checkRequiredDirectories() {
@@ -808,57 +806,20 @@ function isStartStopDefined() {
 	return
 }
 
-function installer_code_download_execute() {
-
-	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
-	local rc=$?
-	if (( $rc )); then
-		unrecoverableError $MSG_NO_INTERNET_CONNECTION_FOUND "$rc"
-		return
+function createSymLink() { # create link from /usr/local/bin/<filename> to /usr/local/bin/<filename>.sh
+	local fileName="$1"
+	local linkName="${fileName%.*}"
+	rm -f $linkName &>/dev/null
+	if ! ln -s $fileName $linkName; then
+		unrecoverableError $MSG_MOVE_FAILED "$linkName"
+		return 1
 	fi
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
-		return
-	fi
+}
 
-	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		return
-	fi
-
-	SCRIPT_INSTALLED=1
-
-	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
-
-	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
-		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		return
-	fi
-
-	if [[ "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
-		if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
-			if ! mv -f "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
-				unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-				return
-			fi
-		else
-			cp "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"
-		fi
-	fi
-
-	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-
-	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		return
-	fi
-
-	local chownArgs=$(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed 's/\n//')
-	if ! chown $chownArgs "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		return
-	fi
-
+function deleteSymLink() { # delete link from /usr/local/bin/<filename> to /usr/local/bin/<filename>.sh
+	local fileName="$1"
+	local linkName="${fileName%.*}"
+	rm -f $linkName &>/dev/null
 }
 
 function code_download_execute() {
@@ -872,11 +833,6 @@ function code_download_execute() {
 		newName="$FILE_TO_INSTALL_ABS_FILE.$oldVersion.sh"
 		writeToConsole $MSG_SAVING_FILE "$FILE_TO_INSTALL" "$newName"
 		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
-	elif (($REFRESH_SCRIPT)); then
-		writeToConsole $MSG_NO_INSTALLATION_FOUND
-		INSTALLATION_WARNING=1
-		logExit
-		return
 	fi
 
 	if (($BETA_INSTALL)); then
@@ -891,15 +847,18 @@ function code_download_execute() {
 	local rc=$?
 	if (( $rc )); then
 		unrecoverableError $MSG_NO_INTERNET_CONNECTION_FOUND "$rc"
+		logExit
 		return
 	fi
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
+		logExit
 		return
 	fi
 
 	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		logExit
 		return
 	fi
 
@@ -909,13 +868,20 @@ function code_download_execute() {
 
 	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
 		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		logExit
 		return
 	fi
 
-	if [[ "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
+	if ! createSymLink "$FILE_TO_INSTALL_ABS_FILE"; then
+		logExit
+		return
+	fi
+
+	if [[ -e "$MYDIR/$MYSELF" && "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
 		if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
 			if ! mv -f "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
 				unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+				logExit
 				return
 			fi
 		else
@@ -927,12 +893,19 @@ function code_download_execute() {
 
 	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		logExit
 		return
 	fi
 
 	local chownArgs=$(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed 's/\n//')
 	if ! chown $chownArgs "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		logExit
+		return
+	fi
+
+	if ! createSymLink "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"; then
+		logExit
 		return
 	fi
 
@@ -1147,18 +1120,19 @@ function extensions_uninstall_execute() {
 
 	local extensions="mem temp disk"
 
-	if ! rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_SAMPLEEXTENSION_UNINSTALL_FAILED "rm extensions"
-		return
+	if ls $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh >&/dev/null; then
+		if ! rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_SAMPLEEXTENSION_UNINSTALL_FAILED "rm extensions"
+			return
+		fi
+		writeToConsole $MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS
 	fi
-
+	
 	if [[ -f CONFIG_ABS_FILE ]]; then
 		sed -i "s/^DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"\"/" $CONFIG_ABS_FILE
 	fi
 
 	EXTENSIONS_INSTALLED=0
-
-	writeToConsole $MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS
 
 	logExit
 
@@ -1363,10 +1337,12 @@ function cron_uninstall_execute() {
 
 	logEntry
 
-	writeToConsole $MSG_UNINSTALLING_CRON_TEMPLATE "$CRON_ABS_FILE"
-	if ! rm -f "$CRON_ABS_FILE" 2>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$CRON_ABS_FILE"
-		return
+	if [[ -e "$CRON_ABS_FILE" ]]; then
+		writeToConsole $MSG_UNINSTALLING_CRON_TEMPLATE "$CRON_ABS_FILE"
+		if ! rm -f "$CRON_ABS_FILE" 2>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$CRON_ABS_FILE"
+			return
+		fi
 	fi
 	CRON_INSTALLED=0
 	logExit
@@ -1378,12 +1354,14 @@ function config_uninstall_execute() {
 	logEntry
 
 	# all config files starting with raspiBackup
-	
+
 	local pre=${CONFIG_ABS_FILE%%.*}
-	writeToConsole $MSG_DELETE_FILE "$pre*"
-	if ! rm -f $pre* &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$pre*"
-		return
+	if ls $pre* &>/dev/null; then
+		writeToConsole $MSG_DELETE_FILE "$pre*"
+		if ! rm -f $pre* &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$pre*"
+			return
+		fi
 	fi
 	logExit
 }
@@ -1391,25 +1369,29 @@ function config_uninstall_execute() {
 function misc_uninstall_execute() {
 
 	logEntry
-		
+
 	# tmp files
-	writeToConsole $MSG_DELETE_FILE "/tmp/$RASPIBACKUP_NAME*"
-	if ! rm -f /tmp/$RASPIBACKUP_NAME* &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "/tmp/$RASPIBACKUP_NAME*"
-		return
+	if ls /tmp/$RASPIBACKUP_NAME* &>/dev/null; then 
+		writeToConsole $MSG_DELETE_FILE "/tmp/$RASPIBACKUP_NAME*"
+		if ! rm -f /tmp/$RASPIBACKUP_NAME* &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "/tmp/$RASPIBACKUP_NAME*"
+			return
+		fi
 	fi
 
 	# reminder status file
-	writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY/*"
-	if ! rm -f $VAR_LIB_DIRECTORY/* &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY/*"
-		return
-	fi
-	if [[ -d $VAR_LIB_DIRECTORY ]]; then
-		writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY"
-		if ! rmdir $VAR_LIB_DIRECTORY &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY"
+	if ls $VAR_LIB_DIRECTORY/* &>/dev/null; then 
+		writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY/*"
+		if ! rm -f $VAR_LIB_DIRECTORY/* &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY/*"
 			return
+		fi
+		if [[ -d $VAR_LIB_DIRECTORY ]]; then
+			writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY"
+			if ! rmdir $VAR_LIB_DIRECTORY &>>"$LOG_FILE"; then
+				unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY"
+				return
+			fi
 		fi
 	fi
 	logExit
@@ -1422,17 +1404,23 @@ function uninstall_script_execute() {
 	pre=${FILE_TO_INSTALL_ABS_FILE%%.*}
 	post=${FILE_TO_INSTALL_ABS_FILE##*.}
 
-	writeToConsole $MSG_DELETE_FILE "$pre*.$post*"
-	if ! rm -f $pre*.$post* 2>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$pre*.$post*"
-		return
+	if ls $pre.$post* &>/dev/null; then
+		writeToConsole $MSG_DELETE_FILE "$pre.$post*"
+		if ! rm -f $pre.$post* 2>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$pre.$post*"
+			return
+		fi
+	fi
+	if [[ -e "$FILE_TO_INSTALL_ABS_FILE" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_FILE"
+		if ! rm -f "$FILE_TO_INSTALL_ABS_FILE" 2>>$LOG_FILE; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+			return
+		fi
 	fi
 
-	writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-	if ! rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		return
-	fi
+	deleteSymLink "$FILE_TO_INSTALL_ABS_FILE"
+
 	INSTALLATION_SUCCESSFULL=0
 	logExit
 }
@@ -1441,15 +1429,23 @@ function uninstall_execute() {
 
 	logEntry
 
-	writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-	if ! rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		return
+	if [[ -e "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+		if ! rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+			return
+		fi
+		deleteSymLink "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+
+		if [[ -f "$LATEST_TEMP_PROPERTY_FILE" ]]; then
+			writeToConsole $MSG_DELETE_FILE "$LATEST_TEMP_PROPERTY_FILE"
+			rm -f "$LATEST_TEMP_PROPERTY_FILE" 2>>$LOG_FILE
+		fi
+		writeToConsole $MSG_UNINSTALL_FINISHED "$RASPIBACKUP_NAME"
+	else
+		writeToConsole $MSG_NOT_INSTALLED "$RASPIBACKUP_NAME"
 	fi
 
-	[[ -f "$LATEST_TEMP_PROPERTY_FILE" ]] && rm -f "$LATEST_TEMP_PROPERTY_FILE" 2>>$LOG_FILE
-
-	writeToConsole $MSG_UNINSTALL_FINISHED "$RASPIBACKUP_NAME"
 	INSTALLATION_SUCCESSFULL=0
 	logExit
 
@@ -1606,6 +1602,7 @@ function cleanup() {
 	logItem "rc: $rc"
 
 	TAIL=0
+
 	if (($INSTALLATION_STARTED)); then
 		if ((!$INSTALLATION_SUCCESSFULL)); then
 			writeToConsole $MSG_CLEANUP
@@ -1613,24 +1610,18 @@ function cleanup() {
 			(($SCRIPT_INSTALLED)) && rm $FILE_TO_INSTALL_ABS_FILE &>>"$LOG_FILE" || true
 			(($CRON_INSTALLED)) && rm $CRON_ABS_FILE &>>"$LOG_FILE" || true
 			(($EXTENSIONS_INSTALLED)) && rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE" || true
-			if [[ "$signal" == "EXIT" ]]; then
-				if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
-					rm -f $LOG_FILE &>/dev/null || true
-				fi
-			else
-				writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
-			fi
-			rc=127
-		else
-			if ((!$INSTALLATION_WARNING)); then
-				writeToConsole $MSG_INSTALLATION_FINISHED "$RASPIBACKUP_NAME"
-			fi
 		fi
 	fi
 
 	(($EXTENSIONS_INSTALLED)) && rm $SAMPLEEXTENSION_TAR_FILE &>>$LOG_FILE || true
 
-	logExit
+	if [[ "$signal" == "EXIT" ]]; then
+		(( ! $RASPIBACKUP_INSTALL_DEBUG )) && rm -f $LOG_FILE &>/dev/null
+	else
+		writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
+		logExit
+		rc=127
+	fi
 
 	exit $rc
 }
@@ -2690,6 +2681,7 @@ function config_download_do() {
 
 	DOWNLOAD_DESCRIPTION=("Downloading $RASPIBACKUP_NAME configuration ...")
 	progressbar_do "DOWNLOAD_DESCRIPTION" "Downloading $FILE_TO_INSTALL configuration template" config_download_execute
+	
 	logExit
 
 }
@@ -3144,7 +3136,9 @@ function unattendedInstall() {
 		fi
 	elif (( MODE_UPDATE )); then
 		update_installer_execute
-	else
+	elif (( MODE_EXTENSIONS )); then
+		extensions_install_execute
+	else # uninstall
 		extensions_uninstall_execute
 		cron_uninstall_execute
 		config_uninstall_execute
@@ -3166,10 +3160,12 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF -i [ -e ]? | -u"
-	echo "-i: unattended install of $RASPIBACKUP_NAME"
+	echo "$MYSELF ( -i [-e]? | -u | -U ) [-d]? "
+	echo "-d: enable debug mode"
+	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
+	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
+	echo "-U: unattended update of $MYSELF"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
-	echo "-e: unattended install of $RASPIBACKUP_NAME extensions"
 }
 
 INVOCATIONPARMS=""			# save passed opts for logging
@@ -3179,6 +3175,43 @@ for (( i=1; i<=$#; i++ )); do
 	INVOCATIONPARMS="$INVOCATIONPARMS $p"
 done
 
+CLEANUP_LOG=0
+
+MODE_UNATTENDED=0
+# MODE_UNINSTALL=0 is default
+MODE_INSTALL=0
+MODE_UPDATE=0 # force install
+MODE_EXTENSIONS=0
+
+while getopts "dh?uUei" opt; do
+    case "$opt" in
+	 d) RASPIBACKUP_INSTALL_DEBUG=1
+		 ;;
+	 h|\?)
+       show_help
+       exit 0
+       ;;
+    i) MODE_INSTALL=1
+		 MODE_UNATTENDED=1
+       ;;
+    e) MODE_EXTENSIONS=1
+		 MODE_UNATTENDED=1
+		 ;;
+    U) MODE_UPDATE=1
+		 MODE_UNATTENDED=1
+		 ;;
+    u) MODE_UNINSTALL=1
+		 MODE_UNATTENDED=1
+		 ;;
+	*)  echo "Unknown option $op"
+		 show_help
+		 exit 1
+		 ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
 if (( $UID != 0 )); then
 	t=$(getMessageText $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS")
 	echo "$t"
@@ -3186,39 +3219,6 @@ if (( $UID != 0 )); then
 fi
 
 trapWithArg cleanup SIGINT SIGTERM EXIT
-
-MODE_UNATTENDED=0
-MODE_UNINSTALL=0
-MODE_INSTALL=0
-MODE_UPDATE=0 # force install
-MODE_EXTENSIONS=0
-
-while getopts "h?uUei" opt; do
-    case "$opt" in
-    h|\?)
-        show_help
-        exit 0
-        ;;
-    i)  MODE_INSTALL=1
-		MODE_UNATTENDED=1
-        ;;
-    e)  MODE_EXTENSIONS=1
-		MODE_UNATTENDED=1
-		;;
-    U)  MODE_UPDATE=1
-		MODE_UNATTENDED=1
-		;;
-    u)  MODE_UNINSTALL=1
-		MODE_UNATTENDED=1
-		;;
-	*)  echo "Unknown option $op"
-		show_help
-		exit 1
-		;;
-    esac
-done
-
-shift $((OPTIND-1))
 
 writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
 
