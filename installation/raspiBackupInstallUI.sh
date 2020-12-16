@@ -44,11 +44,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2020-10-04 10:43:24 +0200$"
+GIT_DATE="$Date: 2020-11-24 20:02:50 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: a0fcb37$"
+GIT_COMMIT="$Sha1: 4ca22ad$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -58,6 +58,7 @@ FILE_TO_INSTALL="raspiBackup.sh"
 RASPIBACKUP_NAME=${FILE_TO_INSTALL%.*}
 RASPIBACKUP_INSTALL_DEBUG=0 # just disable some code for debugging
 
+CURRENT_DIR=$(pwd)
 NL=$'\n'
 IGNORE_START_STOP_CHAR=":"
 FILE_TO_INSTALL_BETA="raspiBackup_beta.sh"
@@ -79,7 +80,9 @@ EOF
 
 PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
 BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta-sh/download"
-LATEST_TEMP_PROPERTY_FILE="/tmp/$MYNAME.properties"
+PROPERTY_FILE_NAME="$MYNAME.properties"
+LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
+LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-sh/download"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
@@ -614,6 +617,10 @@ INSTALL_EXTENSIONS=0
 BETA_INSTALL=0
 CRONTAB_ENABLED="undefined"
 
+function existsLocalPropertiesFile() {
+	[[ -e "$LOCAL_PROPERTY_FILE" ]]
+}
+
 function checkRequiredDirectories() {
 
 	local dirs=( "$BIN_DIR" "$ETC_DIR" "$CRON_DIR")
@@ -1084,7 +1091,7 @@ function extensions_install_execute() {
 		return
 	fi
 
-	sed -i "s/^DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_ABS_FILE
+	sed -i -E "s/^(#?\s?)?DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_ABS_FILE
 
 	EXTENSIONS_INSTALLED=1
 
@@ -1127,9 +1134,9 @@ function extensions_uninstall_execute() {
 		fi
 		writeToConsole $MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS
 	fi
-	
+
 	if [[ -f CONFIG_ABS_FILE ]]; then
-		sed -i "s/^DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"\"/" $CONFIG_ABS_FILE
+		sed -i -E "s/DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"\"/" $CONFIG_ABS_FILE
 	fi
 
 	EXTENSIONS_INSTALLED=0
@@ -1242,15 +1249,15 @@ function config_update_execute() {
 	logItem "eMail: $CONFIG_EMAIL"
 	logItem "mailProgram: $CONFIG_MAIL_PROGRAM"
 
-	sed -i "s/^DEFAULT_LANGUAGE=.*\$/DEFAULT_LANGUAGE=\"$CONFIG_LANGUAGE\"/" "$CONFIG_ABS_FILE"
-	sed -i "s/^DEFAULT_BACKUPTYPE=.*\$/DEFAULT_BACKUPTYPE=\"$CONFIG_BACKUPTYPE\"/" "$CONFIG_ABS_FILE"
-	sed -i "s/^DEFAULT_ZIP_BACKUP=.*\$/DEFAULT_ZIP_BACKUP=\"$CONFIG_ZIP_BACKUP\"/" "$CONFIG_ABS_FILE"
-	sed -i "s/^DEFAULT_KEEPBACKUPS=.*\$/DEFAULT_KEEPBACKUPS=\"$CONFIG_KEEPBACKUPS\"/" "$CONFIG_ABS_FILE"
-	sed -i "s/^DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_MSG_LEVEL\"/" "$CONFIG_ABS_FILE"
-	sed -i "s/^DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
-	sed -i "s/^DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_LANGUAGE=.*\$/DEFAULT_LANGUAGE=\"$CONFIG_LANGUAGE\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPTYPE=.*\$/DEFAULT_BACKUPTYPE=\"$CONFIG_BACKUPTYPE\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_ZIP_BACKUP=.*\$/DEFAULT_ZIP_BACKUP=\"$CONFIG_ZIP_BACKUP\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_KEEPBACKUPS=.*$/DEFAULT_KEEPBACKUPS=\"$CONFIG_KEEPBACKUPS\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_MSG_LEVEL\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
 	local f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
-	sed -i "s/^DEFAULT_BACKUPPATH=.*$/DEFAULT_BACKUPPATH=\"$f\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPPATH=.*$/DEFAULT_BACKUPPATH=\"$f\"/" "$CONFIG_ABS_FILE"
 
 	local pline sline
 	if [[ "$CONFIG_STOPSERVICES" != "$IGNORE_START_STOP_CHAR" && -n "$CONFIG_STOPSERVICES" ]]; then
@@ -1265,8 +1272,8 @@ function config_update_execute() {
 	logItem "pline: $pline"
 	logItem "sline: $sline"
 
-	sed -i "s/^DEFAULT_STOPSERVICES=.*$/DEFAULT_STOPSERVICES=\"$pline\"/" "$CONFIG_ABS_FILE"
-	sed -i "s/^DEFAULT_STARTSERVICES=.*$/DEFAULT_STARTSERVICES=\"$sline\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_STOPSERVICES=.*$/DEFAULT_STOPSERVICES=\"$pline\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_STARTSERVICES=.*$/DEFAULT_STARTSERVICES=\"$sline\"/" "$CONFIG_ABS_FILE"
 
 	logExit
 
@@ -1371,7 +1378,7 @@ function misc_uninstall_execute() {
 	logEntry
 
 	# tmp files
-	if ls /tmp/$RASPIBACKUP_NAME* &>/dev/null; then 
+	if ls /tmp/$RASPIBACKUP_NAME* &>/dev/null; then
 		writeToConsole $MSG_DELETE_FILE "/tmp/$RASPIBACKUP_NAME*"
 		if ! rm -f /tmp/$RASPIBACKUP_NAME* &>>"$LOG_FILE"; then
 			unrecoverableError $MSG_UNINSTALL_FAILED "/tmp/$RASPIBACKUP_NAME*"
@@ -1380,7 +1387,7 @@ function misc_uninstall_execute() {
 	fi
 
 	# reminder status file
-	if ls $VAR_LIB_DIRECTORY/* &>/dev/null; then 
+	if ls $VAR_LIB_DIRECTORY/* &>/dev/null; then
 		writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY/*"
 		if ! rm -f $VAR_LIB_DIRECTORY/* &>>"$LOG_FILE"; then
 			unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY/*"
@@ -2681,7 +2688,7 @@ function config_download_do() {
 
 	DOWNLOAD_DESCRIPTION=("Downloading $RASPIBACKUP_NAME configuration ...")
 	progressbar_do "DOWNLOAD_DESCRIPTION" "Downloading $FILE_TO_INSTALL configuration template" config_download_execute
-	
+
 	logExit
 
 }
@@ -2810,6 +2817,8 @@ function config_language_do() {
 	local en_=off
 	local de_=off
 
+	[[ -z "$CONFIG_LANGUAGE" ]] && CONFIG_LANGUAGE="$MESSAGE_LANGUAGE"
+
 	case "$CONFIG_LANGUAGE" in
 		DE) de_=on ;;
 		EN) en_=on ;;
@@ -2930,23 +2939,23 @@ function isNewerVersion() { # current actual
 #INCOMPATIBLE_INSTALLER=""
 #BETA_INSTALLER=""
 
-function parsePropertiesFile() {
+function parsePropertiesFile() { # propertyFileName
 
 	logEntry
 
-	local properties=$(grep "^VERSION=" "$LATEST_TEMP_PROPERTY_FILE" 2>/dev/null)
+	local properties=$(grep "^VERSION=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY=${BASH_REMATCH[1]}
-	properties=$(grep "^INCOMPATIBLE=" "$LATEST_TEMP_PROPERTY_FILE" 2>/dev/null)
+	properties=$(grep "^INCOMPATIBLE=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && INCOMPATIBLE_PROPERTY=${BASH_REMATCH[1]}
-	properties=$(grep "^BETA=" "$LATEST_TEMP_PROPERTY_FILE" 2>/dev/null)
+	properties=$(grep "^BETA=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && BETA_PROPERTY=${BASH_REMATCH[1]}
 	logItem "Script properties: v: $VERSION_PROPERTY i: $INCOMPATIBLE_PROPERTY b: $BETA_PROPERTY"
 
-	local properties=$(grep "^VERSION_INSTALLER=" "$LATEST_TEMP_PROPERTY_FILE" 2>/dev/null)
+	local properties=$(grep "^VERSION_INSTALLER=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY_INSTALLER=${BASH_REMATCH[1]}
-	properties=$(grep "^INCOMPATIBLE_INSTALLER=" "$LATEST_TEMP_PROPERTY_FILE" 2>/dev/null)
+	properties=$(grep "^INCOMPATIBLE_INSTALLER=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && INCOMPATIBLE_PROPERTY_INSTALLER=${BASH_REMATCH[1]}
-	properties=$(grep "^BETA_INSTALLER=" "$LATEST_TEMP_PROPERTY_FILE" 2>/dev/null)
+	properties=$(grep "^BETA_INSTALLER=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && BETA_PROPERTY_INSTALLER=${BASH_REMATCH[1]}
 	logItem "Installer properties: v: $VERSION_PROPERTY_INSTALLER i: $INCOMPATIBLE_PROPERTY_INSTALLER b: $BETA_PROPERTY_INSTALLER"
 
@@ -3046,8 +3055,12 @@ function uiInstall() {
 	fi
 
 	if isInternetAvailable; then
-		downloadPropertiesFile_do
-		parsePropertiesFile
+		if existsLocalPropertiesFile; then
+			parsePropertiesFile "$LOCAL_PROPERTY_FILE"
+		else
+			downloadPropertiesFile_do
+			parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
+		fi
 	fi
 
 	parseCurrentVersions
