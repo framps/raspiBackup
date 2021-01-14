@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2020-12-16 09:58:36 +0100$"
+GIT_DATE="$Date: 2021-01-14 12:30:25 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7989828$"
+GIT_COMMIT="$Sha1: d85a087$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1939,7 +1939,7 @@ function findUser() {
 			thisUser="root"
 			break
 		fi
-		ARR=($(ps h -p$thisPID -ouser,ppid;))
+		ARR=($(/bin/ps h -p$thisPID -ouser,ppid;))
 		thisUser="${ARR[0]}"
 		myPPid="${ARR[1]}"
 		thisPID=$myPPid
@@ -2553,6 +2553,7 @@ function supportsFileAttributes() {	# directory
 	# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
 	cp -a /tmp/$MYNAME.fileattributes /$1 &>>"$LOG_FILE"
 	read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
+	attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
 	logItem "$attrsT # $ownerT # $groupT"
 
 	# check fileattributes and ownerships are identical
@@ -6453,9 +6454,11 @@ function doitRestore() {
 		exitError $RC_MISSING_FILES
 	fi
 
-	if isMounted "$RESTORE_DEVICE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$RESTORE_DEVICE"
-		exitError $RC_MISC_ERROR
+	if (( ! $SKIP_SFDISK )); then
+		if isMounted "$RESTORE_DEVICE"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$RESTORE_DEVICE"
+			exitError $RC_MISC_ERROR
+		fi
 	fi
 
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
