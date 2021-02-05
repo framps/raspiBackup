@@ -2,7 +2,7 @@
 
 #######################################################################################################################
 #
-# Script to download, install, configure and uninstall raspiBackup.sh.
+# Script to download, install and configure raspiBackup.sh.
 #
 # Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
@@ -33,11 +33,11 @@ INSTALLER="raspiBackupInstallUI.sh"
 INSTALLER_DOWNLOAD_URL="$URL/$INSTALLER"
 TO_BE_INSTALLED="raspiBackup.sh"
 
-GIT_DATE="$Date: 2020-10-09 21:41:20 +0200$"
+GIT_DATE="$Date: 2020-03-01 22:23:44 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: adca021$"
+GIT_COMMIT="$Sha1: c06acc0$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"

@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2021-01-14 12:30:25 +0100$"
+GIT_DATE="$Date: 2021-02-05 14:43:04 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: d85a087$"
+GIT_COMMIT="$Sha1: 6dc5832$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -328,6 +328,7 @@ INTERACTIVE=!$?
 MSG_SUPPORTED_REGEX="^EN$|^DE$"
 
 LANG_EXT="${LANG^^*}"
+LANG_SUFF="EN"
 MSG_LANG_FALLBACK="EN"
 LANGUAGE="$MSG_LANG_FALLBACK"
 
@@ -1139,14 +1140,17 @@ MSG_DYNAMIC_MOUNT_NOT_REQUIRED=262
 MSG_EN[$MSG_DYNAMIC_MOUNT_NOT_REQUIRED]="RBK0262I: Dynamic mount of %s skipped because it's already mounted."
 MSG_DE[$MSG_DYNAMIC_MOUNT_NOT_REQUIRED]="RBK0262I: Dynamischer mount von %s nicht ausgeführt da es schon gemounted ist."
 MSG_NO_FILEATTRIBUTESUPPORT=263
-MSG_EN[$MSG_NO_FILEATTRIBUTESUPPORT]="RBK0263E: Filesystem on %s does not support Linux fileattributes."
-MSG_DE[$MSG_NO_FILEATTRIBUTESUPPORT]="RBK0263E: Dateisystem auf %s unterstützt keine Linux Dateiattribute."
+MSG_EN[$MSG_NO_FILEATTRIBUTESUPPORT]="RBK0263E: Filesystem %s on %s does not support Linux fileattributes."
+MSG_DE[$MSG_NO_FILEATTRIBUTESUPPORT]="RBK0263E: Dateisystem %s auf %s unterstützt keine Linux Dateiattribute."
 MSG_ROOT_PARTITION_NOT_DIFFERENT=264
 MSG_EN[$MSG_ROOT_PARTITION_NOT_DIFFERENT]="RBK0264E: Partition used with option -R cannot be located on same device %s used with option -d."
 MSG_DE[$MSG_ROOT_PARTITION_NOT_DIFFERENT]="RBK0264E: Die mit Option -R genutzte Partition darf nicht auf demselben Gerät %s welches mit Option -d angegeben wurde liegen."
 MSG_DD_WARNING=265
 MSG_EN[$MSG_DD_WARNING]="RBK0265W: It's not recommended to use the dd backup method. For details read $DD_WARNING_URL_EN."
 MSG_DE[$MSG_DD_WARNING]="RBK0265W: dd als Backupmethode wird nicht empfohlen. Details dazu finden sich auf $DD_WARNING_URL_DE."
+MSG_NO_FILEATTRIBUTE_RIGHTS=266
+MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create fileattributes on %s (Filesystem: %s)."
+MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1273,7 +1277,9 @@ function callExtensions() { # extensionplugpoint rc
 
 function usage() {
 
-	LANG_SUFF=$LANGUAGE
+	[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
+	LANG_EXT="${LANG^^*}"
+	LANG_SUFF="${LANG_EXT:0:2}"
 
 	NO_YES=( $(getLocalizedMessage $MSG_NO_YES) )
 
@@ -2629,8 +2635,11 @@ function getFsType() { # file or path
 
 	logEntry "$1"
 
+	local mp="$(findMountPath "$1")"
+	logEntry "Mountpoint: $mp"
+
 	local dev fstype r
-	read dev fstype r <<< $(df -T | grep "$1")
+	read dev fstype r <<< $(df -T | grep "$mp")
 	echo $fstype
 
 	logExit "$fstype"
@@ -2661,6 +2670,31 @@ function isPathMounted() {
 	logExit "$rc"
 
 	return $rc
+}
+
+# find path of mount of file or directory
+
+function findMountPath() {
+
+	logEntry "$1"
+
+	local path
+	path=$1
+
+	# path has to be mount point of the file system (second field fs_file in /etc/fstab) and NOT fs_spec otherwise test algorithm will create endless loop
+	if [[ "${1:0:1}" == "/" ]]; then
+		while [[ "$path" != "" ]]; do
+			logItem "Path: $path"
+			if mountpoint -q "$path"; then
+				break
+			fi
+			path=${path%/*}
+		done
+	fi
+	echo "$path"
+	logExit "$path"
+
+	return
 }
 
 function readConfigParameters() {
@@ -3234,6 +3268,8 @@ function noop() {
 function cleanupBackupDirectory() {
 
 	logEntry
+
+	logCommand "ls -la "$BACKUPTARGET_DIR""
 
 	if [[ $rc != 0 ]] || (( $FAKE_BACKUPS )); then
 
@@ -5259,7 +5295,7 @@ function getRootPartition() {
 
 	local cmdline=$(cat /proc/cmdline)
 	logCommand "cat /proc/cmdline"
-	if [[ $cmdline =~ .*(imgpart|root)=([^ ]+) ]]; then
+	if [[ $cmdline =~ .*(imgpart|root|datadev)=([^ ]+) ]]; then # berryboot and 
 		ROOT_PARTITION=${BASH_REMATCH[2]}
 		logItem "RootPartition: $ROOT_PARTITION"
 	else
@@ -5636,7 +5672,11 @@ function doitBackup() {
 				local fs="$(getFsType "$BACKUPPATH")"
 				logItem "Filesystem: $fs"
 				if ! supportsFileAttributes $BACKUPPATH; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$BACKUPPATH"
+					if [[ $fs =~ ^nfs* ]]; then
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTE_RIGHTS "$(findMountPath "$BACKUPPATH")" "$fs"
+					else
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$fs" "$(findMountPath "$BACKUPPATH")"
+					fi
 					exitError $RC_MISC_ERROR
 				fi
 				ROOT_HARDLINKS_SUPPORTED=1
@@ -7354,6 +7394,11 @@ for (( i=1; i<=$#; i++ )); do
 	INVOCATIONPARMS="$INVOCATIONPARMS $p"
 done
 
+# initialize default config
+initializeDefaultConfigVariables
+# assign default config to variables
+copyDefaultConfigVariables
+
 # handle options which don't require root access
 if (( $# == 1 )); then
 	if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
@@ -7368,11 +7413,6 @@ if (( $# == 1 )); then
 		esac
 	fi
 fi
-
-# initialize default config
-initializeDefaultConfigVariables
-# assign default config to variables
-copyDefaultConfigVariables
 
 if (( $UID != 0 )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
@@ -7909,6 +7949,7 @@ if [[ -n $fileParameter ]]; then
 		BACKUPPATH="$(readlink -f "$fileParameter")"
 	fi
 fi
+
 if ( (( $RESTORE )) && [[ -z "$RESTOREFILE" ]] ) || ( (( ! $RESTORE )) && [[ -z "$BACKUPPATH" ]] ); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_FILEPARAMETER
 	mentionHelp

@@ -8,7 +8,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2021 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.3.4" 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.3.5" 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -44,11 +44,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2020-11-24 20:02:50 +0100$"
+GIT_DATE="$Date: 2021-02-05 16:24:27 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: 4ca22ad$"
+GIT_COMMIT="$Sha1: 57d9924$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -118,13 +118,23 @@ CONFIG_LANGUAGE="${LANG_SYSTEM^^*}"
 CONFIG_MSG_LEVEL="0"
 CONFIG_BACKUPTYPE="rsync"
 CONFIG_KEEPBACKUPS="3"
+DEFAULT_CONFIG_SMART_RECYCLE="0"
+CONFIG_SMART_RECYCLE="$DEFAULT_CONFIG_SMART_RECYCLE"
+DEFAULT_CONFIG_SMART_RECYCLE_OPTIONS="7 4 12 1"
+CONFIG_SMART_RECYCLE_OPTIONS="$DEFAULT_CONFIG_SMART_RECYCLE_OPTIONS"
+DEFAULT_CONFIG_SMART_RECYCLE_DRYRUN="1"
+CONFIG_SMART_RECYCLE_DRYRUN="$DEFAULT_CONFIG_SMART_RECYCLE_DRYRUN"
 CONFIG_BACKUPPATH="/backup"
+CONFIG_PARTITIONBASED_BACKUP="0"
+DEFAULT_CONFIG_PARTITIONS_TO_BACKUP="1 2"
+CONFIG_PARTITIONS_TO_BACKUP="$DEFAULT_CONFIG_PARTITIONS_TO_BACKUP"
 CONFIG_ZIP_BACKUP="0"
 CONFIG_CRON_HOUR="5"
 CONFIG_CRON_MINUTE="0"
 CONFIG_CRON_DAY="1" # Sun
 CONFIG_MAIL_PROGRAM="mail"
 CONFIG_EMAIL=""
+CONFIG_RESIZE_ROOTFS="1"
 
 ROWS_MSGBOX=10
 ROWS_ABOUT=16
@@ -297,8 +307,20 @@ MSG_DOWNLOADING_PROPERTYFILE=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING_PROPERTYFILE]="Downloading version information."
 MSG_DE[$MSG_DOWNLOADING_PROPERTYFILE]="Versionsinformationen werden runtergeladen."
 MSG_INVALID_KEEP=$((SCNT++))
-MSG_EN[$MSG_INVALID_KEEP]="Invalid number '%1'. Number has to be between 1 and 52."
-MSG_DE[$MSG_INVALID_KEEP]="Ungültige Zahl '%1'. Die Zahl muss zwischen 1 und 52 sein."
+MSG_EN[$MSG_INVALID_KEEP]="Invalid number %1 entered. Number has to be between 1 and 52."
+MSG_DE[$MSG_INVALID_KEEP]="Ungültige Zahl %1 eingegeben. Sie muss zwischen 1 und 52 liegen."
+MSG_INVALID_KEEP_NUMBER_COUNT=$((SCNT++))
+MSG_EN[$MSG_INVALID_KEEP_NUMBER_COUNT]="Insert one number only."
+MSG_DE[$MSG_INVALID_KEEP_NUMBER_COUNT]="Nur eine Zahl eingeben."
+MSG_INVALID_SMART=$((SCNT++))
+MSG_EN[$MSG_INVALID_SMART]="Invalid number %1 entered. Number has to be >= 0."
+MSG_DE[$MSG_INVALID_SMART]="Ungültige Zahl %1 eingegeben. Sie muss >= 0 sein."
+MSG_INVALID_SMART_NUMBER_COUNT=$((SCNT++))
+MSG_EN[$MSG_INVALID_SMART_NUMBER_COUNT]="Expect four numbers separated by spaces: daily, weekly, monthly and yearly backups."
+MSG_DE[$MSG_INVALID_SMART_NUMBER_COUNT]="Vier durch Leerzeichen getrennte Zahlen werden erwartet: Tägliche, wöchentliche, monatliche und jährliche Backups."
+MSG_INVALID_KEEP_NUMBER_COUNT=$((SCNT++))
+MSG_EN[$MSG_INVALID_KEEP_NUMBER_COUNT]="Enter one single number only."
+MSG_DE[$MSG_INVALID_KEEP_NUMBER_COUNT]="Nur eine einzige Zahl eingeben."
 MSG_INVALID_TIME=$((SCNT++))
 MSG_EN[$MSG_INVALID_TIME]="Invalid time '%1'. Input has to be in format hh:mm and 0<=hh<24 and 0<=mm<60."
 MSG_DE[$MSG_INVALID_TIME]="Ungültige Zeit '%1'. Die Eingabe muss im Format hh:mm sein und 0<=hh<24 und 0<=mm<60."
@@ -325,13 +347,16 @@ MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular
 Configure the backup to be created daily or weekly. For other backup intervals you have to modify /etc/cron.d/raspiBackup manually."
 MSG_DE[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME sollte regelmäßig gestartet werden wenn die initiale Konfiguration sowie Backup und Restore Tests beendet sind. \
 Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Intervalle muss die Datei /etc/cron.d/raspiBackup manuell geändert werden."
+DESCRIPTION_SMARTMODE=$((SCNT++))
+MSG_EN[$DESCRIPTION_SMARTMODE]="${NL}There exist two different ways to define the number of backups to keep. Just by defining the maximum number of backups to keep or \
+by using the smart backup strategy. See https://www.linux-tips-and-tricks.de/en/smart-recycle/ for details about the strategy."
+MSG_DE[$DESCRIPTION_SMARTMODE]="${NL}Es gibt zwei verschiedene Mthoden die Anzahl der vorzuhaltenden Backups zu definieren. Entweder wird die Anzahl der maximalen Backups definiert \
+oder durch Benutzung der intelligenten Backupstrategie. Eine Detailbeschreibung der Strategie befindet sich auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/."
 DESCRIPTION_MESSAGEDETAIL=$((SCNT++))
-MSG_EN[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME can either be very verbose with messages or just write the most important. \
-Usually it makes sense to turn it on when installing $RASPIBACKUP_NAME the first time to get additional messages which may help to isolate configuration issue. \
-Later on turn it off."
-MSG_DE[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME kann ziemlich viele Meldungen schreiben oder einfach nur die Wichtigsten. \
-Es macht Sinn sie beim ersten Installieren von $RASPIBACKUP_NAME anzuschalten um u.U. Hinweise auf mögliche Fehlkonfigurationen zu bekommen. \
-Später können sie ausgeschaltet werden."
+MSG_EN[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME can either be very verbose or just write important messages. \
+Usually it makes sense to turn all on when installing $RASPIBACKUP_NAME the first time. Later on you can change it to write important messages only."
+MSG_DE[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME kann viele Meldungen schreiben oder nur die Wichtigsten. \
+Es macht Sinn alle beim ersten Installieren von $RASPIBACKUP_NAME anzuschalten. Später können sie auf die Wichtigsten reduziert werden."
 DESCRIPTION_STARTSTOP=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP]="${NL}Before and after creating a backup important services should be stopped and started. Add the required services separated by a space which should be stopped in the correct order. \
 The services will be started in reverse order when backup finished. For further details see https://www.linux-tips-and-tricks.de/en/faq#a18."
@@ -350,14 +375,24 @@ Current sequence is displayed.\
 They will be started in reverse sequence again when the backup finished."
 MSG_DE[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Wähle alle wichtigen Services aus die vor dem Backup gestoppt werden sollen. \
 Sie werden wieder in umgekehrter Reihenfolge gestartet wenn der Backup beendet wurde."
+DESCRIPTION_PARTITIONS=$((SCNT++))
+MSG_EN[$DESCRIPTION_PARTITIONS]="${NL}Select all partitions which should be included in the backup. \
+${NL}${NL}Note: The first two partitions have to be selected all the time."
+MSG_DE[$DESCRIPTION_PARTITIONS]="${NL}Wähle alle Partitionen aus die im Backup enthalten sein sollen. \
+${NL}${NL}Hinweis: Die ersten beiden Partitionen müssen immer ausgewählt werden."
 DESCRIPTION_LANGUAGE=$((SCNT++))
 MSG_EN[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME und dieser Installer unterstützen Englisch und Deutsch. Standard ist die Systemsprache.${NL}\
 ${NL}$RASPIBACKUP_NAME and this installer support English and German. The default language is set by the system language."
 MSG_DE[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME and this installer support English and German. The default language is set by the system language.${NL}\
 ${NL}$RASPIBACKUP_NAME und dieser Installer unterstützen Englisch und Deutsch. Standard ist die Systemsprache."
 DESCRIPTION_KEEP=$((SCNT++))
-MSG_EN[$DESCRIPTION_KEEP]="${NL}This number defines how many backups will be kept on the backup partition. If more backups are created the oldest backups will be deleted."
-MSG_DE[$DESCRIPTION_KEEP]="${NL}Diese Zahl bestimmt wie viele Backups auf der Backupartition gehalten werden. Sobald diese Zahl überschritten wird werden die ältesten Backups automatisch gelöscht."
+MSG_EN[$DESCRIPTION_KEEP]="${NL}Enter number of backups to keep. Number hast to be between 1 and 52."
+MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Beackups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
+DESCRIPTION_SMART=$((SCNT++))
+MSG_EN[$DESCRIPTION_SMART]="${NL}Enter four numbers separated by spaces to define the smart recycle backup strategy parameters. The numbers define how many daily, weekly, monthly and yearly backups are kept. \
+For details about the backup strategy see https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+MSG_DE[$DESCRIPTION_SMART]="${NL}Gib mit vier durch Leerzeichen getrennten Zahlen die Parameter für die intelligente Rotationsstrategie ein. Die Zahlen definieren wie viele tägliche, wöchentliche, monatliche und jährliche Backups vorgehalten werden. \
+Details zur Backupstrategie können auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/ nachgelesen werden."
 DESCRIPTION_ERROR=$((SCNT++))
 MSG_EN[$DESCRIPTION_ERROR]="Unrecoverable error occurred. Check logfile $LOG_FILE."
 MSG_DE[$DESCRIPTION_ERROR]="Ein nicht behebbarer Fehler ist aufgetreten. Siehe Logdatei $LOG_FILE."
@@ -366,6 +401,11 @@ MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be b
 This can be a local partition or a mounted remote partition."
 MSG_DE[$DESCRIPTION_BACKUPPATH]="${NL}Am Backuppfad muss eine Partition gemounted sein auf welcher $FILE_TO_INSTALL die Backups ablegt. \
 Das kann eine lokale Partition oder eine remote gemountete Partition."
+DESCRIPTION_BACKUPMODE=$((SCNT++))
+MSG_EN[$DESCRIPTION_BACKUPMODE]="${NL}Preferred mode is the normal backup mode. If you need to save more than two partitions with tar or rsync use the partition oriented mode. \
+Use normal mode and dd backup if you need a dd backup. Default is to backup the first two partitions only but it's possible to add any additional partition."
+MSG_DE[$DESCRIPTION_BACKUPMODE]="${NL}Empfohlener Modus ist der normale Backup Modus. Wenn allerdings mehr als zwei Partitionen gesichert werden sollen mit tar oder rsync ist der paritionsorientiert Modus zu wählen. \
+Den normalen Modus muss man aber wählen wenn man ein dd Backup haben möchte. Standard ist nur die ersten beiden Partitionen zu sichern aber es kann jede weitere Partition dazugefügt werden."
 DESCRIPTION_BACKUPTYPE=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPTYPE]="${NL}rsync is the suggested backuptype because when using hardlinks from EXT3/4 filesystem it's fast because only changed or new files will be saved. \
 tar should be used if the backup filesystem is no EXT3/4, e.g a remote mounted samba share. Don't used a FAT32 filesystem because the maximum filesize is 4GB. \
@@ -525,32 +565,47 @@ MENU_CONFIG_MESSAGE_V=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MESSAGE_V]='"Verbose" "Display all messages"'
 MENU_DE[$MENU_CONFIG_MESSAGE_V]='"Detailiert" "Alle Meldungen anzeigen"'
 MENU_CONFIG_BACKUPPATH=$((MCNT++))
-MENU_EN[$MENU_CONFIG_BACKUPPATH]='"C2" "Backup path for backups"'
-MENU_DE[$MENU_CONFIG_BACKUPPATH]='"C2" "Verzeichnispfad für die Backups"'
+MENU_EN[$MENU_CONFIG_BACKUPPATH]='"C2" "Backup path"'
+MENU_DE[$MENU_CONFIG_BACKUPPATH]='"C2" "Backupverzeichnispfad"'
 MENU_CONFIG_BACKUPS=$((MCNT++))
-MENU_EN[$MENU_CONFIG_BACKUPS]='"C3" "Number of backups to save"'
-MENU_DE[$MENU_CONFIG_BACKUPS]='"C3" "Anzahl vorzuhaltender Backups"'
+MENU_EN[$MENU_CONFIG_BACKUPS]='"C3" "Backup versions"'
+MENU_DE[$MENU_CONFIG_BACKUPS]='"C3" "Backupversionen"'
 MENU_CONFIG_TYPE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE]='"C4" "Backup type"'
 MENU_DE[$MENU_CONFIG_TYPE]='"C4" "Backup Typ"'
+MENU_CONFIG_MODE=$((MCNT++))
+MENU_EN[$MENU_CONFIG_MODE]='"C5" "Backup mode"'
+MENU_DE[$MENU_CONFIG_MODE]='"C5" "Backup Modus"'
 MENU_CONFIG_SERVICES=$((MCNT++))
-MENU_EN[$MENU_CONFIG_SERVICES]='"C5" "Services to stop and start"'
-MENU_DE[$MENU_CONFIG_SERVICES]='"C5" "Zu stoppende und startende Services"'
+MENU_EN[$MENU_CONFIG_SERVICES]='"C6" "Services to stop and start"'
+MENU_DE[$MENU_CONFIG_SERVICES]='"C6" "Zu stoppende und startende Services"'
 MENU_CONFIG_MESSAGE=$((MCNT++))
-MENU_EN[$MENU_CONFIG_MESSAGE]='"C6" "Message verbosity"'
-MENU_DE[$MENU_CONFIG_MESSAGE]='"C6" "Meldungsgenauigkeit"'
+MENU_EN[$MENU_CONFIG_MESSAGE]='"C7" "Message verbosity"'
+MENU_DE[$MENU_CONFIG_MESSAGE]='"C7" "Meldungsgenauigkeit"'
 MENU_CONFIG_EMAIL=$((MCNT++))
-MENU_EN[$MENU_CONFIG_EMAIL]='"C7" "eMail notification"'
-MENU_DE[$MENU_CONFIG_EMAIL]='"C7" "eMail Benachrichtigung"'
+MENU_EN[$MENU_CONFIG_EMAIL]='"C8" "eMail notification"'
+MENU_DE[$MENU_CONFIG_EMAIL]='"C8" "eMail Benachrichtigung"'
 MENU_CONFIG_CRON=$((MCNT++))
-MENU_EN[$MENU_CONFIG_CRON]='"C8" "Regular backup"'
-MENU_DE[$MENU_CONFIG_CRON]='"C8" "Regelmäßiges Backup"'
+MENU_EN[$MENU_CONFIG_CRON]='"C9" "Regular backup"'
+MENU_DE[$MENU_CONFIG_CRON]='"C9" "Regelmäßiges Backup"'
 MENU_CONFIG_ZIP=$((MCNT++))
-MENU_EN[$MENU_CONFIG_ZIP]='"C9" "Compression"'
-MENU_DE[$MENU_CONFIG_ZIP]='"C9" "Komprimierung"'
+MENU_EN[$MENU_CONFIG_ZIP]='"C10" "Compression"'
+MENU_DE[$MENU_CONFIG_ZIP]='"C10" "Komprimierung"'
 MENU_CONFIG_ZIP_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP_NA]='" " " "'
 MENU_DE[$MENU_CONFIG_ZIP_NA]='" " " "'
+MENU_CONFIG_MODE_KEEP=$((MCNT++))
+MENU_EN[$MENU_CONFIG_MODE_KEEP]='"Simple" "Keep a maximum number of backups"'
+MENU_DE[$MENU_CONFIG_MODE_KEEP]='"Einfach" "Eine maximale Anzahl von Backups vorhalten"'
+MENU_CONFIG_MODE_SMART=$((MCNT++))
+MENU_EN[$MENU_CONFIG_MODE_SMART]='"Smart" "Smart backup strategy"'
+MENU_DE[$MENU_CONFIG_MODE_SMART]='"Intelligent" "Intelligente Backupstrategie "'
+MENU_CONFIG_MODE_NORMAL=$((MCNT++))
+MENU_EN[$MENU_CONFIG_MODE_NORMAL]='"Standard" "Backup the two standard partitions"'
+MENU_DE[$MENU_CONFIG_MODE_NORMAL]='"Standard" "Sichere die zwei Standardpartitionen "'
+MENU_CONFIG_MODE_PARTITION=$((MCNT++))
+MENU_EN[$MENU_CONFIG_MODE_PARTITION]='"Extended" "Backup more than two partitions"'
+MENU_DE[$MENU_CONFIG_MODE_PARTITION]='"Erweitert" "Sichere mehr als zwei Partitionen"'
 MENU_INSTALL_INSTALL=$((MCNT++))
 MENU_EN[$MENU_INSTALL_INSTALL]='"I1" "Install $RASPIBACKUP_NAME using a default configuration"'
 MENU_DE[$MENU_INSTALL_INSTALL]='"I1" "Installiere $RASPIBACKUP_NAME mit einer Standardkonfiguration"'
@@ -1160,6 +1215,29 @@ function getActiveServices() {
 	logExit "$as"
 }
 
+function getPartitionNumbers() { # device, e.g. /dev/mmcblk0
+
+#	/dev/sda1 256M c W95
+#	/dev/sda2 14.3G 83 Linux
+#	/dev/sda5 265G 83 Linux
+
+	logEntry $1
+	local ap=""
+	ap="$(LANG=C fdisk -l $1 | grep ^/dev | awk '{ print $1,$5,$6,$7,$8,$9,$10}' | grep -v -E " 8?5 " | sed -E "s@${1}p?@@" )"
+#	"1 256M c W95"
+#	"2 14.3G 83 Linux"
+#	"5 265G 83 Linux"
+	logItem "Partitions: $ap"
+# now remove partition type info
+	local apr="$(cut -d ' ' -f 1-2,4- <<< "$ap")"
+#	"1 256M W95"
+#	"2 14.3G Linux"
+#	"5 265G Linux"
+	echo "$apr"
+	logExit "$apr"
+
+}
+
 function isPathMounted() { # dir
 
 	logEntry "$1"
@@ -1214,7 +1292,8 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 
 function parseConfig() {
 	logEntry
-	IFS="" matches=$(grep -E "MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM" "$CONFIG_ABS_FILE")
+
+	IFS="" matches=$(grep -E "MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS" "$CONFIG_ABS_FILE")
 	while IFS="=" read key value; do
 		key=${key//\"/}
 		key=${key/DEFAULT/CONFIG}
@@ -1239,20 +1318,31 @@ function config_update_execute() {
 	writeToConsole $MSG_UPDATING_CONFIG "$CONFIG_ABS_FILE"
 
 	logItem "Language: $CONFIG_LANGUAGE"
+	logItem "Mode: $CONFIG_PARTITIONBASED_BACKUP"
+	logItem "Partitions: $CONFIG_PARTITIONS_TO_BACKUP"
 	logItem "Type: $CONFIG_BACKUPTYPE"
 	logItem "Zip: $CONFIG_ZIP_BACKUP"
 	logItem "Keep: $CONFIG_KEEPBACKUPS"
+	logItem "Recycle: $CONFIG_SMART_RECYCLE"
+	logItem "Recycleoptions: $CONFIG_SMART_RECYCLE_OPTIONS"
+	logItem "Dryrun: $CONFIG_SMART_RECYCLE_DRYRUN"
 	logItem "Msglevel: $CONFIG_MSG_LEVEL"
 	logItem "Backuppath: $CONFIG_BACKUPPATH"
 	logItem "Stop: $CONFIG_STOPSERVICES"
 	logItem "Start: $CONFIG_STARTSERVICES"
 	logItem "eMail: $CONFIG_EMAIL"
 	logItem "mailProgram: $CONFIG_MAIL_PROGRAM"
+	logItem "Resize: $CONFIG_RESIZE_ROOTFS"
 
 	sed -i -E "s/^(#?\s?)?DEFAULT_LANGUAGE=.*\$/DEFAULT_LANGUAGE=\"$CONFIG_LANGUAGE\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONBASED_BACKUP=.*\$/DEFAULT_PARTITIONBASED_BACKUP=\"$CONFIG_PARTITIONBASED_BACKUP\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONS_TO_BACKUP=.*\$/DEFAULT_PARTITIONS_TO_BACKUP=\"$CONFIG_PARTITIONS_TO_BACKUP\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPTYPE=.*\$/DEFAULT_BACKUPTYPE=\"$CONFIG_BACKUPTYPE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_ZIP_BACKUP=.*\$/DEFAULT_ZIP_BACKUP=\"$CONFIG_ZIP_BACKUP\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_KEEPBACKUPS=.*$/DEFAULT_KEEPBACKUPS=\"$CONFIG_KEEPBACKUPS\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_SMART_RECYCLE=.*$/DEFAULT_SMART_RECYCLE=\"$CONFIG_SMART_RECYCLE\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_SMART_RECYCLE_OPTIONS=.*$/DEFAULT_SMART_RECYCLE_OPTIONS=\"$CONFIG_SMART_RECYCLE_OPTIONS\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_SMART_RECYCLE_DRYRUN=.*$/DEFAULT_SMART_RECYCLE_DRYRUN=\"$CONFIG_SMART_RECYCLE_DRYRUN\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_MSG_LEVEL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
@@ -1554,27 +1644,28 @@ function do_finish() {
 
 	logEntry
 
-	if isRaspiBackupInstalled ; then
-		if ! isStartStopDefined; then
-			local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
-			local y="$(getMessageText $BUTTON_YES)"
-			local n="$(getMessageText $BUTTON_NO)"
-			local t=$(center $WINDOW_COLS "$m")
-			local tt="$(getMessageText $TITLE_WARNING)"
-			if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
-				return
+	if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
+		if isRaspiBackupInstalled ; then
+			if ! isStartStopDefined; then
+				local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
+				local y="$(getMessageText $BUTTON_YES)"
+				local n="$(getMessageText $BUTTON_NO)"
+				local t=$(center $WINDOW_COLS "$m")
+				local tt="$(getMessageText $TITLE_WARNING)"
+				if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
+					return
+				fi
+			fi
+
+			if (( $INSTALLATION_SUCCESSFULL )); then
+				first_steps
 			fi
 		fi
 
-		if (( $INSTALLATION_SUCCESSFULL )); then
-			first_steps
-		fi
+		help
+
+		reset
 	fi
-
-	help
-
-	reset
-
 	logExit
 
 	exit 0
@@ -1678,6 +1769,7 @@ function config_menu() {
 		getMenuText $MENU_CONFIG_BACKUPPATH m2
 		getMenuText $MENU_CONFIG_BACKUPS m3
 		getMenuText $MENU_CONFIG_TYPE m4
+		getMenuText $MENU_CONFIG_MODE m5
 		getMenuText $MENU_CONFIG_SERVICES m6
 		getMenuText $MENU_CONFIG_MESSAGE m7
 		getMenuText $MENU_CONFIG_EMAIL m8
@@ -1698,6 +1790,7 @@ function config_menu() {
 		local s2="${m2[0]}"
 		local s3="${m3[0]}"
 		local s4="${m4[0]}"
+		local s5="${m5[0]}"
 		local s6="${m6[0]}"
 		local s7="${m7[0]}"
 		local s8="${m8[0]}"
@@ -1710,6 +1803,7 @@ function config_menu() {
 			"${m2[@]}" \
 			"${m3[@]}" \
 			"${m4[@]}" \
+			"${m5[@]}" \
 			"${m6[@]}" \
 			"${m7[@]}" \
 			"${m8[@]}" \
@@ -1718,7 +1812,6 @@ function config_menu() {
 			3>&1 1>&2 2>&3)
 		RET=$?
 		if [ $RET -eq 1 ]; then
-
 			if (($CONFIG_UPDATED)); then
 				local m="$(getMessageText $MSG_QUESTION_UPDATE_CONFIG)"
 				local t=$(center $WINDOW_COLS "$m")
@@ -1742,8 +1835,9 @@ function config_menu() {
 			case "$FUN" in
 				$s1) config_language_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s2) config_backuppath_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s3) config_keep_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				$s3) config_keep_selection_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s4) config_backuptype_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				$s5) config_backupmode_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s6) config_services_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
@@ -1757,43 +1851,168 @@ function config_menu() {
 	logExit
 
 }
+function config_keep_selection_do() {
 
-function config_keep_do() {
+	logEntry "$CONFIG_SMART_RECYCLE"
 
-	logEntry
+	local smart_mode=off
+	local keep_mode=off
+	local old="$CONFIG_SMART_RECYCLE"
+	local rc
 
-	local current="$CONFIG_KEEPBACKUPS"
-	local old="$current"
+	case "$CONFIG_SMART_RECYCLE" in
+		0) keep_mode=on ;;
+		1) smart_mode=on ;;
+		*) whiptail --msgbox "Programm error, unrecognized smart mode $CONFIG_SMART_RECYCLE" $ROWS_MENU $WINDOW_COLS 2
+			logExit
+			return 1
+			;;
+	esac
+
+	getMenuText $MENU_CONFIG_MODE_KEEP m1
+	getMenuText $MENU_CONFIG_MODE_SMART m2
+	local s1="${m1[0]}"
+	local s2="${m2[0]}"
+
+	getMenuText $MENU_CONFIG_MODE tt
+	local o1="$(getMessageText $BUTTON_OK)"
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local d="$(getMessageText $DESCRIPTION_SMARTMODE)"
+
+	local updated=0
+
+	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $ROWS_MENU $WINDOW_COLS 2 \
+		"${m1[@]}" $keep_mode \
+		"${m2[@]}" $smart_mode \
+		3>&1 1>&2 2>&3)
+	if [ $? -eq 0 ]; then
+		logItem "Answer: $ANSWER"
+		case "$ANSWER" in
+		$s1)	logItem "$s1"
+				config_keep_do 0
+				updated=$?
+				;;
+		$s2)	logItem "$s2"
+				config_keep_do 1
+				updated=$?
+				;;
+		*) whiptail --msgbox "Programm error, unrecognized smart mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
+			logExit 1
+			return 1
+			;;
+		esac
+	fi
+
+	[[ "$old" == "$CONFIG_SMART_RECYCLE" ]] && (( $updated == 0 ))
+	rc=$?
+	logExit $rc
+	return $rc
+}
+
+function config_keep_do() { # smartRecycle
+
+	logEntry $1
+
+	local isSmartRecycle=$1
+	local current
 
 	while :; do
+
+		local error=0
+
+		if (( $isSmartRecycle )); then
+			current="$CONFIG_SMART_RECYCLE_OPTIONS"
+		else
+			current="$CONFIG_KEEPBACKUPS"
+		fi
 
 		getMenuText $MENU_CONFIG_BACKUPS tt
 		local c1="$(getMessageText $BUTTON_CANCEL)"
 		local o1="$(getMessageText $BUTTON_OK)"
-		local d="$(getMessageText $DESCRIPTION_KEEP)"
+
+		local d
+		if (( $isSmartRecycle )); then
+			d="$(getMessageText $DESCRIPTION_SMART)"
+		else
+			d="$(getMessageText $DESCRIPTION_KEEP)"
+		fi
 
 		ANSWER=$(whiptail --inputbox "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS "$current" --ok-button "$o1" --cancel-button "$c1" 3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
-			current="$ANSWER"
-			if [[ ! "$ANSWER" =~ ^[0-9]+$ ]] || (( "$ANSWER" >  52 )); then
-				local m="$(getMessageText $MSG_INVALID_KEEP "$ANSWER")"
+
+			IFS=$DEFAULT_IFS
+			local srNumbers=( $ANSWER )
+			local srNumberCount=${#srNumbers[@]}
+			local n
+
+			if (( $srNumberCount == 4 || $srNumberCount == 1 )); then
+				for n in ${srNumbers[@]}; do
+					if [[ ! "$n" =~ ^[0-9]+$ ]]; then
+						local m
+						if (( $isSmartRecycle )); then
+							m="$(getMessageText $MSG_INVALID_SMART "$n")"
+						else
+							m="$(getMessageText $MSG_INVALID_KEEP "$n")"
+						fi
+						local t=$(center $WINDOW_COLS "$m")
+						local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+						whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+						error=1
+						break
+					fi
+				done
+			else
+				local m
+				if (( $isSmartRecycle )); then
+					m="$(getMessageText $MSG_INVALID_SMART_NUMBER_COUNT)"
+				else
+					m="$(getMessageText $MSG_INVALID_KEEP_NUMBER_COUNT)"
+				fi
 				local t=$(center $WINDOW_COLS "$m")
 				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
-			else
-				CONFIG_KEEPBACKUPS="$ANSWER"
+				error=1
+			fi
+
+			if (( ! $error )); then
+				if (( $isSmartRecycle )); then # smart recycle
+					local old="$CONFIG_SMART_RECYCLE_OPTIONS"
+					CONFIG_SMART_RECYCLE_OPTIONS="$ANSWER"
+					CONFIG_SMART_RECYCLE_DRYRUN="0"
+					CONFIG_SMART_RECYCLE="1"
+					isSmartRecycle=1
+				else	# normal keep
+					local old="$CONFIG_KEEPBACKUPS"
+					CONFIG_KEEPBACKUPS="$ANSWER"
+					CONFIG_SMART_RECYCLE_OPTIONS="$DEFAULT_CONFIG_SMART_RECYCLE_OPTIONS"
+					CONFIG_SMART_RECYCLE_DRYRUN="$DEFAULT_CONFIG_SMART_RECYCLE_DRYRUN"
+					CONFIG_SMART_RECYCLE="$DEFAULT_CONFIG_SMART_RECYCLE"
+					isSmartRecycle=0
+				fi
 				break
 			fi
 		else
-			break
+			logExit "aborted"
+			return 0
 		fi
 	done
 
-	logExit "$CONFIG_KEEPBACKUPS"
+	logItem "isSmartRecycle: $isSmartRecycle"
+	logItem "CONFIG_KEEPBACKUPS: $CONFIG_KEEPBACKUPS"
+	logItem "CONFIG_SMART_RECYCLE_OPTIONS: $CONFIG_SMART_RECYCLE_OPTIONS"
+	logItem "CONFIG_SMART_RECYCLE: $CONFIG_SMART_RECYCLE"
+	logItem "CONFIG_SMART_RECYCLE_DRYRUN: $CONFIG_SMART_RECYCLE_DRYRUN"
 
-	[[ "$old" == "$CONFIG_KEEPBACKUPS" ]]
-	return
+	( (( ! $isSmartRecycle )) && [[ "$old" == "$CONFIG_KEEPBACKUPS" ]] ) || ( (( $isSmartRecycle )) && [[ "$old" == "$CONFIG_SMART_RECYCLE_OPTIONS" ]] )
+	local rc=$?
+	if (( $isSmartRecycle )); then
+		logExit "$rc - $CONFIG_SMART_RECYCLE"
+	else
+		logExit "$rc - $CONFIG_KEEPBACKUPS"
+	fi
+
+	return $rc
 
 }
 
@@ -1834,10 +2053,10 @@ function config_backuppath_do() {
 		fi
 	done
 
-	logExit "$CONFIG_BACKUPPATH"
-
 	[[ "$old" == "$CONFIG_BACKUPPATH" ]]
-	return
+	local rc=$?
+	logExit "$rc -$CONFIG_BACKUPPATH"
+	return $rc
 
 }
 
@@ -1881,10 +2100,10 @@ function config_crontime_do() {
 		fi
 	done
 
-	logExit "$CONFIG_CRON_HOUR:$CONFIG_CRON_MINUTE"
-
 	[[ "$old" == "$CONFIG_CRON_HOUR:$CONFIG_CRON_MINUTE" ]]
-	return
+	local rc=$?
+	logExit "$rc - $CONFIG_CRON_HOUR:$CONFIG_CRON_MINUTE"
+	return $rc
 
 }
 
@@ -2072,7 +2291,7 @@ function config_services_do() {
 
 	# insert selected services in front of list
 	for s in ${c[@]}; do
-		state="on"
+		state=on
 		if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 			cl+=("$s" "" "$state")
 		else
@@ -2085,7 +2304,7 @@ function config_services_do() {
 		if containsElement "$s" "${c[@]}"; then
 			continue
 		fi
-		state="off"
+		state=off
 		if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 			cl+=("$s" "" "$state")
 		else
@@ -2106,7 +2325,7 @@ function config_services_do() {
 		CONFIG_STOPSERVICES="$current"
 		if [[ -n $CONFIG_STOPSERVICES ]]; then
 			config_service_sequence_do
-			[ $? -ne 0 ] &&	CONFIG_STOPSERVICES="$old"
+			[ $? -ne 0 ] && CONFIG_STOPSERVICES="$old"
 		else
 			CONFIG_STOPSERVICES="$IGNORE_START_STOP_CHAR"
 		fi
@@ -2181,9 +2400,9 @@ function config_service_sequence_do() {
 		local i=1
 		for t in ${tgt[@]}; do
 			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
-				tl+=("$i: $t" "" "on")
+				tl+=("$i: $t" "" on)
 			else
-				tl+=("$i: $t" "$i: $t" "on")
+				tl+=("$i: $t" "$i: $t" on)
 			fi
 			(( i++ ))
 		done
@@ -2206,6 +2425,99 @@ function config_service_sequence_do() {
 	done
 
 	logExit "$CONFIG_STOPSERVICES"
+}
+
+function config_partitions_do() {
+
+	local old="$CONFIG_PARTITIONS_TO_BACKUP"
+
+	logEntry "$old"
+
+	IFS="$DEFAULT_IFS"
+
+	wtv=$(whiptail -v | cut -d " " -f 3)
+
+	local rootPartition=$(findmnt / -o source -n | sed -E 's/p?[0-9]+$//') # /dev/sda or /dev/mmcblk0
+	logItem "Rootpartition: $rootPartition"
+
+	local done=0
+
+	while ((! $done)); do
+
+		local current="$CONFIG_PARTITIONS_TO_BACKUP"
+
+		logItem "Current: $current"
+		local c=($current)
+
+#	1 256M c W95
+#	2 14.3G 83 Linux
+#	5 265G 83 Linux
+
+		local ps=()
+		local line
+		while IFS= read -r line; do
+			ps+=("$line")
+		done <<< "$(getPartitionNumbers $rootPartition)"
+
+		local numberOfPartitions=${#ps[@]}
+		logItem "Partitions: $numberOfPartitions"
+
+		local pn=()
+		local -A pn_desc
+		local state s
+		IFS="$DEFAULT_IFS"
+
+		for s in "${ps[@]}"; do
+			local n="$(cut -f1 -d " " <<< "$s")"
+			pn+=($n)
+			pn_desc[$n]="$(cut -f2- -d " " <<< "$s")"
+		done
+
+		getMenuText $MENU_CONFIG_MODE_PARTITION tt
+
+		local cl=()
+		# add all partitions in list
+		for s in ${pn[@]}; do
+			if containsElement "$s" "${c[@]}"; then
+				state=on
+			else
+				state=off
+			fi
+			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
+				cl+=("$s" "" "$state")
+			else
+				local desc="$(printf "%6s %s" $(cut -d ' ' -f 1 <<< "${pn_desc[$s]}") $(cut -d ' ' -f 2- <<< "${pn_desc[$s]}"))"
+				cl+=("$s" "$s: ${desc}" "$state")
+			fi
+		done
+
+		local d="$(getMessageText $DESCRIPTION_PARTITIONS)"
+		local c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1="$(getMessageText $BUTTON_OK)"
+
+		ANSWER=$(whiptail --notags --checklist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 7 \
+			"${cl[@]}" \
+			3>&1 1>&2 2>&3)
+		if [ $? -eq 0 ]; then
+			logItem "Answer: $ANSWER"
+			local current=${ANSWER//\"}
+			# make sure the first two partitions are included
+			local orgCurrent="$current"
+			current="1 2 $current" # add first two partitions
+			current="$(tr ' ' '\n' <<< "$current" | sort -u | tr '\n' ' ' | sed 's/^[ \t]*//;s/[ \t]*$//')" # remove duplicates
+			CONFIG_PARTITIONS_TO_BACKUP="$current"
+			[[ "$orgCurrent" == "$current" ]] # check the first partitions were not deselected
+			done=$(( ! $? ))
+		else
+			CONFIG_PARTITIONS_TO_BACKUP="$old"
+			done=1
+		fi
+	done
+
+	[[ "$old" == "$CONFIG_PARTITIONS_TO_BACKUP" ]]
+	local rc=$?
+	logExit "$rc - $CONFIG_PARTITIONS_TO_BACKUP"
+	return $rc
 }
 
 function config_cronday_do() {
@@ -2237,10 +2549,9 @@ function config_cronday_do() {
 		CONFIG_CRON_DAY=$(cut -d/ -f1 <<< ${s[@]/$ANSWER//} | wc -w | tr -d ' ')
 	fi
 
-	logExit "$CONFIG_CRON_DAY"
-
 	[[ "$old" == "$CONFIG_CRON_DAY" ]]
-	return
+	logExit "$rc - $CONFIG_CRON_DAY"
+	return $rc
 }
 
 function config_compress_do() {
@@ -2293,10 +2604,10 @@ function config_compress_do() {
 		fi
 	fi
 
-	logExit "$CONFIG_ZIP_BACKUP"
-
 	[[ "$old" == "$CONFIG_ZIP_BACKUP" ]]
-	return
+	local rc=$?
+	logExit "$rc - $CONFIG_ZIP_BACKUP"
+	return $rc
 
 }
 
@@ -2758,6 +3069,68 @@ function cron_activate_do() {
 
 }
 
+function config_backupmode_do() {
+
+	local normal_mode=off
+	local partition_mode=off
+	local old="$CONFIG_PARTITIONBASED_BACKUP"
+	local rc
+
+	logEntry "$old"
+
+	case "$CONFIG_PARTITIONBASED_BACKUP" in
+		0) normal_mode=on ;;
+		1) partition_mode=on ;;
+		*) whiptail --msgbox "Programm error, unrecognized backup mode $CONFIG_PARTITIONBASED_BACKUP" $ROWS_MENU $WINDOW_COLS 2
+			logExit
+			return 1
+			;;
+	esac
+
+	getMenuText $MENU_CONFIG_MODE_NORMAL m1
+	getMenuText $MENU_CONFIG_MODE_PARTITION m2
+	local s1="${m1[0]}"
+	local s2="${m2[0]}"
+
+	getMenuText $MENU_CONFIG_MODE tt
+	local o1="$(getMessageText $BUTTON_OK)"
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local d="$(getMessageText $DESCRIPTION_BACKUPMODE)"
+
+	local partitionsUpdated=0
+
+	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $ROWS_MENU $WINDOW_COLS 2 \
+		"${m1[@]}" $normal_mode \
+		"${m2[@]}" $partition_mode \
+		3>&1 1>&2 2>&3)
+	if [ $? -eq 0 ]; then
+		logItem "Answer: $ANSWER"
+		case "$ANSWER" in
+		$s1) CONFIG_PARTITIONBASED_BACKUP="0"
+			CONFIG_PARTITIONS_TO_BACKUP="$DEFAULT_CONFIG_PARTITIONS_TO_BACKUP" # reset default
+			;;
+		$s2) config_partitions_do
+			  if [ $? -eq 1 ]; then
+					partitionsUpdated=1
+					CONFIG_PARTITIONBASED_BACKUP="1"
+			  else
+					partitionsUpdated=0
+					CONFIG_PARTITIONBASED_BACKUP="$old"
+			  fi
+			  ;;
+		*) whiptail --msgbox "Programm error, unrecognized backup mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
+			logExit 1
+			return 1
+			;;
+		esac
+	fi
+
+	[[ "$old" == "$CONFIG_PARTITIONBASED_BACKUP" ]] && (( $partitionsUpdated == 0 ))
+	rc=$?
+	logExit $rc
+	return $rc
+}
+
 function config_message_detail_do() {
 
 	local detailed_=off
@@ -2801,9 +3174,9 @@ function config_message_detail_do() {
 		esac
 	fi
 
-	logExit "$CONFIG_MSG_LEVEL"
-
 	[[ "$old" == "$CONFIG_MSG_LEVEL" ]]
+	local rc=$?
+	logExit "$rc - $CONFIG_MSG_LEVEL"
 	return
 
 }
@@ -2856,10 +3229,10 @@ function config_language_do() {
 		esac
 	fi
 
-	logExit "$CONFIG_LANGUAGE"
-
 	[[ "$old" == "$CONFIG_LANGUAGE" ]]
-	return
+	local rc=$?
+	logExit "$rc - $CONFIG_LANGUAGE"
+	return $rc
 
 }
 
@@ -3069,7 +3442,7 @@ function uiInstall() {
 		navigation_do
 	fi
 
-	while true; do
+	while :; do
 
 		getMenuText $MENU_LANGUAGE m1
 		getMenuText $MENU_INSTALL m2
@@ -3114,12 +3487,15 @@ function uiInstall() {
 			logItem "$FUN"
 			case "$FUN" in
 				$s1) config_language_do
-					if (( $? )); then
+					local r=$?
+					logItem "rc: $r"
+					if (( $r )); then
 						if isConfigInstalled; then
 							config_update_do
 							parseConfig
 						fi
-					fi ;;
+					fi
+					;;
 				$s2) install_menu ;;
 				$s3) config_menu ;;
 				$s4) uninstall_menu ;;
