@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2021-02-05 14:43:04 +0100$"
+GIT_DATE="$Date: 2021-03-04 21:06:43 +0100$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 6dc5832$"
+GIT_COMMIT="$Sha1: af3febe$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -420,8 +420,8 @@ MSG_SAVED_LOG=26
 MSG_EN[$MSG_SAVED_LOG]="RBK0026I: Debug logfile saved in %s."
 MSG_DE[$MSG_SAVED_LOG]="RBK0026I: Debug Logdatei wurde in %s gesichert."
 MSG_NO_DEVICEMOUNTED=27
-MSG_EN[$MSG_NO_DEVICEMOUNTED]="RBK0027E: No external device mounted on %s. SD card would be used for backup."
-MSG_DE[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Kein externes Gerät an %s verbunden. Die SD Karte würde für das Backup benutzt werden."
+MSG_EN[$MSG_NO_DEVICEMOUNTED]="RBK0027E: No external device mounted on %s. root partition would be used for the backup."
+MSG_DE[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Kein externes Gerät an %s verbunden. Die root Partition würde für das Backup benutzt werden."
 MSG_RESTORE_DIRECTORY_NO_DIRECTORY=28
 MSG_EN[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s is no backup directory of $MYNAME."
 MSG_DE[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ist kein Wiederherstellungsverzeichnis von $MYNAME."
@@ -1003,7 +1003,7 @@ MSG_EN[$MSG_APPLYING_BACKUP_STRATEGY_ONLY]="RBK0216W: Applying backup strategy i
 MSG_DE[$MSG_APPLYING_BACKUP_STRATEGY_ONLY]="RBK0216W: Wende nur Backupstrategie in %s an."
 MSG_SMART_RECYCLE_FILES=217
 MSG_EN[$MSG_SMART_RECYCLE_FILES]="RBK0217I: %s backups will be smart recycled. %s backups will be kept. Please be patient."
-MSG_DE[$MSG_SMART_RECYCLE_FILES]="RBK0217I: %s Backups werden smart recycled. %s Backups werden aufgehoben. Bitte Gedult."
+MSG_DE[$MSG_SMART_RECYCLE_FILES]="RBK0217I: %s Backups werden smart recycled. %s Backups werden aufgehoben. Bitte Geduld."
 MSG_SMART_APPLYING_BACKUP_STRATEGY=218
 MSG_EN[$MSG_SMART_APPLYING_BACKUP_STRATEGY]="RBK0218I: Applying smart backup strategy. Daily:%s Weekly:%s Monthly:%s Yearly:%s."
 MSG_DE[$MSG_SMART_APPLYING_BACKUP_STRATEGY]="RBK0218I: Wende smarte Backupstrategie an. Täglich:%s Wöchentlich:%s Monatlich:%s Jährlich:%s"
@@ -2850,9 +2850,14 @@ function setupEnvironment() {
 			MSG_FILE="$BACKUPTARGET_DIR/$MSG_FILE_NAME"
 			rm -f $MSG_FILE &>/dev/null
 			;;
-		*)
+		*) # option -L
 			LOG_FILE="$LOG_OUTPUT"
-			MSG_FILE="${LOG_OUTPUT}.msg"
+			if [[ "$LOG_FILE" =~ \.log$ ]]; then
+				MSG_FILE="$(sed "s/\.log$/\.msg/" <<< "$LOG_FILE")"
+			else
+				MSG_FILE="${LOG_OUTPUT}.msg"
+				LOG_FILE="${LOG_FILE}.log"
+			fi
 			rm -f $LOG_FILE &>/dev/null
 			rm -f $MSG_FILE &>/dev/null
 	esac
@@ -3050,6 +3055,8 @@ function sendTelegramDocument() { # filename
 
 		logEntry "$1"
 
+		logItem "Telegram curl call: curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE"
+		
 		local rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
 		local curlRC=$?
 		logItem "Telegram response:${NL}${rsp}"
@@ -3072,8 +3079,10 @@ function sendTelegramMessage() { # message html(yes/no)
 		logEntry "$1"
 
 		if [[ -z $2 ]]; then
+			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
 			local rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
 		else
+			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 			local rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 		fi
 
@@ -3512,7 +3521,6 @@ function cleanup() { # trap
 	fi
 
 	if (( $rc != 0 )); then
-
 		if (( ! $MAIL_ON_ERROR_ONLY )); then
 			if (( $WARNING_MESSAGE_WRITTEN )); then
 				if (( $RESTORE )); then
@@ -3530,18 +3538,20 @@ function cleanup() { # trap
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_FAILED
 			fi
 
-			if (( $rc != $RC_EMAILPROG_ERROR )); then
-				msgTitle=$(getLocalizedMessage $MSG_TITLE_ERROR $HOSTNAME)
-				sendEMail "$msg" "$msgTitle"
-			fi
-
-			if [[ -n "$TELEGRAM_TOKEN" ]]; then
-				msg=$(getLocalizedMessage $MSG_TITLE_ERROR $HOSTNAME)
-				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
-					sendTelegramm "<b><u> $msg </u></b>"
-					sendTelegrammLogMessages
+			if (( ! $RESTORE )); then
+				if (( $rc != $RC_EMAILPROG_ERROR )); then
+					msgTitle=$(getLocalizedMessage $MSG_TITLE_ERROR $HOSTNAME)
+					sendEMail "$msg" "$msgTitle"
 				fi
-			fi
+
+				if [[ -n "$TELEGRAM_TOKEN" ]]; then
+					msg=$(getLocalizedMessage $MSG_TITLE_ERROR $HOSTNAME)
+					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
+						sendTelegramm "<b><u> $msg </u></b>"
+						sendTelegrammLogMessages
+					fi
+				fi
+			fi #  ! RESTORE
 		fi
 
 	else 	# success
@@ -3552,15 +3562,17 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
 
-		if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-			msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
-			if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
-				sendTelegramm "$msg"
-				sendTelegrammLogMessages
+		if (( ! $RESTORE )); then
+			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
+				msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
+				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
+					sendTelegramm "$msg"
+					sendTelegrammLogMessages
+				fi
 			fi
-		fi
-		msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
-		sendEMail "" "$msg"
+			msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
+			sendEMail "" "$msg"
+		fi # ! $RESTORE
 	fi
 
 	if (( $FILEDESCRIPTORS_SWAPPED )); then
@@ -4516,7 +4528,7 @@ function restore() {
 				cp "$SF_FILE" $$.sfdisk
 				logCommand "cat $$.sfdisk"
 
-				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )); then
+				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
 					local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
 					logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
@@ -5295,7 +5307,7 @@ function getRootPartition() {
 
 	local cmdline=$(cat /proc/cmdline)
 	logCommand "cat /proc/cmdline"
-	if [[ $cmdline =~ .*(imgpart|root|datadev)=([^ ]+) ]]; then # berryboot and 
+	if [[ $cmdline =~ .*(imgpart|root|datadev)=([^ ]+) ]]; then # berryboot and volumio
 		ROOT_PARTITION=${BASH_REMATCH[2]}
 		logItem "RootPartition: $ROOT_PARTITION"
 	else
@@ -7670,18 +7682,21 @@ while (( "$#" )); do
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
+	  substituteNumberArguments
 	  ;;
 
 	-L)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
+	  substituteNumberArguments
 	  ;;
 
 	-m)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
+	  substituteNumberArguments
 	  ;;
 
 	-M)
