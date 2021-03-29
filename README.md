@@ -35,7 +35,7 @@ Kick off the installation with
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
 
-![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_de.gif)
+![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
 ## Nitty gritty details
 
