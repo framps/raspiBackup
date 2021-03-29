@@ -23,7 +23,7 @@
 * [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
 
-## Installer [(Code)](https://github.com/framps/raspiBackup/tree/master/installation)
+## Installer
 
 The installer uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
 
@@ -34,6 +34,8 @@ Kick off the installation with
 ![Screenshot1](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-1.png)
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
+
+![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_de.gif)
 
 ## Nitty gritty details
 
