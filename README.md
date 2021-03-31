@@ -20,7 +20,7 @@
 
 ### German
 * [Installation](https://www.linux-tips-and-tricks.de/de/schnellstart-rbk/)
-* [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/backup)
+* [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
 * [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
 
 ## Installer
