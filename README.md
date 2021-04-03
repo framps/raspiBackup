@@ -3,9 +3,10 @@
 # raspiBackup - Backup and restore your running Raspberries
 
 * Create an unattended full system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron. Important services can be stopped before starting the backup and are started again when the backup finished.
-* Any device mountable on Linux can be used as backupspace (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
+* Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
-* An external rootpartition and Raspberry 3 USB boot images are supported.
+* An external root partition and USB boot images are supported.
+* Migration of a SD card based system to SSD is easy. Just restore the SD card backup to SSD.
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
@@ -61,7 +62,7 @@ Kick off the installation with
 ## Sample extensions [(Code)](https://github.com/framps/raspiBackup/tree/master/extensions)
 * Sample eMail extension
 * Sample pre/post extension which reports the memory usage before and after backup
-* Sample pre/post extension which reports the CPU temperatur before and after backup
+* Sample pre/post extension which reports the CPU temperature before and after backup
 * Sample pre/post extension which reports the disk usage on the backup partition before and after backup and the absolute and relative change
 * Sample pre/post extension which initiates different actions depending on the return code of raspiBackup
 * Sample ready extension which copies /etc/fstab into the backup directory
