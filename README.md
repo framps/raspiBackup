@@ -5,8 +5,8 @@
 * Create an unattended full system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron. Important services can be stopped before starting the backup and are started again when the backup finished.
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
-* An external root partition and USB boot images are supported.
-* Migration of a SD card based system to SSD is easy. Just restore the SD card backup to SSD.
+* External root partition for systems which don't support USB boot mode and USB boot systems are supported.
+* Easy migration of a SD card based system. Just restore the SD card backup to SSD.
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
@@ -28,28 +28,26 @@
 
 The installer uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
 
-Kick off the installation with
-
-`curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
-
 ![Screenshot1](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-1.png)
 ![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
 ![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
 
-### Installation demo
-
 ![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
+
+Installation is started with following command:
+
+`curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
 
 ## Nitty gritty details
 
  * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
  * [German](https://www.linux-tips-and-tricks.de/de/alles-ueber-raspibackup/)
 
-## Social media (English and German)
+## Social media
 
- * [Youtube](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg) - Videos
- * [Twitter](https://twitter.com/linuxframp) - News and announcements
- * [Facebook](https://www.facebook.com/raspiBackup) - News, discussions, announcements and misc background information
+ * [Youtube](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg) - Videos in English and German
+ * [Twitter](https://twitter.com/linuxframp) - News and announcements - English only
+ * [Facebook](https://www.facebook.com/raspiBackup) - News, discussions, announcements and misc background information in English and German
 
 ## Miscellaneous tools and utilities [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
 
