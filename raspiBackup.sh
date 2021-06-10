@@ -61,11 +61,11 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-GIT_DATE="$Date: 2021-03-05 16:23:06 +0100$"
+GIT_DATE="$Date: 2021-05-20 21:07:10 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: eb851a2$"
+GIT_COMMIT="$Sha1: 70652dd$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -3056,17 +3056,22 @@ function sendTelegramDocument() { # filename
 		logEntry "$1"
 
 		logItem "Telegram curl call: curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE"
-		
 		local rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
 		local curlRC=$?
-		logItem "Telegram response:${NL}${rsp}"
 
-		ok=$(jq .ok <<< "$rsp")
-		if [[ $ok == "true" ]]; then
-			logItem "Log sent"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_OK
+		if (( $curlRC )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_FAILED $curlRC "N/A" "N/A"
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_FAILED $curlRC
+			logItem "Telegram response:${NL}${rsp}"
+			ok=$(jq .ok <<< "$rsp")
+			if [[ $ok == "true" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_OK
+			else
+				local error_code="$(jq .error_code  <<< "$rsp")"
+				local error_description="$(jq .description <<< "$rsp")"
+				logItem "Error sending msg: $rsp"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "$error_code" "$error_description"
+			fi
 		fi
 
 		logExit
@@ -3085,21 +3090,24 @@ function sendTelegramMessage() { # message html(yes/no)
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 			local rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 		fi
-
 		local curlRC=$?
-		logItem "Telegram response:${NL}${rsp}"
 
-		local ok=$(jq .ok <<< "$rsp")
-		if [[ $ok == "true" ]]; then
-			logItem "Message sent"
-			if [[ -n $2 ]]; then	# write message only for html, not for messages
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_OK
-			fi
+		if (( $curlRC )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "N/A" "N/A"
 		else
-			error_code="$(jq .error_code  <<< "$rsp")"
-			error_description="$(jq .description <<< "$rsp")"
-			logItem "Error sending msg: $rsp"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "$error_code" "$error_description"
+			logItem "Telegram response:${NL}${rsp}"
+			local ok=$(jq .ok <<< "$rsp")
+			if [[ $ok == "true" ]]; then
+				logItem "Message sent"
+				if [[ -n $2 ]]; then	# write message only for html, not for messages
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_OK
+				fi
+			else
+				error_code="$(jq .error_code  <<< "$rsp")"
+				error_description="$(jq .description <<< "$rsp")"
+				logItem "Error sending msg: $rsp"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "$error_code" "$error_description"
+			fi
 		fi
 
 		logExit
@@ -3889,7 +3897,7 @@ function bootPartitionBackup() {
 					touch "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				else
 					if (( $TAR_BOOT_PARTITION_ENABLED )); then
-						cmd="tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" /boot"
+						cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					else
 						cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=1M"
 					fi
@@ -6110,6 +6118,8 @@ function restorePartitionBasedBackup() {
 		restorePartitionBasedPartition "$partitionBackupFile"
 	done
 
+	updateUUIDs
+
 	logCommand "fdisk -l $RESTORE_DEVICE"
 
 	logExit
@@ -6672,6 +6682,7 @@ function doitRestore() {
 		fi
 	else
 		restorePartitionBasedBackup
+		synchronizeCmdlineAndfstab
 	fi
 
 	logCommand "blkid"
@@ -6959,19 +6970,25 @@ function synchronizeCmdlineAndfstab() {
 		BOOT_PARTITION="${RESTORE_DEVICE}1"
 	fi
 
+	if (( $PARTITIONBASED_BACKUP )); then
+		ROOT_PARTITION="$(sed 's/1$/2/' <<< "$BOOT_PARTITION")"
+	fi
+
+	logEntry "BOOT_PARTITION: $BOOT_PARTITION - ROOT_PARTITION: $ROOT_PARTITION"
+
 	ROOT_MP="$TEMPORARY_MOUNTPOINT_ROOT/root"
 	BOOT_MP="$TEMPORARY_MOUNTPOINT_ROOT/boot"
+	logEntry "ROOT_MP: $ROOT_MP - BOOT_MP: $BOOT_MP"
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
 	local cmdline="/cmdline.txt"
-	CMDLINE="$BOOT_MP/$cmdline" # absolute path in mount
+	CMDLINE="$BOOT_MP$cmdline" # absolute path in mount
 	cmdline="/boot$cmdline" # path for message
 	local fstab="/etc/fstab" # path for message
 	FSTAB="$ROOT_MP$fstab" # absolute path in mount
 
-	logItem "BOOT_PARTITION: $BOOT_PARTITION"
-	logItem "ROOT_PARTITION: $ROOT_PARTITION"
+	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
 	if [[ -f "$CMDLINE" ]]; then
 
@@ -7006,7 +7023,8 @@ function synchronizeCmdlineAndfstab() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+		logCommand "ls -la $BOOT_MP"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
@@ -7018,30 +7036,37 @@ function synchronizeCmdlineAndfstab() {
 			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ $oldPartUUID != $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> "$LOG_FILE"
+				local oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
+				local newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldpartuuidID" "$newpartuuidID" "$fstab"
+				sed -i "s/$oldpartuuidID/$newpartuuidID/g" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldUUID=${BASH_REMATCH[1]}
 			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ $oldUUID != $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
-				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> "$LOG_FILE"
+				local olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
+				local newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
+				sed -i "s/$olduuidID/$newuuidID/g" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
 			newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
 			logItem "FSTAB root - newRootLABEL: $newLABEL, oldRootLABEL: $oldLABEL"
 			if [[ $oldLABEL != $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
-				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> "$LOG_FILE"
+				local oldlabelID="$(sed -E 's/-[0-9]+//' <<< "$oldLABEL")"
+				local newlabelID="$(sed -E 's/-[0-9]+//' <<< "$newLABEL")"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldlabelID" "$newlabelID" "$fstab"
+				sed -i "s/$oldlabelID/$newlabelID/g" $FSTAB &>> "$LOG_FILE"
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
+		logCommand "ls -la $ROOT_MP"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab"
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
