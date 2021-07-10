@@ -40,6 +40,10 @@ Installation is started with following command:
 
 `curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
 
+## Donations
+
+raspiBackup is maintained and supported by just me - framp. I'd appreciate donations if you find raspiBackup useful. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
+
 ## Nitty gritty details
 
  * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
