@@ -30,8 +30,8 @@ MOUNTPOINT="/backup"
 
 VERSION="0.0.7"
 
-GIT_DATE="$Date: 2021-05-20 21:07:10 +0200$"
-GIT_COMMIT="$Sha1: 70652dd$"
+GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
+GIT_COMMIT="$Sha1: 7b4feee$"
 
 # add pathes if not already set (usually not set in crontab)
 

@@ -27,8 +27,8 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2021-05-20 21:07:10 +0200$"
-GIT_COMMIT="$Sha1: 70652dd$"
+GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
+GIT_COMMIT="$Sha1: 7b4feee$"
 
 # set any messages and prefix message name with ext_ and some unique prefix to use a different namespace than the script
 MSG_EXT_FSTAB_COPY="ext_fstab_copy"
