@@ -43,11 +43,11 @@ if [[ -e /bin/grep ]]; then
    done
 fi
 
-GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
+GIT_DATE="$Date: 2021-08-06 10:10:06 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7b4feee$"
+GIT_COMMIT="$Sha1: f22c2e7$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
