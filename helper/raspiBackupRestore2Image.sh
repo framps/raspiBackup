@@ -43,11 +43,11 @@ if [[ -e /bin/grep ]]; then
    done
 fi
 
-GIT_DATE="$Date: 2021-08-06 10:10:06 +0200$"
+GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: f22c2e7$"
+GIT_COMMIT="$Sha1: 7b4feee$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -218,6 +218,11 @@ RC=$?
 # The PARTUUID's aren't actually stored anywhere, they're simply PTUUID-01 for partition 1 and PTUUID-02 for partition 2
 # You can change PTUUID on a live system with fdisk
 # Extract from https://www.raspberrypi.org/forums/viewtopic.php?t=191775
+
+if ! grep -E "^PARTUUID=" /etc/fstab; then
+	echo "Unable to use pishrink. No PARTUUIDs used in /etc/fstab"
+	exit 42
+fi
 
 mount ${LOOP}p2 /mnt
 PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
