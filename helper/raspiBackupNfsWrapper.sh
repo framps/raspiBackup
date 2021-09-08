@@ -2,8 +2,10 @@
 
 #######################################################################################################################
 #
-#      Sample script which checks whether a nfsserver is available and exports a specific directory,
-#      mounts that exported directory and then starts raspiBackup
+#   Sample script which checks whether a nfsserver is available and exports a specific directory,
+#   mounts that exported directory and then starts raspiBackup
+#
+#	NOTE: This is sample code how to extend functionality of raspiBackup and is provided as is with no support.
 #
 #######################################################################################################################
 #
@@ -30,8 +32,8 @@ MOUNTPOINT="/backup"
 
 VERSION="0.0.7"
 
-GIT_DATE="$Date: 2021-08-06 10:10:06 +0200$"
-GIT_COMMIT="$Sha1: f22c2e7$"
+GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
+GIT_COMMIT="$Sha1: 7b4feee$"
 
 # add pathes if not already set (usually not set in crontab)
 

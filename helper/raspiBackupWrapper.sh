@@ -7,6 +7,8 @@
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
+#	NOTE: This is sample code how to extend functionality of raspiBackup and is provided as is with no support.
+#
 #######################################################################################################################
 #
 #   Copyright (c) 2013-2019 framp at linux-tips-and-tricks dot de
@@ -32,11 +34,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 VERSION="0.2.7"
 
-set +u;GIT_DATE="$Date: 2021-08-06 10:10:06 +0200$"; set -u
+set +u;GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1: f22c2e7$";set -u
+set +u;GIT_COMMIT="$Sha1: 7b4feee$";set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
