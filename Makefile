@@ -37,11 +37,24 @@ help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 deploy: ## Deploy raspiBackup
-	rm $(DEPLOYMENT_LOCATION)/*
-	$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm $(file);)
+	@$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm $(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
-	git checkout -f $(LOCAL_MASTER_BRANCH)
-	$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
-	tar --exclude raspiBackup.sh -cvzf $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_DIRECTORY)/*.sh
-	$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+
+	@git checkout -f $(LOCAL_MASTER_BRANCH)
+
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+	@tar --exclude raspiBackup.sh -cvzf $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_DIRECTORY)/*.sh
+	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+
+	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
+
+syncLocal: ## Sync github with local git
+	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(file) $(LOCAL_REPO);)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(file) $(LOCAL_REPO);)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(file) $(LOCAL_REPO);)
+
+syncRemote: ## Sync local git with github
+	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(file) ;)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(file) ;)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(file) ;)
