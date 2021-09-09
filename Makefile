@@ -1,13 +1,47 @@
-.PHONY: test
+#######################################################################################################################
+#
+# 	Makefile for raspiBackup
+#
+# 	See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
+#
+#######################################################################################################################
+#
+#    Copyright (c) 2021 framp at linux-tips-and-tricks dot de
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.#
+#
+#######################################################################################################################
 
-test:
-	@echo "*** test_version ***"
-	@test/test_version.sh
-	@echo
-	@echo "*** test_help ***"
-	@test/test_help.sh
-	@echo
-	@echo "*** test_dryrun ***"
-	@test/test_dryrun.sh
-	@echo
+CURRENT_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+MAKEFILE := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 
+PACKAGE_FILES = installation/raspiBackupInstallUI.sh raspiBackup.sh extensions/raspiBackupSampleExtensions.tgz properties/raspiBackup0613.properties
+PACKAGE_FILE_COLLECTIONS = config/*
+PACKAGE_EXTENSION_DIRECTORY = extensions
+PACKAGE_EXTENSION_FILES = $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackup_*
+
+include $(CURRENT_DIR)/Makefile.env
+
+help: ## help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+deploy: ## Deploy raspiBackup
+	rm $(DEPLOYMENT_LOCATION)/*
+	$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
+	git checkout -f $(LOCAL_MASTER_BRANCH)
+	$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+	tar --exclude raspiBackup.sh -cvzf $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_DIRECTORY)/*.sh
+	$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)

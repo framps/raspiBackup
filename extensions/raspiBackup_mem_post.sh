@@ -27,8 +27,8 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2021-09-09 19:08:54 +0200$"
-GIT_COMMIT="$Sha1: fbf1dbd$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
 # set any variables and prefix all names with ext_ and some unique prefix to use a different namespace than the script
 ext_freememory_post=( $(getMemoryFree) )
