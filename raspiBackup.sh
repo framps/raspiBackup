@@ -30,6 +30,7 @@
 
 
 
+
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
 	echo "??? DEBUG: $(lsof -a -p $$ -d txt | tail -n 1)"
