@@ -31,7 +31,7 @@ PACKAGE_FILE_COLLECTIONS = config/*
 PACKAGE_EXTENSION_DIRECTORY = extensions
 PACKAGE_EXTENSION_FILES = $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackup_*
 
-include $(CURRENT_DIR)/Makefile.env
+include $(CURRENT_DIR)/$(MAKEFILE).env
 
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -50,11 +50,11 @@ deploy: ## Deploy raspiBackup
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
 
 syncLocal: ## Sync github with local git
-	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(file) $(LOCAL_REPO);)
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(file) $(LOCAL_REPO);)
-	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(file) $(LOCAL_REPO);)
+	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
 
 syncRemote: ## Sync local git with github
-	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(file) ;)
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(file) ;)
-	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(file) ;)
+	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)

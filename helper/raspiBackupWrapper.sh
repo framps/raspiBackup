@@ -34,11 +34,11 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 VERSION="0.2.7"
 
-set +u;GIT_DATE="$Date: 2021-09-09 19:08:54 +0200$"; set -u
+set +u;GIT_DATE="$Date$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1: fbf1dbd$";set -u
+set +u;GIT_COMMIT="$Sha1$";set -u
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
