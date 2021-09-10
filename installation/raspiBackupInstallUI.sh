@@ -33,7 +33,7 @@ fi
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.3.5" 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.3.6-beta_nls" 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -111,12 +111,27 @@ VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 
 PROPERTY_REGEX='.*="([^"]*)"'
 
+# borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
+
+function containsElement () {
+  local e
+  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+  return 1
+}
+
+#
+# NLS: Either use system language if language is supported and use English otherwise
+#
+
+SUPPORTED_LANGUAGES=("EN" "DE" "FI")
+
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
 LANG_EXT="${LANG,,*}"
 LANG_SYSTEM="${LANG_EXT:0:2}"
-if [[ $LANG_SYSTEM != "de" && $LANG_SYSTEM != "en" ]]; then
+if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
 	LANG_SYSTEM="en"
 fi
+
 MESSAGE_LANGUAGE="${LANG_SYSTEM^^*}"
 
 # default configs
@@ -142,26 +157,32 @@ CONFIG_MAIL_PROGRAM="mail"
 CONFIG_EMAIL=""
 CONFIG_RESIZE_ROOTFS="1"
 
+# Whiptail box sizes
+
 ROWS_MSGBOX=10
 ROWS_ABOUT=16
 ROWS_MENU=20
 WINDOW_COLS=70
 
-MSG_EN=1 # english	(default)
-MSG_DE=1 # german
+#
+# Messages
+#
+# To add a new language just execute following steps:
+# 1) Add new language id LL (e.g. FI for Finnish) in variable SUPPORTED_LANGUAGES (see above)
+# 2) For every MSG_ add a new message MSG_LL
+#
 
 MSG_PRF="RBI"
-
-declare -A MSG_EN
-declare -A MSG_DE
 
 SCNT=0
 MSG_UNDEFINED=$((SCNT++))
 MSG_EN[$MSG_UNDEFINED]="${MSG_PRF}0000E: Undefined messageid."
 MSG_DE[$MSG_UNDEFINED]="${MSG_PRF}0000E: Unbekannte Meldungsid."
+MSG_FI[$MSG_UNDEFINED]="${MSG_PRF}0000E: (FI) Undefined messageid."
 MSG_VERSION=$((SCNT++))
 MSG_EN[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DE[$MSG_VERSION]="${MSG_PRF}0001I: %1"
+MSG_FI[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DOWNLOADING=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Downloading %1..."
 MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0002I: %1 wird aus dem Netz geladen..."
@@ -249,21 +270,26 @@ MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${
 BUTTON_FINISH=$((SCNT++))
 MSG_EN[$BUTTON_FINISH]="Finish"
 MSG_DE[$BUTTON_FINISH]="Beenden"
+MSG_EN[$BUTTON_FINISH]="(FI) Finish"
 BUTTON_SELECT=$((SCNT++))
 MSG_EN[$BUTTON_SELECT]="Select"
 MSG_DE[$BUTTON_SELECT]="Auswahl"
+MSG_EN[$BUTTON_SELECT]="(FI) Select"
 BUTTON_BACK=$((SCNT++))
 MSG_EN[$BUTTON_BACK]="Back"
 MSG_DE[$BUTTON_BACK]="Zurück"
+MSG_EN[$BUTTON_BACK]="(FI) Back"
 SELECT_TIME=$((SCNT++))
 MSG_EN[$SELECT_TIME]="Enter time of backup in format hh:mm"
 MSG_DE[$SELECT_TIME]="Die Backupzeit im Format hh:mm eingeben"
 BUTTON_CANCEL=$((SCNT++))
 MSG_EN[$BUTTON_CANCEL]="Cancel"
 MSG_DE[$BUTTON_CANCEL]="Abbruch"
+MSG_FI[$BUTTON_CANCEL]="(FI) Cancel"
 BUTTON_OK=$((SCNT++))
 MSG_EN[$BUTTON_OK]="Ok"
 MSG_DE[$BUTTON_OK]="Bestätigen"
+MSG_FI[$BUTTON_OK]="(FI) OK"
 MSG_QUESTION_UPDATE_CONFIG=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UPDATE_CONFIG]="Do you want to save the updated $RASPIBACKUP_NAME configuration now?"
 MSG_DE[$MSG_QUESTION_UPDATE_CONFIG]="Soll die geänderte Konfiguration von $RASPIBACKUP_NAME jetzt gespeichert werden?"
@@ -279,9 +305,11 @@ MSG_DE[$MSG_SEQUENCE_OK]="Stopbefehle für die Services werden in folgender Reih
 BUTTON_YES=$((SCNT++))
 MSG_EN[$BUTTON_YES]="Yes"
 MSG_DE[$BUTTON_YES]="Ja"
+MSG_FI[$BUTTON_YES]="(FI) Yes"
 BUTTON_NO=$((SCNT++))
 MSG_EN[$BUTTON_NO]="No"
 MSG_DE[$BUTTON_NO]="Nein"
+MSG_FI[$BUTTON_NO]="(FI) No"
 MSG_QUESTION_UNINSTALL=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UNINSTALL]="Are you sure to uninstall $RASPIBACKUP_NAME ?"
 MSG_DE[$MSG_QUESTION_UNINSTALL]="Soll $RASPIBACKUP_NAME wirklich deinstalliert werden ?"
@@ -387,10 +415,12 @@ ${NL}${NL}Note: The first two partitions have to be selected all the time."
 MSG_DE[$DESCRIPTION_PARTITIONS]="${NL}Wähle alle Partitionen aus die im Backup enthalten sein sollen. \
 ${NL}${NL}Hinweis: Die ersten beiden Partitionen müssen immer ausgewählt werden."
 DESCRIPTION_LANGUAGE=$((SCNT++))
-MSG_EN[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME und dieser Installer unterstützen Englisch und Deutsch. Standard ist die Systemsprache.${NL}\
-${NL}$RASPIBACKUP_NAME and this installer support English and German. The default language is set by the system language."
-MSG_DE[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME and this installer support English and German. The default language is set by the system language.${NL}\
-${NL}$RASPIBACKUP_NAME und dieser Installer unterstützen Englisch und Deutsch. Standard ist die Systemsprache."
+MSG_EN[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME and this installer support following languages as of now. Default language is the system language.\
+${NL}${NL}Any help to add another language is welcome."
+MSG_DE[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME und dieser Installer unterstützen momentan folgende Sprachen. Standardsprache ist die Systemsprache.\
+${NL}${NL}Jede Hilfe eine weitere Sprache dazuzubringen ist herzlich willkommen."
+MSG_FI[$DESCRIPTION_LANGUAGE]="${NL}(FI) $RASPIBACKUP_NAME und dieser Installer unterstützen momentan folgende Sprachen. Standardsprache ist die Systemsprache.\
+${NL}${NL}Jede Hilfe eine weitere Sprache dazuzubringen ist herzlich willkommen."
 DESCRIPTION_KEEP=$((SCNT++))
 MSG_EN[$DESCRIPTION_KEEP]="${NL}Enter number of backups to keep. Number hast to be between 1 and 52."
 MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Beackups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
@@ -529,11 +559,13 @@ MENU_UNDEFINED=$((MCNT++))
 MENU_EN[$MENU_UNDEFINED]="Undefined menuid."
 MENU_DE[$MENU_UNDEFINED]="Unbekannte menuid."
 MENU_LANGUAGE=$((MCNT++))
-MENU_EN[$MENU_LANGUAGE]='"M1" "Language/Sprache"'
-MENU_DE[$MENU_LANGUAGE]='"M1" "Sprache/Language"'
+MENU_EN[$MENU_LANGUAGE]='"M1" "Language"'
+MENU_DE[$MENU_LANGUAGE]='"M1" "Sprache"'
+MENU_FI[$MENU_LANGUAGE]='"M1" "(FI) Language"'
 MENU_INSTALL=$((MCNT++))
 MENU_EN[$MENU_INSTALL]='"M2" "Install components"'
 MENU_DE[$MENU_INSTALL]='"M2" "Installiere Komponenten"'
+MENU_FI[$MENU_INSTALL]='"M2" "(FI) Install components"'
 MENU_CONFIGURE=$((MCNT++))
 MENU_EN[$MENU_CONFIGURE]='"M3" "Configure major options"'
 MENU_DE[$MENU_CONFIGURE]='"M3" "Konfiguriere die wichtigsten Optionen"'
@@ -559,11 +591,17 @@ MENU_CONFIG_TIME=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TIME]='"R3" "Time of regular backup"'
 MENU_DE[$MENU_CONFIG_TIME]='"R3" "Zeit des regelmäßigen Backups"'
 MENU_CONFIG_LANGUAGE_EN=$((MCNT++))
-MENU_EN[$MENU_CONFIG_LANGUAGE_EN]='"en" "English"'
-MENU_DE[$MENU_CONFIG_LANGUAGE_EN]='"en" "Englisch"'
+MENU_EN[$MENU_CONFIG_LANGUAGE_EN]='"EN" "English"'
+MENU_DE[$MENU_CONFIG_LANGUAGE_EN]='"EN" "Englisch"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_EN]='"EN" "Finnish"'
 MENU_CONFIG_LANGUAGE_DE=$((MCNT++))
-MENU_EN[$MENU_CONFIG_LANGUAGE_DE]='"de" "German"'
-MENU_DE[$MENU_CONFIG_LANGUAGE_DE]='"de" "Deutsch"'
+MENU_EN[$MENU_CONFIG_LANGUAGE_DE]='"DE" "German"'
+MENU_DE[$MENU_CONFIG_LANGUAGE_DE]='"DE" "Deutsch"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_DE]='"DE" "Finnisch"'
+MENU_CONFIG_LANGUAGE_FI=$((MCNT++))
+MENU_EN[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finnish"'
+MENU_DE[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finnisch"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_FI]='"FI" "(FI) Finnish"'
 MENU_CONFIG_MESSAGE_N=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MESSAGE_N]='"Normal" "Display important messages only"'
 MENU_DE[$MENU_CONFIG_MESSAGE_N]='"Normal" "Nur wichtige Meldungen anzeigen"'
@@ -699,26 +737,15 @@ function checkRequiredDirectories() {
 
 function getMessageText() { # messagenumber parm1 parm2 ...
 
-	local msg
-	local p
-	local i
-	local s
+	local msg p i s
 
 	msgVar="MSG_${CONFIG_LANGUAGE}"
 
-	if [[ -n ${!msgVar} ]]; then
+	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
 		msgVar="$msgVar[$1]"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
-			msgVar="$1"
-			if [[ -z ${!msgVar} ]]; then
-				echo "${MSG_EN[$MSG_UNDEFINED]}" # unknown message id
-				logStack
-				logExit "$1"
-				return
-			else
-				msg="${MSG_EN[$1]}" # fallback into english
-			fi
+			msg="${MSG_EN[$1]}" # fallback into english
 		fi
 	else
 		msg="${MSG_EN[$1]}" # fallback into english
@@ -757,19 +784,11 @@ function getMenuText() { # menutextnumber varname
 	local menuVar="MENU_${CONFIG_LANGUAGE}"
 	declare -n varname=$2
 
-	if [[ -n ${!menuVar} ]]; then
+	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
 		menuVar="$menuVar[$1]"
 		menu="${!menuVar}"
 		if [[ -z $menu ]]; then # no translation found
-			menuVar="$1"
-			if [[ -z ${!menuVar} ]]; then
-				echo "${MENU_EN[$MENU_UNDEFINED]}" # unknown menu id
-				logStack
-				logExit
-				return
-			else
-				menu="${MENU_EN[$1]}" # fallback into english
-			fi
+			menu="${MENU_EN[$1]}" # fallback into english
 		fi
 	else
 		menu="${MENU_EN[$1]}" # fallback into english
@@ -2268,14 +2287,6 @@ function config_backuptype_do() {
 	return $rc
 }
 
-# borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
-
-function containsElement () {
-  local e
-  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
-  return 1
-}
-
 function config_services_do() {
 
 	local current="$CONFIG_STOPSERVICES"
@@ -3193,46 +3204,37 @@ function config_language_do() {
 
 	logEntry "$old"
 
-	local en_=off
-	local de_=off
-
 	[[ -z "$CONFIG_LANGUAGE" ]] && CONFIG_LANGUAGE="$MESSAGE_LANGUAGE"
 
-	case "$CONFIG_LANGUAGE" in
-		DE) de_=on ;;
-		EN) en_=on ;;
-		*)
-			whiptail --msgbox "Programm error, unrecognized language $CONFIG_LANGUAGE" $ROWS_MENU $WINDOW_COLS 2
-			logExit
-			return 1
-			;;
-	esac
+	if ! containsElement "$CONFIG_LANGUAGE" "${SUPPORTED_LANGUAGES[@]}"; then
+		whiptail --msgbox "Unsupported language $CONFIG_LANGUAGE. Falling back to English" $ROWS_MENU $WINDOW_COLS 2
+		CONFIG_LANGUAGE="EN"
+	fi
 
-	getMenuText $MENU_CONFIG_LANGUAGE_EN m1
-	getMenuText $MENU_CONFIG_LANGUAGE_DE m2
+	local lng=()
+	local l m state
 
-	local s1="${m1[0]}"
-	local s2="${m2[0]}"
+	for l in "${SUPPORTED_LANGUAGES[@]}"; do
+		local menuLang="MENU_CONFIG_LANGUAGE_$l"
+		getMenuText ${!menuLang} m
+		[[ "$l" == "$CONFIG_LANGUAGE" ]] && state=on || state=off
+		lng+=(${m[@]} $state)
+	done
 
 	getMenuText $MENU_LANGUAGE tt
 	local o1="$(getMessageText $BUTTON_OK)"
 	local c1="$(getMessageText $BUTTON_CANCEL)"
 	local d="$(getMessageText $DESCRIPTION_LANGUAGE)"
 
-	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $ROWS_MENU $WINDOW_COLS 2 \
-		"${m1[@]}" $en_ \
-		"${m2[@]}" $de_ \
+	local listSize=${#SUPPORTED_LANGUAGES[@]}
+	(( $listSize > 7 )) && listSize=7
+
+	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $ROWS_MENU $WINDOW_COLS $listSize \
+		"${lng[@]}" \
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
-		case "$ANSWER" in
-		$s1) CONFIG_LANGUAGE="EN" ;;
-		$s2) CONFIG_LANGUAGE="DE" ;;
-		*)	whiptail --msgbox "Programm error, unrecognized language $ANSWER" $ROWS_MENU $WINDOW_COLS 2
-			logExit
-			return 1
-			;;
-		esac
+ 		CONFIG_LANGUAGE="${ANSWER^^*}"
 	fi
 
 	[[ "$old" == "$CONFIG_LANGUAGE" ]]
