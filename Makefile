@@ -41,11 +41,24 @@ deploy: ## Deploy raspiBackup
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
 
-	@git checkout -f $(LOCAL_MASTER_BRANCH)
+	@git checkout -f $(MASTER_BRANCH)
 
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 	@tar --exclude raspiBackup.sh -cvzf $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_DIRECTORY)/*.sh
 	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+
+	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
+
+deployBeta: ## Deploy raspiBackup beta
+	@$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
+
+	@git checkout -f $(BETA_BRANCH)
+
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
+	@tar --exclude raspiBackup.sh -cvzf $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_DIRECTORY)/*.sh
+	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
 
