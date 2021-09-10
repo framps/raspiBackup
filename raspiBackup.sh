@@ -368,7 +368,7 @@ function containsElement () {
 }
 
 #
-# NLS: Either use system language if language is supported and use English otherwise
+# NLS: Either use system language if language is supported and use fallback language English otherwise
 #
 
 SUPPORTED_LANGUAGES=("EN" "DE" "FI")
@@ -385,8 +385,9 @@ fi
 #
 # To add a new language just execute following steps:
 # 1) Add new language id LL (e.g. FI for Finnish) in variable SUPPORTED_LANGUAGES (see above)
-# 2) For every MSG_ add a new message MSG_LL
-# 3) Optionally add a help function usageLL
+# 2) For every MSG_ add a new message MSG_LL, e.g. MSG_FI for Finnish
+# 3) Optionally add a help function usageLL, e.g. usageFI
+# 4) Note: If a message definition or help function (MSG_LL or usageLL) is missing in a supported language the fallback language English will be selected by the code (MSG_EN or usageEN)
 #
 
 LANGUAGE="${LANG_SYSTEM^^*}"
@@ -400,6 +401,7 @@ MSG_DE[$MSG_ASSERTION_FAILED]="RBK0001E: Unerwarteter Programmfehler trat auf. (
 MSG_RUNASROOT=2
 MSG_EN[$MSG_RUNASROOT]="RBK0002E: $MYSELF has to be started as root. Try 'sudo %s%s'."
 MSG_DE[$MSG_RUNASROOT]="RBK0002E: $MYSELF muss als root gestartet werden. Benutze 'sudo %s%s'."
+MSG_FI[$MSG_RUNASROOT]="RBK0002E: $MYSELF has to be started as root. Try 'sudo %s%s'. (FI)"
 MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY=3
 MSG_EN[$MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY]="RBK0003I: Backup size will be truncated from %s to %s."
 MSG_DE[$MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY]="RBK0003I: Backupgröße wird von %s auf %s reduziert."
