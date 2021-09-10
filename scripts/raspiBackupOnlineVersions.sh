@@ -28,11 +28,11 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2020-05-19 12:44:15 +0200$"
+GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: fe24946$"
+GIT_COMMIT="$Sha1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
@@ -48,11 +48,11 @@ function analyze() { # fileName url
 	tmp=$(mktemp)
 	wget $2 -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmp
 
-	# GIT_COMMIT="$Sha1: fe24946$"
+	# GIT_COMMIT="$Sha1$"
 	sha="$(grep "^GIT_COMMIT=" "$tmp" | cut -f 2 -d ' '| sed  -e "s/[\$\"]//g")"
 	# VERSION="0.6.5-beta"	# -beta, -hotfix or -dev suffixes possible
 	version="$(grep "^VERSION=" "$tmp" | cut -f 2 -d = | sed  -e "s/\"//g" -e "s/[[:space:]]*#.*//")"
-	# GIT_DATE="$Date: 2020-05-19 12:44:15 +0200$"
+	# GIT_DATE="$Date$"
 	date="$(grep "^GIT_DATE=" "$tmp" | cut -f 2-3 -d ' ' )"
 
 	printf "%-20s: Version: %-10s Date: %-20s Sha: %-10s\n" "$1" "$version" "$date" "$sha"
