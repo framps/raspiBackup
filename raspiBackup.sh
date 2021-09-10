@@ -359,24 +359,37 @@ MSG_LEVEL="$MSG_LEVEL_DETAILED"
 LOG_LEVEL="$LOG_DEBUG"
 LOG_OUTPUT="$LOG_OUTPUT_BACKUPLOC"
 
-#################################################################################
-# --- Messages in English and German
-#################################################################################
+# borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
 
-# supported languages
+function containsElement () {
+  local e
+  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+  return 1
+}
 
-MSG_SUPPORTED_REGEX="^EN$|^DE$"
+#
+# NLS: Either use system language if language is supported and use English otherwise
+#
 
-LANG_EXT="${LANG^^*}"
-LANG_SUFF="EN"
-MSG_LANG_FALLBACK="EN"
-LANGUAGE="$MSG_LANG_FALLBACK"
+SUPPORTED_LANGUAGES=("EN" "DE" "FI")
 
-MSG_EN=1      # english	(default)
-MSG_DE=1      # german
+[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
+LANG_EXT="${LANG,,*}"
+LANG_SYSTEM="${LANG_EXT:0:2}"
+if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
+	LANG_SYSTEM="en"
+fi
 
-declare -A MSG_EN
-declare -A MSG_DE
+#
+# Messages
+#
+# To add a new language just execute following steps:
+# 1) Add new language id LL (e.g. FI for Finnish) in variable SUPPORTED_LANGUAGES (see above)
+# 2) For every MSG_ add a new message MSG_LL
+# 3) Optionally add a help function usageLL
+#
+
+LANGUAGE="${LANG_SYSTEM^^*}"
 
 MSG_UNDEFINED=0
 MSG_EN[$MSG_UNDEFINED]="RBK0000E: Undefined messageid"
@@ -408,6 +421,7 @@ MSG_DE[$MSG_STOPPING_SERVICES]="RBK0008I: Services werden gestoppt: '%s'."
 MSG_STARTED=9
 MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) started at %s."
 MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) %s gestartet."
+MSG_FI[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) %s gestartet (FI)."
 MSG_STOPPED=10
 MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) stopped at %s with rc %s."
 MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) %s beendet mit Returncode %s."
@@ -459,6 +473,7 @@ MSG_DE[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Backupverzeichnis %s existier
 MSG_SAVED_LOG=26
 MSG_EN[$MSG_SAVED_LOG]="RBK0026I: Debug logfile saved in %s."
 MSG_DE[$MSG_SAVED_LOG]="RBK0026I: Debug Logdatei wurde in %s gesichert."
+MSG_FI[$MSG_SAVED_LOG]="RBK0026I: Debug Logdatei wurde in %s gesichert. (FI)"
 MSG_NO_DEVICEMOUNTED=27
 MSG_EN[$MSG_NO_DEVICEMOUNTED]="RBK0027E: No external device mounted on %s. root partition would be used for the backup."
 MSG_DE[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Kein externes Gerät an %s verbunden. Die root Partition würde für das Backup benutzt werden."
@@ -880,6 +895,9 @@ ${NL}!!! RBK0165W: =========> NOTE <========="
 MSG_DE[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> HINWEIS <========= \
 ${NL}!!! RBK0165W: Dieses ist eine Betaversion welche nicht in Produktion benutzt werden sollte. \
 ${NL}!!! RBK0165W: =========> HINWEIS <========="
+MSG_FI[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> HINWEIS <========= (FI) \
+${NL}!!! RBK0165W: Dieses ist eine Betaversion welche nicht in Produktion benutzt werden sollte. (FI) \
+${NL}!!! RBK0165W: =========> HINWEIS <========= (FI)"
 MSG_UMOUNT_ERROR=166
 MSG_EN[$MSG_UMOUNT_ERROR]="RBK0166E: Umount for %s failed. RC %s. Maybe mounted somewhere else?"
 MSG_DE[$MSG_UMOUNT_ERROR]="RBK0166E: Umount für %s fehlerhaft. RC %s. Vielleicht noch woanders gemounted?"
@@ -1144,8 +1162,8 @@ MSG_CONFIG_BACKUP_FAILED=250
 MSG_EN[$MSG_CONFIG_BACKUP_FAILED]="RBK0250E: Backup creation of %s failed."
 MSG_DE[$MSG_CONFIG_BACKUP_FAILED]="RBK0250E: Backuperstellung von %s fehlerhaft."
 MSG_CHMOD_FAILED=251
-MSG_EN[$MSG_CHMOD_FAILED]="RBK0251E: chmod of %1 failed."
-MSG_DE[$MSG_CHMOD_FAILED]="RBK0251E: chmod von %1 nicht möglich."
+MSG_EN[$MSG_CHMOD_FAILED]="RBK0251E: chmod of %s failed."
+MSG_DE[$MSG_CHMOD_FAILED]="RBK0251E: chmod von %s nicht möglich."
 MSG_EMAIL_COLORING_NOT_SUPPORTED=252
 MSG_EN[$MSG_EMAIL_COLORING_NOT_SUPPORTED]="RBK0252E: Invalid eMail coloring %s. Using $EMAIL_COLORING_SUBJECT. Supported are %s."
 MSG_DE[$MSG_EMAIL_COLORING_NOT_SUPPORTED]="RBK0252E: Ungültige eMailKolorierung %s. Benutze $EMAIL_COLORING_SUBJECT. Unterstützt sind %s."
@@ -1212,45 +1230,43 @@ LOG_INDENT_INC=4
 
 # Create message and substitute parameters
 
-function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
+function getMessageText() { # messagenumber parm1 parm2 ...
+
 	local msg p i s
 
-	if [[ $1 != "L" ]]; then
-		LANG_SUFF=${1^^*}
-	else
-		LANG_EXT=${LANG^^*}
-		LANG_SUFF=${LANG_EXT:0:2}
-	fi
+	msgVar="MSG_${LANGUAGE}"
 
-	msgVar="MSG_${LANG_SUFF}"
-
-	if [[ -n ${!msgVar} ]]; then
-		msgVar="$msgVar[$2]"
+	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
+		msgVar="$msgVar[$1]"
 		msg=${!msgVar}
-		if [[ -z $msg ]]; then		       			# no translation found
-			msgVar="$2"
-			if [[ -z ${!msgVar} ]]; then
-				echo "${MSG_EN[$MSG_UNDEFINED]}"	# unknown message id
-				logStack
-				return
-			else
-				msg="${MSG_EN[$2]}"  	    	    # fallback into english
-			fi
+		if [[ -z $msg ]]; then # no translation found
+			msg="${MSG_EN[$1]}" # fallback into english
 		fi
-	 else
-		 msg="${MSG_EN[$2]}"      	      	        # fallback into english
-	 fi
-
-	# backward compatibility: change extension messages with old message format of 0.6.4 using %1, %2 ... to new 0.6.4.1 format using %s only
-	if [[ "$msg" =~ ^- ]]; then
-		msg=$(sed -e 's/--- //' -e 's/%[0-9]/%s/g' -e 's/\\%/%%/' <<< "$msg")
+	else
+		msg="${MSG_EN[$1]}" # fallback into english
 	fi
-	printf -v msg "$msg" "${@:3}"
 
-	local msgPref="${msg:0:3}"
-	if [[ $msgPref == "RBK" ]]; then								# RBK0001E
-		local severity="${msg:7:1}"
-		[[ $severity == "W" ]] && WARNING_MESSAGE_WRITTEN=1
+	shift
+
+	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
+	i=1
+	while [[ "$msg" =~ %s ]]; do
+		msg="$(sed "s|%s|%$i|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
+		(( i++ ))
+	done
+
+	for ((i = 1; $i <= $#; i++)); do # substitute all message parameters
+		p=${!i}
+		let s=$i
+		s="%$s"
+		msg="$(sed "s|$s|$p|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
+	done
+
+	msg="$(sed "s/%[0-9]+//g" <<<"$msg" 2>/dev/null)" # delete trailing %n definitions
+
+	local msgPref=${msg:0:3}
+	if [[ $msgPref == "RBK" ]]; then # RBK0001E
+		local severity=${msg:7:1}
 		if [[ "$severity" =~ [EWI] ]]; then
 			local msgHeader=${MSG_HEADER[$severity]}
 			echo "$msgHeader $msg"
@@ -1260,14 +1276,15 @@ function getMessageText() {         # languageflag messagenumber parm1 parm2 ...
 	else
 		echo "$msg"
 	fi
+
 }
 
 # --- Helper function to extract the message text in German or English and insert message parameters
 
-function getLocalizedMessage() { # messageNumber parm1 parm2
+function getMessage() { # messageNumber parm1 parm2
 
 	local msg
-	msg="$(getMessageText $LANGUAGE "$@")"
+	msg="$(getMessageText "$@")"
 	echo "$msg"
 }
 
@@ -1363,8 +1380,8 @@ function logEnable() {
 	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 	logItem "$GIT_CODEVERSION"
-	local sep="$(getLocalizedMessage $MSG_SENSITIVE_SEPARATOR)"
-	local warn="$(getLocalizedMessage $MSG_SENSITIVE_WARNING)"
+	local sep="$(getMessage $MSG_SENSITIVE_SEPARATOR)"
+	local warn="$(getMessage $MSG_SENSITIVE_WARNING)"
 	logItem "$sep"
 	logItem "$warn"
 	logItem "$sep"
@@ -1515,7 +1532,7 @@ function usage() {
 	LANG_EXT="${LANG^^*}"
 	LANG_SUFF="${LANG_EXT:0:2}"
 
-	NO_YES=( $(getLocalizedMessage $MSG_NO_YES) )
+	NO_YES=( $(getMessage $MSG_NO_YES) )
 
 	local func="usage${LANG_SUFF}"
 
@@ -1527,14 +1544,6 @@ function usage() {
 
 }
 
-# borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
-
-function containsElement () {
-  local e
-  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
-  return 1
-}
-
 # Write message
 
 function writeToConsole() {  # msglevel messagenumber message
@@ -1544,7 +1553,7 @@ function writeToConsole() {  # msglevel messagenumber message
 	level=$1
 	shift
 
-	msg="$(getMessageText $LANGUAGE "$@")"
+	msg="$(getMessageText "$@")"
 
 	if (( $level <= $MSG_LEVEL )); then
 
@@ -2180,7 +2189,7 @@ function isUpdatePossible() {
 		oldVersion="${versions[2]}"
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getLocalizedMessage $MSG_VERSION_HISTORY_PAGE)"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 	fi
 
 	logExit
@@ -2328,7 +2337,7 @@ function verifyIsOnOff() { # arg
 
 function askYesNo() { # message message_parms
 
-	local yes_no=$(getLocalizedMessage $MSG_QUERY_CHARS_YES_NO)
+	local yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
 	local addtlMsg=0
 
 	if [[ $# > 1 ]]; then
@@ -2348,7 +2357,7 @@ function askYesNo() { # message message_parms
 	fi
 
 	if (( $NO_YES_QUESTION )); then
-		answer=$(getLocalizedMessage $MSG_ANSWER_CHARS_YES)
+		answer=$(getMessage $MSG_ANSWER_CHARS_YES)
 	else
 		read answer
 	fi
@@ -2356,7 +2365,7 @@ function askYesNo() { # message message_parms
 	answer=${answer:0:1}	# first char only
 	answer=${answer:-"n"}	# set default no
 
-	local yes=$(getLocalizedMessage $MSG_ANSWER_CHARS_YES)
+	local yes=$(getMessage $MSG_ANSWER_CHARS_YES)
 	if [[ ! $yes =~ $answer ]]; then
 		return 1
 	else
@@ -2532,7 +2541,7 @@ function updateScript() {
 		if (( ! $FORCE_UPDATE )) ; then
 			local incompatibleVersions=( $INCOMPATIBLE_PROPERTY )
 			if containsElement "$newVersion" "${incompatibleVersions[@]}"; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPATIBLE_UPDATE "$newVersion" "$(getLocalizedMessage $MSG_VERSION_HISTORY_PAGE)"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPATIBLE_UPDATE "$newVersion" "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 				exitNormal
 			fi
 		fi
@@ -3545,12 +3554,12 @@ function cleanup() { # trap
 
 			if (( ! $RESTORE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
-					msgTitle=$(getLocalizedMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					sendEMail "$msg" "$msgTitle"
 				fi
 
 				if [[ -n "$TELEGRAM_TOKEN" ]]; then
-					msg=$(getLocalizedMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
 						sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
 						sendTelegrammLogMessages
@@ -3572,13 +3581,13 @@ function cleanup() { # trap
 
 		if (( ! $RESTORE )); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-				msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
 					sendTelegramm "${EMOJI_OK} $msg"
 					sendTelegrammLogMessages
 				fi
 			fi
-			msg=$(getLocalizedMessage $MSG_TITLE_OK $HOSTNAME)
+			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 			sendEMail "" "$msg"
 		fi # ! $RESTORE
 	fi
@@ -5545,7 +5554,7 @@ function reportNews() {
 			local betaVersion=$(isBetaAvailable)
 			if [[ -n $betaVersion && $VERSION != $betaVersion ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getLocalizedMessage $MSG_VERSION_HISTORY_PAGE)"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 				NEWS_AVAILABLE=1
 				BETA_AVAILABLE=1
 			fi
@@ -7292,7 +7301,7 @@ function usageEN() {
 	echo "-E \"{additional email call parameters}\" (default: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {config filename}"
 	echo "-g Display progress bar"
-	echo "-G {message language} (EN or DE) (default: $DEFAULT_LANGUAGE)"
+	echo "-G {message language} (${SUPPORTED_LANGUAGES[@]}) (default: $LANGUAGE)"
 	echo "-h display this help text"
 	echo "-l {log level} ($POSSIBLE_LOG_LEVELs_) (default: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-m {message level} ($POSSIBLE_MSG_LEVELs) (default: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
@@ -7342,7 +7351,7 @@ function usageDE() {
 	echo "-E \"{Zusätzliche eMail Aufrufparameter}\" (Standard: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {Konfig Dateiname}"
 	echo "-g Anzeige des Fortschritts"
-	echo "-G {Meldungssprache} (DE oder EN) (Standard: $DEFAULT_LANGUAGE)"
+	echo "-G {Meldungssprache} (${SUPPORTED_LANGUAGES[@]}) (Standard: $LANGUAGE)"
 	echo "-h Anzeige dieses Hilfstextes"
 	echo "-l {log Genauigkeit} ($POSSIBLE_LOG_LEVELs) (Standard: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-m {Meldungsgenauigkeit} ($POSSIBLE_MSG_LEVELs) (Standard: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
@@ -7635,10 +7644,9 @@ while (( "$#" )); do
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
-	  msgVar="MSG_${LANGUAGE}"
-	  if [[ -z ${!msgVar} ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_LANGUAGE_NOT_SUPPORTED $LANGUAGE
-		exitError $RC_PARAMETER_ERROR
+	  if ! containsElement "${LANGUAGE^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
+		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_LANGUAGE_NOT_SUPPORTED $LANGUAGE
+		  exitError $RC_PARAMETER_ERROR
 	  fi
 	  ;;
 
@@ -8005,7 +8013,7 @@ logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
 setupEnvironment
 
 if (( "$NOTIFY_START" )) ; then
-	msg="$(getLocalizedMessage $MSG_TITLE_STARTED "$HOSTNAME")"
+	msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 	if [[ -n "$EMAIL"  ]]; then
 		sendEMail "" "$msg"
 	fi
