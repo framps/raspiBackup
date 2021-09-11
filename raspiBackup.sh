@@ -28,16 +28,13 @@
 #
 #######################################################################################################################
 
-
-
-
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
 	echo "??? DEBUG: $(lsof -a -p $$ -d txt | tail -n 1)"
 	exit 127
 fi
 
-VERSION="0.6.6"											# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.6"													# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"									# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
@@ -2487,7 +2484,7 @@ function updateScript() {
 					newVersion="${betaVersion}-beta"
 					updateNow=1
 				fi
-			elif (( $FORCE_UPDATE )); then									# refresh beta with latest version
+			elif (( $FORCE_UPDATE )) && [[ "${betaVersion}-beta" == "$oldVersion" ]]; then		# refresh current beta with latest version
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_LATEST_BETA "${betaVersion}-beta"
 				if askYesNo; then
 					DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
