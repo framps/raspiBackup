@@ -44,6 +44,10 @@ Installation is started with following command:
 
 raspiBackup is maintained and supported by just me - framp. I'd appreciate donations if you find raspiBackup useful. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
 
+## Feature requests
+
+Anybody is welcome to create feature requests in github. They are either immediately scheduled for the next release or moved into the [backog](https://github.com/framps/raspiBackup/issues?q=is%3Aissue+is%3Aclosed+label%3ABacklog). The backlog will be reviewed every time a new release is planned and some issues are picked up and will be implemented in the next release. If you find some features useful just add a comment to the issue with :+1:. This helps to prioritize the issues.
+
 ## Nitty gritty details
 
  * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
