@@ -1394,64 +1394,67 @@ function logFinish() {
 
 	local DEST_LOGFILE DEST_MSGFILE
 
-	if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
-		|| (( $FAKE )); then 				# error occured and logoutput is backup location which was deleted or fake mode
-		LOG_OUTPUT=$LOG_OUTPUT_HOME 		# save log in home directory
-	fi
 
-	rm "$FINISH_LOG_FILE" &>> "$LOG_FILE"
+	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
+		if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
+			|| (( $FAKE )); then 				# error occured and logoutput is backup location which was deleted or fake mode
+			LOG_OUTPUT=$LOG_OUTPUT_HOME 		# save log in home directory
+		fi
 
-	case $LOG_OUTPUT in
-		$LOG_OUTPUT_VARLOG)
-			LOG_BASE="/var/log/$MYNAME"
-			if [ ! -d ${LOG_BASE} ]; then
-				if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
-					exitError $RC_CREATE_ERROR
+		rm "$FINISH_LOG_FILE" &>> "$LOG_FILE"
+
+		case $LOG_OUTPUT in
+			$LOG_OUTPUT_VARLOG)
+				LOG_BASE="/var/log/$MYNAME"
+				if [ ! -d ${LOG_BASE} ]; then
+					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
+						exitError $RC_CREATE_ERROR
+					fi
 				fi
-			fi
-			DEST_LOGFILE="$LOG_BASE/$HOSTNAME.log"
-			cat "$LOG_FILE" &>> "$DEST_LOGFILE"
-			;;
-		$LOG_OUTPUT_HOME)
-			DEST_LOGFILE="$CALLING_HOME/${MYNAME}.log"
-			if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+				DEST_LOGFILE="$LOG_BASE/$HOSTNAME.log"
+				cat "$LOG_FILE" &>> "$DEST_LOGFILE"
+				;;
+			$LOG_OUTPUT_HOME)
+				DEST_LOGFILE="$CALLING_HOME/${MYNAME}.log"
+				if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+					mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+				fi
+				;;
+			$LOG_OUTPUT_BACKUPLOC)
+				DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}.log"
 				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+				;;
+			*) # option -L <filename>
+				DEST_LOGFILE="$LOG_OUTPUT"
+				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+
+				if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
+					DEST_MSGFILE="$(sed "s/\.log$/\.msg/" <<< "$DEST_LOGFILE")" # replace .log extension
+				else
+					DEST_MSGFILE="$DEST_LOGFILE.msg"
+				fi
+				cp "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
+				chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
+		esac
+
+		cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
+		rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
+
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$DEST_LOGFILE"
+
+		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
+			rm -rf "$TEMP_LOG_FILE" &>> "$DEST_LOGFILE"
+		fi
+
+		rm -rf "$MSG_FILE" &>> "$DEST_LOGFILE"
+
+		if [[ "$DEST_LOGFILE" == "$TEMP_LOG_FILE" || "$DEST_LOGFILE" == "$LOG_OUTPUT" ]]; then # make sure logfile is owned by caller
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &> "$FINISH_LOG_FILE"
+			if [[ -s "$FINISH_LOG_FILE" ]]; then	# there was an error in chown
+				cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE" # make sure the error is logged
+				rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 			fi
-			;;
-		$LOG_OUTPUT_BACKUPLOC)
-			DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}.log"
-			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-			;;
-		*) # option -L <filename>
-			DEST_LOGFILE="$LOG_OUTPUT"
-			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-
-			if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
-				DEST_MSGFILE="$(sed "s/\.log$/\.msg/" <<< "$DEST_LOGFILE")" # replace .log extension
-			else
-				DEST_MSGFILE="$DEST_LOGFILE.msg"
-			fi
-			cp "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
-	esac
-
-	cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
-	rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$DEST_LOGFILE"
-
-	if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
-		rm -rf "$TEMP_LOG_FILE" &>> "$DEST_LOGFILE"
-	fi
-
-	rm -rf "$MSG_FILE" &>> "$DEST_LOGFILE"
-
-	if [[ "$DEST_LOGFILE" == "$TEMP_LOG_FILE" || "$DEST_LOGFILE" == "$LOG_OUTPUT" ]]; then # make sure logfile is owned by caller
-		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &> "$FINISH_LOG_FILE"
-		if [[ -s "$FINISH_LOG_FILE" ]]; then	# there was an error in chown
-			cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE" # make sure the error is logged
-			rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 		fi
 	fi
 }
@@ -7453,7 +7456,7 @@ copyDefaultConfigVariables
 # handle options which don't require root access
 if (( $# == 1 )); then
 	if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
-		LOG_OUTPUT=$LOG_OUTPUT_HOME
+		LOG_LEVEL=$LOG_NONE
 		case "$1" in
 			--version)
 				echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
@@ -7468,6 +7471,7 @@ fi
 
 if (( $UID != 0 )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
+	LOG_LEVEL=$LOG_NONE
 	exitError $RC_MISC_ERROR
 fi
 
