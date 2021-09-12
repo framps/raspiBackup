@@ -123,7 +123,7 @@ function containsElement () {
 # NLS: Either use system language if language is supported and use English otherwise
 #
 
-SUPPORTED_LANGUAGES=("EN" "DE" "FI")
+SUPPORTED_LANGUAGES=("EN" "DE")
 
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
 LANG_EXT="${LANG,,*}"
@@ -270,15 +270,15 @@ MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${
 BUTTON_FINISH=$((SCNT++))
 MSG_EN[$BUTTON_FINISH]="Finish"
 MSG_DE[$BUTTON_FINISH]="Beenden"
-MSG_EN[$BUTTON_FINISH]="(FI) Finish"
+MSG_FI[$BUTTON_FINISH]="(FI) Finish"
 BUTTON_SELECT=$((SCNT++))
 MSG_EN[$BUTTON_SELECT]="Select"
 MSG_DE[$BUTTON_SELECT]="Auswahl"
-MSG_EN[$BUTTON_SELECT]="(FI) Select"
+MSG_FI[$BUTTON_SELECT]="(FI) Select"
 BUTTON_BACK=$((SCNT++))
 MSG_EN[$BUTTON_BACK]="Back"
 MSG_DE[$BUTTON_BACK]="Zurück"
-MSG_EN[$BUTTON_BACK]="(FI) Back"
+MSG_FI[$BUTTON_BACK]="(FI) Back"
 SELECT_TIME=$((SCNT++))
 MSG_EN[$SELECT_TIME]="Enter time of backup in format hh:mm"
 MSG_DE[$SELECT_TIME]="Die Backupzeit im Format hh:mm eingeben"
