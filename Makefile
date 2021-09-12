@@ -32,6 +32,12 @@ PACKAGE_EXTENSION_DIRECTORY = extensions
 PACKAGE_EXTENSION_FILES = $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackup_*
 
 include $(CURRENT_DIR)/$(MAKEFILE).env
+# Has to define following environment constants:
+# 1) GITHUB_REPO - local directoy of github repo
+# 2) LOCAL_REPO - local shadow repo
+# 3) MASTER_BRANCH - should be master
+# 4) BETA_BRANCH - should be beta
+# 5) DEPLOYMENT_LOCATION - directory the code is deployed
 
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -62,12 +68,12 @@ deployBeta: ## Deploy raspiBackup beta
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
 
-syncLocal: ## Sync github with local git
+syncLocal: ## Sync github with local shadow git
 	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
 
-syncRemote: ## Sync local git with github
+syncRemote: ## Sync local shadow git with github
 	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
 	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
