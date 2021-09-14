@@ -395,120 +395,155 @@ LANGUAGE="${LANG_SYSTEM^^*}"
 MSG_UNDEFINED=0
 MSG_EN[$MSG_UNDEFINED]="RBK0000E: Undefined messageid"
 MSG_DE[$MSG_UNDEFINED]="RBK0000E: Unbekannte Meldungsid"
+MSG_FI[$MSG_UNDEFINED]="RBK0000E: Määrittämätön viestitunnus"
 MSG_ASSERTION_FAILED=1
 MSG_EN[$MSG_ASSERTION_FAILED]="RBK0001E: Unexpected program error occured. (%s), Linenumber: %s, Error: %s."
 MSG_DE[$MSG_ASSERTION_FAILED]="RBK0001E: Unerwarteter Programmfehler trat auf. (%s), Zeile: %s, Fehler: %s."
+MSG_FI[$MSG_ASSERTION_FAILED]="RBK0001E: Tapahtui odottamaton virhe. (%s), Rivinumero: %s, Virhe: %s"
 MSG_RUNASROOT=2
 MSG_EN[$MSG_RUNASROOT]="RBK0002E: $MYSELF has to be started as root. Try 'sudo %s%s'."
 MSG_DE[$MSG_RUNASROOT]="RBK0002E: $MYSELF muss als root gestartet werden. Benutze 'sudo %s%s'."
-MSG_FI[$MSG_RUNASROOT]="RBK0002E: $MYSELF has to be started as root. Try 'sudo %s%s'. (FI)"
+MSG_FI[$MSG_RUNASROOT]="RBK0002E: $MYSELF tulee käynnistää root-oikeuksin. Suorita 'sudo %s%s'."
 MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY=3
 MSG_EN[$MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY]="RBK0003I: Backup size will be truncated from %s to %s."
 MSG_DE[$MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY]="RBK0003I: Backupgröße wird von %s auf %s reduziert."
+MSG_FI[$MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY]="RBK0003I: Varmuuskopion koko typistetään koosta %s kokoon %s."
 MSG_ADJUSTING_SECOND=4
 MSG_EN[$MSG_ADJUSTING_SECOND]="RBK0004I: Adjusting second partition from %s to %s."
 MSG_DE[$MSG_ADJUSTING_SECOND]="RBK0004I: Zweite Partition wird von %s auf %s angepasst."
+MSG_FI[$MSG_ADJUSTING_SECOND]="RBK0004I: Säädetään toinen osio %s osioksi %s."
 MSG_BACKUP_FAILED=5
 MSG_EN[$MSG_BACKUP_FAILED]="RBK0005E: Backup failed. Check previous error messages for details."
 MSG_DE[$MSG_BACKUP_FAILED]="RBK0005E: Backup fehlerhaft beendet. Siehe vorhergehende Fehlermeldungen."
+MSG_FI[$MSG_BACKUP_FAILED]="RBK0005E: Varmuuskopiointi epäonnistui. Katso lisätiedot edellisistä virheilmoituksista"
 MSG_ADJUSTING_WARNING=6
 MSG_EN[$MSG_ADJUSTING_WARNING]="RBK0006W: Target %s with %s is smaller than backup source with %s. root partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small."
 MSG_DE[$MSG_ADJUSTING_WARNING]="RBK0006W: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die root Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird."
+MSG_FI[$MSG_ADJUSTING_WARNING]="RBK0006W: Kohde %s kooltaan %s on pienempi kuin varmuuskopion lähde kooltaan %s. Juuriosio typistetään sen mukaiseksi. HUOM: Palautus saattaa epäonnistua, jos juuriosiosta tulee liian pieni."
 MSG_STARTING_SERVICES=7
 MSG_EN[$MSG_STARTING_SERVICES]="RBK0007I: Starting services: '%s'."
 MSG_DE[$MSG_STARTING_SERVICES]="RBK0007I: Services werden gestartet: '%s'."
+MSG_FI[$MSG_STARTING_SERVICES]="RBK0007I: Käynnistetään palvelut: '%s'."
 MSG_STOPPING_SERVICES=8
 MSG_EN[$MSG_STOPPING_SERVICES]="RBK0008I: Stopping services: '%s'."
 MSG_DE[$MSG_STOPPING_SERVICES]="RBK0008I: Services werden gestoppt: '%s'."
+MSG_FI[$MSG_STOPPING_SERVICES]="RBK0008I: Pysäytetään palvelut: '%s'."
 MSG_STARTED=9
 MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) started at %s."
 MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) %s gestartet."
-MSG_FI[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) %s gestartet (FI)."
+MSG_FI[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s) käynnistyi %s."
 MSG_STOPPED=10
 MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) stopped at %s with rc %s."
 MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) %s beendet mit Returncode %s."
+MSG_FI[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) pysäytettiin %s, vastauskoodi %s."
 MSG_NO_BOOT_PARTITION=11
 MSG_EN[$MSG_NO_BOOT_PARTITION]="RBK0011E: No boot partition ${BOOT_PARTITION_PREFIX}1 found."
 MSG_DE[$MSG_NO_BOOT_PARTITION]="RBK0011E: Keine boot Partition ${BOOT_PARTITION_PREFIX}1 gefunden."
+MSG_FI[$MSG_NO_BOOT_PARTITION]="RBK0011E: Käynnistysosiota ${BOOT_PARTITION_PREFIX}1 ei löytynyt."
 MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP=12
 MSG_EN[$MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP]="RBK0012E: DD backup not supported for partition based backup. Use normal mode instead."
 MSG_DE[$MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP]="RBK0012E: DD Backup nicht unterstützt bei partitionsbasiertem Backup. Benutze den normalen Modus dafür."
+MSG_FI[$MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP]="RBK0012E: DD-varmuuskopiota ei tueta osioperustaiselle varmuuskopiolle. Käytä normaalimoodia."
 MSG_MULTIPLE_PARTITIONS_FOUND=13
 MSG_EN[$MSG_MULTIPLE_PARTITIONS_FOUND]="RBK0013E: More than two partitions detected which can be saved only with backuptype DD or DDZ, with option -P or with option --ignoreAdditionalPartitions."
 MSG_DE[$MSG_MULTIPLE_PARTITIONS_FOUND]="RBK0013E: Es existieren mehr als zwei Partitionen, die nur mit dem Backuptype DD oder DDZ, mit der Option -P oder der Option --ignoreAdditionalPartitions gesichert werden können."
+MSG_FI[$MSG_MULTIPLE_PARTITIONS_FOUND]="RBK0013E: Enemmän kuin kansi osiota löytyi, jotka voidaan tallentaa vain DD- tai DDZ-varmuuskopiona. Käytä valintaa -P tai --ignoreAdditionalPartitions."
 MSG_EMAIL_PROG_NOT_SUPPORTED=14
 MSG_EN[$MSG_EMAIL_PROG_NOT_SUPPORTED]="RBK0014E: eMail program %s not supported. Supported are %s"
 MSG_DE[$MSG_EMAIL_PROG_NOT_SUPPORTED]="RBK0014E: eMail Programm %s ist nicht unterstützt. Möglich sind %s"
+MSG_FI[$MSG_EMAIL_PROG_NOT_SUPPORTED]="RBK0014E: Sähköpostisovellusta %s ei tueta. Tuettuja ovat %s"
 MSG_INSTANCE_ACTIVE=15
 MSG_EN[$MSG_INSTANCE_ACTIVE]="RBK0015E: There is already an instance of $MYNAME up and running"
 MSG_DE[$MSG_INSTANCE_ACTIVE]="RBK0015E: Es ist schon eine Instanz von $MYNAME aktiv."
+MSG_FI[$MSG_INSTANCE_ACTIVE]="RBK0015E: $MYNAME on jo tällä hetkellä käynnissä"
 MSG_NO_SDCARD_FOUND=16
 MSG_EN[$MSG_NO_SDCARD_FOUND]="RBK0016E: No sd card %s found."
 MSG_DE[$MSG_NO_SDCARD_FOUND]="RBK0016E: Keine SD Karte %s gefunden."
+MSG_FI[$MSG_NO_SDCARD_FOUND]="RBK0016E: SD-korttia %s ei löytynyt."
 MSG_BACKUP_OK=17
 MSG_EN[$MSG_BACKUP_OK]="RBK0017I: Backup finished successfully."
 MSG_DE[$MSG_BACKUP_OK]="RBK0017I: Backup erfolgreich beendet."
+MSG_FI[$MSG_BACKUP_OK]="RBK0017I: Varmuuskopiointi suoritettu onnistuneesti."
 MSG_ADJUSTING_WARNING2=18
 MSG_EN[$MSG_ADJUSTING_WARNING2]="RBK0018W: Target %s with %s is larger than backup source with %s. root partition will be expanded accordingly to use the whole space."
 MSG_DE[$MSG_ADJUSTING_WARNING2]="RBK0018W: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die root Partition wird entsprechend vergrößert um den ganzen Platz zu benutzen."
+MSG_FI[$MSG_ADJUSTING_WARNING2]="RBK0018W: Kohde %s kooltaan %s, on suurempi kuin varmuuskopion lähde kooltaan %s. Juuriosio laajennetaan sen mukaisesti käyttämään koko tila."
 MSG_MISSING_START_STOP=19
 MSG_EN[$MSG_MISSING_START_STOP]="RBK0019E: Missing option -a and -o."
 MSG_DE[$MSG_MISSING_START_STOP]="RBK0019E: Option -a und -o nicht angegeben."
+MSG_FI[$MSG_MISSING_START_STOP]="RBK0019E: Valinnat -a ja -o puuttuvat"
 MSG_FILESYSTEM_INCORRECT=20
 MSG_EN[$MSG_FILESYSTEM_INCORRECT]="RBK0020E: Filesystem of rsync backup directory %s does not support %s."
 MSG_DE[$MSG_FILESYSTEM_INCORRECT]="RBK0020E: Dateisystem des rsync Backupverzeichnisses %s unterstützt keine %s."
+MSG_FI[$MSG_FILESYSTEM_INCORRECT]="RBK0020E: Rsync-varmuuskopiohakemiston %s tiedostojärjestelmä ei tue %s."
 MSG_BACKUP_PROGRAM_ERROR=21
 MSG_EN[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Backupprogram for type %s failed with RC %s."
 MSG_DE[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Backupprogramm des Typs %s beendete sich mit RC %s."
+MSG_FI[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Tyypin %s varmuuskopiointisovellus epäonnistui, RC %s."
 MSG_UNKNOWN_BACKUPTYPE=22
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unknown backuptype %s."
 MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backtyp %s."
+MSG_FI[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Tuntematon varmuuskopiotyyppi %s."
 MSG_KEEPBACKUP_INVALID=23
 MSG_EN[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Invalid parameter %s for %s detected."
 MSG_DE[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Ungültiger Parameter %s für -k eingegeben."
+MSG_FI[$MSG_KEEPBACKUP_INVALID]="RBK0023E: Havaittu epäkelpo parametri %s kohteelle %s."
 MSG_TOOL_ERROR=24
 MSG_EN[$MSG_TOOL_ERROR]="RBK0024E: Backup tool %s received error %s. Errormessages:$NL%s"
 MSG_DE[$MSG_TOOL_ERROR]="RBK0024E: Backupprogramm %s hat einen Fehler %s bekommen. Fehlermeldungen:$NL%s"
+MSG_FI[$MSG_TOOL_ERROR]="RBK0024E: Varmuuskopiointityökalu %s vastaanotti virheen %s. Virheviestit:$NL%s"
 MSG_DIR_TO_BACKUP_DOESNOTEXIST=25
 MSG_EN[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Backupdirectory %s does not exist."
 MSG_DE[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Backupverzeichnis %s existiert nicht."
+MSG_FI[$MSG_DIR_TO_BACKUP_DOESNOTEXIST]="RBK0025E: Varmuuskopiohakemistoa %s ei ole."
 MSG_SAVED_LOG=26
 MSG_EN[$MSG_SAVED_LOG]="RBK0026I: Debug logfile saved in %s."
 MSG_DE[$MSG_SAVED_LOG]="RBK0026I: Debug Logdatei wurde in %s gesichert."
-MSG_FI[$MSG_SAVED_LOG]="RBK0026I: Debug Logdatei wurde in %s gesichert. (FI)"
+MSG_FI[$MSG_SAVED_LOG]="RBK0026I: Vianmäärityksen lokitiedosto tallennettu kohteeseen %s."
 MSG_NO_DEVICEMOUNTED=27
 MSG_EN[$MSG_NO_DEVICEMOUNTED]="RBK0027E: No external device mounted on %s. root partition would be used for the backup."
 MSG_DE[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Kein externes Gerät an %s verbunden. Die root Partition würde für das Backup benutzt werden."
+MSG_FI[$MSG_NO_DEVICEMOUNTED]="RBK0027E: Ulkoista laitetta ei ole otettu käyttöön kohteessa %s. Juuriosiota käytetään varmuuskopiointiin."
 MSG_RESTORE_DIRECTORY_NO_DIRECTORY=28
 MSG_EN[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s is no backup directory of $MYNAME."
 MSG_DE[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ist kein Wiederherstellungsverzeichnis von $MYNAME."
+MSG_FI[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ei ole kohteen $MYNAME varmuuskopiohakemisto"
 MSG_MPACK_NOT_INSTALLED=29
 MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to send emails. No log can be attached to the eMail."
 MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden."
+MSG_FI[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Sähköpostisovellusta mpack ei ole asennettu sähköpostien lähetykseen. Lokitiedostoa ei voitu liittää sähköpostiin."
 MSG_IMG_DD_FAILED=30
 MSG_EN[$MSG_IMG_DD_FAILED]="RBK0030E: %s file creation with dd failed with RC %s."
 MSG_DE[$MSG_IMG_DD_FAILED]="RBK0030E: %s Datei Erzeugung mit dd endet fehlerhaft mit RC %s."
+MSG_FI[$MSG_IMG_DD_FAILED]="RBK0030E: Tiedoston %s luonti dd:llä epäonnistui, RC %s."
 MSG_CHECKING_FOR_NEW_VERSION=31
 MSG_EN[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Checking whether a new version of $MYSELF is available."
 MSG_DE[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Prüfe ob eine neue Version von $MYSELF verfügbar ist."
+MSG_FI[$MSG_CHECKING_FOR_NEW_VERSION]="RBK0031I: Tarkistetaan, onko $MYSELF uusia versioita saatavilla."
 MSG_INVALID_LOG_LEVEL=32
 MSG_EN[$MSG_INVALID_LOG_LEVEL]="RBK0032E: Invalid parameter '%s' for option -l detected."
 MSG_DE[$MSG_INVALID_LOG_LEVEL]="RBK0032E: Ungültiger Parameter '%s' für Option -l eingegeben."
+MSG_FI[$MSG_INVALID_LOG_LEVEL]="RBK0032E: Havaittu epäkelpo parametri '%s' valinnalle -l."
 MSG_CLEANING_UP=33
 MSG_EN[$MSG_CLEANING_UP]="RBK0033I: Please wait until cleanup has finished."
 MSG_DE[$MSG_CLEANING_UP]="RBK0033I: Bitte warten bis aufgeräumt wurde."
+MSG_FI[$MSG_CLEANING_UP]="RBK0033I: Ole hyvä ja odota, kunnes puhdistus on valmistunut."
 MSG_FILE_NOT_FOUND=34
 MSG_EN[$MSG_FILE_NOT_FOUND]="RBK0034E: File %s not found."
 MSG_DE[$MSG_FILE_NOT_FOUND]="RBK0034E: Datei %s nicht gefunden."
+MSG_FI[$MSG_FILE_NOT_FOUND]="RBK0034E: Tiedostoa %s ei löytynyt."
 MSG_RESTORE_PROGRAM_ERROR=35
 MSG_EN[$MSG_RESTORE_PROGRAM_ERROR]="RBK0035E: Backupprogram %s failed during restore with RC %s."
 MSG_DE[$MSG_RESTORE_PROGRAM_ERROR]="RBK0035E: Backupprogramm %s endete beim Restore mit RC %s."
+MSG_FI[$MSG_RESTORE_PROGRAM_ERROR]="RBK0035E: Varmuuskopiointisovellus %s epäonnistui palautuksen aikana, RC %s."
 MSG_BACKUP_CREATING_PARTITION_INFO=36
 MSG_EN[$MSG_BACKUP_CREATING_PARTITION_INFO]="RBK0036I: Saving partition layout."
 MSG_DE[$MSG_BACKUP_CREATING_PARTITION_INFO]="RBK0036I: Partitionslayout wird gesichert."
+MSG_FI[$MSG_BACKUP_CREATING_PARTITION_INFO]="RBK0036I: Tallennetaan osioasettelua."
 MSG_ANSWER_CHARS_YES=37
 MSG_EN[$MSG_ANSWER_CHARS_YES]="Yy"
 MSG_DE[$MSG_ANSWER_CHARS_YES]="Jj"
+MSG_FI[$MSG_ANSWER_CHARS_YES]="Kk"
 MSG_ARE_YOU_SURE=38
 MSG_EN[$MSG_ARE_YOU_SURE]="RBK0038I: Are you sure? %s "
 MSG_DE[$MSG_ARE_YOU_SURE]="RBK0038I: Bist Du sicher? %s "
@@ -1394,67 +1429,64 @@ function logFinish() {
 
 	local DEST_LOGFILE DEST_MSGFILE
 
+	if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
+		|| (( $FAKE )); then 				# error occured and logoutput is backup location which was deleted or fake mode
+		LOG_OUTPUT=$LOG_OUTPUT_HOME 		# save log in home directory
+	fi
 
-	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
-		if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
-			|| (( $FAKE )); then 				# error occured and logoutput is backup location which was deleted or fake mode
-			LOG_OUTPUT=$LOG_OUTPUT_HOME 		# save log in home directory
-		fi
+	rm "$FINISH_LOG_FILE" &>> "$LOG_FILE"
 
-		rm "$FINISH_LOG_FILE" &>> "$LOG_FILE"
-
-		case $LOG_OUTPUT in
-			$LOG_OUTPUT_VARLOG)
-				LOG_BASE="/var/log/$MYNAME"
-				if [ ! -d ${LOG_BASE} ]; then
-					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
-						exitError $RC_CREATE_ERROR
-					fi
+	case $LOG_OUTPUT in
+		$LOG_OUTPUT_VARLOG)
+			LOG_BASE="/var/log/$MYNAME"
+			if [ ! -d ${LOG_BASE} ]; then
+				if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
+					exitError $RC_CREATE_ERROR
 				fi
-				DEST_LOGFILE="$LOG_BASE/$HOSTNAME.log"
-				cat "$LOG_FILE" &>> "$DEST_LOGFILE"
-				;;
-			$LOG_OUTPUT_HOME)
-				DEST_LOGFILE="$CALLING_HOME/${MYNAME}.log"
-				if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-					mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-				fi
-				;;
-			$LOG_OUTPUT_BACKUPLOC)
-				DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}.log"
-				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-				;;
-			*) # option -L <filename>
-				DEST_LOGFILE="$LOG_OUTPUT"
-				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-
-				if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
-					DEST_MSGFILE="$(sed "s/\.log$/\.msg/" <<< "$DEST_LOGFILE")" # replace .log extension
-				else
-					DEST_MSGFILE="$DEST_LOGFILE.msg"
-				fi
-				cp "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
-				chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
-		esac
-
-		cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
-		rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
-
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$DEST_LOGFILE"
-
-		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
-			rm -rf "$TEMP_LOG_FILE" &>> "$DEST_LOGFILE"
-		fi
-
-		rm -rf "$MSG_FILE" &>> "$DEST_LOGFILE"
-
-		if [[ "$DEST_LOGFILE" == "$TEMP_LOG_FILE" || "$DEST_LOGFILE" == "$LOG_OUTPUT" ]]; then # make sure logfile is owned by caller
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &> "$FINISH_LOG_FILE"
-			if [[ -s "$FINISH_LOG_FILE" ]]; then	# there was an error in chown
-				cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE" # make sure the error is logged
-				rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 			fi
+			DEST_LOGFILE="$LOG_BASE/$HOSTNAME.log"
+			cat "$LOG_FILE" &>> "$DEST_LOGFILE"
+			;;
+		$LOG_OUTPUT_HOME)
+			DEST_LOGFILE="$CALLING_HOME/${MYNAME}.log"
+			if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+			fi
+			;;
+		$LOG_OUTPUT_BACKUPLOC)
+			DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}.log"
+			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+			;;
+		*) # option -L <filename>
+			DEST_LOGFILE="$LOG_OUTPUT"
+			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+
+			if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
+				DEST_MSGFILE="$(sed "s/\.log$/\.msg/" <<< "$DEST_LOGFILE")" # replace .log extension
+			else
+				DEST_MSGFILE="$DEST_LOGFILE.msg"
+			fi
+			cp "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
+	esac
+
+	cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
+	rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
+
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$DEST_LOGFILE"
+
+	if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
+		rm -rf "$TEMP_LOG_FILE" &>> "$DEST_LOGFILE"
+	fi
+
+	rm -rf "$MSG_FILE" &>> "$DEST_LOGFILE"
+
+	if [[ "$DEST_LOGFILE" == "$TEMP_LOG_FILE" || "$DEST_LOGFILE" == "$LOG_OUTPUT" ]]; then # make sure logfile is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &> "$FINISH_LOG_FILE"
+		if [[ -s "$FINISH_LOG_FILE" ]]; then	# there was an error in chown
+			cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE" # make sure the error is logged
+			rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 		fi
 	fi
 }
@@ -7391,6 +7423,55 @@ function usageDE() {
 	echo "--resizeRootFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
+function usageFI() {
+	echo "$GIT_CODEVERSION"
+	echo "Käyttö: $MYSELF [valinta]* {varmuuskopionPolku}"
+	echo ""
+	echo "-Yleiset asetukset-"
+	[ -z "$DEFAULT_EMAIL" ] && DEFAULT_EMAIL="ei"
+	echo "-b {dd lohkon koko} (oletus: $DEFAULT_DD_BLOCKSIZE)"
+	[ -z "$DEFAULT_DD_PARMS" ] && DEFAULT_DD_PARMS="ei"
+	echo "-D \"{dd lisäparametrit}\" (oletus: $DEFAULT_DD_PARMS)"
+	echo "-e {sähköpostiosoite} (oletus: $DEFAULT_EMAIL)"
+	[ -z "$DEFAULT_EMAIL_PARMS" ] && DEFAULT_EMAIL_PARMS="ei"
+	echo "-E \"{sähköpostitoiminnon lisäparametrit}\" (oletus: $DEFAULT_EMAIL_PARMS)"
+	echo "-f {asetustiedoston tiedostonimi}"
+	echo "-g Näytä edistymispalkki"
+	echo "-G {viestien kieli} (${SUPPORTED_LANGUAGES[@]}) (oletus: $LANGUAGE)"
+	echo "-h Näytä tämä ohje"
+	echo "-l {lokitaso} ($POSSIBLE_LOG_LEVELs_) (oletus: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
+	echo "-m {viestitaso} ($POSSIBLE_MSG_LEVELs) (oletus: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
+	echo "-M {varmuuskopion selite}"
+	echo "-n Ilmoita, jos skriptistä on uusi versio ladattavissa (oletus: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
+	echo "-s {käytettävä sähköpostiohjelma} ($SUPPORTED_MAIL_PROGRAMS) (oletus: $DEFAULT_MAIL_PROGRAM)"
+	echo "--timestamps Lisää aikaleima viestien alkuun (oletus: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
+	echo "-u \"{excludeList}\" Lista hakemistoista, jotka ohitetaan tar- ja rsync-varmuuskopioissa"
+	echo "-U Nykyinen skriptin versio korvataan uusimmalla versiolla. Nykyinen versio varmuuskopioidaan ja sen voi palauttaa parametrillä -V"
+	echo "-v Sanallista varmuuskopiotyökalujen tilatiedot (oletus: ${NO_YES[$DEFAULT_VERBOSE]})"
+	echo "-V Palauta skriptin edellinen versio"
+	echo "-z Pakkaa varmuuskopiotiedosto käyttäen gzip:iä (oletus: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
+	echo ""
+	echo "-Varmuuskopioinnin valinnat-"
+	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="ei"
+	echo "-a \"{varmuuskopion jläkeen suoritettavat komennot}\" (oletus: $DEFAULT_STARTSERVICES)"
+	echo "-B Tee käynnistysosiosta kopio tar tiedostoon (oletus: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
+ 	echo "-F Varmuuskopioinnin simulointi"
+	echo "-k {säilytettävien varmuuskopioiden lkm} (oletus: $DEFAULT_KEEPBACKUPS)"
+	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="ei"
+	echo "-o \"{ennen varmuuskopiointia suoritettavat komennot}\" (oletus: $DEFAULT_STOPSERVICES)"
+	echo "-t {varmuuskopion tyyppi} ($ALLOWED_TYPES) (oletus: $DEFAULT_BACKUPTYPE)"
+	echo "-T \"{Lista kopioitavista osioista}\" (Osionumerot, esim. \"1 2 3\"). Valinta käytettävissä vain parametrin -P kanssa (oletus: ${DEFAULT_PARTITIONS_TO_BACKUP})"
+	echo ""
+	echo "-Palautuksen valinnat-"
+	echo "-0 SD-korttia ei alusteta"
+	echo "-1 SD-kortin alustuksen virheet ohitetaan"
+	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="ei"
+	echo "-C Tarkistetaan palautettavien osioiden epäkelvot lohkot (oletus: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
+	echo "-d {palautuslaite} (oletus: $DEFAULT_RESTORE_DEVICE) (Esimerkki: /dev/sda)"
+	echo "-R {juuriosio} (oletus: restoreDevice) (Esimerkki: /dev/sdb1)"
+	echo "--resizeRootFS (oletus: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
+}
+
 function mentionHelp() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
 }
@@ -7456,7 +7537,7 @@ copyDefaultConfigVariables
 # handle options which don't require root access
 if (( $# == 1 )); then
 	if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
-		LOG_LEVEL=$LOG_NONE
+		LOG_OUTPUT=$LOG_OUTPUT_HOME
 		case "$1" in
 			--version)
 				echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
@@ -7471,7 +7552,6 @@ fi
 
 if (( $UID != 0 )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
-	LOG_LEVEL=$LOG_NONE
 	exitError $RC_MISC_ERROR
 fi
 
