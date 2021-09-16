@@ -371,12 +371,14 @@ function containsElement () {
 # NLS: Either use system language if language is supported and use English otherwise
 #
 
-SUPPORTED_LANGUAGES=("EN" "DE" "FI")
+SUPPORTED_LANGUAGES=("EN" "DE")
 
-[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
+# use LANG variable to determine language
+
+[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"		# if no LANG set use English
 LANG_EXT="${LANG,,*}"
-LANG_SYSTEM="${LANG_EXT:0:2}"
-if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
+LANG_SYSTEM="${LANG_EXT:0:2}"						# extract language id
+if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then	# if language is not supported use English
 	LANG_SYSTEM="en"
 fi
 
@@ -389,7 +391,7 @@ fi
 # 3) Optionally add a help function usageLL
 #
 
-LANGUAGE="${LANG_SYSTEM^^*}"
+LANGUAGE="${LANG_SYSTEM^^*}"	# that's the language until it's overwritten with an option or config entry
 
 MSG_UNDEFINED=0
 MSG_EN[$MSG_UNDEFINED]="RBK0000E: Undefined messageid"
@@ -3869,7 +3871,7 @@ function checkImportantParameters() {
 		fi
 	fi
 
-	if [[ ! $LANGUAGE =~ $MSG_SUPPORTED_REGEX ]]; then
+	if ! containsElement "${LANGUAGE}" "${SUPPORTED_LANGUAGES[@]}"; then
 		local l="$LANGUAGE"
 		LANGUAGE=$MSG_LANG_FALLBACK
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_LANGUAGE_NOT_SUPPORTED "$l"
@@ -7478,15 +7480,15 @@ copyDefaultConfigVariables			# and update variables with config file contents
 
 logOptions "Standard option files"
 
-if [[ -z $DEFAULT_LANGUAGE ]]; then
-	if ! [[ $DEFAULT_LANGUAGE =~ $MSG_SUPPORTED_REGEX ]]; then
-		DEFAULT_LANGUAGE="$MSG_LANG_FALLBACK"
+# check if language was overwritten by config option
+if [[ -n $DEFAULT_LANGUAGE ]]; then
+	if ! containsElement "${DEFAULT_LANGUAGE}" "${SUPPORTED_LANGUAGES[@]}"; then
+		DEFAULT_LANGUAGE="$MSG_LANG_FALLBACK"	# unsupported language, fall back to English
+	else
+		DEFAULT_LANGUAGE="${DEFAULT_LANGUAGE^^*}"
 	fi
-else
-	DEFAULT_LANGUAGE="${DEFAULT_LANGUAGE^^*}"
+	LANGUAGE=$DEFAULT_LANGUAGE			# redefine language now
 fi
-
-LANGUAGE=$DEFAULT_LANGUAGE
 
 # misc other vars
 
