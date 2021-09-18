@@ -2561,7 +2561,7 @@ function updateScript() {
 					newVersion="${betaVersion}-beta"
 					updateNow=1
 				fi
-			elif (( $FORCE_UPDATE )); then									# refresh beta with latest version
+			elif (( $FORCE_UPDATE )) && [[ "${betaVersion}-beta" == "$oldVersion" ]]; then		# refresh current beta with latest version
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_LATEST_BETA "${betaVersion}-beta"
 				if askYesNo; then
 					DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
