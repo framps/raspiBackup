@@ -27,7 +27,7 @@ jobs:
         stale-pr-message: 'Stale pull request message'
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
-        exemptLabels:
+        exempt-issue-labels:
         - "Feature request"
         - "Enhancement"
         - "Possible issue"
