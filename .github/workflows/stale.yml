@@ -28,12 +28,12 @@ jobs:
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
         exemptLabels:
-          - "Feature request"
-          - "Enhancement"
-          - "Possible issue"
-          - Bug
-          - "To be verified"
-          - Development
+        - "Feature request"
+        - "Enhancement"
+        - "Possible issue"
+        - Bug
+        - "To be verified"
+        - Development
         exemptMilestones: true
         exemptAssignees: true
           
