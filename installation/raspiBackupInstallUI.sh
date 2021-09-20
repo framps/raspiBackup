@@ -1899,7 +1899,7 @@ function config_keep_selection_do() {
 	local s1="${m1[0]}"
 	local s2="${m2[0]}"
 
-	getMenuText $MENU_CONFIG_MODE_KEEP tt
+	getMenuText $MENU_CONFIG_BACKUPS tt
 	local o1="$(getMessageText $BUTTON_OK)"
 	local c1="$(getMessageText $BUTTON_CANCEL)"
 	local d="$(getMessageText $DESCRIPTION_SMARTMODE)"
