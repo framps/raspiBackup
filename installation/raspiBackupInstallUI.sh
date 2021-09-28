@@ -132,10 +132,9 @@ if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
 	LANG_SYSTEM="en"
 fi
 
-MESSAGE_LANGUAGE="${LANG_SYSTEM^^*}"
-
 # default configs
-CONFIG_LANGUAGE="${LANG_SYSTEM^^*}"
+# CONFIG_LANGUAGE= will become either $LANG_SYSTEM if it's empty (undefined) or the configured language later on
+
 CONFIG_MSG_LEVEL="0"
 CONFIG_BACKUPTYPE="rsync"
 CONFIG_KEEPBACKUPS="3"
@@ -419,7 +418,7 @@ MSG_DE[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME erlaubt selbstgeschrie
 Es gibt Beispielerweiterungen die die Speicherauslastung, die CPU Temperatur sowie die Speicherplatzbenutzung der Backuppartition anzeigen. \
 Für weitere Details siehe${NL}https://www.linux-tips-and-tricks.de/de/13-raspberry/442-raspibackup-erweiterungen."
 MSG_FI[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME tukee lisäosia, joiden toimintoja voidaan suorittaa ennen ja jälkeen varmuuskopioinnin. \
-Mukana tulevat näytelisäosat esittävät prosessorin lämpötilan sekä tietoja muistin ja varmuuskopiointilevyn käytöstä. \ 
+Mukana tulevat näytelisäosat esittävät prosessorin lämpötilan sekä tietoja muistin ja varmuuskopiointilevyn käytöstä. \
 ${NL}Lue lisätietoja osoitteesta https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
 DESCRIPTION_COMPRESS=$((SCNT++))
 MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup. Please note this will increase backup time and will heaten the CPU. \
@@ -1497,6 +1496,10 @@ function parseConfig() {
 		fi
 		logItem "$key=$value"
 		eval "$key=\"$value\""
+		if [[ $key == "CONFIG_LANGUAGE" ]]; then
+			[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
+		fi
+
 	done <<< "$matches"
 	logExit
 }
@@ -3369,7 +3372,7 @@ function config_language_do() {
 
 	logEntry "$old"
 
-	[[ -z "$CONFIG_LANGUAGE" ]] && CONFIG_LANGUAGE="$MESSAGE_LANGUAGE"
+	[[ -z "$CONFIG_LANGUAGE" ]] && CONFIG_LANGUAGE="$LANG_SYSTEM"
 
 	if ! containsElement "$CONFIG_LANGUAGE" "${SUPPORTED_LANGUAGES[@]}"; then
 		whiptail --msgbox "Unsupported language $CONFIG_LANGUAGE. Falling back to English" $ROWS_MENU $WINDOW_COLS 2
