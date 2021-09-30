@@ -1401,7 +1401,7 @@ function logFinish() {
 			LOG_OUTPUT=$LOG_OUTPUT_HOME 		# save log in home directory
 		fi
 
-		rm "$FINISH_LOG_FILE" &>> "$LOG_FILE"
+		rm "$FINISH_LOG_FILE" &>/dev/null
 
 		case $LOG_OUTPUT in
 			$LOG_OUTPUT_VARLOG)
