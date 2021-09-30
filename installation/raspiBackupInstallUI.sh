@@ -2735,6 +2735,7 @@ function config_cronday_do() {
 	fi
 
 	[[ "$old" == "$CONFIG_CRON_DAY" ]]
+	rc=$?
 	logExit "$rc - $CONFIG_CRON_DAY"
 	return $rc
 }
@@ -2957,7 +2958,11 @@ function cron_menu() {
 		return 1
 	fi
 
-	local toggled=0
+	local enabled
+	isCrontabEnabled
+	enabled=$(( !$? ))
+
+	local old=$enabled
 	local cron_updated=0
 
 	while :; do
@@ -2973,7 +2978,7 @@ function cron_menu() {
 		getMenuText $MENU_CONFIG_TIME m2
 		getMenuText $MENU_CONFIG_CRON tt
 
-		if isCrontabEnabled; then
+		if (( $enabled )); then
 			getMenuText $MENU_REGULARBACKUP_DISABLE ct
 			local s1="${m1[0]}"
 			local s2="${m2[0]}"
@@ -2990,24 +2995,22 @@ function cron_menu() {
 			3>&1 1>&2 2>&3)
 		RET=$?
 		if [ $RET -eq 1 ]; then
-			local r=$((toggled|cron_updated))
-			logExit $r
-			return $r
+			break
 		elif [ $RET -eq 0 ]; then
 			logItem "$FUN"
 			case "$FUN" in
-				$s1) config_cronday_do; cron_updated=$(( cron_updated|$? )) ;;
-				$s2) config_crontime_do; cron_updated=$(( cron_updated|$? )) ;;
-				$ct) CRONTAB_ENABLED=$((!$CRONTAB_ENABLED)); toggled=$((!toggled)) ;;
+				$s1) config_cronday_do; cron_updated=$(( $cron_updated|$? )) ;;
+				$s2) config_crontime_do; cron_updated=$(( $cron_updated|$? )) ;;
+				$ct) CRONTAB_ENABLED=$((!$CRONTAB_ENABLED)); enabled=$((!$enabled)); cron_updated=$(( $old != $enabled || $cron_updated )) ;;
 				\ *) whiptail --msgbox "$t" $ROWS_MENU $WINDOW_COLS 1 ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
 		fi
 	done
 
-	logExit $CRONTAB_ENABLED
+	logExit $cron_updated
 
-	return $$CRONTAB_ENABLED
+	return $cron_updated
 
 }
 
