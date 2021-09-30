@@ -33,7 +33,7 @@ fi
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.3.6-beta" 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.3.6-beta_nls" 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -123,7 +123,7 @@ function containsElement () {
 # NLS: Either use system language if language is supported and use English otherwise
 #
 
-SUPPORTED_LANGUAGES=("EN" "DE")
+SUPPORTED_LANGUAGES=("EN" "DE" "FI")
 
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
 LANG_EXT="${LANG,,*}"
@@ -132,10 +132,9 @@ if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
 	LANG_SYSTEM="en"
 fi
 
-MESSAGE_LANGUAGE="${LANG_SYSTEM^^*}"
-
 # default configs
-CONFIG_LANGUAGE="${LANG_SYSTEM^^*}"
+# CONFIG_LANGUAGE= will become either $LANG_SYSTEM if it's empty (undefined) or the configured language later on
+
 CONFIG_MSG_LEVEL="0"
 CONFIG_BACKUPTYPE="rsync"
 CONFIG_KEEPBACKUPS="3"
@@ -178,7 +177,7 @@ SCNT=0
 MSG_UNDEFINED=$((SCNT++))
 MSG_EN[$MSG_UNDEFINED]="${MSG_PRF}0000E: Undefined messageid."
 MSG_DE[$MSG_UNDEFINED]="${MSG_PRF}0000E: Unbekannte Meldungsid."
-MSG_FI[$MSG_UNDEFINED]="${MSG_PRF}0000E: (FI) Undefined messageid."
+MSG_FI[$MSG_UNDEFINED]="${MSG_PRF}0000E: Viestitunnus puuttuu."
 MSG_VERSION=$((SCNT++))
 MSG_EN[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DE[$MSG_VERSION]="${MSG_PRF}0001I: %1"
@@ -186,182 +185,231 @@ MSG_FI[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DOWNLOADING=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Downloading %1..."
 MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0002I: %1 wird aus dem Netz geladen..."
+MSG_FI[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Ladataan %1..."
 MSG_DOWNLOAD_FAILED=$((SCNT++))
 MSG_EN[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Download of %1 failed. HTTP code: %2."
 MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: %1 kann nicht aus dem Netz geladen werden. HTTP code: %2."
+MSG_FI[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Kohteen %1 lataus epäonnistui. HTTP-koodi: %2."
 MSG_INSTALLATION_FAILED=$((SCNT++))
 MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation of %1 failed. Check %2."
 MSG_DE[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation von %1 fehlerhaft beendet. Prüfe %2."
+MSG_FI[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Kohteen %1 asennus epäonnistui. Tarkista %2."
 MSG_SAVING_FILE=$((SCNT++))
 MSG_EN[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Existing file %1 saved as %2."
 MSG_DE[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Existierende Datei %1 wurde als %2 gesichert."
+MSG_FI[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Tiedosto %1 tallennettiin nimellä %2."
 MSG_CHMOD_FAILED=$((SCNT++))
 MSG_EN[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod of %1 failed."
 MSG_DE[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod von %1 nicht möglich."
+MSG_FI[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod %1 epäonnistui."
 MSG_MOVE_FAILED=$((SCNT++))
 MSG_EN[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv of %1 failed."
 MSG_DE[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv von %1 nicht möglich."
+MSG_FI[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv %1 epäonnistui."
 MSG_CLEANUP=$((SCNT++))
 MSG_EN[$MSG_CLEANUP]="${MSG_PRF}0008I: Cleaning up..."
 MSG_DE[$MSG_CLEANUP]="${MSG_PRF}0008I: Räume auf..."
+MSG_FI[$MSG_CLEANUP]="${MSG_PRF}0008I: Puhdistetaan..."
 MSG_INSTALLATION_FINISHED=$((SCNT++))
 MSG_EN[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation of %1 finished successfully."
 MSG_DE[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation von %1 erfolgreich beendet."
+MSG_FI[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Kohde %1 asennettu onnistuneesti."
 MSG_UPDATING_CONFIG=$((SCNT++))
 MSG_EN[$MSG_UPDATING_CONFIG]="${MSG_PRF}0010I: Updating configuration in %1."
 MSG_DE[$MSG_UPDATING_CONFIG]="${MSG_PRF}0010I: Konfigurationsdatei %1 wird angepasst."
+MSG_FI[$MSG_UPDATING_CONFIG]="${MSG_PRF}0010I: Päivitetään asetukset tiedostossa %1."
 MSG_DELETE_FILE=$((SCNT++))
 MSG_EN[$MSG_DELETE_FILE]="${MSG_PRF}0011I: Deleting %1..."
 MSG_DE[$MSG_DELETE_FILE]="${MSG_PRF}0011I: Lösche %1..."
+MSG_FI[$MSG_DELETE_FILE]="${MSG_PRF}0011I: Poistetaan %1..."
 MSG_UNINSTALL_FINISHED=$((SCNT++))
 MSG_EN[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0012I: Uninstall of %1 finished successfully."
 MSG_DE[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0012I: Deinstallation von %1 erfolgreich beendet."
+MSG_FI[$MSG_UNINSTALL_FINISHED]="${MSG_PRF}0012I: Kohteen %1 asennus poistettu onnistuneesti."
 MSG_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0013E: Delete of %1 failed."
 MSG_DE[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0013E: Löschen von %1 fehlerhaft beendet."
+MSG_FI[$MSG_UNINSTALL_FAILED]="${MSG_PRF}0013E: Kohteen %1 poisto epäonnistui."
 MSG_DOWNLOADING_BETA=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: Downloading %1 beta..."
 MSG_DE[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: %1 beta wird aus dem Netz geladen..."
+MSG_FI[$MSG_DOWNLOADING_BETA]="${MSG_PRF}0014I: Ladataan kohteen %1 beta-versiota..."
 MSG_CODE_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: Created %1."
 MSG_DE[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: %1 wurde erstellt."
+MSG_FI[$MSG_CODE_INSTALLED]="${MSG_PRF}0015I: Kohde %1 luotu."
 MSG_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_NOT_INSTALLED]="${MSG_PRF}0016I: %1 not installed."
 MSG_DE[$MSG_NOT_INSTALLED]="${MSG_PRF}0016I: %1 nicht installiert."
+MSG_FI[$MSG_NOT_INSTALLED]="${MSG_PRF}0016I: %1 ei ole asennettu."
 MSG_CHOWN_FAILED=$((SCNT++))
 MSG_EN[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown of %1 failed."
 MSG_DE[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown von %1 nicht möglich."
+MSG_FI[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown %1 epäonnistui."
 MSG_SAMPLEEXTENSION_INSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Sample extension installation failed. %1"
 MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Beispielserweiterungsinstallation fehlgeschlagen. %1"
+MSG_FI[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Näytelisäosien asennus epäonnistui. %1"
 MSG_SAMPLEEXTENSION_INSTALL_SUCCESS=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Sample extensions successfully installed and enabled."
 MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Beispielserweiterungen erfolgreich installiert und eingeschaltet."
+MSG_FI[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Näytelisäosat asennettu ja otettu käyttöön onnistuneesti."
 MSG_INSTALLING_CRON_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: Creating cron file %1."
 MSG_DE[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: Crondatei %1 wird erstellt."
+MSG_FI[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: Luodaan cron-tiedosto %1."
 MSG_NO_INTERNET_CONNECTION_FOUND=$((SCNT++))
 MSG_EN[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Unable to connect to $MYHOMEDOMAIN. wget RC: %1"
 MSG_DE[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Es kann nicht auf $MYHOMEDOMAIN zugegriffen werden. wget RC: %1"
+MSG_FI[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Yhdistäminen kohteeseen $MYHOMEDOMAIN epäonnistui. wget RC: %1"
 MSG_CHECK_INTERNET_CONNECTION=$((SCNT++))
 MSG_EN[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Checking internet connection."
 MSG_DE[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Teste Internetverbindung."
+MSG_FI[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Tarkistetaan verkkoyhteyttä."
 MSG_SAMPLEEXTENSION_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Sample extension uninstall failed. %1"
 MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Beispielserweiterungsdeinstallation fehlgeschlagen. %1"
+MSG_FI[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Näytelisäosien asennuksen poisto epäonnistui. %1"
 MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Sample extensions successfully deleted."
 MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Beispielserweiterungen erfolgreich gelöscht."
+MSG_FI[$MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS]="${MSG_PRF}0024I: Näytelisäosat poistettiin onnistuneesti."
 MSG_UNINSTALLING_CRON_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0025I: Deleting cron file %1."
 MSG_DE[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0025I: Crondatei %1 wird gelöscht."
+MSG_FI[$MSG_UNINSTALLING_CRON_TEMPLATE]="${MSG_PRF}0025I: Poistetaan cron-tiedosto %1."
 MSG_UPDATING_CRON=$((SCNT++))
 MSG_EN[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Updating cron configuration in %1."
 MSG_DE[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Cron Konfigurationsdatei %1 wird angepasst."
+MSG_FI[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Päivitetään cron-asetukset kohteessa %1."
 MSG_MISSING_DIRECTORY=$((SCNT++))
 MSG_EN[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Missing required directory %1."
 MSG_DE[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Erforderliches Verzeichnis %1 existiert nicht."
+MSG_FI[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Vaadittu hakemisto %1 puuttuu."
 MSG_CODE_UPDATED=$((SCNT++))
 MSG_EN[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: Updated %1 with latest available release."
 MSG_DE[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 wurde mit dem letzen aktuellen Release erneuert."
+MSG_FI[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 päivitetty viimeisimpään julkaisuun."
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
 MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${VERSION}"
+MSG_FI[$MSG_TITLE]="$RASPIBACKUP_NAME Asennus- ja määritystyökalu V${VERSION}"
 BUTTON_FINISH=$((SCNT++))
 MSG_EN[$BUTTON_FINISH]="Finish"
 MSG_DE[$BUTTON_FINISH]="Beenden"
-MSG_FI[$BUTTON_FINISH]="(FI) Finish"
+MSG_FI[$BUTTON_FINISH]="Lopeta"
 BUTTON_SELECT=$((SCNT++))
 MSG_EN[$BUTTON_SELECT]="Select"
 MSG_DE[$BUTTON_SELECT]="Auswahl"
-MSG_FI[$BUTTON_SELECT]="(FI) Select"
+MSG_FI[$BUTTON_SELECT]="Valitse"
 BUTTON_BACK=$((SCNT++))
 MSG_EN[$BUTTON_BACK]="Back"
 MSG_DE[$BUTTON_BACK]="Zurück"
-MSG_FI[$BUTTON_BACK]="(FI) Back"
+MSG_FI[$BUTTON_BACK]="Takaisin"
 SELECT_TIME=$((SCNT++))
 MSG_EN[$SELECT_TIME]="Enter time of backup in format hh:mm"
 MSG_DE[$SELECT_TIME]="Die Backupzeit im Format hh:mm eingeben"
+MSG_FI[$SELECT_TIME]="Syötä varmuuskopioinnin kellonaika muodossa hh:mm"
 BUTTON_CANCEL=$((SCNT++))
 MSG_EN[$BUTTON_CANCEL]="Cancel"
 MSG_DE[$BUTTON_CANCEL]="Abbruch"
-MSG_FI[$BUTTON_CANCEL]="(FI) Cancel"
+MSG_FI[$BUTTON_CANCEL]="Peruuta"
 BUTTON_OK=$((SCNT++))
 MSG_EN[$BUTTON_OK]="Ok"
 MSG_DE[$BUTTON_OK]="Bestätigen"
-MSG_FI[$BUTTON_OK]="(FI) OK"
+MSG_FI[$BUTTON_OK]="OK"
 MSG_QUESTION_UPDATE_CONFIG=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UPDATE_CONFIG]="Do you want to save the updated $RASPIBACKUP_NAME configuration now?"
 MSG_DE[$MSG_QUESTION_UPDATE_CONFIG]="Soll die geänderte Konfiguration von $RASPIBACKUP_NAME jetzt gespeichert werden?"
+MSG_FI[$MSG_QUESTION_UPDATE_CONFIG]="Haluatko tallentaa päivitetyt $RASPIBACKUP_NAME-asetukset nyt?"
 MSG_QUESTION_IGNORE_MISSING_STARTSTOP=$((SCNT++))
 MSG_EN[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="There are no services stopped before starting the backup.${NL}WARNING${NL}Inconsistent backups may be created with $RASPIBACKUP_NAME.${NL}Are you sure?"
 MSG_DE[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="Es werden keine Services vor dem Start des Backups gestoppt.${NL}WARNUNG${NL}Dadurch können inkonsistente Backups mit $RASPIBACKUP_NAME entstehen.${NL}Ist das beabsichtigt?"
+MSG_FI[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="Palveluita ei ole valittu pysäytettäväksi ennen varmuuskopiointia.${NL}VAROITUS${NL}Tämä voi johtaa $RASPIBACKUP_NAME-varmuuskopioiden epäyhtenäisyyteen.${NL}Oletko varma?"
 MSG_QUESTION_UPDATE_CRON=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UPDATE_CRON]="Do you want to save the updated cron settings for $RASPIBACKUP_NAME now?"
 MSG_DE[$MSG_QUESTION_UPDATE_CRON]="Soll die geänderte cron Konfiguration für $RASPIBACKUP_NAME jetzt gespeichert werden?"
+MSG_FI[$MSG_QUESTION_UPDATE_CRON]="Haluatko tallentaa nyt päivitetyt cron-asetukset kohteelle $RASPIBACKUP_NAME?"
 MSG_SEQUENCE_OK=$((SCNT++))
 MSG_EN[$MSG_SEQUENCE_OK]="Stopcommands for services will be executed in following sequence. Startcommands will be executed in reverse sequence. Sequence OK?"
 MSG_DE[$MSG_SEQUENCE_OK]="Stopbefehle für die Services werden in folgender Reihenfolge ausgeführt. Startbefehle werden umgekehrt ausgeführt. Ist die Reihenfolge richtig?"
+MSG_FI[$MSG_SEQUENCE_OK]="Palvelut pysäytetään seuraavassa järjestyksessä ja ne käynnistetään uudelleen käänteisessä järjestyksessä. Onko järjestys OK?"
 BUTTON_YES=$((SCNT++))
 MSG_EN[$BUTTON_YES]="Yes"
 MSG_DE[$BUTTON_YES]="Ja"
-MSG_FI[$BUTTON_YES]="(FI) Yes"
+MSG_FI[$BUTTON_YES]="Kyllä"
 BUTTON_NO=$((SCNT++))
 MSG_EN[$BUTTON_NO]="No"
 MSG_DE[$BUTTON_NO]="Nein"
-MSG_FI[$BUTTON_NO]="(FI) No"
+MSG_FI[$BUTTON_NO]="Ei"
 MSG_QUESTION_UNINSTALL=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UNINSTALL]="Are you sure to uninstall $RASPIBACKUP_NAME ?"
 MSG_DE[$MSG_QUESTION_UNINSTALL]="Soll $RASPIBACKUP_NAME wirklich deinstalliert werden ?"
+MSG_FI[$MSG_QUESTION_UNINSTALL]="Haluatko varmasti poistaa koko kohteen $RASPIBACKUP_NAME ?"
 MSG_SCRIPT_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME not installed."
 MSG_DE[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME ist nicht installiert"
+MSG_FI[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME ei ole asennettuna."
 MSG_CRON_NA=$((SCNT++))
 MSG_EN[$MSG_CRON_NA]="Weekly backup disabled."
 MSG_DE[$MSG_CRON_NA]="Wöchentliches Backup ist ausgeschaltet."
+MSG_FI[$MSG_CRON_NA]="Viikoittainen varmuuskopiointi ei ole käytössä."
 MSG_CONFIG_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_CONFIG_NOT_INSTALLED]="No configuration found."
 MSG_DE[$MSG_CONFIG_NOT_INSTALLED]="Keine Konfiguration gefunden."
+MSG_FI[$MSG_CONFIG_NOT_INSTALLED]="Asetuksia ei löytynyt."
 MSG_CRON_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_CRON_NOT_INSTALLED]="No cron configuration found."
 MSG_DE[$MSG_CRON_NOT_INSTALLED]="Keine cron Konfiguration gefunden."
+MSG_FI[$MSG_CRON_NOT_INSTALLED]="Cron-asetuksia ei löytynyt."
 MSG_NO_UPDATE_AVAILABLE=$((SCNT++))
 MSG_EN[$MSG_NO_UPDATE_AVAILABLE]="(No update available)"
 MSG_DE[$MSG_NO_UPDATE_AVAILABLE]="(Kein Update verfügbar)"
+MSG_FI[$MSG_NO_UPDATE_AVAILABLE]="(Päivitystä ei ole saatavilla)"
 MSG_NO_EXTENSIONS_FOUND=$((SCNT++))
 MSG_EN[$MSG_NO_EXTENSIONS_FOUND]="No extensions installed."
 MSG_DE[$MSG_NO_EXTENSIONS_FOUND]="Keine Erweiterungen installiert."
+MSG_FI[$MSG_NO_EXTENSIONS_FOUND]="Lisäosia ei ole asennettu."
 MSG_EXTENSIONS_ALREADY_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Extensions already installed."
 MSG_DE[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Extensions sind bereits installiert."
+MSG_FI[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Lisäosat ovat jo asennettuna."
 MSG_SCRIPT_ALREADY_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME already installed.${NL}Do you want to reinstall $RASPIBACKUP_NAME ?"
 MSG_DE[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME ist bereits installiert.${NL}Soll die bestehende Installation überschrieben werden ?"
+MSG_FI[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME on jo asennettu.${NL} Haluatko uudelleenasentaa kohteen $RASPIBACKUP_NAME ?"
 MSG_DOWNLOADING_PROPERTYFILE=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING_PROPERTYFILE]="Downloading version information."
 MSG_DE[$MSG_DOWNLOADING_PROPERTYFILE]="Versionsinformationen werden runtergeladen."
+MSG_FI[$MSG_DOWNLOADING_PROPERTYFILE]="Ladataan version tietoja."
 MSG_INVALID_KEEP=$((SCNT++))
 MSG_EN[$MSG_INVALID_KEEP]="Invalid number %1 entered. Number has to be between 1 and 52."
 MSG_DE[$MSG_INVALID_KEEP]="Ungültige Zahl %1 eingegeben. Sie muss zwischen 1 und 52 liegen."
+MSG_FI[$MSG_INVALID_KEEP]="Epäkelpo numero %1 syötetty. Numeron tulee olla 1:n ja 52:n väliltä."
 MSG_INVALID_KEEP_NUMBER_COUNT=$((SCNT++))
 MSG_EN[$MSG_INVALID_KEEP_NUMBER_COUNT]="Insert one number only."
 MSG_DE[$MSG_INVALID_KEEP_NUMBER_COUNT]="Nur eine Zahl eingeben."
+MSG_FI[$MSG_INVALID_KEEP_NUMBER_COUNT]="Syötä vain yksi numero."
 MSG_INVALID_SMART=$((SCNT++))
 MSG_EN[$MSG_INVALID_SMART]="Invalid number %1 entered. Number has to be >= 0."
 MSG_DE[$MSG_INVALID_SMART]="Ungültige Zahl %1 eingegeben. Sie muss >= 0 sein."
+MSG_FI[$MSG_INVALID_SMART]="Epäkelpo numero %1 syötetty. Numeron tulee olla >= 0."
 MSG_INVALID_SMART_NUMBER_COUNT=$((SCNT++))
 MSG_EN[$MSG_INVALID_SMART_NUMBER_COUNT]="Expect four numbers separated by spaces: daily, weekly, monthly and yearly backups."
 MSG_DE[$MSG_INVALID_SMART_NUMBER_COUNT]="Vier durch Leerzeichen getrennte Zahlen werden erwartet: Tägliche, wöchentliche, monatliche und jährliche Backups."
+MSG_FI[$MSG_INVALID_SMART_NUMBER_COUNT]="Vaaditaan neljä välilyönnein erotettua numeroa: päivittäinen, viikoittainen, kuukausittainen ja vuosittainen varmuuskopiointien lukumäärä"
 MSG_INVALID_KEEP_NUMBER_COUNT=$((SCNT++))
 MSG_EN[$MSG_INVALID_KEEP_NUMBER_COUNT]="Enter one single number only."
 MSG_DE[$MSG_INVALID_KEEP_NUMBER_COUNT]="Nur eine einzige Zahl eingeben."
+MSG_FI[$MSG_INVALID_KEEP_NUMBER_COUNT]="Syötä vain yksi numero."
 MSG_INVALID_TIME=$((SCNT++))
 MSG_EN[$MSG_INVALID_TIME]="Invalid time '%1'. Input has to be in format hh:mm and 0<=hh<24 and 0<=mm<60."
 MSG_DE[$MSG_INVALID_TIME]="Ungültige Zeit '%1'. Die Eingabe muss im Format hh:mm sein und 0<=hh<24 und 0<=mm<60."
+MSG_FI[$MSG_INVALID_TIME]="Epäkelpo kellonaika '%1'. Ajan tulee olla muodossa hh:mm ja 0<=hh<24 sekä 0<=mm<60."
 MSG_RUNASROOT=$((SCNT++))
 MSG_EN[$MSG_RUNASROOT]="$MYSELF has to be started as root. Try 'sudo %1%2'."
 MSG_DE[$MSG_RUNASROOT]="$MYSELF muss als root gestartet werden. Benutze 'sudo %1%2'."
-
+MSG_FI[$MSG_RUNASROOT]="$MYSELF tulee käynnistää root-oikeuksin. Käynnistä 'sudo %1%2'."
 DESCRIPTION_INSTALLATION=$((SCNT++))
 MSG_EN[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME allows to plug in custom extensions which are called before and after the backup process. \
 There exist sample extensions which report the memory usage, CPU temperature and disk usage of the backup partition. \
@@ -369,6 +417,9 @@ For details see${NL}https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy
 MSG_DE[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME erlaubt selbstgeschriebene Erweiterungen vor und nach dem Backupprozess aufzurufen. \
 Es gibt Beispielerweiterungen die die Speicherauslastung, die CPU Temperatur sowie die Speicherplatzbenutzung der Backuppartition anzeigen. \
 Für weitere Details siehe${NL}https://www.linux-tips-and-tricks.de/de/13-raspberry/442-raspibackup-erweiterungen."
+MSG_FI[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME tukee lisäosia, joiden toimintoja voidaan suorittaa ennen ja jälkeen varmuuskopioinnin. \
+Mukana tulevat näytelisäosat esittävät prosessorin lämpötilan sekä tietoja muistin ja varmuuskopiointilevyn käytöstä. \
+${NL}Lue lisätietoja osoitteesta https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
 DESCRIPTION_COMPRESS=$((SCNT++))
 MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup. Please note this will increase backup time and will heaten the CPU. \
 Please note an option of $FILE_TO_INSTALL which will reduce the size of a dd backup also. \
@@ -376,26 +427,37 @@ For details see https://www.linux-tips-and-tricks.de/en/faq#a16."
 MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups kompressen um die Backupgröße zu reduzieren. Das bedeutet aber dass die Backupzeit steigt und die CPU erwärmen wird. \
 $FILE_TO_INSTALL bietet auch eine Option an mit der ein dd Backup verkleinert werden kann. Siehe dazu \
 https://www.linux-tips-and-tricks.de/de/faq#a16."
+MSG_FI[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME voi pakata dd- ja tar-varmuuskopiot, jotta ne veisivät vähemmän tilaa. Huomioithan, että tämä pidentää varmuuskopioinnin aikaa ja nostaa CPU:n lämpötilaa. \
+Huomioi myös vaihtoehto $FILE_TO_INSTALL, joka vähentää dd-varmuuskopioiden käyttämää tilaa. \
+Lisätietoja löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a16."
 DESCRIPTION_CRON=$((SCNT++))
 MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
 Configure the backup to be created daily or weekly. For other backup intervals you have to modify /etc/cron.d/raspiBackup manually."
 MSG_DE[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME sollte regelmäßig gestartet werden wenn die initiale Konfiguration sowie Backup und Restore Tests beendet sind. \
 Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Intervalle muss die Datei /etc/cron.d/raspiBackup manuell geändert werden."
+MSG_FI[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME tulisi ajaa äännöllisesti se jälkeen, kun asetusten määritysten jälkeen ensimmäinen varmuuskopio on suoritettu ja varmuuskopion palautus on testattu. \
+Ajasta varmuuskopiointi päivittäiseksi tai viikottaiseksi. Muita varmuuskopioinnin aikavälejä varten tulee muokata tiedostoa /etc/cron.d/raspiBackup manuaalisesti."
 DESCRIPTION_SMARTMODE=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMARTMODE]="${NL}There exist two different ways to define the number of backups. Just by defining the maximum number of backups to keep or \
 by using the smart backup strategy. See https://www.linux-tips-and-tricks.de/en/smart-recycle/ for details about the strategy."
 MSG_DE[$DESCRIPTION_SMARTMODE]="${NL}Es gibt grundsätzlich zwei Methoden, die Anzahl der vorzuhaltenden Backups festzulegen. Dies erfolgt entweder durch die Definition der maximalen Anzahl oder durch Verwendung der intelligenten Backupstrategie. \
 Eine Detailbeschreibung der Strategie befindet sich auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/."
+MSG_FI[$DESCRIPTION_SMARTMODE]="${NL}Voit määrittää säilytettävien varmuuskopioiden lukumäärän joko määrittämällä säilytettävien varmuuskopioiden maksimimäärän tai \
+käyttämällä älykästä varmuuskopiointia.${NL}Katso lisätietoa osoitteesta https://www.linux-tips-and-tricks.de/en/smart-recycle/."
 DESCRIPTION_MESSAGEDETAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME can either be very verbose or just write important messages. \
 Usually it makes sense to turn all on when installing $RASPIBACKUP_NAME the first time. Later on you can change it to write important messages only."
 MSG_DE[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME kann viele Meldungen schreiben oder nur die Wichtigsten. \
 Es macht Sinn alle beim ersten Installieren von $RASPIBACKUP_NAME anzuschalten. Später können sie auf die Wichtigsten reduziert werden."
+MSG_FI[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME voi joko kirjoittaa yksityiskohtaiset tai vain tärkeät viestit. \
+Yleensä ensimmäisen $RASPIBACKUP_NAME-asennuksen jälkeen yksityiskohtaiset viestit on hyvä näyttää. Voit myöhemmin valita kirjoitettavaksi vain tärkeät viestit."
 DESCRIPTION_STARTSTOP=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP]="${NL}Before and after creating a backup important services should be stopped and started. Add the required services separated by a space which should be stopped in the correct order. \
 The services will be started in reverse order when backup finished. For further details see https://www.linux-tips-and-tricks.de/en/faq#a18."
 MSG_DE[$DESCRIPTION_STARTSTOP]="${NL}Vor und nach einem Backup sollten immer alle wichtigen Services gestoppt und gestartet werden. Dazu müssen die notwendigen Services die gestoppt werden sollen getrennt durch Leerzeichen in der richtigen Reihenfolge eingegeben werden. \
 In umgekehrter Reihenfolge werden die Services nach dem Backup wieder gestartet. Weitere Details finden sich auf https://www.linux-tips-and-tricks.de/de/faq#a18."
+MSG_FI[$DESCRIPTION_STARTSTOP]="${NL}Tärkeät palvelut tulisi pysäyttää varmuuskopioinnin ajaksi. Lisää pysäytettävät palvelut välilyönnillä erotettuna pysäytysjärjestyksessä. \
+Palvelut käynnistetään käänteisessä järjestyksessä varmuuskopioinnin päättyessä. Lisätietoa löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a18."
 DESCRIPTION_STARTSTOP_SEQUENCE=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Select step by step every service which should be stopped first, second, third and so on and confirm every single service with <Ok> until there is no service any more. \
 Actual sequence is displayed top down. \
@@ -403,48 +465,64 @@ For further details see https://www.linux-tips-and-tricks.de/en/faq#a18."
 MSG_DE[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Wähle der Reihe nach die Services aus wie sie vor dem Backup gestoppt werden sollen und bestätige jeden einzelnen Service mit <Bestätigen> bis keine Services mehr angezeigt werden. \
 Die aktuelle Reihenfolge wird von oben nach unten angezeigt. \
 Weitere Details finden sich auf https://www.linux-tips-and-tricks.de/de/faq#a18."
+MSG_FI[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Valitse pysäytettävät palvelut yksi kerrallaan painaen <OK>, kunnes listalla ei ole palveluita. \
+Toteutuva järjestys näytetään ylhäältä alas. \
+${NL}Lisätietoja näet osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a18."
 DESCRIPTION_STARTSTOP_SERVICES=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Select all services in sequence how they should be stopped before the backup starts. \
 Current sequence is displayed.\
 They will be started in reverse sequence again when the backup finished."
 MSG_DE[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Wähle alle wichtigen Services aus die vor dem Backup gestoppt werden sollen. \
 Sie werden wieder in umgekehrter Reihenfolge gestartet wenn der Backup beendet wurde."
+MSG_FI[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Palvelut pysäytetään ennen varmuuskopiointia siinä järjestyksessä, kun valitset ne. \
+Listalla näytetään nykyinen järjestys. \
+Palvelut käynnistetään käänteisessä järjestyksessä varmuuskopioinnin päättyessä."
 DESCRIPTION_PARTITIONS=$((SCNT++))
 MSG_EN[$DESCRIPTION_PARTITIONS]="${NL}Select all partitions which should be included in the backup. \
 ${NL}${NL}Note: The first two partitions have to be selected all the time."
 MSG_DE[$DESCRIPTION_PARTITIONS]="${NL}Wähle alle Partitionen aus die im Backup enthalten sein sollen. \
 ${NL}${NL}Hinweis: Die ersten beiden Partitionen müssen immer ausgewählt werden."
+MSG_FI[$DESCRIPTION_PARTITIONS]="${NL}Valitse kaikki varmuuskopioitavat osiot. \
+${NL}${NL}Huom: Kaksi ensimmäistä osiota tulee olla aina valittuna."
 DESCRIPTION_LANGUAGE=$((SCNT++))
 MSG_EN[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME and this installer support following languages as of now. Default language is the system language.\
 ${NL}${NL}Any help to add another language is welcome."
 MSG_DE[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME und dieser Installer unterstützen momentan folgende Sprachen. Standardsprache ist die Systemsprache.\
 ${NL}${NL}Jede Hilfe eine weitere Sprache dazuzubringen ist herzlich willkommen."
-MSG_FI[$DESCRIPTION_LANGUAGE]="${NL}(FI) $RASPIBACKUP_NAME und dieser Installer unterstützen momentan folgende Sprachen. Standardsprache ist die Systemsprache.\
-${NL}${NL}Jede Hilfe eine weitere Sprache dazuzubringen ist herzlich willkommen."
+MSG_FI[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME ja tämä asennustyökalu tukevat tällä hetkellä ${NL}alla lueteltuja kieliä. Oletuksena on järjestelmän kieli.\
+${NL}${NL}Apu muiden kielien lisäämiseen on tervetullut."
 DESCRIPTION_KEEP=$((SCNT++))
 MSG_EN[$DESCRIPTION_KEEP]="${NL}Enter number of backups to keep. Number hast to be between 1 and 52."
 MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Beackups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
+MSG_FI[$DESCRIPTION_KEEP]="${NL}Syötä säilytettävien varmuuskopioiden lukumäärä. Numeron tulee olla 1:n ja 52:n väliltä."
 DESCRIPTION_SMART=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMART]="${NL}Enter four numbers separated by spaces to define the smart recycle backup strategy parameters. The numbers define how many daily, weekly, monthly and yearly backups are kept. \
 For details about the backup strategy see https://www.linux-tips-and-tricks.de/en/smart-recycle/."
 MSG_DE[$DESCRIPTION_SMART]="${NL}Gib mit vier durch Leerzeichen getrennten Zahlen die Parameter für die intelligente Rotationsstrategie ein. Die Zahlen definieren wie viele tägliche, wöchentliche, monatliche und jährliche Backups vorgehalten werden. \
 Details zur Backupstrategie können auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/ nachgelesen werden."
+MSG_FI[$DESCRIPTION_SMART]="${NL}Syötä neljä välilyönnein erotettua numeroa määrittääksesi älykkään varmuuskopioinnin parametrit. Numerot määrittävät kuinka monta päivittäistä, viikoittaista, kuukausittaista ja vuosittaista varmuuskopiota säilytetään. \
+Lisätietoa löydät osoitteesta https://www.linux-tips-and-tricks.de/en/smart-recycle/."
 DESCRIPTION_ERROR=$((SCNT++))
 MSG_EN[$DESCRIPTION_ERROR]="Unrecoverable error occurred. Check logfile $LOG_FILE."
 MSG_DE[$DESCRIPTION_ERROR]="Ein nicht behebbarer Fehler ist aufgetreten. Siehe Logdatei $LOG_FILE."
+MSG_FI[$DESCRIPTION_ERROR]="Tapahtui peruuttamaton virhe. Tarkista lokitiedosto $LOG_FILE."
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
 This can be a local partition or a mounted remote partition."
 MSG_DE[$DESCRIPTION_BACKUPPATH]="${NL}Am Backuppfad muss eine Partition gemounted sein auf welcher $FILE_TO_INSTALL die Backups ablegt. \
 Das kann eine lokale Partition oder eine remote gemountete Partition."
+MSG_FI[$DESCRIPTION_BACKUPPATH]="${NL}Sijainti, johon $FILE_TO_INSTALL:n varmuuskopiot tallennetaan, tulee olla otettuna käyttöön. \
+Sijainti voi olla otettu käyttöön joko paikallisesti tai etänä."
 DESCRIPTION_BACKUPMODE=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPMODE]="${NL}Preferred mode is the normal backup mode. If you need to save more than two partitions with tar or rsync use the partition oriented mode. \
 Use normal mode and dd backup if you need a dd backup. Default is to backup the first two partitions only but it's possible to add any additional partition."
 MSG_DE[$DESCRIPTION_BACKUPMODE]="${NL}Empfohlener Modus ist der normale Backup Modus. Wenn allerdings mehr als zwei Partitionen gesichert werden sollen mit tar oder rsync ist der paritionsorientiert Modus zu wählen. \
 Den normalen Modus muss man aber wählen wenn man ein dd Backup haben möchte. Standard ist nur die ersten beiden Partitionen zu sichern aber es kann jede weitere Partition dazugefügt werden."
+MSG_FI[$DESCRIPTION_BACKUPMODE]="${NL}Oletuksena on suositeltu normaali varmuuskopiointitila, jolloin kaksi ensimmäistä osiota varmuuskopioidaan. Jos haluat varmuuskopioida useamman kuin kaksi osiota käyttäen tar:ia tai rsync:iä, käytä jälkimmäistä, osio-orientoitua tilaa. \
+Käytä normaalia tilaa ja dd-varmuuskopiointia, jos haluat dd-varmuuskopion."
 DESCRIPTION_BACKUPTYPE=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPTYPE]="${NL}rsync is the suggested backuptype because when using hardlinks from EXT3/4 filesystem it's fast because only changed or new files will be saved. \
-tar should be used if the backup filesystem is no EXT3/4, e.g a remote mounted samba share. Don't used a FAT32 filesystem because the maximum filesize is 4GB. \
+tar should be used if the backup filesystem is no EXT3/4, e.g a remote mounted samba share. Don't use a FAT32 filesystem because the maximum filesize is 4GB. \
 dd should be used if you want to restore the backup on a Windows OS. \
 dd and tar backups can be compressed. \
 For further details about backup type see${NL}https://www.linux-tips-and-tricks.de/en/backup#butypes. \
@@ -455,43 +533,59 @@ dd ist die richtige Wahl wenn man den Backup auf einem Windows OS wiederherstell
 dd und tar Backups können noch zusätzlich komprimiert werden. \
 Weiter Details zum Backuptyp finden sich${NL}https://www.linux-tips-and-tricks.de/de/raspibackup#vornach. \
 Weitere Details zu der Option für dd siehe${NL}https://www.linux-tips-and-tricks.de/de/faq#a16"
+MSG_FI[$DESCRIPTION_BACKUPTYPE]="${NL}EXT3/4-tiedostojärjetelmässä on suositeltavaa valita rsync, sillä hardlinkit nopeuttavat varmuuskopiointia: vain uudet ja muuttuneet tiedostot kopioidaan. \
+Valitse tar, jos varmuuskopioitava tiedostojärjestelmä ei ole EXT3/4 tai se on esim. etänä käyttöönotettu samba-jako. Älä käytä FAT32-tiedostojärjestelmää, koska sen maksimitiedostokoko on 4Gt. \
+Valitse dd, jos haluat palauttaa varmuuskopion Windows-järjestelmässä. dd- ja tar-varmuuskopiot voidaan pakata tilan säästämiseksi. \
+${NL}${NL}Lisätietoja varmuuskopiotyypeistä löydät osoitteestahttps://www.linux-tips-and-tricks.de/en/backup#butypes. \
+${NL}Lisätietoja dd:n valinnoista löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a16"
 DESCRIPTION_MAIL_PROGRAM=$((SCNT++))
 MSG_EN[$DESCRIPTION_MAIL_PROGRAM]="Select the mail program to use to send notification eMails."
 MSG_DE[$DESCRIPTION_MAIL_PROGRAM]="Wähle das Mailprogramm aus welches zum Versenden von Benachrichtigungen benutzt werden soll."
+MSG_FI[$DESCRIPTION_MAIL_PROGRAM]="Valitse sähköpostisovellus ilmoitussähköpostien lähettämiseen."
 DESCRIPTION_EMAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_EMAIL]="Enter the eMail address to send notifications to. Enter no eMail address to disable notifications."
 MSG_DE[$DESCRIPTION_EMAIL]="Gibt die eMail Adresse ein die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus."
-
+MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta."
 TITLE_ERROR=$((SCNT++))
 MSG_EN[$TITLE_ERROR]="Error"
 MSG_DE[$TITLE_ERROR]="Fehler"
+MSG_FI[$TITLE_ERROR]="Virhe"
 TITLE_FIRST_STEPS=$((SCNT++))
 MSG_EN[$TITLE_FIRST_STEPS]="First steps"
 MSG_DE[$TITLE_FIRST_STEPS]="Erste Schritte"
+MSG_FI[$TITLE_FIRST_STEPS]="Ensiaskeleet"
 TITLE_HELP=$((SCNT++))
 MSG_EN[$TITLE_HELP]="Help"
 MSG_DE[$TITLE_HELP]="Hilfe"
+MSG_FI[$TITLE_HELP]="Ohje"
 TITLE_WARNING=$((SCNT++))
 MSG_EN[$TITLE_WARNING]="Warning"
 MSG_DE[$TITLE_WARNING]="Warnung"
+MSG_FI[$TITLE_WARNING]="Varoitus"
 TITLE_INFORMATION=$((SCNT++))
 MSG_EN[$TITLE_INFORMATION]="Information"
 MSG_DE[$TITLE_INFORMATION]="Information"
+MSG_FI[$TITLE_INFORMATION]="Tietoa"
 TITLE_VALIDATIONERROR=$((SCNT++))
 MSG_EN[$TITLE_VALIDATIONERROR]="Invalid input"
 MSG_DE[$TITLE_VALIDATIONERROR]="Ungültige Eingabe"
+MSG_FI[$TITLE_VALIDATIONERROR]="Virheellinen syöte"
 TITLE_CONFIRM=$((SCNT++))
 MSG_EN[$TITLE_CONFIRM]="Please confirm"
 MSG_DE[$TITLE_CONFIRM]="Bitte bestätigen"
+MSG_FI[$TITLE_CONFIRM]="Ole hyvä ja varmista"
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
 MSG_DE[$MSG_INVALID_BACKUPPATH]="Sicherungsverzeichnis %1 existiert nicht"
+MSG_FI[$MSG_INVALID_BACKUPPATH]="Polkua %1 ei ole"
 MSG_INVALID_EMAIL=$((SCNT++))
 MSG_EN[$MSG_INVALID_EMAIL]="Invalid eMail address %1"
 MSG_DE[$MSG_INVALID_EMAIL]="Ungültige eMail Adresse %1"
+MSG_FI[$MSG_INVALID_EMAIL]="Virheellinen sähköpostiosoite %1"
 MSG_LOCAL_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_LOCAL_BACKUPPATH]="Backup would be stored on SD card"
 MSG_DE[$MSG_LOCAL_BACKUPPATH]="Backup würde auf der SD Karte gespeichert werden"
+MSG_FI[$MSG_LOCAL_BACKUPPATH]="Varmuuskopio säilytetään SD-kortilla"
 MSG_NAVIGATION=$((SCNT++))
 MSG_EN[$MSG_NAVIGATION]="Cursor keys: Move cursor to next menu item, list item or button${NL}\
 Space key: Select/unselect items in a selection list${NL}\
@@ -507,6 +601,13 @@ ${NL}\
 Cursor keys: Move cursor to next menu or list item${NL}\
 Space key: Select/unselect items in a selection list${NL}\
 Tab key: Jump to buttons at the bottom"
+MSG_FI[$MSG_NAVIGATION]="Nuolinäppäimet: Siirrä kursori seuraavaan valikon tai listan kohteeseen${NL}\
+Välilyönti: Valitse/poista valinta${NL}\
+Sarkain: Kohdista alarivin painikkeisiin${NL}\
+${NL}\
+Cursor keys: Move cursor to next menu or list item${NL}\
+Space key: Select/unselect items in a selection list${NL}\
+Tab key: Jump to buttons at the bottom"
 MSG_ABOUT=$((SCNT++))
 MSG_EN[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
 This tool provides a straight-forward way of doing installation,${NL} updating and configuration of $RASPIBACKUP_NAME.${NL}${NL}\
@@ -516,6 +617,10 @@ MSG_DE[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
 Dieses Tool ermöglicht es möglichst einfach $RASPIBACKUP_NAME zu installieren,${NL} zu updaten und die Konfiguration anzupassen.${NL}${NL}\
 Besuche https://www.linux-tips-and-tricks.de/de/raspibackup#parameter${NL}um alle Konfigurationsoptionen von $RASPIBACKUP_NAME kennenzulernen.${NL}${NL}\
 Besuche https://www.linux-tips-and-tricks.de/en/backup${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
+MSG_FI[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
+Tämä työkalu tarjoaa $RASPIBACKUP_NAME:n suoraviivaisen asennuksen,${NL} päivittämisen ja asetusten määrittämisen.${NL}${NL}\
+Kaikista $RASPIBACKUP_NAME:n asetuksista löydät tietoa osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
+Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://www.linux-tips-and-tricks.de/de/raspibackup"
 MSG_FIRST_STEPS=$((SCNT++))
 MSG_EN[$MSG_FIRST_STEPS]="Congratulations! $RASPIBACKUP_NAME installed successfully.${NL}${NL}\
 Next steps:${NL}
@@ -537,8 +642,18 @@ Nächsten Schritte:${NL}
    https://www.linux-tips-and-tricks.de/de/raspibackup#parameters${NL}\
 6) Schalte den regelmäßigen Backup mit dem Installer ein${NL}\
 7) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten"
+MSG_FI[$MSG_FIRST_STEPS]="Onnittelut! $RASPIBACKUP_NAME on asennettu onnistuneesti.${NL}${NL}\
+Seuraavat vaiheet:${NL}
+1) Käynnistä $RASPIBACKUP_NAME komentoriviltä ja luo varmuuskopio${NL}\
+2) Käynnistä $RASPIBACKUP_NAME palauttaaksesi varmuuskopion toiselle SD-kortille${NL}\
+3) Varmista, että palautettu varmuuskopio toimii oikein.${NL}\
+4) Lue FAQ-sivu osoitteessa https://www.linux-tips-and-tricks.de/en/faq${NL}\
+5) Käy valintasivulla ja tee $RASPIBACKUP_NAME$-hienosäädöt{NL}\
+   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+6) Ota käyttöön säännölliset varmuuskopiot asennusohjelmalla${NL}\
+7) Käy osoitteessa https://www.linux-tips-and-tricks.de/en/backup ja lue paljon lisää $RASPIBACKUP_NAME-tietoa"
 MSG_HELP=$((SCNT++))
-MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAME just use one of the following pathes to get help${NL}
+MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAME just use one of the following paths to get help${NL}
 1) Read the FAQ page https://www.linux-tips-and-tricks.de/en/faq${NL}\
 2) Visit https://www.linux-tips-and-tricks.de/en/backup for a lot more information about $RASPIBACKUP_NAME${NL}\
 3) Create an issue on github https://github.com/framps/raspiBackup/issues. That's my preference${NL}\
@@ -550,157 +665,206 @@ MSG_DE[$MSG_HELP]="Falls es irgendwelche Fragen oder Probleme zu $RASPIBACKUP_NA
 3) Erstelle einen Fehlerbericht auf github https://github.com/framps/raspiBackup/issues. Gerne auch in Deutsch. Das ist meine Präferenz.${NL} \
 4) Erstelle einen Kommentar auf jeder Webseite zu $RASPIBACKUP_NAME auf $MYHOMEDOMAIN${NL}\
 5) Besuche $RASPIBACKUP_NAME auf Facebook"
+MSG_FI[$MSG_HELP]="Jos sinulla on kysymyksiä tai ongelmia $RASPIBACKUP_NAME:n kanssa, käytä jotain seuraavista tavoista saadaksesi apua${NL}
+1) Lue FAQ-sivu osoitteessa https://www.linux-tips-and-tricks.de/en/faq${NL}\
+2) Käy osoitteessa https://www.linux-tips-and-tricks.de/en/backup ja lue paljon lisää $RASPIBACKUP_NAME-tietoa${NL}\
+3) Luo issue githubissa https://github.com/framps/raspiBackup/issues. Tätä suosin.${NL}\
+4) Lisää kommentti $RASPIBACKUP_NAME-verkkosivuilla osoitteessa $MYHOMEDOMAIN${NL}\
+5) Käy $RASPIBACKUP_NAME:n Facebook-sivulla"
 
 declare -A MENU_EN
 declare -A MENU_DE
+declare -A MENU_FI
 
 MCNT=0
 MENU_UNDEFINED=$((MCNT++))
 MENU_EN[$MENU_UNDEFINED]="Undefined menuid."
 MENU_DE[$MENU_UNDEFINED]="Unbekannte menuid."
+MENU_FI[$MENU_UNDEFINED]="Määrittämätön valikon id."
 MENU_LANGUAGE=$((MCNT++))
 MENU_EN[$MENU_LANGUAGE]='"M1" "Language"'
 MENU_DE[$MENU_LANGUAGE]='"M1" "Sprache"'
-MENU_FI[$MENU_LANGUAGE]='"M1" "(FI) Language"'
+MENU_FI[$MENU_LANGUAGE]='"M1" "Kieli"'
 MENU_INSTALL=$((MCNT++))
 MENU_EN[$MENU_INSTALL]='"M2" "Install components"'
 MENU_DE[$MENU_INSTALL]='"M2" "Installiere Komponenten"'
-MENU_FI[$MENU_INSTALL]='"M2" "(FI) Install components"'
+MENU_FI[$MENU_INSTALL]='"M2" "Asenna komponentteja"'
 MENU_CONFIGURE=$((MCNT++))
 MENU_EN[$MENU_CONFIGURE]='"M3" "Configure major options"'
 MENU_DE[$MENU_CONFIGURE]='"M3" "Konfiguriere die wichtigsten Optionen"'
+MENU_FI[$MENU_CONFIGURE]='"M3" "Määritä pääasetukset"'
 MENU_UNINSTALL=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL]='"M4" "Delete components"'
 MENU_DE[$MENU_UNINSTALL]='"M4" "Lösche Komponenten"'
+MENU_FI[$MENU_UNINSTALL]='"M4" "Poista komponentteja"'
 MENU_UPDATE=$((MCNT++))
 MENU_EN[$MENU_UPDATE]='"M5" "Update components"'
 MENU_DE[$MENU_UPDATE]='"M5" "Aktualisiere Komponenten"'
+MENU_FI[$MENU_UPDATE]='"M5" "Päivitä komponentteja"'
 MENU_ABOUT=$((MCNT++))
 MENU_EN[$MENU_ABOUT]='"M9" "About and useful links"'
 MENU_DE[$MENU_ABOUT]='"M9" "About und hilfreiche Links"'
+MENU_FI[$MENU_ABOUT]='"M9" "Tietoja ja hyödyllisiä linkkejä"'
 MENU_REGULARBACKUP_ENABLE=$((MCNT++))
 MENU_EN[$MENU_REGULARBACKUP_ENABLE]='"R1" "Enable regular backup"'
 MENU_DE[$MENU_REGULARBACKUP_ENABLE]='"R1" "Regelmäßiges Backup einschalten"'
+MENU_FI[$MENU_REGULARBACKUP_ENABLE]='"R1" "Ota käyttöön säännöllinen varmuuskopiointi"'
 MENU_REGULARBACKUP_DISABLE=$((MCNT++))
 MENU_EN[$MENU_REGULARBACKUP_DISABLE]='"R1" "Disable regular backup"'
 MENU_DE[$MENU_REGULARBACKUP_DISABLE]='"R1" "Regelmäßiges Backup auschalten"'
+MENU_FI[$MENU_REGULARBACKUP_DISABLE]='"R1" "Poista säännöllinen varmuuskopiointi käytöstä"'
 MENU_CONFIG_DAY=$((MCNT++))
 MENU_EN[$MENU_CONFIG_DAY]='"R2" "Weekday of regular backup"'
 MENU_DE[$MENU_CONFIG_DAY]='"R2" "Wochentag des regelmäßigen Backups"'
+MENU_FI[$MENU_CONFIG_DAY]='"R2" "Säännöllisen varmuuskopioinnin viikonpäivä"'
 MENU_CONFIG_TIME=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TIME]='"R3" "Time of regular backup"'
 MENU_DE[$MENU_CONFIG_TIME]='"R3" "Zeit des regelmäßigen Backups"'
+MENU_FI[$MENU_CONFIG_TIME]='"R3" "Säännöllisen varmuuskopioinnin kellonaika"'
 MENU_CONFIG_LANGUAGE_EN=$((MCNT++))
 MENU_EN[$MENU_CONFIG_LANGUAGE_EN]='"EN" "English"'
 MENU_DE[$MENU_CONFIG_LANGUAGE_EN]='"EN" "Englisch"'
-MENU_FI[$MENU_CONFIG_LANGUAGE_EN]='"EN" "Finnish"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_EN]='"EN" "englanti"'
 MENU_CONFIG_LANGUAGE_DE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_LANGUAGE_DE]='"DE" "German"'
 MENU_DE[$MENU_CONFIG_LANGUAGE_DE]='"DE" "Deutsch"'
-MENU_FI[$MENU_CONFIG_LANGUAGE_DE]='"DE" "Finnisch"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_DE]='"DE" "saksa"'
 MENU_CONFIG_LANGUAGE_FI=$((MCNT++))
 MENU_EN[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finnish"'
 MENU_DE[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finnisch"'
-MENU_FI[$MENU_CONFIG_LANGUAGE_FI]='"FI" "(FI) Finnish"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_FI]='"FI" "suomi"'
 MENU_CONFIG_MESSAGE_N=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MESSAGE_N]='"Normal" "Display important messages only"'
 MENU_DE[$MENU_CONFIG_MESSAGE_N]='"Normal" "Nur wichtige Meldungen anzeigen"'
+MENU_FI[$MENU_CONFIG_MESSAGE_N]='"Normaali" "Näytä vain tärkeät viestit"'
 MENU_CONFIG_MESSAGE_V=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MESSAGE_V]='"Verbose" "Display all messages"'
 MENU_DE[$MENU_CONFIG_MESSAGE_V]='"Detailiert" "Alle Meldungen anzeigen"'
+MENU_FI[$MENU_CONFIG_MESSAGE_V]='"Tarkka" "Näytä kaikki viestit"'
 MENU_CONFIG_BACKUPPATH=$((MCNT++))
 MENU_EN[$MENU_CONFIG_BACKUPPATH]='"C2" "Backup path"'
 MENU_DE[$MENU_CONFIG_BACKUPPATH]='"C2" "Backupverzeichnispfad"'
+MENU_FI[$MENU_CONFIG_BACKUPPATH]='"C2" "Varmuuskopioiden sijainti"'
 MENU_CONFIG_BACKUPS=$((MCNT++))
 MENU_EN[$MENU_CONFIG_BACKUPS]='"C3" "Backup versions"'
 MENU_DE[$MENU_CONFIG_BACKUPS]='"C3" "Backupversionen"'
+MENU_FI[$MENU_CONFIG_BACKUPS]='"C3" "Varmuuskopioiden versioiden säilytys"'
 MENU_CONFIG_TYPE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE]='"C4" "Backup type"'
 MENU_DE[$MENU_CONFIG_TYPE]='"C4" "Backup Typ"'
+MENU_FI[$MENU_CONFIG_TYPE]='"C4" "Varmuuskopiontien tyyppi"'
 MENU_CONFIG_MODE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE]='"C5" "Backup mode"'
 MENU_DE[$MENU_CONFIG_MODE]='"C5" "Backup Modus"'
+MENU_FI[$MENU_CONFIG_MODE]='"C5" "Varmuuskopiointitila"'
 MENU_CONFIG_SERVICES=$((MCNT++))
 MENU_EN[$MENU_CONFIG_SERVICES]='"C6" "Services to stop and start"'
 MENU_DE[$MENU_CONFIG_SERVICES]='"C6" "Zu stoppende und startende Services"'
+MENU_FI[$MENU_CONFIG_SERVICES]='"C6" "Palveluiden pysäyttäminen ja uudelleenkäynnistäminen"'
 MENU_CONFIG_MESSAGE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MESSAGE]='"C7" "Message verbosity"'
 MENU_DE[$MENU_CONFIG_MESSAGE]='"C7" "Meldungsgenauigkeit"'
+MENU_FI[$MENU_CONFIG_MESSAGE]='"C7" "Viestien yksityiskohtaisuus"'
 MENU_CONFIG_EMAIL=$((MCNT++))
 MENU_EN[$MENU_CONFIG_EMAIL]='"C8" "eMail notification"'
 MENU_DE[$MENU_CONFIG_EMAIL]='"C8" "eMail Benachrichtigung"'
+MENU_FI[$MENU_CONFIG_EMAIL]='"C8" "Sähköposti-ilmoitus"'
 MENU_CONFIG_CRON=$((MCNT++))
 MENU_EN[$MENU_CONFIG_CRON]='"C9" "Regular backup"'
 MENU_DE[$MENU_CONFIG_CRON]='"C9" "Regelmäßiges Backup"'
+MENU_FI[$MENU_CONFIG_CRON]='"C9" "Säännöllinen varmuuskopiointi"'
 MENU_CONFIG_ZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP]='"C10" "Compression"'
 MENU_DE[$MENU_CONFIG_ZIP]='"C10" "Komprimierung"'
+MENU_FI[$MENU_CONFIG_ZIP]='"C10" "Pakkaaminen"'
 MENU_CONFIG_ZIP_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP_NA]='" " " "'
 MENU_DE[$MENU_CONFIG_ZIP_NA]='" " " "'
+MENU_FI[$MENU_CONFIG_ZIP_NA]='" " " "'
 MENU_CONFIG_MODE_KEEP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE_KEEP]='"Simple" "Keep a maximum number of backups"'
 MENU_DE[$MENU_CONFIG_MODE_KEEP]='"Einfach" "Eine maximale Anzahl von Backups vorhalten"'
+MENU_FI[$MENU_CONFIG_MODE_KEEP]='"Yksinkertainen" "Säilytä valitsemasi lukumäärän verran varmuuskopioita"'
 MENU_CONFIG_MODE_SMART=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE_SMART]='"Smart" "Smart backup strategy"'
 MENU_DE[$MENU_CONFIG_MODE_SMART]='"Intelligent" "Intelligente Backupstrategie "'
+MENU_FI[$MENU_CONFIG_MODE_SMART]='"Älykäs" "Älykäs varmuuskopiointistrategia"'
 MENU_CONFIG_MODE_NORMAL=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE_NORMAL]='"Standard" "Backup the two standard partitions"'
 MENU_DE[$MENU_CONFIG_MODE_NORMAL]='"Standard" "Sichere die zwei Standardpartitionen "'
+MENU_FI[$MENU_CONFIG_MODE_NORMAL]='"Standardi" "Varmuuskopioi kaksi standardiosiota"'
 MENU_CONFIG_MODE_PARTITION=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE_PARTITION]='"Extended" "Backup more than two partitions"'
 MENU_DE[$MENU_CONFIG_MODE_PARTITION]='"Erweitert" "Sichere mehr als zwei Partitionen"'
+MENU_FI[$MENU_CONFIG_MODE_PARTITION]='"Laajennettu" "Varmuuskopioi enemmän kuin kaksi osiota"'
 MENU_INSTALL_INSTALL=$((MCNT++))
 MENU_EN[$MENU_INSTALL_INSTALL]='"I1" "Install $RASPIBACKUP_NAME using a default configuration"'
 MENU_DE[$MENU_INSTALL_INSTALL]='"I1" "Installiere $RASPIBACKUP_NAME mit einer Standardkonfiguration"'
+MENU_FI[$MENU_INSTALL_INSTALL]='"I1" "Asenna $RASPIBACKUP_NAME oletusasetuksilla"'
 MENU_INSTALL_EXTENSIONS=$((MCNT++))
 MENU_EN[$MENU_INSTALL_EXTENSIONS]='"I2" "Install and enable sample extension"'
 MENU_DE[$MENU_INSTALL_EXTENSIONS]='"I2" "Installiere Beispielerweiterungen"'
+MENU_FI[$MENU_INSTALL_EXTENSIONS]='"I2" "Asenna ja ota käyttöön näytelisäosat"'
 MENU_CONFIG_MAIL_MAIL=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MAIL_MAIL]='"mail" ""'
 MENU_DE[$MENU_CONFIG_MAIL_MAIL]='"mail" ""'
+MENU_FI[$MENU_CONFIG_MAIL_MAIL]='"mail" ""'
 MENU_CONFIG_MAIL_SSMTP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MAIL_SSMTP]='"ssmtp" ""'
 MENU_DE[$MENU_CONFIG_MAIL_SSMTP]='"ssmtp" ""'
+MENU_FI[$MENU_CONFIG_MAIL_SSMTP]='"ssmtp" ""'
 MENU_CONFIG_MAIL_MSMTP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 MENU_DE[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
+MENU_FI[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 MENU_CONFIG_TYPE_DD=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and restore on Windows"'
 MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und stelle unter Windows wieder her"'
+MENU_FI[$MENU_CONFIG_TYPE_DD]='"dd" "dd-varmuuskopio, mahdollistaa palautuksen Windowsissa"'
 MENU_CONFIG_TYPE_TAR=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_TAR]='"tar" "Backup with tar"'
 MENU_DE[$MENU_CONFIG_TYPE_TAR]='"tar" "Sichere mit tar"'
+MENU_FI[$MENU_CONFIG_TYPE_TAR]='"tar" "tar-varmuuskopio"'
 MENU_CONFIG_TYPE_RSYNC=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks if possible"'
 MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks wenn möglich"'
+MENU_FI[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "rsync-varmuuskopio ja hardlinkkien käyttö"'
 MENU_UNINSTALL_UNINSTALL=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL_UNINSTALL]='"U1" "Uninstall $RASPIBACKUP_NAME"'
 MENU_DE[$MENU_UNINSTALL_UNINSTALL]='"U1" "Lösche $RASPIBACKUP_NAME"'
+MENU_FI[$MENU_UNINSTALL_UNINSTALL]='"U1" "Poista $RASPIBACKUP_NAME -asennus"'
 MENU_UNINSTALL_EXTENSION=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL_EXTENSION]='"U2" "Uninstall and disable sample extensions"'
 MENU_DE[$MENU_UNINSTALL_EXTENSION]='"U2" "Lösche Extensions"'
+MENU_FI[$MENU_UNINSTALL_EXTENSION]='"U2" "Poista käytöstä ja pura näytelisäosien asennukset"'
 MENU_CONFIG_TYPE_DD_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_DD_NA]='"" "Backup with dd not possible with this mode"'
 MENU_DE[$MENU_CONFIG_TYPE_DD_NA]='"" "Sichern mit dd nicht möglich bei diesem Modus"'
+MENU_FI[$MENU_CONFIG_TYPE_DD_NA]='"" "DD-varmuuskopio ei ole mahdollista tässä tilassa"'
 MENU_CONFIG_COMPRESS_OFF=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No backup compression"'
 MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Backup Komprimierung"'
+MENU_FI[$MENU_CONFIG_COMPRESS_OFF]='"off" "Ei varmuuskopion pakkausta"'
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "Compress $CONFIG_BACKUPTYPE backup"'
 MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "Komprimiere den $CONFIG_BACKUPTYPE Backup"'
+MENU_FI[$MENU_CONFIG_COMPRESS_ON]='"on" "Pakkaa $CONFIG_BACKUPTYPE -varmuuskopio"'
 MENU_DAYS_SHORT=$((MCNT++))
 MENU_EN[$MENU_DAYS_SHORT]='"Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
 MENU_DE[$MENU_DAYS_SHORT]='"Täglich" "So" "Mo" "Di" "Mi" "Do" "Fr" "Sa"'
+MENU_FI[$MENU_DAYS_SHORT]='"Päivittäin" "Su" "Ma" "Ti" "Ke" "To" "Pe" "La"'
 MENU_DAYS_LONG=$((MCNT++))
 MENU_EN[$MENU_DAYS_LONG]='"Daily" "Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday"'
-MENU_DE[$MENU_DAYS_LONG]=' "Täglich" "Sonntag" "Montag" "Dienstag" "Mittwoch" "Donnerstag" "Freitag" "Samstag"'
+MENU_DE[$MENU_DAYS_LONG]='"Täglich" "Sonntag" "Montag" "Dienstag" "Mittwoch" "Donnerstag" "Freitag" "Samstag"'
+MENU_FI[$MENU_DAYS_LONG]='"Päivittäin" "Sunnuntai" "Maanantai" "Tiistai" "Keskiviikko" "Torstai" "Perjantai" "Lauantai"'
 MENU_UPDATE_SCRIPT=$((MCNT++))
 MENU_EN[$MENU_UPDATE_SCRIPT]='"P1" "Update $FILE_TO_INSTALL"'
 MENU_DE[$MENU_UPDATE_SCRIPT]='"P1" "Aktualisiere $FILE_TO_INSTALL"'
+MENU_FI[$MENU_UPDATE_SCRIPT]='"P1" "Päivitä $FILE_TO_INSTALL"'
 MENU_UPDATE_INSTALLER=$((MCNT++))
 MENU_EN[$MENU_UPDATE_INSTALLER]='"P2" "Update $MYSELF"'
 MENU_DE[$MENU_UPDATE_INSTALLER]='"P2" "Aktualisiere $MYSELF"'
+MENU_FI[$MENU_UPDATE_INSTALLER]='"P2" "Päivitä $MYSELF"'
 
 declare -A MSG_HEADER=(['I']="---" ['W']="!!!" ['E']="???")
 
@@ -1332,6 +1496,10 @@ function parseConfig() {
 		fi
 		logItem "$key=$value"
 		eval "$key=\"$value\""
+		if [[ $key == "CONFIG_LANGUAGE" ]]; then
+			[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
+		fi
+
 	done <<< "$matches"
 	logExit
 }
@@ -3204,7 +3372,7 @@ function config_language_do() {
 
 	logEntry "$old"
 
-	[[ -z "$CONFIG_LANGUAGE" ]] && CONFIG_LANGUAGE="$MESSAGE_LANGUAGE"
+	[[ -z "$CONFIG_LANGUAGE" ]] && CONFIG_LANGUAGE="$LANG_SYSTEM"
 
 	if ! containsElement "$CONFIG_LANGUAGE" "${SUPPORTED_LANGUAGES[@]}"; then
 		whiptail --msgbox "Unsupported language $CONFIG_LANGUAGE. Falling back to English" $ROWS_MENU $WINDOW_COLS 2
