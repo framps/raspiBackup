@@ -50,6 +50,11 @@ if ! which wget &>/dev/null; then
 	exit 1
 fi
 
+if ! rsync wget &>/dev/null; then
+	echo "$MYSELF depends on rsync. Please install rsync first."
+	exit 1
+fi
+
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
 
