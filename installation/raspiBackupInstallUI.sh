@@ -40,20 +40,30 @@ if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${
 	exit 1
 fi
 
-if ! which whiptail &>/dev/null; then
-	echo "$MYSELF depends on whiptail. Please install whiptail first."
-	exit 1
-fi
+# Commands used by raspiBackup and which have to be available
+# [command]=package
+declare -A REQUIRED_COMMANDS=( \
+		["parted"]="parted" \
+		["fsck.vfat"]="dosfstools" \
+		["e2label"]="e2fsprogs" \
+		["rsync"]="rsync" \
+		["whiptail"]="whiptail" \
+		["dosfslabel"]="dosfstools" \
+		["fdisk"]="util-linux" \
+		["blkid"]="util-linux" \
+		["sfdisk"]="util-linux" \
+		["xxd"]="xxd" \
+		)
 
-if ! which wget &>/dev/null; then
-	echo "$MYSELF depends on wget. Please install wget first."
-	exit 1
-fi
+missingSomeCommands=0
+for cmd in "${!REQUIRED_COMMANDS[@]}"; do
+	if ! hash $cmd 2>/dev/null; then
+		echo "$MYSELF depends on $cmd. Please install ${REQUIRED_COMMANDS[$cmd]} first."
+		missingSomeCommands=1
+	fi
+done
 
-if ! rsync wget &>/dev/null; then
-	echo "$MYSELF depends on rsync. Please install rsync first."
-	exit 1
-fi
+(( $missingSomeCommands )) && exit
 
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
