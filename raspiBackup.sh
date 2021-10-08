@@ -9,6 +9,9 @@
 # Smart recycle backup strategy inspired by https://opensource.com/article/18/8/automate-backups-raspberry-pi and
 # enhanced to support multiple backups in a given timeframe of days, weeks, months and years
 #
+# Credits to following people for their translation work
+#	  FI - teemue
+#
 #######################################################################################################################
 #
 #    Copyright (c) 2013-2021 framp at linux-tips-and-tricks dot de
@@ -25,7 +28,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# 	
 #######################################################################################################################
 
 if [ -z "$BASH" ] ;then

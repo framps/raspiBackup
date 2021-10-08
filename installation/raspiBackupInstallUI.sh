@@ -6,6 +6,9 @@
 #
 # Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
+# Credits to following people for their translation work
+#	  FI - teemue
+#
 #######################################################################################################################
 #
 #    Copyright (c) 2015-2021 framp at linux-tips-and-tricks dot de
