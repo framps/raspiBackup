@@ -38,7 +38,7 @@ fi
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.3.5"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.3.6"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
