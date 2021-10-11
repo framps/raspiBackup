@@ -28,7 +28,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# 	
+#
 #######################################################################################################################
 
 if [ -z "$BASH" ] ;then
@@ -40,7 +40,7 @@ fi
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.6.1-beta"											# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.6.1"												# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"									# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
