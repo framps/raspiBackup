@@ -391,9 +391,12 @@ fi
 # To add a new language just execute following steps:
 # 1) Add new language id LL (e.g. FI for Finnish) in variable SUPPORTED_LANGUAGES (see above)
 # 2) For every MSG_ add a new message MSG_LL, e.g. MSG_FI for Finnish
-# 3) Optionally add a help function usageLL, e.g. usageFI
-# 4) Note: If a message definition or help function (MSG_LL or usageLL) is missing in a supported language the fallback language English will be selected by the code (MSG_EN or usageEN)
+# 3) For every MSG_ add a new declare -A in following line, e.g. MSG_FI for Finnish
+# 4) Optionally add a help function usageLL, e.g. usageFI
+# 5) Note: If a message definition or help function (MSG_LL or usageLL) is missing in a supported language the fallback language English will be selected by the code (MSG_EN or usageEN)
 #
+
+declare -A MSG_EN MSG_DE MSG_FI
 
 LANGUAGE="${LANG_SYSTEM^^*}"	# that's the language until it's overwritten with an option or config entry
 
