@@ -10,6 +10,7 @@
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
+* Messages in English, German and Finnish
 * Much more features ... (See doc below)
 
 ## Documentation
@@ -59,13 +60,13 @@ Anybody is welcome to create feature requests in github. They are either immedia
  * [Twitter](https://twitter.com/linuxframp) - News and announcements - English only
  * [Facebook](https://www.facebook.com/raspiBackup) - News, discussions, announcements and misc background information in English and German
 
-## Miscellaneous tools and utilities [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
+## Miscellaneous sample scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
 
 * Sample wrapper scripts to add any activities before and after backup [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupWrapper.sh)
 
 * Sample wrapper script which checks whether a nfsserver is online, mounts one exported directory and invokes raspiBackup. If the nfsserver is not online no backup is started. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupNfsWrapper.sh)
 
-* Script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
+* Sample script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
 
 ## Sample extensions [(Code)](https://github.com/framps/raspiBackup/tree/master/extensions)
 * Sample eMail extension
