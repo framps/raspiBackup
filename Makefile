@@ -29,7 +29,8 @@ MAKEFILE := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 PACKAGE_FILES = installation/raspiBackupInstallUI.sh raspiBackup.sh extensions/raspiBackupSampleExtensions.tgz properties/raspiBackup0613.properties
 PACKAGE_FILE_COLLECTIONS = config/*
 PACKAGE_EXTENSION_DIRECTORY = extensions
-PACKAGE_EXTENSION_FILES = $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackup_*
+PACKAGE_EXTENSION_FILES_PREFIX = raspiBackup_*
+PACKAGE_EXTENSION_FILES = $(PACKAGE_EXTENSION_DIRECTORY)/$(PACKAGE_EXTENSION_FILES_PREFIX)
 
 include $(CURRENT_DIR)/$(MAKEFILE).env
 # Has to define following environment constants:
@@ -50,7 +51,7 @@ deploy: ## Deploy raspiBackup
 	@git checkout -f $(MASTER_BRANCH)
 
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
-	@tar --exclude raspiBackup.sh -cvzf $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_DIRECTORY)/*.sh
+	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
 	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
@@ -63,7 +64,7 @@ deployBeta: ## Deploy raspiBackup beta
 	@git checkout -f $(BETA_BRANCH)
 
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
-	@tar --exclude raspiBackup.sh -cvzf $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_DIRECTORY)/*.sh
+	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
 	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
