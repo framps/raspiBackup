@@ -152,7 +152,7 @@ SUPPORTED_LANGUAGES=("EN" "DE" "FI" "ZH")
 LANG_EXT="${LANG,,*}"
 LANG_SYSTEM="${LANG_EXT:0:2}"
 if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
-	LANG_SYSTEM="en"
+	LANG_SYSTEM="EN"
 fi
 
 # default configs
