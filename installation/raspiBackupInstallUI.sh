@@ -202,51 +202,61 @@ MSG_EN[$MSG_UNDEFINED]="${MSG_PRF}0000E: Undefined messageid."
 MSG_DE[$MSG_UNDEFINED]="${MSG_PRF}0000E: Unbekannte Meldungsid."
 MSG_FI[$MSG_UNDEFINED]="${MSG_PRF}0000E: Viestitunnus puuttuu."
 MSG_ZH[$MSG_UNDEFINED]="${MSG_PRF}0000E: 未定义的错误ID."
+
 MSG_VERSION=$((SCNT++))
 MSG_EN[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_DE[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_FI[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_ZH[$MSG_VERSION]="${MSG_PRF}0001I: %1"
+
 MSG_DOWNLOADING=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Downloading %1..."
 MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0002I: %1 wird aus dem Netz geladen..."
 MSG_FI[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Ladataan %1..."
 MSG_ZH[$MSG_DOWNLOADING]="${MSG_PRF}0002I: 下载中 %1..."
+
 MSG_DOWNLOAD_FAILED=$((SCNT++))
 MSG_EN[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Download of %1 failed. HTTP code: %2."
 MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: %1 kann nicht aus dem Netz geladen werden. HTTP code: %2."
 MSG_FI[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Kohteen %1 lataus epäonnistui. HTTP-koodi: %2."
 MSG_ZH[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: 下载 %1 失败. HTTP-代码: %2."
+
 MSG_INSTALLATION_FAILED=$((SCNT++))
 MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation of %1 failed. Check %2."
 MSG_DE[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation von %1 fehlerhaft beendet. Prüfe %2."
 MSG_FI[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Kohteen %1 asennus epäonnistui. Tarkista %2."
 MSG_ZH[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: 安装 %1 失败. 检查 %2."
+
 MSG_SAVING_FILE=$((SCNT++))
 MSG_EN[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Existing file %1 saved as %2."
 MSG_DE[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Existierende Datei %1 wurde als %2 gesichert."
 MSG_FI[$MSG_SAVING_FILE]="${MSG_PRF}0005I: Tiedosto %1 tallennettiin nimellä %2."
 MSG_ZH[$MSG_SAVING_FILE]="${MSG_PRF}0005I:  %1 已存在,另存为 %2."
+
 MSG_CHMOD_FAILED=$((SCNT++))
 MSG_EN[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod of %1 failed."
 MSG_DE[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod von %1 nicht möglich."
 MSG_FI[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod %1 epäonnistui."
 MSG_ZH[$MSG_CHMOD_FAILED]="${MSG_PRF}0006E: chmod %1 失败."
+
 MSG_MOVE_FAILED=$((SCNT++))
 MSG_EN[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv of %1 failed."
 MSG_DE[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv von %1 nicht möglich."
 MSG_FI[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv %1 epäonnistui."
 MSG_ZH[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv %1 失败."
+
 MSG_CLEANUP=$((SCNT++))
 MSG_EN[$MSG_CLEANUP]="${MSG_PRF}0008I: Cleaning up..."
 MSG_DE[$MSG_CLEANUP]="${MSG_PRF}0008I: Räume auf..."
 MSG_FI[$MSG_CLEANUP]="${MSG_PRF}0008I: Puhdistetaan..."
 MSG_ZH[$MSG_CLEANUP]="${MSG_PRF}0008I: 正在清理..."
+
 MSG_INSTALLATION_FINISHED=$((SCNT++))
 MSG_EN[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation of %1 finished successfully."
 MSG_DE[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation von %1 erfolgreich beendet."
 MSG_FI[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Kohde %1 asennettu onnistuneesti."
 MSG_ZH[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: 安装 %1 成功."
+
 MSG_UPDATING_CONFIG=$((SCNT++))
 MSG_EN[$MSG_UPDATING_CONFIG]="${MSG_PRF}0010I: Updating configuration in %1."
 MSG_DE[$MSG_UPDATING_CONFIG]="${MSG_PRF}0010I: Konfigurationsdatei %1 wird angepasst."
@@ -657,8 +667,8 @@ MSG_DE[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME und dieser Installer unter
 ${NL}${NL}Jede Hilfe eine weitere Sprache dazuzubringen ist herzlich willkommen."
 MSG_FI[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME ja tämä asennustyökalu tukevat tällä hetkellä ${NL}alla lueteltuja kieliä. Oletuksena on järjestelmän kieli.\
 ${NL}${NL}Apu muiden kielien lisäämiseen on tervetullut."
-MSG_ZH[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME 目前支持下列语言，默认使用系统语言.\
-${NL}${NL}欢迎翻译其他语言！."
+MSG_ZH[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME and this installer support following languages as of now. Default language is the system language.\
+${NL}${NL}Any help to add another language is welcome."
 
 DESCRIPTION_KEEP=$((SCNT++))
 MSG_EN[$DESCRIPTION_KEEP]="${NL}Enter number of backups to keep. Number hast to be between 1 and 52."
@@ -1009,10 +1019,10 @@ MENU_FI[$MENU_CONFIG_LANGUAGE_FI]='"FI" "suomi"'
 MENU_ZH[$MENU_CONFIG_LANGUAGE_FI]='"FI" "芬兰语"'
 
 MENU_CONFIG_LANGUAGE_ZH=$((MCNT++))
-MENU_EN[$MENU_CONFIG_LANGUAGE_FI]='"ZH" "Chinese"'
-MENU_DE[$MENU_CONFIG_LANGUAGE_FI]='"ZH" "Chinesisch"'
-MENU_FI[$MENU_CONFIG_LANGUAGE_FI]='"ZH" "Kiina"'
-MENU_ZH[$MENU_CONFIG_LANGUAGE_FI]='"ZH" "中文"'
+MENU_EN[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "Chinese"'
+MENU_DE[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "Chinesisch"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "Kiina"'
+MENU_ZH[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "中文"'
 
 MENU_CONFIG_MESSAGE_N=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MESSAGE_N]='"Normal" "Display important messages only"'
