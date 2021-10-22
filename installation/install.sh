@@ -28,7 +28,7 @@
 MYSELF="install"
 VERSION="0.1.1"
 
-URL="https://www.linux-tips-and-tricks.de"
+URL="https://github.com/GoogleBeEvil/raspiBackup/edit/nls_zh/installation"
 INSTALLER="raspiBackupInstallUI.sh"
 INSTALLER_DOWNLOAD_URL="$URL/$INSTALLER"
 TO_BE_INSTALLED="raspiBackup.sh"
