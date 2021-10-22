@@ -149,10 +149,10 @@ function containsElement () {
 SUPPORTED_LANGUAGES=("EN" "DE" "FI")
 
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
-LANG_EXT="${LANG,,*}"
+LANG_EXT="${LANG^^*}"
 LANG_SYSTEM="${LANG_EXT:0:2}"
 if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
-	LANG_SYSTEM="en"
+	LANG_SYSTEM="EN"
 fi
 
 # default configs
@@ -3401,7 +3401,7 @@ function config_language_do() {
 	[[ -z "$CONFIG_LANGUAGE" ]] && CONFIG_LANGUAGE="$LANG_SYSTEM"
 
 	if ! containsElement "$CONFIG_LANGUAGE" "${SUPPORTED_LANGUAGES[@]}"; then
-		whiptail --msgbox "Unsupported language $CONFIG_LANGUAGE. Falling back to English" $ROWS_MENU $WINDOW_COLS 2
+		whiptail --msgbox "Unsupported language \"$CONFIG_LANGUAGE\". Falling back to EN (English)" $ROWS_MENU $WINDOW_COLS 2
 		CONFIG_LANGUAGE="EN"
 	fi
 
