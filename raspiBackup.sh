@@ -3391,7 +3391,6 @@ function sendTelegramm() { # subject
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
 			local smiley
-			WARNING_MESSAGE_WRITTEN=1
 			if (( $WARNING_MESSAGE_WRITTEN )); then
 				smiley="$EMOJI_WARNING ${smiley}"
 			fi
