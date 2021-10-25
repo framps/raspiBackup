@@ -1860,22 +1860,20 @@ function do_finish() {
 
 	logEntry
 
-	if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
-		if isRaspiBackupInstalled ; then
-			if ! isStartStopDefined; then
-				local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
-				local y="$(getMessageText $BUTTON_YES)"
-				local n="$(getMessageText $BUTTON_NO)"
-				local t=$(center $WINDOW_COLS "$m")
-				local tt="$(getMessageText $TITLE_WARNING)"
-				if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
-					return
-				fi
+	if isRaspiBackupInstalled ; then
+		if ! isStartStopDefined; then
+			local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
+			local y="$(getMessageText $BUTTON_YES)"
+			local n="$(getMessageText $BUTTON_NO)"
+			local t=$(center $WINDOW_COLS "$m")
+			local tt="$(getMessageText $TITLE_WARNING)"
+			if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
+				return
 			fi
+		fi
 
-			if (( $INSTALLATION_SUCCESSFULL )); then
-				first_steps
-			fi
+		if (( $INSTALLATION_SUCCESSFULL )); then
+			first_steps
 		fi
 
 		help
@@ -1929,9 +1927,7 @@ function cleanup() {
 
 	(($EXTENSIONS_INSTALLED)) && rm $SAMPLEEXTENSION_TAR_FILE &>>$LOG_FILE || true
 
-	if [[ "$signal" == "EXIT" ]]; then
-		(( ! $RASPIBACKUP_INSTALL_DEBUG )) && rm -f $LOG_FILE &>/dev/null
-	else
+	if [[ "$signal" != "EXIT" ]]; then
 		writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
 		logExit
 		rc=127
