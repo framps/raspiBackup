@@ -8,7 +8,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2020-2021 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #######################################################################################################################
 
 MYSELF="install"
-VERSION="0.1.1"
+VERSION="0.1.2"
 
 URL="https://www.linux-tips-and-tricks.de"
 INSTALLER="raspiBackupInstallUI.sh"
@@ -65,7 +65,6 @@ trap cleanup SIGINT SIGTERM EXIT
 cd ~
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." 
-
 curl -sLO "$INSTALLER_DOWNLOAD_URL" 
 rc=$?
 
