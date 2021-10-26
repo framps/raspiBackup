@@ -64,4 +64,20 @@ trap cleanup SIGINT SIGTERM EXIT
 
 cd ~
 # download and invoke installer
-curl -sLO "$INSTALLER_DOWNLOAD_URL" && sudo bash "./$INSTALLER" "$1"
+echo "Downloading $INSTALLER_DOWNLOAD_URL ..." 
+
+curl -sLO "$INSTALLER_DOWNLOAD_URL" 
+rc=$?
+
+if (( $rc )); then
+	echo "??? Error downloading $INSTALLER_DOWNLOAD_URL. RC: $rc"
+	exit 1
+fi	
+
+echo "Starting ./$INSTALLER ..."
+sudo bash "./$INSTALLER" "$1"
+rc=$?
+if (( $rc )); then
+	echo "??? Error executing $INSTALLER RC: $rc"
+	exit 1
+fi	
