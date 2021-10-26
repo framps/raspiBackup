@@ -80,7 +80,7 @@ echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
 sudo bash "./$INSTALLER" "$1"
 rc=$?
 if (( $rc )); then
-	echo "??? $INSTALLER failed. RC: $rc"
+	echo "??? $INSTALLER failed. RC: $rc" >> "$LOG_FILE"
 	cat "$LOG_FILE"
 	exit 1
 fi	
