@@ -58,7 +58,7 @@ function analyze() { # fileName url
 		sha="$(grep "GIT_COMMIT=" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 	if [[ -z "$sha" ]]; then
-		sha="$(grep '$Sha1$tmp | cut -f 3-4 -d ' ' )"
+		sha="$(grep 'Sha1:' $tmp | cut -f 3-4 -d ' ' )"
 	fi
 	
 	sha="$(sed  -e "s/[\$\"]//g" <<< "$sha")"
