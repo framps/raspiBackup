@@ -374,7 +374,8 @@ function containsElement () {
 # NLS: Either use system language if language is supported and use fallback language English otherwise
 #
 
-SUPPORTED_LANGUAGES=("EN" "DE")
+SUPPORTED_LANGUAGES=("EN" "DE" "FI")
+FALLBACK_LANGUAGE="EN"
 
 # use LANG variable to determine language
 
@@ -382,7 +383,7 @@ SUPPORTED_LANGUAGES=("EN" "DE")
 LANG_EXT="${LANG,,*}"
 LANG_SYSTEM="${LANG_EXT:0:2}"						# extract language id
 if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then	# if language is not supported use English
-	LANG_SYSTEM="en"
+	LANG_SYSTEM=$FALLBACK_LANGUAGE
 fi
 
 #
@@ -785,9 +786,9 @@ MSG_EN[$MSG_RESTORING_PARTITIONFILE]="RBK0095I: Restoring partition %s."
 MSG_DE[$MSG_RESTORING_PARTITIONFILE]="RBK0095I: Backup wird auf Partition %s zurückgespielt."
 MSG_FI[$MSG_RESTORING_PARTITIONFILE]="RBK0095I: Palautetaan osiota %s."
 MSG_LANGUAGE_NOT_SUPPORTED=96
-MSG_EN[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096E: Language %s not supported."
-MSG_DE[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096E: Die Sprache %s wird nicht unterstützt."
-MSG_FI[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096E: Kieli %s ei ole tuettu."
+MSG_EN[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Language %s not supported."
+MSG_DE[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Die Sprache %s wird nicht unterstützt."
+MSG_FI[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Kieli %s ei ole tuettu."
 MSG_PARTITIONING_SDCARD=97
 MSG_EN[$MSG_PARTITIONING_SDCARD]="RBK0097I: Partitioning and formating %s."
 MSG_DE[$MSG_PARTITIONING_SDCARD]="RBK0097I: Partitioniere und formatiere %s."
@@ -1513,7 +1514,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 
 	msgVar="MSG_${LANGUAGE}"
 
-	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
+	if [[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]]; then
 		msgVar="$msgVar[$1]"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
@@ -1585,6 +1586,7 @@ function logSystem() {
 	[[ -f /etc/os-release ]] &&	logCommand "cat /etc/os-release"
 	[[ -f /etc/debian_version ]] &&	logCommand "cat /etc/debian_version"
 	[[ -f /etc/fstab ]] &&	logCommand "cat /etc/fstab"
+	logCommand "locale"
 	logExit
 }
 
@@ -2305,7 +2307,6 @@ function copyDefaultConfigVariables() {
 	KEEPBACKUPS_TAR="$DEFAULT_KEEPBACKUPS_TAR"
 	KEEPBACKUPS_TGZ="$DEFAULT_KEEPBACKUPS_TGZ"
 	KEEPBACKUPS_RSYNC="$DEFAULT_KEEPBACKUPS_RSYNC"
-	LANGUAGE="$DEFAULT_LANGUAGE"
 	LINK_BOOTPARTITIONFILES="$DEFAULT_LINK_BOOTPARTITIONFILES"
 	LOG_LEVEL="$DEFAULT_LOG_LEVEL"
 	LOG_OUTPUT="$DEFAULT_LOG_OUTPUT"
@@ -4147,10 +4148,9 @@ function checkImportantParameters() {
 	fi
 
 	if ! containsElement "${LANGUAGE}" "${SUPPORTED_LANGUAGES[@]}"; then
-		local l="$LANGUAGE"
-		LANGUAGE=$MSG_LANG_FALLBACK
+		local l=$LANGUAGE
+		LANGUAGE=$FALLBACK_LANGUAGE
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_LANGUAGE_NOT_SUPPORTED "$l"
-		exitError $RC_PARAMETER_ERROR
 	fi
 
 }
