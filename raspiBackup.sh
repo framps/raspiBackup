@@ -1669,8 +1669,11 @@ function logEnable() {
 # move temporary log file to it's destination
 function logFinish() {
 
-	local DEST_LOGFILE DEST_MSGFILE
+	logEntry
 
+	local DEST_LOGFILE DEST_MSGFILE rc
+
+	rm "$FINISH_LOG_FILE" &>>$LOG_FILE
 
 	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
 		if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
@@ -1678,7 +1681,7 @@ function logFinish() {
 			LOG_OUTPUT=$LOG_OUTPUT_HOME 		# save log in home directory
 		fi
 
-		rm "$FINISH_LOG_FILE" &>/dev/null
+		logItem "LOG_OUTPUT: $LOG_OUTPUT"
 
 		case $LOG_OUTPUT in
 			$LOG_OUTPUT_VARLOG)
@@ -1700,12 +1703,15 @@ function logFinish() {
 				;;
 			$LOG_OUTPUT_BACKUPLOC)
 				DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}.log"
-				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+				if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+					mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+				fi
 				;;
 			*) # option -L <filename>
 				DEST_LOGFILE="$LOG_OUTPUT"
-				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-
+				if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+					mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+				fi
 				if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
 					DEST_MSGFILE="$(sed "s/\.log$/\.msg/" <<< "$DEST_LOGFILE")" # replace .log extension
 				else
@@ -1715,25 +1721,32 @@ function logFinish() {
 				chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
 		esac
 
-		cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
-		rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
+		logItem "DEST_LOGFILE: $DEST_LOGFILE"
+		logItem "DEST_MSGFILE: $DEST_MSGFILE"
+
+		if [[ -f $FINISH_LOG_FILE ]]; then					# append optional final messages
+			logCommand "cat $FINISH_LOG_FILE"
+			cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
+			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
+		fi
+
+		LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$DEST_LOGFILE"
 
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
-			rm -rf "$TEMP_LOG_FILE" &>> "$DEST_LOGFILE"
+			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
 
-		rm -rf "$MSG_FILE" &>> "$DEST_LOGFILE"
+		rm -f "$MSG_FILE" &>> "$LOG_FILE"
 
 		if [[ "$DEST_LOGFILE" == "$TEMP_LOG_FILE" || "$DEST_LOGFILE" == "$LOG_OUTPUT" ]]; then # make sure logfile is owned by caller
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &> "$FINISH_LOG_FILE"
-			if [[ -s "$FINISH_LOG_FILE" ]]; then	# there was an error in chown
-				cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE" # make sure the error is logged
-				rm "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
-			fi
+			logItem "Updating logfile ownership"
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &> "$LOG_FILE"
 		fi
 	fi
+
+	logExit
 }
 
 logEnable
