@@ -1302,7 +1302,7 @@ MENU_INSTALL_EXTENSIONS=$((MCNT++))
 MENU_EN[$MENU_INSTALL_EXTENSIONS]='"I2" "Install and enable sample extension"'
 MENU_DE[$MENU_INSTALL_EXTENSIONS]='"I2" "Installiere Beispielerweiterungen"'
 MENU_FI[$MENU_INSTALL_EXTENSIONS]='"I2" "Asenna ja ota käyttöön näytelisäosat"'
-MENU_FR[$MENU_INSTALL_EXTENSIONS]='"I2" "Installer et activer l'exemple d'extension"'
+MENU_FR[$MENU_INSTALL_EXTENSIONS]='"I2" "Installer et activer l'\''exemple d'\''extension"'
 MENU_ZH[$MENU_INSTALL_EXTENSIONS]='"I2" "安装并开启示例扩展"'
 
 MENU_CONFIG_MAIL_MAIL=$((MCNT++))
