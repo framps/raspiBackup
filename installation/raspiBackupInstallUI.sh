@@ -157,7 +157,9 @@ if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
 fi
 
 # default configs
-# CONFIG_LANGUAGE= will become either $LANG_SYSTEM if it's empty (undefined) or the configured language later on
+
+CONFIG_LANGUAGE=$LANG_SYSTEM
+# CONFIG_LANGUAGE= will become the configured language later on
 
 CONFIG_MSG_LEVEL="0"
 CONFIG_BACKUPTYPE="rsync"
