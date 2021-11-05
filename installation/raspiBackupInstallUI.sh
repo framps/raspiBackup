@@ -9,7 +9,7 @@
 # Credits to following people for their translation work
 #	  FI - teemue
 #	  ZH - GoogleBeEvil
-#	  FR - Michel 
+#	  FR - mgrafr
 #
 #######################################################################################################################
 #

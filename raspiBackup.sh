@@ -11,7 +11,7 @@
 #
 # Credits to following people for their translation work
 #	  FI - teemue
-#	  FR - Michel
+#	  FR - mgrafr
 #
 #######################################################################################################################
 #
@@ -1605,7 +1605,7 @@ MSG_INVALID_TRUE_FALSE_OPTION=235
 MSG_EN[$MSG_INVALID_TRUE_FALSE_OPTION]="RBK0235E: Invalid true/false option %s for %s detected. Should be on, off, 0 or 1."
 MSG_DE[$MSG_INVALID_TRUE_FALSE_OPTION]="RBK0235E: Ungültige an/aus Option %s für %s entdeckt. Es sollte an, aus, 0 oder 1 sein."
 MSG_FI[$MSG_INVALID_TRUE_FALSE_OPTION]="RBK0235E: Virheellinen päälle/pois-valinta %s havaittu kohteelle %s. Valinnan tulee olla on, off, 0 tai 1."  #on and off are OK for finnish language
-MSG_FR[$MSG_INVALID_TRUE_FALSE_OPTION]="RBK0235E: Option on/off non valide %s détectée pour %s. Il doit être activé, désactivé, 0 ou 1." 
+MSG_FR[$MSG_INVALID_TRUE_FALSE_OPTION]="RBK0235E: Option on/off non valide %s détectée pour %s. Il doit être activé, désactivé, 0 ou 1."
 #MSG_PARTITION_MODE_NO_LONGER_SUPPORTED=236
 #MSG_EN[$MSG_PARTITION_MODE_NO_LONGER_SUPPORTED]="RBK0236W: Partition oriented backup will not be maintained any more and disable somewhere in the future."
 #MSG_DE[$MSG_PARTITION_MODE_NO_LONGER_SUPPORTED]="RBK0236W: Partitionsorientierter Modus wird nicht mehr weiter gewartet und irgendwann in Zukunft nicht mehr verfügbar sein."
