@@ -87,7 +87,7 @@ Permet de démarrer raspiBackup à partir d’un système distant ou de n’impo
 
 1 - Télécharger l’exécutable à partir du répertoire RESTAPI
 2 - Créer un fichier /usr/local/etc/raspiBackup.auth et définir les informations d’identification d’accès pour l’API. Pour chaque utilisateur, créer une ligne userid:password
-4-  Définir les attributs de fichier pour /usr/local/etc/raspiBackup.auth sur 600
+4-  Définir les attributs de fichier pour /usr/local/etc/raspiBackup.auth sur 600.
 5 - Démarrer RESTAPI avec : sudo raspiBackupRESTAPIListener. L’option -a peut être utilisée pour définir un autre port d’écoute que :8080.
 6 - Pour lancer une sauvegarde : curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v0.1/backup
 
