@@ -1,6 +1,6 @@
 ![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat)
 
-# raspiBackup - Pour Sauvegarder et restaurer les Raspberry en cours d’exécution
+# raspiBackup - Pour Sauvegarder et restaurer les Raspberry PI en cours d’exécution
 
 * Pour créer une sauvegarde complète sans l'arrêter du système , sans toute autre intervention simplement en démarrant raspiBackup à l’aide de cron. Les services importants peuvent être arrêtés (c'est recommandé) avant le démarrage de la sauvegarde et sont redémarrés une fois la sauvegarde terminée. 
 * Tout périphérique monté sous Linux peut être utilisé comme espace de sauvegarde (disque externe USB , lecteur nfs , partage samba ,serveur ssh utilisant sshfs, serveur ftp utilisant curlftpfs, lecteur webdav utilisant davfs, ...).
@@ -27,7 +27,7 @@
 
 ## Installation
 
-Le programme d’installation utilise des menus, des listes et des boutons radio similaires à raspi-config et aide à l'installation et à la configuration des les principales options de raspiBackup ; en 5 minutes, la première sauvegarde peut être créée.
+Le programme d’installation utilise des menus, des listes et des boutons radio, similaires à raspi-config,  et aide à l'installation et à la configuration des principales options de raspiBackup ; en 5 minutes, la première sauvegarde peut être créée.
 
 
 ![Screenshot1](https://github.com/mgrafr/raspiBackup/blob/rbackup/images/raspiBackupInstallUI-1.png)
@@ -38,17 +38,17 @@ Le programme d’installation utilise des menus, des listes et des boutons radio
 
 ![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
-L’installation est démarrée avec la commande suivante :
+L’installation démarre avec la commande suivante :
 
 `curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
 
 ## Dons
 
-raspiBackup est développé et maintenu uniquement par moi, framp. Les dons seront bienvenus si vous trouvez raspiBackup utile. Pour plus de détails sur la façon de faire un don, voir <a href="https://www.linux-tips-and-tricks.de/en/donations/" rel="nofollow" _istranslated="1">ici</a>
+raspiBackup est développé et maintenu uniquement par moi, framp. Les dons seront les bienvenus si vous trouvez raspiBackup utile. Pour plus de détails sur la façon de faire un don, voir <a href="https://www.linux-tips-and-tricks.de/en/donations/" rel="nofollow" _istranslated="1">ici</a>
 
 ## Demandes de fonctionnalités
 
-Vous êtes invité à créer vos demandes de fonctionnalités dans github. Ils seront soit immédiatement programmés pour la prochaine version, soit déplacés dans le backog. Les taches priorisées seront examinées chaque fois qu’une nouvelle version sera planifiée et que certains problèmes auront été détectés et résolus pour la prochaine version. Si vous trouvez certaines fonctionnalités utiles, ajoutez simplement un commentaire au problème avec <g-emoji class="g-emoji" alias="+1" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f44d.png" _istranslated="1">??</g-emoji>. Cela aide à hiérarchiser les problèmes.
+Vous êtes invité à créer vos demandes de fonctionnalités dans github. Ils seront soit immédiatement programmées pour la prochaine version, soit déplacées dans le backog. Les taches priorisées seront examinées chaque fois qu’une nouvelle version sera planifiée et que certains problèmes détectés auront été résolus pour la prochaine version. Si vous trouvez certaines fonctionnalités utiles, ajoutez simplement un commentaire au problème avec <g-emoji class="g-emoji" alias="+1" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f44d.png" _istranslated="1">??</g-emoji>. Cela aide à hiérarchiser les problèmes.
 
 ## Plus de détails sur les fonctionnalités en anglais ou allemand
 
