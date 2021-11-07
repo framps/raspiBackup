@@ -30,9 +30,9 @@
 Le programme d’installation utilise des menus, des listes et des boutons radio similaires à raspi-config et aide à l'installation et à la configuration des les principales options de raspiBackup ; en 5 minutes, la première sauvegarde peut être créée.
 
 
-![Screenshot1](https://github.com/framps/raspiBackup/tree/rbackup/images/raspiBackupInstallUI-1.png)
-![Screenshot2](https://github.com/framps/raspiBackup/tree/rbackup/images/raspiBackupInstallUI-2.png)
-![Screenshot3](https://github.com/framps/raspiBackup/tree/rbackup/images/raspiBackupInstallUI-3.png)
+![Screenshot1](https://github.com/framps/raspiBackup/blob/rbackup/images/raspiBackupInstallUI-1.png)
+![Screenshot2](https://github.com/framps/raspiBackup/blob/rbackup/images/raspiBackupInstallUI-2.png)
+![Screenshot3](https://github.com/framps/raspiBackup/blob/rbackup/images/raspiBackupInstallUI-3.png)
 
 ### Démo de l’installation depuis l'interface utilisateur (en anglais)
 
