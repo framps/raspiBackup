@@ -48,7 +48,7 @@ raspiBackup est développé et maintenu uniquement par moi, framp. Les dons sero
 
 ## Demandes de fonctionnalités
 
-Vous êtes invité à créer vos demandes de fonctionnalités dans github. Ils seront soit immédiatement programmées pour la prochaine version, soit déplacées dans le backog. Les taches priorisées seront examinées chaque fois qu’une nouvelle version sera planifiée et que certains problèmes détectés auront été résolus pour la prochaine version. Si vous trouvez certaines fonctionnalités utiles, ajoutez simplement un commentaire au problème avec <g-emoji class="g-emoji" alias="+1" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f44d.png" _istranslated="1">??</g-emoji>. Cela aide à hiérarchiser les problèmes.
+Vous êtes invité à créer vos demandes de fonctionnalités dans github. Ils seront soit immédiatement programmées pour la prochaine version, soit déplacées dans le backog. Les taches priorisées seront examinées chaque fois qu’une nouvelle version sera planifiée et que certains problèmes détectés auront été résolus. Si vous trouvez certaines fonctionnalités utiles, ajoutez simplement un commentaire au problème avec :+1:. Cela aide à hiérarchiser les problèmes.
 
 ## Plus de détails sur les fonctionnalités en anglais ou allemand
 
