@@ -3652,15 +3652,12 @@ function config_backupmode_do() {
 		$s1) CONFIG_PARTITIONBASED_BACKUP="0"
 			CONFIG_PARTITIONS_TO_BACKUP="$DEFAULT_CONFIG_PARTITIONS_TO_BACKUP" # reset default
 			;;
-		$s2) config_partitions_do
-			  if [ $? -eq 1 ]; then
-					partitionsUpdated=1
-					CONFIG_PARTITIONBASED_BACKUP="1"
-			  else
-					partitionsUpdated=0
-					CONFIG_PARTITIONBASED_BACKUP="$old"
-			  fi
-			  ;;
+		$s2) CONFIG_PARTITIONBASED_BACKUP="1"
+			config_partitions_do
+			if [ $? -eq 1 ]; then
+				partitionsUpdated=1
+			fi
+			;;
 		*) whiptail --msgbox "Programm error, unrecognized backup mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
 			logExit 1
 			return 1
@@ -4083,10 +4080,10 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF ( -i [-e]? | -u | -U ) [-d]? "
-	echo "-d: enable debug mode"
+	echo "$MYSELF ( -i [-e]? | -u | -U )"
 	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
 	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
+	echo "-h: display this help"
 	echo "-U: unattended update of $MYSELF"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
 }
@@ -4106,10 +4103,8 @@ MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 
-while getopts "dh?uUei" opt; do
+while getopts "h?uUei" opt; do
     case "$opt" in
-	 d) RASPIBACKUP_INSTALL_DEBUG=1
-		 ;;
 	 h|\?)
        show_help
        exit 0
