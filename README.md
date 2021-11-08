@@ -12,11 +12,11 @@
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
 * Messages in English, German, Finnish and Chinese
 * Much more features ... (See doc below)
-* Default language is English. For following languages the English messages were translated.
- * German
- * Finnish
- * Chinese
- * French
+* Default language is English. Following languages are supported native:
+  * German
+  * Finnish
+  * Chinese
+  * French
 
 ## Documentation
 
