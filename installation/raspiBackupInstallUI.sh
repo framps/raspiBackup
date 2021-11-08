@@ -822,12 +822,12 @@ Valitse tar, jos varmuuskopioitava tiedostojärjestelmä ei ole EXT3/4 tai se on
 Valitse dd, jos haluat palauttaa varmuuskopion Windows-järjestelmässä. dd- ja tar-varmuuskopiot voidaan pakata tilan säästämiseksi. \
 ${NL}${NL}Lisätietoja varmuuskopiotyypeistä löydät osoitteestahttps://www.linux-tips-and-tricks.de/en/backup#butypes. \
 ${NL}Lisätietoja dd:n valinnoista löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a16"
-MSG_FR[$DESCRIPTION_BACKUPTYPE]="${NL}rsync est le type de sauvegarde recommandé car les liens physiques du système de fichiers ETX3/4 rendent la sauvegarde rapide, seuls les fichiers nouveaux ou modifiés sont enregistrés. \
+MSG_FR[$DESCRIPTION_BACKUPTYPE]="${NL}rsync est le type de sauvegarde recommandé car le système de fichiers ETX3/4 rend la sauvegarde rapide, seuls les fichiers nouveaux ou modifiés sont enregistrés. \
 tar doit être utilisé si le système de fichiers de sauvegarde n'est pas un EXT3/4, par exemple un lecteur Samba distant. Un système de fichiers FAT32 ne convient pas car la taille maximale du fichier n'est que de 4 Go. \
 dd est le bon choix si vous souhaitez restaurer la sauvegarde sur un système d'exploitation Windows. \
 les sauvegardes dd et tar peuvent également être compressées. \
 Vous trouverez plus de détails sur le type de sauvegarde sur${NL}https://www.linux-tips-and-tricks.de/de/raspibackup#vornach. \
-Pour plus de détails sur l'option pour dd voir${NL}https://www.linux-tips-and-tricks.de/de/faq#a16 "
+Pour dd voir : ${NL}https://www.linux-tips-and-tricks.de/de/faq#a16 "
 MSG_ZH[$DESCRIPTION_BACKUPTYPE]="${NL}rsync是建议的备份方法.因为ETX3/4文件系统的硬链接只有在改变时才会被保存\
 建议tar在非EXT3/4文件系统上使用，比如云端samba设备 \
 建议dd模式在有在windows系统上恢复备份需求时使用. \
@@ -1305,7 +1305,6 @@ MENU_EN[$MENU_INSTALL_EXTENSIONS]='"I2" "Install and enable sample extension"'
 MENU_DE[$MENU_INSTALL_EXTENSIONS]='"I2" "Installiere Beispielerweiterungen"'
 MENU_FI[$MENU_INSTALL_EXTENSIONS]='"I2" "Asenna ja ota käyttöön näytelisäosat"'
 MENU_FR[$MENU_INSTALL_EXTENSIONS]='"I2" "Installer et activer l'\''exemple d'\''extension"'
-MENU_ZH[$MENU_INSTALL_EXTENSIONS]='"I2" "安装并开启示例扩展"'
 
 MENU_CONFIG_MAIL_MAIL=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MAIL_MAIL]='"mail" ""'
@@ -1504,7 +1503,7 @@ function getMenuText() { # menutextnumber varname
 		menu="${MENU_EN[$1]}" # fallback into english
 	fi
 
-	eval "varname=( ${menu[@]} )"
+        eval "varname=( ${menu[@]} )"
 
 }
 
