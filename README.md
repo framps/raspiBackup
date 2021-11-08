@@ -25,6 +25,10 @@
 * [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
 * [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
 
+### French
+
+This README was translated into French. Read [here](README_fr) (thx [mgrafr](https://github.com/mgrafr)) for the translation.
+
 ## Installer
 
 The installer uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
