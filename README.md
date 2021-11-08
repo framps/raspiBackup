@@ -12,6 +12,11 @@
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
 * Messages in English, German, Finnish and Chinese
 * Much more features ... (See doc below)
+* Default language is English. For following languages the English messages were translated.
+ * German
+ * Finnish
+ * Chinese
+ * French
 
 ## Documentation
 
@@ -44,16 +49,6 @@ The installer uses menus, checklists and radiolists similar to raspi-config and 
 Installation is started with following command:
 
 `curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
-
-## Language support
-
-Following languages are supported. All system with other languages will use English.
-
-* English
-* German
-* Finnish
-* Chinese
-* French
 
 ## Donations
 
