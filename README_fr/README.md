@@ -30,9 +30,9 @@
 Le programme d’installation utilise des menus, des listes et des boutons radio, similaires à raspi-config,  et aide à l'installation et à la configuration des principales options de raspiBackup ; en 5 minutes, la première sauvegarde peut être créée.
 
 
-![Screenshot1](https://github.com/mgrafr/raspiBackup/blob/rbackup/images/raspiBackupInstallUI-1.png)
-![Screenshot2](https://github.com/mgrafr/raspiBackup/blob/rbackup/images/raspiBackupInstallUI-2.png)
-![Screenshot3](https://github.com/mgrafr/raspiBackup/blob/rbackup/images/raspiBackupInstallUI-3.png)
+![Screenshot1](images/raspiBackupInstallUI-1.png)
+![Screenshot2](images/raspiBackupInstallUI-2.png)
+![Screenshot3](images/raspiBackupInstallUI-3.png)
 
 ### Démo de l’installation depuis l'interface utilisateur (en anglais)
 
@@ -79,7 +79,7 @@ Vous êtes invité à créer vos demandes de fonctionnalités dans github. Ils s
 
 ## Systemd
 
-Au lieu de cron systemd peut être utilisé pour démarrer raspiBackup. Voir <a href="/mgrafr/raspiBackup/blob/master/installation/systemd" _istranslated="1">ici</a>
+Au lieu de cron systemd peut être utilisé pour démarrer raspiBackup. Voir <a href="/framps/raspiBackup/blob/master/installation/systemd" _istranslated="1">ici</a>
 
 # Démonstration du concept du serveur REST API 
 
