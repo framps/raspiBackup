@@ -75,7 +75,7 @@ function analyze() { # fileName url
 		date="$(grep "GIT_DATE=" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 	if [[ -z "$date" ]]; then
-		date="$(grep '$Date: ' $tmp | cut -f 3-4 -d ' ' )"
+		date="$(grep '$Date$tmp | cut -f 3-4 -d ' ' )"
 	fi
 
 	printf "%-30s: Version: %-10s Date: %-20s Sha: %-10s\n" "$1" "$version" "$date" "$sha"
