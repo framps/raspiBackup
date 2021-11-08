@@ -27,15 +27,15 @@
 
 ### French
 
-This README was translated into French. Read [here](README_fr) (thx [mgrafr](https://github.com/mgrafr)) for the translation.
+This README was translated into [French](README_fr). Credits to [mgrafr](https://github.com/mgrafr) for his translation work.
 
 ## Installer
 
 The installer uses menus, checklists and radiolists similar to raspi-config and helps to install and configure major options of raspiBackup and in 5 minutes the first backup can be created.
 
-![Screenshot1](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-1.png)
-![Screenshot2](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-2.png)
-![Screenshot3](https://github.com/framps/raspiBackup/blob/master/images/raspiBackupInstallUI-3.png)
+![Screenshot1](images/raspiBackupInstallUI-1.png)
+![Screenshot2](images/raspiBackupInstallUI-2.png)
+![Screenshot3](images/raspiBackupInstallUI-3.png)
 
 ### Installer demo
 
@@ -44,6 +44,16 @@ The installer uses menus, checklists and radiolists similar to raspi-config and 
 Installation is started with following command:
 
 `curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
+
+## Language support
+
+Following languages are supported. All system with other languages will use English.
+
+* English
+* German
+* Finnish
+* Chinese
+* French
 
 ## Donations
 
