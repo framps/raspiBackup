@@ -860,7 +860,7 @@ TITLE_FIRST_STEPS=$((SCNT++))
 MSG_EN[$TITLE_FIRST_STEPS]="First steps"
 MSG_DE[$TITLE_FIRST_STEPS]="Erste Schritte"
 MSG_FI[$TITLE_FIRST_STEPS]="Ensiaskeleet"
-MSG_FR[$TITLE_FIRST_STEPS]="En premiert"
+MSG_FR[$TITLE_FIRST_STEPS]="En premier"
 MSG_ZH[$TITLE_FIRST_STEPS]="第一步"
 
 TITLE_HELP=$((SCNT++))
@@ -1049,7 +1049,7 @@ MSG_FI[$MSG_HELP]="Jos sinulla on kysymyksiä tai ongelmia $RASPIBACKUP_NAME:n k
 3) Luo issue githubissa https://github.com/framps/raspiBackup/issues. Tätä suosin.${NL}\
 4) Lisää kommentti $RASPIBACKUP_NAME-verkkosivuilla osoitteessa $MYHOMEDOMAIN${NL}\
 5) Käy $RASPIBACKUP_NAME:n Facebook-sivulla"
-MSG_FR[$MSG_HELP]="Si vous avez un problème ou une question concernant $RASPIBACKUP_NAME, utilisez simplement l'un des liens suivants pour obtenir de l'aide${NL}
+MSG_FR[$MSG_HELP]="Si vous avez un problème ou une question concernant $RASPIBACKUP_NAME, utilisez simplement un des liens suivants pour obtenir une aide :${NL}
 1) Lisez la page FAQ https://www.linux-tips-and-tricks.de/en/faq${NL}\
 2) Visitez https://www.linux-tips-and-tricks.de/en/backup pour plus d'informations sur $RASPIBACKUP_NAME${NL}\
 3) Exposez le problème sur github https://github.com/framps/raspiBackup/issues. C'est ma préférence${NL}\
