@@ -10,13 +10,12 @@
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * UI installer configures all major options to get raspiBackup up and running in 5 minutes
-* Messages in English, German, Finnish and Chinese
-* Much more features ... (See doc below)
-* Default language is English. Following languages are supported native:
+* Default language for messages is English. Following languages are supported native:
   * German
   * Finnish
   * Chinese
   * French
+* Much more features ... (See doc below)
 
 ## Documentation
 
