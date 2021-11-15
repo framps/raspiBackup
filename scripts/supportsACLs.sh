@@ -39,6 +39,7 @@ else
 	cat $LOG_FILE
 fi
 
+rm $1/$MYNAME.acls &>/dev/null
 
 
 
