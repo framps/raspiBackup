@@ -2016,7 +2016,7 @@ function logFinish() {
 
 		if [[ "$DEST_LOGFILE" == "$TEMP_LOG_FILE" || "$DEST_LOGFILE" == "$LOG_OUTPUT" ]]; then # make sure logfile is owned by caller
 			logItem "Updating logfile ownership"
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &> "$LOG_FILE"
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>> "$LOG_FILE"
 		fi
 	fi
 
