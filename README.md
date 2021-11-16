@@ -16,6 +16,7 @@
   * Finnish
   * Chinese
   * French
+* Extensive logging helps to isolate and solve configuration and environment issues quickly
 * Much more features ... (See doc below)
 
 ## Documentation
