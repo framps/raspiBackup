@@ -9,12 +9,14 @@ source ~/.ssh/rsyncServer.creds
 #SSH_KEY_FILE=
 
 #DAEMON_HOST=
-#DAEMON_TARGET=
+#DAEMON_MODULE=
 #DAEMON_USER=
 #DAEMON_PASSWORD=
 
 USE_SSH=1
 USE_DAEMON=$((! $USE_SSH ))
+
+RSYNC_OPTIONS="-aAvpz"
 
 # invoke command either local or remote via ssh
 function invoke() { # command [host]
@@ -46,7 +48,7 @@ echo -n "@@@ Syning with "
 if (( $USE_SSH )); then
 	echo "SSH ..."
 	# use user key
-	rsync -av --delete -e "ssh -i ${SSH_KEY_FILE}" $1 ${SSH_USER}@${SSH_HOST}:/disks/raid1/test
+	rsync $RSYNC_OPTIONS --delete -e "ssh -i ${SSH_KEY_FILE}" $1 ${SSH_USER}@${SSH_HOST}:/disks/raid1/test
 	checkrc $?
 fi
 
@@ -54,7 +56,7 @@ if (( $USE_DAEMON )); then
 	echo "rsync daemon ..."
 	# use rsync daemon
 	export RSYNC_PASSWORD="${DAEMON_PASSWORD}"
-	rsync -pv $1 rsync://"${DAEMON_USER}"@${DAEMON_HOST}:/Test-Backup # points to /disks/raid1/test
+	rsync $RSYNC_OPTIONS $1 rsync://"${DAEMON_USER}"@${DAEMON_HOST}:/${DAEMON_MODULE} # points to /disks/raid1/test
 	checkrc $?
 fi
 
