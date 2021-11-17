@@ -48,6 +48,12 @@ CONF_EN_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-en-conf/download"
 DOWNLOAD_TIMEOUT=60 # seconds
 DOWNLOAD_RETRIES=3
 
+SHA="JFNoYTE6Cg=="
+DATE="JERhdGU6Cg=="
+
+SHA="$(base64 -d <<< "$SHA")"
+DATE="$(base64 -d <<< "$DATE")"
+
 function analyze() { # fileName url
 	tmp=$(mktemp)
 	wget $2 -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmp
@@ -58,9 +64,9 @@ function analyze() { # fileName url
 		sha="$(grep "GIT_COMMIT=" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 	if [[ -z "$sha" ]]; then
-		sha="$(grep '$Sha1:' $tmp | cut -f 3-4 -d ' ' )"
+		sha="$(grep "$SHA" $tmp | cut -f 3-4 -d ' ' )"
 	fi
-	
+
 	sha="$(sed  -e "s/[\$\"]//g" <<< "$sha")"
 
 	# VERSION="0.6.5-beta"	# -beta, -hotfix or -dev suffixes possible
@@ -75,14 +81,14 @@ function analyze() { # fileName url
 		date="$(grep "GIT_DATE=" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 	if [[ -z "$date" ]]; then
-		date="$(grep '$Date:' $tmp | cut -f 3-4 -d ' ' )"
+		date="$(grep "$DATE" $tmp | cut -f 3-4 -d ' ' )"
 	fi
 
 	printf "%-30s: Version: %-10s Date: %-20s Sha: %-10s\n" "$1" "$version" "$date" "$sha"
 	rm $tmp
-}	
+}
 
-analyze "raspiBackup" $DOWNLOAD_URL 
+analyze "raspiBackup" $DOWNLOAD_URL
 analyze "raspiBackup_beta" $BETA_DOWNLOAD_URL
 analyze "raspiBackupInstallUI" $INSTALLER_DOWNLOAD_URL
 analyze "raspiBackupInstallUI_beta" $INSTALLER_BETA_DOWNLOAD_URL
