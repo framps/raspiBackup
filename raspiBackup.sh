@@ -7709,9 +7709,6 @@ function SR_listYearlyBackups() { # directory
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
 			local d=$(date +%Y -d "${i} year ago")
-			logCommand "ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}""
-			logCommand "ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur"
-			logCommand "ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur | tail -n 1"
 			ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
