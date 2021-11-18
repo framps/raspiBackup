@@ -1950,9 +1950,13 @@ function logFinish() {
 	rm "$FINISH_LOG_FILE" &>>$LOG_FILE
 
 	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
+		# 1) error occured and logoutput is backup location which was deleted or fake mode
+		# 2) fake
+		# 3) backup location was already deleted by SR
 		if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
-			|| (( $FAKE )); then 				# error occured and logoutput is backup location which was deleted or fake mode
-			LOG_OUTPUT=$LOG_OUTPUT_HOME 		# save log in home directory
+			|| (( $FAKE )) \
+			|| [[ ! -e $BACKUPTARGET_DIR ]]; then
+			LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
 		fi
 
 		logItem "LOG_OUTPUT: $LOG_OUTPUT"
@@ -1998,7 +2002,7 @@ function logFinish() {
 		logItem "DEST_LOGFILE: $DEST_LOGFILE"
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
-		if [[ -f $FINISH_LOG_FILE ]]; then					# append optional final messages
+		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
 			cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
@@ -7705,6 +7709,9 @@ function SR_listYearlyBackups() { # directory
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
 			local d=$(date +%Y -d "${i} year ago")
+			logCommand "ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}""
+			logCommand "ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur"
+			logCommand "ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur | tail -n 1"
 			ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
