@@ -4,6 +4,10 @@
 
 source ~/.ssh/rsyncServer.creds
 
+LOGFILE="./rsyncServer.log"
+
+rm $LOGFILE
+
 #SSH_HOST=
 #SSH_USER=
 #SSH_KEY_FILE=
@@ -13,24 +17,30 @@ source ~/.ssh/rsyncServer.creds
 #DAEMON_USER=
 #DAEMON_PASSWORD=
 
-USE_SSH=1
+for (( useSSH=0; useSSH<2; useSSH++ )); do
+
+USE_SSH=$useSSH
 USE_DAEMON=$((! $USE_SSH ))
 
-RSYNC_OPTIONS="-aAvpz"
+RSYNC_OPTIONS="-arAvp"
 
 # invoke command either local or remote via ssh
 function invoke() { # command [host]
 
-	local rc
+	local rc reply
+
+	echo "-> $1" >> $LOGFILE
 
 	if [[ -z $2 ]]; then
 		# $2
 		local host="$(hostname)"
-		ssh "${SSH_USER}@$host" "$1"
+		reply="$(ssh "${SSH_USER}@$host" "$1")"
 		rc=$?
+		echo "<- $reply" >> $LOGFILE
 	else
-		ssh "$2" "$1"
+		reply="$(ssh "$2" "$1" 2>&1)"
 		rc=$?
+		echo "<- $reply" >> $LOGFILE
 	fi
 
 	return $rc
@@ -46,30 +56,38 @@ checkrc() {
 echo -n "@@@ Syning with "
 
 if (( $USE_SSH )); then
-	echo "SSH ..."
+	echo "rsync SSH ..."
 	# use user key
-	rsync $RSYNC_OPTIONS --delete -e "ssh -i ${SSH_KEY_FILE}" $1 ${SSH_USER}@${SSH_HOST}:/disks/raid1/test
-	checkrc $?
+	reply="$(rsync $RSYNC_OPTIONS --delete -e "ssh -i ${SSH_KEY_FILE}" $1 ${SSH_USER}@${SSH_HOST}:/disks/raid1/test)"
+	rc=$?
+	echo "$reply" >> $LOGFILE
+	checkrc $rc
 fi
 
 if (( $USE_DAEMON )); then
 	echo "rsync daemon ..."
 	# use rsync daemon
 	export RSYNC_PASSWORD="${DAEMON_PASSWORD}"
-	rsync $RSYNC_OPTIONS $1 rsync://"${DAEMON_USER}"@${DAEMON_HOST}:/${DAEMON_MODULE} # points to /disks/raid1/test
-	checkrc $?
+	reply="$(rsync $RSYNC_OPTIONS $1 rsync://"${DAEMON_USER}"@${DAEMON_HOST}:/${DAEMON_MODULE})" # points to /disks/raid1/test 
+	rc=$?
+	echo "$reply" >> $LOGFILE
+	checkrc $rc
 fi
 
 echo -e "\n@@@ ls -la"
 invoke "ls -la /disks/raid1/test" ${SSH_HOST}
-#ssh ${SSH_USER}@${SSH_HOST} -i ${SSH_KEY_FILE} "ls -la /disks/raid1/test"
 checkrc $?
 
 echo -e "\n@@@ sudo rm *"
-ssh ${SSH_USER}@${SSH_HOST} -i ${SSH_KEY_FILE} "sudo rm /disks/raid1/test/*"
+invoke "sudo rm /disks/raid1/test/*" ${SSH_HOST}
 checkrc $?
 
 echo -e "\n@@@ ls -la"
-ssh ${SSH_USER}@${SSH_HOST} -i ${SSH_KEY_FILE} "ls -la /disks/raid1/test"
+invoke "ls -la /disks/raid1/test"  ${SSH_HOST}
 checkrc $?
 
+echo "+========================"
+cat $LOGFILE
+echo "-========================"
+
+done
