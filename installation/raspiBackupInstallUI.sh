@@ -2282,7 +2282,7 @@ function uninstall_execute() {
 		writeToConsole $MSG_NOT_INSTALLED "$RASPIBACKUP_NAME"
 	fi
 
-	rm /tmp/${RASPIBACKUP_NAME}.*
+	rm /tmp/${RASPIBACKUP_NAME}*.*
 
 	INSTALLATION_SUCCESSFULL=0
 	logExit
@@ -3695,6 +3695,8 @@ function update_installer_do() {
 
 	INSTALL_DESCRIPTION=("Downloading $MYSELF ...")
 	progressbar_do "INSTALL_DESCRIPTION" "Updating $MYSELF" update_installer_execute
+
+	exec $INSTALLER_ABS_PATH/$MYSELF # no return
 
 	logExit
 
