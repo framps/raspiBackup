@@ -1947,7 +1947,7 @@ function logFinish() {
 
 	local DEST_LOGFILE DEST_MSGFILE
 
-	rm "$FINISH_LOG_FILE" &>>$LOG_FILE
+	rm -f "$FINISH_LOG_FILE"
 
 	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
 		# 1) error occured and logoutput is backup location which was deleted or fake mode
@@ -3861,7 +3861,7 @@ function cleanupBackupDirectory() {
 
 	logEntry
 
-	logCommand "ls -lad "$BACKUPTARGET_DIR""
+	logCommand "ls -la "$BACKUPTARGET_DIR""
 
 	if (( $rc != 0 )); then
 
@@ -3915,6 +3915,12 @@ function masquerade() { # text
 }
 
 function masqueradeSensitiveInfoInLog() {
+
+	local xEnabled=0
+	if [ -o xtrace ]; then	# disable xtrace
+		xEnabled=1
+	        set +x
+	fi
 
 	# no logging any more
 
@@ -3983,6 +3989,10 @@ function masqueradeSensitiveInfoInLog() {
 	sed -i 's/\x1b\[1;31m//g' $LOG_FILE
 	sed -i 's/\x1b\[0m//g' $LOG_FILE
 
+	if (( $xEnabled )); then	# enable xtrace again
+        	set -x
+	fi
+
 }
 
 function masqueradeNonlocalIPs() {
@@ -4048,18 +4058,18 @@ function cleanupStartup() { # trap
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
 	fi
 
+	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
+		logItem "Umount of $DYNAMIC_MOUNT scheduled"
+		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
+	fi
+
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		logItem "Umount of $DYNAMIC_MOUNT scheduled"
-		nohup umount $DYNAMIC_MOUNT &> /tmp/raspiBackup.nohup </dev/null &
-	fi
+	logFinish
 
 	logExit
-
-	logFinish
 
 	exit $rc
 }
@@ -4164,18 +4174,18 @@ function cleanup() { # trap
 		fi # ! $RESTORE
 	fi
 
+	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
+		logItem "Umount of $DYNAMIC_MOUNT scheduled"
+		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
+	fi
+
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		logItem "Umount of $DYNAMIC_MOUNT scheduled"
-		nohup umount $DYNAMIC_MOUNT &> /tmp/raspiBackup.nohup </dev/null &
-	fi
+	logFinish
 
 	logExit
-
-	logFinish
 
 	exit $rc
 }
@@ -5327,16 +5337,17 @@ function applyBackupStrategy() {
 		SR_YEARLY="${SMART_RECYCLE_PARMS[3]}"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_APPLYING_BACKUP_STRATEGY $SR_DAILY $SR_WEEKLY $SR_MONTHLY $SR_YEARLY
 
+		logCommand "ls -d $BACKUPPATH/*"
+
 		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
-		local numKeptBackups="$(countLines <<< "$keptBackups")"
+		local numKeptBackups="$(countLines "$keptBackups")"
 		logItem "Keptbackups $numKeptBackups: $keptBackups"
 
 		local tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
-		local numTobeDeletedBackups="$(countLines <<< "$tobeDeletedBackups")"
+		local numTobeDeletedBackups="$(countLines "$tobeDeletedBackups")"
 		logItem "TobeDeletedBackups $numTobeDeletedBackups: $tobeDeletedBackups"
 
 		if [[ -n "$tobeDeletedBackups" ]]; then
-
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILES "$numTobeDeletedBackups" "$numKeptBackups"
 			echo "$tobeDeletedBackups" | while read dir_to_delete; do
 				logItem "Recycling $BACKUPTARGET_ROOT/${dir_to_delete}"
@@ -7723,7 +7734,7 @@ function SR_listYearlyBackups() { # directory
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
 			local d=$(date +%Y -d "${i} year ago")
-			ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur | tail -n 1 # find earliest yearly backup
+			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
 	logExit
@@ -7739,7 +7750,7 @@ function SR_listMonthlyBackups() { # directory
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			ls $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | sort -ur | tail -n 1 # find earlies monthly backup
+			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | sort -ur | tail -n 1 # find earlies monthly backup
 		done
 	fi
 	logExit
@@ -7764,7 +7775,7 @@ function SR_listWeeklyBackups() { # directory
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
 				dl="\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
 			done
-			ls $1 | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | sort -ur | tail -n 1 # use earliest backup of this week
+			ls -1 $1 | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | sort -ur | tail -n 1 # use earliest backup of this week
 		done
 	fi
 	logExit
@@ -7778,7 +7789,7 @@ function SR_listDailyBackups() { # directory
 			# today is 20191117
 			# date +%Y%m%d -d "-1 day" -> 20191116
 			local d=$(date +%Y%m%d -d "-${i} day") # get day
-			ls $1 | grep "\-${BACKUPTYPE}\-backup\-$d" | sort -ur | head -n 1 # find most current backup of this day
+			ls -1 $1 | grep "\-${BACKUPTYPE}\-backup\-$d" | sort -ur | head -n 1 # find most current backup of this day
 		done
 	fi
 	logExit
@@ -7812,17 +7823,17 @@ function SR_getAllBackups() { # directory
 function SR_listUniqueBackups() { #directory
 	logEntry $1
 	local r="$(SR_getAllBackups "$1" | sort -u )"
-	logItem "$r"
 	local rc="$(countLines "$r")"
+	logItem "$r"
 	echo "$r"
 	logExit "$rc"
 }
 
 function SR_listBackupsToDelete() { # directory
 	logEntry $1
-	local r="$(ls $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
-	logItem "$r"
+	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc="$(countLines "$r")"
+	logItem "$r"
 	echo "$r"
 	logExit "$rc"
 }
