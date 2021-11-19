@@ -38,7 +38,7 @@ fi
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.3.6"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.3.5"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -2282,7 +2282,7 @@ function uninstall_execute() {
 		writeToConsole $MSG_NOT_INSTALLED "$RASPIBACKUP_NAME"
 	fi
 
-	rm /tmp/${RASPIBACKUP_NAME}.*
+	rm /tmp/${RASPIBACKUP_NAME}*.*
 
 	INSTALLATION_SUCCESSFULL=0
 	logExit
@@ -3695,6 +3695,8 @@ function update_installer_do() {
 
 	INSTALL_DESCRIPTION=("Downloading $MYSELF ...")
 	progressbar_do "INSTALL_DESCRIPTION" "Updating $MYSELF" update_installer_execute
+
+	exec $INSTALLER_ABS_PATH/$MYSELF # no return
 
 	logExit
 
