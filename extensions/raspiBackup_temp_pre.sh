@@ -27,8 +27,8 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2021-11-16 16:50:51 +0100$"
-GIT_COMMIT="$Sha1: 2469c21$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
 # define functions needed
 # use local for all variables so the script namespace is not polluted

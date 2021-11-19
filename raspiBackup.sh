@@ -302,6 +302,8 @@ NEW_CONFIG="/usr/local/etc/raspiBackup.conf.new"
 MERGED_CONFIG="/usr/local/etc/raspiBackup.conf.merged"
 BACKUP_CONFIG="/usr/local/etc/raspiBackup.conf.bak"
 
+PERSISTENT_JOURNAL="/var/log/journal"
+
 NEW_OPTION_TRAILER="# >>>>> NEW OPTION added in config version %s <<<<< "
 DELETED_OPTION_TRAILER="# >>>>> OPTION DELETED in config version %s <<<<< "
 
@@ -4919,6 +4921,13 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
+
+	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
+	local fs="$(getFsType "$BACKUPPATH")"
+	if [[ -e $PERSISTENT_JOURNAL && $fs =~ ^nfs* ]]; then
+		logItem "Excluding $PERSISTENT_JOURNAL for nfs"
+		EXCLUDE_LIST+=" --exclude $PERSISTENT_JOURNAL"
+	fi
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER\" \
 			--exclude=\"$excludeRoot/$log_file\" \
