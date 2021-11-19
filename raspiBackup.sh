@@ -3861,7 +3861,7 @@ function cleanupBackupDirectory() {
 
 	logEntry
 
-	logCommand "ls -la "$BACKUPTARGET_DIR""
+	logCommand "ls -lad "$BACKUPTARGET_DIR""
 
 	if (( $rc != 0 )); then
 
@@ -5328,17 +5328,17 @@ function applyBackupStrategy() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_APPLYING_BACKUP_STRATEGY $SR_DAILY $SR_WEEKLY $SR_MONTHLY $SR_YEARLY
 
 		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
+		local numKeptBackups="$(countLines <<< "$keptBackups")"
+		logItem "Keptbackups $numKeptBackups: $keptBackups"
 
-		local numKeptBackups=$(wc -l <<< "$keptBackups")
+		local tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
+		local numTobeDeletedBackups="$(countLines <<< "$tobeDeletedBackups")"
+		logItem "TobeDeletedBackups $numTobeDeletedBackups: $tobeDeletedBackups"
 
-		local btd="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
+		if [[ -n "$tobeDeletedBackups" ]]; then
 
-		if [[ -n "$btd" ]]; then
-
-			local numbtd=$(wc -l <<< "$btd")
-
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILES "$numbtd" "$numKeptBackups"
-			echo "$btd" | while read dir_to_delete; do
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILES "$numTobeDeletedBackups" "$numKeptBackups"
+			echo "$tobeDeletedBackups" | while read dir_to_delete; do
 				logItem "Recycling $BACKUPTARGET_ROOT/${dir_to_delete}"
 				if (( ! $SMART_RECYCLE_DRYRUN )); then
 					writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
@@ -7701,6 +7701,20 @@ function synchronizeCmdlineAndfstab() {
 	logExit
 }
 
+# count number of lines in string and return 0 if line is empty (wc -l will return 1 :-( )
+function countLines() { # string
+	logEntry "$1"
+	local c
+	if [[ -z "$1" ]]; then
+		c=0
+	else
+		c=$(wc -l <<< "$1")
+	fi
+	echo "$c"
+	logExit "$c"
+}
+
+
 function SR_listYearlyBackups() { # directory
 	logEntry $SR_YEARLY $1
 	if (( $SR_YEARLY > 0 )); then
@@ -7773,34 +7787,44 @@ function SR_listDailyBackups() { # directory
 function SR_getAllBackups() { # directory
 	logEntry $1
 	local yb="$(SR_listYearlyBackups $1)"
-	logItem "Yearly backups: $(wc -l <<< "$yb")$NL$yb"
-	echo "$yb"
+	logItem "$yb"
+	local ybc="$(countLines "$yb")"
+	[[ -n "$yb" ]] && echo "$yb"
+
 	local mb="$(SR_listMonthlyBackups $1)"
-	logItem "Monthly backups: $(wc -l <<< "$mb")$NL $mb"
-	echo "$mb"
+	logItem "$mb"
+	local mbc="$(countLines "$mb")"
+	[[ -n "$mb" ]] && echo "$mb"
+
 	local wb="$(SR_listWeeklyBackups $1)"
-	logItem "Weekly backups: $(wc -l <<< "$wb")$NL$wb"
-	echo "$wb"
+	logItem "$wb"
+	local wbc="$(countLines "$wb")"
+	[[ -n "$wb" ]] && echo "$wb"
+
 	local db="$(SR_listDailyBackups $1)"
-	logItem "Daily backups: $(wc -l <<< "$db")$NL$db"
-	echo "$db"
+	logItem "$db"
+	local dbc="$(countLines "$db")"
+	[[ -n "$db" ]] && echo "$db"
+
 	logExit
 }
 
 function SR_listUniqueBackups() { #directory
 	logEntry $1
-	local r="$(SR_getAllBackups $1 | sort -u )"
-	logItem "getAllBackups: $(wc -l <<< "$r")$NL$r"
+	local r="$(SR_getAllBackups "$1" | sort -u )"
+	logItem "$r"
+	local rc="$(countLines "$r")"
 	echo "$r"
-	logExit "$r"
+	logExit "$rc"
 }
 
 function SR_listBackupsToDelete() { # directory
 	logEntry $1
-	local r="$(ls $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups $1) | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
-	logItem "listBackupsToDelete: $(wc -l <<< "$r")$NL$r"
+	local r="$(ls $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	logItem "$r"
+	local rc="$(countLines "$r")"
 	echo "$r"
-	logExit "$r"
+	logExit "$rc"
 }
 
 function check4RequiredCommands() {
