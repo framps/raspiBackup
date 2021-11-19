@@ -2282,6 +2282,8 @@ function uninstall_execute() {
 		writeToConsole $MSG_NOT_INSTALLED "$RASPIBACKUP_NAME"
 	fi
 
+	rm /tmp/${RASPIBACKUP_NAME}.*
+
 	INSTALLATION_SUCCESSFULL=0
 	logExit
 
