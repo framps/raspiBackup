@@ -47,6 +47,9 @@ LOGFILE="./rsyncServer.log"
 
 rm -f $LOGFILE
 
+LOG="&>> $LOGFILE"
+LOG=""
+
 if (( $# < 1 )); then
 	echo "Missing directory to sync"
 	exit -1
@@ -69,22 +72,22 @@ function invokeCommand() { # target command
 
 	local -n target=$1
 
-	echo "-> $1: $2" >> $LOGFILE
+	echo "-> $1: $2" $LOG
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			echo "Targethost: $(hostname)" &>> $LOGFILE
+			echo "Targethost: $(hostname)" $LOG
 			reply="$($2)"
 			rc=$?
-			echo "<- %rc: $reply" &>> $LOGFILE
+			echo "<- %rc: $reply" $LOG
 			;;
 
 		$TARGET_TYPE_SSH)
-			echo "Targethost: ${target[$TARGET_HOST]}" &>> $LOGFILE
+			echo "Targethost: ${target[$TARGET_HOST]}" $LOG
 			reply="$(ssh "${target[$TARGET_HOST]}" "$2" 2>&1)"
 			rc=$?
-			echo "<- $rc: $reply" &>> $LOGFILE
+			echo "<- $rc: $reply" $LOG
 			;;
 
 		*) echo "Unknown target ${target[$TARGET_TYPE]}"
@@ -107,31 +110,30 @@ function invokeRsync() { # target direction from to
 	localDir="$2"
 	remoteDir="$3"
 
-	echo "-> $1: $2 $3 " >> $LOGFILE
+	echo "-> $direction: $localDir $remoteDir " $LOG
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			echo "Targethost: $(hostname)" &>> $LOGFILE
+			echo "Targethost: $(hostname)" $LOG
 			reply="$(rsync $RSYNC_OPTIONS $localDir $remoteDir)"
 			rc=$?
-			echo "<- $reply" &>> $LOGFILE
+			echo -e "RC: $rc\n$reply" $LOG
 			;;
 
 		$TARGET_TYPE_SSH)
-			echo "Targethost: ${target[$TARGET_HOST]}" &>> $LOGFILE
+			echo "Targethost: ${target[$TARGET_HOST]}" $LOG
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
 				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" $localDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$remoteDir)"
 			else
 				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$remoteDir $localDir)"
 			fi
 			rc=$?
-			echo "$rc: $reply" >> $LOGFILE
+			echo -e "RC $rc:\n$reply" $LOG
 			;;
 
 		$TARGET_TYPE_DAEMON)
-			set -x
-			echo "Targethost: ${target[$TARGET_HOST]}" &>> $LOGFILE
+			echo "Targethost: ${target[$TARGET_HOST]}" $LOG
 			export RSYNC_PASSWORD="${target[$TARGET_PASSWORD]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
 				reply="$(rsync $RSYNC_OPTIONS $localDir rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$remoteDir)" # remoteDir is actually the rsync server module
@@ -139,7 +141,7 @@ function invokeRsync() { # target direction from to
 				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$remoteDir $localDir)"
 			fi
 			rc=$?
-			echo "$rc; $reply" >> $LOGFILE
+			echo -e "RC $rc:\n$reply" $LOG
 			;;
 
 		*) echo "Unknown target ${target[$TARGET_TYPE]}"
@@ -156,17 +158,18 @@ function testSSH() {
 
 	for (( target=0; target<2; target++ )); do
 
-		echo -e "\n@@@ ls -la" &>>$LOGFILE
+		echo -e "\n@@@ ls -la" $LOG
 		invokeCommand ${t[$target]} "ls -la ${TARGET_DIR}"
 		checkrc $?
 
 	done
 
-	echo "+========================"
-	cat $LOGFILE
-	echo "-========================"
-
-	rm $LOGFILE
+	if [[ -e $LOGFILE ]]; then
+		echo "+========================"
+		cat $LOGFILE
+		echo "-========================"
+		rm -f $LOGFILE
+	fi
 
 }
 
@@ -174,7 +177,7 @@ function testRsync() {
 
 	declare t=(localTarget sshTarget rsyncTarget)
 
-	for (( target=2; target<3; target++ )); do
+	for (( target=1; target<2; target++ )); do
 
 		TARGET_DIR_SPEC="$TARGET_DIR"
 		(( $target == 2 )) && TARGET_DIR_SPEC="$DAEMON_MODULE"
@@ -184,11 +187,14 @@ function testRsync() {
 
 	done
 
-	echo "+========================"
-	cat $LOGFILE
-	echo "-========================"
+	if [[ -e $LOGFILE ]]; then
+		echo "+========================"
+		cat $LOGFILE
+		echo "-========================"
+		rm -f $LOGFILE
+	fi
 
-	rm $LOGFILE
 }
 
+reset
 testRsync
