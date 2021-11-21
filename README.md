@@ -16,7 +16,7 @@
   * Finnish
   * Chinese
   * French
-* Extensive logging helps to isolate and solve configuration and environment issues quickly
+* Extensive logging helps to answer github issue create by raspiBackup users
 * Much more features ... (See doc below)
 
 ## Documentation
