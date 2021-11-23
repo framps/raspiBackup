@@ -1,6 +1,36 @@
 #!/bin/bash
 
-# Just some code to get familiar with remote ssh and rsync daemon
+# Just some code to get familiar with remote ssh command execution and rsync daemon
+
+# @@@ test scenarios @@@
+#
+### Rsync functions
+#
+## - rsync to -
+# 1) Copy local files to other local destination
+# 2) Copy local files to remote destination via ssh (ACLs will not be preserved)
+# 3) Copy local files to remote destination via rsync daemon
+
+# - Test File attributes and ACLs are transferred correctly
+# - Test RCs are transferred correctly
+
+## - rsync from -
+# 1) Copy local files to other local destination
+# 2) Copy remote files from remote destination to local via ssh (ACLs will not be preserved)
+# 3) Copy remote files from remote destination to local via rsync daemon
+
+# - Test File attributes and ACLs are transferred correctly
+# - Test RCs are transferred correctly
+
+### Command execution
+#
+## - local command execution -
+# 1) Test local result (stdout and stderr) returned correctly
+# 2) Test local RCs are returned correctly
+#
+## - remote command execution via ssh -
+# 1) Test remote result (stdout and stderr) received correctly locally
+# 2) Test remote execution RCs are returned correctly
 
 source ~/.ssh/rsyncServer.creds
 #will define
