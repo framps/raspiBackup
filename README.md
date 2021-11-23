@@ -2,12 +2,12 @@
 
 # raspiBackup - Backup and restore your running Raspberries
 
-* Create an unattended full system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron. Important services can be stopped before starting the backup and are started again when the backup finished.
+* Create an unattended full or incremental system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron.
+* Important services can be stopped before starting the backup and are started again when the backup finished.
 * Menu driven installer installs raspiBackup and configures all major options to get raspiBackup up and running in 5 minutes
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
-* Stop important services before the backup and start them afterwards 
-* dd and tar are full backups. rsync uses hardlinks for an incremental backup
+* dd and tar are full backups. rsync uses hardlinks for incremental backups
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * Default language for messages is English. Following languages are supported native:
@@ -15,7 +15,7 @@
   * Finnish
   * Chinese
   * French
-* Extensive logging helps to answer github issue create by raspiBackup users
+* Extensive logging helps to answer and fix github issues create by raspiBackup users
 * Much more features ... (See doc below)
 
 ## Documentation
