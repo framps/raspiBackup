@@ -2,6 +2,8 @@
 
 # Just some code to get familiar with remote ssh command execution and rsync daemon
 
+declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 # @@@ test scenarios @@@
 #
 ### Rsync functions
@@ -39,7 +41,8 @@ source ~/.ssh/rsyncServer.creds
 #SSH_KEY_FILE= # public key of user
 
 #DAEMON_HOST=
-#DAEMON_MODULE="Test-Backup" # points to /disks/raid1/test
+#DAEMON_MODULE="Test-Backup" # uses DAEMON_DIR
+#DAEMON_MODULE_DIR="/disks/raid1/test"
 #DAEMON_USER=
 #DAEMON_PASSWORD=
 
@@ -47,6 +50,8 @@ readonly TARGET_HOST="TARGET_HOST" # ssh and daemon
 readonly TARGET_USER="TARGET_USER" # ssh and daemon
 readonly TARGET_KEY="TARGET_KEY" # ssh
 readonly TARGET_PASSWORD="TARGET_PASSWORD" # daemon
+readonly TARGET_MODULE="TARGET_MODULE" # daemon
+readonly TARGET_MODULE_DIR="TARGET_MODULE_DIR" # daemon
 
 readonly TARGET_TYPE="TARGET_TYPE"
 readonly TARGET_TYPE_DAEMON="TARGET_TYPE_DAEMON"
@@ -70,6 +75,8 @@ rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
 rsyncTarget[$TARGET_HOST]="$DAEMON_HOST"
 rsyncTarget[$TARGET_USER]="$DAEMON_USER"
 rsyncTarget[$TARGET_PASSWORD]="$DAEMON_PASSWORD"
+rsyncTarget[$TARGET_MODULE]="$DAEMON_MODULE"
+rsyncTarget[$TARGET_MODULE_DIR]="$DAEMON_MODULE_DIR"
 
 RSYNC_OPTIONS="-aHAxvp --delete"
 
@@ -78,15 +85,15 @@ LOGFILE="./rsyncServer.log"
 rm -f $LOGFILE
 
 LOG="&>> $LOGFILE"
-LOG=""
+#LOG=""
 
 #f (( $# < 1 )); then
 #	echo "Missing directory to sync"
 #	exit -1
 #fi
 
-TARGET_DIR="/disks/raid1/test"
 SOURCE_DIR=Test-Backup
+TARGET_DIR="/disks/raid1/test/$SOURCE_DIR"
 
 if (( $UID != 0 )); then
 	"Call me as root"
@@ -116,6 +123,27 @@ function createTestData() { # directory
 function verifyTestData() { # directory
 
 	./testRemote.sh "$1"
+
+}
+
+function getRemoteDirectory() { # target directory
+
+	local -n target=$1
+
+	case ${target[$TARGET_TYPE]} in
+
+		$TARGET_TYPE_LOCAL | $TARGET_TYPE_SSH)
+			echo "$2"
+			;;
+
+		$TARGET_TYPE_DAEMON)
+			echo "${target[$TARGET_MODULE_DIR]}"
+			;;
+
+		*) echo "Unknown target ${target[$TARGET_TYPE]}"
+			exit -1
+			;;
+	esac
 
 }
 
@@ -155,22 +183,22 @@ function invokeCommand() { # target command
 
 function invokeRsync() { # target direction from to
 
-	local rc reply direction localDir remoteDir command
+	local rc reply direction fromDir toDir command module
 
 	local -n target=$1
 
 	shift
 	direction="$1"
-	localDir="$2"
-	remoteDir="$3"
+	fromDir="$2"
+	toDir="$3"
 
-	echo "-> $direction: $localDir $remoteDir " $LOG
+	echo "-> Dir: $direction: From: $fromDir to: $toDir " $LOG
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
 			echo "local targethost: $(hostname)" $LOG
-			reply="$(rsync $RSYNC_OPTIONS $localDir $remoteDir)"
+			reply="$(rsync $RSYNC_OPTIONS $fromDir $toDir)"
 			rc=$?
 			echo -e "RC: $rc\n$reply" $LOG
 			;;
@@ -178,9 +206,9 @@ function invokeRsync() { # target direction from to
 		$TARGET_TYPE_SSH)
 			echo "SSH targethost: ${target[$TARGET_HOST]}" $LOG
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" $localDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$remoteDir)"
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
 			else
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$remoteDir $localDir)"
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
 			fi
 			rc=$?
 			echo -e "RC $rc:\n$reply" $LOG
@@ -189,10 +217,11 @@ function invokeRsync() { # target direction from to
 		$TARGET_TYPE_DAEMON)
 			echo "daemon targethost: ${target[$TARGET_HOST]}" $LOG
 			export RSYNC_PASSWORD="${target[$TARGET_PASSWORD]}"
+			module="${target[$TARGET_MODULE]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $RSYNC_OPTIONS $localDir rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$remoteDir)" # remoteDir is actually the rsync server module
+				reply="$(rsync $RSYNC_OPTIONS $fromDir rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$module)" # toDir is actually the rsync server module
 			else
-				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$remoteDir $localDir)"
+				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
 			fi
 			rc=$?
 			echo -e "RC $rc:\n$reply" $LOG
@@ -233,17 +262,33 @@ function testRsync() {
 
 	for (( target=1; target<2; target++ )); do
 
-		TARGET_DIR_SPEC="$TARGET_DIR"
-		(( $target == 2 )) && TARGET_DIR_SPEC="$DAEMON_MODULE"
+
+		echo "@@@ Creating test data in local dir"
+		targetDir="$(getRemoteDirectory "${t[$target]}" $TARGET_DIR)"
 
 		createTestData $SOURCE_DIR
 
-		invokeRsync ${t[$target]} $TARGET_DIRECTION_TO "$SOURCE_DIR" "$TARGET_DIR_SPEC"
+		echo "@@@ Copy local data to remote"
+		invokeRsync ${t[$target]} $TARGET_DIRECTION_TO "$SOURCE_DIR/" "$targetDir"
 		checkrc $?
 
+		echo "@@@ Verify remote data"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
-		printf -v args '%q ' "$TARGET_DIR_SPEC/$SOURCE_DIR"
+		printf -v args '%q ' "$targetDir"
 		invokeCommand ${t[$target]} "bash -s -- $args"  < "./testRemote.sh"
+
+		# cleanup local dir
+		echo "@@@ Clear local data"
+		rm $SOURCE_DIR/*
+
+		echo "@@@ Copy remote data to local"
+		invokeRsync ${t[$target]} $TARGET_DIRECTION_FROM "$targetDir/" "$SOURCE_DIR"
+		checkrc $?
+
+		echo "@@@ Verify local data"
+		verifyTestData "$SOURCE_DIR"
+
+		# invokeCommand ${t[$target]} "rm "$SOURCE_DIR/*""
 
 	done
 
