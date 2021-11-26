@@ -93,10 +93,10 @@ LOG="&>> $LOGFILE"
 #fi
 
 SOURCE_DIR=Test-Backup
-TARGET_DIR="/disks/raid1/test/$SOURCE_DIR"
+TARGET_DIR="/srv/rsync/$SOURCE_DIR"
 
 if (( $UID != 0 )); then
-	"Call me as root"
+	echo "Call me as root"
 	exit -1
 fi
 
