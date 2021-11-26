@@ -41,8 +41,8 @@ source ~/.ssh/rsyncServer.creds
 #SSH_KEY_FILE= # public key of user
 
 #DAEMON_HOST=
-#DAEMON_MODULE="Test-Backup" # uses DAEMON_DIR
-#DAEMON_MODULE_DIR="/disks/raid1/test"
+#DAEMON_MODULE="Rsync-Test" # uses DAEMON_MODULE_DIR
+#DAEMON_MODULE_DIR="/srv/rsync"
 #DAEMON_USER=
 #DAEMON_PASSWORD=
 
@@ -84,13 +84,8 @@ LOGFILE="./rsyncServer.log"
 
 rm -f $LOGFILE
 
-LOG="&>> $LOGFILE"
-#LOG=""
-
-#f (( $# < 1 )); then
-#	echo "Missing directory to sync"
-#	exit -1
-#fi
+#LOG="&>> $LOGFILE"
+LOG=""
 
 SOURCE_DIR=Test-Backup
 TARGET_DIR="/srv/rsync/$SOURCE_DIR"
@@ -147,7 +142,7 @@ function getRemoteDirectory() { # target directory
 
 }
 
-# invoke command either local or remote via ssh
+# invoke command either local, remote via ssh or on rsync daemon directory
 function invokeCommand() { # target command
 
 	local rc reply
@@ -165,7 +160,7 @@ function invokeCommand() { # target command
 			echo "<- %rc: $reply" $LOG
 			;;
 
-		$TARGET_TYPE_SSH)
+		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
 			echo "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}" $LOG
 			reply="$(ssh "${target[$TARGET_USER]}@${target[$TARGET_HOST]}" "$2" 2>&1)"
 			rc=$?
@@ -260,7 +255,7 @@ function testRsync() {
 
 	declare t=(localTarget sshTarget rsyncTarget)
 
-	for (( target=1; target<2; target++ )); do
+	for (( target=2; target<3; target++ )); do
 
 
 		echo "@@@ Creating test data in local dir"
@@ -284,7 +279,7 @@ function testRsync() {
 		echo "@@@ Copy remote data to local"
 		invokeRsync ${t[$target]} $TARGET_DIRECTION_FROM "$targetDir/" "$SOURCE_DIR"
 		checkrc $?
-
+exit
 		echo "@@@ Verify local data"
 		verifyTestData "$SOURCE_DIR"
 
