@@ -49,10 +49,12 @@ source ~/.ssh/rsyncServer.creds
 #
 # Required access rights
 #
-#LOCAL_USER: SSH key access to SSH_USER@SSH_HOST 
+#LOCAL_USER: SSH key access to SSH_USER@SSH_HOST
 #LOCAL root: SSH key access to SSH_USER@SSH_HOST (script is invoked as root or via sudo)
-#SSH_HOST: Can use sudo 
+#SSH_HOST: Can use sudo
 #
+
+TEST_DIR="Test-Backup"
 
 readonly TARGET_HOST="TARGET_HOST" # ssh and daemon
 readonly TARGET_USER="TARGET_USER" # ssh and daemon
@@ -76,7 +78,7 @@ sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
 sshTarget[$TARGET_HOST]="$SSH_HOST"
 sshTarget[$TARGET_USER]="$SSH_USER"
 sshTarget[$TARGET_KEY]="$SSH_KEY_FILE"
-sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR"
+sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
 
 declare -A localTarget
 localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
@@ -94,8 +96,6 @@ rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR"
 RSYNC_OPTIONS="-aHAxvp --delete"
 
 LOGFILE="./rsyncServer.log"
-
-TEST_DIR="Test-Backup"
 
 rm -f $LOGFILE
 
@@ -147,11 +147,7 @@ function getRemoteDirectory() { # target directory
 			echo "$2"
 			;;
 
-		$TARGET_TYPE_SSH)
-			echo "${target[$TARGET_DIR]}/$TEST_DIR"
-			;;
-
-		$TARGET_TYPE_DAEMON)
+		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
 			echo "${target[$TARGET_DIR]}"
 			;;
 
@@ -280,21 +276,21 @@ function testRsync() {
 
 		tt="${t[$target]}"
 		echo "@@@ Target: $tt"
-		
+
 		echo "@@@ Creating test data in local dir"
 		targetDir="$(getRemoteDirectory "${t[$target]}" $TARGET_DIR)"
 
 		createTestData $TEST_DIR
 
 		echo "@@@ Copy local data to remote"
-		invokeRsync ${t[$target]} $TARGET_DIRECTION_TO "$TEST_DIR/*" "$targetDir/$TEST_DIR"
+		invokeRsync ${t[$target]} $TARGET_DIRECTION_TO "$TEST_DIR/" "$targetDir"
 		checkrc $?
 
 		echo "@@@ Verify remote data"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
 		printf -v args '%q ' "$targetDir"
 		invokeCommand ${t[$target]} "bash -s -- $args"  < "./testRemote.sh"
-		
+
 		# cleanup local dir
 		echo "@@@ Clear local data"
 		rm ./$TEST_DIR/*
@@ -307,7 +303,7 @@ function testRsync() {
 		verifyTestData "$TEST_DIR"
 
 		echo "@@@ Clear remote data"
-		invokeCommand ${t[$target]} "echo "$targetDir/$TEST_DIR/*""
+		invokeCommand ${t[$target]} "rm "$targetDir/*""
 
 	done
 
