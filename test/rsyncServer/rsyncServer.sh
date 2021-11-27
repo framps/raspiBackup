@@ -37,7 +37,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 source ~/.ssh/rsyncServer.creds
 #will define
 #SSH_HOST=
-#SSH_USER= # root
+#SSH_USER= # pi
 #SSH_KEY_FILE= # public key of user
 
 #DAEMON_HOST=
@@ -46,12 +46,25 @@ source ~/.ssh/rsyncServer.creds
 #DAEMON_USER=
 #DAEMON_PASSWORD=
 
+#
+# Grants
+#
+#LOCAL_USER: SSH key access to SSH_USER@SSH_HOST
+#LOCAL root: SSH key access to SSH_USER@SSH_HOST (script is invoked as root or via sudo)
+#SSH_HOST: Can use sudo 
+#
+
 readonly TARGET_HOST="TARGET_HOST" # ssh and daemon
 readonly TARGET_USER="TARGET_USER" # ssh and daemon
-readonly TARGET_KEY="TARGET_KEY" # ssh
 readonly TARGET_PASSWORD="TARGET_PASSWORD" # daemon
+readonly TARGET_KEY="TARGET_KEY" # ssh
+readonly TARGET_DAEMON_USER="TARGET_DAEMON_USER" # ssh and daemon
+readonly TARGET_DAEMON_PASSWORD="TARGET_DAEMON_PASSWORD" # daemon
 readonly TARGET_MODULE="TARGET_MODULE" # daemon
 readonly TARGET_MODULE_DIR="TARGET_MODULE_DIR" # daemon
+
+SOURCE_DIR=Test-Backup
+TARGET_DIR="/srv/rsync/$SOURCE_DIR"
 
 readonly TARGET_TYPE="TARGET_TYPE"
 readonly TARGET_TYPE_DAEMON="TARGET_TYPE_DAEMON"
@@ -72,11 +85,13 @@ localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
 
 declare -A rsyncTarget
 rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
-rsyncTarget[$TARGET_HOST]="$DAEMON_HOST"
-rsyncTarget[$TARGET_USER]="$DAEMON_USER"
-rsyncTarget[$TARGET_PASSWORD]="$DAEMON_PASSWORD"
+rsyncTarget[$TARGET_HOST]="$SSH_HOST"
+rsyncTarget[$TARGET_USER]="$SSH_USER"
+rsyncTarget[$TARGET_KEY]="$SSH_KEY_FILE"
+rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
+rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
 rsyncTarget[$TARGET_MODULE]="$DAEMON_MODULE"
-rsyncTarget[$TARGET_MODULE_DIR]="$DAEMON_MODULE_DIR"
+rsyncTarget[$TARGET_MODULE_DIR]="$DAEMON_MODULE_DIR/$SOURCE_DIR"
 
 RSYNC_OPTIONS="-aHAxvp --delete"
 
@@ -84,11 +99,8 @@ LOGFILE="./rsyncServer.log"
 
 rm -f $LOGFILE
 
-#LOG="&>> $LOGFILE"
-LOG=""
-
-SOURCE_DIR=Test-Backup
-TARGET_DIR="/srv/rsync/$SOURCE_DIR"
+LOG="&>> $LOGFILE"
+#LOG=""
 
 if (( $UID != 0 )); then
 	echo "Call me as root"
@@ -162,7 +174,8 @@ function invokeCommand() { # target command
 
 		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
 			echo "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}" $LOG
-			reply="$(ssh "${target[$TARGET_USER]}@${target[$TARGET_HOST]}" "$2" 2>&1)"
+			#reply="$(ssh "${target[$TARGET_USER]}@${target[$TARGET_HOST]}" "$2" 2>&1)"
+			ssh "${target[$TARGET_USER]}@${target[$TARGET_HOST]}" "$2"
 			rc=$?
 			echo "<- $rc: $reply" $LOG
 			;;
@@ -211,12 +224,12 @@ function invokeRsync() { # target direction from to
 
 		$TARGET_TYPE_DAEMON)
 			echo "daemon targethost: ${target[$TARGET_HOST]}" $LOG
-			export RSYNC_PASSWORD="${target[$TARGET_PASSWORD]}"
+			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
 			module="${target[$TARGET_MODULE]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $RSYNC_OPTIONS $fromDir rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$module)" # toDir is actually the rsync server module
+				reply="$(rsync $RSYNC_OPTIONS $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module)" # toDir is actually the rsync server module
 			else
-				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
+				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
 			fi
 			rc=$?
 			echo -e "RC $rc:\n$reply" $LOG
@@ -257,14 +270,16 @@ function testRsync() {
 
 	for (( target=2; target<3; target++ )); do
 
-
+		tt="${t[$target]}"
+		echo "@@@ Target: $tt"
+		
 		echo "@@@ Creating test data in local dir"
 		targetDir="$(getRemoteDirectory "${t[$target]}" $TARGET_DIR)"
 
 		createTestData $SOURCE_DIR
 
 		echo "@@@ Copy local data to remote"
-		invokeRsync ${t[$target]} $TARGET_DIRECTION_TO "$SOURCE_DIR/" "$targetDir"
+		invokeRsync ${t[$target]} $TARGET_DIRECTION_TO "$SOURCE_DIR" "$targetDir"
 		checkrc $?
 
 		echo "@@@ Verify remote data"
@@ -272,6 +287,9 @@ function testRsync() {
 		printf -v args '%q ' "$targetDir"
 		invokeCommand ${t[$target]} "bash -s -- $args"  < "./testRemote.sh"
 
+
+		exit
+		
 		# cleanup local dir
 		echo "@@@ Clear local data"
 		rm $SOURCE_DIR/*
@@ -279,7 +297,7 @@ function testRsync() {
 		echo "@@@ Copy remote data to local"
 		invokeRsync ${t[$target]} $TARGET_DIRECTION_FROM "$targetDir/" "$SOURCE_DIR"
 		checkrc $?
-exit
+
 		echo "@@@ Verify local data"
 		verifyTestData "$SOURCE_DIR"
 
