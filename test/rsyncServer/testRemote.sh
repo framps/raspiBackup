@@ -3,7 +3,6 @@
 # Check on (remote) host whether ACLs were transferred correctly
 
 DEBUG=0
-#LOGFILE="&>> ./rsyncServer.log"
 
 function verifyTestData() { # directory
 
@@ -15,8 +14,8 @@ function verifyTestData() { # directory
 		getfacl $1/acl.txt | grep -q "user:root"
 		if (( $? )); then
 			echo "??? ACL not found ???"
-		else
-			echo "!!! ACL found !!!"
+#		else
+#			echo "!!! ACL found !!!"
 		fi
 	fi
 
@@ -28,8 +27,8 @@ function verifyTestData() { # directory
 		getfacl $1/noacl.txt | grep -q "user:root"
 		if (( ! $? )); then
 			echo "??? ACL found ???"
-		else
-			echo "!!! ACL not found !!!"
+#		else
+#			echo "!!! ACL not found !!!"
 		fi
 	fi
 }
