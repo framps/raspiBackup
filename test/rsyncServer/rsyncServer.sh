@@ -82,6 +82,7 @@ sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
 
 declare -A localTarget
 localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
+sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/${TEST_DIR}"
 
 declare -A rsyncTarget
 rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
@@ -272,7 +273,7 @@ function testRsync() {
 
 	declare t=(localTarget sshTarget rsyncTarget)
 
-	for (( target=1; target<2; target++ )); do
+	for (( target=2; target<3; target++ )); do
 
 		tt="${t[$target]}"
 		echo "@@@ Target: $tt"
@@ -293,6 +294,7 @@ function testRsync() {
 
 		# cleanup local dir
 		echo "@@@ Clear local data"
+		invokeCommand ${t[$target]} "ls -la "$targetDir/*""
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data to local"
@@ -303,6 +305,7 @@ function testRsync() {
 		verifyTestData "$TEST_DIR"
 
 		echo "@@@ Clear remote data"
+		invokeCommand ${t[$target]} "ls -la "$targetDir/*""
 		invokeCommand ${t[$target]} "rm "$targetDir/*""
 
 	done
