@@ -2,7 +2,20 @@
 
 # Just some code to get familiar with STDIO and STDERR grabbing into variables
 
-# Code grabbed from https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables
+# Code grabbed and modified from https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables
+
+cmd="ssh pi@192.168.0.152 ls -la /"
+
+unset t_std t_err
+eval "$( (echo "$($cmd >&1 2>&2)") \
+        2> >(readarray t_err; typeset -p t_err) \
+         > >(readarray t_std; typeset -p t_std) )"
+echo "STDOUT"
+echo "${t_std[@]}"
+echo "STDERR"
+echo "${t_err[@]}"
+
+exit
 
 # SYNTAX:
 #   catch STDOUT_VARIABLE STDERR_VARIABLE COMMAND
