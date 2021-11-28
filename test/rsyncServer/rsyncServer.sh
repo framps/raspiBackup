@@ -6,23 +6,23 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # @@@ test scenarios @@@
 #
-### Rsync functions
+### Copy functions
 #
-## - rsync to -
-# 1) Copy local files to other local destination
-# 2) Copy local files to remote destination via ssh (ACLs will not be preserved)
-# 3) Copy local files to remote destination via rsync daemon
-
 # - Test File attributes and ACLs are transferred correctly
 # - Test RCs are transferred correctly
+#
+## - Copy to remote -
+# 1) Copy local files to other local destination
+# 2) Copy local files to remote destination via ssh
+# 3) Copy local files to remote destination via rsync daemon
 
-## - rsync from -
+## - Copy from remote -
 # 1) Copy local files to other local destination
 # 2) Copy remote files from remote destination to local via ssh (ACLs will not be preserved)
 # 3) Copy remote files from remote destination to local via rsync daemon
 
-# - Test File attributes and ACLs are transferred correctly
-# - Test RCs are transferred correctly
+# !!! - Test File attributes and ACLs are transferred correctly
+# !!! - Test RCs are transferred correctly
 
 ### Command execution
 #
