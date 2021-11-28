@@ -26,6 +26,8 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 ### Command execution
 #
+# See https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables how to capture stdout and stderr and rc into different variables
+#
 ## - local command execution -
 # 1) Test local result (stdout and stderr) returned correctly
 # 2) Test local RCs are returned correctly
@@ -73,16 +75,16 @@ readonly TARGET_TYPE_LOCAL="TARGET_TYPE_LOCAL"
 readonly TARGET_DIRECTION_TO="TARGET_DIRECTION_TO"	# from local to remote
 readonly TARGET_DIRECTION_FROM="TARGET_DIRECTION_FROM" # from remote to local
 
+declare -A localTarget
+localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
+localTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/${TEST_DIR}"
+
 declare -A sshTarget
 sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
 sshTarget[$TARGET_HOST]="$SSH_HOST"
 sshTarget[$TARGET_USER]="$SSH_USER"
 sshTarget[$TARGET_KEY]="$SSH_KEY_FILE"
 sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
-
-declare -A localTarget
-localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
-sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/${TEST_DIR}"
 
 declare -A rsyncTarget
 rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
@@ -248,15 +250,19 @@ function invokeRsync() { # target direction from to
 	return $rc
 }
 
-function testSSH() {
+function testCommand() {
 
-	declare t=(sshTarget localTarget)
+	echo "@@@ testCommand @@@"
 
-	for (( target=0; target<2; target++ )); do
+	declare t=(localTarget sshTarget)
 
-		echo -e "\n@@@ ls -la" $LOG
-		invokeCommand ${t[$target]} "ls -la ${TARGET_DIR}"
-		checkrc $?
+	for (( target=0; target<${#t[@]}; target++ )); do
+
+		tt="${t[$target]}"
+		echo "@@@ Target: $tt"
+
+		invokeCommand ${t[$target]} "ls -la /hugo"
+		echo "RC: $?"
 
 	done
 
@@ -271,9 +277,11 @@ function testSSH() {
 
 function testRsync() {
 
+	echo "@@@ testRsync @@@"
+
 	declare t=(localTarget sshTarget rsyncTarget)
 
-	for (( target=2; target<3; target++ )); do
+	for (( target=1; target<3; target++ )); do
 
 		tt="${t[$target]}"
 		echo "@@@ Target: $tt"
@@ -320,4 +328,5 @@ function testRsync() {
 }
 
 reset
-testRsync
+#testRsync
+testCommand
