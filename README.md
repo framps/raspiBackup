@@ -11,7 +11,7 @@
 * dd and tar are full backups. rsync uses hardlinks for incremental backups
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
-* Extensionpoints allow to execute any additional logic at various places in the backup process
+* Extensionpoints allow to execute any additional logic at various steps in the backup process
 * Default language for messages is English. Following languages are supported native:
   * German
   * Finnish
