@@ -9,6 +9,7 @@
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
 * dd and tar are full backups. rsync uses hardlinks for incremental backups
+* Restore a SD card image backup to SSD or USB disk and migrate to use USB boot mode 
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * Extensionpoints allow to execute any additional logic at various steps in the backup process
