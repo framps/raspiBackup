@@ -1,18 +1,12 @@
 #!/bin/bash
+
 #######################################################################################################################
 #
-# Sample plugin for raspiBackup.sh
-# called after a backup finished
-#
-# Function: Call another script
-#
-# See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
-#
-# $1 has the return code of raspiBackup. If it equals 0 this signals success and failure otherwise
+# Check if a filesystem supports Linux ACLs
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2016-2018 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2021 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -25,22 +19,50 @@
 #    GNU General Public License for more details.
 #
 #    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.#
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
 
-GIT_DATE="$Date$"
-GIT_COMMIT="$Sha1$"
+MYSELF=${0##*/}
+MYNAME=${MYSELF%.*}
+LOG_FILE="$MYNAME.log"
 
-if [[ -n $1 ]]; then											# was there a return code ? Should be :-)
-	if [[ "$1" == 0 ]]; then
-		wall <<< "Extension detected ${0##*/} succeeded :-)"
-	else
-		wall <<< "Extension detected ${0##*/} failed :-("
-	fi
-else
-	wall <<< "Extension detected ${0##*/} didn't receive a return code :-("
+function supportsACLs() {	# directory
+
+	local rc
+	touch $1/$MYNAME.acls &>>"$LOG_FILE"
+	setfacl -m $USER:rwx $1/$MYNAME.acls &>>"$LOG_FILE"
+	return
+}
+
+rm "$LOG_FILE" &>>"$LOG_FILE"
+
+trap "rm -f $LOG_FILE" EXIT
+
+if (( $# < 1 )); then
+	echo "??? Missing directory"
+	exit -1
 fi
+
+if ! which setfacl; then
+	echo "??? Package acl not installed"
+	exit -1
+fi
+
+if [[ ! -d $1 ]]; then
+	echo "??? Directory $1 does not exist"
+	exit -1
+fi
+
+if supportsACLs $1; then
+	echo "*** $1 supports ACLs"
+	getfacl $1/$MYNAME.acls
+else
+	echo "??? setfacl Fails on $1 with RC $?"
+	cat $LOG_FILE
+fi
+
+rm $1/$MYNAME.acls &>/dev/null
 
 
 

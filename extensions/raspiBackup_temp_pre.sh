@@ -10,7 +10,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015,2021 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,14 +27,14 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
-GIT_COMMIT="$Sha1: 7b4feee$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
 # define functions needed
 # use local for all variables so the script namespace is not polluted
 
 function getCPUTemp() {
-	local temp=$(/opt/vc/bin/vcgencmd measure_temp | cut -d '=' -f 2)
+	local temp=$(vcgencmd measure_temp | cut -d '=' -f 2)
 	echo "$(echo $temp)"
 }
 

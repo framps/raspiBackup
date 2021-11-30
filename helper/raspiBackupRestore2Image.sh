@@ -6,6 +6,8 @@
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup to get more details about raspiBackup
 #
+#	NOTE: This is sample code how to extend functionality of raspiBackup and is provided as is with no support.
+#
 #######################################################################################################################
 #
 #   Copyright (c) 2017-2020 framp at linux-tips-and-tricks dot de
@@ -23,14 +25,14 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#	Kudos for kmbach who suggested to create this helper and who helped to improve its
+#	Kudos for kmbach who suggested to create this helper and who helped to improve it
 #
 #######################################################################################################################
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.6"
+VERSION="v0.1.7"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -43,11 +45,11 @@ if [[ -e /bin/grep ]]; then
    done
 fi
 
-GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
+GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: 7b4feee$"
+GIT_COMMIT="$Sha1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -220,22 +222,30 @@ RC=$?
 # Extract from https://www.raspberrypi.org/forums/viewtopic.php?t=191775
 
 mount ${LOOP}p2 /mnt
-PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
+PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /mnt/etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
 umount /mnt
 losetup -d $LOOP
 
+if [[ -z $PTUUID ]]; then
+	echo "??? Unrecoverable error. Unable to find PARTUUID of / in image"
+	RC=1
+fi
+
 # now shrink image
 
-echo "===> Shrinking Image $IMAGE_FILENAME"
 if (( ! $RC )); then
+	echo "===> PARTUUID to patch into image after pishrink: $PTUUID"
+	echo
+	echo "===> Shrinking Image $IMAGE_FILENAME"
 	pishrink.sh "$IMAGE_FILENAME"
 	RC=$?
 	if (( $RC )); then
 		echo "??? Error $RC received from piShrink"
-    	RC=1
+	    	RC=1
+		exit 42
 	fi
 else
-	echo "??? Error $RC received from raspiBackup"
+	echo "??? Error $RC received"
 	RC=1
 fi
 
@@ -258,12 +268,14 @@ fi
 # pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
 
 LOOP=$(losetup -f)
+
+echo "===> Patching image PARTUUID with $PTUUID"
+
 losetup -P $LOOP $IMAGE_FILENAME
 printf "x\ni\n0x$PTUUID\nr\nw\nq\n" | fdisk $LOOP
 partprobe $LOOP
 udevadm settle
 sleep 3
-
 
 exit $RC
 

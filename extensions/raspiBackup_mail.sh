@@ -28,8 +28,8 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
-GIT_COMMIT="$Sha1: 7b4feee$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
 # Parameters received by script: "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" "$append"
 

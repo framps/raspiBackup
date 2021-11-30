@@ -27,24 +27,25 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
-GIT_COMMIT="$Sha1: 7b4feee$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
 # set any variables and prefix all names with ext_ and some unique prefix to use a different namespace than the script
 ext_diskUsage_post=( $(getDiskUsage) )
 
 # set any messages and prefix message name with ext_ and some unique prefix to use a different namespace than the script
-MSG_EXT_DISK_USAGE="ext_diskusage_2"
-MSG_EN[$MSG_EXT_DISK_USAGE]="RBK1002I: Disk usage pre backup: Used: %s Free: %s"
-MSG_DE[$MSG_EXT_DISK_USAGE]="RBK1002I: Partitionsauslastung vor dem Backup: Belegt: %s Frei: %s"
-MSG_EXT_DISK_USAGE2="ext_diskusage_3"
-MSG_EN[$MSG_EXT_DISK_USAGE2]="RBK1003I: Disk usage post backup: Used: %s Free: %s"
-MSG_DE[$MSG_EXT_DISK_USAGE2]="RBK1003I: Partitionsauslastung nach dem Backup: Belegt: %s Frei: %s"
-MSG_EXT_DISK_USAGE3="ext_diskusage_4"
-MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1004I: Free change: %s (%s %%)"
-MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1004I: Änderung freier Platz: %s (%s %%)"
-MSG_EXT_DISK_USAGE4="ext_diskusage_5"
-MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1005E: bc not found. Please install bc first with with 'sudo apt-get install bc'."
+
+MSG_EXT_DISK_USAGE1="ext_diskusage_1"
+MSG_EN[$MSG_EXT_DISK_USAGE1]="RBK1001I: Disk usage pre backup: Used: %s Free: %s"
+MSG_DE[$MSG_EXT_DISK_USAGE1]="RBK1001I: Partitionsauslastung vor dem Backup: Belegt: %s Frei: %s"
+MSG_EXT_DISK_USAGE2="ext_diskusage_2"
+MSG_EN[$MSG_EXT_DISK_USAGE2]="RBK1002I: Disk usage post backup: Used: %s Free: %s"
+MSG_DE[$MSG_EXT_DISK_USAGE2]="RBK1002I: Partitionsauslastung nach dem Backup: Belegt: %s Frei: %s"
+MSG_EXT_DISK_USAGE3="ext_diskusage_3"
+MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1003I: Free change: %s (%s %%)"
+MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1003I: Änderung freier Platz: %s (%s %%)"
+MSG_EXT_DISK_USAGE4="ext_diskusage_4"
+MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc not found. Please install bc first with with 'sudo apt-get install bc'."
 MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert werden mit 'sudo apt-get install bc'."
 
 # now write message to console and log and email
@@ -68,7 +69,7 @@ else
 	freeChange=$( bc <<< "$freePost - $freePre" )
 
 	# Use bytesToHuman from raspiBackup which displays a number in a human readable form
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE "$(bytesToHuman $usagePre)" "$(bytesToHuman $freePre)"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE1 "$(bytesToHuman $usagePre)" "$(bytesToHuman $freePre)"	
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE2 "$(bytesToHuman $usagePost)" "$(bytesToHuman $freePost)"
 
 	if (( $freePre != 0 )); then

@@ -7,6 +7,8 @@
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
+#	NOTE: This is sample code and is provided as is with no support.
+#
 #######################################################################################################################
 #
 #   Copyright (c) 2018-2019 - framp at linux-tips-and-tricks dot de
@@ -30,8 +32,8 @@
 
 VERSION="v0.2"
 
-GIT_DATE="$Date: 2021-07-21 20:34:13 +0200$"
-GIT_COMMIT="$Sha1: 7b4feee$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
 trap startAllServices EXIT ERR
 

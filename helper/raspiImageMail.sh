@@ -11,6 +11,8 @@
 # Visit http://www.linux-tips-and-tricks.de/raspiBackup and https://github.com/framps/raspiBackup to get more
 # details about raspiBackup
 #
+#	NOTE: This is sample code how to extend functionality of raspiBackup and is provided as is with no support.
+#
 #######################################################################################################################
 #
 #    Copyright (C) 2017 kmbach
