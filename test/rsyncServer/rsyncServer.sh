@@ -4,6 +4,8 @@
 
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+source ./executeCommand.sh
+
 # @@@ test scenarios @@@
 #
 ### Copy functions
