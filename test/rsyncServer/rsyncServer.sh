@@ -4,7 +4,7 @@
 
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-source ./executeCommand.sh
+source ./executeRemoteCommand.sh
 
 # @@@ test scenarios @@@
 #
@@ -100,13 +100,6 @@ rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR"
 
 RSYNC_OPTIONS="-aHAxvp --delete"
 
-LOGFILE="./rsyncServer.log"
-
-rm -f $LOGFILE
-
-LOG="&>> $LOGFILE"
-#LOG=""
-
 if (( $UID != 0 )); then
 	echo "Call me as root"
 	exit -1
@@ -166,27 +159,22 @@ function getRemoteDirectory() { # target directory
 # invoke command either local, remote via ssh or on rsync daemon directory
 function invokeCommand() { # target command
 
-	local rc reply
+	local rc reply std err
 
 	local -n target=$1
-
-	echo "-> $1: $2" $LOG
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			echo "Local targethost: $(hostname)" $LOG
 			reply="$($2)"
 			rc=$?
-			echo "<- %rc: $reply" $LOG
+			echo "$reply"
 			;;
 
 		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
-			echo "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}" $LOG
-			#reply="$(ssh "${target[$TARGET_USER]}@${target[$TARGET_HOST]}" "$2" 2>&1)"
-			ssh "${target[$TARGET_USER]}@${target[$TARGET_HOST]}" "$2"
+			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} $2"
 			rc=$?
-			echo "<- $rc: $reply" $LOG
+			echo "$std"
 			;;
 
 		*) echo "Unknown target ${target[$TARGET_TYPE]}"
@@ -209,7 +197,7 @@ function invokeRsync() { # target direction from to
 	fromDir="$2"
 	toDir="$3"
 
-	echo "-> Dir: $direction: From: $fromDir to: $toDir " $LOG
+	# echo "-> Dir: $direction: From: $fromDir to: $toDir " $LOG
 
 	case ${target[$TARGET_TYPE]} in
 
@@ -254,18 +242,18 @@ function invokeRsync() { # target direction from to
 
 function testCommand() {
 
+	local reply
+
 	echo "@@@ testCommand @@@"
 
 	declare t=(localTarget sshTarget)
 
 	for (( target=0; target<${#t[@]}; target++ )); do
-
 		tt="${t[$target]}"
 		echo "@@@ Target: $tt"
-
-		invokeCommand ${t[$target]} "ls -la /hugo"
+		reply="$(invokeCommand ${t[$target]} "ls -la /")"
+		echo "Reply: $reply"
 		echo "RC: $?"
-
 	done
 
 	if [[ -e $LOGFILE ]]; then
@@ -279,11 +267,13 @@ function testCommand() {
 
 function testRsync() {
 
+	local reply
+
 	echo "@@@ testRsync @@@"
 
 	declare t=(localTarget sshTarget rsyncTarget)
 
-	for (( target=1; target<3; target++ )); do
+	for (( target=2; target<3; target++ )); do
 
 		tt="${t[$target]}"
 		echo "@@@ Target: $tt"
@@ -300,23 +290,35 @@ function testRsync() {
 		echo "@@@ Verify remote data"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
 		printf -v args '%q ' "$targetDir"
-		invokeCommand ${t[$target]} "bash -s -- $args"  < "./testRemote.sh"
+
+		reply="$(invokeCommand ${t[$target]} "bash -s -- $args"  < ./testRemote.sh)"
+		echo "$reply"
 
 		# cleanup local dir
 		echo "@@@ Clear local data"
-		invokeCommand ${t[$target]} "ls -la "$targetDir/*""
+		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/*"")"
+		echo "$reply"
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data to local"
-		invokeRsync ${t[$target]} $TARGET_DIRECTION_FROM "$targetDir/" "$TEST_DIR"
+		reply="$(invokeRsync ${t[$target]} $TARGET_DIRECTION_FROM "$targetDir/" "$TEST_DIR")"
 		checkrc $?
+		echo "$reply"
 
 		echo "@@@ Verify local data"
 		verifyTestData "$TEST_DIR"
 
+		echo "@@@ Remote data"
+		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/*"")"
+		echo "$reply"
+
 		echo "@@@ Clear remote data"
-		invokeCommand ${t[$target]} "ls -la "$targetDir/*""
-		invokeCommand ${t[$target]} "rm "$targetDir/*""
+		reply="$(invokeCommand ${t[$target]} "rm "$targetDir/*"")"
+		echo "$reply"
+
+		echo "@@@ Remote data cleared"
+		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/*"")"
+		echo "$reply"
 
 	done
 
@@ -330,5 +332,5 @@ function testRsync() {
 }
 
 reset
-#testRsync
-testCommand
+testRsync
+#testCommand
