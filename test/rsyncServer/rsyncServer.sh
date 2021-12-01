@@ -6,6 +6,8 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 source ./executeRemoteCommand.sh
 
+source ../../raspiBackup.sh --include
+
 # @@@ test scenarios @@@
 #
 ### Copy functions
@@ -162,6 +164,8 @@ function getRemoteDirectory() { # target directory
 # invoke command either local, remote via ssh or on rsync daemon directory
 function invokeCommand() { # target command
 
+	logEntry "$1 $2"
+
 	local rc reply std err
 
 	local -n target=$1
@@ -180,7 +184,7 @@ function invokeCommand() { # target command
 			echo "$std"
 			;;
 
-		*) echo "Unknown target ${target[$TARGET_TYPE]}"
+		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
 			exit -1
 			;;
 
@@ -191,6 +195,8 @@ function invokeCommand() { # target command
 
 function invokeRsync() { # target direction from to
 
+	logEntry "$1 $2 $3 $4"
+
 	local rc reply direction fromDir toDir command module
 
 	local -n target=$1
@@ -200,32 +206,26 @@ function invokeRsync() { # target direction from to
 	fromDir="$2"
 	toDir="$3"
 
-	# echo "-> Dir: $direction: From: $fromDir to: $toDir " $LOG
-
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			echo "local targethost: $(hostname)" $LOG
+			logItem "local targethost: $(hostname)" 
 			reply="$(rsync $RSYNC_OPTIONS $fromDir $toDir)"
 			rc=$?
-			checkrc $rc
-			# echo -e "RC: $rc\n$reply" $LOG
 			;;
 
 		$TARGET_TYPE_SSH)
-			echo "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}" $LOG
+			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}" 
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
 				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
 			else
 				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
 			fi
 			rc=$?
-			checkrc $rc
-			# echo -e "RC $rc:\n$reply" $LOG
 			;;
 
 		$TARGET_TYPE_DAEMON)
-			echo "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]}" $LOG
+			logItem "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]}"
 			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
 			module="${target[$TARGET_MODULE]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
@@ -234,15 +234,14 @@ function invokeRsync() { # target direction from to
 				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
 			fi
 			rc=$?
-			checkrc $rc
-			#echo -e "RC $rc:\n$reply" $LOG
 			;;
 
-		*) echo "Unknown target ${target[$TARGET_TYPE]}"
-			exit -1
+		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
 			;;
 	esac
 
+	logExit $rc
+	
 	return $rc
 }
 
@@ -319,15 +318,9 @@ function testRsync() {
 
 	done
 
-	if [[ -e $LOGFILE ]]; then
-		echo "+========================"
-		cat $LOGFILE
-		echo "-========================"
-		rm -f $LOGFILE
-	fi
-
 }
 
 reset
 testRsync
 testCommand
+
