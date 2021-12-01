@@ -323,6 +323,82 @@ declare -A REQUIRED_COMMANDS=( \
 		)
 # ["btrfs"]="btrfs-tools"
 
+# remote execution constants and definitions for rsync via ssh or rsync daemon
+#
+# @@@ NOTE @@@
+#
+# Everything still hard coded right now
+
+source ~/.ssh/rsyncServer.creds
+#will define
+#SSH_HOST=
+#SSH_USER= # pi
+#SSH_KEY_FILE= # public key of user pi
+
+#DAEMON_HOST=
+#DAEMON_MODULE="Rsync-Test" # uses DAEMON_MODULE_DIR
+#DAEMON_MODULE_DIR="/srv/rsync"
+#DAEMON_USER=
+#DAEMON_PASSWORD=
+
+TEST_DIR="Test-Backup"								# @@@ HARD CODED as of now
+
+#
+# Required access rights
+#
+# SSH
+# 1) Local user (e.g. framp) calling script via sudo to connect to remote backup system has to have its public key in authorized_hosts of remote user (e.g. pi)
+# 2) Remote user (e.g. pi) can call sudo
+#
+# RSYNC
+# 1) See access rights for SSH
+# 2) Remote rsync server user has to have full access on module directory
+#
+# LOCAL_USER: SSH key access to SSH_USER@SSH_HOST
+# SSH_USER: Can use sudo on remote host
+#
+# Suggestion: Use the same remote user for SSH and rsync module
+
+# SSH
+readonly TARGET_HOST="TARGET_HOST" 						# IP of remote target
+readonly TARGET_USER="TARGET_USER" 						# remote target ssh userid
+readonly TARGET_KEY="TARGET_KEY" 						# ssh public key file
+
+# daemon
+readonly TARGET_DAEMON_USER="TARGET_DAEMON_USER" 		# module user
+readonly TARGET_DAEMON_PASSWORD="TARGET_DAEMON_PASSWORD" # module password
+readonly TARGET_MODULE="TARGET_MODULE"					# module name
+readonly TARGET_DIR="TARGET_DIR" 						# module directory
+
+readonly TARGET_TYPE="TARGET_TYPE"
+readonly TARGET_TYPE_DAEMON="TARGET_TYPE_DAEMON"
+readonly TARGET_TYPE_SSH="TARGET_TYPE_SSH"
+readonly TARGET_TYPE_LOCAL="TARGET_TYPE_LOCAL"
+
+readonly TARGET_DIRECTION_TO="TARGET_DIRECTION_TO"		# from local to remote
+readonly TARGET_DIRECTION_FROM="TARGET_DIRECTION_FROM" 	# from remote to local
+
+declare -A localTarget
+localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
+localTarget[$TARGET_DIR]="./$TEST_DIR"
+
+declare -A sshTarget
+sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
+sshTarget[$TARGET_HOST]="$SSH_HOST"
+sshTarget[$TARGET_USER]="$SSH_USER"
+sshTarget[$TARGET_KEY]="$SSH_KEY_FILE"
+sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
+
+declare -A rsyncTarget
+rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
+rsyncTarget[$TARGET_HOST]="$SSH_HOST"
+rsyncTarget[$TARGET_USER]="$SSH_USER"
+rsyncTarget[$TARGET_KEY]="$SSH_KEY_FILE"
+rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
+rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
+rsyncTarget[$TARGET_MODULE]="$DAEMON_MODULE"
+rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR"
+
 # possible script exit codes
 
 RC_ASSERTION=101
@@ -2741,6 +2817,125 @@ function dynamic_mount() { # mountpoint
 
 	logExit
 
+}
+
+function invokeRsync() { # target direction from to
+
+	logEntry "$1 $2 $3 $4"
+
+	local rc reply direction fromDir toDir command module
+
+	local -n target=$1
+
+	shift
+	direction="$1"
+	fromDir="$2"
+	toDir="$3"
+
+	case ${target[$TARGET_TYPE]} in
+
+		$TARGET_TYPE_LOCAL)
+			logItem "local targethost: $(hostname)"
+			reply="$(rsync $RSYNC_OPTIONS $fromDir $toDir)"
+			rc=$?
+			;;
+
+		$TARGET_TYPE_SSH)
+			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}"
+			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
+			else
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
+			fi
+			rc=$?
+			;;
+
+		$TARGET_TYPE_DAEMON)
+			logItem "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]}"
+			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
+			module="${target[$TARGET_MODULE]}"
+			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
+				reply="$(rsync $RSYNC_OPTIONS $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module)" # toDir is actually the rsync server module
+			else
+				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
+			fi
+			rc=$?
+			;;
+
+		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
+			;;
+	esac
+
+	logExit $rc
+
+	return $rc
+}
+
+# invoke command either localy, remote via ssh or remote via rsync daemon. Remote calls are executed via sudo
+function invokeCommand() { # target command
+
+	logEntry "$1 $2"
+
+	local rc reply std err
+
+	local -n target=$1
+
+	case ${target[$TARGET_TYPE]} in
+
+		$TARGET_TYPE_LOCAL)
+			reply="$($2)"
+			rc=$?
+			echo "$reply"
+			;;
+
+		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
+			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY]} sudo $2"
+			rc=$?
+			logItem "STD: $std"
+			logItem "ERR: $err"
+			echo "$std"
+			;;
+
+		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
+			;;
+
+	esac
+
+	logExit $rc
+
+	return $rc
+}
+
+# Code borrowed and modified from https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables
+
+# issue ls -b is not returned as one line but n lines
+# but cat /etc/fstab returns n lines of file
+function executeRemoteCommand() { # stoutVarName stdErrVarName command
+	local rc
+	logEntry "$1 $2 $3"
+	{
+        IFS=$'\n' read -r -d '' "${1}";
+        IFS=$'\n' read -r -d '' "${2}";
+        (IFS=$'\n' read -r -d '' _ERRNO_; return ${_ERRNO_});
+    } < <(
+				(
+					printf '\0%s\0%d\0' \
+						"$(
+							(
+								(
+									(
+										{
+											${3}; echo "${?}" 1>&3-;
+										} | tr -d '\0' 1>&4-
+									) 4>&2- 2>&1- | tr -d '\0' 1>&4-
+								) 3>&1- | exit "$(cat)"
+							) 4>&1-
+						)" "${?}" 1>&2
+				) 2>&1
+			)
+	rc=$?
+	logExit $rc
+	return $rc
 }
 
 # borrowed from https://newfivefour.com/unix-urlencode-urldecode-command-line-bash.html
