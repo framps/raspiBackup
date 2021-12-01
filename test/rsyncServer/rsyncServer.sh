@@ -53,10 +53,18 @@ source ~/.ssh/rsyncServer.creds
 #
 # Required access rights
 #
-#LOCAL_USER: SSH key access to SSH_USER@SSH_HOST
-#LOCAL root: SSH key access to SSH_USER@SSH_HOST (script is invoked as root or via sudo)
-#SSH_HOST: Can use sudo
+# SSH
+# 1) Local user (e.g. framp) calling script via sudo to connect to remote backup system has to have its public key in authorized_hosts of remote user (e.g. pi)
+# 2) Remote user (e.g. pi) can call sudo 
 #
+# RSYNC
+# 1) See access rights for SSH
+# 2) Remote rsync server user has to have full access on module directory
+#
+# LOCAL_USER: SSH key access to SSH_USER@SSH_HOST
+# SSH_USER: Can use sudo on remote host
+#
+# Suggestion: Use the same remote user for SSH and rsync module
 
 TEST_DIR="Test-Backup"
 
@@ -167,7 +175,7 @@ function invokeCommand() { # target command
 			;;
 
 		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
-			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} $2"
+			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY]} $2"
 			rc=$?
 			echo "$std"
 			;;
@@ -207,9 +215,9 @@ function invokeRsync() { # target direction from to
 		$TARGET_TYPE_SSH)
 			echo "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}" $LOG
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
 			else
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
 			fi
 			rc=$?
 			checkrc $rc
@@ -322,4 +330,4 @@ function testRsync() {
 
 reset
 testRsync
-#testCommand
+testCommand
