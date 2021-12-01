@@ -79,7 +79,7 @@ readonly TARGET_DIRECTION_FROM="TARGET_DIRECTION_FROM" # from remote to local
 
 declare -A localTarget
 localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
-localTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/${TEST_DIR}"
+localTarget[$TARGET_DIR]="./$TEST_DIR"
 
 declare -A sshTarget
 sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
@@ -141,10 +141,6 @@ function getRemoteDirectory() { # target directory
 
 	case ${target[$TARGET_TYPE]} in
 
-		$TARGET_TYPE_LOCAL)
-			echo "$2"
-			;;
-
 		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
 			echo "${target[$TARGET_DIR]}"
 			;;
@@ -153,7 +149,6 @@ function getRemoteDirectory() { # target directory
 			exit -1
 			;;
 	esac
-
 }
 
 # invoke command either local, remote via ssh or on rsync daemon directory
@@ -205,7 +200,8 @@ function invokeRsync() { # target direction from to
 			echo "local targethost: $(hostname)" $LOG
 			reply="$(rsync $RSYNC_OPTIONS $fromDir $toDir)"
 			rc=$?
-			echo -e "RC: $rc\n$reply" $LOG
+			checkrc $rc
+			# echo -e "RC: $rc\n$reply" $LOG
 			;;
 
 		$TARGET_TYPE_SSH)
@@ -216,7 +212,8 @@ function invokeRsync() { # target direction from to
 				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
 			fi
 			rc=$?
-			echo -e "RC $rc:\n$reply" $LOG
+			checkrc $rc
+			# echo -e "RC $rc:\n$reply" $LOG
 			;;
 
 		$TARGET_TYPE_DAEMON)
@@ -229,7 +226,8 @@ function invokeRsync() { # target direction from to
 				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
 			fi
 			rc=$?
-			echo -e "RC $rc:\n$reply" $LOG
+			checkrc $rc
+			#echo -e "RC $rc:\n$reply" $LOG
 			;;
 
 		*) echo "Unknown target ${target[$TARGET_TYPE]}"
@@ -271,9 +269,9 @@ function testRsync() {
 
 	echo "@@@ testRsync @@@"
 
-	declare t=(localTarget sshTarget rsyncTarget)
+	declare t=(sshTarget rsyncTarget)
 
-	for (( target=2; target<3; target++ )); do
+	for (( target=0; target<${#t[@]}; target++ )); do
 
 		tt="${t[$target]}"
 		echo "@@@ Target: $tt"
@@ -290,34 +288,25 @@ function testRsync() {
 		echo "@@@ Verify remote data"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
 		printf -v args '%q ' "$targetDir"
-
 		reply="$(invokeCommand ${t[$target]} "bash -s -- $args"  < ./testRemote.sh)"
-		echo "$reply"
 
 		# cleanup local dir
 		echo "@@@ Clear local data"
-		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/*"")"
-		echo "$reply"
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data to local"
 		reply="$(invokeRsync ${t[$target]} $TARGET_DIRECTION_FROM "$targetDir/" "$TEST_DIR")"
 		checkrc $?
-		echo "$reply"
 
 		echo "@@@ Verify local data"
 		verifyTestData "$TEST_DIR"
 
-		echo "@@@ Remote data"
-		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/*"")"
-		echo "$reply"
-
 		echo "@@@ Clear remote data"
-		reply="$(invokeCommand ${t[$target]} "rm "$targetDir/*"")"
+		reply="$(invokeCommand ${t[$target]} "rm "$targetDir/$TEST_DIR/*"")"
 		echo "$reply"
-
+		
 		echo "@@@ Remote data cleared"
-		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/*"")"
+		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/$TEST_DIR/*"")"
 		echo "$reply"
 
 	done

@@ -15,7 +15,7 @@ function verifyTestData() { # directory
 		if (( $? )); then
 			echo "??? ACL not found ???"
 		else
-			echo "!!! ACL found !!!"
+			: echo "!!! ACL found !!!"
 		fi
 	fi
 
@@ -28,7 +28,7 @@ function verifyTestData() { # directory
 		if (( ! $? )); then
 			echo "??? ACL found ???"
 		else
-			echo "!!! ACL not found !!!"
+			: echo "!!! ACL not found !!!"
 		fi
 	fi
 }
