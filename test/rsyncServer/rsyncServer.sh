@@ -127,12 +127,19 @@ function testCommand() {
 
 	declare t=(localTarget sshTarget)
 
+	cmds=("ls -la /" "sudo cat /etc/shadow")
+
 	for (( target=0; target<${#t[@]}; target++ )); do
 		tt="${t[$target]}"
-		echo "@@@ Target: $tt"
-		reply="$(invokeCommand ${t[$target]} "ls -la /")"
-		rc=$?
-		logItem "$reply"
+		echo "@@@ ---> Target: $tt"
+		for cmd in "${cmds[@]}"; do
+			echo "Command: $cmd "
+			reply="$(invokeCommand ${t[$target]} "$cmd")"
+			rc=$?
+			checkrc $rc
+			logItem "$reply"
+		done
+		echo
 	done
 
 	logExit $rc
@@ -144,16 +151,21 @@ function testRsync() {
 
 	echo "@@@ testRsync @@@"
 
-	declare t=(sshTarget rsyncTarget)
+	declare t=(localTarget sshTarget rsyncTarget)
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 
 		tt="${t[$target]}"
-		echo "@@@ Target: $tt"
+		echo
+		echo "@@@ ---> Target: $tt"
 
 		echo "@@@ Creating test data in local dir"
-		targetDir="$(getRemoteDirectory "${t[$target]}" $TARGET_DIR)"
-
+		if [[ $t == "localTarget" ]]; then
+			targetDir="${TEST_DIR}_tgt"
+			mkdir -p $targetDir
+		else
+			targetDir="$(getRemoteDirectory "${t[$target]}" $TARGET_DIR)"
+		fi
 		createTestData $TEST_DIR
 
 		echo "@@@ Copy local data to remote"
@@ -189,7 +201,7 @@ function testRsync() {
 		logItem "$reply"
 
 		echo "@@@ Remote data cleared"
-		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir/*"")"
+		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir"")"
 		logItem "$reply"
 
 	done
@@ -197,6 +209,7 @@ function testRsync() {
 }
 
 reset
-testRsync
+#testRsync
 testCommand
+
 

@@ -33,6 +33,6 @@ function verifyTestData() { # directory
 	fi
 }
 
-echo "Testing $1"
+#echo "Testing $1"
 
 verifyTestData "$1"
