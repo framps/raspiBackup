@@ -359,10 +359,10 @@ TEST_DIR="Test-Backup"								# @@@ HARD CODED as of now
 #
 # Suggestion: Use the same remote user for SSH and rsync module
 
-# SSH
+# SSH + daemon
 readonly TARGET_HOST="TARGET_HOST" 						# IP of remote target
 readonly TARGET_USER="TARGET_USER" 						# remote target ssh userid
-readonly TARGET_KEY="TARGET_KEY" 						# ssh public key file
+readonly TARGET_KEY_FILE="TARGET_KEY_FILE" 				# ssh public key file
 
 # daemon
 readonly TARGET_DAEMON_USER="TARGET_DAEMON_USER" 		# module user
@@ -386,14 +386,14 @@ declare -A sshTarget
 sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
 sshTarget[$TARGET_HOST]="$SSH_HOST"
 sshTarget[$TARGET_USER]="$SSH_USER"
-sshTarget[$TARGET_KEY]="$SSH_KEY_FILE"
+sshTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
 sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
 
 declare -A rsyncTarget
 rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
 rsyncTarget[$TARGET_HOST]="$SSH_HOST"
 rsyncTarget[$TARGET_USER]="$SSH_USER"
-rsyncTarget[$TARGET_KEY]="$SSH_KEY_FILE"
+rsyncTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
 rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
 rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
 rsyncTarget[$TARGET_MODULE]="$DAEMON_MODULE"
@@ -2641,6 +2641,19 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 	# Name of backup partition to dynamically mount (e.g. /dev/sda1 or /backup)
 	DEFAULT_DYNAMIC_MOUNT=""
+
+	# Required for SSH or rsync server
+	DEFAULT_RSYNC_TARGET_TYPE=""
+	DEFAULT_RSYNC_TARGET_HOST=""
+	DEFAULT_RSYNC_TARGET_USER=""
+	DEFAULT_RSYNC_TARGET_USER_KEY_FILE=""
+	DEFAULT_RSYNC_TARGET_DIR=""
+
+	# In addition required for rsync daemon
+	DEFAULT_RSYNC_TARGET_DAEMON_USER=""
+	DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD=""
+	DEFAULT_RSYNC_TARGET_MODULE=""
+
 	############# End default config section #############
 	logExit
 }
@@ -2691,6 +2704,14 @@ function copyDefaultConfigVariables() {
 	RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
 	RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
+	RSYNC_TARGET_TYPE="$DEFAULT_RSYNC_TARGET_TYPE"
+	RSYNC_TARGET_HOST="$DEFAULT_RSYNC_TARGET_HOST"
+	RSYNC_TARGET_USER="$DEFAULT_RSYNC_TARGET_USER"
+	RSYNC_TARGET_USER_KEY_FILE="$DEFAULT_RSYNC_TARGET_USER_KEY_FILE"
+	RSYNC_TARGET_DIR="$DEFAULT_RSYNC_TARGET_DIR"
+	DEFAULT_RSYNC_TARGET_DAEMON_USER="$DEFAULT_RSYNC_TARGET_DAEMON_USER"
+	DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD="$DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD"
+	DEFAULT_RSYNC_TARGET_MODULE="$DEFAULT_RSYNC_TARGET_MODULE"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
 	SKIPLOCALCHECK="$DEFAULT_SKIPLOCALCHECK"
 	SMART_RECYCLE="$DEFAULT_SMART_RECYCLE"
@@ -2843,9 +2864,9 @@ function invokeRsync() { # target direction from to
 		$TARGET_TYPE_SSH)
 			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
 			else
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
+				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
 			fi
 			rc=$?
 			;;
@@ -2889,7 +2910,7 @@ function invokeCommand() { # target command
 			;;
 
 		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
-			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY]} sudo $2"
+			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY_FILE]} sudo $2"
 			rc=$?
 			logItem "STD: $std"
 			logItem "ERR: $err"
