@@ -380,7 +380,7 @@ readonly TARGET_DIRECTION_FROM="TARGET_DIRECTION_FROM" 	# from remote to local
 
 declare -A localTarget
 localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
-localTarget[$TARGET_DIR]="./$TEST_DIR"
+localTarget[$TARGET_DIR]="./$TEST_DIR"					# just for testing purposes
 
 declare -A sshTarget
 sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
@@ -398,6 +398,8 @@ rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
 rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
 rsyncTarget[$TARGET_MODULE]="$DAEMON_MODULE"
 rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR"
+
+declare -A RSYNC_TARGETS=( [$TARGET_TYPE_LOCAL]="localTarget" [$TARGET_TYPE_SSH]="sshTarget" [$TARGET_TYPE_DAEMON]="rsyncTarget" )
 
 # possible script exit codes
 
@@ -2643,7 +2645,7 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_DYNAMIC_MOUNT=""
 
 	# Required for SSH or rsync server
-	DEFAULT_RSYNC_TARGET_TYPE=""
+	DEFAULT_RSYNC_TARGET_TYPE="$TARGET_TYPE_LOCAL"
 	DEFAULT_RSYNC_TARGET_HOST=""
 	DEFAULT_RSYNC_TARGET_USER=""
 	DEFAULT_RSYNC_TARGET_USER_KEY_FILE=""
@@ -3634,6 +3636,14 @@ function setupEnvironment() {
 
 		if [[ -n "$DYNAMIC_MOUNT" ]]; then
 			dynamic_mount "$DYNAMIC_MOUNT"
+		fi
+
+		if [[ -n "$RSYNC_TARGET_TYPE" ]]; then
+			if [[ ! " ${RSYNC_TARGETS[*]} " =~ " ${RSYNC_TARGET_TYPE} " ]]; then
+				assertionFailed $LINENO "Invalid rsync target $RSYNC_TARGET_TYPE detected"
+			fi
+			local -n RSYNC_TARGET=${$RSYNC_TARGETS[$RSYNC_TARGET_TYPE]}
+			logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target $RSYNC_TARGET"
 		fi
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
@@ -5176,8 +5186,13 @@ function rsyncBackup() { # partition number (for partition based backup)
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
 	if (( ! $FAKE )); then
-		executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"
-		rc=$?
+		if [[ -n $RSYNC_TARGET_TYPE ]]; then
+			invokeRsync $RSYNC_TARGET $TARGET_DIRECTION_TO $source $target
+			rc=$?
+		else
+			executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"
+			rc=$?
+		fi
 	fi
 
 	logExit  "$rc"
@@ -8383,6 +8398,7 @@ RESTORE=0
 RESTOREFILE=""
 RESTORETEST_REQUIRED=0
 REVERT=0
+RSYNC_TARGET=""
 ROOT_PARTITION_DEFINED=0
 SHARED_BOOT_DIRECTORY=0
 SKIP_SFDISK=0
