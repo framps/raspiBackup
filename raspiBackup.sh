@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -399,6 +400,7 @@ rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
 rsyncTarget[$TARGET_MODULE]="$DAEMON_MODULE"
 rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR"
 
+POSSIBLE_RSYNC_TARGET_TYPES="[$TARGET_TYPE_LOCAL|$TARGET_TYPE_SSH|$TARGET_TYPE_DAEMON]"
 declare -A RSYNC_TARGETS=( [$TARGET_TYPE_LOCAL]="localTarget" [$TARGET_TYPE_SSH]="sshTarget" [$TARGET_TYPE_DAEMON]="rsyncTarget" )
 
 # possible script exit codes
@@ -1842,6 +1844,10 @@ MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Lin
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
+MSG_RSYNC_TARGETTYPE_USED=267
+MSG_EN[$MSG_RSYNC_TARGETTYPE_USED]="RBK0267I: Rsync target type %s used."
+MSG_DE[$MSG_RSYNC_TARGETTYPE_USED]="RBK0267I: Rsync Zieltyp %s wird genutzt."
+
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
 # setup trap function
@@ -2483,6 +2489,7 @@ function logOptions() { # option state
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
 	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
+	logItem "RSYNC_TARGET_TYPE=$RSYNC_TARGET_TYPE"
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
  	logItem "SKIP_DEPRECATED=$SKIP_DEPRECATED"
  	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
@@ -2711,9 +2718,9 @@ function copyDefaultConfigVariables() {
 	RSYNC_TARGET_USER="$DEFAULT_RSYNC_TARGET_USER"
 	RSYNC_TARGET_USER_KEY_FILE="$DEFAULT_RSYNC_TARGET_USER_KEY_FILE"
 	RSYNC_TARGET_DIR="$DEFAULT_RSYNC_TARGET_DIR"
-	DEFAULT_RSYNC_TARGET_DAEMON_USER="$DEFAULT_RSYNC_TARGET_DAEMON_USER"
-	DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD="$DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD"
-	DEFAULT_RSYNC_TARGET_MODULE="$DEFAULT_RSYNC_TARGET_MODULE"
+	RSYNC_TARGET_DAEMON_USER="$DEFAULT_RSYNC_TARGET_DAEMON_USER"
+	RSYNC_TARGET_DAEMON_PASSWORD="$DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD"
+	RSYNC_TARGET_MODULE="$DEFAULT_RSYNC_TARGET_MODULE"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
 	SKIPLOCALCHECK="$DEFAULT_SKIPLOCALCHECK"
 	SMART_RECYCLE="$DEFAULT_SMART_RECYCLE"
@@ -2842,7 +2849,7 @@ function dynamic_mount() { # mountpoint
 
 }
 
-function invokeRsync() { # target direction from to
+function invokeRsync() { # target options direction from to
 
 	logEntry "$1 $2 $3 $4"
 
@@ -2851,24 +2858,27 @@ function invokeRsync() { # target direction from to
 	local -n target=$1
 
 	shift
-	direction="$1"
-	fromDir="$2"
-	toDir="$3"
+	local options="$1"
+	direction="$2"
+	fromDir="$3"
+	toDir="$4"
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
 			logItem "local targethost: $(hostname)"
-			reply="$(rsync $RSYNC_OPTIONS $fromDir $toDir)"
+				set -x
+			reply="$(rsync $options $fromDir $toDir)"
+			set +x
 			rc=$?
 			;;
 
 		$TARGET_TYPE_SSH)
 			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
+				reply="$(rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
 			else
-				reply="$(rsync $RSYNC_OPTIONS -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
+				reply="$(rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
 			fi
 			rc=$?
 			;;
@@ -2878,9 +2888,9 @@ function invokeRsync() { # target direction from to
 			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
 			module="${target[$TARGET_MODULE]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $RSYNC_OPTIONS $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module)" # toDir is actually the rsync server module
+				reply="$(rsync $options $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module)" # toDir is actually the rsync server module
 			else
-				reply="$(rsync $RSYNC_OPTIONS rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
+				reply="$(rsync $options rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
 			fi
 			rc=$?
 			;;
@@ -2888,6 +2898,8 @@ function invokeRsync() { # target direction from to
 		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
 			;;
 	esac
+
+	echo "$reply"
 
 	logExit $rc
 
@@ -3639,11 +3651,12 @@ function setupEnvironment() {
 		fi
 
 		if [[ -n "$RSYNC_TARGET_TYPE" ]]; then
-			if [[ ! " ${RSYNC_TARGETS[*]} " =~ " ${RSYNC_TARGET_TYPE} " ]]; then
+			if [[ ! "${RSYNC_TARGET_TYPE}" =~ $POSSIBLE_RSYNC_TARGET_TYPES ]]; then
 				assertionFailed $LINENO "Invalid rsync target $RSYNC_TARGET_TYPE detected"
 			fi
-			local -n RSYNC_TARGET=${$RSYNC_TARGETS[$RSYNC_TARGET_TYPE]}
+			RSYNC_TARGET=${RSYNC_TARGETS[$RSYNC_TARGET_TYPE]}
 			logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target $RSYNC_TARGET"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_USED "$RSYNC_TARGET"
 		fi
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
@@ -4292,7 +4305,7 @@ function cleanupStartup() { # trap
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
-		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
+		: # masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
 	logFinish
@@ -4408,7 +4421,7 @@ function cleanup() { # trap
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
-		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
+		: # masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
 	logFinish
@@ -5119,7 +5132,8 @@ function rsyncBackup() { # partition number (for partition based backup)
 		target="\"${BACKUPTARGET_DIR}\""
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
 
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
+		lastBackupDir="$(invokeCommand $RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		# lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot="/$partition"
 
 	else
@@ -5127,7 +5141,8 @@ function rsyncBackup() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
+		lastBackupDir="$(invokeCommand $RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		#lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
@@ -5187,7 +5202,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 	if (( ! $FAKE )); then
 		if [[ -n $RSYNC_TARGET_TYPE ]]; then
-			invokeRsync $RSYNC_TARGET $TARGET_DIRECTION_TO $source $target
+			invokeRsync $RSYNC_TARGET "$cmdParms" $TARGET_DIRECTION_TO # $source $target
 			rc=$?
 		else
 			executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"

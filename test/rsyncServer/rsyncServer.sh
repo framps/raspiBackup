@@ -72,10 +72,14 @@ if (( $UID != 0 )); then
 fi
 
 function checkrc() {
-	if (( $1 != 0 )); then
-		echo "Error $1"
+	logEntry "$1"
+	local rc="$1"
+	if (( $rc != 0 )); then
+		echo "Error $rc"
 		exit 1
 	fi
+
+	logExit $rc
 }
 
 function createTestData() { # directory
@@ -153,14 +157,14 @@ function testRsync() {
 
 	declare t=(localTarget sshTarget rsyncTarget)
 
-	for (( target=0; target<${#t[@]}; target++ )); do
+	for (( target=2; target<${#t[@]}; target++ )); do
 
 		tt="${t[$target]}"
 		echo
 		echo "@@@ ---> Target: $tt"
 
 		echo "@@@ Creating test data in local dir"
-		if [[ $t == "localTarget" ]]; then
+		if [[ $tt == "localTarget" ]]; then
 			targetDir="${TEST_DIR}_tgt"
 			mkdir -p $targetDir
 		else
@@ -169,7 +173,7 @@ function testRsync() {
 		createTestData $TEST_DIR
 
 		echo "@@@ Copy local data to remote"
-		invokeRsync ${t[$target]} $TARGET_DIRECTION_TO "$TEST_DIR/" "$targetDir"
+		invokeRsync ${t[$target]} "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "$TEST_DIR/" "$targetDir"
 		checkrc $?
 		logItem "$reply"
 
@@ -185,7 +189,7 @@ function testRsync() {
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data to local"
-		reply="$(invokeRsync ${t[$target]} $TARGET_DIRECTION_FROM "$targetDir/" "$TEST_DIR")"
+		reply="$(invokeRsync ${t[$target]} "$RSYNC_OPTIONS" $TARGET_DIRECTION_FROM "$targetDir/" "$TEST_DIR")"
 		checkrc $?
 		logItem "$reply"
 
@@ -204,12 +208,19 @@ function testRsync() {
 		reply="$(invokeCommand ${t[$target]} "ls -la "$targetDir"")"
 		logItem "$reply"
 
+#		remote error
+
+		echo "@@@ Error"
+		replay="$(invokeRsync ${t[$target]} "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "${TEST_DIR}Dummy/" "${targetDir}Dummy")"
+		checkrc $?
+		logItem "$reply"
+
 	done
 
 }
 
 reset
-#testRsync
-testCommand
+testRsync
+#testCommand
 
 
