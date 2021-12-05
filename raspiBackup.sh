@@ -5043,13 +5043,6 @@ function restore() {
 
 	(( $VERBOSE )) && verbose="v" || verbose=""
 
-	if (( $PROGRESS )); then
-		if ! which pv &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
-			exitError $RC_MISSING_COMMANDS
-		fi
-	fi
-
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE "$RESTOREFILE"
 	logCommand "ls -la $RESTOREFILE"
 
@@ -7194,6 +7187,13 @@ function doitRestore() {
 	logItem "Backuptype: $BACKUPTYPE"
 	DATE=$(basename "$RESTOREFILE" | sed -r 's/.*-[A-Za-z]+-backup-([0-9]+-[0-9]+).*/\1/')
 	logItem "Date: $DATE"
+
+	if (( $PROGRESS )); then
+		if ! which pv &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
+			exitError $RC_MISSING_COMMANDS
+		fi
+	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
 		if ! which rsync &>/dev/null; then
