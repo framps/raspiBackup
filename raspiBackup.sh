@@ -5238,11 +5238,10 @@ function restore() {
 			local ext=$BOOT_DD_EXT
 			if [[ -e "$DD_FILE" ]]; then
 				logItem "Restoring boot partition from $DD_FILE"
-				if (( $PROGRESS )); then
-					dd if="$DD_FILE" 2>> $LOG_FILE | pv -fs $(stat -c %s "$DD_FILE") | dd of=$BOOT_PARTITION bs=1M &>>"$LOG_FILE"
-				else
-					dd if="$DD_FILE" of=$BOOT_PARTITION bs=1M &>>"$LOG_FILE"
-				fi
+				local progressFlag=""
+				(( $PROGRESS )) && progressFlag="type=progress"			
+				local cmd="dd if="$DD_FILE" $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
+				executeDD "$cmd"
 				rc=$?
 			else
 				ext=$BOOT_TAR_EXT
@@ -5250,11 +5249,11 @@ function restore() {
 				mountAndCheck $BOOT_PARTITION "$MNT_POINT"
 				pushd "$MNT_POINT" &>>"$LOG_FILE"
 				if (( $PROGRESS )); then
-					cmd="pv -f $TAR_FILE | tar -xf -"
+					local cmd="pv -f $TAR_FILE | tar -xf -"
 				else
-					cmd="tar -xf  \"$TAR_FILE\""
+					local cmd="tar -xf  \"$TAR_FILE\""
 				fi
-				executeCommand "$cmd"
+				executeTar "$cmd"
 				rc=$?
 				popd &>>"$LOG_FILE"
 			fi
@@ -5293,11 +5292,11 @@ function restore() {
 					pushd "$MNT_POINT" &>>"$LOG_FILE"
 					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
 					if (( $PROGRESS )); then
-						cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
+						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						cmd="tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
+						local cmd="tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
 					fi
-					executeCommand "$cmd"
+					executeTar "$cmd"
 					rc=$?
 					popd &>>"$LOG_FILE"
 					;;
@@ -5305,12 +5304,10 @@ function restore() {
 				$BACKUPTYPE_RSYNC)
 					local excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
-					if (( $PROGRESS )); then
-						cmd="rsync --info=progress2 --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
-					else
-						cmd="rsync --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
-					fi
-					executeCommand "$cmd"
+					local progressFlag=""
+					(( $PROGRESS )) && progressFlag="--info=progress2"			
+					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					executeRsync "$cmd"
 					rc=$?
 					;;
 
