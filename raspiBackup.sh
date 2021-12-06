@@ -2256,10 +2256,11 @@ function exitError() { # {rc}
 	exit $rc
 }
 
-function executeDD() { # cmd
+function executeDD() { # cmd silent
 	logEntry
 	local rc cmd
 	cmd="$1"
+
 	if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
 		if (( $PROGRESS )); then
 			executeCommandNoRedirect "$cmd"
@@ -2271,6 +2272,7 @@ function executeDD() { # cmd
 	else
 		executeCommand "$cmd"
 	fi
+
 	logExit $rc
 	return $rc
 }
@@ -2330,8 +2332,12 @@ function executeCmd() { # command - redirects - rc's to accept
 	logEntry "Command: $1"
 	logItem "Redirect: $2 - Skips: $3"
 
-	if (( $INTERACTIVE )) || [[ -z "$2" ]]; then
-		eval "$1"							# no redirect at all
+	if [[ $2 == "S" ]]; then			# silent mode
+		eval "$1 &>> $LOG_FILE"			# redirect 1 and/or 2 depending on $2
+
+	elif (( $INTERACTIVE )) || [[ -z "$2" ]]; then
+		eval "$1"						# no redirect at all
+
 	else
 		eval "$1 $2>> $LOG_FILE"		# redirect 1 and/or 2 depending on $2
 	fi
@@ -4572,10 +4578,10 @@ function bootPartitionBackup() {
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
 					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
-					executeTar "$cmd"
+					executeCmd "$cmd" "S" # silent mode
 				else
 					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
-					executeDD "$cmd"
+					executeCmd "$cmd" "S" # silent mode
 				fi
 				rc=$?
 				if [ $rc != 0 ]; then
@@ -4797,8 +4803,6 @@ function backupTar() {
 	local verbose zip cmd partition source target devroot sourceDir
 
 	logEntry
-
-	(( $PROGRESS )) && VERBOSE=1
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 	[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="-z" || zip=""
