@@ -4569,13 +4569,11 @@ function bootPartitionBackup() {
 
 		logItem "Starting boot partition backup..."
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_CREATING_PARTITION_INFO
-
 		if (( ! $FAKE && ! $EXCLUDE_DD && ! $SHARED_BOOT_DIRECTORY )); then
 			local ext=$BOOT_DD_EXT
 			(( $TAR_BOOT_PARTITION_ENABLED )) && ext=$BOOT_TAR_EXT
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
 					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					executeCmd "$cmd" "S" # silent mode
