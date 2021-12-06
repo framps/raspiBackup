@@ -2256,6 +2256,51 @@ function exitError() { # {rc}
 	exit $rc
 }
 
+function executeDD() { # cmd
+	logEntry
+	local rc cmd
+	cmd="$1"
+	if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+		if (( $PROGRESS )); then
+			executeCommandNoRedirect "$cmd"	
+		else
+			executeCommandNoStdoutRedirect "$cmd"		
+		fi
+	elif (( $PROGRESS )); then
+		executeCommandNoStderrRedirect "$cmd"
+	else
+		executeCommand "$cmd"
+	fi
+	logExit $rc
+	return $rc
+}
+
+function executeRsync() { # cmd flagsToIgnore
+	logEntry
+	local rc cmd
+	cmd="$1"
+	if (( $PROGRESS )); then
+		executeCommandNoStdoutRedirect "$cmd" "$2"
+	else
+		executeCommand "$cmd" "$2"
+	fi
+	logExit $rc
+	return $rc
+}
+
+function executeTar() { # cmd flagsToIgnore
+	logEntry
+	local rc cmd
+	cmd="$1"
+	if (( $PROGRESS )); then
+		executeCommandNoStdoutRedirect "$cmd" "$2"
+	else
+		executeCommand "$cmd" "$2"
+	fi
+	logExit $rc
+	return $rc
+}
+
 # write stdout and stderr into log if in background
 function executeCommand() { # command - rc's to accept
 	executeCmd "$1" "&" "$2"
@@ -4526,12 +4571,17 @@ function bootPartitionBackup() {
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
-					cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					local progressFlag=""
+					(( $PROGRESS )) && progressFlag="-v"			
+					cmd="cd /boot; tar $TAR_BACKUP_OPTIONS $progressFlag \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					executeTar "$cmd"
 				else
-					cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=1M"
+					local progressFlag=""
+					(( $PROGRESS )) && progressFlag="type=progress"			
+					cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE $progressFlag"
+					executeDD "$cmd"
 				fi
 
-				executeCommand "$cmd"
 				rc=$?
 				if [ $rc != 0 ]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_BACKUP_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
@@ -4663,7 +4713,7 @@ function partitionLayoutBackup() {
 
 }
 
-function ddBackup() {
+function backupDD() {
 
 	logEntry
 
@@ -4692,7 +4742,6 @@ function ddBackup() {
 				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
 			else
 				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"$BACKUPTARGET_FILE\""
-				fi
 			fi
 		else
 			logCommand "fdisk -l $BOOT_DEVICENAME"
@@ -4736,17 +4785,7 @@ function ddBackup() {
 
 	if (( ! $EXCLUDE_DD )); then
 		if (( ! $FAKE)); then
-			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-				if (( $PROGRESS )); then
-					executeCommandNoRedirect "$cmd"	
-				else
-					executeCommandNoStdoutRedirect "$cmd"		
-				fi
-			elif (( $PROGRESS )); then
-				executeCommandNoStderrRedirect "$cmd"
-			else
-				executeCommand "$cmd"
-			fi
+			executeDD "$cmd"
 			rc=$?
 		else
 			rc=0
@@ -4758,7 +4797,7 @@ function ddBackup() {
 	return $rc
 }
 
-function tarBackup() {
+function backupTar() {
 
 	local verbose zip cmd partition source target devroot sourceDir
 
@@ -4814,7 +4853,7 @@ function tarBackup() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
 	if (( ! $FAKE )); then
-		executeCommand "${cmd}" "$TAR_IGNORE_ERRORS"
+		executeTar "${cmd}" "$TAR_IGNORE_ERRORS"
 		rc=$?
 	fi
 
@@ -4882,7 +4921,7 @@ function updateUUID() {
 	logExit
 }
 
-function rsyncBackup() { # partition number (for partition based backup)
+function backupRsync() { # partition number (for partition based backup)
 
 	local verbose partition target source excludeRoot cmd cmdParms excludeMeta
 
@@ -4966,7 +5005,7 @@ function rsyncBackup() { # partition number (for partition based backup)
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
 	if (( ! $FAKE )); then
-		executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"
+		executeRsync "$cmd" "$RSYNC_IGNORE_ERRORS"
 		rc=$?
 	fi
 
@@ -5060,21 +5099,16 @@ function restore() {
 
 		$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
 
+			local progressFlag=""
+			(( $PROGRESS )) && progressFlag="type=progress"			
+
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DD ]]; then
-				if (( $PROGRESS )); then
-					cmd="dd if=\"$ROOT_RESTOREFILE\" | pv -fs $(stat -c %s "$ROOT_RESTOREFILE") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-				else
-					cmd="dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE if=\"$ROOT_RESTOREFILE\" $DD_PARMS"
-				fi
+				cmd="dd if=\"$ROOT_RESTOREFILE\" $progressFlag of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
 			else
-				if (( $PROGRESS )); then
-					cmd="gunzip -c \"$ROOT_RESTOREFILE\" | pv -fs $(stat -c %s "$ROOT_RESTOREFILE") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-				else
-					cmd="gunzip -c \"$ROOT_RESTOREFILE\" | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-				fi
+				cmd="gunzip -c \"$ROOT_RESTOREFILE\" | dd of=$RESTORE_DEVICE $progressFlag bs=$DD_BLOCKSIZE $DD_PARMS"
 			fi
 
-			executeCommand "$cmd"
+			executeCommandDD "$cmd"
 			rc=$?
 
 			if [[ $rc != 0 ]]; then
@@ -5501,13 +5535,13 @@ function backup() {
 
 			case "$BACKUPTYPE" in
 
-				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) ddBackup
+				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD
 					;;
 
-				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) tarBackup
+				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar
 					;;
 
-				$BACKUPTYPE_RSYNC) rsyncBackup
+				$BACKUPTYPE_RSYNC) backupRsync
 					;;
 
 				*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
@@ -5621,13 +5655,13 @@ function backupPartitions() {
 
 			case "$BACKUPTYPE" in
 
-				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) ddBackup "$partition"
+				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD "$partition"
 					;;
 
-				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) tarBackup "$partition"
+				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar "$partition"
 					;;
 
-				$BACKUPTYPE_RSYNC) rsyncBackup "$partition"
+				$BACKUPTYPE_RSYNC) backupRsync "$partition"
 					;;
 
 				*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
