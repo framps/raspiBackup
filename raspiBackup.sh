@@ -2256,9 +2256,21 @@ function exitError() { # {rc}
 	exit $rc
 }
 
-# write stdout and stderr into log
+# write stdout and stderr into log if in background
 function executeCommand() { # command - rc's to accept
 	executeCmd "$1" "&" "$2"
+	return $?
+}
+
+# write nothing into log
+function executeCommandNoRedirect() { # command - rc's to accept
+	executeCmd "$1" "" "$2"
+	return $?
+}
+
+# write stdout into log if in background
+function executeCommandNoStderrRedirect() { # command - rc's to accept
+	executeCmd "$1" "1" "$2"
 	return $?
 }
 
@@ -2273,11 +2285,11 @@ function executeCmd() { # command - redirects - rc's to accept
 	logEntry "Command: $1"
 	logItem "Redirect: $2 - Skips: $3"
 
-#	if (( $INTERACTIVE )); then
-		eval "$1 $2>> $LOG_FILE"
-#	else
-#		eval "$1 $2>> $LOG_FILE"
-#	fi
+	if (( $INTERACTIVE )) || [[ -z "$2" ]]; then
+		eval "$1"							# no redirect at all
+	else
+		eval "$1 $2>> $LOG_FILE"		# redirect 1 and/or 2 depending on $2
+	fi
 	rc=$?
 	if (( $rc != 0 )); then
 		local error=1
@@ -4659,39 +4671,27 @@ function ddBackup() {
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 
+	local progressFlag=""
+	(( $PROGRESS )) && progressFlag="type=progress"			
+
 	if (( $PARTITIONBASED_BACKUP )); then
 
 		partition="${BOOT_DEVICENAME}p$1"
 		partitionName="${BOOT_PARTITION_PREFIX}$1"
 
 		if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-			if (( $PARTITION )); then
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $partition | grep "Disk.*$partition" | cut -d ' ' -f 5) | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			else
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			fi
+			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
 		else
-			if (( $PROGRESS )); then
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $partition | grep "Disk.*$partition" | cut -d ' ' -f 5) | dd of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			else
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			fi
+			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
 		fi
 
 	else
 
 		if (( ! $DD_BACKUP_SAVE_USED_PARTITIONS_ONLY )); then
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-				if (( $PROGRESS )); then
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $BOOT_DEVICENAME | grep "Disk.*$BOOT_DEVICENAME" | cut -d ' ' -f 5) | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
-				else
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
-				fi
+				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
 			else
-				if (( $PROGRESS )); then
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $BOOT_DEVICENAME | grep "Disk.*$BOOT_DEVICENAME" | cut -d ' ' -f 5) | dd of=\"$BACKUPTARGET_FILE\""
-				else
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS of=\"$BACKUPTARGET_FILE\""
+				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"$BACKUPTARGET_FILE\""
 				fi
 			fi
 		else
@@ -4737,7 +4737,13 @@ function ddBackup() {
 	if (( ! $EXCLUDE_DD )); then
 		if (( ! $FAKE)); then
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-				executeCommandNoStdoutRedirect "$cmd"
+				if (( $PROGRESS )); then
+					executeCommandNoRedirect "$cmd"	
+				else
+					executeCommandNoStdoutRedirect "$cmd"		
+				fi
+			elif (( $PROGRESS )); then
+				executeCommandNoStderrRedirect "$cmd"
 			else
 				executeCommand "$cmd"
 			fi
