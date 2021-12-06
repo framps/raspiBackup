@@ -2262,9 +2262,9 @@ function executeDD() { # cmd
 	cmd="$1"
 	if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
 		if (( $PROGRESS )); then
-			executeCommandNoRedirect "$cmd"	
+			executeCommandNoRedirect "$cmd"
 		else
-			executeCommandNoStdoutRedirect "$cmd"		
+			executeCommandNoStdoutRedirect "$cmd"
 		fi
 	elif (( $PROGRESS )); then
 		executeCommandNoStderrRedirect "$cmd"
@@ -3929,7 +3929,7 @@ function cleanupBackupDirectory() {
 				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
 			fi
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
-			rm -rf $BACKUPTARGET_DIR # delete incomplete backupdir
+			rm -rfd $BACKUPTARGET_DIR # delete incomplete backupdir
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_DIR" "$rmrc"
@@ -4571,17 +4571,12 @@ function bootPartitionBackup() {
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
-					local progressFlag=""
-					(( $PROGRESS )) && progressFlag="-v"			
-					cmd="cd /boot; tar $TAR_BACKUP_OPTIONS $progressFlag \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					executeTar "$cmd"
 				else
-					local progressFlag=""
-					(( $PROGRESS )) && progressFlag="type=progress"			
-					cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE $progressFlag"
+					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
 					executeDD "$cmd"
 				fi
-
 				rc=$?
 				if [ $rc != 0 ]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_BACKUP_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
@@ -4722,7 +4717,7 @@ function backupDD() {
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 
 	local progressFlag=""
-	(( $PROGRESS )) && progressFlag="type=progress"			
+	(( $PROGRESS )) && progressFlag="status=progress"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 
@@ -5100,7 +5095,7 @@ function restore() {
 		$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
 
 			local progressFlag=""
-			(( $PROGRESS )) && progressFlag="type=progress"			
+			(( $PROGRESS )) && progressFlag="status=progress"
 
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DD ]]; then
 				cmd="dd if=\"$ROOT_RESTOREFILE\" $progressFlag of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
@@ -5239,7 +5234,7 @@ function restore() {
 			if [[ -e "$DD_FILE" ]]; then
 				logItem "Restoring boot partition from $DD_FILE"
 				local progressFlag=""
-				(( $PROGRESS )) && progressFlag="type=progress"			
+				(( $PROGRESS )) && progressFlag="status=progress"
 				local cmd="dd if="$DD_FILE" $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
 				executeDD "$cmd"
 				rc=$?
@@ -5305,7 +5300,7 @@ function restore() {
 					local excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
 					local progressFlag=""
-					(( $PROGRESS )) && progressFlag="--info=progress2"			
+					(( $PROGRESS )) && progressFlag="--info=progress2"
 					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
 					executeRsync "$cmd"
 					rc=$?
@@ -6368,7 +6363,7 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
+	if (( $PROGRESS )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
@@ -7220,7 +7215,7 @@ function doitRestore() {
 	DATE=$(basename "$RESTOREFILE" | sed -r 's/.*-[A-Za-z]+-backup-([0-9]+-[0-9]+).*/\1/')
 	logItem "Date: $DATE"
 
-	if (( $PROGRESS )) &&  [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
+	if (( $PROGRESS )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
