@@ -11,4 +11,4 @@ If you have a question about raspiBackup please execute all following actions fi
 * Provide the output of `sudo raspiBackup.sh --version` or `sudo raspiBackupInstallUI.sh --version`
 * Provide the output of `cat /etc/os-release`
 
-If any action was not executed or any requested information was not provided the question will be rejected.
+If any requested information was not provided the question will be rejected.
