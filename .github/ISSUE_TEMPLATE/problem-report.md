@@ -8,5 +8,3 @@ Please execute all following actions first and provide all requested information
 
 * Check whether my error messages were listed on the messages page and all suggested actions don't fixes my issue. [English](https://linux-tips-and-tricks.de/en/rmessages) - [German](https://linux-tips-and-tricks.de/de/fehlermeldungen)
 * Attach raspiBackup debug log
-
-Any problem report without a debug log will be rejected.
