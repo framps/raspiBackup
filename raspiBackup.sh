@@ -4161,7 +4161,9 @@ function cleanup() { # trap
 	else
 		cleanupBackup $1
 		if [[ $rc -eq 0 ]]; then
-			applyBackupStrategy
+			if (( ! $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then
+				applyBackupStrategy
+			fi
 		fi
 	fi
 
