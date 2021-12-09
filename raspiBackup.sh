@@ -2262,12 +2262,12 @@ function executeDD() { # cmd silent
 	cmd="$1"
 
 	if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-		if (( $PROGRESS )); then
+		if (( $PROGRESS && $INTERACTIVE )); then
 			executeCommandNoRedirect "$cmd"
 		else
 			executeCommandNoStdoutRedirect "$cmd"
 		fi
-	elif (( $PROGRESS )); then
+	elif (( $PROGRESS && $INTERACTIVE)); then
 		executeCommandNoStderrRedirect "$cmd"
 	else
 		executeCommand "$cmd"
@@ -2281,7 +2281,7 @@ function executeRsync() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	if (( $PROGRESS )); then
+	if (( $PROGRESS && $INTERACTIVE )); then
 		executeCommandNoStdoutRedirect "$cmd" "$2"
 	else
 		executeCommand "$cmd" "$2"
@@ -2294,11 +2294,7 @@ function executeTar() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	if (( $PROGRESS )); then
-		executeCommandNoStdoutRedirect "$cmd" "$2"
-	else
-		executeCommand "$cmd" "$2"
-	fi
+	executeCommand "$cmd" "$2"
 	logExit $rc
 	return $rc
 }
