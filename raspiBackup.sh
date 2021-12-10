@@ -2284,7 +2284,7 @@ function executeRsync() { # cmd flagsToIgnore
 	if (( $PROGRESS && $INTERACTIVE )); then
 		executeCommandNoStdoutRedirect "$cmd" "$2"
 	else
-		executeCommand "$cmd" "$2"
+		executeCommandNoStderrRedirect "$cmd" "$2"
 	fi
 	logExit $rc
 	return $rc
@@ -4924,7 +4924,8 @@ function backupRsync() { # partition number (for partition based backup)
 
 	(( $PROGRESS )) && VERBOSE=0
 
-	(( $VERBOSE )) && verbose="-v" || verbose=""
+	verbose="--info=NAME0"
+	(( $VERBOSE )) && verbose="-v"
 
 	logCommand "ls $BACKUPTARGET_ROOT"
 
