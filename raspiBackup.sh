@@ -4224,45 +4224,6 @@ function cleanupRestore() { # trap
 
 }
 
-function resizeRootFS() {
-
-	logEntry
-
-	local partitionStart
-
-	logItem "RESTORE_DEVICE: $RESTORE_DEVICE"
-	logItem "ROOT_PARTITION: $ROOT_PARTITION"
-
-	logItem "partitionLayout of $RESTORE_DEVICE"
-	logCommand "fdisk -l $RESTORE_DEVICE"
-
-	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p|sd[a-z])2(\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
-
-	logItem "PartitionStart: $partitionStart"
-
-	if [[ -z "$partitionStart" ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS "42" "Partitionstart of second partition of ${RESTORE_DEVICE} not found"
-		exitError $RC_CREATE_PARTITIONS_FAILED
-	fi
-
-	fdisk $RESTORE_DEVICE &>> $LOG_FILE <<EOF
-p
-d
-2
-n
-p
-2
-$partitionStart
-
-p
-w
-q
-EOF
-
-	waitForPartitionDefsChanged
-	logExit
-}
-
 function revertScriptVersion() {
 
 	logEntry
@@ -5122,16 +5083,9 @@ function restore() {
 
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
-				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
-				rc=$?
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
-					exitError $RC_CREATE_PARTITIONS_FAILED
-				fi
-
-				waitForPartitionDefsChanged
 
 				cp "$SF_FILE" $$.sfdisk
+				logItem "Current sfdisk file"
 				logCommand "cat $$.sfdisk"
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
@@ -5170,14 +5124,23 @@ function restore() {
 
 						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $$.sfdisk
 
+						logItem "Updated sfdisk file"
 						logCommand "cat $$.sfdisk"
 
 						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
 							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
 						fi
 
-						resizeRootFS
 					fi
+
+					sfdisk -f $RESTORE_DEVICE < "$$.sfdisk" &>>"$LOG_FILE"
+					rc=$?
+					if (( $rc )); then
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+						exitError $RC_CREATE_PARTITIONS_FAILED
+					fi
+
+					waitForPartitionDefsChanged
 
 					rm $$.sfdisk &>/dev/null
 				fi
