@@ -137,6 +137,7 @@ TEMPORARY_MOUNTPOINT_ROOT="/tmp"
 TEMP_LOG_FILE="$CALLING_HOME/${MYNAME}.log"
 TEMP_MSG_FILE="$CALLING_HOME/${MYNAME}.msg"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
+MODIFIED_SFDISK="$$.sfdisk"
 
 # timeouts
 
@@ -4203,7 +4204,7 @@ function cleanupRestore() { # trap
 	logItem "Got trap $1"
 	logItem "rc: $rc"
 
-	rm $$.sfdisk &>/dev/null
+	rm $MODIFIED_SFDISK &>/dev/null
 
 	if [[ -n $MNT_POINT ]]; then
 		if isMounted $MNT_POINT; then
@@ -5084,9 +5085,9 @@ function restore() {
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
 
-				cp "$SF_FILE" $$.sfdisk
+				cp "$SF_FILE" $MODIFIED_SFDISK
 				logItem "Current sfdisk file"
-				logCommand "cat $$.sfdisk"
+				logCommand "cat $MODIFIED_SFDISK"
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
@@ -5122,10 +5123,10 @@ function restore() {
 						local newTargetPartitionSize=$(( adjustedTargetPartitionBlockSize * 512 ))
 						local oldPartitionSourceSize=$(( ${sourceValues[3]} * 512 ))
 
-						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $$.sfdisk
+						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $MODIFIED_SFDISK
 
 						logItem "Updated sfdisk file"
-						logCommand "cat $$.sfdisk"
+						logCommand "cat $MODIFIED_SFDISK"
 
 						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
 							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
@@ -5133,7 +5134,7 @@ function restore() {
 
 					fi
 
-					sfdisk -f $RESTORE_DEVICE < "$$.sfdisk" &>>"$LOG_FILE"
+					sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
 					rc=$?
 					if (( $rc )); then
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
@@ -5142,7 +5143,7 @@ function restore() {
 
 					waitForPartitionDefsChanged
 
-					rm $$.sfdisk &>/dev/null
+					rm $MODIFIED_SFDISK &>/dev/null
 				fi
 			fi
 
