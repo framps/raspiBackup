@@ -2272,7 +2272,7 @@ function executeDD() { # cmd silent
 	else
 		executeCommand "$cmd"
 	fi
-
+	rc=$?
 	logExit $rc
 	return $rc
 }
@@ -2286,6 +2286,7 @@ function executeRsync() { # cmd flagsToIgnore
 	else
 		executeCommandNoStderrRedirect "$cmd" "$2"
 	fi
+	rc=$?
 	logExit $rc
 	return $rc
 }
@@ -2295,6 +2296,7 @@ function executeTar() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	executeCommand "$cmd" "$2"
+	rc=$?
 	logExit $rc
 	return $rc
 }
