@@ -137,6 +137,7 @@ TEMPORARY_MOUNTPOINT_ROOT="/tmp"
 TEMP_LOG_FILE="$CALLING_HOME/${MYNAME}.log"
 TEMP_MSG_FILE="$CALLING_HOME/${MYNAME}.msg"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
+MODIFIED_SFDISK="$$.sfdisk"
 
 # timeouts
 
@@ -4264,7 +4265,7 @@ function cleanupRestore() { # trap
 	logItem "Got trap $1"
 	logItem "rc: $rc"
 
-	rm $$.sfdisk &>/dev/null
+	rm $MODIFIED_SFDISK &>/dev/null
 
 	if [[ -n $MNT_POINT ]]; then
 		if isMounted $MNT_POINT; then
@@ -4283,45 +4284,6 @@ function cleanupRestore() { # trap
 
 	logExit "$rc"
 
-}
-
-function resizeRootFS() {
-
-	logEntry
-
-	local partitionStart
-
-	logItem "RESTORE_DEVICE: $RESTORE_DEVICE"
-	logItem "ROOT_PARTITION: $ROOT_PARTITION"
-
-	logItem "partitionLayout of $RESTORE_DEVICE"
-	logCommand "fdisk -l $RESTORE_DEVICE"
-
-	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p|sd[a-z])2(\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
-
-	logItem "PartitionStart: $partitionStart"
-
-	if [[ -z "$partitionStart" ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS "42" "Partitionstart of second partition of ${RESTORE_DEVICE} not found"
-		exitError $RC_CREATE_PARTITIONS_FAILED
-	fi
-
-	fdisk $RESTORE_DEVICE &>> $LOG_FILE <<EOF
-p
-d
-2
-n
-p
-2
-$partitionStart
-
-p
-w
-q
-EOF
-
-	waitForPartitionDefsChanged
-	logExit
 }
 
 function revertScriptVersion() {
@@ -5158,17 +5120,10 @@ function restore() {
 
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
-				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
-				rc=$?
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
-					exitError $RC_CREATE_PARTITIONS_FAILED
-				fi
 
-				waitForPartitionDefsChanged
-
-				cp "$SF_FILE" $$.sfdisk
-				logCommand "cat $$.sfdisk"
+				cp "$SF_FILE" $MODIFIED_SFDISK
+				logItem "Current sfdisk file"
+				logCommand "cat $MODIFIED_SFDISK"
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
@@ -5204,18 +5159,27 @@ function restore() {
 						local newTargetPartitionSize=$(( adjustedTargetPartitionBlockSize * 512 ))
 						local oldPartitionSourceSize=$(( ${sourceValues[3]} * 512 ))
 
-						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $$.sfdisk
+						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $MODIFIED_SFDISK
 
-						logCommand "cat $$.sfdisk"
+						logItem "Updated sfdisk file"
+						logCommand "cat $MODIFIED_SFDISK"
 
 						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
 							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
 						fi
 
-						resizeRootFS
 					fi
 
-					rm $$.sfdisk &>/dev/null
+					sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+					rc=$?
+					if (( $rc )); then
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+						exitError $RC_CREATE_PARTITIONS_FAILED
+					fi
+
+					waitForPartitionDefsChanged
+
+					rm $MODIFIED_SFDISK &>/dev/null
 				fi
 			fi
 
