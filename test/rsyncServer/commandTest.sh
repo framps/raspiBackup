@@ -49,12 +49,9 @@ function testCommand() {
 
 	local reply rc
 
-	echo "@@@ testCommand @@@"
+	declare t=(localTarget sshTarget)
 
-	declare t=(localTarget) #  sshTarget)
-
-	cmds=("ls -la /" "sudo cat /etc/shadow" "ls -la /wurks")
-	cmds=("ls -la /wurks")
+	cmds=("ls -b") # "ls -la /" "sudo cat /etc/shadow" "ls -la /forceError" "lsblk")
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 		tt="${t[$target]}"
@@ -65,16 +62,13 @@ function testCommand() {
 			rc=$?
 			checkrc $rc
 			echo "stdout: $stdout"
-			echo "stderr: $sterr"
+			echo "stderr: $stderr"
 		done
 		echo
 	done
 
 	logExit $rc
 }
-
-stdout=""
-stderr=""
 
 reset
 testCommand

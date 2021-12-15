@@ -2907,36 +2907,32 @@ function invokeRsync() { # target options direction from to
 }
 
 # invoke command either localy, remote via ssh or remote via rsync daemon. Remote calls are executed via sudo
-function invokeCommand() { # target stdOutVar stdErrVar command
+function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarname command
 
 	logEntry "$1 $2 $3 $4"
 
-	local rc reply std err
-
-	set -x
+	local -n target=$1
 	local -n sout=$2
 	local -n eout=$3
-
 	local cmd="$4"
 
-	local -n target=$1
+	local rc
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			# std="$($cmd)"
-			local s="$(mktemp -p /dev/shm/)"
+			local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr wia in memory file
 			local e="$(mktemp -p /dev/shm/)"
-			$($cmd 1>$s 2>$e)
+			$($cmd 1>$s 2>$e)						# invoke command on local system
 			rc=$?
-			std="$(cat $s)"
-			err="$(cat $e)"
+			sout="$(<$s)"
+			eout="$(<$e)"
 			rm $e
 			rm $s
 			;;
 
 		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
-			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY_FILE]} sudo $cmd"
+			executeRemoteCommand sout eout "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY_FILE]} sudo $cmd"
 			rc=$?
 			;;
 
@@ -2945,10 +2941,6 @@ function invokeCommand() { # target stdOutVar stdErrVar command
 
 	esac
 
-	sout="$std"
-	eout="$err"
-
-	set +x
 	logItem "STD: $sout"
 	logItem "ERR: $eout"
 
