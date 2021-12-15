@@ -6098,7 +6098,7 @@ function inspect4Restore() {
 		fi
 
 		MBR_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.mbr)
-		if [[ -z $MBR_FILE_FILE ]]; then
+		if [[ -z $MBR_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.mbr"
 			exitError $RC_MISSING_FILES
 		fi
@@ -6106,7 +6106,7 @@ function inspect4Restore() {
 
 	if (( PARTITIONBASED_BACKUP )); then
 		BLKID_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.blkid)
-		if [[ -z $BLKID_FILE_FILE ]]; then
+		if [[ -z $BLKID_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
 			exitError $RC_MISSING_FILES
 		fi
@@ -6118,7 +6118,7 @@ function inspect4Restore() {
 		fi
 
 		FDISK_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.fdisk)
-		if [[ -z $FDISK_FILE_FILE ]]; then
+		if [[ -z $FDISK_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.fdisk"
 			exitError $RC_MISSING_FILES
 		fi
