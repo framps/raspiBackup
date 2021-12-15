@@ -2907,34 +2907,50 @@ function invokeRsync() { # target options direction from to
 }
 
 # invoke command either localy, remote via ssh or remote via rsync daemon. Remote calls are executed via sudo
-function invokeCommand() { # target command
+function invokeCommand() { # target stdOutVar stdErrVar command
 
-	logEntry "$1 $2"
+	logEntry "$1 $2 $3 $4"
 
 	local rc reply std err
+
+	set -x
+	local -n sout=$2
+	local -n eout=$3
+
+	local cmd="$4"
 
 	local -n target=$1
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			reply="$($2)"
+			# std="$($cmd)"
+			local s="$(mktemp -p /dev/shm/)"
+			local e="$(mktemp -p /dev/shm/)"
+			$($cmd 1>$s 2>$e)
 			rc=$?
-			echo "$reply"
+			std="$(cat $s)"
+			err="$(cat $e)"
+			rm $e
+			rm $s
 			;;
 
 		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
-			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY_FILE]} sudo $2"
+			executeRemoteCommand std err "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY_FILE]} sudo $cmd"
 			rc=$?
-			logItem "STD: $std"
-			logItem "ERR: $err"
-			echo "$std"
 			;;
 
 		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
 			;;
 
 	esac
+
+	sout="$std"
+	eout="$err"
+
+	set +x
+	logItem "STD: $sout"
+	logItem "ERR: $eout"
 
 	logExit $rc
 
