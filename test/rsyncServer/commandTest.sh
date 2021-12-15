@@ -38,9 +38,68 @@ function checkrc() {
 	local rc="$1"
 	if (( $rc != 0 )); then
 		echo "Error $rc"
+		echo $stderr
+	else
+		echo "OK: $rc"
 	fi
 
 	logExit $rc
+}
+
+function verifyRemoteSSHAccessOK() {
+	logEntry
+
+	local reply rc
+
+	declare t=sshTarget
+
+	# test remote access
+	cmd="pwd"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "pwd"
+	rc=$?
+	checkrc $rc
+
+	cmd="mkdir -p /root/raspiBackup/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	checkrc $rc
+
+	cmd="rmdir /root/raspiBackup/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	checkrc $rc
+
+}
+
+function verifyRemoteDaemonAccessOK() {
+	logEntry
+
+	local reply rc
+
+	declare -t rsyncTarget
+
+	# test remote access
+	cmd="pwd"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "pwd"
+	rc=$?
+	checkrc $rc
+
+	cmd="mkdir -p /root/raspiBackup/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	checkrc $rc
+
+	cmd="rmdir /root/raspiBackup/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	checkrc $rc
+
 }
 
 function testCommand() {
@@ -49,9 +108,9 @@ function testCommand() {
 
 	local reply rc
 
-	declare t=(localTarget sshTarget)
+	declare t=(localTarget sshTarget rsyncTarget)
 
-	cmds=("ls -b") # "ls -la /" "sudo cat /etc/shadow" "ls -la /forceError" "lsblk")
+	cmds=("ls -b" "ls -la /" "mkdir /dummy" "ls -la /dummy" "rmdir /dummy" "ls -la /forceError" "lsblk")
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 		tt="${t[$target]}"
@@ -71,6 +130,8 @@ function testCommand() {
 }
 
 reset
-testCommand
+#verifyRemoteSSHAccessOK
+verifyRemoteDaemonAccessOK
+#testCommand
 
 
