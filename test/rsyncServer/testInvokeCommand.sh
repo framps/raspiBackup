@@ -46,6 +46,8 @@ function checkrc() {
 	logExit $rc
 }
 
+# test whether ssh configuration is OK and all required commands can be executed via ssh
+
 function verifyRemoteSSHAccessOK() {
 	logEntry
 
@@ -74,12 +76,14 @@ function verifyRemoteSSHAccessOK() {
 
 }
 
+# test whether daemon configuration is OK and all required commands can be executed via ssh
+
 function verifyRemoteDaemonAccessOK() {
 	logEntry
 
 	local reply rc
 
-	declare -t rsyncTarget
+	declare t=rsyncTarget
 
 	# test remote access
 	cmd="pwd"
@@ -88,13 +92,26 @@ function verifyRemoteDaemonAccessOK() {
 	rc=$?
 	checkrc $rc
 
-	cmd="mkdir -p /root/raspiBackup/dummy"
+	local moduleDir=${rsyncTarget[$TARGET_DIR]}
+	cmd="mkdir -p $moduleDir/dummy"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
 	rc=$?
 	checkrc $rc
 
-	cmd="rmdir /root/raspiBackup/dummy"
+	cmd="touch $moduleDir/dummy/dummy.txt"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	checkrc $rc
+
+	cmd="rm $moduleDir/dummy/dummy.txt"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	checkrc $rc
+
+	cmd="rmdir $moduleDir/dummy"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
 	rc=$?
@@ -131,7 +148,5 @@ function testCommand() {
 
 reset
 #verifyRemoteSSHAccessOK
-verifyRemoteDaemonAccessOK
-#testCommand
-
-
+#verifyRemoteDaemonAccessOK
+testCommand
