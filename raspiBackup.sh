@@ -2864,13 +2864,13 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 	local fromDir="$6"
 	local toDir="$7"
 
-	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr wia in memory file
+	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr in memory files
 	local e="$(mktemp -p /dev/shm/)"
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			logItem "local targethost: $(hostname)"			
+			logItem "local targethost: $(hostname)"
 			rsync $options $fromDir $toDir 1>$s 2>$e
 			rc=$?
 			;;
@@ -2887,14 +2887,16 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 
 		$TARGET_TYPE_DAEMON)
 			logItem "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]}"
+			set -x
 			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
 			module="${target[$TARGET_MODULE]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				rsync $options $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module 1>$s 2>$e # toDir is actually the rsync server module
+				rsync $options $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module/$toDir 1>$s 2>$e
 			else
-				rsync $options rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir 1>$s 2>$e
+				rsync $options rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
+			set +x
 			;;
 
 		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"

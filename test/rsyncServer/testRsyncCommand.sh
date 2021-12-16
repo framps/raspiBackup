@@ -28,6 +28,8 @@ source ~/.ssh/rsyncServer.creds
 #DAEMON_USER=
 #DAEMON_PASSWORD=
 
+RSYNC_OPTIONS="-aArv"
+
 if (( $UID != 0 )); then
 	echo "Call me as root"
 	exit -1
@@ -92,7 +94,8 @@ function testRsync() {
 	echo "@@@ testRsync @@@"
 
 	declare t=(localTarget sshTarget rsyncTarget)
-	declare t=(sshTarget)
+	#declare t=(sshTarget)
+	declare t=(rsyncTarget)
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 
@@ -110,47 +113,47 @@ function testRsync() {
 		createTestData $TEST_DIR
 
 		echo "@@@ Copy local data to remote"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "$TEST_DIR/" "$targetDir"
+		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "$TEST_DIR/*" "$targetDir"
 		checkrc $?
-		logItem "$reply"
+		echo "$stdout"
 
-#		echo "@@@ Verify remote data"
+		echo "@@@ Verify remote data"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
-#		printf -v args '%q ' "$targetDir"
-#		reply="$(invokeCommand ${t[$target]} stdout stderr "bash -s -- $args"  < ./testRemote.sh)"
-#		checkrc $?
-#		logItem "$stdout"
+		printf -v args '%q ' "$targetDir"
+		invokeCommand ${t[$target]} stdout stderr "bash -s -- $args"  < ./testRemote.sh
+		checkrc $?
+		echo "$stdout"
 
 		# cleanup local dir
 		echo "@@@ Clear local data"
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data to local"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_FROM "$targetDir/" "$TEST_DIR"
+		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_FROM "$targetDir/*" "$TEST_DIR"
 		checkrc $?
-		logItem "$stdout"
+		echo "$stdout"
 
 		echo "@@@ Verify local data"
 		verifyTestData "$TEST_DIR"
 
+		# cleanup local dir
+		echo "@@@ Clear local data"
+		rm ./$TEST_DIR/*
+
 		echo "@@@ Remote data"
 		invokeCommand ${t[$target]} stdout stderr "ls -la "$targetDir/*""
-		logItem "$stdout"
+		checkrc $?
+		echo "$stdout"
 
 		echo "@@@ Clear remote data"
 		invokeCommand ${t[$target]} stdout stderr "rm "$targetDir/*""
-		logItem "$stdout"
+		checkrc $?
+		echo "$stdout"
 
 		echo "@@@ Remote data cleared"
 		invokeCommand ${t[$target]} stdout stderr "ls -la "$targetDir""
-		logItem "$stdout"
-
-#		remote error
-
-		echo "@@@ Error"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "${TEST_DIR}Dummy/" "${targetDir}Dummy"
 		checkrc $?
-		logItem "$stderr"
+		echo "$stdout"
 
 	done
 
