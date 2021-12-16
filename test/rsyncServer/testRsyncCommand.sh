@@ -94,14 +94,17 @@ function testRsync() {
 	echo "@@@ testRsync @@@"
 
 	declare t=(localTarget sshTarget rsyncTarget)
-	#declare t=(sshTarget)
-	declare t=(rsyncTarget)
+	declare t=(sshTarget rsyncTarget)
+	declare t=(sshTarget)
+	#declare t=(rsyncTarget)
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 
 		tt="${t[$target]}"
+		local -n tgt=$tt
+
 		echo
-		echo "@@@ ---> Target: $tt"
+		echo "@@@ ---> Target: $tt TargetDir: ${tgt[$TARGET_DIR]}"
 
 		echo "@@@ Creating test data in local dir"
 		if [[ $tt == "localTarget" ]]; then
@@ -113,13 +116,13 @@ function testRsync() {
 		createTestData $TEST_DIR
 
 		echo "@@@ Copy local data to remote"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "$TEST_DIR/*" "$targetDir"
+		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "$TEST_DIR/" "$TEST_DIR/"
 		checkrc $?
 		echo "$stdout"
 
 		echo "@@@ Verify remote data"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
-		printf -v args '%q ' "$targetDir"
+		printf -v args '%q ' "${tgt[$TARGET_DIR]}"
 		invokeCommand ${t[$target]} stdout stderr "bash -s -- $args"  < ./testRemote.sh
 		checkrc $?
 		echo "$stdout"
@@ -129,7 +132,7 @@ function testRsync() {
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data to local"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_FROM "$targetDir/*" "$TEST_DIR"
+		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_FROM "$TEST_DIR/" "$TEST_DIR/"
 		checkrc $?
 		echo "$stdout"
 
@@ -141,17 +144,17 @@ function testRsync() {
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Remote data"
-		invokeCommand ${t[$target]} stdout stderr "ls -la "$targetDir/*""
+		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[$TARGET_DIR]}/*""
 		checkrc $?
 		echo "$stdout"
 
 		echo "@@@ Clear remote data"
-		invokeCommand ${t[$target]} stdout stderr "rm "$targetDir/*""
+		invokeCommand ${t[$target]} stdout stderr "rm "${tgt[$TARGET_DIR]}/*""
 		checkrc $?
 		echo "$stdout"
 
 		echo "@@@ Remote data cleared"
-		invokeCommand ${t[$target]} stdout stderr "ls -la "$targetDir""
+		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[$TARGET_DIR]}""
 		checkrc $?
 		echo "$stdout"
 

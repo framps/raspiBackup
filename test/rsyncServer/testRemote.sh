@@ -2,7 +2,7 @@
 
 # Check on (remote) host whether ACLs were transferred correctly
 
-DEBUG=0
+DEBUG=1
 
 function verifyTestData() { # directory
 

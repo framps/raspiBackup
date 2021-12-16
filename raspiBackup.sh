@@ -364,12 +364,12 @@ TEST_DIR="Test-Backup"								# @@@ HARD CODED as of now
 readonly TARGET_HOST="TARGET_HOST" 						# IP of remote target
 readonly TARGET_USER="TARGET_USER" 						# remote target ssh userid
 readonly TARGET_KEY_FILE="TARGET_KEY_FILE" 				# ssh public key file
+readonly TARGET_DIR="TARGET_DIR" 						# backup dir
+readonly TARGET_BASE="TARGET_BASE" 						# backup dir base
 
 # daemon
 readonly TARGET_DAEMON_USER="TARGET_DAEMON_USER" 		# module user
 readonly TARGET_DAEMON_PASSWORD="TARGET_DAEMON_PASSWORD" # module password
-readonly TARGET_MODULE="TARGET_MODULE"					# module name
-readonly TARGET_DIR="TARGET_DIR" 						# module directory
 
 readonly TARGET_TYPE="TARGET_TYPE"
 readonly TARGET_TYPE_DAEMON="TARGET_TYPE_DAEMON"
@@ -382,13 +382,15 @@ readonly TARGET_DIRECTION_FROM="TARGET_DIRECTION_FROM" 	# from remote to local
 declare -A localTarget
 localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
 localTarget[$TARGET_DIR]="./$TEST_DIR"					# just for testing purposes
+localTarget[$TARGET_BASE]="."
 
 declare -A sshTarget
 sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
 sshTarget[$TARGET_HOST]="$SSH_HOST"
 sshTarget[$TARGET_USER]="$SSH_USER"
 sshTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
-sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
+sshTarget[$TARGET_DIR]="$TEST_DIR"
+sshTarget[$TARGET_BASE]="$DAEMON_MODULE_DIR"
 
 declare -A rsyncTarget
 rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
@@ -397,8 +399,8 @@ rsyncTarget[$TARGET_USER]="$SSH_USER"
 rsyncTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
 rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
 rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
-rsyncTarget[$TARGET_MODULE]="$DAEMON_MODULE"
-rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR"
+rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
+rsyncTarget[$TARGET_BASE]="$DAEMON_MODULE"
 
 POSSIBLE_RSYNC_TARGET_TYPES="[$TARGET_TYPE_LOCAL|$TARGET_TYPE_SSH|$TARGET_TYPE_DAEMON]"
 declare -A RSYNC_TARGETS=( [$TARGET_TYPE_LOCAL]="localTarget" [$TARGET_TYPE_SSH]="sshTarget" [$TARGET_TYPE_DAEMON]="rsyncTarget" )
@@ -2851,7 +2853,7 @@ function dynamic_mount() { # mountpoint
 
 function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname options direction from to
 
-	logEntry "$1 $2 $3 $4"
+	logEntry "$1 $2 $3 $4 $5 $6 $7"
 
 	local -n target=$1
 	local -n sout=$2
@@ -2876,24 +2878,26 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 			;;
 
 		$TARGET_TYPE_SSH)
-			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}"
+			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]} $fromDir $toDir"
+			set -x
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir 1>$s 2>$e
+				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:${target[$TARGET_BASE]}/$toDir 1>$s 2>$e
 			else
-				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir 1>$s 2>$e
+				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:${target[$TARGET_BASE]}/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
+			set +x
 			;;
 
 		$TARGET_TYPE_DAEMON)
-			logItem "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]}"
-			set -x
+			logItem "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]} $fromDir $toDir"
 			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
 			module="${target[$TARGET_MODULE]}"
+			set -x
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				rsync $options $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module/$toDir 1>$s 2>$e
+				rsync $options $fromDir "${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}::${target[$TARGET_BASE]}/$toDir 1>$s 2>$e
 			else
-				rsync $options rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module/$fromDir $toDir 1>$s 2>$e
+				rsync $options "${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}::${target[$TARGET_BASE]}/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
 			set +x
