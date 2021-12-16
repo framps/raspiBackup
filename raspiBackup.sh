@@ -2849,36 +2849,38 @@ function dynamic_mount() { # mountpoint
 
 }
 
-function invokeRsync() { # target options direction from to
+function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname options direction from to
 
 	logEntry "$1 $2 $3 $4"
 
-	local rc reply direction fromDir toDir command module
-
 	local -n target=$1
+	local -n sout=$2
+	local -n eout=$3
 
-	shift
-	local options="$1"
-	direction="$2"
-	fromDir="$3"
-	toDir="$4"
+	local rc
+
+	local options="$4"
+	local direction="$5"
+	local fromDir="$6"
+	local toDir="$7"
+
+	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr wia in memory file
+	local e="$(mktemp -p /dev/shm/)"
 
 	case ${target[$TARGET_TYPE]} in
 
 		$TARGET_TYPE_LOCAL)
-			logItem "local targethost: $(hostname)"
-				set -x
-			reply="$(rsync $options $fromDir $toDir)"
-			set +x
+			logItem "local targethost: $(hostname)"			
+			rsync $options $fromDir $toDir 1>$s 2>$e
 			rc=$?
 			;;
 
 		$TARGET_TYPE_SSH)
 			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir)"
+				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$toDir 1>$s 2>$e
 			else
-				reply="$(rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir)"
+				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
 			;;
@@ -2888,9 +2890,9 @@ function invokeRsync() { # target options direction from to
 			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
 			module="${target[$TARGET_MODULE]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				reply="$(rsync $options $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module)" # toDir is actually the rsync server module
+				rsync $options $fromDir rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module 1>$s 2>$e # toDir is actually the rsync server module
 			else
-				reply="$(rsync $options rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir)"
+				rsync $options rsync://"${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}:/$module $toDir 1>$s 2>$e
 			fi
 			rc=$?
 			;;
@@ -2899,7 +2901,11 @@ function invokeRsync() { # target options direction from to
 			;;
 	esac
 
-	echo "$reply"
+	sout="$(<$s)"
+	eout="$(<$e)"
+
+	rm $e
+	rm $s
 
 	logExit $rc
 
