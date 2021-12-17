@@ -1,22 +1,24 @@
-![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat)
+![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/stars/framps/raspiBackup?style=social)
 
 # raspiBackup - Backup and restore your running Raspberries
 
-* Create an unattended full system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron. Important services can be stopped before starting the backup and are started again when the backup finished.
+* Create an unattended full or incremental system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron.
+* Restore any of the created backups. 
+* Important services can be stopped before starting the backup and are started again when the backup finished.
+* Menu driven installer installs raspiBackup and configures all major options to get raspiBackup up and running in 5 minutes
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
-* dd and tar are full backups. rsync uses hardlinks for an incremental backup
-* External root partition for systems which don't support USB boot mode and USB boot systems are supported.
-* Easy migration of a SD card based system. Just restore the SD card backup to SSD.
+* dd and tar are full backups. rsync uses hardlinks for incremental backups
+* Restore a SD card image backup to SSD or USB disk and migrate to use USB boot mode 
 * Status of backup run can be sent via eMail or to Telegram
 * Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
-* UI installer configures all major options to get raspiBackup up and running in 5 minutes
+* Extensionpoints allow to execute any additional logic at various steps in the backup process
 * Default language for messages is English. Following languages are supported native:
   * German
   * Finnish
   * Chinese
   * French
-* Extensive logging helps to isolate and solve configuration and environment issues quickly
+* Extensive logging helps to answer and fix github issues create by raspiBackup users
 * Much more features ... (See doc below)
 
 ## Documentation

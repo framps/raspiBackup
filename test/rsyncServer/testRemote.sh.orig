@@ -6,18 +6,27 @@ DEBUG=0
 
 function verifyTestData() { # directory
 
+<<<<<<< HEAD
 	local rc=0
 
+=======
+>>>>>>> development
 	(( $DEBUG )) && echo "Testing  $1/acl.txt"
 	(( $DEBUG )) && getfacl $1/acl.txt
 	if [[ ! -f $1/acl.txt ]]; then
 		echo "??? acl.txt not found ???"
+<<<<<<< HEAD
 		rc=1
+=======
+>>>>>>> development
 	else
 		getfacl $1/acl.txt | grep -q "user:root"
 		if (( $? )); then
 			echo "??? ACL not found ???"
+<<<<<<< HEAD
 			rc=1
+=======
+>>>>>>> development
 		else
 			: echo "!!! ACL found !!!"
 		fi
@@ -27,17 +36,32 @@ function verifyTestData() { # directory
 	(( $DEBUG )) && getfacl $1/noacl.txt
 	if [[ ! -f $1/noacl.txt ]]; then
 		echo "??? noacl.txt not found ???"
+<<<<<<< HEAD
 		rc=1
+=======
+>>>>>>> development
 	else
 		getfacl $1/noacl.txt | grep -q "user:root"
 		if (( ! $? )); then
 			echo "??? ACL found ???"
+<<<<<<< HEAD
 			rc=1
+=======
+>>>>>>> development
 		else
 			: echo "!!! ACL not found !!!"
 		fi
 	fi
+<<<<<<< HEAD
+
 	return $rc
 }
+
+#echo "Testing $1"
+=======
+}
+
+echo "Testing $1"
+>>>>>>> development
 
 verifyTestData "$1"

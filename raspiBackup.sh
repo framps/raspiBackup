@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -138,6 +137,7 @@ TEMPORARY_MOUNTPOINT_ROOT="/tmp"
 TEMP_LOG_FILE="$CALLING_HOME/${MYNAME}.log"
 TEMP_MSG_FILE="$CALLING_HOME/${MYNAME}.msg"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
+MODIFIED_SFDISK="/tmp/$$.sfdisk"
 
 # timeouts
 
@@ -2343,9 +2343,66 @@ function exitError() { # {rc}
 	exit $rc
 }
 
-# write stdout and stderr into log
+function executeDD() { # cmd silent
+	logEntry
+	local rc cmd
+	cmd="$1"
+
+	if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+		if (( $PROGRESS && $INTERACTIVE )); then
+			executeCommandNoRedirect "$cmd"
+		else
+			executeCommandNoStdoutRedirect "$cmd"
+		fi
+	elif (( $PROGRESS && $INTERACTIVE)); then
+		executeCommandNoStderrRedirect "$cmd"
+	else
+		executeCommand "$cmd"
+	fi
+	rc=$?
+	logExit $rc
+	return $rc
+}
+
+function executeRsync() { # cmd flagsToIgnore
+	logEntry
+	local rc cmd
+	cmd="$1"
+	if (( $PROGRESS && $INTERACTIVE )); then
+		executeCommandNoStdoutRedirect "$cmd" "$2"
+	else
+		executeCommandNoStderrRedirect "$cmd" "$2"
+	fi
+	rc=$?
+	logExit $rc
+	return $rc
+}
+
+function executeTar() { # cmd flagsToIgnore
+	logEntry
+	local rc cmd
+	cmd="$1"
+	executeCommand "$cmd" "$2"
+	rc=$?
+	logExit $rc
+	return $rc
+}
+
+# write stdout and stderr into log if in background
 function executeCommand() { # command - rc's to accept
 	executeCmd "$1" "&" "$2"
+	return $?
+}
+
+# write nothing into log
+function executeCommandNoRedirect() { # command - rc's to accept
+	executeCmd "$1" "" "$2"
+	return $?
+}
+
+# write stdout into log if in background
+function executeCommandNoStderrRedirect() { # command - rc's to accept
+	executeCmd "$1" "1" "$2"
 	return $?
 }
 
@@ -2360,11 +2417,15 @@ function executeCmd() { # command - redirects - rc's to accept
 	logEntry "Command: $1"
 	logItem "Redirect: $2 - Skips: $3"
 
-#	if (( $INTERACTIVE )); then
-		eval "$1 $2>> $LOG_FILE"
-#	else
-#		eval "$1 $2>> $LOG_FILE"
-#	fi
+	if [[ $2 == "S" ]]; then			# silent mode
+		eval "$1 &>> $LOG_FILE"			# redirect 1 and/or 2 depending on $2
+
+	elif (( $INTERACTIVE )) || [[ -z "$2" ]]; then
+		eval "$1"						# no redirect at all
+
+	else
+		eval "$1 $2>> $LOG_FILE"		# redirect 1 and/or 2 depending on $2
+	fi
 	rc=$?
 	if (( $rc != 0 )); then
 		local error=1
@@ -4130,7 +4191,7 @@ function cleanupBackupDirectory() {
 				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
 			fi
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
-			rm -rf $BACKUPTARGET_DIR # delete incomplete backupdir
+			rm -rfd $BACKUPTARGET_DIR # delete incomplete backupdir
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_DIR" "$rmrc"
@@ -4324,7 +4385,7 @@ function cleanupStartup() { # trap
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
-		: # masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
+		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
 	logFinish
@@ -4356,7 +4417,9 @@ function cleanup() { # trap
 	else
 		cleanupBackup $1
 		if [[ $rc -eq 0 ]]; then
-			applyBackupStrategy
+			if (( ! $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then
+				applyBackupStrategy
+			fi
 		fi
 	fi
 
@@ -4440,7 +4503,7 @@ function cleanup() { # trap
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
-		: # masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
+		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
 	logFinish
@@ -4459,7 +4522,7 @@ function cleanupRestore() { # trap
 	logItem "Got trap $1"
 	logItem "rc: $rc"
 
-	rm $$.sfdisk &>/dev/null
+	rm $MODIFIED_SFDISK &>/dev/null
 
 	if [[ -n $MNT_POINT ]]; then
 		if isMounted $MNT_POINT; then
@@ -4478,45 +4541,6 @@ function cleanupRestore() { # trap
 
 	logExit "$rc"
 
-}
-
-function resizeRootFS() {
-
-	logEntry
-
-	local partitionStart
-
-	logItem "RESTORE_DEVICE: $RESTORE_DEVICE"
-	logItem "ROOT_PARTITION: $ROOT_PARTITION"
-
-	logItem "partitionLayout of $RESTORE_DEVICE"
-	logCommand "fdisk -l $RESTORE_DEVICE"
-
-	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p|sd[a-z])2(\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
-
-	logItem "PartitionStart: $partitionStart"
-
-	if [[ -z "$partitionStart" ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS "42" "Partitionstart of second partition of ${RESTORE_DEVICE} not found"
-		exitError $RC_CREATE_PARTITIONS_FAILED
-	fi
-
-	fdisk $RESTORE_DEVICE &>> $LOG_FILE <<EOF
-p
-d
-2
-n
-p
-2
-$partitionStart
-
-p
-w
-q
-EOF
-
-	waitForPartitionDefsChanged
-	logExit
 }
 
 function revertScriptVersion() {
@@ -4764,20 +4788,18 @@ function bootPartitionBackup() {
 
 		logItem "Starting boot partition backup..."
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_CREATING_PARTITION_INFO
-
 		if (( ! $FAKE && ! $EXCLUDE_DD && ! $SHARED_BOOT_DIRECTORY )); then
 			local ext=$BOOT_DD_EXT
 			(( $TAR_BOOT_PARTITION_ENABLED )) && ext=$BOOT_TAR_EXT
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
-					cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					executeCmd "$cmd" "S" # silent mode
 				else
-					cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=1M"
+					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
+					executeCmd "$cmd" "S" # silent mode
 				fi
-
-				executeCommand "$cmd"
 				rc=$?
 				if [ $rc != 0 ]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_BACKUP_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
@@ -4909,7 +4931,7 @@ function partitionLayoutBackup() {
 
 }
 
-function ddBackup() {
+function backupDD() {
 
 	logEntry
 
@@ -4917,40 +4939,27 @@ function ddBackup() {
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 
+	local progressFlag=""
+	(( $PROGRESS )) && progressFlag="status=progress"
+
 	if (( $PARTITIONBASED_BACKUP )); then
 
 		partition="${BOOT_DEVICENAME}p$1"
 		partitionName="${BOOT_PARTITION_PREFIX}$1"
 
 		if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-			if (( $PARTITION )); then
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $partition | grep "Disk.*$partition" | cut -d ' ' -f 5) | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			else
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			fi
+			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
 		else
-			if (( $PROGRESS )); then
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $partition | grep "Disk.*$partition" | cut -d ' ' -f 5) | dd of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			else
-				cmd="dd if=$partition bs=$DD_BLOCKSIZE $DD_PARMS of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
-			fi
+			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
 		fi
 
 	else
 
 		if (( ! $DD_BACKUP_SAVE_USED_PARTITIONS_ONLY )); then
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-				if (( $PROGRESS )); then
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $BOOT_DEVICENAME | grep "Disk.*$BOOT_DEVICENAME" | cut -d ' ' -f 5) | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
-				else
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
-				fi
+				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
 			else
-				if (( $PROGRESS )); then
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS | pv -fs $(fdisk -l $BOOT_DEVICENAME | grep "Disk.*$BOOT_DEVICENAME" | cut -d ' ' -f 5) | dd of=\"$BACKUPTARGET_FILE\""
-				else
-					cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $DD_PARMS of=\"$BACKUPTARGET_FILE\""
-				fi
+				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"$BACKUPTARGET_FILE\""
 			fi
 		else
 			logCommand "fdisk -l $BOOT_DEVICENAME"
@@ -4994,11 +5003,7 @@ function ddBackup() {
 
 	if (( ! $EXCLUDE_DD )); then
 		if (( ! $FAKE)); then
-			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-				executeCommandNoStdoutRedirect "$cmd"
-			else
-				executeCommand "$cmd"
-			fi
+			executeDD "$cmd"
 			rc=$?
 		else
 			rc=0
@@ -5010,13 +5015,11 @@ function ddBackup() {
 	return $rc
 }
 
-function tarBackup() {
+function backupTar() {
 
 	local verbose zip cmd partition source target devroot sourceDir
 
 	logEntry
-
-	(( $PROGRESS )) && VERBOSE=1
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 	[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="-z" || zip=""
@@ -5066,7 +5069,7 @@ function tarBackup() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
 	if (( ! $FAKE )); then
-		executeCommand "${cmd}" "$TAR_IGNORE_ERRORS"
+		executeTar "${cmd}" "$TAR_IGNORE_ERRORS"
 		rc=$?
 	fi
 
@@ -5134,7 +5137,7 @@ function updateUUID() {
 	logExit
 }
 
-function rsyncBackup() { # partition number (for partition based backup)
+function backupRsync() { # partition number (for partition based backup)
 
 	local verbose partition target source excludeRoot cmd cmdParms excludeMeta
 
@@ -5142,7 +5145,8 @@ function rsyncBackup() { # partition number (for partition based backup)
 
 	(( $PROGRESS )) && VERBOSE=0
 
-	(( $VERBOSE )) && verbose="-v" || verbose=""
+	verbose="--info=NAME0"
+	(( $VERBOSE )) && verbose="-v"
 
 	logCommand "ls $BACKUPTARGET_ROOT"
 
@@ -5319,21 +5323,16 @@ function restore() {
 
 		$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
 
+			local progressFlag=""
+			(( $PROGRESS )) && progressFlag="status=progress"
+
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DD ]]; then
-				if (( $PROGRESS )); then
-					cmd="dd if=\"$ROOT_RESTOREFILE\" | pv -fs $(stat -c %s "$ROOT_RESTOREFILE") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-				else
-					cmd="dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE if=\"$ROOT_RESTOREFILE\" $DD_PARMS"
-				fi
+				cmd="dd if=\"$ROOT_RESTOREFILE\" $progressFlag of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
 			else
-				if (( $PROGRESS )); then
-					cmd="gunzip -c \"$ROOT_RESTOREFILE\" | pv -fs $(stat -c %s "$ROOT_RESTOREFILE") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-				else
-					cmd="gunzip -c \"$ROOT_RESTOREFILE\" | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-				fi
+				cmd="gunzip -c \"$ROOT_RESTOREFILE\" | dd of=$RESTORE_DEVICE $progressFlag bs=$DD_BLOCKSIZE $DD_PARMS"
 			fi
 
-			executeCommand "$cmd"
+			executeCommandDD "$cmd"
 			rc=$?
 
 			if [[ $rc != 0 ]]; then
@@ -5385,17 +5384,10 @@ function restore() {
 
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
-				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
-				rc=$?
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
-					exitError $RC_CREATE_PARTITIONS_FAILED
-				fi
 
-				waitForPartitionDefsChanged
-
-				cp "$SF_FILE" $$.sfdisk
-				logCommand "cat $$.sfdisk"
+				cp "$SF_FILE" $MODIFIED_SFDISK
+				logItem "Current sfdisk file"
+				logCommand "cat $MODIFIED_SFDISK"
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
@@ -5431,18 +5423,27 @@ function restore() {
 						local newTargetPartitionSize=$(( adjustedTargetPartitionBlockSize * 512 ))
 						local oldPartitionSourceSize=$(( ${sourceValues[3]} * 512 ))
 
-						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $$.sfdisk
+						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $MODIFIED_SFDISK
 
-						logCommand "cat $$.sfdisk"
+						logItem "Updated sfdisk file"
+						logCommand "cat $MODIFIED_SFDISK"
 
 						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
 							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
 						fi
 
-						resizeRootFS
 					fi
 
-					rm $$.sfdisk &>/dev/null
+					sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+					rc=$?
+					if (( $rc )); then
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+						exitError $RC_CREATE_PARTITIONS_FAILED
+					fi
+
+					waitForPartitionDefsChanged
+
+					rm $MODIFIED_SFDISK &>/dev/null
 				fi
 			fi
 
@@ -5463,11 +5464,10 @@ function restore() {
 			local ext=$BOOT_DD_EXT
 			if [[ -e "$DD_FILE" ]]; then
 				logItem "Restoring boot partition from $DD_FILE"
-				if (( $PROGRESS )); then
-					dd if="$DD_FILE" 2>> $LOG_FILE | pv -fs $(stat -c %s "$DD_FILE") | dd of=$BOOT_PARTITION bs=1M &>>"$LOG_FILE"
-				else
-					dd if="$DD_FILE" of=$BOOT_PARTITION bs=1M &>>"$LOG_FILE"
-				fi
+				local progressFlag=""
+				(( $PROGRESS )) && progressFlag="status=progress"
+				local cmd="dd if="$DD_FILE" $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
+				executeDD "$cmd"
 				rc=$?
 			else
 				ext=$BOOT_TAR_EXT
@@ -5475,11 +5475,11 @@ function restore() {
 				mountAndCheck $BOOT_PARTITION "$MNT_POINT"
 				pushd "$MNT_POINT" &>>"$LOG_FILE"
 				if (( $PROGRESS )); then
-					cmd="pv -f $TAR_FILE | tar -xf -"
+					local cmd="pv -f $TAR_FILE | tar -xf -"
 				else
-					cmd="tar -xf  \"$TAR_FILE\""
+					local cmd="tar -xf  \"$TAR_FILE\""
 				fi
-				executeCommand "$cmd"
+				executeTar "$cmd"
 				rc=$?
 				popd &>>"$LOG_FILE"
 			fi
@@ -5518,11 +5518,11 @@ function restore() {
 					pushd "$MNT_POINT" &>>"$LOG_FILE"
 					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
 					if (( $PROGRESS )); then
-						cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
+						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						cmd="tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
+						local cmd="tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
 					fi
-					executeCommand "$cmd"
+					executeTar "$cmd"
 					rc=$?
 					popd &>>"$LOG_FILE"
 					;;
@@ -5530,12 +5530,10 @@ function restore() {
 				$BACKUPTYPE_RSYNC)
 					local excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
-					if (( $PROGRESS )); then
-						cmd="rsync --info=progress2 --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
-					else
-						cmd="rsync --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
-					fi
-					executeCommand "$cmd"
+					local progressFlag=""
+					(( $PROGRESS )) && progressFlag="--info=progress2"
+					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					executeRsync "$cmd"
 					rc=$?
 					;;
 
@@ -5760,13 +5758,13 @@ function backup() {
 
 			case "$BACKUPTYPE" in
 
-				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) ddBackup
+				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD
 					;;
 
-				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) tarBackup
+				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar
 					;;
 
-				$BACKUPTYPE_RSYNC) rsyncBackup
+				$BACKUPTYPE_RSYNC) backupRsync
 					;;
 
 				*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
@@ -5880,13 +5878,13 @@ function backupPartitions() {
 
 			case "$BACKUPTYPE" in
 
-				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) ddBackup "$partition"
+				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD "$partition"
 					;;
 
-				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) tarBackup "$partition"
+				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar "$partition"
 					;;
 
-				$BACKUPTYPE_RSYNC) rsyncBackup "$partition"
+				$BACKUPTYPE_RSYNC) backupRsync "$partition"
 					;;
 
 				*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
@@ -6321,35 +6319,35 @@ function inspect4Restore() {
 	logEntry
 
 	if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
-		SF_FILE=$(ls -1 $RESTOREFILE/*.sfdisk)
+		SF_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.sfdisk)
 		if [[ -z $SF_FILE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.sfdisk"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.sfdisk"
 			exitError $RC_MISSING_FILES
 		fi
 
-		MBR_FILE=$(ls -1 $RESTOREFILE/*.mbr)
-		if [[ -z $SF_FILE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.mbr"
+		MBR_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.mbr)
+		if [[ -z $MBR_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.mbr"
 			exitError $RC_MISSING_FILES
 		fi
 	fi
 
 	if (( PARTITIONBASED_BACKUP )); then
-		BLKID_FILE=$(ls -1 $RESTOREFILE/*.blkid)
-		if [[ -z $SF_FILE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.blkid"
+		BLKID_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.blkid)
+		if [[ -z $BLKID_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
 			exitError $RC_MISSING_FILES
 		fi
 
-		PARTED_FILE=$(ls -1 $RESTOREFILE/*.parted)
-		if [[ -z $SF_FILE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.parted"
+		PARTED_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.parted)
+		if [[ -z $PARTED_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.parted"
 			exitError $RC_MISSING_FILES
 		fi
 
-		FDISK_FILE=$(ls -1 $RESTOREFILE/*.fdisk)
-		if [[ -z $SF_FILE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/*.fdisk"
+		FDISK_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.fdisk)
+		if [[ -z $FDISK_FILE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.fdisk"
 			exitError $RC_MISSING_FILES
 		fi
 	fi
@@ -6596,7 +6594,7 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
+	if (( $PROGRESS )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
@@ -7402,11 +7400,6 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ $(which pv &>/dev/null) ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
-		exitError $RC_PARAMETER_ERROR
-	fi
-
 	if ! (( $FAKE )); then
 		RESTORE_DEVICE=${RESTORE_DEVICE%/} # delete trailing /
 		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]$ ) && ! ( $RESTORE_DEVICE =~ "/dev/loop" ) ]]; then
@@ -7452,6 +7445,13 @@ function doitRestore() {
 	logItem "Backuptype: $BACKUPTYPE"
 	DATE=$(basename "$RESTOREFILE" | sed -r 's/.*-[A-Za-z]+-backup-([0-9]+-[0-9]+).*/\1/')
 	logItem "Date: $DATE"
+
+	if (( $PROGRESS )); then
+		if ! which pv &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
+			exitError $RC_MISSING_COMMANDS
+		fi
+	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
 		if ! which rsync &>/dev/null; then
