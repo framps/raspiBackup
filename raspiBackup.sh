@@ -342,7 +342,6 @@ source ~/.ssh/rsyncServer.creds
 #DAEMON_USER=
 #DAEMON_PASSWORD=
 
-TEST_DIR="Test-Backup"								# @@@ HARD CODED as of now
 
 #
 # Required access rights
@@ -379,17 +378,18 @@ readonly TARGET_TYPE_LOCAL="TARGET_TYPE_LOCAL"
 readonly TARGET_DIRECTION_TO="TARGET_DIRECTION_TO"		# from local to remote
 readonly TARGET_DIRECTION_FROM="TARGET_DIRECTION_FROM" 	# from remote to local
 
+: << 'END_COMMENT'
 declare -A localTarget
 localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
-localTarget[$TARGET_DIR]="./$TEST_DIR"					# just for testing purposes
 localTarget[$TARGET_BASE]="."
+localTarget[$TARGET_DIR]="./${TEST_DIR}_tgt"
 
 declare -A sshTarget
 sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
 sshTarget[$TARGET_HOST]="$SSH_HOST"
 sshTarget[$TARGET_USER]="$SSH_USER"
 sshTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
-sshTarget[$TARGET_DIR]="$TEST_DIR"
+sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
 sshTarget[$TARGET_BASE]="$DAEMON_MODULE_DIR"
 
 declare -A rsyncTarget
@@ -401,6 +401,7 @@ rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
 rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
 rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
 rsyncTarget[$TARGET_BASE]="$DAEMON_MODULE"
+END_COMMENT
 
 POSSIBLE_RSYNC_TARGET_TYPES="[$TARGET_TYPE_LOCAL|$TARGET_TYPE_SSH|$TARGET_TYPE_DAEMON]"
 declare -A RSYNC_TARGETS=( [$TARGET_TYPE_LOCAL]="localTarget" [$TARGET_TYPE_SSH]="sshTarget" [$TARGET_TYPE_DAEMON]="rsyncTarget" )
@@ -2873,34 +2874,32 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 
 		$TARGET_TYPE_LOCAL)
 			logItem "local targethost: $(hostname)"
+			set -x
 			rsync $options $fromDir $toDir 1>$s 2>$e
 			rc=$?
+			set +x
 			;;
 
 		$TARGET_TYPE_SSH)
 			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]} $fromDir $toDir"
-			set -x
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
 				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:${target[$TARGET_BASE]}/$toDir 1>$s 2>$e
 			else
 				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:${target[$TARGET_BASE]}/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
-			set +x
 			;;
 
 		$TARGET_TYPE_DAEMON)
 			logItem "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]} $fromDir $toDir"
 			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
-			module="${target[$TARGET_MODULE]}"
-			set -x
+			module="${target[$TARGET_BASE]}"
 			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
 				rsync $options $fromDir "${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}::${target[$TARGET_BASE]}/$toDir 1>$s 2>$e
 			else
 				rsync $options "${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}::${target[$TARGET_BASE]}/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
-			set +x
 			;;
 
 		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
