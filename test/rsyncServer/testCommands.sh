@@ -31,27 +31,26 @@ source ~/.ssh/rsyncServer.creds
 TEST_DIR="Test-Backup"
 
 declare -A localTarget
-localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
-localTarget[$TARGET_BASE]="."
-localTarget[$TARGET_DIR]="./${TEST_DIR}_tgt"
+localTarget[RSYNC_TARGET_TYPE]="$RSYNC_TARGET_TYPE_LOCAL"
+localTarget[RSYNC_TARGET_BASE]="."
+localTarget[RSYNC_TARGET_DIR]="./${TEST_DIR}_tgt"
 
 declare -A sshTarget
-sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
-sshTarget[$TARGET_HOST]="$SSH_HOST"
-sshTarget[$TARGET_USER]="$SSH_USER"
-sshTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
-sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
-sshTarget[$TARGET_BASE]="$DAEMON_MODULE_DIR"
+sshTarget[RSYNC_TARGET_TYPE]="$RSYNC_TARGET_TYPE_SSH"
+sshTarget[RSYNC_TARGET_HOST]="$SSH_HOST"
+sshTarget[RSYNC_TARGET_USER]="$SSH_USER"
+sshTarget[RSYNC_TARGET_KEY_FILE]="$SSH_KEY_FILE"
+sshTarget[RSYNC_TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
 
 declare -A rsyncTarget
-rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
-rsyncTarget[$TARGET_HOST]="$SSH_HOST"
-rsyncTarget[$TARGET_USER]="$SSH_USER"
-rsyncTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
-rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
-rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
-rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
-rsyncTarget[$TARGET_BASE]="$DAEMON_MODULE"
+rsyncTarget[RSYNC_TARGET_TYPE]="$RSYNC_TARGET_TYPE_DAEMON"
+rsyncTarget[RSYNC_TARGET_HOST]="$SSH_HOST"
+rsyncTarget[RSYNC_TARGET_USER]="$SSH_USER"
+rsyncTarget[RSYNC_TARGET_KEY_FILE]="$SSH_KEY_FILE"
+rsyncTarget[RSYNC_TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
+rsyncTarget[RSYNC_TARGET_DAEMON_MODULE]="$DAEMON_MODULE"
+rsyncTarget[RSYNC_TARGET_DAEMON_USER]="$DAEMON_USER"
+rsyncTarget[RSYNC_TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
 
 RSYNC_OPTIONS="-aArv"
 
@@ -104,13 +103,13 @@ function getRemoteDirectory() { # target directory
 
 	local -n target=$1
 
-	case ${target[$TARGET_TYPE]} in
+	case ${target[RSYNC_TARGET_TYPE]} in
 
-		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
-			echo "${target[$TARGET_DIR]}"
+		$RSYNC_TARGET_TYPE_SSH | $RSYNC_TARGET_TYPE_DAEMON)
+			echo "${target[RSYNC_TARGET_DIR]}"
 			;;
 
-		*) echo "Unknown target ${target[$TARGET_TYPE]}"
+		*) echo "Unknown target ${target[RSYNC_TARGET_TYPE]}"
 			exit -1
 			;;
 	esac
@@ -122,7 +121,7 @@ function testRsync() {
 
 	declare t=(sshTarget rsyncTarget)
 	#declare t=(sshTarget)
-	#declare t=(rsyncTarget)
+	declare t=(rsyncTarget)
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 
@@ -130,20 +129,20 @@ function testRsync() {
 		local -n tgt=$tt
 
 		echo
-		echo "@@@ ---> Target: $tt TargetDir: ${tgt[$TARGET_DIR]}"
+		echo "@@@ ---> Target: $tt TargetDir: ${tgt[RSYNC_TARGET_DIR]}"
 
 		echo "@@@ Creating test data in local dir"
-		targetDir="$(getRemoteDirectory "${t[$target]}" $TARGET_DIR)"
+		targetDir="$(getRemoteDirectory "${t[$target]}" ${tgt[RSYNC_TARGET_DIR]})"
 		createTestData $TEST_DIR
 
 		echo "@@@ Copy local data to remote"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_TO "$TEST_DIR/" "$TEST_DIR/"
+		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_TO "$TEST_DIR/" "$TEST_DIR/"
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
-		echo "@@@ Verify remote data in ${tgt[$TARGET_DIR]}"
+		echo "@@@ Verify remote data in ${tgt[RSYNC_TARGET_DIR]}"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
-		printf -v args '%q ' "${tgt[$TARGET_DIR]}"
+		printf -v args '%q ' "${tgt[RSYNC_TARGET_DIR]}"
 		invokeCommand ${t[$target]} stdout stderr "bash -s -- $args"  < ./testRemote.sh
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
@@ -153,7 +152,7 @@ function testRsync() {
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data to local"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" $TARGET_DIRECTION_FROM "$TEST_DIR/" "$TEST_DIR/"
+		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_FROM "$TEST_DIR/" "$TEST_DIR/"
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
@@ -165,17 +164,17 @@ function testRsync() {
 		rm ./$TEST_DIR/*
 
 		echo "@@@ List remote data"
-		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[$TARGET_DIR]}/*""
+		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR]}/*""
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ Clear remote data"
-		invokeCommand ${t[$target]} stdout stderr "rm "${tgt[$TARGET_DIR]}/*""
+		invokeCommand ${t[$target]} stdout stderr "rm "${tgt[RSYNC_TARGET_DIR]}/*""
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ List cleared remote data"
-		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[$TARGET_DIR]}""
+		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR]}""
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
@@ -229,7 +228,7 @@ function verifyRemoteDaemonAccessOK() {
 	rc=$?
 	checkrc $rc
 
-	local moduleDir=${rsyncTarget[$TARGET_DIR]}
+	local moduleDir=${rsyncTarget[$RSYNC_TARGET_DIR]}
 	cmd="mkdir -p $moduleDir/dummy"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
@@ -271,6 +270,7 @@ function testCommand() {
 		echo "@@@ ---> Target: $tt"
 		for cmd in "${cmds[@]}"; do
 			echo "Command: $cmd "
+			export RSYNC_TARGET_TYPE=$tt
 			invokeCommand ${t[$target]} stdout stderr "$cmd"
 			rc=$?
 			checkrc $rc
@@ -284,12 +284,12 @@ function testCommand() {
 }
 
 reset
-echo "##################### daemon access ok ##################"
-verifyRemoteDaemonAccessOK
-echo "##################### ssh access ok ##################"
-verifyRemoteSSHAccessOK
+#echo "##################### daemon access ok ##################"
+#verifyRemoteDaemonAccessOK
+#echo "##################### ssh access ok ##################"
+#verifyRemoteSSHAccessOK
 echo "##################### rsync ##################"
 testRsync
-echo "##################### command ##################"
-testCommand
+#echo "##################### command ##################"
+#testCommand
 

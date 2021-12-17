@@ -325,120 +325,62 @@ declare -A REQUIRED_COMMANDS=( \
 # ["btrfs"]="btrfs-tools"
 
 # remote execution constants and definitions for rsync via ssh or rsync daemon
-#
-# @@@ NOTE @@@
-#
-# Everything still hard coded right now
-
-source ~/.ssh/rsyncServer.creds
-#will define
-#SSH_HOST=
-#SSH_USER= # pi
-#SSH_KEY_FILE= # public key of user pi
-
-#DAEMON_HOST=
-#DAEMON_MODULE="Rsync-Test" # uses DAEMON_MODULE_DIR
-#DAEMON_MODULE_DIR="/srv/rsync"
-#DAEMON_USER=
-#DAEMON_PASSWORD=
-
-
-#
-# Required access rights
-#
-# SSH
-# 1) Local user (e.g. framp) calling script via sudo to connect to remote backup system has to have its public key in authorized_hosts of remote user (e.g. pi)
-# 2) Remote user (e.g. pi) can call sudo
-#
-# RSYNC
-# 1) See access rights for SSH
-# 2) Remote rsync server user has to have full access on module directory
-#
-# LOCAL_USER: SSH key access to SSH_USER@SSH_HOST
-# SSH_USER: Can use sudo on remote host
-#
-# Suggestion: Use the same remote user for SSH and rsync module
 
 # SSH + daemon
-readonly TARGET_HOST="TARGET_HOST" 						# IP of remote target
-readonly TARGET_USER="TARGET_USER" 						# remote target ssh userid
-readonly TARGET_KEY_FILE="TARGET_KEY_FILE" 				# ssh public key file
-readonly TARGET_DIR="TARGET_DIR" 						# backup dir
-readonly TARGET_BASE="TARGET_BASE" 						# backup dir base
+#readonly RSYNC_TARGET_HOST="RSYNC_TARGET_HOST" 						# IP of remote target
+#readonly RSYNC_TARGET_USER="RSYNC_TARGET_USER" 						# remote target ssh userid
+#readonly RSYNC_TARGET_KEY_FILE="RSYNC_TARGET_KEY_FILE" 				# ssh public key file
+#readonly RSYNC_TARGET_DIR="RSYNC_TARGET_DIR" 						# backup dir
+#readonly RSYNC_TARGET_BASE="RSYNC_TARGET_BASE" 						# backup dir base, module for rsync daemon
 
-# daemon
-readonly TARGET_DAEMON_USER="TARGET_DAEMON_USER" 		# module user
-readonly TARGET_DAEMON_PASSWORD="TARGET_DAEMON_PASSWORD" # module password
+# daemon only
+#readonly RSYNC_TARGET_DAEMON_USER="RSYNC_TARGET_DAEMON_USER" 		# module user
+#readonly RSYNC_TARGET_DAEMON_PASSWORD="RSYNC_TARGET_DAEMON_PASSWORD" # module password
 
-readonly TARGET_TYPE="TARGET_TYPE"
-readonly TARGET_TYPE_DAEMON="TARGET_TYPE_DAEMON"
-readonly TARGET_TYPE_SSH="TARGET_TYPE_SSH"
-readonly TARGET_TYPE_LOCAL="TARGET_TYPE_LOCAL"
+# constants
+#readonly RSYNC_TARGET_TYPE="RSYNC_TARGET_TYPE"
+readonly RSYNC_TARGET_TYPE_DAEMON="rsyncTarget"
+readonly RSYNC_TARGET_TYPE_SSH="sshTarget"
+readonly RSYNC_TARGET_TYPE_LOCAL="localTarget"
 
-readonly TARGET_DIRECTION_TO="TARGET_DIRECTION_TO"		# from local to remote
-readonly TARGET_DIRECTION_FROM="TARGET_DIRECTION_FROM" 	# from remote to local
+readonly RSYNC_TARGET_DIRECTION_TO="RSYNC_TARGET_DIRECTION_TO"		# from local to remote
+readonly RSYNC_TARGET_DIRECTION_FROM="RSYNC_TARGET_DIRECTION_FROM" 	# from remote to local
 
-: << 'END_COMMENT'
-declare -A localTarget
-localTarget[$TARGET_TYPE]="$TARGET_TYPE_LOCAL"
-localTarget[$TARGET_BASE]="."
-localTarget[$TARGET_DIR]="./${TEST_DIR}_tgt"
-
-declare -A sshTarget
-sshTarget[$TARGET_TYPE]="$TARGET_TYPE_SSH"
-sshTarget[$TARGET_HOST]="$SSH_HOST"
-sshTarget[$TARGET_USER]="$SSH_USER"
-sshTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
-sshTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
-sshTarget[$TARGET_BASE]="$DAEMON_MODULE_DIR"
-
-declare -A rsyncTarget
-rsyncTarget[$TARGET_TYPE]="$TARGET_TYPE_DAEMON"
-rsyncTarget[$TARGET_HOST]="$SSH_HOST"
-rsyncTarget[$TARGET_USER]="$SSH_USER"
-rsyncTarget[$TARGET_KEY_FILE]="$SSH_KEY_FILE"
-rsyncTarget[$TARGET_DAEMON_USER]="$DAEMON_USER"
-rsyncTarget[$TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
-rsyncTarget[$TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
-rsyncTarget[$TARGET_BASE]="$DAEMON_MODULE"
-END_COMMENT
-
-POSSIBLE_RSYNC_TARGET_TYPES="[$TARGET_TYPE_LOCAL|$TARGET_TYPE_SSH|$TARGET_TYPE_DAEMON]"
-declare -A RSYNC_TARGETS=( [$TARGET_TYPE_LOCAL]="localTarget" [$TARGET_TYPE_SSH]="sshTarget" [$TARGET_TYPE_DAEMON]="rsyncTarget" )
+POSSIBLE_RSYNC_TARGET_TYPES="[$RSYNC_TARGET_TYPE_LOCAL|$RSYNC_TARGET_TYPE_SSH|$RSYNC_TARGET_TYPE_DAEMON]"
 
 # possible script exit codes
 
-RC_ASSERTION=101
-RC_MISC_ERROR=102
-RC_CTRLC=103
-RC_EXTENSION_ERROR=104
-RC_STOP_SERVICES_ERROR=105
-RC_START_SERVICES_ERROR=106
-RC_PARAMETER_ERROR=107
-RC_MISSING_FILES=108
-RC_NATIVE_BACKUP_FAILED=109
-RC_LINK_FILE_FAILED=110
-RC_COLLECT_PARTITIONS_FAILED=111
-RC_CREATE_PARTITIONS_FAILED=112
+readonly RC_ASSERTION=101
+readonly RC_MISC_ERROR=102
+readonly RC_CTRLC=103
+readonly RC_EXTENSION_ERROR=104
+readonly RC_STOP_SERVICES_ERROR=105
+readonly RC_START_SERVICES_ERROR=106
+readonly RC_PARAMETER_ERROR=107
+readonly RC_MISSING_FILES=108
+readonly RC_NATIVE_BACKUP_FAILED=109
+readonly RC_LINK_FILE_FAILED=110
+readonly RC_COLLECT_PARTITIONS_FAILED=111
+readonly RC_CREATE_PARTITIONS_FAILED=112
 #RC_=113
-RC_DD_IMG_FAILED=114
-RC_SDCARD_ERROR=115
-RC_RESTORE_FAILED=116
-RC_NATIVE_RESTORE_FAILED=117
-RC_DEVICES_NOTFOUND=118
-RC_CREATE_ERROR=119
-RC_MISSING_COMMANDS=120
-RC_NO_BOOT_FOUND=121
-RC_BEFORE_START_SERVICES_ERROR=122
-RC_BEFORE_STOP_SERVICES_ERROR=123
-RC_EMAILPROG_ERROR=124
-RC_MISSING_PARTITION=125
-RC_UUIDS_NOT_UNIQUE=126
-RC_INCOMPLETE_PARMS=127
-RC_CONFIGVERSION_MISMATCH=128
-RC_TELEGRAM_ERROR=129
-RC_FILE_OPERATION_ERROR=130
-RC_MOUNT_FAILED=131
+readonly RC_DD_IMG_FAILED=114
+readonly RC_SDCARD_ERROR=115
+readonly RC_RESTORE_FAILED=116
+readonly RC_NATIVE_RESTORE_FAILED=117
+readonly RC_DEVICES_NOTFOUND=118
+readonly RC_CREATE_ERROR=119
+readonly RC_MISSING_COMMANDS=120
+readonly RC_NO_BOOT_FOUND=121
+readonly RC_BEFORE_START_SERVICES_ERROR=122
+readonly RC_BEFORE_STOP_SERVICES_ERROR=123
+readonly RC_EMAILPROG_ERROR=124
+readonly RC_MISSING_PARTITION=125
+readonly RC_UUIDS_NOT_UNIQUE=126
+readonly RC_INCOMPLETE_PARMS=127
+readonly RC_CONFIGVERSION_MISMATCH=128
+readonly RC_TELEGRAM_ERROR=129
+readonly RC_FILE_OPERATION_ERROR=130
+readonly RC_MOUNT_FAILED=131
 
 tty -s
 INTERACTIVE=!$?
@@ -2554,6 +2496,13 @@ function logOptions() { # option state
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
 	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
 	logItem "RSYNC_TARGET_TYPE=$RSYNC_TARGET_TYPE"
+	logItem "RSYNC_TARGET_HOST=$RSYNC_TARGET_HOST"
+	logItem "RSYNC_TARGET_USER=$RSYNC_TARGET_USER"
+	logItem "RSYNC_TARGET_USER_KEY_FILE=$RSYNC_TARGET_USER_KEY_FILE"
+	logItem "RSYNC_TARGET_DIR=$RSYNC_TARGET_DIR"
+	logItem "RSYNC_TARGET_DAEMON_MODULE=$RSYNC_TARGET_DAEMON_MODULE"
+	logItem "RSYNC_TARGET_DAEMON_USER=$RSYNC_TARGET_DAEMON_USER"
+	logItem "RSYNC_TARGET_DAEMON_PASSWORD=$RSYNC_TARGET_DAEMON_PASSWORD"
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
  	logItem "SKIP_DEPRECATED=$SKIP_DEPRECATED"
  	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
@@ -2716,7 +2665,7 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_DYNAMIC_MOUNT=""
 
 	# Required for SSH or rsync server
-	DEFAULT_RSYNC_TARGET_TYPE="$TARGET_TYPE_LOCAL"
+	DEFAULT_RSYNC_TARGET_TYPE=""
 	DEFAULT_RSYNC_TARGET_HOST=""
 	DEFAULT_RSYNC_TARGET_USER=""
 	DEFAULT_RSYNC_TARGET_USER_KEY_FILE=""
@@ -2725,7 +2674,7 @@ function initializeDefaultConfigVariables() {
 	# In addition required for rsync daemon
 	DEFAULT_RSYNC_TARGET_DAEMON_USER=""
 	DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD=""
-	DEFAULT_RSYNC_TARGET_MODULE=""
+	DEFAULT_RSYNC_TARGET_DAEMON_MODULE=""
 
 	############# End default config section #############
 	logExit
@@ -2782,9 +2731,9 @@ function copyDefaultConfigVariables() {
 	RSYNC_TARGET_USER="$DEFAULT_RSYNC_TARGET_USER"
 	RSYNC_TARGET_USER_KEY_FILE="$DEFAULT_RSYNC_TARGET_USER_KEY_FILE"
 	RSYNC_TARGET_DIR="$DEFAULT_RSYNC_TARGET_DIR"
+	RSYNC_TARGET_DAEMON_MODULE="$DEFAULT_RSYNC_TARGET_DAEMON_MODULE"
 	RSYNC_TARGET_DAEMON_USER="$DEFAULT_RSYNC_TARGET_DAEMON_USER"
 	RSYNC_TARGET_DAEMON_PASSWORD="$DEFAULT_RSYNC_TARGET_DAEMON_PASSWORD"
-	RSYNC_TARGET_MODULE="$DEFAULT_RSYNC_TARGET_MODULE"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
 	SKIPLOCALCHECK="$DEFAULT_SKIPLOCALCHECK"
 	SMART_RECYCLE="$DEFAULT_SMART_RECYCLE"
@@ -2931,41 +2880,42 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr in memory files
 	local e="$(mktemp -p /dev/shm/)"
 
-	case ${target[$TARGET_TYPE]} in
+	set -x
+	case ${target[RSYNC_TARGET_TYPE]} in
 
-		$TARGET_TYPE_LOCAL)
+		$RSYNC_TARGET_TYPE_LOCAL)
 			logItem "local targethost: $(hostname)"
-			set -x
 			rsync $options $fromDir $toDir 1>$s 2>$e
 			rc=$?
-			set +x
 			;;
 
-		$TARGET_TYPE_SSH)
-			logItem "SSH targethost: ${target[$TARGET_USER]}@${target[$TARGET_HOST]} $fromDir $toDir"
-			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:${target[$TARGET_BASE]}/$toDir 1>$s 2>$e
+		$RSYNC_TARGET_TYPE_SSH)
+			logItem "SSH targethost: ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]} $fromDir $toDir"
+			if [[ $direction == RSYNC_TARGET_DIRECTION_TO ]]; then
+				rsync $options -e "ssh -i ${target[RSYNC_TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$toDir 1>$s 2>$e
 			else
-				rsync $options -e "ssh -i ${target[$TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[$TARGET_USER]}@${target[$TARGET_HOST]}:${target[$TARGET_BASE]}/$fromDir $toDir 1>$s 2>$e
+				rsync $options -e "ssh -i ${target[RSYNC_TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
 			;;
 
-		$TARGET_TYPE_DAEMON)
-			logItem "daemon targethost: ${target[$TARGET_DAEMON_USER]}@${target[$TARGET_HOST]} $fromDir $toDir"
-			export RSYNC_PASSWORD="${target[$TARGET_DAEMON_PASSWORD]}"
-			module="${target[$TARGET_BASE]}"
-			if [[ $direction == $TARGET_DIRECTION_TO ]]; then
-				rsync $options $fromDir "${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}::${target[$TARGET_BASE]}/$toDir 1>$s 2>$e
+		$RSYNC_TARGET_TYPE_DAEMON)
+			logItem "daemon targethost: ${target[RSYNC_TARGET_DAEMON_USER]}@${target[RSYNC_TARGET_HOST]} $fromDir $toDir"
+			export RSYNC_PASSWORD="${target[RSYNC_TARGET_DAEMON_PASSWORD]}"
+			module="${target[RSYNC_TARGET_BASE]}"
+			if [[ $direction == RSYNC_TARGET_DIRECTION_TO ]]; then
+				rsync $options $fromDir "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]}/$toDir 1>$s 2>$e
 			else
-				rsync $options "${target[$TARGET_DAEMON_USER]}"@${target[$TARGET_HOST]}::${target[$TARGET_BASE]}/$fromDir $toDir 1>$s 2>$e
+				rsync $options "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]]}/$fromDir $toDir 1>$s 2>$e
 			fi
 			rc=$?
 			;;
 
-		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
+		*) assertionFailed $LINENO "Unkown target ${target[RSYNC_TARGET_TYPE]}"
 			;;
 	esac
+
+	set +x
 
 	sout="$(<$s)"
 	eout="$(<$e)"
@@ -2990,9 +2940,9 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 
 	local rc
 
-	case ${target[$TARGET_TYPE]} in
+	case ${target[RSYNC_TARGET_TYPE]} in
 
-		$TARGET_TYPE_LOCAL)
+		$RSYNC_TARGET_TYPE_LOCAL)
 			local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr wia in memory file
 			local e="$(mktemp -p /dev/shm/)"
 			$($cmd 1>$s 2>$e)						# invoke command on local system
@@ -3003,12 +2953,12 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 			rm $s
 			;;
 
-		$TARGET_TYPE_SSH | $TARGET_TYPE_DAEMON)
-			executeRemoteCommand sout eout "ssh ${target[$TARGET_USER]}@${target[$TARGET_HOST]} -i ${target[$TARGET_KEY_FILE]} sudo $cmd"
+		$RSYNC_TARGET_TYPE_SSH | $RSYNC_TARGET_TYPE_DAEMON)
+			executeRemoteCommand sout eout "ssh ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]} -i ${target[RSYNC_TARGET_KEY_FILE]} sudo $cmd"
 			rc=$?
 			;;
 
-		*) assertionFailed $LINENO "Unkown target $TARGET_TYPE"
+		*) assertionFailed $LINENO "Unkown target ${target[RSYNC_TARGET_TYPE]}"
 			;;
 
 	esac
@@ -3734,9 +3684,8 @@ function setupEnvironment() {
 			if [[ ! "${RSYNC_TARGET_TYPE}" =~ $POSSIBLE_RSYNC_TARGET_TYPES ]]; then
 				assertionFailed $LINENO "Invalid rsync target $RSYNC_TARGET_TYPE detected"
 			fi
-			RSYNC_TARGET=${RSYNC_TARGETS[$RSYNC_TARGET_TYPE]}
-			logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target $RSYNC_TARGET"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_USED "$RSYNC_TARGET"
+			logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target type $RSYNC_TARGET_TYPE"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_USED "$RSYNC_TARGET_TYPE"
 		fi
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
@@ -5225,7 +5174,7 @@ function backupRsync() { # partition number (for partition based backup)
 
 	if (( ! $FAKE )); then
 		if [[ -n $RSYNC_TARGET_TYPE ]]; then
-			invokeRsync $RSYNC_TARGET "$cmdParms" $TARGET_DIRECTION_TO # $source $target
+			invokeRsync $RSYNC_TARGET "$cmdParms" $RSYNC_TARGET_DIRECTION_TO # $source $target
 			rc=$?
 		else
 			executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"
