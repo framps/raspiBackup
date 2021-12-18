@@ -33,28 +33,28 @@ TEST_DIR="Test-Backup"
 declare -A localTarget
 localTarget[RSYNC_TARGET_TYPE]="$RSYNC_TARGET_TYPE_LOCAL"
 localTarget[RSYNC_TARGET_BASE]="."
-localTarget[RSYNC_TARGET_DIR]="./${TEST_DIR}_tgt"
+localTarget[RSYNC_TARGET_DIR]="${TEST_DIR}_tgt"
 
 declare -A sshTarget
 sshTarget[RSYNC_TARGET_TYPE]="$RSYNC_TARGET_TYPE_SSH"
 sshTarget[RSYNC_TARGET_HOST]="$SSH_HOST"
 sshTarget[RSYNC_TARGET_USER]="$SSH_USER"
 sshTarget[RSYNC_TARGET_KEY_FILE]="$SSH_KEY_FILE"
-sshTarget[RSYNC_TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
+sshTarget[RSYNC_TARGET_DIR]="$DAEMON_MODULE_DIR"
 
 declare -A rsyncTarget
 rsyncTarget[RSYNC_TARGET_TYPE]="$RSYNC_TARGET_TYPE_DAEMON"
 rsyncTarget[RSYNC_TARGET_HOST]="$SSH_HOST"
 rsyncTarget[RSYNC_TARGET_USER]="$SSH_USER"
 rsyncTarget[RSYNC_TARGET_KEY_FILE]="$SSH_KEY_FILE"
-rsyncTarget[RSYNC_TARGET_DIR]="$DAEMON_MODULE_DIR/$TEST_DIR"
+rsyncTarget[RSYNC_TARGET_DIR]="$DAEMON_MODULE_DIR"
 rsyncTarget[RSYNC_TARGET_DAEMON_MODULE]="$DAEMON_MODULE"
 rsyncTarget[RSYNC_TARGET_DAEMON_USER]="$DAEMON_USER"
 rsyncTarget[RSYNC_TARGET_DAEMON_PASSWORD]="$DAEMON_PASSWORD"
 
 RSYNC_OPTIONS="-aArv"
 
-ECHO_REPLIES=0
+ECHO_REPLIES=
 
 if (( $UID != 0 )); then
 	echo "Call me as root"
@@ -75,8 +75,6 @@ function checkrc() {
 }
 
 function createTestData() { # directory
-
-	echo "@@@ Creating local test data in $1"
 
 	if [[ ! -d $1 ]]; then
 		mkdir $1
@@ -105,7 +103,7 @@ function getRemoteDirectory() { # target directory
 
 	case ${target[RSYNC_TARGET_TYPE]} in
 
-		$RSYNC_TARGET_TYPE_SSH | $RSYNC_TARGET_TYPE_DAEMON)
+		$RSYNC_TARGET_TYPE_LOCAL | $RSYNC_TARGET_TYPE_SSH | $RSYNC_TARGET_TYPE_DAEMON)
 			echo "${target[RSYNC_TARGET_DIR]}"
 			;;
 
@@ -121,7 +119,8 @@ function testRsync() {
 
 	declare t=(sshTarget rsyncTarget)
 	#declare t=(sshTarget)
-	declare t=(rsyncTarget)
+	#declare t=(rsyncTarget)
+	#declare t=(localTarget)
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 
@@ -131,27 +130,27 @@ function testRsync() {
 		echo
 		echo "@@@ ---> Target: $tt TargetDir: ${tgt[RSYNC_TARGET_DIR]}"
 
-		echo "@@@ Creating test data in local dir"
+		echo "@@@ Creating test data in local dir $TEST_DIR"
 		targetDir="$(getRemoteDirectory "${t[$target]}" ${tgt[RSYNC_TARGET_DIR]})"
 		createTestData $TEST_DIR
 
-		echo "@@@ Copy local data to remote"
+		echo "@@@ Copy local data $TEST_DIR to remote $TEST_DIR"
 		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_TO "$TEST_DIR/" "$TEST_DIR/"
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ Verify remote data in ${tgt[RSYNC_TARGET_DIR]}"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
-		printf -v args '%q ' "${tgt[RSYNC_TARGET_DIR]}"
+		printf -v args '%q ' "${tgt[RSYNC_TARGET_DIR]}/$TEST_DIR"
 		invokeCommand ${t[$target]} stdout stderr "bash -s -- $args"  < ./testRemote.sh
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		# cleanup local dir
-		echo "@@@ Clear local data $TEST_DIR"
+		echo "@@@ Clear local data dir $TEST_DIR"
 		rm ./$TEST_DIR/*
 
-		echo "@@@ Copy remote data to local"
+		echo "@@@ Copy remote data $TEST_DIR to local $TEST_DIR"
 		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_FROM "$TEST_DIR/" "$TEST_DIR/"
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
@@ -164,17 +163,17 @@ function testRsync() {
 		rm ./$TEST_DIR/*
 
 		echo "@@@ List remote data"
-		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR]}/*""
+		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR]}/$TEST_DIR""
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ Clear remote data"
-		invokeCommand ${t[$target]} stdout stderr "rm "${tgt[RSYNC_TARGET_DIR]}/*""
+		invokeCommand ${t[$target]} stdout stderr "rm "${tgt[RSYNC_TARGET_DIR]}/$TEST_DIR/*""
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ List cleared remote data"
-		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR]}""
+		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR]}/$TEST_DIR""
 		checkrc $?
 		(( ECHO_REPLIES )) && echo "$stdout"
 
@@ -191,20 +190,15 @@ function verifyRemoteSSHAccessOK() {
 
 	declare t=sshTarget
 
-	# test remote access
-	cmd="pwd"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "pwd"
-	rc=$?
-	checkrc $rc
-
+	# test root access
 	cmd="mkdir -p /root/raspiBackup/dummy"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
 	rc=$?
 	checkrc $rc
 
-	cmd="rmdir /root/raspiBackup/dummy"
+	# cleanup
+	cmd="rm -rf /root/raspiBackup/dummy"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
 	rc=$?
@@ -219,16 +213,12 @@ function verifyRemoteDaemonAccessOK() {
 
 	local reply rc
 
+	verifyRemoteSSHAccessOK
+
 	declare t=rsyncTarget
 
-	# test remote access
-	cmd="pwd"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "pwd"
-	rc=$?
-	checkrc $rc
-
-	local moduleDir=${rsyncTarget[$RSYNC_TARGET_DIR]}
+	# check existance of module and access
+	local moduleDir=${rsyncTarget[RSYNC_TARGET_DIR]}
 	cmd="mkdir -p $moduleDir/dummy"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
@@ -241,12 +231,14 @@ function verifyRemoteDaemonAccessOK() {
 	rc=$?
 	checkrc $rc
 
+	# cleanup
 	cmd="rm $moduleDir/dummy/dummy.txt"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
 	rc=$?
 	checkrc $rc
 
+	#cleanup
 	cmd="rmdir $moduleDir/dummy"
 	echo "Testing $cmd"
 	invokeCommand ${t[$target]} stdout stderr "$cmd"
@@ -284,12 +276,12 @@ function testCommand() {
 }
 
 reset
-#echo "##################### daemon access ok ##################"
-#verifyRemoteDaemonAccessOK
-#echo "##################### ssh access ok ##################"
-#verifyRemoteSSHAccessOK
+echo "##################### daemon access ok ##################"
+verifyRemoteDaemonAccessOK
+echo "##################### ssh access ok ##################"
+verifyRemoteSSHAccessOK
 echo "##################### rsync ##################"
 testRsync
-#echo "##################### command ##################"
-#testCommand
+echo "##################### command ##################"
+testCommand
 

@@ -2870,7 +2870,7 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 	local -n sout=$2
 	local -n eout=$3
 
-	local rc
+	local rc ect
 
 	local options="$4"
 	local direction="$5"
@@ -2880,22 +2880,26 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr in memory files
 	local e="$(mktemp -p /dev/shm/)"
 
-	set -x
 	case ${target[RSYNC_TARGET_TYPE]} in
 
 		$RSYNC_TARGET_TYPE_LOCAL)
 			logItem "local targethost: $(hostname)"
-			rsync $options $fromDir $toDir 1>$s 2>$e
+			local ec="rsync $options $fromDir $toDir"
+			echo "Executing command $ec"
+			eval $ec 1>$s 2>$e
 			rc=$?
 			;;
 
 		$RSYNC_TARGET_TYPE_SSH)
 			logItem "SSH targethost: ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]} $fromDir $toDir"
 			if [[ $direction == RSYNC_TARGET_DIRECTION_TO ]]; then
-				rsync $options -e "ssh -i ${target[RSYNC_TARGET_KEY_FILE]}" --rsync-path='sudo rsync' $fromDir ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$toDir 1>$s 2>$e
+				ect="$fromDir ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$toDir"
 			else
-				rsync $options -e "ssh -i ${target[RSYNC_TARGET_KEY_FILE]}" --rsync-path='sudo rsync' ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$fromDir $toDir 1>$s 2>$e
+				ect="${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$fromDir $toDir"
 			fi
+			ec="rsync $options -e \"ssh -i ${target[RSYNC_TARGET_KEY_FILE]}\" --rsync-path='sudo rsync' $ect 1>$s 2>$e"
+			echo "Executing command $ec"
+			eval $ec
 			rc=$?
 			;;
 
@@ -2904,18 +2908,18 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 			export RSYNC_PASSWORD="${target[RSYNC_TARGET_DAEMON_PASSWORD]}"
 			module="${target[RSYNC_TARGET_BASE]}"
 			if [[ $direction == RSYNC_TARGET_DIRECTION_TO ]]; then
-				rsync $options $fromDir "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]}/$toDir 1>$s 2>$e
+				ec="rsync $options $fromDir "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]}/$toDir"
 			else
-				rsync $options "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]]}/$fromDir $toDir 1>$s 2>$e
+				ec="rsync $options "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]]}/$fromDir $toDir"
 			fi
+			echo "Executing command $ec"
+			eval $ec 1>$s 2>$e
 			rc=$?
 			;;
 
 		*) assertionFailed $LINENO "Unkown target ${target[RSYNC_TARGET_TYPE]}"
 			;;
 	esac
-
-	set +x
 
 	sout="$(<$s)"
 	eout="$(<$e)"
@@ -2945,7 +2949,8 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 		$RSYNC_TARGET_TYPE_LOCAL)
 			local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr wia in memory file
 			local e="$(mktemp -p /dev/shm/)"
-			$($cmd 1>$s 2>$e)						# invoke command on local system
+			local ec="$cmd"
+			$($ec 1>$s 2>$e)						# invoke command on local system
 			rc=$?
 			sout="$(<$s)"
 			eout="$(<$e)"
@@ -2954,7 +2959,9 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 			;;
 
 		$RSYNC_TARGET_TYPE_SSH | $RSYNC_TARGET_TYPE_DAEMON)
-			executeRemoteCommand sout eout "ssh ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]} -i ${target[RSYNC_TARGET_KEY_FILE]} sudo $cmd"
+			local ec="ssh ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]} -i ${target[RSYNC_TARGET_KEY_FILE]} sudo $cmd"
+			echo "Executing $ec"
+			executeRemoteCommand sout eout "$ec"
 			rc=$?
 			;;
 
