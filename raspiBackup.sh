@@ -327,15 +327,15 @@ declare -A REQUIRED_COMMANDS=( \
 # remote execution constants and definitions for rsync via ssh or rsync daemon
 
 # SSH + daemon
-#readonly RSYNC_TARGET_HOST="RSYNC_TARGET_HOST" 						# IP of remote target
-#readonly RSYNC_TARGET_USER="RSYNC_TARGET_USER" 						# remote target ssh userid
-#readonly RSYNC_TARGET_KEY_FILE="RSYNC_TARGET_KEY_FILE" 				# ssh public key file
-#readonly RSYNC_TARGET_DIR="RSYNC_TARGET_DIR" 						# backup dir
-#readonly RSYNC_TARGET_BASE="RSYNC_TARGET_BASE" 						# backup dir base, module for rsync daemon
+readonly RSYNC_TARGET_HOST_CNST="RSYNC_TARGET_HOST" 						# IP of remote target
+readonly RSYNC_TARGET_USER_CNST="RSYNC_TARGET_USER" 						# remote target ssh userid
+readonly RSYNC_TARGET_KEY_FILE_CNST="RSYNC_TARGET_KEY_FILE"				# ssh public key file
+readonly RSYNC_TARGET_DIR_CNST="RSYNC_TARGET_DIR" 							# backup dir
 
 # daemon only
-#readonly RSYNC_TARGET_DAEMON_USER="RSYNC_TARGET_DAEMON_USER" 		# module user
-#readonly RSYNC_TARGET_DAEMON_PASSWORD="RSYNC_TARGET_DAEMON_PASSWORD" # module password
+readonly RSYNC_TARGET_DAEMON_USER_CNST="RSYNC_TARGET_DAEMON_USER" 		# module user
+readonly RSYNC_TARGET_DAEMON_PASSWORD_CNST="RSYNC_TARGET_DAEMON_PASSWORD" # module password
+readonly RSYNC_TARGET_DAEMON_MODULE_CNST="RSYNC_TARGET_DAEMON_MODULE"	# module name
 
 # constants
 #readonly RSYNC_TARGET_TYPE="RSYNC_TARGET_TYPE"
@@ -2862,6 +2862,51 @@ function dynamic_mount() { # mountpoint
 
 }
 
+function testTarget() {
+
+	local -n tgt=$1
+
+	local k
+	for k in ${!tgt[@]}; do
+		echo "$k: ${tgt[$k]}"
+	done
+
+	case ${tgt[RSYNC_TARGET_TYPE_CNST]} in
+
+		$RSYNC_TARGET_TYPE_DAEMON)
+			if [[ \
+				   -z "${tgt[RSYNC_TARGET_DAEMON_MODULE_CNST]}" \
+				|| -z "${tgt[RSYNC_TARGET_DAEMON_USER_CNST]}" \
+				|| -z "${tgt[RSYNC_TARGET_DAEMON_PASSWORD_CNST]}" \
+				]]; then
+					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (daemon part)"
+			fi
+			;&
+			
+		$RSYNC_TARGET_TYPE_SSH)
+			if [[ \
+				   -z "${tgt[RSYNC_TARGET_KEY_FILE_CNST]}" \
+				|| -z "${tgt[RSYNC_TARGET_DIR_CNST]}" \
+				]]; then
+					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (ssh part)"
+			fi
+			;&
+			
+		$RSYNC_TARGET_TYPE_LOCAL)
+			if [[ \
+				   -z "${tgt[RSYNC_TARGET_TYPE_CNST]}" \
+				|| -z "${tgt[RSYNC_TARGET_DIR_CNST]}" \
+				]]; then
+					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (local part)"
+			fi
+			;;
+			
+		*) assertionFailed $LINENO "Unkown target ${tgt[RSYNC_TARGET_TYPE_CNST]}"
+			;;
+	esac
+	
+}
+
 function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname options direction from to
 
 	logEntry "$1 $2 $3 $4 $5 $6 $7"
@@ -2879,8 +2924,8 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 
 	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr in memory files
 	local e="$(mktemp -p /dev/shm/)"
-
-	case ${target[RSYNC_TARGET_TYPE]} in
+	
+	case ${target[RSYNC_TARGET_TYPE_CNST]} in
 
 		$RSYNC_TARGET_TYPE_LOCAL)
 			logItem "local targethost: $(hostname)"
@@ -2891,33 +2936,32 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 			;;
 
 		$RSYNC_TARGET_TYPE_SSH)
-			logItem "SSH targethost: ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]} $fromDir $toDir"
+			logItem "SSH targethost: ${target[RSYNC_TARGET_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]} $fromDir $toDir"
 			if [[ $direction == RSYNC_TARGET_DIRECTION_TO ]]; then
-				ect="$fromDir ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$toDir"
+				ect="$fromDir ${target[RSYNC_TARGET_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]}:${target[RSYNC_TARGET_DIR_CNST]}/$toDir"
 			else
-				ect="${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]}:${target[RSYNC_TARGET_DIR]}/$fromDir $toDir"
+				ect="${target[RSYNC_TARGET_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]}:${target[RSYNC_TARGET_DIR_CNST]}/$fromDir $toDir"
 			fi
-			ec="rsync $options -e \"ssh -i ${target[RSYNC_TARGET_KEY_FILE]}\" --rsync-path='sudo rsync' $ect 1>$s 2>$e"
+			ec="rsync $options -e \"ssh -i ${target[RSYNC_TARGET_KEY_FILE_CNST]}\" --rsync-path='sudo rsync' $ect 1>$s 2>$e"
 			echo "Executing command $ec"
 			eval $ec
 			rc=$?
 			;;
 
 		$RSYNC_TARGET_TYPE_DAEMON)
-			logItem "daemon targethost: ${target[RSYNC_TARGET_DAEMON_USER]}@${target[RSYNC_TARGET_HOST]} $fromDir $toDir"
-			export RSYNC_PASSWORD="${target[RSYNC_TARGET_DAEMON_PASSWORD]}"
-			module="${target[RSYNC_TARGET_BASE]}"
+			logItem "daemon targethost: ${target[RSYNC_TARGET_DAEMON_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]} $fromDir $toDir"
+			export RSYNC_PASSWORD="${target[RSYNC_TARGET_DAEMON_PASSWORD_CNST]}"
 			if [[ $direction == RSYNC_TARGET_DIRECTION_TO ]]; then
-				ec="rsync $options $fromDir "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]}/$toDir"
+				ec="rsync $options $fromDir "${target[RSYNC_TARGET_DAEMON_USER_CNST]}"@${target[RSYNC_TARGET_HOST_CNST]}::${target[RSYNC_TARGET_DAEMON_MODULE_CNST]}/$toDir"
 			else
-				ec="rsync $options "${target[RSYNC_TARGET_DAEMON_USER]}"@${target[RSYNC_TARGET_HOST]}::${target[RSYNC_TARGET_DAEMON_MODULE]]}/$fromDir $toDir"
+				ec="rsync $options "${target[RSYNC_TARGET_DAEMON_USER_CNST]}"@${target[RSYNC_TARGET_HOST_CNST]}::${target[RSYNC_TARGET_DAEMON_MODULE_CNST]}/$fromDir $toDir"
 			fi
 			echo "Executing command $ec"
 			eval $ec 1>$s 2>$e
 			rc=$?
 			;;
 
-		*) assertionFailed $LINENO "Unkown target ${target[RSYNC_TARGET_TYPE]}"
+		*) assertionFailed $LINENO "Unkown target ${target[RSYNC_TARGET_TYPE_CNST]}"
 			;;
 	esac
 
@@ -2944,7 +2988,7 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 
 	local rc
 
-	case ${target[RSYNC_TARGET_TYPE]} in
+	case ${target[RSYNC_TARGET_TYPE_CNST]} in
 
 		$RSYNC_TARGET_TYPE_LOCAL)
 			local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr wia in memory file
@@ -2959,13 +3003,13 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 			;;
 
 		$RSYNC_TARGET_TYPE_SSH | $RSYNC_TARGET_TYPE_DAEMON)
-			local ec="ssh ${target[RSYNC_TARGET_USER]}@${target[RSYNC_TARGET_HOST]} -i ${target[RSYNC_TARGET_KEY_FILE]} sudo $cmd"
+			local ec="ssh ${target[RSYNC_TARGET_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]} -i ${target[RSYNC_TARGET_KEY_FILE_CNST]} sudo $cmd"
 			echo "Executing $ec"
 			executeRemoteCommand sout eout "$ec"
 			rc=$?
 			;;
 
-		*) assertionFailed $LINENO "Unkown target ${target[RSYNC_TARGET_TYPE]}"
+		*) assertionFailed $LINENO "Unkown target ${target[RSYNC_TARGET_TYPE_CNST]}"
 			;;
 
 	esac
