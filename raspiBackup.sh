@@ -308,7 +308,7 @@ PERSISTENT_JOURNAL="/var/log/journal"
 NEW_OPTION_TRAILER="# >>>>> NEW OPTION added in config version %s <<<<< "
 DELETED_OPTION_TRAILER="# >>>>> OPTION DELETED in config version %s <<<<< "
 
-TWO_TB=$((1024*1024*1024*1024*2))			# disks > 2TB reuquire gpt instead of mbr
+TWO_TB=$((1024*1024*1024*1024*2))			# disks > 2TB require gpt instead of mbr
 
 # Commands used by raspiBackup and which have to be available
 # [command]=package
@@ -338,7 +338,7 @@ readonly RSYNC_TARGET_DAEMON_PASSWORD_CNST="RSYNC_TARGET_DAEMON_PASSWORD" # modu
 readonly RSYNC_TARGET_DAEMON_MODULE_CNST="RSYNC_TARGET_DAEMON_MODULE"	# module name
 
 # constants
-#readonly RSYNC_TARGET_TYPE="RSYNC_TARGET_TYPE"
+readonly RSYNC_TARGET_TYPE_CNST="RSYNC_TARGET_TYPE"
 readonly RSYNC_TARGET_TYPE_DAEMON="rsyncTarget"
 readonly RSYNC_TARGET_TYPE_SSH="sshTarget"
 readonly RSYNC_TARGET_TYPE_LOCAL="localTarget"
@@ -347,6 +347,8 @@ readonly RSYNC_TARGET_DIRECTION_TO="RSYNC_TARGET_DIRECTION_TO"		# from local to 
 readonly RSYNC_TARGET_DIRECTION_FROM="RSYNC_TARGET_DIRECTION_FROM" 	# from remote to local
 
 POSSIBLE_RSYNC_TARGET_TYPES="[$RSYNC_TARGET_TYPE_LOCAL|$RSYNC_TARGET_TYPE_SSH|$RSYNC_TARGET_TYPE_DAEMON]"
+
+declare -A RSYNC_TARGET=( [RSYNC_TARGET_TYPE_CNST]="$RSYNC_TARGET_TYPE_LOCAL" )
 
 # possible script exit codes
 
@@ -381,6 +383,7 @@ readonly RC_CONFIGVERSION_MISMATCH=128
 readonly RC_TELEGRAM_ERROR=129
 readonly RC_FILE_OPERATION_ERROR=130
 readonly RC_MOUNT_FAILED=131
+readonly RC_TARGET_ERROR=132
 
 tty -s
 INTERACTIVE=!$?
@@ -1792,6 +1795,9 @@ MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour c
 MSG_RSYNC_TARGETTYPE_USED=267
 MSG_EN[$MSG_RSYNC_TARGETTYPE_USED]="RBK0267I: Rsync target type %s used."
 MSG_DE[$MSG_RSYNC_TARGETTYPE_USED]="RBK0267I: Rsync Zieltyp %s wird genutzt."
+MSG_RSYNC_TARGETTYPE_INVALID=268
+MSG_EN[$MSG_RSYNC_TARGETTYPE_INVALID]="RBK0268I: Rsync target type %s invalid."
+MSG_DE[$MSG_RSYNC_TARGETTYPE_INVALID]="RBK0268I: Rsync Zieltyp %s ist ungültig."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2862,13 +2868,47 @@ function dynamic_mount() { # mountpoint
 
 }
 
+function createTarget() {
+
+	logEntry
+
+	local -n tgt=$1
+
+	case ${tgt[RSYNC_TARGET_TYPE_CNST]} in
+
+		$RSYNC_TARGET_TYPE_DAEMON)
+			tgt[RSYNC_TARGET_DAEMON_MODULE_CNST]="$RSYNC_TARGET_DAEMON_MODULE"
+			tgt[RSYNC_TARGET_DAEMON_USER_CNST]="$RSYNC_TARGET_DAEMON_USER"
+			tgt[RSYNC_TARGET_DAEMON_PASSWORD_CNST]="$RSYNC_TARGET_DAEMON_PASSWORD"
+			;&
+
+		$RSYNC_TARGET_TYPE_SSH)
+			tgt[RSYNC_TARGET_KEY_FILE_CNST]="$RSYNC_TARGET_KEY_FILE"
+			tgt[RSYNC_TARGET_HOST_CNST]="$RSYNC_TARGET_HOST"
+			;&
+
+		$RSYNC_TARGET_TYPE_LOCAL)
+			tgt[RSYNC_TARGET_TYPE_CNST]="$RSYNC_TARGET_TYPE"
+			tgt[RSYNC_TARGET_DIR_CNST]}="$RSYNC_TARGET_DIR"
+			;;
+
+		*) assertionFailed $LINENO "Unkown target ${tgt[RSYNC_TARGET_TYPE_CNST]}"
+			;;
+	esac
+
+	logExit
+
+}
+
 function testTarget() {
+
+	logEntry "$1"
 
 	local -n tgt=$1
 
 	local k
 	for k in ${!tgt[@]}; do
-		echo "$k: ${tgt[$k]}"
+		logItem "$k: ${tgt[$k]}"
 	done
 
 	case ${tgt[RSYNC_TARGET_TYPE_CNST]} in
@@ -2882,16 +2922,16 @@ function testTarget() {
 					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (daemon part)"
 			fi
 			;&
-			
+
 		$RSYNC_TARGET_TYPE_SSH)
 			if [[ \
 				   -z "${tgt[RSYNC_TARGET_KEY_FILE_CNST]}" \
-				|| -z "${tgt[RSYNC_TARGET_DIR_CNST]}" \
+				|| -z "${tgt[RSYNC_TARGET_HOST_CNST]}" \
 				]]; then
 					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (ssh part)"
 			fi
 			;&
-			
+
 		$RSYNC_TARGET_TYPE_LOCAL)
 			if [[ \
 				   -z "${tgt[RSYNC_TARGET_TYPE_CNST]}" \
@@ -2900,11 +2940,12 @@ function testTarget() {
 					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (local part)"
 			fi
 			;;
-			
+
 		*) assertionFailed $LINENO "Unkown target ${tgt[RSYNC_TARGET_TYPE_CNST]}"
 			;;
 	esac
-	
+
+	logExit
 }
 
 function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname options direction from to
@@ -2924,7 +2965,7 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 
 	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr in memory files
 	local e="$(mktemp -p /dev/shm/)"
-	
+
 	case ${target[RSYNC_TARGET_TYPE_CNST]} in
 
 		$RSYNC_TARGET_TYPE_LOCAL)
@@ -3733,10 +3774,17 @@ function setupEnvironment() {
 
 		if [[ -n "$RSYNC_TARGET_TYPE" ]]; then
 			if [[ ! "${RSYNC_TARGET_TYPE}" =~ $POSSIBLE_RSYNC_TARGET_TYPES ]]; then
-				assertionFailed $LINENO "Invalid rsync target $RSYNC_TARGET_TYPE detected"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_INVALID "$RSYNC_TARGET_TYPE"
+				exitError $RC_TARGET_ERROR
 			fi
 			logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target type $RSYNC_TARGET_TYPE"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_USED "$RSYNC_TARGET_TYPE"
+
+			createTarget RSYNC_TARGET
+			testTarget RSYNC_TARGET
+
+			exit
+
 		fi
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
