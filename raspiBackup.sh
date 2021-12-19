@@ -329,7 +329,7 @@ declare -A REQUIRED_COMMANDS=( \
 # SSH + daemon
 readonly RSYNC_TARGET_HOST_CNST="RSYNC_TARGET_HOST" 						# IP of remote target
 readonly RSYNC_TARGET_USER_CNST="RSYNC_TARGET_USER" 						# remote target ssh userid
-readonly RSYNC_TARGET_KEY_FILE_CNST="RSYNC_TARGET_KEY_FILE"				# ssh public key file
+readonly RSYNC_TARGET_USER_KEY_FILE_CNST="RSYNC_TARGET_USER_KEY_FILE"				# ssh public key file
 readonly RSYNC_TARGET_DIR_CNST="RSYNC_TARGET_DIR" 							# backup dir
 
 # daemon only
@@ -338,7 +338,7 @@ readonly RSYNC_TARGET_DAEMON_PASSWORD_CNST="RSYNC_TARGET_DAEMON_PASSWORD" # modu
 readonly RSYNC_TARGET_DAEMON_MODULE_CNST="RSYNC_TARGET_DAEMON_MODULE"	# module name
 
 # constants
-readonly RSYNC_TARGET_TYPE_CNST="RSYNC_TARGET_TYPE"
+readonly RSYNC_TARGET_TYPE_CNST="RSYNC_TARGET_TYPE_CNST"
 readonly RSYNC_TARGET_TYPE_DAEMON="rsyncTarget"
 readonly RSYNC_TARGET_TYPE_SSH="sshTarget"
 readonly RSYNC_TARGET_TYPE_LOCAL="localTarget"
@@ -348,7 +348,7 @@ readonly RSYNC_TARGET_DIRECTION_FROM="RSYNC_TARGET_DIRECTION_FROM" 	# from remot
 
 POSSIBLE_RSYNC_TARGET_TYPES="[$RSYNC_TARGET_TYPE_LOCAL|$RSYNC_TARGET_TYPE_SSH|$RSYNC_TARGET_TYPE_DAEMON]"
 
-declare -A RSYNC_TARGET=( [RSYNC_TARGET_TYPE_CNST]="$RSYNC_TARGET_TYPE_LOCAL" )
+declare -A RSYNC_TARGET
 
 # possible script exit codes
 
@@ -2870,11 +2870,13 @@ function dynamic_mount() { # mountpoint
 
 function createTarget() {
 
-	logEntry
+	logEntry $1 $2
 
 	local -n tgt=$1
 
-	case ${tgt[RSYNC_TARGET_TYPE_CNST]} in
+	logItem "Type: $2"
+
+	case $2 in
 
 		$RSYNC_TARGET_TYPE_DAEMON)
 			tgt[RSYNC_TARGET_DAEMON_MODULE_CNST]="$RSYNC_TARGET_DAEMON_MODULE"
@@ -2883,13 +2885,13 @@ function createTarget() {
 			;&
 
 		$RSYNC_TARGET_TYPE_SSH)
-			tgt[RSYNC_TARGET_KEY_FILE_CNST]="$RSYNC_TARGET_KEY_FILE"
+			tgt[RSYNC_TARGET_USER_KEY_FILE_CNST]="$RSYNC_TARGET_USER_KEY_FILE"
 			tgt[RSYNC_TARGET_HOST_CNST]="$RSYNC_TARGET_HOST"
 			;&
 
 		$RSYNC_TARGET_TYPE_LOCAL)
 			tgt[RSYNC_TARGET_TYPE_CNST]="$RSYNC_TARGET_TYPE"
-			tgt[RSYNC_TARGET_DIR_CNST]}="$RSYNC_TARGET_DIR"
+			tgt[RSYNC_TARGET_DIR_CNST]="$RSYNC_TARGET_DIR"
 			;;
 
 		*) assertionFailed $LINENO "Unkown target ${tgt[RSYNC_TARGET_TYPE_CNST]}"
@@ -2925,7 +2927,7 @@ function testTarget() {
 
 		$RSYNC_TARGET_TYPE_SSH)
 			if [[ \
-				   -z "${tgt[RSYNC_TARGET_KEY_FILE_CNST]}" \
+				   -z "${tgt[RSYNC_TARGET_USER_KEY_FILE_CNST]}" \
 				|| -z "${tgt[RSYNC_TARGET_HOST_CNST]}" \
 				]]; then
 					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (ssh part)"
@@ -2983,7 +2985,7 @@ function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname option
 			else
 				ect="${target[RSYNC_TARGET_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]}:${target[RSYNC_TARGET_DIR_CNST]}/$fromDir $toDir"
 			fi
-			ec="rsync $options -e \"ssh -i ${target[RSYNC_TARGET_KEY_FILE_CNST]}\" --rsync-path='sudo rsync' $ect 1>$s 2>$e"
+			ec="rsync $options -e \"ssh -i ${target[RSYNC_TARGET_USER_KEY_FILE_CNST]}\" --rsync-path='sudo rsync' $ect 1>$s 2>$e"
 			echo "Executing command $ec"
 			eval $ec
 			rc=$?
@@ -3044,7 +3046,7 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 			;;
 
 		$RSYNC_TARGET_TYPE_SSH | $RSYNC_TARGET_TYPE_DAEMON)
-			local ec="ssh ${target[RSYNC_TARGET_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]} -i ${target[RSYNC_TARGET_KEY_FILE_CNST]} sudo $cmd"
+			local ec="ssh ${target[RSYNC_TARGET_USER_CNST]}@${target[RSYNC_TARGET_HOST_CNST]} -i ${target[RSYNC_TARGET_USER_KEY_FILE_CNST]} sudo $cmd"
 			echo "Executing $ec"
 			executeRemoteCommand sout eout "$ec"
 			rc=$?
@@ -3709,6 +3711,7 @@ function readConfigParameters() {
 	# Override default parms with parms in global config file
 
 	ETC_CONFIG_FILE_INCLUDED=0
+	logItem "Testing for $ETC_CONFIG_FILE"
 	if [ -f "$ETC_CONFIG_FILE" ]; then
 		set -e
 		. "$ETC_CONFIG_FILE"
@@ -3727,6 +3730,7 @@ function readConfigParameters() {
 	# Override default parms with parms in user config file
 
 	HOME_CONFIG_FILE_INCLUDED=0
+	logItem "Testing for $HOME_CONFIG_FILE"
 	if [ -f "$HOME_CONFIG_FILE" ]; then
 		set -e
 		. "$HOME_CONFIG_FILE"
@@ -3741,6 +3745,7 @@ function readConfigParameters() {
 
 	CURRENTDIR_CONFIG_FILE_INCLUDED=0
 	if [[ "$HOME_CONFIG_FILE" != "$CURRENTDIR_CONFIG_FILE" ]]; then
+		logItem "Testing for $CURRENTDIR_CONFIG_FILE"
 		if [ -f "$CURRENTDIR_CONFIG_FILE" ]; then
 			set -e
 			. "$CURRENTDIR_CONFIG_FILE"
@@ -3770,21 +3775,6 @@ function setupEnvironment() {
 
 		if [[ -n "$DYNAMIC_MOUNT" ]]; then
 			dynamic_mount "$DYNAMIC_MOUNT"
-		fi
-
-		if [[ -n "$RSYNC_TARGET_TYPE" ]]; then
-			if [[ ! "${RSYNC_TARGET_TYPE}" =~ $POSSIBLE_RSYNC_TARGET_TYPES ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_INVALID "$RSYNC_TARGET_TYPE"
-				exitError $RC_TARGET_ERROR
-			fi
-			logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target type $RSYNC_TARGET_TYPE"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_USED "$RSYNC_TARGET_TYPE"
-
-			createTarget RSYNC_TARGET
-			testTarget RSYNC_TARGET
-
-			exit
-
 		fi
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
@@ -5762,13 +5752,14 @@ function backup() {
 	callExtensions $PRE_BACKUP_EXTENSION "0"
 	PRE_BACKUP_EXTENSION_CALLED=1
 
-	if (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
+	if [[ -z $RSYNC_TARGET_TYPE ]] && (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
 		exitError $RC_MISC_ERROR
 	fi
 
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
+
 	if [[ ! -d "$BACKUPPATH" ]] && (( !$FAKE )); then
 		 if ! mkdir -p "${BACKUPPATH}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
@@ -5965,6 +5956,22 @@ function doit() {
 	logItem "Startingdirectory: $(pwd)"
 	logCommand "fdisk -l | grep -v "^$""
 	logCommand "mount"
+
+	if [[ -n "$RSYNC_TARGET_TYPE" ]]; then
+		if [[ ! "${RSYNC_TARGET_TYPE}" =~ $POSSIBLE_RSYNC_TARGET_TYPES ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_INVALID "$RSYNC_TARGET_TYPE"
+			exitError $RC_TARGET_ERROR
+		fi
+		logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target type $RSYNC_TARGET_TYPE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_USED "$RSYNC_TARGET_TYPE"
+
+		createTarget RSYNC_TARGET $DEFAULT_RSYNC_TARGET_TYPE
+		testTarget RSYNC_TARGET
+
+		exit
+
+	fi
+
 
 	if (( $RESTORE )); then
 		doitRestore
