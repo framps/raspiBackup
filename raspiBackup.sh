@@ -1805,8 +1805,8 @@ MSG_TARGET_DAEMON_ERROR=270
 MSG_EN[$MSG_TARGET_DAEMON_ERROR]="RBK0270E: Unable to execute command %s via ssh for daemon target which failed with RC %s."
 MSG_DE[$MSG_TARGET_DAEMON_ERROR]="RBK0270E: Befehl %s kann nicht per ssh für den Zieldaemon ausgeführt werden. RC: %s"
 MSG_TARGET_KEYS_MISSING=271
-MSG_EN[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Missing target definitions %s."
-MSG_DE[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Es fehlen Zieldefinitionen %s."
+MSG_EN[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Missing target definitions %s for target %s."
+MSG_DE[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Es fehlen Zieldefinitionen %s für das Ziel %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3030,7 +3030,8 @@ function testTarget() {
 			;;
 	esac
 	if [[ -n "$missingKey" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_KEYS_MISSING "$missingKey"
+		missingKey="$(xargs <<< "$missingKey")"					# strip trailing space
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_KEYS_MISSING "$missingKey" "${tgt[RSYNC_TARGET_TYPE_CNST]}"
 		exitError $RC_TARGET_ERROR
 	fi
 
