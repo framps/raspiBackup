@@ -1798,6 +1798,15 @@ MSG_DE[$MSG_RSYNC_TARGETTYPE_USED]="RBK0267I: Rsync Zieltyp %s wird genutzt."
 MSG_RSYNC_TARGETTYPE_INVALID=268
 MSG_EN[$MSG_RSYNC_TARGETTYPE_INVALID]="RBK0268I: Rsync target type %s invalid."
 MSG_DE[$MSG_RSYNC_TARGETTYPE_INVALID]="RBK0268I: Rsync Zieltyp %s ist ungültig."
+MSG_TARGET_SSH_ERROR=269
+MSG_EN[$MSG_TARGET_SSH_ERROR]="RBK0269E: Unable to execute command %s via ssh for ssh target which failed with RC %s."
+MSG_DE[$MSG_TARGET_SSH_ERROR]="RBK0269E: Befehl %s kann nicht per ssh für das SSH-Ziel ausgeführt werden. RC: %s"
+MSG_TARGET_DAEMON_ERROR=270
+MSG_EN[$MSG_TARGET_DAEMON_ERROR]="RBK0270E: Unable to execute command %s via ssh for daemon target which failed with RC %s."
+MSG_DE[$MSG_TARGET_DAEMON_ERROR]="RBK0270E: Befehl %s kann nicht per ssh für den Zieldaemon ausgeführt werden. RC: %s"
+MSG_TARGET_KEYS_MISSING=271
+MSG_EN[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Missing target definitions %s."
+MSG_DE[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Es fehlen Zieldefinitionen %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2901,6 +2910,90 @@ function createTarget() {
 	logExit
 
 }
+# test whether ssh configuration is OK and all required commands can be executed via ssh
+
+function verifyRemoteSSHAccessOK() {
+
+	logEntry
+
+	local reply rc
+
+	declare t=sshTarget
+
+	# test root access
+	cmd="mkdir -p /root/raspiBackup/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	if (( $rc != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_SSH_ERROR "$cmd" "$rc"
+		exitError $RC_TARGET_ERROR
+	fi
+
+	# cleanup
+	cmd="rm -rf /root/raspiBackup/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	if (( $rc != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_SSH_ERROR "$cmd" "$rc"
+		exitError $RC_TARGET_ERROR
+	fi
+
+}
+
+# test whether daemon configuration is OK and all required commands can be executed via ssh
+
+function verifyRemoteDaemonAccessOK() {
+	logEntry
+
+	local reply rc
+
+	verifyRemoteSSHAccessOK
+
+	declare t=rsyncTarget
+
+	# check existance of module and access
+	local moduleDir=${rsyncTarget[RSYNC_TARGET_DIR_CNST]}
+	cmd="mkdir -p $moduleDir/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	if (( $rc != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_DAEMON_ERROR "$cmd" "$rc"
+		exitError $RC_TARGET_ERROR
+	fi
+
+	cmd="touch $moduleDir/dummy/dummy.txt"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	if (( $rc != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_DAEMON_ERROR "$cmd" "$rc"
+		exitError $RC_TARGET_ERROR
+	fi
+
+	# cleanup
+	cmd="rm $moduleDir/dummy/dummy.txt"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	if (( $rc != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_DAEMON_ERROR "$cmd" "$rc"
+		exitError $RC_TARGET_ERROR
+	fi
+
+	#cleanup
+	cmd="rmdir $moduleDir/dummy"
+	echo "Testing $cmd"
+	invokeCommand ${t[$target]} stdout stderr "$cmd"
+	rc=$?
+	if (( $rc != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_DAEMON_ERROR "$cmd" "$rc"
+		exitError $RC_TARGET_ERROR
+	fi
+
+}
 
 function testTarget() {
 
@@ -2913,39 +3006,33 @@ function testTarget() {
 		logItem "$k: ${tgt[$k]}"
 	done
 
+	local missingKey=""
+
 	case ${tgt[RSYNC_TARGET_TYPE_CNST]} in
 
 		$RSYNC_TARGET_TYPE_DAEMON)
-			if [[ \
-				   -z "${tgt[RSYNC_TARGET_DAEMON_MODULE_CNST]}" \
-				|| -z "${tgt[RSYNC_TARGET_DAEMON_USER_CNST]}" \
-				|| -z "${tgt[RSYNC_TARGET_DAEMON_PASSWORD_CNST]}" \
-				]]; then
-					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (daemon part)"
-			fi
+			[[ -z "${tgt[RSYNC_TARGET_DAEMON_MODULE_CNST]}" ]] && missingKey="RSYNC_TARGET_DAEMON_MODULE $missingKey "
+			[[ -z "${tgt[RSYNC_TARGET_DAEMON_USER_CNST]}" ]] && missingKey="RSYNC_TARGET_DAEMON_USER $missingKey "
+			[[ -z "${tgt[RSYNC_TARGET_DAEMON_PASSWORD_CNST]}" ]] && missingKey="RSYNC_TARGET_DAEMON_PASSWORD $missingKey "
 			;&
 
 		$RSYNC_TARGET_TYPE_SSH)
-			if [[ \
-				   -z "${tgt[RSYNC_TARGET_USER_KEY_FILE_CNST]}" \
-				|| -z "${tgt[RSYNC_TARGET_HOST_CNST]}" \
-				]]; then
-					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (ssh part)"
-			fi
+			[[ -z "${tgt[RSYNC_TARGET_USER_KEY_FILE_CNST]}" ]] && missingKey="RSYNC_TARGET_USER_KEY_FILE $missingKey"
+			[[ -z "${tgt[RSYNC_TARGET_HOST_CNST]}" ]] && missingKey="RSYNC_TARGET_HOST $missingKey"
 			;&
 
 		$RSYNC_TARGET_TYPE_LOCAL)
-			if [[ \
-				   -z "${tgt[RSYNC_TARGET_TYPE_CNST]}" \
-				|| -z "${tgt[RSYNC_TARGET_DIR_CNST]}" \
-				]]; then
-					assertionFailed $LINENO "Incomplete ${tgt[RSYNC_TARGET_TYPE_CNST]} (local part)"
-			fi
+			[[ -z "${tgt[RSYNC_TARGET_TYPE_CNST]}" ]] && missingKey="RSYNC_TARGET_TYPE $missingKey"
+			[[ -z "${tgt[RSYNC_TARGET_DIR_CNST]}" ]] && missingKey="RSYNC_TARGET_DIR $missingKey"
 			;;
 
 		*) assertionFailed $LINENO "Unkown target ${tgt[RSYNC_TARGET_TYPE_CNST]}"
 			;;
 	esac
+	if [[ -n "$missingKey" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_KEYS_MISSING "$missingKey"
+		exitError $RC_TARGET_ERROR
+	fi
 
 	logExit
 }
@@ -3030,6 +3117,8 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 	local cmd="$4"
 
 	local rc
+
+	testTarget target
 
 	case ${target[RSYNC_TARGET_TYPE_CNST]} in
 
@@ -4307,6 +4396,26 @@ function masqueradeSensitiveInfoInLog() {
 		logItem "Masquerading eMail parameters"
 		m="$(masquerade "$EMAIL_PARMS")"
 		sed -i -E "s/$EMAIL_PARMS/${m}/" $LOG_FILE # may contain passwords
+	fi
+
+	# rsync targets
+
+	if [[ -n "$RSYNC_TARGET_DAEMON_PASSWORD" ]]; then
+		logItem "Masquerading target daemon pwd"
+		m="$(masquerade "$RSYNC_TARGET_DAEMON_PASSWORD")"
+		sed -i -E "s/$RSYNC_TARGET_DAEMON_PASSWORD/${m}/g" $LOG_FILE
+	fi
+
+	if [[ -n "$RSYNC_TARGET_DAEMON_USER" ]]; then
+		logItem "Masquerading target daemon user"
+		m="$(masquerade "$RSYNC_TARGET_DAEMON_USER")"
+		sed -i -E "s/$RSYNC_TARGET_DAEMON_USER/${m}/g" $LOG_FILE
+	fi
+
+	if [[ -n "$RSYNC_TARGET_USER" && "$RSYNC_TARGET_USER" != "pi" ]]; then
+		logItem "Masquerading target user"
+		m="$(masquerade "$RSYNC_TARGET_USER")"
+		sed -i -E "s/$RSYNC_TARGET_USER/${m}/g" $LOG_FILE
 	fi
 
 	# some mount options
@@ -5968,10 +6077,14 @@ function doit() {
 		createTarget RSYNC_TARGET $DEFAULT_RSYNC_TARGET_TYPE
 		testTarget RSYNC_TARGET
 
-		exit
+		logItem "Verifying remote access"
+		if [[ $RSYNC_TARGET == $RSYNC_TARGET_TYPE_SSH ]]; then
+			verifyRemoteSSHAccessOK RSYNC_TARGET
+		elif [[ $RSYNC_TARGET == $RSYNC_TARGET_TYPE_DAEMON ]]; then
+			verifyRemoteDaemonAccessOK RSYNC_TARGET
+		fi
 
 	fi
-
 
 	if (( $RESTORE )); then
 		doitRestore
@@ -8487,7 +8600,6 @@ RESTORE=0
 RESTOREFILE=""
 RESTORETEST_REQUIRED=0
 REVERT=0
-RSYNC_TARGET=""
 ROOT_PARTITION_DEFINED=0
 SHARED_BOOT_DIRECTORY=0
 SKIP_SFDISK=0

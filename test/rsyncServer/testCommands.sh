@@ -38,14 +38,14 @@ declare -A sshTarget
 sshTarget[RSYNC_TARGET_TYPE_CNST]="$RSYNC_TARGET_TYPE_SSH"
 sshTarget[RSYNC_TARGET_HOST_CNST]="$SSH_HOST"
 sshTarget[RSYNC_TARGET_USER_CNST]="$SSH_USER"
-sshTarget[RSYNC_TARGET_KEY_FILE_CNST]="$SSH_KEY_FILE"
+sshTarget[RSYNC_TARGET_USER_KEY_FILE_CNST]="$SSH_KEY_FILE"
 sshTarget[RSYNC_TARGET_DIR_CNST]="$DAEMON_MODULE_DIR"
 
 declare -A rsyncTarget
 rsyncTarget[RSYNC_TARGET_TYPE_CNST]="$RSYNC_TARGET_TYPE_DAEMON"
 rsyncTarget[RSYNC_TARGET_HOST_CNST]="$SSH_HOST"
 rsyncTarget[RSYNC_TARGET_USER_CNST]="$SSH_USER"
-rsyncTarget[RSYNC_TARGET_KEY_FILE_CNST]="$SSH_KEY_FILE"
+rsyncTarget[RSYNC_TARGET_USER_KEY_FILE_CNST]="$SSH_KEY_FILE"
 rsyncTarget[RSYNC_TARGET_DIR_CNST]="$DAEMON_MODULE_DIR"
 rsyncTarget[RSYNC_TARGET_DAEMON_MODULE_CNST]="$DAEMON_MODULE"
 rsyncTarget[RSYNC_TARGET_DAEMON_USER_CNST]="$DAEMON_USER"
@@ -176,72 +176,6 @@ function testRsync() {
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 	done
-
-}
-
-# test whether ssh configuration is OK and all required commands can be executed via ssh
-
-function verifyRemoteSSHAccessOK() {
-	logEntry
-
-	local reply rc
-
-	declare t=sshTarget
-
-	# test root access
-	cmd="mkdir -p /root/raspiBackup/dummy"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "$cmd"
-	rc=$?
-	checkrc $rc
-
-	# cleanup
-	cmd="rm -rf /root/raspiBackup/dummy"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "$cmd"
-	rc=$?
-	checkrc $rc
-
-}
-
-# test whether daemon configuration is OK and all required commands can be executed via ssh
-
-function verifyRemoteDaemonAccessOK() {
-	logEntry
-
-	local reply rc
-
-	verifyRemoteSSHAccessOK
-
-	declare t=rsyncTarget
-
-	# check existance of module and access
-	local moduleDir=${rsyncTarget[RSYNC_TARGET_DIR_CNST]}
-	cmd="mkdir -p $moduleDir/dummy"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "$cmd"
-	rc=$?
-	checkrc $rc
-
-	cmd="touch $moduleDir/dummy/dummy.txt"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "$cmd"
-	rc=$?
-	checkrc $rc
-
-	# cleanup
-	cmd="rm $moduleDir/dummy/dummy.txt"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "$cmd"
-	rc=$?
-	checkrc $rc
-
-	#cleanup
-	cmd="rmdir $moduleDir/dummy"
-	echo "Testing $cmd"
-	invokeCommand ${t[$target]} stdout stderr "$cmd"
-	rc=$?
-	checkrc $rc
 
 }
 
