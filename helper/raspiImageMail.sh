@@ -41,7 +41,7 @@
 # will be sent in an eMail.
 #
 # Base:
-# raspiBackup.sh VERSION="0.6.4"
+# raspiBackup.sh VERSION="0.6.4.1"
 #
 # Prerequisites:
 # -  raspiImageMail.sh, raspiBackup.sh, raspiBackupRestore2Image.sh and pishrink.sh
@@ -64,7 +64,7 @@
 # raspiBackupRestore2Image.sh werden in einer eMail verschickt.
 #
 # Basis:
-# raspiBackup.sh VERSION="0.6.4"
+# raspiBackup.sh VERSION="0.6.4.1"
 #
 # Voraussetzungen:
 # -  raspiImageMail.sh muss sich, zusammen mit den Programmen
