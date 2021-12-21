@@ -2,7 +2,7 @@
 #
 #######################################################################################################################
 #
-# Send an email using the functions from raspiBackup, based of version 0.6.3.1
+# Send an email using the functions from raspiBackup, based of version 0.6.4
 # Written by kmbach 2017
 #
 # Using: raspiImageMail.sh <msgTitle> <msg> [<attach>]
@@ -41,7 +41,7 @@
 # will be sent in an eMail.
 #
 # Base:
-# raspiBackup.sh VERSION="0.6.3.1"
+# raspiBackup.sh VERSION="0.6.4.1"
 #
 # Prerequisites:
 # -  raspiImageMail.sh, raspiBackup.sh, raspiBackupRestore2Image.sh and pishrink.sh
@@ -64,7 +64,7 @@
 # raspiBackupRestore2Image.sh werden in einer eMail verschickt.
 #
 # Basis:
-# raspiBackup.sh VERSION="0.6.3.1"
+# raspiBackup.sh VERSION="0.6.4.1"
 #
 # Voraussetzungen:
 # -  raspiImageMail.sh muss sich, zusammen mit den Programmen
@@ -82,7 +82,7 @@
 
 MYSELF=${0##*/}
 
-VERSION="0.1"
+VERSION="0.2.0"
 
 if [[ ! $(which raspiBackup.sh) ]]; then
 	echo "raspiBackup.sh not found"
@@ -100,38 +100,18 @@ if [[ $# < 2 ]]; then
 	exit 1
 fi
 
+
 MSG_TITLE="$1"
 MSG="$2"
 APPEND="${3:-""}"
 
+# include raspiBackup.sh
+. raspiBackup.sh --include
+
 # defaults for use functions from raspiBackup.sh
-EMAIL_EXTENSION_PROGRAM="mailext"
-EMAIL_MAILX_PROGRAM="mail"
-EMAIL_SSMTP_PROGRAM="ssmtp"
-EMAIL_SENDEMAIL_PROGRAM="sendEmail"
-NEWS_AVAILABLE=0
-NOTIFY_UPDATE=0
-LOG_FILE=""
-APPEND_LOG=0
 MYNAME="raspiBackup"
-MYNAME_ABS="$(dirname $0)""/""$MYNAME"".sh"
-
-# other defines
-NL=$'\n'
-
-# dummys to use the original features of raspiBackup.sh
-function logItem() { : ;}
-function logExit() { : ;}
-function logEntry() { : ;}
-function assertionFailed() { : ;}
-
-# functions load from raspiBackup.sh.
-# The closing bracket of the function definition must be at the beginning of the line
-. /dev/stdin <<EOF
-$(sed -n '/^function *readConfigParameters\(\)/,/^}/p' $MYNAME_ABS)
-$(sed -n '/^function *findUser\(\)/,/^}/p' $MYNAME_ABS)
-$(sed -n '/^function *sendEMail\(\)/,/^}/p' $MYNAME_ABS)
-EOF
+MSG_FILE=/dev/null
+LOG_FILE="$MYNAME.log"
 
 # include raspiBackup.conf
 readConfigParameters
@@ -140,6 +120,9 @@ readConfigParameters
 EMAIL=$DEFAULT_EMAIL
 EMAIL_PROGRAM=$DEFAULT_MAIL_PROGRAM
 EMAIL_PARMS=$DEFAULT_EMAIL_PARMS
+
+# other defines
+NL=$'\n'
 
 # check if email includes attachment
 if [[ $APPEND != "" ]]; then
@@ -153,11 +136,10 @@ fi
 
 # mail parameters are defined in .conf
 if [[ -n $EMAIL ]]; then
-    sendEMail "$MSG" "$MSG_TITLE" &>/dev/null
+    sendEMail "$MSG" "$MSG_TITLE" 
     RC=$?
 else
     RC=1
 fi
 
 exit $RC
-
