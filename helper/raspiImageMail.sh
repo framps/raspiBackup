@@ -11,6 +11,8 @@
 # Visit http://www.linux-tips-and-tricks.de/raspiBackup and https://github.com/framps/raspiBackup to get more
 # details about raspiBackup
 #
+#	NOTE: This is sample code how to extend functionality of raspiBackup and is provided as is with no support.
+#
 #######################################################################################################################
 #
 #    Copyright (C) 2017 kmbach
@@ -39,7 +41,7 @@
 # will be sent in an eMail.
 #
 # Base:
-# raspiBackup.sh VERSION="0.6.6"
+# raspiBackup.sh VERSION="0.6.4"
 #
 # Prerequisites:
 # -  raspiImageMail.sh, raspiBackup.sh, raspiBackupRestore2Image.sh and pishrink.sh
@@ -62,7 +64,7 @@
 # raspiBackupRestore2Image.sh werden in einer eMail verschickt.
 #
 # Basis:
-# raspiBackup.sh VERSION="0.6.6"
+# raspiBackup.sh VERSION="0.6.4"
 #
 # Voraussetzungen:
 # -  raspiImageMail.sh muss sich, zusammen mit den Programmen
