@@ -32,7 +32,7 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.7"
+VERSION="v0.1.8"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -221,9 +221,10 @@ RC=$?
 # You can change PTUUID on a live system with fdisk
 # Extract from https://www.raspberrypi.org/forums/viewtopic.php?t=191775
 
-mount ${LOOP}p2 /mnt
-PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /mnt/etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
-umount /mnt
+mkdir -p /tmp/mnt
+mount ${LOOP}p2 /tmp/mnt
+PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /tmp/mnt/etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
+umount /tmp/mnt
 losetup -d $LOOP
 
 if [[ -z $PTUUID ]]; then
@@ -241,8 +242,7 @@ if (( ! $RC )); then
 	RC=$?
 	if (( $RC )); then
 		echo "??? Error $RC received from piShrink"
-	    	RC=1
-		exit 42
+	    RC1=42
 	fi
 else
 	echo "??? Error $RC received"
@@ -250,20 +250,23 @@ else
 fi
 
 if (( $MAIL_EXTENSION_AVAILABLE )); then
-    IMAGE_FILENAME=${IMAGE_FILENAME##*/}
-    HOST_NAME=${IMAGE_FILENAME%%-*}
+    IMAGE_NAME=${IMAGE_FILENAME##*/}
+    HOST_NAME=${IMAGE_NAME%%-*}
     if (( $RC )); then
         status="with errors finished"
     else
         status="finished successfully"
     fi
-    BODY="raspiBackupRestore2Image.sh $IMAGE_FILENAME$NL$NL$(echo -e "$(cat $MSG_FILE)")"
+    BODY="raspiBackupRestore2Image.sh $IMAGE_NAME$NL$NL$(echo -e "$(cat $MSG_FILE)")"
     raspiImageMail.sh "$HOSTNAME - Restore $status"  "$BODY"
     if [[ $? = 0 ]]; then
         echo "-- Send email succeeded!"
         RC=0
     fi
 fi
+
+# exit when pishrink failed
+(( $RC1 )) && exit $RC1
 
 # pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
 
@@ -273,9 +276,9 @@ echo "===> Patching image PARTUUID with $PTUUID"
 
 losetup -P $LOOP $IMAGE_FILENAME
 printf "x\ni\n0x$PTUUID\nr\nw\nq\n" | fdisk $LOOP
+sleep 1
 partprobe $LOOP
 udevadm settle
 sleep 3
 
 exit $RC
-
