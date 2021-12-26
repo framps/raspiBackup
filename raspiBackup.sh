@@ -5268,9 +5268,9 @@ function restore() {
 					local excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
 					if (( $PROGRESS )); then
-						cmd="rsync --info=progress2 --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+						cmd="rsync --info=progress2 --numeric-ids ${RSYNC_BACKUP_OPTIONS} ${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
 					else
-						cmd="rsync --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+						cmd="rsync --numeric-ids ${RSYNC_BACKUP_OPTIONS} ${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
 					fi
 					executeCommand "$cmd"
 					rc=$?
