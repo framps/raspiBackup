@@ -10,15 +10,15 @@
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
 * dd and tar are full backups. rsync uses hardlinks for incremental backups
 * Restore a SD card image backup to SSD or USB disk and migrate to use USB boot mode 
-* Status of backup run can be sent via eMail or to Telegram
-* Apply a smart recycle backup strategy (save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
+* Result of backup run can be sent via eMail or to Telegram
+* Smart recycle backup strategy supported (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * Extensionpoints allow to execute any additional logic at various steps in the backup process
 * Default language for messages is English. Following languages are supported native:
   * German
   * Finnish
   * Chinese
   * French
-* Extensive logging helps to answer and fix github issues create by raspiBackup users
+* Extensive logging helps to answer github issues create by raspiBackup users
 * Much more features ... (See doc below)
 
 ## Documentation
@@ -55,11 +55,11 @@ Installation is started with following command:
 
 ## Donations
 
-raspiBackup is maintained and supported by just me - framp. I'd appreciate donations if you find raspiBackup useful. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
+raspiBackup is maintained and supported by just me - framp. I appreciate donations if you find raspiBackup useful. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
 
 ## Feature requests
 
-Anybody is welcome to create feature requests in github. They are either immediately scheduled for the next release or moved into the [backog](https://github.com/framps/raspiBackup/issues?q=is%3Aissue+is%3Aclosed+label%3ABacklog). The backlog will be reviewed every time a new release is planned and some issues are picked up and will be implemented in the next release. If you find some features useful just add a comment to the issue with :+1:. This helps to prioritize the issues.
+Anybody is welcome to create feature requests in github. They are either immediately scheduled for the next release or moved into the [backog](https://github.com/framps/raspiBackup/issues?q=is%3Aissue+is%3Aclosed+label%3ABacklog). The backlog will be reviewed every time a new release is planned and some issues are picked up and will be implemented in the next release. If you find some features useful just add a comment to the issue with :+1:. This helps to prioritize the issues in then backlog.
 
 ## Nitty gritty details
 
