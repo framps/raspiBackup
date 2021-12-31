@@ -2,16 +2,13 @@
 
 #######################################################################################################################
 #
-# 	  Retrieve version and commit sha/revision of scripts of raspiBackup
-#	  - raspiBackup.sh
-#    - raspiBackupInstallUI.sh
-#    - raspiBackup.sh (Beta)
+# 	  Retrieve version and commit sha/revision of files offered by raspiBackup for download
 #
 # 	  Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2021 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -83,6 +80,11 @@ function analyze() { # fileName url
 	if [[ -z "$date" ]]; then
 		date="$(grep "$DATE" $tmp | cut -f 3-4 -d ' ' )"
 	fi
+
+	[[ -z "$version" ]] && version="N/A"
+	[[ -z "$sha" ]] && sha="N/A"
+	[[ -z "$date" ]] && date="N/A"
+		
 
 	printf "%-30s: Version: %-10s Date: %-20s Sha: %-10s\n" "$1" "$version" "$date" "$sha"
 	rm $tmp
