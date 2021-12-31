@@ -1,6 +1,6 @@
-## Collection of some sample scripts useful for raspiBackup users.
+## Collection of some sample scripts useful for raspiBackup users
 
-__Note:__ The scripts are provided as is by framps and raspiBackup users and are not included in any raspiBackup release and thus are not maintained
+__Note:__ The scripts are provided as is by framps and raspiBackup users and are not included in any raspiBackup release and thus are not maintained. Enhancements and other helper scripts are welcome in a PR.
 
 1. r2i-raspi - Sample code which retrieves the latest backup created with raspiBackup and uses raspiBackupRestore2Image to create an image from a tar or rsync backup
 
