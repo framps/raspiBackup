@@ -86,7 +86,9 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 * Sample script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
 
-## Sample extensions [(Code)](./extensions/README.md)
+## Sample extensions
+
+See [here](./extensions) for availabel extensions. There exist also [user provided extensions](./extensions_userprovided)
 
 ## Systemd
 
