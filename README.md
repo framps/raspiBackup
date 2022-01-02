@@ -19,7 +19,7 @@
   * Chinese
   * French
 * Extensive logging helps to answer github issues create by raspiBackup users
-* Much more features ... (See doc below)
+* Much more features ...
 
 ## Documentation
 
@@ -27,11 +27,17 @@
 * [Installation](https://www.linux-tips-and-tricks.de/en/quickstart-rbk)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
+* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/rmessages/)
+* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/smart-recycle/)
+* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/synology-usage/)
 
 ### German
 * [Installation](https://www.linux-tips-and-tricks.de/de/schnellstart-rbk/)
 * [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
 * [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
+* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/fehlermeldungen/)
+* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/rotationsstrategie/)
+* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/benutzung-von-synology/)
 
 ### French
 
@@ -80,13 +86,7 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 * Sample script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
 
-## Sample extensions [(Code)](https://github.com/framps/raspiBackup/tree/master/extensions)
-* Sample eMail extension
-* Sample pre/post extension which reports the memory usage before and after backup
-* Sample pre/post extension which reports the CPU temperature before and after backup
-* Sample pre/post extension which reports the disk usage on the backup partition before and after backup and the absolute and relative change
-* Sample pre/post extension which initiates different actions depending on the return code of raspiBackup
-* Sample ready extension which copies /etc/fstab into the backup directory
+## Sample extensions [(Code)](./extensions/README.md)
 
 ## Systemd
 
