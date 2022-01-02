@@ -88,7 +88,7 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 ## Sample extensions
 
-See [here](./extensions) for availabel extensions. There exist also [user provided extensions](./extensions_userprovided)
+There exist [sample extesions](./extensions) for raspiBackup which report for example memory usage, CPU temperature, disk usage and more. There exist also [user provided extensions](./extensions_userprovided). 
 
 ## Systemd
 
