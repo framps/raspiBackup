@@ -6288,7 +6288,7 @@ function doitBackup() {
 		fi
 
 		if ! supportsHardlinks "$BACKUPPATH"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_USE_HARDLINKS "$BACKUPPATH"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH"
 			exitError $RC_MISC_ERROR
 		else
 			local fs="$(getFsType "$BACKUPPATH")"
