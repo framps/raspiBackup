@@ -75,7 +75,7 @@ Anybody is welcome to create feature requests in github. They are either immedia
 ## Social media
 
  * [Youtube](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg) - Videos in English and German
- * [Twitter](https://twitter.com/search/?q=%23raspiBackup) - News and announcements - English only
+ * [Twitter](https://twitter.com/search?q=%23raspiBackup&src=typed_query) - News and announcements - English only
  * [Facebook](https://www.facebook.com/raspiBackup) - News, discussions, announcements and misc background information in English and German
 
 ## Miscellaneous sample scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
