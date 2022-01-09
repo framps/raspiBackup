@@ -13,12 +13,12 @@
 * Result of backup run can be sent via eMail or to Telegram
 * Smart recycle backup strategy supported (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * Extensionpoints allow to execute any additional logic at various steps in the backup process
-* Following languages are supported:
-  * English (Default)
+* National language support:
   * German
   * Finnish
   * Chinese
   * French
+  * English (Default for all other languages)
 * Extensive logging helps to answer questions or to solve issues create by raspiBackup users
 * Much more features (see below)
 ## Documentation
