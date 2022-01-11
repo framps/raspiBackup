@@ -4,7 +4,7 @@
 
 * Create an unattended full or incremental system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron.
 * Restore any of the created backup versions 
-* Important services can be stopped before starting the backup and are started again when the backup finished.
+* Important services can be stopped before starting the backup and are restarted again when the backup finished.
 * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
@@ -14,12 +14,12 @@
 * Smart recycle backup strategy supported (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * Extensionpoints allow to execute any additional logic at various steps in the backup process
 * National language support:
+  * English (Default)
   * German
   * Finnish
   * Chinese
   * French
-  * English (Default for all other languages)
-* Extensive logging helps to answer questions or to solve issues create by raspiBackup users
+* Extensive logging helps to answer questions or to solve issues created by raspiBackup users
 * Much more features (see below)
 ## Documentation
 
