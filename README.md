@@ -3,15 +3,15 @@
 # raspiBackup - Backup and restore your running Raspberries
 
 * Create an unattended full or incremental system backup with no shutdown of the system or any other manual intervention just by starting raspiBackup using cron.
-* Restore any of the created backup versions 
-* Important services can be stopped before starting the backup and are restarted again when the backup finished.
-* Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes
+* Either keep a configurable number of backups or use the smart recycle backup strategy (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
+* Restore any of the created backup versions. 
+* Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
+* Important services can be stopped before starting the backup and will be restarted when the backup finished.
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
 * dd and tar are full backups. rsync uses hardlinks for incremental backups
 * Restore a SD card image backup to SSD or USB disk and migrate to use USB boot mode 
 * Result of backup run can be sent via eMail or to Telegram
-* Smart recycle backup strategy supported (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle
 * Extensionpoints allow to execute any additional logic at various steps in the backup process
 * National language support:
   * English (Default)
@@ -55,13 +55,13 @@ The installer uses menus, checklists and radiolists similar to raspi-config and 
 
 ![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
-Installation is started with following command:
+Installation of raspiBackup will started with following command:
 
 `curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
 
 ## Donations
 
-raspiBackup is maintained and supported by just me - framp. I appreciate donations if you find raspiBackup useful. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
+raspiBackup is maintained and supported by just me - framp. If you find raspiBackup useful please donate to support future development and acknowledge user support. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
 
 ## Feature requests
 
