@@ -12,4 +12,5 @@ If you have a question about raspiBackup please execute all following actions fi
 
 If any requested information was not provided the question will be rejected.
 
-* Issues are closed automatically after 2 weeks if there is no activity any more
+## Note
+Issues are closed automatically after 2 weeks if there is no activity any more
