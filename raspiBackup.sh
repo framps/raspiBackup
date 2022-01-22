@@ -134,8 +134,11 @@ VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp"
-TEMP_LOG_FILE="$CALLING_HOME/${MYNAME}.log"
-TEMP_MSG_FILE="$CALLING_HOME/${MYNAME}.msg"
+LOGFILE_NAME="${MYNAME}.log"
+LOGFILE_RESTORE_NAME="${MYNAME}Restore.log"
+MSGFILE_NAME="${MYNAME}.log"
+TEMP_LOG_FILE="$CALLING_HOME/$LOGFILE_NAME"
+TEMP_MSG_FILE="$CALLING_HOME/$MSGFILE_NAME"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
 MODIFIED_SFDISK="/tmp/$$.sfdisk"
 
@@ -2013,7 +2016,13 @@ function logFinish() {
 
 		LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$DEST_LOGFILE"
+		if (( $RESTORE )); then
+			local rstFileName="${LOG_FILE/$LOGFILE_NAME/$LOGFILE_RESTORE_NAME}"
+			logItem "Renamed logfile to restore logfilename $rstFileName"
+			LOG_FILE="$rstFileName"
+		fi
+
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
