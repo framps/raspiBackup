@@ -263,8 +263,8 @@ PRE_BACKUP_EXTENSION="pre"
 POST_BACKUP_EXTENSION="post"
 READY_BACKUP_EXTENSION="ready"
 EMAIL_EXTENSION="mail"
-PRE_RESTORE_EXTENSION="preRestore"
-POST_RESTORE_EXTENSION="postRestore"
+PRE_RESTORE_EXTENSION="$PRE_BACKUP_EXTENSION"
+POST_RESTORE_EXTENSION="$POST_BACKUP_EXTENSION"
 
 PRE_BACKUP_EXTENSION_CALLED=0
 PRE_RESTORE_EXTENSION_CALLED=0
@@ -1772,6 +1772,9 @@ MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create 
 MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
+MSG_EXTENSION_CALLED=267
+MSG_EN[$MSG_EXTENSION_CALLED]="RBK0267I: Extension %s called."
+MSG_DE[$MSG_EXTENSION_CALLED]="RBK0267I: Erweiterung %s wird aufgerufen."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2083,7 +2086,7 @@ function callExtensions() { # extensionplugpoint rc
 		local args=( "$@" )
 
 		if which $extensionFileName &>/dev/null; then
-			logItem "Calling $extensionFileName"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 			$extensionFileName "${args[@]}"
 			rc=$?
 			logItem "Extension RC: $rc"
@@ -2104,6 +2107,7 @@ function callExtensions() { # extensionplugpoint rc
 
 			if which $extensionFileName &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 				executeShellCommand ". $extensionFileName $2"
 				rc=$?
 				logItem "Extension RC: $rc"
