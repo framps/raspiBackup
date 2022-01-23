@@ -41,7 +41,7 @@ fi
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.6.1"										# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.6.1-dev-NVMe"										# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"									# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
@@ -2359,12 +2359,13 @@ function logOptions() { # option state
 	logEntry "$1"
 
 	logItem "Options: $INVOCATIONPARMS"
+	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
 	logItem "APPEND_LOG=$APPEND_LOG"
 	logItem "APPEND_LOG_OPTION=$APPEND_LOG_OPTION"
 	logItem "BACKUPPATH=$BACKUPPATH"
 	logItem "BACKUPTYPE=$BACKUPTYPE"
-	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
+	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
@@ -2565,6 +2566,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 	# Name of backup partition to dynamically mount (e.g. /dev/sda1 or /backup)
 	DEFAULT_DYNAMIC_MOUNT=""
+	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nmve0n1 or /dev/sda) and turn off boot device autodiscovery
+	DEFAULT_BOOT_DEVICE=""
 	############# End default config section #############
 	logExit
 }
@@ -2577,6 +2580,7 @@ function copyDefaultConfigVariables() {
 	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
+	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
 	AFTER_STARTSERVICES="$DEFAULT_AFTER_STARTSERVICES"
 	BEFORE_STOPSERVICES="$DEFAULT_BEFORE_STOPSERVICES"
 	CHECK_FOR_BAD_BLOCKS="$DEFAULT_CHECK_FOR_BAD_BLOCKS"
@@ -5954,6 +5958,7 @@ function inspect4Backup() {
 	logCommand "ls -1 /dev/mmcblk*"
 	logCommand "ls -1 /dev/sd*"
 	logCommand "ls -1 /dev/nvme*"
+		
 	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
 
 	if (( $REGRESSION_TEST )); then
@@ -5963,7 +5968,7 @@ function inspect4Backup() {
 	elif (( $RESTORE )); then
 		BOOT_DEVICE="mmcblk0"
 		logItem "Force BOOT_DEVICE to $BOOT_DEVICE"
-	else
+	elif [[ -z $BOOT_DEVICE ]]; then
 
 		#if ! areDevicesUnique; then
 		#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
@@ -6039,6 +6044,8 @@ function inspect4Backup() {
 				SHARED_BOOT_DIRECTORY=1
 			fi
 		fi
+	else 
+		logCommand "Using configured bootdevice $BOOT_DEVICE"
 	fi
 
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
