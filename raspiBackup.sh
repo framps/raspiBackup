@@ -2566,7 +2566,7 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 	# Name of backup partition to dynamically mount (e.g. /dev/sda1 or /backup)
 	DEFAULT_DYNAMIC_MOUNT=""
-	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nmve0n1 or /dev/sda) and turn off boot device autodiscovery
+	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nvme0n1 or /dev/sda) and turn off boot device autodiscovery
 	DEFAULT_BOOT_DEVICE=""
 	############# End default config section #############
 	logExit
@@ -2663,16 +2663,16 @@ function bootedFromSD() {
 # Input:
 # 	mmcblk0
 # 	sda
-#  nvme0n1
+#   nvme0n1
 # Output:
 # 	mmcblk0p
 # 	sda
-#  nvme0n1p
+#   nvme0n1p
 
 function getPartitionPrefix() { # device
 
 	logEntry "$1"
-	if [[ $1 =~ ^(mmcblk|loop|sd[a-z]) ]]; then
+	if [[ $1 =~ ^(mmcblk|loop|nvme|sd[a-z]) ]]; then
 		local pref="$1"
 		[[ $1 =~ ^(mmcblk|loop|nvme) ]] && pref="${1}p"
 	else
@@ -2688,7 +2688,7 @@ function getPartitionPrefix() { # device
 # Input:
 # 	/dev/mmcblk0p1
 #	/dev/sda2
-#  /dev/nvme0n1p1
+#   /dev/nvme0n1p1
 # Output:
 # 	1
 #	2
@@ -2697,7 +2697,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "$1"
 	local id
-	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) || $1 =~ ^/dev/(nmve)[0-9]+n[0-9]+p([0-9]+)]]; then
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+)]]; then
 		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -4241,7 +4241,7 @@ function resizeRootFS() {
 	logItem "partitionLayout of $RESTORE_DEVICE"
 	logCommand "fdisk -l $RESTORE_DEVICE"
 
-	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p|sd[a-z])2(\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
+	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p | nvme[0-9]+n[0-9]+p | sd[a-z])2 (\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
 
 	logItem "PartitionStart: $partitionStart"
 
@@ -5958,7 +5958,7 @@ function inspect4Backup() {
 	logCommand "ls -1 /dev/mmcblk*"
 	logCommand "ls -1 /dev/sd*"
 	logCommand "ls -1 /dev/nvme*"
-		
+
 	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
 
 	if (( $REGRESSION_TEST )); then
@@ -6044,7 +6044,7 @@ function inspect4Backup() {
 				SHARED_BOOT_DIRECTORY=1
 			fi
 		fi
-	else 
+	else
 		logCommand "Using configured bootdevice $BOOT_DEVICE"
 	fi
 
