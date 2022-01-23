@@ -136,7 +136,7 @@ VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp"
 LOGFILE_NAME="${MYNAME}.log"
 LOGFILE_RESTORE_NAME="${MYNAME}Restore.log"
-MSGFILE_NAME="${MYNAME}.log"
+MSGFILE_NAME="${MYNAME}.msg"
 TEMP_LOG_FILE="$CALLING_HOME/$LOGFILE_NAME"
 TEMP_MSG_FILE="$CALLING_HOME/$MSGFILE_NAME"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
@@ -2016,13 +2016,6 @@ function logFinish() {
 
 		LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
 
-		if (( $RESTORE )); then
-			local rstFileName="${LOG_FILE/$LOGFILE_NAME/$LOGFILE_RESTORE_NAME}"
-			logItem "Renamed logfile to restore logfilename $rstFileName"
-			LOG_FILE="$rstFileName"
-		fi
-
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
@@ -2034,6 +2027,16 @@ function logFinish() {
 			logItem "Updating logfile ownership"
 			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>> "$LOG_FILE"
 		fi
+
+		if (( $RESTORE )); then
+			local rstFileName="${LOG_FILE/$LOGFILE_NAME/$LOGFILE_RESTORE_NAME}"
+			logItem "Will rename logfile $LOG_FILE to $rstFileName"
+			mv $LOG_FILE $rstFileName
+			LOG_FILE="$rstFileName"
+		fi
+
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
+
 	fi
 
 	logExit
