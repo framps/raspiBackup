@@ -21,6 +21,8 @@
   * French
 * Extensive logging helps to answer questions or to solve issues created by raspiBackup users
 * Much more features (see below)
+* raspiBackup is supported for RaspberryPiOS as operating system and Raspberry HW only. There are environments out there which successfully run raspiBackup but any support on request on unsupported environments will be rejected. 
+
 ## Documentation
 
 ### English
