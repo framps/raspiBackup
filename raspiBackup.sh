@@ -15,7 +15,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
+
+set -o pipefail
 
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
