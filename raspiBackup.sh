@@ -6295,7 +6295,7 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
+	if (( $PROGRESS )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
@@ -7101,7 +7101,7 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ $(which pv &>/dev/null) ]]; then
+	if (( $PROGRESS )) && [[ $(which pv &>/dev/null) ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 		exitError $RC_PARAMETER_ERROR
 	fi
