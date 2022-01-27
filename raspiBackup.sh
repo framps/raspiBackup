@@ -15,7 +15,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -360,6 +360,7 @@ RC_CONFIGVERSION_MISMATCH=128
 RC_TELEGRAM_ERROR=129
 RC_FILE_OPERATION_ERROR=130
 RC_MOUNT_FAILED=131
+RC_UNSUPPORTED_ENVIRONMENT=132
 
 tty -s
 INTERACTIVE=!$?
@@ -1768,6 +1769,17 @@ MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Lin
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
+MSG_UNSUPPORTED_ENVIRONMENT=267
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Unsupported environment. Has to be Raspberry HW and Raspberry OS. Check --unsupportedEnvironment option documentation for details."
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Die Umgebung wird nicht unterstützt. Sie muss Raspberry HW und Raspbian OS sein. Lies die Dokumentation zu Option --unsupportedEnvironment für weitere Informationen."
+MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=268
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@ \
+${NL}!!! RBK0268W: Unsupported environment. $MYNAME may work but if it fails there is no support given! \
+${NL}!!! RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@"
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@ \
+${NL}!!! RBK0268W: Die Umgebung wird nicht unterstützt. $MYNAME kann korrekt funktionieren aber bei Fehlern wird keine Unterstützung gegeben! \
+${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
+
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
 # setup trap function
@@ -2178,6 +2190,24 @@ function writeToConsole() {  # msglevel messagenumber message
 	fi
 
 	unset noNL
+}
+
+#!/bin/bash
+
+function isSupportedEnvironment() {
+
+	local MODELPATH=/sys/firmware/devicetree/base/model
+	local OSRELEASE=/etc/os-release
+
+	[[ ! -e $MODELPATH ]] && return 1
+	logCommand "cat $MODELPATH"
+	! grep -q -i "raspberry" $MODELPATH && return 1
+
+	[[ ! -e $OSRELEASE ]] && return 1
+	logCommand "cat $OSRELEASE"
+	! grep -q -E -i "NAME=.*raspbian" $OSRELEASE && return 1
+
+	return 0
 }
 
 # Create a backupfile FILE.bak from FILE. If this file already exists rename this file to FILE.n.bak when n is next backup number
@@ -8189,6 +8219,7 @@ VERSION_DEPRECATED=0
 WARNING_MESSAGE_WRITTEN=0
 CLEANUP_RC=0
 UPDATE_CONFIG=0
+UNSUPPORTED_ENVIRONMENT=0
 
 PARAMS=""
 
@@ -8535,6 +8566,10 @@ while (( "$#" )); do
 	  UPDATE_MYSELF=1; shift 1
 	  ;;
 
+	--unsupportedEnvironment)
+	  UNSUPPORTED_ENVIRONMENT=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
 	--updateConfig|--updateConfig[+-])
 	  UPDATE_CONFIG=$(getEnableDisableOption "$1"); shift 1
 	  ;;
@@ -8625,6 +8660,15 @@ if [[ -n "$unusedParms" ]]; then
 	usage
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNUSED_PARAMETERS "$unusedParms"
 	exitError $RC_PARAMETER_ERROR
+fi
+
+if ! isSupportedEnvironment; then
+	if (( $UNSUPPORTED_ENVIRONMENT )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_ENVIRONMENT
+		exitError $RC_UNSUPPORTED_ENVIRONMENT
+	fi
 fi
 
 if (( $DEPLOY )); then
