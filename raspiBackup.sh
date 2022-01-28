@@ -263,8 +263,11 @@ PRE_BACKUP_EXTENSION="pre"
 POST_BACKUP_EXTENSION="post"
 READY_BACKUP_EXTENSION="ready"
 EMAIL_EXTENSION="mail"
+PRE_RESTORE_EXTENSION="$PRE_BACKUP_EXTENSION"
+POST_RESTORE_EXTENSION="$POST_BACKUP_EXTENSION"
 
 PRE_BACKUP_EXTENSION_CALLED=0
+PRE_RESTORE_EXTENSION_CALLED=0
 
 EMAIL_EXTENSION_PROGRAM="mailext"
 EMAIL_MAILX_PROGRAM="mail"
@@ -361,6 +364,8 @@ RC_TELEGRAM_ERROR=129
 RC_FILE_OPERATION_ERROR=130
 RC_MOUNT_FAILED=131
 RC_UNSUPPORTED_ENVIRONMENT=132
+RC_RESTORE_EXTENSION_FAILS=133
+RC_BACKUP_EXTENSION_FAILS=134
 
 tty -s
 INTERACTIVE=!$?
@@ -1768,6 +1773,9 @@ MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create 
 MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
+MSG_EXTENSION_CALLED=267
+MSG_EN[$MSG_EXTENSION_CALLED]="RBK0267I: Extension %s called."
+MSG_DE[$MSG_EXTENSION_CALLED]="RBK0267I: Erweiterung %s wird aufgerufen."
 
 MSG_UNSUPPORTED_ENVIRONMENT=267
 MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Unsupported environment. Has to be Raspberry HW and Raspberry OS. Check --unsupportedEnvironment option documentation for details."
@@ -2082,7 +2090,7 @@ function callExtensions() { # extensionplugpoint rc
 
 	logEntry "$1"
 
-	local extension
+	local extension rc=0
 
 	if [[ $1 == $EMAIL_EXTENSION ]]; then
 		local extensionFileName="${MYNAME}_${EMAIL_EXTENSION}.sh"
@@ -2090,11 +2098,11 @@ function callExtensions() { # extensionplugpoint rc
 		local args=( "$@" )
 
 		if which $extensionFileName &>/dev/null; then
-			logItem "Calling $extensionFileName"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 			$extensionFileName "${args[@]}"
-			local rc=$?
+			rc=$?
 			logItem "Extension RC: $rc"
-			if [[ $rc != 0 ]]; then
+			if (( $rc != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTENSION_FAILED "$extensionFileName" "$rc"
 			fi
 		else
@@ -2102,16 +2110,20 @@ function callExtensions() { # extensionplugpoint rc
 		fi
 	else
 
-		for extension in $EXTENSIONS; do
+		local extensions="$EXTENSIONS"
+		(( $RESTORE )) && extensions="$RESTORE_EXTENSIONS"
+
+		for extension in $extensions; do
 
 			local extensionFileName="${MYNAME}_${extension}_$1.sh"
 
 			if which $extensionFileName &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 				executeShellCommand ". $extensionFileName $2"
-				local rc=$?
+				rc=$?
 				logItem "Extension RC: $rc"
-				if [[ $rc != 0 ]]; then
+				if (( $rc != 0 )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTENSION_FAILED "$extensionFileName" "$rc"
 				fi
 			else
@@ -2122,6 +2134,7 @@ function callExtensions() { # extensionplugpoint rc
 
 	logExit
 
+	return $rc
 }
 
 # usage
@@ -2483,6 +2496,7 @@ function logOptions() { # option state
 	logItem "EMAIL_PARMS=$EMAIL_PARMS"
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
 	logItem "EXTENSIONS=$EXTENSIONS"
+	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
 	logItem "FAKE=$FAKE"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
@@ -2606,6 +2620,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_NOTIFY_UPDATE=1
 	# extensions to call
 	DEFAULT_EXTENSIONS=""
+	# restore extensions to call
+	DEFAULT_RESTORE_EXTENSIONS=""
 	# partition based backup  (0 = false, 1 = true)
 	DEFAULT_PARTITIONBASED_BACKUP=0
 	# backup first two partitions only
@@ -2717,6 +2733,7 @@ function copyDefaultConfigVariables() {
 	RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
 	RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
 	RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
+	RESTORE_EXTENSIONS="$DEFAULT_RESTORE_EXTENSIONS"
 	RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
@@ -4309,6 +4326,10 @@ function cleanupRestore() { # trap
 
 	rm $MODIFIED_SFDISK &>/dev/null
 
+	if (( $PRE_RESTORE_EXTENSION_CALLED )); then
+		callExtensions $POST_RESTORE_EXTENSION $rc
+	fi
+
 	if [[ -n $MNT_POINT ]]; then
 		if isMounted $MNT_POINT; then
 			logItem "Umount $MNT_POINT"
@@ -5097,6 +5118,13 @@ function restore() {
 
 	logSystemDiskState
 
+	callExtensions $PRE_RESTORE_EXTENSION "0"
+	rc=$?
+	PRE_RESTORE_EXTENSION_CALLED=1
+	if (( $rc )); then
+		exitError $RC_RESTORE_EXTENSION_FAILS
+	fi
+
 	case $BACKUPTYPE in
 
 		$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
@@ -5360,6 +5388,8 @@ function restore() {
 	logItem "Syncing filesystems"
 	sync
 
+	callExtensions $POST_RESTORE_EXTENSION
+
 	if isMounted $MNT_POINT; then
 		logItem "Umount $MNT_POINT"
 		umount $MNT_POINT &>> "$LOG_FILE"
@@ -5490,7 +5520,11 @@ function backup() {
 	executeBeforeStopServices
 	stopServices
 	callExtensions $PRE_BACKUP_EXTENSION "0"
+	rc=$?
 	PRE_BACKUP_EXTENSION_CALLED=1
+	if (( $rc )); then
+		exitError $RC_BACKUP_EXTENSION_FAILS
+	fi
 
 	if (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
