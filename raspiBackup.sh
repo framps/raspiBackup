@@ -2098,7 +2098,7 @@ function callExtensions() { # extensionplugpoint rc
 		fi
 	else
 
-		local extensions=$"EXTENSIONS"
+		local extensions="$EXTENSIONS"
 		(( $RESTORE )) && extensions="$RESTORE_EXTENSIONS"
 
 		for extension in $extensions; do
