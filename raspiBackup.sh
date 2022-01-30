@@ -15,7 +15,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@
 #
 #######################################################################################################################
 
+set -o pipefail
+
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
 	echo "??? DEBUG: $(lsof -a -p $$ -d txt | tail -n 1)"
@@ -41,11 +43,11 @@ fi
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.6.1"										# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.4"									# required config version for script
+VERSION="0.6.6.1"											# -beta, -hotfix or -dev suffixes possible
+VERSION_SCRIPT_CONFIG="0.1.4"								# required config version for script
 
-VERSION_VARNAME="VERSION"										# has to match above var names
-VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"						# used to lookup VERSION_CONFIG in config files
+VERSION_VARNAME="VERSION"									# has to match above var names
+VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
 [ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
 [ -z "${BASH_VERSINFO[0]}" ] && printf "\n\033[1;35m Make sure you're using \"bash\"! \033[m\n\n" >&2 && exit 255
@@ -137,6 +139,7 @@ TEMPORARY_MOUNTPOINT_ROOT="/tmp"
 TEMP_LOG_FILE="$CALLING_HOME/${MYNAME}.log"
 TEMP_MSG_FILE="$CALLING_HOME/${MYNAME}.msg"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
+MODIFIED_SFDISK="$$.sfdisk"
 
 # timeouts
 
@@ -740,10 +743,10 @@ MSG_DE[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Gerät %s wird überschr
 MSG_FI[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Laite %s ylikirjoitetaan tallennetuilla käynnistys- ja juuriosioilla."
 MSG_FR[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Le périphérique %s sera écrasé par la procédure de boot et la partition Root."
 MSG_CURRENT_PARTITION_TABLE=67
-MSG_EN[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Current partitions on %s:$NL%s"
-MSG_DE[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Momentane Partitionen auf %s:$NL%s"
-MSG_FI[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Nykyiset osiot kohteella %s:$NL%s"
-MSG_FR[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Partitions actuelles sur %s:$NL%s"
+MSG_EN[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Current partitions on %s:"
+MSG_DE[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Momentane Partitionen auf %s:"
+MSG_FI[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Nykyiset osiot kohteella %s:"
+MSG_FR[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Partitions actuelles sur %s:"
 MSG_BOOTPATITIONFILES_FOUND=68
 MSG_EN[$MSG_BOOTPATITIONFILES_FOUND]="RBK0068I: Using bootpartition backup files starting with %s from directory %s."
 MSG_DE[$MSG_BOOTPATITIONFILES_FOUND]="RBK0068I: Bootpartitionsdateien des Backups aus dem Verzeichnis %s die mit %s beginnen werden benutzt."
@@ -4201,7 +4204,7 @@ function cleanupRestore() { # trap
 	logItem "Got trap $1"
 	logItem "rc: $rc"
 
-	rm $$.sfdisk &>/dev/null
+	rm $MODIFIED_SFDISK &>/dev/null
 
 	if [[ -n $MNT_POINT ]]; then
 		if isMounted $MNT_POINT; then
@@ -4220,45 +4223,6 @@ function cleanupRestore() { # trap
 
 	logExit "$rc"
 
-}
-
-function resizeRootFS() {
-
-	logEntry
-
-	local partitionStart
-
-	logItem "RESTORE_DEVICE: $RESTORE_DEVICE"
-	logItem "ROOT_PARTITION: $ROOT_PARTITION"
-
-	logItem "partitionLayout of $RESTORE_DEVICE"
-	logCommand "fdisk -l $RESTORE_DEVICE"
-
-	partitionStart="$(fdisk -l $RESTORE_DEVICE |  grep -E '/dev/((mmcblk|loop)[0-9]+p|sd[a-z])2(\s+[[:digit:]]+){3}' | awk '{ print $2; }')"
-
-	logItem "PartitionStart: $partitionStart"
-
-	if [[ -z "$partitionStart" ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS "42" "Partitionstart of second partition of ${RESTORE_DEVICE} not found"
-		exitError $RC_CREATE_PARTITIONS_FAILED
-	fi
-
-	fdisk $RESTORE_DEVICE &>> $LOG_FILE <<EOF
-p
-d
-2
-n
-p
-2
-$partitionStart
-
-p
-w
-q
-EOF
-
-	waitForPartitionDefsChanged
-	logExit
 }
 
 function revertScriptVersion() {
@@ -5120,17 +5084,10 @@ function restore() {
 
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
-				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
-				rc=$?
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
-					exitError $RC_CREATE_PARTITIONS_FAILED
-				fi
 
-				waitForPartitionDefsChanged
-
-				cp "$SF_FILE" $$.sfdisk
-				logCommand "cat $$.sfdisk"
+				cp "$SF_FILE" $MODIFIED_SFDISK
+				logItem "Current sfdisk file"
+				logCommand "cat $MODIFIED_SFDISK"
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
@@ -5166,18 +5123,27 @@ function restore() {
 						local newTargetPartitionSize=$(( adjustedTargetPartitionBlockSize * 512 ))
 						local oldPartitionSourceSize=$(( ${sourceValues[3]} * 512 ))
 
-						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $$.sfdisk
+						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $MODIFIED_SFDISK
 
-						logCommand "cat $$.sfdisk"
+						logItem "Updated sfdisk file"
+						logCommand "cat $MODIFIED_SFDISK"
 
 						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
 							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
 						fi
 
-						resizeRootFS
 					fi
 
-					rm $$.sfdisk &>/dev/null
+					sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+					rc=$?
+					if (( $rc )); then
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+						exitError $RC_CREATE_PARTITIONS_FAILED
+					fi
+
+					waitForPartitionDefsChanged
+
+					rm $MODIFIED_SFDISK &>/dev/null
 				fi
 			fi
 
@@ -6331,7 +6297,7 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
+	if (( $PROGRESS )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
@@ -6551,7 +6517,8 @@ function restoreNonPartitionBasedBackup() {
 
 	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
 	if [[ -n "$current_partition_table" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE" "$current_partition_table"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+		echo "$current_partition_table"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
 		if (( $SKIP_SFDISK )); then
@@ -7137,7 +7104,7 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]] && [[ $(which pv &>/dev/null) ]]; then
+	if (( $PROGRESS )) && [[ ! $(which pv &>/dev/null) ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 		exitError $RC_PARAMETER_ERROR
 	fi
