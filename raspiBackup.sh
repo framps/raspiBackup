@@ -43,7 +43,7 @@ fi
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.6.1"											# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.6.1-437-1"											# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -1958,10 +1958,12 @@ function logFinish() {
 		# 1) error occured and logoutput is backup location which was deleted or fake mode
 		# 2) fake
 		# 3) backup location was already deleted by SR
-		if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
-			|| (( $FAKE )) \
-			|| [[ ! -e $BACKUPTARGET_DIR ]]; then
-			LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
+		if [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then			# no -L used
+			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
+				|| (( $FAKE )) \
+				|| [[ ! -e $BACKUPTARGET_DIR ]]; then
+				LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
+			fi
 		fi
 
 		logItem "LOG_OUTPUT: $LOG_OUTPUT"
@@ -1976,33 +1978,36 @@ function logFinish() {
 					fi
 				fi
 				DEST_LOGFILE="$LOG_BASE/$HOSTNAME.log"
-				cat "$LOG_FILE" &>> "$DEST_LOGFILE"
+				cat "$LOG_FILE" &>> "$DEST_LOGFILE"		# don't move, just append
 				;;
 			$LOG_OUTPUT_HOME)
 				DEST_LOGFILE="$CALLING_HOME/${MYNAME}.log"
-				if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-					mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-				fi
+				DEST_MSGFILE="$CALLING_HOME/${MYNAME}.msg"
 				;;
 			$LOG_OUTPUT_BACKUPLOC)
 				DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}.log"
-				if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-					mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-				fi
+				DEST_MSGFILE="$BACKUPTARGET_DIR/${MYNAME}.msg"
 				;;
 			*) # option -L <filename>
 				DEST_LOGFILE="$LOG_OUTPUT"
-				if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-					mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-				fi
 				if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
 					DEST_MSGFILE="$(sed "s/\.log$/\.msg/" <<< "$DEST_LOGFILE")" # replace .log extension
 				else
 					DEST_MSGFILE="$DEST_LOGFILE.msg"
 				fi
-				cp "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
-				chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
 		esac
+
+		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
+		fi
+		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
+			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
+			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
+		fi
+
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
 
 		logItem "DEST_LOGFILE: $DEST_LOGFILE"
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
@@ -2013,20 +2018,12 @@ function logFinish() {
 			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 		fi
 
-		LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
-
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$DEST_LOGFILE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
 
-		rm -f "$MSG_FILE" &>> "$LOG_FILE"
-
-		if [[ "$DEST_LOGFILE" == "$TEMP_LOG_FILE" || "$DEST_LOGFILE" == "$LOG_OUTPUT" ]]; then # make sure logfile is owned by caller
-			logItem "Updating logfile ownership"
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>> "$LOG_FILE"
-		fi
 	fi
 
 	logExit
