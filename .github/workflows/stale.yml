@@ -21,7 +21,7 @@ jobs:
     - uses: actions/stale@v3
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        days-before-issue-stale: 14
+        days-before-issue-stale: 7
         days-before-issue-close: 7
         stale-issue-message: 'This issue is considered stale now and will be closed automatically in 1 week if there is no activity any more'
         stale-pr-message: 'Stale pull request message'

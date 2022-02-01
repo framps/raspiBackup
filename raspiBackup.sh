@@ -32,6 +32,8 @@
 #
 #######################################################################################################################
 
+set -o pipefail
+
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
 	echo "??? DEBUG: $(lsof -a -p $$ -d txt | tail -n 1)"
@@ -44,8 +46,8 @@ MYNAME=${MYSELF%.*}
 VERSION="0.6.7-dev"												# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.4"									# required config version for script
 
-VERSION_VARNAME="VERSION"										# has to match above var names
-VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"						# used to lookup VERSION_CONFIG in config files
+VERSION_VARNAME="VERSION"									# has to match above var names
+VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
 [ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
 [ -z "${BASH_VERSINFO[0]}" ] && printf "\n\033[1;35m Make sure you're using \"bash\"! \033[m\n\n" >&2 && exit 255
@@ -750,10 +752,10 @@ MSG_DE[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Gerät %s wird überschr
 MSG_FI[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Laite %s ylikirjoitetaan tallennetuilla käynnistys- ja juuriosioilla."
 MSG_FR[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Le périphérique %s sera écrasé par la procédure de boot et la partition Root."
 MSG_CURRENT_PARTITION_TABLE=67
-MSG_EN[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Current partitions on %s:$NL%s"
-MSG_DE[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Momentane Partitionen auf %s:$NL%s"
-MSG_FI[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Nykyiset osiot kohteella %s:$NL%s"
-MSG_FR[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Partitions actuelles sur %s:$NL%s"
+MSG_EN[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Current partitions on %s:"
+MSG_DE[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Momentane Partitionen auf %s:"
+MSG_FI[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Nykyiset osiot kohteella %s:"
+MSG_FR[$MSG_CURRENT_PARTITION_TABLE]="RBK0067I: Partitions actuelles sur %s:"
 MSG_BOOTPATITIONFILES_FOUND=68
 MSG_EN[$MSG_BOOTPATITIONFILES_FOUND]="RBK0068I: Using bootpartition backup files starting with %s from directory %s."
 MSG_DE[$MSG_BOOTPATITIONFILES_FOUND]="RBK0068I: Bootpartitionsdateien des Backups aus dem Verzeichnis %s die mit %s beginnen werden benutzt."
@@ -2204,8 +2206,6 @@ function writeToConsole() {  # msglevel messagenumber message
 
 	unset noNL
 }
-
-#!/bin/bash
 
 function isSupportedEnvironment() {
 
@@ -4219,9 +4219,7 @@ function cleanup() { # trap
 	else
 		cleanupBackup $1
 		if [[ $rc -eq 0 ]]; then
-			if (( ! $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then
-				applyBackupStrategy
-			fi
+			applyBackupStrategy
 		fi
 	fi
 
@@ -6361,7 +6359,7 @@ function doitBackup() {
 		fi
 
 		if ! supportsHardlinks "$BACKUPPATH"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_USE_HARDLINKS "$BACKUPPATH"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH"
 			exitError $RC_MISC_ERROR
 		else
 			local fs="$(getFsType "$BACKUPPATH")"
@@ -6626,7 +6624,8 @@ function restoreNonPartitionBasedBackup() {
 
 	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
 	if [[ -n "$current_partition_table" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE" "$current_partition_table"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+		echo "$current_partition_table"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
 		if (( $SKIP_SFDISK )); then
@@ -7210,6 +7209,13 @@ function doitRestore() {
 	if [[ -z $RESTORE_DEVICE ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_RESTOREDEVICE_DEFINED
 		exitError $RC_PARAMETER_ERROR
+	fi
+
+	if (( $PROGRESS )); then
+		if ! which pv &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
+			exitError $RC_PARAMETER_ERROR
+		fi
 	fi
 
 	if ! (( $FAKE )); then
