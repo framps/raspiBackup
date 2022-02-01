@@ -7104,9 +7104,11 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )) && [[ ! $(which pv &>/dev/null) ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
-		exitError $RC_PARAMETER_ERROR
+	if (( $PROGRESS )); then
+		if ! which pv &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
+			exitError $RC_PARAMETER_ERROR
+		fi
 	fi
 
 	if ! (( $FAKE )); then
