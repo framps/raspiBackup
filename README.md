@@ -2,28 +2,28 @@
 
 # raspiBackup - Backup and restore your running Raspberries
 
-* Unattended full or incremental system backup with no shutdown of the system 
+* Unattended full or incremental system backup with no shutdown of the system.
 * No manual intervention required by using cron.
-* Number of backup versions to keep configurable
-* Smart recycle backup strategy (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle available
+* Number of backup versions to keep configurable.
+* Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle.
 * Restore any of the created backup versions. 
 * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
 * Important services can be stopped before starting the backup and will be restarted when the backup finished.
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
 * Standard Linux backup tools dd, tar and rsync can be used to create the backup.
-* dd and tar are full backups. rsync uses hardlinks for incremental backups
-* Restore a SD card image backup to SSD or USB disk and migrate to use USB boot mode 
-* Backup run results may be send via eMail or to Telegram
-* Extensionpoints allow to execute any additional logic at various steps in the backup process
+* dd and tar are full backups. rsync uses hardlinks for incremental backups.
+* Restore a SD card image backup to SSD or USB disk and migrate to use USB boot mode.
+* Backup run results may be send via eMail or to Telegram.
+* Extensionpoints allow to execute any additional logic at various steps in the backup process.
 * National language support:
   * English (Default)
   * German
   * Finnish
   * Chinese
   * French
-* Extensive logging 
-* Automated regressiontests 
-* Much more features (see below)
+* Extensive logging. 
+* Automated regressiontests. 
+* Much more features (see below).
 
 ## Note
 **raspiBackup is supported only for RaspberryOS as operating system and Raspberry hardware. raspiBackup runs also successully on other Linux environments but any support request on these unsupported environments will be rejected. Just try it and be happy if it works on an unsupported environment but don't ask for any support.**
@@ -74,7 +74,7 @@ raspiBackup is maintained just by me - framp. If you find raspiBackup useful ple
 
 Anybody is welcome to create feature requests in github. They are either immediately scheduled for the next release or moved into the [backog](https://github.com/framps/raspiBackup/issues?q=is%3Aissue+is%3Aclosed+label%3ABacklog). The backlog will be reviewed every time a new release is planned and some issues are picked up and will be implemented in the next release. If you find some features useful just add a comment to the issue with :+1:. This helps to prioritize the issues in the backlog.
 
-## Detailed documentation
+## Much more detailed documentation
 
  * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
  * [German](https://www.linux-tips-and-tricks.de/de/alles-ueber-raspibackup/)
