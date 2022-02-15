@@ -60,11 +60,12 @@ if (( $UID != 0 )); then
 	exit -1
 fi
 
-function checkrc() {
+function checkrc() { # is should
 	logEntry "$1"
 	local rc="$1"
-	if (( $rc != 0 )); then
-		echo "Error $rc"
+	local should=$2
+	if (( $rc != $should )); then
+		echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@ Error $rc received. Should be $should"
 		echo $stderr
 	else
 		: echo "OK: $rc"
@@ -134,14 +135,14 @@ function testRsync() {
 
 		echo "@@@ Copy local data $TEST_DIR to remote $TEST_DIR"
 		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_TO "$TEST_DIR/" "$TEST_DIR/"
-		checkrc $?
+		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ Verify remote data in ${tgt[RSYNC_TARGET_DIR_CNST]}"
 #		See https://unix.stackexchange.com/questions/87405/how-can-i-execute-local-script-on-remote-machine-and-include-arguments
 		printf -v args '%q ' "${tgt[RSYNC_TARGET_DIR_CNST]}/$TEST_DIR"
 		invokeCommand ${t[$target]} stdout stderr "bash -s -- $args"  < ./testRemote.sh
-		checkrc $?
+		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		# cleanup local dir
@@ -150,7 +151,7 @@ function testRsync() {
 
 		echo "@@@ Copy remote data $TEST_DIR to local $TEST_DIR"
 		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_FROM "$TEST_DIR/" "$TEST_DIR/"
-		checkrc $?
+		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ Verify local data in $TEST_DIR"
@@ -162,17 +163,17 @@ function testRsync() {
 
 		echo "@@@ List remote data"
 		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR_CNST]}/$TEST_DIR""
-		checkrc $?
+		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ Clear remote data"
 		invokeCommand ${t[$target]} stdout stderr "rm "${tgt[RSYNC_TARGET_DIR_CNST]}/$TEST_DIR/*""
-		checkrc $?
+		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ List cleared remote data"
 		invokeCommand ${t[$target]} stdout stderr "ls -la "${tgt[RSYNC_TARGET_DIR_CNST]}/$TEST_DIR""
-		checkrc $?
+		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 	done
@@ -188,19 +189,21 @@ function testCommand() {
 	declare t=(localTarget sshTarget rsyncTarget)
 
 	cmds=("ls -b" "ls -la /" "mkdir /dummy" "ls -la /dummy" "rmdir /dummy" "ls -la /forceError" "lsblk")
+	rcs=(  0      0          0              0               0              2                    0)
 
 	for (( target=0; target<${#t[@]}; target++ )); do
 		tt="${t[$target]}"
 		echo "@@@ ---> Target: $tt"
-
+		local r=0
 		for cmd in "${cmds[@]}"; do
 			echo "Command: $cmd "
 			export RSYNC_TARGET_TYPE=$tt
 			invokeCommand ${t[$target]} stdout stderr "$cmd"
 			rc=$?
-			checkrc $rc
+			checkrc $rc ${rcs[$r]}
 			(( ECHO_REPLIES )) && echo "stdout: $stdout"
 			(( ECHO_REPLIES )) && echo "stderr: $stderr"
+			(( r++ ))
 		done
 		echo
 	done
