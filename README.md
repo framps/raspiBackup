@@ -36,7 +36,7 @@
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
 * [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/rmessages/)
 * [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/smart-recycle/)
-* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/synology-usage/)
+* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/backup/synology-usage/)
 
 ### German
 * [Installation](https://www.linux-tips-and-tricks.de/de/schnellstart-rbk/)
