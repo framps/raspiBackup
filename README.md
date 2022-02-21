@@ -44,7 +44,7 @@
 * [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
 * [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/fehlermeldungen/)
 * [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/rotationsstrategie/)
-* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/benutzung-von-synology/)
+* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/raspibackup/benutzung-von-synology/)
 
 ### French
 
