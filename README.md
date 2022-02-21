@@ -39,11 +39,11 @@
 * [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/backup/synology-usage/)
 
 ### German
-* [Installation](https://www.linux-tips-and-tricks.de/de/schnellstart-rbk/)
+* [Installation](https://www.linux-tips-and-tricks.de/de/raspibackup/schnellstart-rbk/)
 * [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
 * [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
-* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/fehlermeldungen/)
-* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/rotationsstrategie/)
+* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/faq/fehlermeldungen/)
+* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/raspibackup/rotationsstrategie/)
 * [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/raspibackup/benutzung-von-synology/)
 
 ### French
