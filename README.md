@@ -31,11 +31,11 @@
 ## Documentation
 
 ### English
-* [Installation](https://www.linux-tips-and-tricks.de/en/quickstart-rbk)
+* [Installation](https://www.linux-tips-and-tricks.de/en/backup/quickstart-rbk/)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
-* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/rmessages/)
-* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/smart-recycle/)
+* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/faq/rmessages/)
+* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/backup/smart-recycle/)
 * [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/backup/synology-usage/)
 
 ### German
