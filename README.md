@@ -26,7 +26,7 @@
 * Much more features (see below).
 
 ## Note
-**raspiBackup is supported only for RaspberryOS as operating system and Raspberry hardware. raspiBackup runs also successfully on other Linux environments but any support request on these unsupported environments will be rejected. Just try it and be happy if it works on an unsupported environment but don't ask for any support.**
+**raspiBackup is supported only for RaspberryOS as operating system and Raspberry hardware. raspiBackup runs also successfully on other Linux environments but any support request on these unsupported environments will be rejected. Just try it and be happy if it works but don't ask for any support.**
 
 ## Documentation
 
