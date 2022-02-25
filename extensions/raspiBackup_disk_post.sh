@@ -42,8 +42,8 @@ MSG_EXT_DISK_USAGE2="ext_diskusage_2"
 MSG_EN[$MSG_EXT_DISK_USAGE2]="RBK1002I: Disk usage post backup: Used: %s Free: %s"
 MSG_DE[$MSG_EXT_DISK_USAGE2]="RBK1002I: Partitionsauslastung nach dem Backup: Belegt: %s Frei: %s"
 MSG_EXT_DISK_USAGE3="ext_diskusage_3"
-MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1003I: Free change: %s (%s %%)"
-MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1003I: Änderung freier Platz: %s (%s %%)"
+MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1003I: Disk usage change: %s (%s %%)"
+MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1003I: Partitionsauslatung Änderung freier Platz: %s (%s %%)"
 MSG_EXT_DISK_USAGE4="ext_diskusage_4"
 MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc not found. Please install bc first with with 'sudo apt-get install bc'."
 MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert werden mit 'sudo apt-get install bc'."
@@ -69,7 +69,7 @@ else
 	freeChange=$( bc <<< "$freePost - $freePre" )
 
 	# Use bytesToHuman from raspiBackup which displays a number in a human readable form
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE1 "$(bytesToHuman $usagePre)" "$(bytesToHuman $freePre)"	
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE1 "$(bytesToHuman $usagePre)" "$(bytesToHuman $freePre)"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE2 "$(bytesToHuman $usagePost)" "$(bytesToHuman $freePost)"
 
 	if (( $freePre != 0 )); then

@@ -10,7 +10,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2018 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2021 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ GIT_COMMIT="$Sha1$"
 #Swap:            99          83          16
 
 function getMemoryFree() {
-	eval set -- "$(free -m |grep -i 'Mem:')"
+	eval set -- "$(LC_ALL=C free -m |grep -i 'Mem:')"	# "Mem" will be "Speicher" in German and others in other languages, so force language to be English
 	echo "$3 $4"
 }
 
