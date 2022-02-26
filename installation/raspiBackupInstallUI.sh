@@ -1062,6 +1062,10 @@ MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用
 4) 在 $MYHOMEDOMAIN$上关于$RASPIBACKUP_NAME的页面留言评论{NL}\
 5) 访问$RASPIBACKUP_NAME 的Facebook页面"
 
+MSG_FIRST_PARTITIONS_NOT_SELECTED=$((SCNT++))
+MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions have to be selected."
+MSG_DE[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Wenigstens die beiden ersten Partitionen müssen ausgewählt sein."
+
 declare -A MENU_EN
 declare -A MENU_DE
 declare -A MENU_FI
@@ -3235,6 +3239,13 @@ function config_partitions_do() {
 			CONFIG_PARTITIONS_TO_BACKUP="$current"
 			[[ "$orgCurrent" == "$current" ]] # check the first partitions were not deselected
 			done=$(( ! $? ))
+
+			if (( ! $done )); then
+				local m="$(getMessageText $MSG_FIRST_PARTITIONS_NOT_SELECTED)"
+				local t=$(center $WINDOW_COLS "$m")
+				local tt="$(getMessageText $TITLE_INFORMATION)"
+				whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
+			fi
 		else
 			CONFIG_PARTITIONS_TO_BACKUP="$old"
 			done=1
