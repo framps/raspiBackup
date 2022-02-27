@@ -1,4 +1,4 @@
-![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/stars/framps/raspiBackup?style=social)
+![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
 
 # raspiBackup - Backup and restore your running Raspberries
 
@@ -26,25 +26,25 @@
 * Much more features (see below).
 
 ## Note
-**raspiBackup is supported only for RaspberryOS as operating system and Raspberry hardware. raspiBackup runs also successully on other Linux environments but any support request on these unsupported environments will be rejected. Just try it and be happy if it works on an unsupported environment but don't ask for any support.**
+**raspiBackup is supported only for RaspberryOS as operating system and Raspberry hardware. raspiBackup runs also successfully on other Linux distros but any support request on these unsupported environments will be rejected. Just try it and be happy if it works but don't ask for any support.**
 
 ## Documentation
 
 ### English
-* [Installation](https://www.linux-tips-and-tricks.de/en/quickstart-rbk)
+* [Installation](https://www.linux-tips-and-tricks.de/en/backup/quickstart-rbk/)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
-* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/rmessages/)
-* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/smart-recycle/)
-* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/synology-usage/)
+* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/faq/rmessages/)
+* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/backup/smart-recycle/)
+* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/backup/synology-usage/)
 
 ### German
-* [Installation](https://www.linux-tips-and-tricks.de/de/schnellstart-rbk/)
+* [Installation](https://www.linux-tips-and-tricks.de/de/raspibackup/schnellstart-rbk/)
 * [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
 * [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
-* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/fehlermeldungen/)
-* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/rotationsstrategie/)
-* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/benutzung-von-synology/)
+* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/faq/fehlermeldungen/)
+* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/raspibackup/rotationsstrategie/)
+* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/raspibackup/benutzung-von-synology/)
 
 ### French
 
