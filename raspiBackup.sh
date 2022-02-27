@@ -8606,6 +8606,8 @@ if (( $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	fi
 fi
 
+check4RequiredCommands
+
 if (( $UPDATE_CONFIG )); then
 	updateConfig
 	exitNormal
