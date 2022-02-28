@@ -1807,6 +1807,12 @@ MSG_DE[$MSG_TARGET_DAEMON_ERROR]="RBK0270E: Befehl %s kann nicht per ssh für de
 MSG_TARGET_KEYS_MISSING=271
 MSG_EN[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Missing target definitions %s for target %s."
 MSG_DE[$MSG_TARGET_KEYS_MISSING]="RBK0271E: Es fehlen Zieldefinitionen %s für das Ziel %s."
+MSG_CHECKING_REMOTE_SSH_ACCESS=272
+MSG_EN[$MSG_CHECKING_REMOTE_SSH_ACCESS]="RBK0272I: Checking remote SSH access"
+MSG_DE[$MSG_CHECKING_REMOTE_SSH_ACCESS]="RBK0272I: Remoter SSH Zugriff wird geprüft"
+MSG_CHECKING_REMOTE_DAEMON_ACCESS=273
+MSG_EN[$MSG_CHECKING_REMOTE_DAEMON_ACCESS]="RBK0273I: Checking remote rsync daemon access."
+MSG_DE[$MSG_CHECKING_REMOTE_DAEMON_ACCESS]="RBK0273I: Remoter rsync daemon Zugriff wird geprüft."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2877,7 +2883,7 @@ function dynamic_mount() { # mountpoint
 
 }
 
-function createTarget() {
+function targetCreate() {
 
 	logEntry $1 $2
 
@@ -2916,6 +2922,8 @@ function verifyRemoteSSHAccessOK() {
 
 	logEntry
 
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_REMOTE_SSH_ACCESS
+
 	local reply rc
 
 	declare t=sshTarget
@@ -2945,7 +2953,10 @@ function verifyRemoteSSHAccessOK() {
 # test whether daemon configuration is OK and all required commands can be executed via ssh
 
 function verifyRemoteDaemonAccessOK() {
+
 	logEntry
+
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_REMOTE_DAEMON_ACCESS
 
 	local reply rc
 
@@ -2995,7 +3006,7 @@ function verifyRemoteDaemonAccessOK() {
 
 }
 
-function testTarget() {
+function targetTest() {
 
 	logEntry "$1"
 
@@ -5303,7 +5314,7 @@ function backupRsync() { # partition number (for partition based backup)
 		target="\"${BACKUPTARGET_DIR}\""
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
 
-		lastBackupDir="$(invokeCommand $RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		lastBackupDir="$(invokeCommand RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
 		# lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot="/$partition"
 
@@ -5312,7 +5323,7 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir="$(invokeCommand $RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		lastBackupDir="$(invokeCommand RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
 		#lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
@@ -6075,13 +6086,12 @@ function doit() {
 		logItem "RSYNC target $RSYNC_TARGET_TYPE defined. Using target type $RSYNC_TARGET_TYPE"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_TARGETTYPE_USED "$RSYNC_TARGET_TYPE"
 
-		createTarget RSYNC_TARGET $DEFAULT_RSYNC_TARGET_TYPE
-		testTarget RSYNC_TARGET
+		targetCreate RSYNC_TARGET $DEFAULT_RSYNC_TARGET_TYPE
+		targetTest RSYNC_TARGET
 
-		logItem "Verifying remote access"
-		if [[ $RSYNC_TARGET == $RSYNC_TARGET_TYPE_SSH ]]; then
+		if [[ ${RSYNC_TARGET[$RSYNC_TARGET_TYPE]} == $RSYNC_TARGET_TYPE_SSH ]]; then
 			verifyRemoteSSHAccessOK RSYNC_TARGET
-		elif [[ $RSYNC_TARGET == $RSYNC_TARGET_TYPE_DAEMON ]]; then
+		elif [[ ${RSYNC_TARGET[$RSYNC_TARGET_TYPE]} == $RSYNC_TARGET_TYPE_DAEMON ]]; then
 			verifyRemoteDaemonAccessOK RSYNC_TARGET
 		fi
 
