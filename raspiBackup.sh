@@ -3049,20 +3049,22 @@ function targetTest() {
 	logExit
 }
 
-function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname options direction from to
+function invokeRsync() { # target stdOutReturnVarname stdErrReturnVarname direction from to options
 
-	logEntry "$1 $2 $3 $4 $5 $6 $7"
+	logEntry "$@"
 
-	local -n target=$1
-	local -n sout=$2
-	local -n eout=$3
+	local -n target="$1"
+	local -n sout="$2"
+	local -n eout="$3"
 
 	local rc ect
 
-	local options="$4"
-	local direction="$5"
-	local fromDir="$6"
-	local toDir="$7"
+	local direction="$4"
+	local fromDir="$5"
+	local toDir="$6"
+	shift 6
+
+	local options="$@"
 
 	local s="$(mktemp -p /dev/shm/)"		# catch stdio and stderr in memory files
 	local e="$(mktemp -p /dev/shm/)"
@@ -3123,14 +3125,14 @@ function invokeCommand() { # targetVarname stdOutReturnVarname stdErrReturnVarna
 
 	logEntry "$1 $2 $3 $4"
 
-	local -n target=$1
-	local -n sout=$2
-	local -n eout=$3
+	local -n target="$1"
+	local -n sout="$2"
+	local -n eout="$3"
 	local cmd="$4"
 
 	local rc
 
-	testTarget target
+	targetTest target
 
 	case ${target[RSYNC_TARGET_TYPE_CNST]} in
 
@@ -5314,7 +5316,7 @@ function backupRsync() { # partition number (for partition based backup)
 		target="\"${BACKUPTARGET_DIR}\""
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
 
-		lastBackupDir="$(invokeCommand RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		lastBackupDir="$(invokeCommand RSYNC_TARGET stdout stderr "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
 		# lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot="/$partition"
 
@@ -5323,7 +5325,7 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir="$(invokeCommand RSYNC_TARGET "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		lastBackupDir="$(invokeCommand RSYNC_TARGET stdout stderr "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
 		#lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
@@ -5384,7 +5386,7 @@ function backupRsync() { # partition number (for partition based backup)
 
 	if (( ! $FAKE )); then
 		if [[ -n $RSYNC_TARGET_TYPE ]]; then
-			invokeRsync $RSYNC_TARGET "$cmdParms" $RSYNC_TARGET_DIRECTION_TO # $source $target
+			invokeRsync RSYNC_TARGET $RSYNC_TARGET_DIRECTION_TO stout stderr $source $target "${cmdParms[@]}"
 			rc=$?
 		else
 			executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"

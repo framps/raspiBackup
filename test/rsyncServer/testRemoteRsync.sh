@@ -89,6 +89,8 @@ function createTestData() { # directory
 	touch $1/noacl.txt
 
 	verifyTestData "$1"
+	checkrc $? 0
+
 }
 
 function verifyTestData() { # directory
@@ -134,7 +136,7 @@ function testRsync() {
 		createTestData $TEST_DIR
 
 		echo "@@@ Copy local data $TEST_DIR to remote $TEST_DIR"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_TO "$TEST_DIR/" "$TEST_DIR/"
+		invokeRsync ${t[$target]} stdout stderr RSYNC_TARGET_DIRECTION_TO "$TEST_DIR/" "$TEST_DIR/" "$RSYNC_OPTIONS"
 		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
@@ -150,12 +152,13 @@ function testRsync() {
 		rm ./$TEST_DIR/*
 
 		echo "@@@ Copy remote data $TEST_DIR to local $TEST_DIR"
-		invokeRsync ${t[$target]} stdout stderr "$RSYNC_OPTIONS" RSYNC_TARGET_DIRECTION_FROM "$TEST_DIR/" "$TEST_DIR/"
+		invokeRsync ${t[$target]} stdout stderr RSYNC_TARGET_DIRECTION_FROM "$TEST_DIR/" "$TEST_DIR/" "$RSYNC_OPTIONS"
 		checkrc $? 0
 		(( ECHO_REPLIES )) && echo "$stdout"
 
 		echo "@@@ Verify local data in $TEST_DIR"
 		verifyTestData "$TEST_DIR"
+		checkrc $? 0
 
 		# cleanup local dir
 		echo "@@@ Clear local data $TEST_DIR"
