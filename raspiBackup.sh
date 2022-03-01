@@ -5316,7 +5316,8 @@ function backupRsync() { # partition number (for partition based backup)
 		target="\"${BACKUPTARGET_DIR}\""
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
 
-		lastBackupDir="$(invokeCommand RSYNC_TARGET stdout stderr "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		invokeCommand RSYNC_TARGET stdout stderr "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1"
+		lastBackupDir="$stdout"
 		# lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot="/$partition"
 
@@ -5325,7 +5326,8 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir="$(invokeCommand RSYNC_TARGET stdout stderr "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1")"
+		invokeCommand RSYNC_TARGET stdout stderr "find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name \"*-$BACKUPTYPE-*\" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1"
+		lastBackupDir="$stdout"
 		#lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
@@ -5386,7 +5388,7 @@ function backupRsync() { # partition number (for partition based backup)
 
 	if (( ! $FAKE )); then
 		if [[ -n $RSYNC_TARGET_TYPE ]]; then
-			invokeRsync RSYNC_TARGET $RSYNC_TARGET_DIRECTION_TO stout stderr $source $target "${cmdParms[@]}"
+			invokeRsync RSYNC_TARGET stout stderr $RSYNC_TARGET_DIRECTION_TO $source $target "${cmdParms[@]}"
 			rc=$?
 		else
 			executeCommand "$cmd" "$RSYNC_IGNORE_ERRORS"
