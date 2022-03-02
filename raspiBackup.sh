@@ -1780,14 +1780,14 @@ MSG_EN[$MSG_EXTENSION_CALLED]="RBK0267I: Extension %s called."
 MSG_DE[$MSG_EXTENSION_CALLED]="RBK0267I: Erweiterung %s wird aufgerufen."
 
 MSG_UNSUPPORTED_ENVIRONMENT=267
-MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Unsupported environment. Has to be Raspberry HW and Raspberry OS. Check --unsupportedEnvironment option documentation for details."
-MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Die Umgebung wird nicht unterstützt. Sie muss Raspberry HW und Raspbian OS sein. Lies die Dokumentation zu Option --unsupportedEnvironment für weitere Informationen."
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Unsupported environment. Raspberries wunning Raspberry PI OS are supported only. Check --unsupportedEnvironment option documentation for details how to invoke $MYNAME without support."
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Die Umgebung wird nicht unterstützt. Es werden nur Raspberries mit Raspbian PI OS unterstützt. Die Dokumentation zu Option --unsupportedEnvironment beschreibt wie man $MYNAME nicht unterstützt aufrufen kann."
 MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=268
 MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@ \
-${NL}!!! RBK0268W: Unsupported environment. $MYNAME may work but if it fails there is no support given! \
+${NL}!!! RBK0268W: Unsupported environment. $MYNAME may work but there is no support given! \
 ${NL}!!! RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@"
 MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@ \
-${NL}!!! RBK0268W: Die Umgebung wird nicht unterstützt. $MYNAME kann korrekt funktionieren aber bei Fehlern wird keine Unterstützung gegeben! \
+${NL}!!! RBK0268W: Die Umgebung wird nicht unterstützt. $MYNAME kann korrekt funktionieren aber es wird keine Unterstützung gegeben! \
 ${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
