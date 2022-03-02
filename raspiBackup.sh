@@ -2480,6 +2480,7 @@ function logOptions() { # option state
 	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
+	logItem "COLOR_CODES="${COLOR_CODES[@]}""
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
  	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
@@ -2581,6 +2582,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_BEFORE_STOPSERVICES=""
 	# commands to execute after backup start separated by &&
 	DEFAULT_AFTER_STARTSERVICES=""
+	# HTML color and VT100 color for warning and error, yellow red
+	DEFAULT_COLOR_CODES=("#FF8000 33" "#FF0000 31")
 	# email to send completion status
 	DEFAULT_EMAIL=""
 	# sender email used with ssmtp
@@ -2615,7 +2618,7 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_EXCLUDE_LIST=""
 	# notify in email if there is an updated script version available  (0 = false, 1 = true)
 	DEFAULT_NOTIFY_UPDATE=1
-	# extensions to call
+	# backup extensions to call
 	DEFAULT_EXTENSIONS=""
 	# restore extensions to call
 	DEFAULT_RESTORE_EXTENSIONS=""
@@ -2697,6 +2700,7 @@ function copyDefaultConfigVariables() {
 	AFTER_STARTSERVICES="$DEFAULT_AFTER_STARTSERVICES"
 	BEFORE_STOPSERVICES="$DEFAULT_BEFORE_STOPSERVICES"
 	CHECK_FOR_BAD_BLOCKS="$DEFAULT_CHECK_FOR_BAD_BLOCKS"
+	COLOR_CODES=("${DEFAULT_COLOR_CODES[0]}" "${DEFAULT_COLOR_CODES[1]}")
 	COLORING="$DEFAULT_COLORING"
 	DD_BACKUP_SAVE_USED_PARTITIONS_ONLY="$DEFAULT_DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
 	DD_BLOCKSIZE="$DEFAULT_DD_BLOCKSIZE"
@@ -3684,8 +3688,6 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 # html vt100
 COLOR_WARNING=0
 COLOR_ERROR=1
-# yellow red
-COLOR_CODES=("#FF8000 33" "#FF0000 31")
 COLOR_TYPE_HTML=0
 COLOR_TYPE_VT100=1
 
