@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -960,23 +960,23 @@ MSG_ABOUT=$((SCNT++))
 MSG_EN[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
 This tool provides a straight-forward way of doing installation,${NL} updating and configuration of $RASPIBACKUP_NAME.${NL}${NL}\
 Visit https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}for details about all configuration options of $RASPIBACKUP_NAME.${NL}${NL}\
-Visit https://www.linux-tips-and-tricks.de/de/raspibackup${NL}for details about $RASPIBACKUP_NAME."
+Visit https://www.linux-tips-and-tricks.de/en/raspibackup${NL}for details about $RASPIBACKUP_NAME."
 MSG_DE[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
 Dieses Tool ermöglicht es möglichst einfach $RASPIBACKUP_NAME zu installieren,${NL} zu updaten und die Konfiguration anzupassen.${NL}${NL}\
 Besuche https://www.linux-tips-and-tricks.de/de/raspibackup#parameter${NL}um alle Konfigurationsoptionen von $RASPIBACKUP_NAME kennenzulernen.${NL}${NL}\
-Besuche https://www.linux-tips-and-tricks.de/en/backup${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
+Besuche https://www.linux-tips-and-tricks.de/de/raspibackup${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
 MSG_FI[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
 Tämä työkalu tarjoaa $RASPIBACKUP_NAME:n suoraviivaisen asennuksen,${NL} päivittämisen ja asetusten määrittämisen.${NL}${NL}\
 Kaikista $RASPIBACKUP_NAME:n asetuksista löydät tietoa osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
-Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://www.linux-tips-and-tricks.de/de/raspibackup"
+Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup"
 MSG_FR[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
 Cet outil facilite au maximum la mise en place de $RASPIBACKUP_NAME ,la mise à jour ,${NL} et la configuration.${NL}${NL}\
 Visitez https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}pour plus de détails sur toutes les options de configuration de $RASPIBACKUP_NAME.${NL}${NL}\
-Visitez https://www.linux-tips-and-tricks.de/de/raspibackup${NL}pour plus de détails sur $RASPIBACKUP_NAME."
+Visitez https://www.linux-tips-and-tricks.de/en/raspibackup${NL}pour plus de détails sur $RASPIBACKUP_NAME."
 MSG_ZH[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
 此界面提供一个$RASPIBACKUP_NAME的安装引导,${NL}更新和设置页面.${NL}${NL}\
 $RASPIBACKUP_NAME的的详情设置请访问${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
-获取$RASPIBACKUP_NAME详情请访问:{NL}https://www.linux-tips-and-tricks.de/de/raspibackup "
+获取$RASPIBACKUP_NAME详情请访问:{NL}https://www.linux-tips-and-tricks.de/en/raspibackup "
 
 MSG_FIRST_STEPS=$((SCNT++))
 MSG_EN[$MSG_FIRST_STEPS]="Congratulations! $RASPIBACKUP_NAME installed successfully.${NL}${NL}\
@@ -1061,6 +1061,10 @@ MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用
 3) 在github上创建issues https://github.com/framps/raspiBackup/issues. 通常选这项!${NL}\
 4) 在 $MYHOMEDOMAIN$上关于$RASPIBACKUP_NAME的页面留言评论{NL}\
 5) 访问$RASPIBACKUP_NAME 的Facebook页面"
+
+MSG_FIRST_PARTITIONS_NOT_SELECTED=$((SCNT++))
+MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions have to be selected."
+MSG_DE[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Wenigstens die beiden ersten Partitionen müssen ausgewählt sein."
 
 declare -A MENU_EN
 declare -A MENU_DE
@@ -3237,6 +3241,13 @@ function config_partitions_do() {
 			CONFIG_PARTITIONS_TO_BACKUP="$current"
 			[[ "$orgCurrent" == "$current" ]] # check the first partitions were not deselected
 			done=$(( ! $? ))
+
+			if (( ! $done )); then
+				local m="$(getMessageText $MSG_FIRST_PARTITIONS_NOT_SELECTED)"
+				local t=$(center $WINDOW_COLS "$m")
+				local tt="$(getMessageText $TITLE_INFORMATION)"
+				whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
+			fi
 		else
 			CONFIG_PARTITIONS_TO_BACKUP="$old"
 			done=1

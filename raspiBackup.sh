@@ -2650,8 +2650,6 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_SMART_RECYCLE_DRYRUN=1
 	# Smart recycle parameters (daily, weekly, monthly and yearly)
 	DEFAULT_SMART_RECYCLE_OPTIONS="7 4 12 1"
-	# report uuid
-	DEFAULT_USE_UUID=1
 	# Check for back blocks when formating restore device (Will take a long time)
 	DEFAULT_CHECK_FOR_BAD_BLOCKS=0
 	# Resize root filesystem during restore
@@ -2666,6 +2664,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_RESTORE_REMINDER_REPEAT=3
 	# update device UUIDs
 	DEFAULT_UPDATE_UUIDS=0
+	# send stats
+	DEFAULT_SEND_STATS=1
 	# ignore partitions > 2 in normal mode
 	DEFAULT_IGNORE_ADDITIONAL_PARTITIONS=0
 	# notify in email and telegram when backup starts
@@ -2739,6 +2739,7 @@ function copyDefaultConfigVariables() {
 	SMART_RECYCLE_DRYRUN="$DEFAULT_SMART_RECYCLE_DRYRUN"
 	SMART_RECYCLE_OPTIONS="$DEFAULT_SMART_RECYCLE_OPTIONS"
 	STARTSERVICES="$DEFAULT_STARTSERVICES"
+	SEND_STATS="$DEFAULT_SEND_STATS"
 	STOPSERVICES="$DEFAULT_STOPSERVICES"
 	SYSTEMSTATUS="$DEFAULT_SYSTEMSTATUS"
 	TAR_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS"
@@ -2750,7 +2751,6 @@ function copyDefaultConfigVariables() {
 	TELEGRAM_TOKEN="$DEFAULT_TELEGRAM_TOKEN"
 	TIMESTAMPS="$DEFAULT_TIMESTAMPS"
 	UPDATE_UUIDS="$DEFAULT_UPDATE_UUIDS"
-	USE_UUID="$DEFAULT_USE_UUID"
 	VERBOSE="$DEFAULT_VERBOSE"
 	YES_NO_RESTORE_DEVICE="$DEFAULT_YES_NO_RESTORE_DEVICE"
 	ZIP_BACKUP="$DEFAULT_ZIP_BACKUP"
@@ -2905,14 +2905,17 @@ function downloadPropertiesFile() { # FORCE
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_FOR_NEW_VERSION
 
-			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
-			local type=$BACKUPTYPE
-			local keep=$KEEPBACKUPS
-			local func="B"; (( $RESTORE )) && func="R"
-			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
-			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
-			local uuid="?"; [[ -n $UUID ]]  && (( $USE_UUID )) && uuid="?uuid=$UUID&"
-			local downloadURL="$PROPERTY_URL${uuid}version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
+			if (( $DEFAULT_SEND_STATS )); then
+				local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
+				local type=$BACKUPTYPE
+				local keep=$KEEPBACKUPS
+				local func="B"; (( $RESTORE )) && func="R"
+				local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
+				local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
+				local downloadURL="$PROPERTY_URLversion=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
+			else
+				local downloadURL="$PROPERTY_URL"
+			fi
 
 			wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
 			local rc=$?
@@ -8396,10 +8399,6 @@ while (( "$#" )); do
 
 	-h|--help)
 	  HELP=1; break
-	  ;;
-
-	-i|-i[-+])
-	  USE_UUID=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	--ignoreAdditionalPartitions|--ignoreAdditionalPartitions[+-])
