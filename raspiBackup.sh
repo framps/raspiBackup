@@ -1780,8 +1780,8 @@ MSG_EN[$MSG_EXTENSION_CALLED]="RBK0267I: Extension %s called."
 MSG_DE[$MSG_EXTENSION_CALLED]="RBK0267I: Erweiterung %s wird aufgerufen."
 
 MSG_UNSUPPORTED_ENVIRONMENT=267
-MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Unsupported environment. Raspberries wunning Raspberry PI OS are supported only. Check --unsupportedEnvironment option documentation for details how to invoke $MYNAME without support."
-MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Die Umgebung wird nicht unterstützt. Es werden nur Raspberries mit Raspbian PI OS unterstützt. Die Dokumentation zu Option --unsupportedEnvironment beschreibt wie man $MYNAME nicht unterstützt aufrufen kann."
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Only Raspberries running Raspberry PI OS are supported. Use option --unsupportedEnvironment to invoke $MYNAME WITHOUT ANY SUPPORT."
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
 MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=268
 MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@ \
 ${NL}!!! RBK0268W: Unsupported environment. $MYNAME may work but there is no support given! \
@@ -2210,7 +2210,7 @@ function isSupportedEnvironment() {
 	local OSRELEASE=/etc/os-release
 
 	[[ ! -e $MODELPATH ]] && return 1
-	logCommand "cat $MODELPATH"
+	logCommand "$(cat $MODELPATH | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
 	[[ ! -e $OSRELEASE ]] && return 1
