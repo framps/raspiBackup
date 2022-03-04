@@ -2032,8 +2032,14 @@ function logFinish() {
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
 
+		if (( $RESTORE )); then
+			local rstFileName="${DEST_LOGFILE/$LOGFILE_NAME/$LOGFILE_RESTORE_NAME}"
+			DEST_LOGFILE="$rstFileName"
+		else
+			logItem "DEST_MSGFILE: $DEST_MSGFILE"
+		fi
+
 		logItem "DEST_LOGFILE: $DEST_LOGFILE"
-		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
@@ -2046,15 +2052,6 @@ function logFinish() {
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
-
-		if (( $RESTORE )); then
-			local rstFileName="${LOG_FILE/$LOGFILE_NAME/$LOGFILE_RESTORE_NAME}"
-			logItem "Will rename logfile $LOG_FILE to $rstFileName"
-			mv $LOG_FILE $rstFileName
-			LOG_FILE="$rstFileName"
-		fi
-
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 
 	fi
 
