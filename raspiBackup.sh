@@ -136,11 +136,14 @@ VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp"
-LOGFILE_NAME="${MYNAME}.log"
-LOGFILE_RESTORE_NAME="${MYNAME}Restore.log"
-MSGFILE_NAME="${MYNAME}.msg"
-TEMP_LOG_FILE="$CALLING_HOME/$LOGFILE_NAME"
-TEMP_MSG_FILE="$CALLING_HOME/$MSGFILE_NAME"
+LOGFILE_EXT=".log"
+LOGFILE_NAME="${MYNAME}${LOGFILE_EXT}"
+LOGFILE_RESTORE_EXT=".logr"
+MSGFILE_EXT=".msg"
+MSGFILE_RESTORE_EXT=".msgr"
+MSGFILE_NAME="${MYNAME}${MSGFILE_EXT}"
+TEMP_LOG_FILE="/tmp/$LOGFILE_NAME"
+TEMP_MSG_FILE="/tmp/$MSGFILE_NAME"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
 MODIFIED_SFDISK="/tmp/$$.sfdisk"
 
@@ -2000,25 +2003,28 @@ function logFinish() {
 						exitError $RC_CREATE_ERROR
 					fi
 				fi
-				DEST_LOGFILE="$LOG_BASE/$HOSTNAME.log"
+				DEST_LOGFILE="$LOG_BASE/$HOSTNAME$LOGFILE_EXT"
 				cat "$LOG_FILE" &>> "$DEST_LOGFILE"		# don't move, just append
 				;;
 			$LOG_OUTPUT_HOME)
-				DEST_LOGFILE="$CALLING_HOME/${MYNAME}.log"
-				DEST_MSGFILE="$CALLING_HOME/${MYNAME}.msg"
+				DEST_LOGFILE="$CALLING_HOME/${MYNAME}$LOGFILE_EXT"
+				DEST_MSGFILE="$CALLING_HOME/${MYNAME}$MSGFILE_EXT"
 				;;
 			$LOG_OUTPUT_BACKUPLOC)
-				DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}.log"
-				DEST_MSGFILE="$BACKUPTARGET_DIR/${MYNAME}.msg"
+				DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}$LOGFILE_EXT"
+				DEST_MSGFILE="$BACKUPTARGET_DIR/${MYNAME}$MSGFILE_EXT"
 				;;
 			*) # option -L <filename>
 				DEST_LOGFILE="$LOG_OUTPUT"
 				if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
-					DEST_MSGFILE="$(sed "s/\.log$/\.msg/" <<< "$DEST_LOGFILE")" # replace .log extension
+					DEST_MSGFILE="$(sed "s/\$LOGFILE_EXT$/\$MSGFILE_EXT/" <<< "$DEST_LOGFILE")" # replace .log extension
 				else
-					DEST_MSGFILE="$DEST_LOGFILE.msg"
+					DEST_MSGFILE="$DEST_LOGFILE$MSGFILE_EXT"
 				fi
 		esac
+
+		logItem "DEST_LOGFILE: $DEST_LOGFILE"
+		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
 			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
@@ -2031,15 +2037,6 @@ function logFinish() {
 
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
-
-		if (( $RESTORE )); then
-			local rstFileName="${DEST_LOGFILE/$LOGFILE_NAME/$LOGFILE_RESTORE_NAME}"
-			DEST_LOGFILE="$rstFileName"
-		else
-			logItem "DEST_MSGFILE: $DEST_MSGFILE"
-		fi
-
-		logItem "DEST_LOGFILE: $DEST_LOGFILE"
 
 		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
@@ -8663,6 +8660,15 @@ if (( ! $INCLUDE_ONLY )); then
 
 # set positional arguments in argument list $@
 set -- "$PARAMS"
+
+if (( $RESTORE )); then
+	rstFileName="${LOG_FILE/$LOGFILE_EXT/$LOGFILE_RESTORE_EXT}"
+	LOG_FILE="$rstFileName"
+	LOGFILE_EXT="$LOGFILE_RESTORE_EXT"
+	rstFileName="${MSG_FILE/$MSGFILE_EXT/$MSGFILE_RESTORE_EXT}"
+	MSG_FILE="$rstFileName"
+	MSGFILE_EXT="$MSGFILE_RESTORE_EXT"
+fi
 
 if (( ! $RESTORE )); then
 	lockingFramework
