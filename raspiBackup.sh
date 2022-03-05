@@ -2015,12 +2015,8 @@ function logFinish() {
 				DEST_MSGFILE="$BACKUPTARGET_DIR/${MYNAME}$MSGFILE_EXT"
 				;;
 			*) # option -L <filename>
-				DEST_LOGFILE="$LOG_OUTPUT"
-				if [[ "$DEST_LOGFILE" =~ \.log$ ]]; then
-					DEST_MSGFILE="$(sed "s/\$LOGFILE_EXT$/\$MSGFILE_EXT/" <<< "$DEST_LOGFILE")" # replace .log extension
-				else
-					DEST_MSGFILE="$DEST_LOGFILE$MSGFILE_EXT"
-				fi
+				DEST_LOGFILE="$LOG_OUTPUT$LOGFILE_EXT"
+				DEST_MSGFILE="$LOG_OUTPUT$MSGFILE_EXT"
 		esac
 
 		logItem "DEST_LOGFILE: $DEST_LOGFILE"
@@ -2204,7 +2200,7 @@ function isSupportedEnvironment() {
 	local OSRELEASE=/etc/os-release
 
 	[[ ! -e $MODELPATH ]] && return 1
-	logCommand "$(cat $MODELPATH | sed 's/\x0/\n/g')"
+	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
 	[[ ! -e $OSRELEASE ]] && return 1
@@ -4519,10 +4515,6 @@ function checkImportantParameters() {
 	if [[ ! "$LOG_OUTPUT" =~ $POSSIBLE_LOG_OUTPUT_NUMBERs ]]; then
 		if [[ ${LOG_OUTPUT:0:1} != "/" ]]; then
 			LOG_OUTPUT="$CURRENT_DIR/$LOG_OUTPUT"
-		fi
-
-		if [[ ! "${LOG_OUTPUT}" =~ \.log$ ]]; then
-			LOG_OUTPUT="${LOG_OUTPUT}.log"
 		fi
 
 		if ! touch "$LOG_OUTPUT" &>/dev/null; then
