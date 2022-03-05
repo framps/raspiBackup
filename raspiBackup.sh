@@ -5374,8 +5374,6 @@ function restore() {
 	logItem "Syncing filesystems"
 	sync
 
-	callExtensions $POST_RESTORE_EXTENSION
-
 	if isMounted $MNT_POINT; then
 		logItem "Umount $MNT_POINT"
 		umount $MNT_POINT &>> "$LOG_FILE"
