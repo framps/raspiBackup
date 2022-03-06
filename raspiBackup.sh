@@ -1792,6 +1792,9 @@ ${NL}!!! RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@"
 MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@ \
 ${NL}!!! RBK0268W: Die Umgebung wird nicht unterstützt. $MYNAME kann korrekt funktionieren aber es wird keine Unterstützung gegeben! \
 ${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
+MSG_REBOOT_SYSTEM=268
+MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0268I: System will be rebooted at the end of the backup run."
+MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0268I: Das System wird am Ende des Backuplaufes neu gestartet."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2505,6 +2508,7 @@ function logOptions() { # option state
 	logItem "NOTIFY_UPDATE=$NOTIFY_UPDATE"
 	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
 	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
+	logItem "REBOOT_SYSTEM=$REBOOT_SYSTEM"
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
@@ -2627,6 +2631,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_LINK_BOOTPARTITIONFILES=0
 	# save boot partition with tar
 	DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
+	# reboot system at end of backup
+	DEFAULT_REBOOT_SYSTEM=0
 	# Change these options only if you know what you are doing !!!
 	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete"
 	DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
@@ -2720,6 +2726,7 @@ function copyDefaultConfigVariables() {
 	NOTIFY_UPDATE="$DEFAULT_NOTIFY_UPDATE"
 	PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
+	REBOOT_SYSTEM="$DEFAULT_REBOOT_SYSTEM"
 	RESIZE_ROOTFS="$DEFAULT_RESIZE_ROOTFS"
 	RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
 	RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
@@ -3162,8 +3169,10 @@ function startServices() {
 	logSystemServices
 
 	if (( $STOPPED_SERVICES )); then
-		if [[ -n "$STARTSERVICES" ]]; then
-			if [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
+		if [[ -n "$STARTSERVICES" ]]; then		
+			if (( ! $RESTORE && $REBOOT_SYSTEM )); then
+				:	# just ignore STARTSERVICES
+			elif [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STARTING_SERVICES
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_STARTING_SERVICES "$STARTSERVICES"
@@ -6440,6 +6449,10 @@ function doitBackup() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
+	if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_REBOOT_SYSTEM
+	fi
+
 	if (( $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then # just apply backup strategy to test smart recycle
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH/$(hostname)"
 		applyBackupStrategy
@@ -8516,6 +8529,10 @@ while (( "$#" )); do
 	  RESIZE_ROOTFS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
+	--rebootSystem|--rebootSystem[+-])
+	  REBOOT_SYSTEM=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
 	-s)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
@@ -8809,5 +8826,9 @@ if isVersionDeprecated "$VERSION"; then
 fi
 
 doit
+
+if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
+	reboot
+fi	
 
 fi # ! INCLUDE_ONLY
