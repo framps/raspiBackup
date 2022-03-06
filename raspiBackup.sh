@@ -2199,6 +2199,10 @@ function writeToConsole() {  # msglevel messagenumber message
 
 function isSupportedEnvironment() {
 
+	if (( $REGRESSION_TEST )); then
+		return 0
+	fi
+
 	local MODELPATH=/sys/firmware/devicetree/base/model
 	local OSRELEASE=/etc/os-release
 
@@ -3169,7 +3173,7 @@ function startServices() {
 	logSystemServices
 
 	if (( $STOPPED_SERVICES )); then
-		if [[ -n "$STARTSERVICES" ]]; then		
+		if [[ -n "$STARTSERVICES" ]]; then
 			if (( ! $RESTORE && $REBOOT_SYSTEM )); then
 				:	# just ignore STARTSERVICES
 			elif [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
@@ -8829,6 +8833,6 @@ doit
 
 if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
 	reboot
-fi	
+fi
 
 fi # ! INCLUDE_ONLY
