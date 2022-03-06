@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo ./raspiBackup.sh --version
+sudo ../raspiBackup.sh --version
