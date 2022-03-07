@@ -2797,13 +2797,14 @@ function downloadPropertiesFile() { # FORCE
 				local func="B"; (( $RESTORE )) && func="R"
 				local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 				local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
-				local downloadURL="$PROPERTY_URLversion=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
+				local downloadURL="${PROPERTY_URL}version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
 			else
 				local downloadURL="$PROPERTY_URL"
 			fi
-
+set -x
 			wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
 			local rc=$?
+set +x
 			if [[ $rc == 0 ]]; then
 				logItem "Download of $downloadURL successfull"
 				NEW_PROPERTIES_FILE=1
