@@ -120,7 +120,7 @@ SMILEY_VERSION_DEPRECATED=":-("
 
 DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup${URLTARGET}-sh/download"
 BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta${URLTARGET}-sh/download"
-PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties${URLTARGET}/download"
+PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613${URLTARGET}-properties/download"
 CONFIG_URL="$MYHOMEURL/downloads/raspibackup-\$lang\${URLTARGET}-conf/download" # used in eval for late binding of URLTAGRET
 
 # dd warning website
