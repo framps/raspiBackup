@@ -116,11 +116,12 @@ SMILEY_VERSION_DEPRECATED=":-("
 
 # URLs and temp filenames used
 
-# URLTARGET allows to use new version
-DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup${RASPIBACKUPURLTARGET}-sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup${RASPIBACKUPURLTARGET}-beta-sh/download"
-PROPERTY_URL="$MYHOMEURL/downloads/raspibackup${RASPIBACKUPURLTARGET}0613-properties/download"
-CONFIG_URL="$MYHOMEURL/downloads/raspibackup\${RASPIBACKUPURLTARGET}-\$lang-conf/download" # used in eval for late binding of URLTAGRET
+# URLTARGET allows to use new version for tests
+
+DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup${URLTARGET}-sh/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta${URLTARGET}-sh/download"
+PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties${URLTARGET}/download"
+CONFIG_URL="$MYHOMEURL/downloads/raspibackup-\$lang\${URLTARGET}-conf/download" # used in eval for late binding of URLTAGRET
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
