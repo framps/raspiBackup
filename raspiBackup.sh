@@ -2801,10 +2801,9 @@ function downloadPropertiesFile() { # FORCE
 			else
 				local downloadURL="$PROPERTY_URL"
 			fi
-set -x
+
 			wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
 			local rc=$?
-set +x
 			if [[ $rc == 0 ]]; then
 				logItem "Download of $downloadURL successfull"
 				NEW_PROPERTIES_FILE=1
