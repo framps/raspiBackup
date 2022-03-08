@@ -109,12 +109,12 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
-PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta-sh/download"
+PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613${URLTARGET}-properties/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta${URLTARGET}-sh/download"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-sh/download"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui${URLTARGET}-sh/download"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
 DOWNLOAD_TIMEOUT=60 # seconds
