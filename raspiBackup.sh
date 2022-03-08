@@ -116,12 +116,13 @@ SMILEY_VERSION_DEPRECATED=":-("
 
 # URLs and temp filenames used
 
-# URLTARGET allows to use new version for tests
+# URLTARGET allows to use deployment of new code versions, example: use "beta" to test beta code as if it was published just before it's published
 
-DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup${URLTARGET}-sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta${URLTARGET}-sh/download"
-PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613${URLTARGET}-properties/download"
-CONFIG_URL="$MYHOMEURL/downloads/raspibackup-\$lang\${URLTARGET}-conf/download" # used in eval for late binding of URLTAGRET
+[[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
+DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
+PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
+CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.\$lang\.conf/download" # used in eval for late binding of URLTAGRET
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
