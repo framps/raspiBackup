@@ -110,6 +110,7 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 EOF
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
+
 PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup0613-properties/download"
 BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup-beta-sh/download"
 PROPERTY_FILE_NAME="$MYNAME.properties"
@@ -118,7 +119,7 @@ LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackupinstallui-sh/download"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
-DOWNLOAD_TIMEOUT=60 # seconds
+DOWNLOAD_TIMEOUt=60 # seconds
 DOWNLOAD_RETRIES=3
 
 BIN_DIR="/usr/local/bin"
@@ -1756,7 +1757,7 @@ function update_installer_execute() {
 
 	local newName
 
-	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$downloadURL $INSTALLER_DOWNLOAD_URL)" 2>>"$LOG_FILE")
+	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL $INSTALLER_DOWNLOAD_URL)" 2>>"$LOG_FILE")
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
 		return
