@@ -1958,7 +1958,7 @@ function getActiveServices() {
 
 function downloadURL() { # fileName
 	logEntry "$1"
-	local u="$MYHOMEURL/downloads/$1/download"
+	local u="$MYHOMEURL/downloads$URLTARGET/$1/download"
 	echo "$u"
 	logExit "$u"
 }
