@@ -1956,7 +1956,10 @@ function getActiveServices() {
 }
 
 function downloadURL() { # fileName
-	echo "$MYHOMEURL/downloads/$1/download"
+	logEntry "$1"
+	local u="$MYHOMEURL/downloads/$1/download"
+	echo "$u"
+	logExit "$u"
 }
 
 function getPartitionNumbers() { # device, e.g. /dev/mmcblk0
