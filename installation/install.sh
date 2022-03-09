@@ -79,7 +79,7 @@ if (( $rc )); then
 fi
 
 echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
-sudo bash "./$INSTALLER" "$1"
+sudo -E bash "./$INSTALLER" "$1"
 rc=$?
 if (( $rc )); then
 	echo "??? $INSTALLER failed. RC: $rc" >> "$LOG_FILE"
