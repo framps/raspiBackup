@@ -1645,7 +1645,7 @@ function code_download_execute() {
 		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 	fi
 
-	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/downloads/$FILE_TO_INSTALL/download" 2>>"$LOG_FILE")
+	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL $FILE_TO_INSTALL)" 2>>"$LOG_FILE")
 	local rc=$?
 	if (( $rc )); then
 		unrecoverableError $MSG_NO_INTERNET_CONNECTION_FOUND "$rc"
@@ -1728,7 +1728,7 @@ function update_script_execute() {
 		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
 	fi
 
-	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/downloads/$FILE_TO_INSTALL/download" 2>>"$LOG_FILE")
+	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL $FILE_TO_INSTALL)" 2>>"$LOG_FILE")
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
 		return
@@ -1756,7 +1756,7 @@ function update_installer_execute() {
 
 	local newName
 
-	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/downloads/$INSTALLER_DOWNLOAD_URL/download" 2>>"$LOG_FILE")
+	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$downloadURL $INSTALLER_DOWNLOAD_URL)" 2>>"$LOG_FILE")
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
 		return
@@ -1811,7 +1811,7 @@ function config_download_execute() {
 
 	logItem "Downloading $confFile"
 
-	httpCode=$(curl -s -o $CONFIG_ABS_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/downloads/$confFile/download" 2>>$LOG_FILE)
+	httpCode=$(curl -s -o $CONFIG_ABS_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL $confFile)" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode"
 		return
@@ -1865,7 +1865,7 @@ function extensions_install_execute() {
 
 	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
 
-	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/downloads/$SAMPLEEXTENSION_TAR_FILE/download" 2>>$LOG_FILE)
+	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL $SAMPLEEXTENSION_TAR_FILE)" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode"
 		return
@@ -1953,6 +1953,10 @@ function getActiveServices() {
 	done < <(systemctl list-units --type=service --state=active | grep -v "@")
 	echo "$as"
 	logExit "$as"
+}
+
+function downloadURL() { # fileName
+	echo "$MYHOMEURL/downloads/$1/download"
 }
 
 function getPartitionNumbers() { # device, e.g. /dev/mmcblk0
