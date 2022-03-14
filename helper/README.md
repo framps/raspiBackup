@@ -11,3 +11,5 @@ __Note:__ The scripts are provided as is by framps and raspiBackup users and are
 4. raspiImageMail - Send an email using the functions from raspiBackup, based of version 0.6.4
 
 5. stopStartAllServicesWrapper - Script wish either stops or starts all existing services.
+
+6. raspiBackupRestoreHelper.sh - Makes restore of backups much more convenient. The latest backup of available backup versions is restored as default but also can be selected from a list.
