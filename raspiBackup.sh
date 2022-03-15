@@ -118,7 +118,10 @@ SMILEY_VERSION_DEPRECATED=":-("
 
 # URLTARGET allows to use deployment of new code versions, example: use "beta" to test beta code as if it was published just before it's published
 
-[[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
+if [[ -n $URLTARGET ]]; then
+	echo "===> URLTARGET: $URLTARGET"
+	URLTARGET="/$URLTARGET"
+fi
 DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
 BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
 PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
@@ -2056,10 +2059,6 @@ function logFinish() {
 	logExit
 }
 
-logEnable
-
-trapWithArg cleanupStartup SIGINT SIGTERM EXIT
-
 # Borrowed from http://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
 
 fn_exists() {
@@ -3298,7 +3297,13 @@ function updateScript() {
 				chown --reference=$newName $SCRIPT_DIR/$MYSELF
 				chmod --reference=$newName $SCRIPT_DIR/$MYSELF
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
-				source $SCRIPT_DIR/$MYSELF --include		# update version info for config version checks executed later on
+				# refresh version information from updated script
+				local properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+				[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
+				logItem "Updating VERSION from updated script to $VERSION"
+				local properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+				[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
+				logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 			fi
@@ -8187,6 +8192,10 @@ function getEnableDisableOption() { # option
 }
 
 ##### Now do your job
+
+logEnable
+
+trapWithArg cleanupStartup SIGINT SIGTERM EXIT
 
 INVOCATIONPARMS=""			# save passed opts for logging
 for (( i=1; i<=$#; i++ )); do
