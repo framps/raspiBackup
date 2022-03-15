@@ -122,7 +122,7 @@ SMILEY_VERSION_DEPRECATED=":-("
 DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
 BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
 PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
-CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.\$lang\.conf/download" # used in eval for late binding of URLTAGRET
+CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
@@ -3298,6 +3298,9 @@ function updateScript() {
 				chown --reference=$newName $SCRIPT_DIR/$MYSELF
 				chmod --reference=$newName $SCRIPT_DIR/$MYSELF
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
+				source $SCRIPT_DIR/$MYSELF --include		# update version info for config version checks executed later on
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 			fi
 		else
 			rm $MYSELF~ &>/dev/null
@@ -7513,10 +7516,11 @@ function updateConfig() {
 		fi
 	fi
 
-	local lang=${LANGUAGE,,}
-	eval "DL_URL=$CONFIG_URL"
-
 	if (( ! $localNewConfig )); then
+
+		local lang=${LANGUAGE,,}
+		eval "DL_URL=$CONFIG_URL"
+
 		# download new config file
 		if (( $UPDATE_CONFIG )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
@@ -7609,11 +7613,6 @@ function updateConfig() {
 			fi
 		fi
 	done < "$ORIG_CONFIG"
-
-	local UUID="$(grep "^UUID=" $ORIG_CONFIG)"
-	echo "" >> $MERGED_CONFIG
-	echo "# GENERATED - DO NOT DELETE" >> $MERGED_CONFIG
-	echo "$UUID" >> $MERGED_CONFIG
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGE_SUCCESSFULL
 
