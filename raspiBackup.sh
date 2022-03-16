@@ -2185,7 +2185,9 @@ function writeToConsole() {  # msglevel messagenumber message
 			fi
 		fi
 
-		echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
+		if (( $LOG_LEVEL != $LOG_NONE )); then
+			echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
+		fi
 	fi
 
 	if (( ! $INTERACTIVE )); then # don't write message twice into log
@@ -8191,60 +8193,6 @@ function getEnableDisableOption() { # option
 	esac
 }
 
-##### Now do your job
-
-logEnable
-
-trapWithArg cleanupStartup SIGINT SIGTERM EXIT
-
-INVOCATIONPARMS=""			# save passed opts for logging
-for (( i=1; i<=$#; i++ )); do
-	p=${!i}
-	INVOCATIONPARMS="$INVOCATIONPARMS $p"
-done
-
-# initialize default config
-initializeDefaultConfigVariables
-# assign default config to variables
-copyDefaultConfigVariables
-
-# handle options which don't require root access
-if (( $# == 1 )); then
-	if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
-		LOG_LEVEL=$LOG_NONE
-		case "$1" in
-			--version)
-				echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
-				exitNormal
-				;;
-		*)	usage
-			exitNormal
-			;;
-		esac
-	fi
-fi
-
-if (( $UID != 0 )); then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
-	LOG_LEVEL=$LOG_NONE
-	exitError $RC_MISC_ERROR
-fi
-
-readConfigParameters				# overwrite defaults with settings in config files
-copyDefaultConfigVariables			# and update variables with config file contents
-
-logOptions "Standard option files"
-
-# check if language was overwritten by config option
-if [[ -n $DEFAULT_LANGUAGE ]]; then
-	if ! containsElement "${DEFAULT_LANGUAGE}" "${SUPPORTED_LANGUAGES[@]}"; then
-		DEFAULT_LANGUAGE="$MSG_LANG_FALLBACK"	# unsupported language, fall back to English
-	else
-		DEFAULT_LANGUAGE="${DEFAULT_LANGUAGE^^*}"
-	fi
-	LANGUAGE=$DEFAULT_LANGUAGE			# redefine language now
-fi
-
 # misc other vars
 
 BACKUP_DIRECTORY_NAME=""
@@ -8277,6 +8225,60 @@ UPDATE_CONFIG=0
 UNSUPPORTED_ENVIRONMENT=0
 
 PARAMS=""
+
+##### Now do your job
+
+# handle options which don't require root access
+if (( $# == 1 )); then
+	if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
+		LOG_LEVEL=$LOG_NONE
+		case "$1" in
+			--version)
+				echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
+				exitNormal
+				;;
+		*)	usage
+			exitNormal
+			;;
+		esac
+	fi
+fi
+
+if (( $UID != 0 )); then
+	LOG_LEVEL=$LOG_NONE
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
+	exitError $RC_MISC_ERROR
+fi
+
+logEnable
+
+trapWithArg cleanupStartup SIGINT SIGTERM EXIT
+
+INVOCATIONPARMS=""			# save passed opts for logging
+for (( i=1; i<=$#; i++ )); do
+	p=${!i}
+	INVOCATIONPARMS="$INVOCATIONPARMS $p"
+done
+
+# initialize default config
+initializeDefaultConfigVariables
+# assign default config to variables
+copyDefaultConfigVariables
+
+readConfigParameters				# overwrite defaults with settings in config files
+copyDefaultConfigVariables			# and update variables with config file contents
+
+logOptions "Standard option files"
+
+# check if language was overwritten by config option
+if [[ -n $DEFAULT_LANGUAGE ]]; then
+	if ! containsElement "${DEFAULT_LANGUAGE}" "${SUPPORTED_LANGUAGES[@]}"; then
+		DEFAULT_LANGUAGE="$MSG_LANG_FALLBACK"	# unsupported language, fall back to English
+	else
+		DEFAULT_LANGUAGE="${DEFAULT_LANGUAGE^^*}"
+	fi
+	LANGUAGE=$DEFAULT_LANGUAGE			# redefine language now
+fi
 
 ARG_BAK=("$@")				# save invocation options
 
