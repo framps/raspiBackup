@@ -7546,7 +7546,7 @@ function updateConfig() {
 	compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
 	local cr=$?
 	if (( $cr == 1 )); then							# new configVersion < SCRIPT_CONFIG
-		assertionFailed $LINENO "No new config version available. Required: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
+		logItem "Old config version found. Required: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
 	fi
 
 	rm -f $MERGED_CONFIG &>/dev/null
