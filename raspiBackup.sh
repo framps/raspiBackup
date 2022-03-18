@@ -1800,9 +1800,6 @@ ${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
 MSG_REBOOT_SYSTEM=268
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0268I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0268I: Das System wird am Ende des Backuplaufes neu gestartet."
-MSG_NO_CONFIGMERGE_REQUIRED=269
-MSG_EN[$MSG_NO_CONFIGMERGE_REQUIRED]="RBK0267I: Kein Konfigurationsupdate notwendig."
-MSG_DE[$MSG_NO_CONFIGMERGE_REQUIRED]="RBK0267I: No configuration update required."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7556,13 +7553,18 @@ function updateConfig() {
 
 	logItem "NewConfigVersion: $newConfigVersion"
 
-	compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
+	compareVersions "$ETC_CONFIG_FILE_VERSION" "$VERSION_SCRIPT_CONFIG"
 	local cr=$?
-	if (( $cr == 1 || $cr == 0 )); then							# new configVersion < SCRIPT_CONFIG or they are equal
-		logItem "Old config version found. Required: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGMERGE_REQUIRED
-		logExit
-		return
+	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
+		logItem "Config update required: $VERSION_SCRIPT_CONFIG - Available: $ETC_CONFIG_FILE_VERSION"
+
+		compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
+		cr=$?
+		if (( $cr == 1 || $cr == -1 )); then							# newConfigVersion < SCRIPT_CONFIG or newConfigVersion > SCRIPT_CONFIG
+			logItem "No config update possible: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
+			logExit
+			return
+		fi
 	fi
 
 	rm -f $MERGED_CONFIG &>/dev/null
@@ -8003,7 +8005,7 @@ function lockingFramework() {
 	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\"" ; }
 
 # ON START
-#	_prepare_locking
+	_prepare_locking
 
 # PUBLIC
 	exlock_now()        { _lock xn; }  # obtain an exclusive lock immediately or fail
@@ -8268,6 +8270,7 @@ if (( $UID != 0 )); then
 fi
 
 logEnable
+lockingFramework
 
 trapWithArg cleanupStartup SIGINT SIGTERM EXIT
 
@@ -8713,7 +8716,6 @@ if (( $RESTORE )); then
 fi
 
 if (( ! $RESTORE )); then
-	lockingFramework
 	exlock_now
 	if (( $? )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
@@ -8805,7 +8807,6 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	exitError $RC_PARAMETER_ERROR
 fi
 
-_prepare_locking
 logItem "Enabling trap handler"
 trapWithArg cleanup SIGINT SIGTERM EXIT
 lockMe
