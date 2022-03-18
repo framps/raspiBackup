@@ -1812,7 +1812,7 @@ declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 # borrowed from # from http://stackoverflow.com/a/2183063/804678
 
 function trapWithArg() { # function trap1 trap2 ... trapn
-	logEntry "TRAP $*"
+	logEntry "$*"
 	local func="$1" ; shift
 	for sig ; do
 		trap "$func $sig" "$sig"
@@ -4219,6 +4219,18 @@ function cleanupStartup() { # trap
 	exit $rc
 }
 
+function lockMe() {
+	logEntry
+	exlock_now
+	logExit
+}
+
+function unLockMe() {
+	logEntry
+	unlock
+	logExit
+}
+
 function cleanup() { # trap
 
 	logEntry
@@ -4246,10 +4258,6 @@ function cleanup() { # trap
 	fi
 
 	cleanupTempFiles
-
-	if (( ! $RESTORE )); then
-		_no_more_locking
-	fi
 
 	logItem "Terminate now with rc $CLEANUP_RC"
 	(( $CLEANUP_RC == 0 )) && saveVars
@@ -4329,6 +4337,8 @@ function cleanup() { # trap
 	fi
 
 	logFinish
+
+	unLockMe
 
 	logExit
 
@@ -7551,7 +7561,7 @@ function updateConfig() {
 	if (( $cr == 1 || $cr == 0 )); then							# new configVersion < SCRIPT_CONFIG or they are equal
 		logItem "Old config version found. Required: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGMERGE_REQUIRED
-		logEntry
+		logExit
 		return
 	fi
 
@@ -7989,10 +7999,11 @@ function lockingFramework() {
 # PRIVATE
 	_lock()             { flock -$1 $LOCKFD; }
 	_no_more_locking()  { _lock u; _lock xn && rm -f $LOCKFILE ; }
-	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\""; trap _no_more_locking EXIT; }
+#	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\""; trap _no_more_locking EXIT; }
+	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\"" ; }
 
 # ON START
-	_prepare_locking
+#	_prepare_locking
 
 # PUBLIC
 	exlock_now()        { _lock xn; }  # obtain an exclusive lock immediately or fail
@@ -8794,8 +8805,10 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	exitError $RC_PARAMETER_ERROR
 fi
 
+_prepare_locking
 logItem "Enabling trap handler"
 trapWithArg cleanup SIGINT SIGTERM EXIT
+lockMe
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)"
 logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
