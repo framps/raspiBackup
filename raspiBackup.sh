@@ -1800,6 +1800,9 @@ ${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
 MSG_REBOOT_SYSTEM=268
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0268I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0268I: Das System wird am Ende des Backuplaufes neu gestartet."
+MSG_NO_CONFIGMERGE_REQUIRED=269
+MSG_EN[$MSG_NO_CONFIGMERGE_REQUIRED]="RBK0267I: Kein Konfigurationsupdate notwendig."
+MSG_DE[$MSG_NO_CONFIGMERGE_REQUIRED]="RBK0267I: No configuration update required."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7545,8 +7548,11 @@ function updateConfig() {
 
 	compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
 	local cr=$?
-	if (( $cr == 1 )); then							# new configVersion < SCRIPT_CONFIG
+	if (( $cr == 1 || $cr == 0 )); then							# new configVersion < SCRIPT_CONFIG or they are equal
 		logItem "Old config version found. Required: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGMERGE_REQUIRED
+		logEntry
+		return
 	fi
 
 	rm -f $MERGED_CONFIG &>/dev/null
