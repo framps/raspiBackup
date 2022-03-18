@@ -8807,6 +8807,7 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	exitError $RC_PARAMETER_ERROR
 fi
 
+_prepare_locking
 logItem "Enabling trap handler"
 trapWithArg cleanup SIGINT SIGTERM EXIT
 lockMe
