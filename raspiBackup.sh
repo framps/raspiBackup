@@ -7547,6 +7547,12 @@ function updateConfig() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$NEW_CONFIG" "$httpCode"
 			exit 42
 		fi
+
+		# make sure new config file is readable by owner only
+		if ! chmod 600 $NEW_CONFIG &>>$LOG_FILE; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
+			exitError $RC_FILE_OPERATION_ERROR
+		fi
 	fi
 
 	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
@@ -7584,7 +7590,7 @@ function updateConfig() {
 
 	logItem "Merging $NEW_CONFIG and $ORIG_CONFIG"
 	while read line; do
-		if [[ -n "$line" && ! "$line" =~ ^.*# ]]; then			# skip comment or empty lines
+		if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then			# skip comment or empty lines
 			local KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
 			local VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
 
