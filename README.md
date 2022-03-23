@@ -3,26 +3,27 @@
 # raspiBackup - Backup and restore your running Raspberries
 
 * Unattended full or incremental system backup with no shutdown of the system.
-* No manual intervention required by using cron.
-* Number of backup versions to keep configurable.
-* Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle.
-* Restore any of the created backup versions. 
-* Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
+* No manual intervention required. Backups are created via cron over night.
 * Important services can be stopped before starting the backup and will be restarted when the backup finished.
+* Number of backup versions to keep is configurable.
+* Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle.
+* Restore any of the created backup versions and the system will boot up again successfully.
+* Migrate a SD card backup image to an USB device during restore
+* Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
 * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
-* Standard Linux backup tools dd, tar and rsync can be used to create the backup.
+* Standard Linux backup tools dd, tar and rsync are available to create a backup.
 * dd and tar are full backups. rsync uses hardlinks for incremental backups.
-* Restore a SD card image backup to SSD or USB disk and migrate to use USB boot mode.
-* Backup run results may be send via eMail or to Telegram.
-* Extensionpoints allow to execute any additional logic at various steps in the backup process.
+* dd backups can be restored with Windows tools.
+* Backup run completion results can be reported via eMail or to Telegram.
+* Extensionpoints allow to execute any additional logic at various steps in the backup and restore process.
 * National language support:
   * English (Default)
   * German
   * Finnish
   * Chinese
   * French
-* Extensive logging. 
-* Automated regressiontests. 
+* Automated regressiontests make sure a new release will backup and restore successfully. 
+* Extensive logging allows to isolate backup/restore issues. 
 * Much more features (see below).
 
 ## Note
