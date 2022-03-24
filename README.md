@@ -8,13 +8,13 @@
 * Number of backup versions to keep is configurable.
 * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle.
 * Restore any of the created backup versions and the system will boot up again successfully.
-* Migrate a SD card backup image to an USB device during restore
-* Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
-* Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
+* Migrate a SD card backup image to an USB device during restore.
 * Standard Linux backup tools dd, tar and rsync are available to create a backup.
 * dd and tar are full backups. rsync uses hardlinks for incremental backups.
 * dd backups can be restored with Windows tools.
-* Backup run completion results can be reported via eMail or to Telegram.
+* Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
+* Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
+* Messages and completion status of backup run can be send in an eMail or to Telegram.
 * Extensionpoints allow to execute any additional logic at various steps in the backup and restore process.
 * National language support:
   * English (Default)
