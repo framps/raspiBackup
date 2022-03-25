@@ -2214,7 +2214,7 @@ function isSupportedEnvironment() {
 	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
-	logCommand "[[ -e $RPI_ISSUE ]]; echo $?"
+	logCommand "test -e $RPI_ISSUE; echo $?"
 	[[ ! -e $RPI_ISSUE ]] && return 1
 
 	[[ ! -e $OSRELEASE ]] && return 1
