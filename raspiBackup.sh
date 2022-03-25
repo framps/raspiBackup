@@ -2208,16 +2208,30 @@ function isSupportedEnvironment() {
 
 	local MODELPATH=/sys/firmware/devicetree/base/model
 	local OSRELEASE=/etc/os-release
+	local RPI_ISSUE=/etc/rpi-issue
 
 	[[ ! -e $MODELPATH ]] && return 1
 	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
+	logCommand "[[ -e $RPI_ISSUE ]]; echo $?"
+	[[ ! -e $RPI_ISSUE ]] && return 1
+
 	[[ ! -e $OSRELEASE ]] && return 1
 	logCommand "cat $OSRELEASE"
-	! grep -q -E -i "NAME=.*raspbian" $OSRELEASE && return 1
 
-	return 0
+	local ARCH=$(dpkg --print-architecture)
+	logItem "Architecture: $ARCH"
+
+	if [[ "$ARCH" == "armhf" ]]; then
+		grep -q -E -i "NAME=.*raspbian" $OSRELEASE
+		return
+	elif [[ "$ARCH" == "arm64" ]]; then
+		grep -q -E -i "NAME=.*debian" $OSRELEASE
+		return
+	fi
+
+	return 1
 }
 
 # Create a backupfile FILE.bak from FILE. If this file already exists rename this file to FILE.n.bak when n is next backup number
