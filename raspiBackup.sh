@@ -123,7 +123,7 @@ if [[ -n $URLTARGET ]]; then
 	URLTARGET="/$URLTARGET"
 fi
 DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup-beta.sh/download"
 PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
 CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
 
