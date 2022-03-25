@@ -1648,11 +1648,11 @@ MSG_EN[$MSG_DOWNLOAD_FAILED]="RBK0239E: Download of %s failed. HTTP code: %s."
 MSG_DE[$MSG_DOWNLOAD_FAILED]="RBK0239E: %s kann nicht aus dem Netz geladen werden. HTTP code: %s."
 MSG_FI[$MSG_DOWNLOAD_FAILED]="RBK0239E: Kohteen %s lataus epäonnistui. HTTP-koodi: %s."
 MSG_FR[$MSG_DOWNLOAD_FAILED]="RBK0239E: Le téléchargement de %s a échoué. Code HTTP : %s."
-MSG_SAVING_ACTUAL_VERSION=240
-MSG_EN[$MSG_SAVING_ACTUAL_VERSION]="RBK0240I: Saving current configuration %s to %s."
-MSG_DE[$MSG_SAVING_ACTUAL_VERSION]="RBK0240I: Aktuelle Konfiguration %s wird in %s gesichert."
-MSG_FI[$MSG_SAVING_ACTUAL_VERSION]="RBK0240I: Tallennetaan nykyiset asetukset %s kohteeseen %s."
-MSG_FR[$MSG_SAVING_ACTUAL_VERSION]="RBK0240I: Enregistrement de la configuration actuelle %s dans %s."
+MSG_SAVING_CURRENT_CONFIGURATION=240
+MSG_EN[$MSG_SAVING_CURRENT_CONFIGURATION]="RBK0240I: Saving current configuration %s to %s."
+MSG_DE[$MSG_SAVING_CURRENT_CONFIGURATION]="RBK0240I: Aktuelle Konfiguration %s wird in %s gesichert."
+MSG_FI[$MSG_SAVING_CURRENT_CONFIGURATION]="RBK0240I: Tallennetaan nykyiset asetukset %s kohteeseen %s."
+MSG_FR[$MSG_SAVING_CURRENT_CONFIGURATION]="RBK0240I: Enregistrement de la configuration actuelle %s dans %s."
 MSG_MERGING_VERSION=241
 MSG_EN[$MSG_MERGING_VERSION]="RBK0241I: Merging current configuration %s with new configuration %s into %s."
 MSG_DE[$MSG_MERGING_VERSION]="RBK0241I: Aktuelle Konfiguration %s wird mit der neuen Konfiguration %s in %s zusammengefügt."
@@ -7656,7 +7656,7 @@ function updateConfig() {
 
 	if askYesNo "$MSG_UPDATE_CONFIG" "$BACKUP_CONFIG"; then
 		# save old config
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_ACTUAL_VERSION  "$ORIG_CONFIG" "$BACKUP_CONFIG"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_CURRENT_CONFIGURATION  "$ORIG_CONFIG" "$BACKUP_CONFIG"
 		local new_file=$(createBackupVersion "$ORIG_CONFIG")
 		local r=$?
 		if (( $rc )); then
