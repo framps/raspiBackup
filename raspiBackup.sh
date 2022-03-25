@@ -40,7 +40,7 @@ if [ -z "$BASH" ] ;then
 	exit 127
 fi
 
-MYSELF=${0##*/}
+MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
 VERSION="0.6.7-beta"												# -beta, -hotfix or -dev suffixes possible
