@@ -36,9 +36,9 @@ if [ -z "$BASH_VERSION" ] ;then
 	exit 127
 fi
 
-MYSELF=${0##*/}
+MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.4-beta"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.4"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -92,7 +92,6 @@ RASPIBACKUP_INSTALL_DEBUG=0 # just disable some code for debugging
 CURRENT_DIR=$(pwd)
 NL=$'\n'
 IGNORE_START_STOP_CHAR=":"
-FILE_TO_INSTALL_BETA="raspiBackup_beta.sh"
 declare -A CONFIG_DOWNLOAD_FILE=(['DE']="raspiBackup_de.conf" ['EN']="raspiBackup_en.conf")
 CONFIG_FILE="raspiBackup.conf"
 SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
