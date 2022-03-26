@@ -1645,10 +1645,10 @@ MSG_FR[$MSG_UPDATE_TO_LATEST_BETA]="RBK0237I: Mise à niveau de la version actue
 #MSG_FI[$MSG_JUST_TEXT]="%s"
 #MSG_FR[$MSG_JUST_TEXT]="%s"
 MSG_DOWNLOAD_FAILED=239
-MSG_EN[$MSG_DOWNLOAD_FAILED]="RBK0239E: Download of %s failed. HTTP code: %s."
-MSG_DE[$MSG_DOWNLOAD_FAILED]="RBK0239E: %s kann nicht aus dem Netz geladen werden. HTTP code: %s."
-MSG_FI[$MSG_DOWNLOAD_FAILED]="RBK0239E: Kohteen %s lataus epäonnistui. HTTP-koodi: %s."
-MSG_FR[$MSG_DOWNLOAD_FAILED]="RBK0239E: Le téléchargement de %s a échoué. Code HTTP : %s."
+MSG_EN[$MSG_DOWNLOAD_FAILED]="RBK0239E: Download of %s failed. HTTP code: %s. RC: %s"
+MSG_DE[$MSG_DOWNLOAD_FAILED]="RBK0239E: %s kann nicht aus dem Netz geladen werden. HTTP code: %s. RC: %s"
+MSG_FI[$MSG_DOWNLOAD_FAILED]="RBK0239E: Kohteen %s lataus epäonnistui. HTTP-koodi: %s. RC: %s"
+MSG_FR[$MSG_DOWNLOAD_FAILED]="RBK0239E: Le téléchargement de %s a échoué. Code HTTP : %s. RC:%s"
 MSG_SAVING_CURRENT_CONFIGURATION=240
 MSG_EN[$MSG_SAVING_CURRENT_CONFIGURATION]="RBK0240I: Saving current configuration %s to %s."
 MSG_DE[$MSG_SAVING_CURRENT_CONFIGURATION]="RBK0240I: Aktuelle Konfiguration %s wird in %s gesichert."
@@ -2941,9 +2941,12 @@ function downloadPropertiesFile() { # FORCE
 				local downloadURL="$PROPERTY_URL"
 			fi
 
+			logItem "Downloading $PROPERTY_URL"
 			local httpCode=$(curl -sSL -o "$LATEST_TEMP_PROPERTY_FILE" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$downloadURL")
-			if [[ ${httpCode:0:1} != "2" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$NEW_CONFIG" "$downloadURL"
+			local rc=$?
+			logItem "httpCode: $httpCode RC: $rc"
+			if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$PROPERTY_URL" "$httpCode" $rc
 				exitError $RC_DOWNLOAD_FAILED
 			fi
 			NEW_PROPERTIES_FILE=1
@@ -3305,9 +3308,13 @@ function updateScript() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
 			logItem "Download URL: $DOWNLOAD_URL"
 
+			logItem "Downloading $DOWNLOAD_URL"
 			local httpCode=$(curl -sSL -o "${MYSELF}~" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$DOWNLOAD_URL")
-			if [[ ${httpCode:0:1} != "2" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DOWNLOAD_URL" "$httpCode"
+			local rc=$?
+			logItem "httpCode: $httpCode RC: $rc"
+
+			if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DOWNLOAD_URL" "$httpCode" $rc
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 				logExit $RC_DOWNLOAD_FAILED
 			fi
@@ -7558,9 +7565,12 @@ function updateConfig() {
 		if (( $UPDATE_CONFIG )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 		fi
+
+		logItem "Downloading $DL_URL"
 		local httpCode=$(curl -sSL -o "$NEW_CONFIG" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$DL_URL")
-		if [[ ${httpCode:0:1} != "2" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$NEW_CONFIG" "$httpCode"
+		local rc=$?
+		if (( $rc != 0 )) || [[ ${httpCode:0:1} != "2" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$httpCode" $rc
 			exit 42
 		fi
 
