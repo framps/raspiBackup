@@ -376,6 +376,7 @@ RC_MOUNT_FAILED=131
 RC_UNSUPPORTED_ENVIRONMENT=132
 RC_RESTORE_EXTENSION_FAILS=133
 RC_BACKUP_EXTENSION_FAILS=134
+RC_DOWNLOAD_FAILED=135
 
 tty -s
 INTERACTIVE=!$?
@@ -2940,15 +2941,12 @@ function downloadPropertiesFile() { # FORCE
 				local downloadURL="$PROPERTY_URL"
 			fi
 
-			wget $downloadURL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
-			local rc=$?
-
-			if [[ $rc == 0 ]]; then
-				logItem "Download of $downloadURL successfull"
-				NEW_PROPERTIES_FILE=1
-			else
-				logItem "Download of $downloadURL failed with rc $rc"
+			local httpCode=$(curl -sSL -o "$LATEST_TEMP_PROPERTY_FILE" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$downloadURL")
+			if [[ ${httpCode:0:1} != "2" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$NEW_CONFIG" "$downloadURL"
+				exitError $RC_DOWNLOAD_FAILED
 			fi
+			NEW_PROPERTIES_FILE=1
 		fi
 
 		parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
@@ -3306,23 +3304,27 @@ function updateScript() {
 			local file="${MYSELF}"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
 			logItem "Download URL: $DOWNLOAD_URL"
-			if wget "$DOWNLOAD_URL" -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $MYSELF~; then
-				newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
-				mv $SCRIPT_DIR/$MYSELF $newName
-				mv $MYSELF~ $SCRIPT_DIR/$MYSELF
-				chown --reference=$newName $SCRIPT_DIR/$MYSELF
-				chmod --reference=$newName $SCRIPT_DIR/$MYSELF
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
-				# refresh version information from updated script
-				local properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
-				[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
-				logItem "Updating VERSION from updated script to $VERSION"
-				local properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
-				[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
-				logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
-			else
+
+			local httpCode=$(curl -sSL -o "${MYSELF}~" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$DOWNLOAD_URL")
+			if [[ ${httpCode:0:1} != "2" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DOWNLOAD_URL" "$httpCode"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
+				logExit $RC_DOWNLOAD_FAILED
 			fi
+
+			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
+			mv $SCRIPT_DIR/$MYSELF $newName
+			mv $MYSELF~ $SCRIPT_DIR/$MYSELF
+			chown --reference=$newName $SCRIPT_DIR/$MYSELF
+			chmod --reference=$newName $SCRIPT_DIR/$MYSELF
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
+			# refresh version information from updated script
+			local properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
+			logItem "Updating VERSION from updated script to $VERSION"
+			local properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
+			logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
 		else
 			rm $MYSELF~ &>/dev/null
 			if [[ $rc == 1 ]]; then
