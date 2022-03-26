@@ -122,10 +122,10 @@ if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
 fi
-DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup-beta.sh/download"
-PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
-CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
+DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup.sh/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup-beta.sh/download"
+PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup0613.properties/download"
+CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
