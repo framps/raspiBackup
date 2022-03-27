@@ -1762,17 +1762,17 @@ function downloadFile() { # url, targetFileName
 		logItem "httpCode: $httpCode RC: $rc"
 		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
 			rm $f &>>$LOG_FILE
-			logExit
+			logExit $httpCode
 			return $httpCode
 		fi
 
-		if grep -q "<!DOCTYPE html>" $f; then						# Download plugin doesn't return 404 if file not found
+		if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
 			rm $f &>>$LOG_FILE
-			logExit
+			logExit 404
 			return 404
 		fi
 		mv $f $file &>>$LOG_FILE
-		logExit
+		logExit 0
 		return 0
 }
 

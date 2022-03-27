@@ -2215,7 +2215,6 @@ function isSupportedEnvironment() {
 	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
-	logCommand "test -e $RPI_ISSUE; echo $?"
 	[[ ! -e $RPI_ISSUE ]] && return 1
 
 	[[ ! -e $OSRELEASE ]] && return 1
@@ -3056,24 +3055,24 @@ function downloadFile() { # url, targetFileName
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
-		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" &>>$LOG_FILE)
+		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
 		local rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$url" "$httpCode" $rc
 			rm $f &>>$LOG_FILE
-			logExit
+			logExit $httpCode
 			return $httpCode
 		fi
-		
-		if grep -q "<!DOCTYPE html>" $f; then						# Download plugin doesn't return 404 if file not found 
+
+		if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$url" "404" 0
 			rm $f &>>$LOG_FILE
-			logExit
+			logExit 404
 			return 404
 		fi
 		mv $f $file &>>$LOG_FILE
-		logExit
+		logExit 0
 		return 0
 }
 
@@ -3330,7 +3329,7 @@ function updateScript() {
 
 			if ! downloadFile "$DOWNLOAD_URL" "${MYSELF}~"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
-				logExit $RC_DOWNLOAD_FAILED
+				exitError $RC_DOWNLOAD_FAILED
 			fi
 
 			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
@@ -7582,7 +7581,7 @@ function updateConfig() {
 
 		if ! downloadFile "$DL_URL" "$NEW_CONFIG"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$httpCode" $rc
-			logExit $RC_DOWNLOAD_FAILED
+			exitError $RC_DOWNLOAD_FAILED
 		fi
 
 		# make sure new config file is readable by owner only
