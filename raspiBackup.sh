@@ -122,10 +122,10 @@ if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
 fi
-DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup.sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup-beta.sh/download"
-PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup0613.properties/download"
-CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
+DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup-beta.sh/download"
+PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
+CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
@@ -2941,12 +2941,7 @@ function downloadPropertiesFile() { # FORCE
 				local downloadURL="$PROPERTY_URL"
 			fi
 
-			logItem "Downloading $PROPERTY_URL"
-			local httpCode=$(curl -sSL -o "$LATEST_TEMP_PROPERTY_FILE" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$downloadURL")
-			local rc=$?
-			logItem "httpCode: $httpCode RC: $rc"
-			if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$PROPERTY_URL" "$httpCode" $rc
+			if ! downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE"; then
 				exitError $RC_DOWNLOAD_FAILED
 			fi
 			NEW_PROPERTIES_FILE=1
@@ -3054,6 +3049,32 @@ function verifyIsOnOff() { # arg
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_TRUE_FALSE_OPTION "$v" "$1"
 	exitError $RC_PARAMETER_ERROR
+}
+
+function downloadFile() { # url, targetFileName
+		logEntry "URL: $1, file: $2"
+		local url="$1"
+		local file="$2"
+		local f=$(mktemp)
+		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" &>>$LOG_FILE)
+		local rc=$?
+		logItem "httpCode: $httpCode RC: $rc"
+		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$url" "$httpCode" $rc
+			rm $f &>>$LOG_FILE
+			logExit
+			return $httpCode
+		fi
+		
+		if grep -q "<!DOCTYPE html>" $f; then						# Download plugin doesn't return 404 if file not found 
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$url" "404" 0
+			rm $f &>>$LOG_FILE
+			logExit
+			return 404
+		fi
+		mv $f $file &>>$LOG_FILE
+		logExit
+		return 0
 }
 
 function askYesNo() { # message message_parms
@@ -3306,15 +3327,8 @@ function updateScript() {
 		if (( $updateNow )); then
 			local file="${MYSELF}"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
-			logItem "Download URL: $DOWNLOAD_URL"
 
-			logItem "Downloading $DOWNLOAD_URL"
-			local httpCode=$(curl -sSL -o "${MYSELF}~" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$DOWNLOAD_URL")
-			local rc=$?
-			logItem "httpCode: $httpCode RC: $rc"
-
-			if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DOWNLOAD_URL" "$httpCode" $rc
+			if ! downloadFile "$DOWNLOAD_URL" "${MYSELF}~"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 				logExit $RC_DOWNLOAD_FAILED
 			fi
@@ -7566,12 +7580,9 @@ function updateConfig() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 		fi
 
-		logItem "Downloading $DL_URL"
-		local httpCode=$(curl -sSL -o "$NEW_CONFIG" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$DL_URL")
-		local rc=$?
-		if (( $rc != 0 )) || [[ ${httpCode:0:1} != "2" ]]; then
+		if ! downloadFile "$DL_URL" "$NEW_CONFIG"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$httpCode" $rc
-			exit 42
+			logExit $RC_DOWNLOAD_FAILED
 		fi
 
 		# make sure new config file is readable by owner only

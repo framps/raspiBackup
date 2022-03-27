@@ -36,9 +36,9 @@ if [ -z "$BASH_VERSION" ] ;then
 	exit 127
 fi
 
-MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
+MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.4.4"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.3.7"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -92,6 +92,7 @@ RASPIBACKUP_INSTALL_DEBUG=0 # just disable some code for debugging
 CURRENT_DIR=$(pwd)
 NL=$'\n'
 IGNORE_START_STOP_CHAR=":"
+FILE_TO_INSTALL_BETA="raspiBackup_beta.sh"
 declare -A CONFIG_DOWNLOAD_FILE=(['DE']="raspiBackup_de.conf" ['EN']="raspiBackup_en.conf")
 CONFIG_FILE="raspiBackup.conf"
 SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
@@ -108,14 +109,12 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
-[[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
-
-PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613-properties/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup-beta-sh/download"
+PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613${URLTARGET}-properties/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta${URLTARGET}-sh/download"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackupinstallui-sh/download"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui${URLTARGET}-sh/download"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
 DOWNLOAD_TIMEOUT=60 # seconds
@@ -136,9 +135,6 @@ INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 
 PROPERTY_REGEX='.*="([^"]*)"'
-
-VERSION_CURRENT=""
-VERSION_CURRENT_INSTALLER=""
 
 # borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
 
@@ -1537,13 +1533,6 @@ function logItem() { # message
 	log "$@"
 }
 
-function downloadURL() { # fileName
-	logEntry "$1"
-	local u="$MYHOMEURL/downloads$URLTARGET/$1/download"
-	echo "$u"
-	logExit "$u"
-}
-
 function isInternetAvailable() {
 
 	logEntry
@@ -1655,9 +1644,15 @@ function code_download_execute() {
 		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 	fi
 
-	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
-	if (( $? )); then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
+	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
+	local rc=$?
+	if (( $rc )); then
+		unrecoverableError $MSG_NO_INTERNET_CONNECTION_FOUND "$rc"
+		logExit
+		return
+	fi
+	if [[ ${httpCode:0:1} != "2" ]]; then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
 		logExit
 		return
 	fi
@@ -1732,10 +1727,9 @@ function update_script_execute() {
 		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
 	fi
 
-	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")"  "/tmp/$FILE_TO_INSTALL" )"
-	if (( $? )); then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
-		logExit
+	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
+	if [[ ${httpCode:0:1} != "2" ]]; then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
 		return
 	fi
 
@@ -1755,42 +1749,18 @@ function update_script_execute() {
 
 }
 
-function downloadFile() { # url, targetFileName
-		logEntry "URL: $1, file: $2"
-		local url="$1"
-		local file="$2"
-		local f=$(mktemp)
-		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
-		local rc=$?
-		logItem "httpCode: $httpCode RC: $rc"
-		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
-			rm $f &>>$LOG_FILE
-			logExit
-			return $httpCode
-		fi
-		
-		if grep -q "<!DOCTYPE html>" $f; then						# Download plugin doesn't return 404 if file not found 
-			rm $f &>>$LOG_FILE
-			logExit
-			return 404
-		fi
-		mv $f $file &>>$LOG_FILE
-		logExit
-		return 0
-}
-
 function update_installer_execute() {
 
 	logEntry
 
 	local newName
 
-
-	if ! downloadURL "$MYSELF" "/tmp/$MYSELF"; then
+	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$INSTALLER_DOWNLOAD_URL" 2>>"$LOG_FILE")
+	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
 		return
 	fi
-	
+
 	if ! mv "/tmp/$MYSELF" "$INSTALLER_ABS_FILE" &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_MOVE_FAILED "$INSTALLER_ABS_FILE"
 		return
@@ -1838,9 +1808,9 @@ function config_download_execute() {
 		;;
 	esac
 
-	logItem "Downloading $(downloadURL "$confFile")"
+	logItem "Downloading $confFile"
 
-	httpCode=$(curl -s -o $CONFIG_ABS_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL "$confFile")" 2>>$LOG_FILE)
+	httpCode=$(curl -s -o $CONFIG_ABS_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$confFile" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode"
 		return
@@ -1894,9 +1864,7 @@ function extensions_install_execute() {
 
 	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
 
-	logItem "Downloading $(downloadURL "$SAMPLEEXTENSION_TAR_FILE") ..."
-
-	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" 2>>$LOG_FILE)
+	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$SAMPLEEXTENSION_TAR_FILE" 2>>$LOG_FILE)
 	if [[ ${httpCode:0:1} != "2" ]]; then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode"
 		return
