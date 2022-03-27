@@ -110,12 +110,12 @@ EOF
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 
-PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613-properties/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup-beta-sh/download"
+PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup-beta.sh/download"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackupinstallui-sh/download"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackupInstallUI.sh/download"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
 DOWNLOAD_TIMEOUT=60 # seconds
@@ -136,9 +136,6 @@ INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 
 PROPERTY_REGEX='.*="([^"]*)"'
-
-VERSION_CURRENT=""
-VERSION_CURRENT_INSTALLER=""
 
 # borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
 
@@ -1768,8 +1765,8 @@ function downloadFile() { # url, targetFileName
 			logExit
 			return $httpCode
 		fi
-		
-		if grep -q "<!DOCTYPE html>" $f; then						# Download plugin doesn't return 404 if file not found 
+
+		if grep -q "<!DOCTYPE html>" $f; then						# Download plugin doesn't return 404 if file not found
 			rm $f &>>$LOG_FILE
 			logExit
 			return 404
@@ -1785,12 +1782,12 @@ function update_installer_execute() {
 
 	local newName
 
-
-	if ! downloadURL "$MYSELF" "/tmp/$MYSELF"; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
+	local httpCode="$(downloadFile "$(downloadURL "$MYSELF")" "/tmp/$MYSELF")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$MYSELF")" "$httpCode"
 		return
 	fi
-	
+
 	if ! mv "/tmp/$MYSELF" "$INSTALLER_ABS_FILE" &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_MOVE_FAILED "$INSTALLER_ABS_FILE"
 		return
@@ -1838,11 +1835,9 @@ function config_download_execute() {
 		;;
 	esac
 
-	logItem "Downloading $(downloadURL "$confFile")"
-
-	httpCode=$(curl -s -o $CONFIG_ABS_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL "$confFile")" 2>>$LOG_FILE)
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode"
+	httpCode="$(downloadFile "$(downloadURL "$confFile")" "$CONFIG_ABS_FILE")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$confFile")" "$httpCode"
 		return
 	fi
 
@@ -1894,11 +1889,9 @@ function extensions_install_execute() {
 
 	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
 
-	logItem "Downloading $(downloadURL "$SAMPLEEXTENSION_TAR_FILE") ..."
-
-	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" 2>>$LOG_FILE)
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode"
+	local httpCode="$(downloadFile "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$SAMPLEEXTENSION_TAR_FILE")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$httpCode"
 		return
 	fi
 
@@ -3741,7 +3734,7 @@ function update_installer_do() {
 	INSTALL_DESCRIPTION=("Downloading $MYSELF ...")
 	progressbar_do "INSTALL_DESCRIPTION" "Updating $MYSELF" update_installer_execute
 
-	exec $INSTALLER_ABS_PATH/$MYSELF # no return
+	exec $INSTALLER_ABS_PATH/$MYSELF # restart installer, no return
 
 	logExit
 
@@ -4130,13 +4123,12 @@ function downloadPropertiesFile_execute() {
 	NEW_PROPERTIES_FILE=0
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING_PROPERTYFILE
-	wget $PROPERTY_URL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
-	local rc=$?
-	if [[ $rc == 0 ]]; then
-		logItem "Download of $downloadURL successfull"
+	local httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
+	if (( ! $? )); then
 		NEW_PROPERTIES_FILE=1
 	else
-		logItem "Download of $downloadURL failed with rc $rc"
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$PROPERTY_URL")" "$httpCode"
+		logExit
 	fi
 
 	logExit "$NEW_PROPERTIES_FILE"
