@@ -47,7 +47,7 @@ function execution(){
         echo "OK"
     else
         echo""
-        echo -e "$red $destination Warn_drive_not_present $normal"
+        echo -e "$red $destination $Warn_drive_not_present $normal"
         execution
     fi
 
