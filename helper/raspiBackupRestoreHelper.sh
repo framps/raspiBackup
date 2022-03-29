@@ -36,39 +36,71 @@ hostname="$(hostname)"           #Determine hostname
 
 FILE="/usr/local/etc/raspiBackup.conf"    #Determining the DEFAULT_BACKUPPATH from raspiBackup.conf
 
+function backup(){
+        echo ""
+        lsblk
+	echo ""
+	echo -e "$yellow ------------------------------------------------------------------ \n"
+        echo -e " $Quest_more_than_2_partitions   y/N \n"
+	echo -e " ------------------------------------------------------------------$normal \n"
+        read input_partitions_more_then_2
+
+    if [[ ${input_partitions_more_then_2,,} = "y" ]]; then
+	echo -e "$yellow -----------------------------------------------------------------0- \n"
+        echo -e " $Quest_backup_more_than_2   y/N \n"
+	echo -e " -------------------------------------------------------------------$normal \n"
+        read input_backup_more_then_2
+
+        if [[ ${input_backup_more_then_2,,} = "y" ]]; then
+	    echo -e "$yellow ----------------------------------------------------------------- \n"
+            echo -e " $yellow $Quest_additional_partitions \n"
+	    echo -e " -----------------------------------------------------------------$normal \n"
+            read partitions
+            echo ""
+            /usr/local/bin/raspiBackup.sh -P -T "1 2 $partitions"
+
+        else
+            /usr/local/bin/raspiBackup.sh --ignoreAdditionalPartitions
+
+        fi
+
+    else
+    	/usr/local/bin/raspiBackup.sh
+
+    fi
+    	exit 0
+}
+
 function execution(){
 
-    lsblk                      #Output of lsblk to check the drive for restore
-    echo ""
-    echo -e "$yellow $Quest_select_drive $normal"
-    read destination
+        lsblk                      #Output of lsblk to check the drive for restore
+        echo -e "$yellow ---------------------------------------------------------- \n"
+        echo -e " $Quest_select_drive \n"
+        echo -e " ----------------------------------------------------------$normal \n"
+        read destination
 
     if [[ -e /dev/$destination ]]; then
         echo "OK"
     else
-        echo""
-        echo -e "$red $destination $Warn_drive_not_present $normal"
+        echo -e "$red --------------------------------------------------------- \n"
+        echo -e " $destination $Warn_drive_not_present \n"
+	echo -e " ---------------------------------------------------------$normal \n"
         execution
     fi
 
     if grep -q /$destination /proc/mounts; then
-        echo -e "$red -------------------------------------------------------------------------------------------------"
-        echo ""
-        echo " $red $destination $Warn_drive_mounted $normal".
-        echo ""
-        echo -e " ------------------------------------------------------------------------------------------------- $normal"
-      exit 0
-
+        echo -e "$red ------------------------------------------------------------------------ \n"
+        echo -e " $destination $Warn_drive_mounted \n".
+        echo -e " -------------------------------------------------------------------------- $normal"
+	exit 0
     fi
+    
+        echo -e "$green --------------------------------------------------------------------------------------------------------------------- \n"
+        echo -e " $Info_backup_drive $backup_path >>> $destination \n"
+        echo -e " -------------------------------------------------------------------------------------------------------------------- $normal \n"
 
-    echo -e "$green ----------------------------------------------------------------------------------------------"
-    echo ""
-    echo "$Info_backup_drive $backup_path >>> $destination"
-    echo ""
-    echo -e " ------------------------------------------------------------------------------------------------- $normal"
-
-    /usr/local/bin/raspiBackup.sh -d /dev/$destination /$backup_path      #Call raspiBackup.sh
-    exit 0
+        /usr/local/bin/raspiBackup.sh -d /dev/$destination /$backup_path      #Call raspiBackup.sh
+        exit 0
 }
 
 function execution_select(){
@@ -82,9 +114,9 @@ function execution_select(){
         echo "${backup_folder[$i]}  -> $v"
     done
 
-    echo ""
-    echo -e "$yellow $Quest_number_of_backup $normal"
-    echo ""
+    echo -e " $yellow ------------------------------------------------------------------ \n"
+    echo -e " $Quest_number_of_backup \n"
+    echo -e " -------------------------------------------------------------------$normal \n"
 
     read v
 
@@ -98,13 +130,12 @@ function execution_select(){
     test_digit "$number" "$min" "$max" "$backup_path"
 
     if [[ -d "$backup_path" ]]; then
-
         execution
-        echo -e "$red $Warn_drive_not_present $normal"
-        echo ""
+        echo -e "$red -------------------------------------------------------------- \n"
+        echo -e " $Warn_drive_not_present \n"
+        echo -e " ------------------------------------------------------------- $normal \n"
         execution_select
     fi
-
 }
 
 function test_digit(){
@@ -112,31 +143,32 @@ function test_digit(){
     if [[ "$1" =~ ^[0-9]+$ ]]; then            # regex: a number has to have
 
         if (( $1 < $2 || $1 > $3 )); then
-            echo -e "$red $1 $Warn_invalid_number $2 > $3 $normal"
-            echo ""
+	    echo -e "$red ------------------------------------------------------\n"
+	    echo -e " $$1 $Warn_invalid_number $2 > $3 \n"
+            echo -e " -----------------------------------------------------$normal \n"
             execution_select
         else
-            echo -e "$green $Info_restore $backup_path $normal"
-            echo""
+	    echo -e "$green --------------------------------------------------------------------------------------- \n"
+            echo -e " $Info_restore $backup_path \n"
+            echo -e " ---------------------------------------------------------------------------------------$normal \n"
         fi
 
     else
-        echo -e "$red $1 $Warn_no_number $normal"
-        echo""
+	echo -e "$red --------------------------------------------------------------\n"
+        echo -e " $1 $Warn_no_number \n"
+        echo -e " -------------------------------------------------------------$normal \n"
         execution_select
     fi
-
 }
 
 function language(){
 
-        echo ""
-        echo -e "$yellow Please choose your preferred language"
-        echo -e " Bitte waehle deine bevorzugte Sprache"
-        echo ""
-        echo -e " German  = 1"
-        echo -e " English = 2 $normal"
-
+        echo -e "$yellow ------------------------------------------------------------ \n"
+       	echo -e " Please choose your preferred language"
+       	echo -e " Bitte waehle deine bevorzugte Sprache \n"
+       	echo -e " German  = 1"
+       	echo -e " English = 2 \n"
+	echo -e " ------------------------------------------------------------$normal \n"
         read lang
 
     if (( $lang == 1 )); then
@@ -151,6 +183,10 @@ function language(){
 	Info_restore="Das folgende Backup wird zurueckgespielt "
 	Warn_no_number="Das ist keine Zahl "
 	Warn_false_number="Falsche Eingabe Bitte nur 1 oder 2 eingeben "
+       	Quest_backup_or_restore="Soll ein Backup oder ein restore erstellt werden?"
+       	Quest_more_than_2_partitions="Befinden sich auf dem Systemlaufwerk mehr als die 2 Standard-Partitionen?"
+       	Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?"
+       	Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n  Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
 
     elif (( $lang == 2 )); then
 	Quest_last_backup="Should the last backup be restored? y/N "
@@ -164,21 +200,27 @@ function language(){
 	Info_restore="The following Backup will be restored "
 	Warn_no_number="That is no number "
 	Warn_false_number="Please enter 1 or 2 "
-
+        Quest_backup_or_restore="Should a backup or a restore be created?"
+        Quest_more_than_2_partitions="Are there more than the 2 standard partitions on the system drive?"
+       	Quest_backup_more_than_2="Should more than the 2 standard partitions be backed up?"
+       	Quest_additional_partitions="Please enter the partition number(s) that should be backed up \n  in addition to the default partitions. \n  If more than one, separate them with spaces. \n  Example:   3 4 5 "
+    
     else
-	echo -e "$red False input. Please enter only 1 or 2"
+    	echo -e "$red False input. Please enter only 1 or 2"
 	echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
 	language
-    fi
+  
+  fi
 }
 
 if (( $UID != 0 )); then
+    echo ""
     echo -e "$red Script has to be called as root or with sudo $normal"
     echo -e "$red Das Script muss als root oder mit sudo aufgerufen werden $normal"
-	exit
+    exit
 fi
 
-	language
+language
 
 source $FILE
 backupdir=$DEFAULT_BACKUPPATH
@@ -193,16 +235,38 @@ elif [[ $1 == "--select" ]]; then
     execution_select
     exit 0
 
-else
-    echo ""
-    echo -e "$yellow $Quest_last_backup $normal"
+elif [[ $1 == "--backup" ]]; then
+    backup
+    exit 0
+fi
+
+    echo -e "$yellow ------------------------------------------------------------ \n"
+    echo -e " $Quest_backup_or_restore \n"
+    echo -e " backup    1"
+    echo -e " restore   2 \n"
+    echo -e " ------------------------------------------------------------$normal \n"
+	
+    read backup_or_restore
+
+if (( $backup_or_restore  == 1 )); then
+    backup
+    
+elif (($backup_or_restore == 2 )); then
+    echo -e "$yellow ------------------------------------------------------------ \n"
+    echo -e " $Quest_last_backup \n"
+    echo -e "-------------------------------------------------------------$normal \n"
     read answer
+    
+else
+    echo -e "$red --------------------------------------------------------------- \n"
+    echo -e " $Warn_false_number \n"
+    echo -e " ------------------------------------------------------------$normal \n"
 fi
 
 if [[ ${answer,,} = "y" ]]; then
     execution
     exit 0
-
+    
 else
     execution_select
 fi
