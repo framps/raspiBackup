@@ -188,7 +188,6 @@ function language(){
 	Info_restore="Das folgende Backup wird zurueckgespielt "
 	Warn_no_number="Das ist keine Zahl "
 	Warn_false_number="Falsche Eingabe Bitte nur 1 oder 2 eingeben "
-	Quest_backup_or_restore="Should a backup or a restore be created?"
         Quest_backup_or_restore="Soll ein Backup oder ein restore erstellt werden?"
         Quest_more_than_2_partitions="Befinden sich auf dem Systemlaufwerk mehr als die 2 Standard-Partitionen?"
         Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?"
