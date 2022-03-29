@@ -105,8 +105,8 @@ function execution(){
 
 function execution_select(){
 
-        declare -a backup_folder
-        backup_folder=( $(find $backupdir/$hostname/$hostname* -maxdepth 0 -type d))
+    declare -a backup_folder
+    backup_folder=( $(find $backupdir/$hostname/$hostname* -maxdepth 0 -type d))
 
     for i in "${!backup_folder[@]}"; do
 
@@ -114,20 +114,20 @@ function execution_select(){
         echo "${backup_folder[$i]}  -> $v"
     done
 
-        echo -e " $yellow ------------------------------------------------------------------ \n"
-        echo -e " $Quest_number_of_backup \n"
-        echo -e " -------------------------------------------------------------------$normal \n"
+    echo -e " $yellow ------------------------------------------------------------------ \n"
+    echo -e " $Quest_number_of_backup \n"
+    echo -e " -------------------------------------------------------------------$normal \n"
 
-        read v
+    read v
 
-        number="$v"
-        min=1
-        max="${#backup_folder[@]}"
+    number="$v"
+    min=1
+    max="${#backup_folder[@]}"
 
-        i=$(( $v - 1 ))
-        backup_path=${backup_folder[$i]}
+    i=$(( $v - 1 ))
+    backup_path=${backup_folder[$i]}
 
-        test_digit "$number" "$min" "$max" "$backup_path"
+    test_digit "$number" "$min" "$max" "$backup_path"
 
     if [[ -d "$backup_path" ]]; then
         execution
