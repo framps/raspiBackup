@@ -52,7 +52,7 @@ deploy: ## Deploy raspiBackup
 	@git checkout -f $(MASTER_BRANCH)
 
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
-	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
+	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar --owner=root --group =root -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
 	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
@@ -65,7 +65,7 @@ deployBeta: ## Deploy raspiBackup beta
 	@git checkout -f $(BETA_BRANCH)
 
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
-	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
+	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar --owner=root --group=root -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
 	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
