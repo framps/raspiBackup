@@ -38,7 +38,7 @@ FILE="/usr/local/etc/raspiBackup.conf"    #Determining the DEFAULT_BACKUPPATH fr
 
 function backup(){
 		echo ""
-        lsblk
+        	lsblk
 		echo ""
 		echo -e "$yellow ------------------------------------------------------------------ \n"
 		echo -e " $Quest_more_than_2_partitions   y/N \n"
