@@ -45,13 +45,13 @@ function backup(){
 		echo -e " ------------------------------------------------------------------$normal \n"
 		read input_partitions_more_then_2
 
-	if [[ ${input_partitions_more_then_2,,} = "y" ]] || [[ ${input_partitions_more_then_2,,} = "j" ]]; then
+	if [[ ${input_partitions_more_then_2,,} =~ [yj] ]]; then
 		echo -e "$yellow -----------------------------------------------------------------0- \n"
 		echo -e " $Quest_backup_more_than_2 \n"
 		echo -e " -------------------------------------------------------------------$normal \n"
 		read input_backup_more_then_2
 
-		if [[ ${input_backup_more_then_2,,} = "y" ]] || [[ ${input_backup_more_then_2,,} = "j" ]]; then
+		if [[ ${input_backup_more_then_2,,} =~ [yj] ]]; then
 			echo -e "$yellow ----------------------------------------------------------------- \n"
 			echo -e " $yellow $Quest_additional_partitions \n"
 			echo -e " -----------------------------------------------------------------$normal \n"
@@ -263,7 +263,7 @@ else
 	echo -e " ------------------------------------------------------------$normal \n"
 fi
 
-if [[ ${answer,,} = "y" ]] || [[ ${answer,,} = "j" ]]; then
+if [[ ${answer,,} =~ [yj] ]]; then
 	execution
 exit 0
     
