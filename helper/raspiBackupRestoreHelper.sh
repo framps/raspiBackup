@@ -41,17 +41,17 @@ function backup(){
 		lsblk
 		echo ""
 		echo -e "$yellow ------------------------------------------------------------------ \n"
-		echo -e " $Quest_more_than_2_partitions   y/N \n"
+		echo -e " $Quest_more_than_2_partitions \n"
 		echo -e " ------------------------------------------------------------------$normal \n"
 		read input_partitions_more_then_2
 
-	if [[ ${input_partitions_more_then_2,,} = "y" ]]; then
+	if [[ ${input_partitions_more_then_2,,} = "y" ]] || [[ ${input_partitions_more_then_2,,} = "j" ]]; then
 		echo -e "$yellow -----------------------------------------------------------------0- \n"
-		echo -e " $Quest_backup_more_than_2   y/N \n"
+		echo -e " $Quest_backup_more_than_2 \n"
 		echo -e " -------------------------------------------------------------------$normal \n"
 		read input_backup_more_then_2
 
-		if [[ ${input_backup_more_then_2,,} = "y" ]]; then
+		if [[ ${input_backup_more_then_2,,} = "y" ]] || [[ ${input_backup_more_then_2,,} = "j" ]]; then
 			echo -e "$yellow ----------------------------------------------------------------- \n"
 			echo -e " $yellow $Quest_additional_partitions \n"
 			echo -e " -----------------------------------------------------------------$normal \n"
@@ -172,7 +172,7 @@ function language(){
 		read lang
 
 	if (( $lang == 1 )); then
-		Quest_last_backup="Soll das letzte Backup restored werden? y/N"
+		Quest_last_backup="Soll das letzte Backup restored werden? j/N"
 		Quest_select_drive="Bitte waehle das Ziellaufwerk z.B. mmcblk0,sda,sdb,sdc...."
 		Warn_drive_not_present="Das Ziellaufwerk existiert nicht"
 		Warn_drive_mounted="Mindestens eine Partition ist gemountet. Bitte erst aushaengen."
@@ -184,8 +184,8 @@ function language(){
 		Warn_no_number="Das ist keine Zahl "
 		Warn_false_number="Falsche Eingabe Bitte nur 1 oder 2 eingeben "
 		Quest_backup_or_restore="Soll ein Backup oder ein restore erstellt werden?"
-		Quest_more_than_2_partitions="Befinden sich auf dem Systemlaufwerk mehr als die 2 Standard-Partitionen?"
-		Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?"
+		Quest_more_than_2_partitions="Befinden sich auf dem Systemlaufwerk mehr als die 2 Standard-Partitionen?   j/N"
+		Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?   j/N"
 		Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n  Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
 
 	elif (( $lang == 2 )); then
@@ -201,8 +201,8 @@ function language(){
 		Warn_no_number="That is no number "
 		Warn_false_number="Please enter 1 or 2 "
 		Quest_backup_or_restore="Should a backup or a restore be created?"
-		Quest_more_than_2_partitions="Are there more than the 2 standard partitions on the system drive?"
-		Quest_backup_more_than_2="Should more than the 2 standard partitions be backed up?"
+		Quest_more_than_2_partitions="Are there more than the 2 standard partitions on the system drive?   y/N"
+		Quest_backup_more_than_2="Should more than the 2 standard partitions be backed up   y/N?"
 		Quest_additional_partitions="Please enter the partition number(s) that should be backed up \n  in addition to the default partitions. \n  If more than one, separate them with spaces. \n  Example:   3 4 5 "
     
 	else
@@ -263,7 +263,7 @@ else
 	echo -e " ------------------------------------------------------------$normal \n"
 fi
 
-if [[ ${answer,,} = "y" ]]; then
+if [[ ${answer,,} = "y" ]] || [[ ${answer,,} = "j" ]]; then
 	execution
 exit 0
     
