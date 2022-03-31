@@ -3316,7 +3316,7 @@ function updateScript() {
 				exitNormal
 			fi
 			updateNow=1
-		elif [[ $rc == 1 || $rc == 2 ]] && [[ -z "$betaVersion" ]] && (( ! $updateNow && $FORCE_UPDATE )); then		# no beta version, same or upper version (maybe development version) but force update
+		elif [[ $rc == 1 || $rc == 2 ]] && (( ! $IS_BETA )) && (( ! $updateNow && $FORCE_UPDATE )); then		# no beta version, same or upper version (maybe development version) but force update
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCE_UPDATE "$newVersion"
 			if askYesNo; then
 				updateNow=1
