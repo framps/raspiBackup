@@ -79,7 +79,13 @@ function execution(){
 		echo -e " ----------------------------------------------------------$normal \n"
 		read destination
 
-	if [[ -e /dev/$destination ]]; then
+	if [[ $destination == "" ]]; then
+		echo -e "$red ------------------------------------------------------------------\n"
+		echo -e "$Warn_no_input"
+		echo -e " -----------------------------------------------------------------$normal \n"
+		execution
+
+ 	elif [[ -e /dev/$destination ]]; then
 		echo "OK"
 	else
 		echo -e "$red --------------------------------------------------------- \n"
@@ -187,6 +193,7 @@ function language(){
 		Quest_more_than_2_partitions="Befinden sich auf dem Systemlaufwerk mehr als die 2 Standard-Partitionen?   j/N"
 		Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?   j/N"
 		Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n  Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
+		Warn_no_input="Es wurde kein Ziellaufwerk eingegeben"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -204,7 +211,8 @@ function language(){
 		Quest_more_than_2_partitions="Are there more than the 2 standard partitions on the system drive?   y/N"
 		Quest_backup_more_than_2="Should more than the 2 standard partitions be backed up   y/N?"
 		Quest_additional_partitions="Please enter the partition number(s) that should be backed up \n  in addition to the default partitions. \n  If more than one, separate them with spaces. \n  Example:   3 4 5 "
-    
+		Warn_no_input="No destination drive was entered"
+
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
