@@ -79,13 +79,17 @@ function execution(){
 		echo -e " ----------------------------------------------------------$normal \n"
 		read destination
 
-	if [[ $destination == "" ]]; then
-		echo -e "$red ------------------------------------------------------------------\n"
-		echo -e "$Warn_no_input"
-		echo -e " -----------------------------------------------------------------$normal \n"
-		execution
+	if [[ "$destination" =~ ^[0a-fsmlk]*$ ]]; then
+		echo ""
 
- 	elif [[ -e /dev/$destination ]]; then
+	else
+		echo -e "$red -----------------------------------------------------------\n"
+		echo -e "$destination $Warn_only_drive"
+		echo -e " ----------------------------------------------------------$normal \n"
+		execution
+	fi
+	
+ 	if [[ -b /dev/$destination ]]; then
 		echo "OK"
 	else
 		echo -e "$red --------------------------------------------------------- \n"
@@ -185,7 +189,7 @@ function language(){
 		Info_backup_drive="Folgendes Backup wird restored "
 		Quest_number_of_backup="Bitte gebe die hinter dem gewuenschten Backups stehende Zahl ein. "
 		Warn_no_dir="Oops Das Verzeichnis existier nicht."
-		Warn_invalid_number="Die eingegebene Zahl ist ungueltig. Nur Zahelen im Bereich von "
+		Warn_invalid_number="Die eingegebene Zahl ist ungueltig. Nur Zahlen im Bereich von "
 		Info_restore="Das folgende Backup wird zurueckgespielt "
 		Warn_no_number="Das ist keine Zahl "
 		Warn_false_number="Falsche Eingabe Bitte nur 1 oder 2 eingeben "
@@ -193,7 +197,7 @@ function language(){
 		Quest_more_than_2_partitions="Befinden sich auf dem Systemlaufwerk mehr als die 2 Standard-Partitionen?   j/N"
 		Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?   j/N"
 		Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n  Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
-		Warn_no_input="Es wurde kein Ziellaufwerk eingegeben"
+		Warn_only_drive="Bitte nur das laufwerk eingeben, nicht die Partition"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -211,7 +215,7 @@ function language(){
 		Quest_more_than_2_partitions="Are there more than the 2 standard partitions on the system drive?   y/N"
 		Quest_backup_more_than_2="Should more than the 2 standard partitions be backed up   y/N?"
 		Quest_additional_partitions="Please enter the partition number(s) that should be backed up \n  in addition to the default partitions. \n  If more than one, separate them with spaces. \n  Example:   3 4 5 "
-		Warn_no_input="No destination drive was entered"
+		Warn_only_drive="Please only enter the Drive, not the partition"
 
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
