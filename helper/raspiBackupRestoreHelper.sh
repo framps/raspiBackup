@@ -79,7 +79,7 @@ function execution(){
 		echo -e " ----------------------------------------------------------$normal \n"
 		read destination
 
-	if [[ "$destination" =~ ^sd(a|b|c|d|e|f)$|mmcblk(0|1|2|3) ]]; then
+	if [[ "$destination" =~ ^(sd[a-f]|mmcblk[0-2])$ ]]; then
 		echo ""
 
 	else
@@ -197,7 +197,7 @@ function language(){
 		Quest_more_than_2_partitions="Befinden sich auf dem Systemlaufwerk mehr als die 2 Standard-Partitionen?   j/N"
 		Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?   j/N"
 		Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n  Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
-		Warn_only_drive="Bitte nur das laufwerk eingeben, nicht die Partition"
+		Warn_only_drive="Bitte ein gueltiges Laufwerk eingeben"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -215,7 +215,7 @@ function language(){
 		Quest_more_than_2_partitions="Are there more than the 2 standard partitions on the system drive?   y/N"
 		Quest_backup_more_than_2="Should more than the 2 standard partitions be backed up   y/N?"
 		Quest_additional_partitions="Please enter the partition number(s) that should be backed up \n  in addition to the default partitions. \n  If more than one, separate them with spaces. \n  Example:   3 4 5 "
-		Warn_only_drive="Please only enter the Drive, not the partition"
+		Warn_only_drive="Please only enter a valid Drive"
 
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
