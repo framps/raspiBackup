@@ -720,11 +720,11 @@ MSG_EN[$MSG_INVALID_MSG_LEVEL]="RBK0058E: Invalid parameter '%s' for option -m d
 MSG_DE[$MSG_INVALID_MSG_LEVEL]="RBK0058E: Ungültiger Parameter '%s' für Option -m eingegeben."
 MSG_FI[$MSG_INVALID_MSG_LEVEL]="RBK0058E: Havaittu epäkelpo parametri '%s' valinnalle -m."
 MSG_FR[$MSG_INVALID_MSG_LEVEL]="RBK0058E: Paramètre invalide '%s' entré pour l'option -m."
-MSG_INVALID_LOG_OUTPUT=59
-MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Invalid parameter '%s' for option -L detected."
-MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Ungültiger Parameter '%s' für Option -L eingegeben."
-MSG_FI[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Havaittu epäkelpo parametri '%s' valinnalle -L."
-MSG_FR[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Paramètre invalide '%s' entré pour l'option -L."
+#MSG_INVALID_LOG_OUTPUT=59
+#MSG_EN[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Invalid parameter '%s' for option -L detected."
+#MSG_DE[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Ungültiger Parameter '%s' für Option -L eingegeben."
+#MSG_FI[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Havaittu epäkelpo parametri '%s' valinnalle -L."
+#MSG_FR[$MSG_INVALID_LOG_OUTPUT]="RBK0059W: Paramètre invalide '%s' entré pour l'option -L."
 MSG_NO_YES=60
 MSG_EN[$MSG_NO_YES]="no yes"
 MSG_DE[$MSG_NO_YES]="nein ja"
@@ -1579,11 +1579,11 @@ MSG_EN[$MSG_UNABLE_TO_CREATE_FILE]="RBK0225E: Unable to create file %s."
 MSG_DE[$MSG_UNABLE_TO_CREATE_FILE]="RBK0225E: Datei %s kann nicht erstellt werden."
 MSG_FI[$MSG_UNABLE_TO_CREATE_FILE]="RBK0225E: Tiedoston %s luonti epäonnistui"
 MSG_FR[$MSG_UNABLE_TO_CREATE_FILE]="RBK0225E: Impossible de créer le fichier %s."
-MSG_CONFIG_VERSION_DOES_NOT_MATCH=226
-MSG_EN[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Found unexpected config version %s in %s. Expected version %s."
-MSG_DE[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Unerwartete Konfigurationsversion %s in %s gefunden. %s wird erwartet."
-MSG_FI[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Odottamaton asetustiedoston versio %s löytyi kohteessa %s. Oletettiin versiota %s."
-MSG_FR[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Version de configuration inattendue %s trouvée dans %s. Version attendue %s."
+#MSG_CONFIG_VERSION_DOES_NOT_MATCH=226
+#MSG_EN[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Found unexpected config version %s in %s. Expected version %s."
+#MSG_DE[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Unerwartete Konfigurationsversion %s in %s gefunden. %s wird erwartet."
+#MSG_FI[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Odottamaton asetustiedoston versio %s löytyi kohteessa %s. Oletettiin versiota %s."
+#MSG_FR[$MSG_CONFIG_VERSION_DOES_NOT_MATCH]="RBK0226W: Version de configuration inattendue %s trouvée dans %s. Version attendue %s."
 MSG_TITLE_STARTED=227
 MSG_EN[$MSG_TITLE_STARTED]="%s: Backup started."
 MSG_DE[$MSG_TITLE_STARTED]="%s: Backup gestarted."
@@ -1798,9 +1798,9 @@ ${NL}!!! RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@"
 MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@ \
 ${NL}!!! RBK0268W: Die Umgebung wird nicht unterstützt. $MYNAME kann korrekt funktionieren aber es wird keine Unterstützung gegeben! \
 ${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
-MSG_REBOOT_SYSTEM=268
-MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0268I: System will be rebooted at the end of the backup run."
-MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0268I: Das System wird am Ende des Backuplaufes neu gestartet."
+MSG_REBOOT_SYSTEM=269
+MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0269I: System will be rebooted at the end of the backup run."
+MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0269I: Das System wird am Ende des Backuplaufes neu gestartet."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
