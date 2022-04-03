@@ -2,11 +2,18 @@
 
 ##########################################################################################################################################
 #
-# Auxiliary script for easy restore of a backup created with raspiBackup on Raspberry Pi OS.
-# Possibe Options:
-# --load     (automatic selection of the last backup)
-# --select   (any backup can be selected from a list)
-# Without Options   (This is the same process as with options except that at startup it asks whether the last backup should be restored.)
+# Auxiliary - script for easy, dialog guided creating or restoring of a backup with   "framps raspiBackup"
+# Possible options
+# --backup (simple dialog guided creation of a backup)
+# --last (creation of a restore with selection of the target drive)
+# --select (the backup to restore can be selected from a list of available backups)
+#
+# Without option (The program asks whether a backup should be created or a backup should be restored.
+# All options are asked in the program by dialog).
+#
+# Selectable languages "German" and "English"
+#
+# Requirement  Installing of "framps raspiBackup"
 #
 ##########################################################################################################################################
 #
