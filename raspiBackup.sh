@@ -7899,6 +7899,8 @@ function countLines() { # string
 	logExit "$c"
 }
 
+# Smart recycle strategy was inspired by Manuel Dewalds excelent article "The implementation was inspired by Manuel Dewalds article Automating backups on a Raspberry Pi NAS"
+# on https://opensource.com/article/18/8/automate-backups-raspberry-pi
 
 function SR_listYearlyBackups() { # directory
 	logEntry $SR_YEARLY $1
