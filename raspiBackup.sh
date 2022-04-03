@@ -1519,11 +1519,11 @@ MSG_EN[$MSG_MOUNT_CHECK_ERROR]="RBK0213E: Mount %s to %s failed. RC %s."
 MSG_DE[$MSG_MOUNT_CHECK_ERROR]="RBK0213E: Mount von %s an %s ist fehlerhaft."
 MSG_FI[$MSG_MOUNT_CHECK_ERROR]="RBK0213E: Kohteen %s käyttöönotto kohteeseen %s epäonnistui. RC %s."
 MSG_FR[$MSG_MOUNT_CHECK_ERROR]="RBK0213E: Échec du montage de %s sur %s. Code d'erreur %s."
-MSG_MISSING_SMART_RECYCLE_PARMS=214
-MSG_EN[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Missing smart recycle parms in %s. Have to be four:Daily Weekly Monthly Yearly."
-MSG_DE[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Missing smart recycle parms in %s. Es müssen vier sein: Täglich Wöchentlich Monatlich Jährlich"
-MSG_FI[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Älykkään varmuuskopion parametrejä puuttuu parametreistä %s. Niitä tulee olla neljä: Päivittäinen Viikoittainen Kuukausittainen Vuosittainen."
-MSG_FR[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Paramètres du cycle de statégie des sauvegardes manquants en %s. Il doit y en avoir quatre : Quotidien Hebdomadaire Mensuel Annuel."
+#MSG_MISSING_SMART_RECYCLE_PARMS=214
+#MSG_EN[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Missing smart recycle parms in %s. Have to be four:Daily Weekly Monthly Yearly."
+#MSG_DE[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Missing smart recycle parms in %s. Es müssen vier sein: Täglich Wöchentlich Monatlich Jährlich"
+#MSG_FI[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Älykkään varmuuskopion parametrejä puuttuu parametreistä %s. Niitä tulee olla neljä: Päivittäinen Viikoittainen Kuukausittainen Vuosittainen."
+#MSG_FR[$MSG_MISSING_SMART_RECYCLE_PARMS]="RBK0214E: Paramètres du cycle de statégie des sauvegardes manquants en %s. Il doit y en avoir quatre : Quotidien Hebdomadaire Mensuel Annuel."
 MSG_SMART_RECYCLE_PARM_INVALID=215
 MSG_EN[$MSG_SMART_RECYCLE_PARM_INVALID]="RBK0215E: Invalid smart recycle parameter %s in option '%s'."
 MSG_DE[$MSG_SMART_RECYCLE_PARM_INVALID]="RBK0215E: Ungültiger smart recycle Parameter %s in Option '%s'."
@@ -4291,8 +4291,13 @@ function cleanup() { # trap
 		cleanupRestore $1
 	else
 		cleanupBackup $1
-		if [[ $rc -eq 0 ]]; then
-			applyBackupStrategy
+		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
+			if (( \
+				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
+				|| ! $SMART_RECYCLE \
+				)); then
+				applyBackupStrategy
+			fi
 		fi
 	fi
 
@@ -5651,7 +5656,7 @@ function backup() {
 				exitError $RC_NATIVE_BACKUP_FAILED
 			fi
 		else
-				backupPartitions
+			backupPartitions
 		fi
 	fi
 
@@ -6362,26 +6367,28 @@ function doitBackup() {
 		fi
 	done
 
-	eval "SMART_RECYCLE_PARMS=( $SMART_RECYCLE_OPTIONS )"
-	local p="${SMART_RECYCLE_PARMS[@]}"
-	logItem "SMART_RECYCLE_PARMS: $p"
-	logItem "smart recycle parms: ${#SMART_RECYCLE_PARMS[@]}"
-
-	if (( ${#SMART_RECYCLE_PARMS[@]} != 4 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_SMART_RECYCLE_PARMS "${SMART_RECYCLE_PARMS[@]}"
-		mentionHelp
-		exitError $RC_PARAMETER_ERROR
-	fi
-
-	local sb
 	if (( $SMART_RECYCLE )); then
-		for sb in "${SMART_RECYCLE_PARMS[@]}"; do
-			if [[ ! $sb =~ ^[0-9]+$ ]] || (( $sb > 365 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_PARM_INVALID "$sb" "$SMART_RECYCLE_OPTIONS"
-				mentionHelp
-				exitError $RC_PARAMETER_ERROR
-			fi
-		done
+		if [[ ! "$SMART_RECYCLE_OPTIONS" =~ ^[0-9]+[[:space:]]*+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+$ ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_PARM_INVALID "" "$SMART_RECYCLE_OPTIONS"
+			mentionHelp
+			exitError $RC_PARAMETER_ERROR
+		fi
+
+		eval "SMART_RECYCLE_PARMS=( $SMART_RECYCLE_OPTIONS )"
+		local p="${SMART_RECYCLE_PARMS[@]}"
+		logItem "SMART_RECYCLE_PARMS: $p"
+		logItem "smart recycle parms: ${#SMART_RECYCLE_PARMS[@]}"
+
+		local sb
+		if (( $SMART_RECYCLE )); then
+			for sb in "${SMART_RECYCLE_PARMS[@]}"; do
+				if (( $sb > 365 )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_PARM_INVALID "$sb" "$SMART_RECYCLE_OPTIONS"
+					mentionHelp
+					exitError $RC_PARAMETER_ERROR
+				fi
+			done
+		fi
 	fi
 
 	if (( $ZIP_BACKUP_TYPE_INVALID )); then
