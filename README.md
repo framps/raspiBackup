@@ -2,28 +2,37 @@
 
 # raspiBackup - Backup and restore your running Raspberries
 
-* Unattended full or incremental system backup with no shutdown of the system.
-* No manual intervention required. Backups are created via cron over night.
-* Important services can be stopped before starting the backup and will be restarted when the backup finished.
-* Number of backup versions to keep is configurable.
-* Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle.
-* Restore any of the created backup versions and the system will boot up again successfully.
-* Migrate a SD card backup image to an USB device during restore.
-* Standard Linux backup tools dd, tar and rsync are available to create a backup.
-* dd and tar are full backups. rsync uses hardlinks for incremental backups.
-* dd backups can be restored with Windows tools.
-* Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
-* Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
-* Messages and completion status of backup run can be send in an eMail or to Telegram.
-* Extensionpoints allow to execute any additional logic at various steps in the backup and restore process.
-* National language support:
-  * English (Default)
-  * German
-  * Finnish
-  * Chinese
-  * French
-* Automated regressiontests make sure a new release will backup and restore successfully. 
-* Extensive logging allows to isolate backup/restore issues. 
+* Primary features
+  * Unattended full or incremental system backup with no shutdown of the system.
+  * No manual intervention required. Backups are created via cron over night.
+  * Important services can be stopped before starting the backup and will be restarted when the backup finished.
+  * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
+  * Messages and completion status of backup run can be send in an eMail or to Telegram.
+  * Extensionpoints allow to execute any additional logic at various steps in the backup and restore process.
+* Restore
+  * Restore any of the created backup versions to get a system which boots up immediately.
+  * Migrate a SD card backup image to an USB device during restore.
+* Backup strategies
+  * Number of backup versions to keep is configurable.
+  * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle.
+* Linux backup tools used
+  * Standard Linux backup tools dd, tar and rsync are available to create a backup.
+  * dd and tar are full backups. rsync uses hardlinks for incremental backups.
+  * dd backups can be restored with Windows tools.
+* Installation 
+  * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
+* Usability
+  * National language support:
+    * English (Default)
+    * German
+    * Finnish
+    * Chinese
+    * French
+  * More than 270 messages inform about configuration and environment mismatches and runtime errors together with a lot of informational messages.
+* Reliability 
+  * Automated regressiontests make sure a new release will still backup and restore successfully. 
+* Servicability
+  * Extensive logging helps to isolate backup/restore issues. 
 * Much more features (see below).
 
 ## Note
