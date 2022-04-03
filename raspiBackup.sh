@@ -1801,6 +1801,9 @@ ${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
 MSG_REBOOT_SYSTEM=268
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0268I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0268I: Das System wird am Ende des Backuplaufes neu gestartet."
+MSG_SMART_RECYCLE_WILL_BE_APPLIED=269
+MSG_EN[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0269I: Smart recycle strategy will be applied."
+MSG_DE[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0269I: Wende smarte Backupstrategie an."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1963,6 +1966,8 @@ function logEnable() {
 	rm -f "$LOG_FILE" &>/dev/null
 	rm -f "$MSG_FILE" &>/dev/null
 
+	logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
+
 	touch "$LOG_FILE"
 	touch "$MSG_FILE"
 
@@ -2034,10 +2039,12 @@ function logFinish() {
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
 			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
 			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
+			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
 			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
 			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
+			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
@@ -4234,10 +4241,6 @@ function cleanupStartup() { # trap
 
 	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
-	fi
-
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		logItem "Umount of $DYNAMIC_MOUNT scheduled"
 		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
 	fi
 
@@ -6522,6 +6525,9 @@ function doitBackup() {
 		applyBackupStrategy
 		rc=0
 	else
+		if (( $SMART_RECYCLE && !$SMART_RECYCLE_DRYRUN )); then
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_WILL_BE_APPLIED
+		fi
 		backup
 	fi
 
