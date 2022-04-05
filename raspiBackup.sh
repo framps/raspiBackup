@@ -377,7 +377,7 @@ RC_UNSUPPORTED_ENVIRONMENT=132
 RC_RESTORE_EXTENSION_FAILS=133
 RC_BACKUP_EXTENSION_FAILS=134
 RC_DOWNLOAD_FAILED=135
-RC_BACKUP_DIR_ERROR=136
+RC_BACKUP_DIRNAME_ERROR=136
 
 tty -s
 INTERACTIVE=!$?
@@ -1808,9 +1808,9 @@ MSG_DE[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0269I: Wende smarte Backupstrateg
 MSG_REBOOT_SYSTEM=270
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0270I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0270I: Das System wird am Ende des Backuplaufes neu gestartet."
-MSG_INVALID_BACKUPS_DETECTED=271
-MSG_EN[$MSG_INVALID_BACKUPS_DETECTED]="RBK0271E: %s non compliant backup directorie(s) found in %s."
-MSG_DE[$MSG_INVALID_BACKUPS_DETECTED]="RBK0271E: %s nicht konforme Backupverzeichnis(se) in %s gefunden."
+MSG_INVALID_BACKUPNAMES_DETECTED=271
+MSG_EN[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0271E: %s invalid backup directorie(s) found in %s."
+MSG_DE[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0271E: %s ungültige Backupverzeichnis(se) in %s gefunden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3613,7 +3613,7 @@ function setupEnvironment() {
 		fi
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
-		
+
 		if [[ -z "$BACKUP_DIRECTORY_NAME" ]]; then
 			BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-$DATE"
 		else
@@ -5599,28 +5599,6 @@ function backup() {
 		exitError $RC_BACKUP_EXTENSION_FAILS
 	fi
 
-	if (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
-		exitError $RC_MISC_ERROR
-	fi
-
-	BACKUPPATH_PARAMETER="$BACKUPPATH"
-	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
-	if [[ ! -d "$BACKUPPATH" ]] && (( !$FAKE )); then
-		 if ! mkdir -p "${BACKUPPATH}"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
-			exitError $RC_CREATE_ERROR
-		 fi
-	fi
-
-	logCommand "ls -1 ${BACKUPPATH} | egrep -Ev \"$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}\""
-	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}" |wc -l)
-
-	if (( $nonRaspiGeneratedDirs > 0 )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_INVALID_BACKUPS_DETECTED $nonRaspiGeneratedDirs $BACKUPPATH
-		exitError $RC_BACKUP_DIR_ERROR
-	fi
-
 	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || (( $PARTITIONBASED_BACKUP )) ]]; then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_DIR"
 	else
@@ -6523,7 +6501,31 @@ function doitBackup() {
 		 exitError $RC_MISSING_COMMANDS
 	fi
 
-	# just inform about enabled config options
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
+
+	if (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
+		exitError $RC_MISC_ERROR
+	fi
+
+	BACKUPPATH_PARAMETER="$BACKUPPATH"
+	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
+	if [[ ! -d "$BACKUPPATH" ]]; then
+		 if ! mkdir -p "${BACKUPPATH}"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
+			exitError $RC_CREATE_ERROR
+		 fi
+	fi
+
+	logCommand "ls -1 ${BACKUPPATH} | egrep -Ev \"$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}\""
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}" |wc -l)
+
+	if (( $nonRaspiGeneratedDirs > 0 )); then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_INVALID_BACKUPNAMES_DETECTED $nonRaspiGeneratedDirs $BACKUPPATH
+		exitError $RC_BACKUP_DIRNAME_ERROR
+	fi
+
+	# just inform about options enabled
 
 	if  [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
 		if (( $LINK_BOOTPARTITIONFILES )); then
@@ -6537,11 +6539,11 @@ function doitBackup() {
 		fi
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
-
 	if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_REBOOT_SYSTEM
 	fi
+
+	# now either execute a SR dryrun or start backup
 
 	if (( $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then # just apply backup strategy to test smart recycle
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH/$(hostname)"
