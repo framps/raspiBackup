@@ -377,6 +377,7 @@ RC_UNSUPPORTED_ENVIRONMENT=132
 RC_RESTORE_EXTENSION_FAILS=133
 RC_BACKUP_EXTENSION_FAILS=134
 RC_DOWNLOAD_FAILED=135
+RC_BACKUP_DIR_ERROR=136
 
 tty -s
 INTERACTIVE=!$?
@@ -1807,6 +1808,9 @@ MSG_DE[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0269I: Wende smarte Backupstrateg
 MSG_REBOOT_SYSTEM=270
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0270I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0270I: Das System wird am Ende des Backuplaufes neu gestartet."
+MSG_INVALID_BACKUPS_DETECTED=271
+MSG_EN[$MSG_INVALID_BACKUPS_DETECTED]="RBK0271E: %s non compliant backup directorie(s) found in %s."
+MSG_DE[$MSG_INVALID_BACKUPS_DETECTED]="RBK0271E: %s nicht konforme Backupverzeichnis(se) in %s gefunden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5607,6 +5611,14 @@ function backup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
 			exitError $RC_CREATE_ERROR
 		 fi
+	fi
+
+	logCommand "ls -1 ${BACKUPPATH} | egrep -Ev \"$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}\""
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}" |wc -l)
+
+	if (( $nonRaspiGeneratedDirs > 0 )); then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_INVALID_BACKUPS_DETECTED $nonRaspiGeneratedDirs $BACKUPPATH
+		exitError $RC_BACKUP_DIR_ERROR
 	fi
 
 	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || (( $PARTITIONBASED_BACKUP )) ]]; then
