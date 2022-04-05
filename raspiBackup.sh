@@ -3609,15 +3609,16 @@ function setupEnvironment() {
 		fi
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
-		BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-$DATE"
-
+		
 		if [[ -z "$BACKUP_DIRECTORY_NAME" ]]; then
-			BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
+			BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-$DATE"
 		else
-			BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME-${BACKUP_DIRECTORY_NAME}"
+			BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-${DATE}_${BACKUP_DIRECTORY_NAME}"
 		fi
 
+		BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
 		BACKUPTARGET_DIR="$BACKUPTARGET_ROOT/$BACKUPFILE"
+
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
 		if [ ! -d "${BACKUPTARGET_DIR}" ] && (( ! $FAKE )); then
@@ -5631,7 +5632,7 @@ function backup() {
 	callExtensions $READY_BACKUP_EXTENSION $rc
 
 	START_TIME=$(date +%s)
-
+:<<END
 	if (( ! $FAKE )); then
 
 		if (( ! $PARTITIONBASED_BACKUP )); then
@@ -5659,7 +5660,7 @@ function backup() {
 			backupPartitions
 		fi
 	fi
-
+END
 	END_TIME=$(date +%s)
 
 	BACKUP_TIME=($(duration $START_TIME $END_TIME))
