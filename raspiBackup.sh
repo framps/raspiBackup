@@ -225,6 +225,7 @@ BACKUPTYPE_DDZ="ddz"
 BACKUPTYPE_TAR="tar"
 BACKUPTYPE_TGZ="tgz"
 BACKUPTYPE_RSYNC="rsync"
+POSSIBLE_BACKUP_TYPES_REGEX="$BACKUPTYPE_DD|$BACKUPTYPE_DDZ|$BACKUPTYPE_RSYNC|$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ"
 declare -A FILE_EXTENSION=( [$BACKUPTYPE_DD]=".img" [$BACKUPTYPE_DDZ]=".img.gz" [$BACKUPTYPE_RSYNC]="" [$BACKUPTYPE_TGZ]=".tgz" [$BACKUPTYPE_TAR]=".tar" )
 # map dd/tar to ddz/tgz extension if -z switch is used
 declare -A Z_TYPE_MAPPING=( [$BACKUPTYPE_DD]=$BACKUPTYPE_DDZ [$BACKUPTYPE_TAR]=$BACKUPTYPE_TGZ )
@@ -6521,8 +6522,8 @@ function doitBackup() {
 		 fi
 	fi
 
-	logCommand "ls -1 ${BACKUPPATH} | egrep -Ev \"$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}\""
-	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-$BACKUPTYPE\-backup\-([0-9]){8}.([0-9]){6}" |wc -l)
+	logCommand "ls -1 ${BACKUPPATH} | egrep -Ev \"$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}\""
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" |wc -l)
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_INVALID_BACKUPNAMES_DETECTED $nonRaspiGeneratedDirs $BACKUPPATH
