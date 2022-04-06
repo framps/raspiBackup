@@ -29,6 +29,7 @@ SMARTRECYCLE_TEST=1
 RESTORE_TEST=1
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
+MESSAGE_TEST=1
 
 #ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
 ENVIRONMENTS_TO_TEST="sd usb"
@@ -126,6 +127,12 @@ if (( $UID != 0 )); then
 fi
 
 rm *.log >/dev/null
+
+if (( $MESSAGE_TEST )); then
+	if ! ./checkMessages.sh; then
+		exit
+	fi
+fi
 
 startTime=$(date +%Y-%M-%d/%H:%m:%S)
 echo "Start: $startTime"

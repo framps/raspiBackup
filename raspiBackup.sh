@@ -1848,6 +1848,10 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 		msg="${MSG_EN[$1]}" # fallback into english
 	fi
 
+	if [[ -z $msg ]]; then
+		msg="${MSG_EN[$MSG_UNDEFINED]} $1"
+	fi
+
 	shift
 
 	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
