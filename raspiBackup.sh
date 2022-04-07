@@ -5627,35 +5627,35 @@ function backup() {
 	callExtensions $READY_BACKUP_EXTENSION $rc
 
 	START_TIME=$(date +%s)
-:<<END
-	if (( ! $FAKE )); then
 
-		if (( ! $PARTITIONBASED_BACKUP )); then
+	if (( ! $FAKE_BACKUP )); then
+		if (( ! $FAKE )); then
+			if (( ! $PARTITIONBASED_BACKUP )); then
 
-			case "$BACKUPTYPE" in
+				case "$BACKUPTYPE" in
 
-				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD
-					;;
+					$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD
+						;;
 
-				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar
-					;;
+					$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar
+						;;
 
-				$BACKUPTYPE_RSYNC) backupRsync
-					;;
+					$BACKUPTYPE_RSYNC) backupRsync
+						;;
 
-				*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
-					;;
-			esac
+					*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
+						;;
+				esac
 
-			if [[ $rc != 0 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR $BACKUPTYPE $rc
-				exitError $RC_NATIVE_BACKUP_FAILED
+				if [[ $rc != 0 ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR $BACKUPTYPE $rc
+					exitError $RC_NATIVE_BACKUP_FAILED
+				fi
+			else
+				backupPartitions
 			fi
-		else
-			backupPartitions
 		fi
 	fi
-END
 	END_TIME=$(date +%s)
 
 	BACKUP_TIME=($(duration $START_TIME $END_TIME))
