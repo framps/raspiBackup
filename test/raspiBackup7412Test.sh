@@ -30,7 +30,7 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.1"
+VERSION="0.2"
 
 set +u;GIT_DATE="$Date$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
@@ -85,6 +85,10 @@ function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmms
 		(( ${#d} <= 8 )) && t="$tc" || t=""
 		local h="$(hostname)/$(hostname)-${type}-backup-"$d$t
 		mkdir -p $DIR/$h
+		h="$(hostname)/$(hostname)-${type}-backup-"${d}-100000_before
+		mkdir -p $DIR/$h
+		h="$(hostname)/$(hostname)-${type}-backup-"${d}-200000_after
+		mkdir -p $DIR/$h
 	done
 
 	(( $DEBUG )) && ls -1 "$DIR/$(hostname)"
@@ -133,6 +137,10 @@ function createMassBackups() { # startdate count #per_day type dont_delete_flag
 				(( $DEBUG )) && echo "Next $TICKS ... $n ..."
 			fi
 			mkdir -p $DIR/$n
+			n="${h}100000_before"
+			mkdir -p $DIR/$n
+			n="${h}200000_after"
+			mkdir -p $DIR/$n
 		done
 	done
 
@@ -153,27 +161,43 @@ function testMassBackups() { # count type
 	fi
 }
 
-function testSpecificBackups() { # lineNo stringlist_of_dates type
+function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstaticBackups
 
-	local l=$1
-	local type=${3:-rsync}
-	shift
+	local l="$1"
+	local dtes="$2"
+	local type="$3"
+	local static
 
-	echo "Testing for type $type ..."
+	if [[ "$3" =~ [0-9]+ ]]; then
+		type="rsync"
+		static="$3"
+	else
+		static="$3"
+	fi
+	
+	echo "Testing for type $type and static $static..."
 
-	local f=$(ls $DIR/$(hostname)/ | grep $type | wc -l)
-	local n=$(wc -w <<< "$1")
+	local f=$(ls $DIR/$(hostname)/ | grep $type | grep -v "_" | wc -l)
+	local n=$(wc -w <<< "$dtes")
 
 	if (( f != $n )); then
-		echo "??? Test in line $l: Expected #$n $@ but found $f backups of type $type"
+		echo "??? Test in line $l: Expected #$n $dtes but found $f backups of type $type"
+		ls -1 "$DIR/$(hostname)"
+		exit 1
+	fi
+
+	local f=$(ls $DIR/$(hostname)/ | grep $type | grep "_" | wc -l)
+	
+	if (( f != $(($static*2)) )); then
+		echo "??? Test in line $l: Expected #$static statics but found $f statics of type $type"
 		ls -1 "$DIR/$(hostname)"
 		exit 1
 	fi
 
 	local d
-	for d in $1; do
+	for d in $dtes; do
 		if [[ -z $(find $DIR/$(hostname) -type d -name "*${type}-backup-${d}*") ]] ; then
-			echo "??? Test in line $l: Expected date $d of type $type in $@ not found"
+			echo "??? Test in line $l: Expected date $d of type $type in $dtes not found"
 			ls -1 "$DIR/$(hostname)"
 			exit 1
 		fi
@@ -200,21 +224,21 @@ if (( $DAILY )); then
 	d="20191116 20191117 20191118 20191119"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "3 0 0 0"  $raspiOpts >> $LOG_FILE
-	testSpecificBackups $l "20191117 20191118 20191119"
+	testSpecificBackups $l "20191117 20191118 20191119" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === DAILY (2)"
 	d="20191116 20191117 20191119"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "3 0 0 0" $raspiOpts >> $LOG_FILE
-	testSpecificBackups $l "20191119 20191117"
+	testSpecificBackups $l "20191119 20191117" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === DAILY (3) + (4)"
 	d="20191117-130000 20191117-230010 20191118-130000 20191118-140005 20191119-120000 20191119-120001"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "3 0 0 0" $raspiOpts >> $LOG_FILE
-	testSpecificBackups $l "20191117-230010 20191118-140005 20191119-120001"
+	testSpecificBackups $l "20191117-230010 20191118-140005 20191119-120001" $(wc -w <<< "$d")
 fi
 
 ###
@@ -228,84 +252,84 @@ if (( $WEEKLY )); then
 	d="20191118 20191112 20190601"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 2 0 0" $raspiOpts >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191112"
+	testSpecificBackups $l "20191118 20191112" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY (1)"
 	d="20191118 20191112 20190601"
 	createSpecificBackups "$d"
 	faketime "2019-11-18" ../raspiBackup.sh --smartRecycleOptions "0 2 0 0"  $raspiOpts >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191112"
+	testSpecificBackups $l "20191118 20191112" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY (2)"
 	d="20191118 20191112 20190601"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 4 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191112"
+	testSpecificBackups $l "20191118 20191112" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY (2)"
 	d="20191118 20191112 20190601"
 	createSpecificBackups "$d"
 	faketime "2019-11-18" ../raspiBackup.sh --smartRecycleOptions "0 4 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191112"
+	testSpecificBackups $l "20191118 20191112" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY (3)"
 	d="20191119 20191118 20191117 20191116 20191115 20191114 20191113 20191112 20191111 20191110"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 4 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191111 20191110"
+	testSpecificBackups $l "20191118 20191111 20191110" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY (3)"
 	d="20191118 20191117 20191116 20191115 20191114 20191113 20191112 20191111 20191110"
 	createSpecificBackups "$d"
 	faketime "2019-11-18" ../raspiBackup.sh --smartRecycleOptions "0 4 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191111 20191110"
+	testSpecificBackups $l "20191118 20191111 20191110" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY (4) + (5)"
 	d="20191118 20191112 20191030"
 	createSpecificBackups "$d"
 	faketime "2019-11-18" ../raspiBackup.sh --smartRecycleOptions "0 4 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191112 20191030"
+	testSpecificBackups $l "20191118 20191112 20191030" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY (4) + (5)"
 	d="20191118 20191112 20191030"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 4 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191112 20191030"
+	testSpecificBackups $l "20191118 20191112 20191030" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY - different weekdays considered"
 	d="20191119 20191115 20191107 20191101 20191026"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 5 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191119 20191115 20191107 20191101 20191026"
+	testSpecificBackups $l "20191119 20191115 20191107 20191101 20191026" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY - different weekdays considered"
 	d="20191118 20191115 20191107 20191101 20191026"
 	createSpecificBackups "$d"
 	faketime "2019-11-18" ../raspiBackup.sh --smartRecycleOptions "0 5 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191115 20191107 20191101 20191026"
+	testSpecificBackups $l "20191118 20191115 20191107 20191101 20191026" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY - different multiple weekdays considered with most current weekday"
 	d="20191118 20191115 20191112 20191111 20191105 20191103 20191030 20191029 20191024 20191021 20191018 20191015 20191012 20191010 20190929 20190925"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 10 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191111 20191105 20191029 20191021 20191015 20191010 20190925"
+	testSpecificBackups $l "20191118 20191111 20191105 20191029 20191021 20191015 20191010 20190925" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === WEEKLY - different multiple weekdays considered with most current weekday"
 	d="20191118 20191115 20191112 20191111 20191105 20191103 20191030 20191029 20191024 20191021 20191018 20191015 20191012 20191010 20190929 20190925"
 	createSpecificBackups "$d"
 	faketime "2019-11-18" ../raspiBackup.sh --smartRecycleOptions "0 10 0 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191118 20191111 20191105 20191029 20191021 20191015 20191010 20190925"
+	testSpecificBackups $l "20191118 20191111 20191105 20191029 20191021 20191015 20191010 20190925" $(wc -w <<< "$d")
 fi
 
 ###
@@ -319,35 +343,35 @@ if (( $MONTHLY )); then
 	d="20191108 20191003 20190903 20190810"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 0 1 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191108"
+	testSpecificBackups $l "20191108" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === MONTHLY (2)"
 	d="20191103 20191003 20190903 20190810"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 0 12 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191103 20191103 20190903 20190810"
+	testSpecificBackups $l "20191103 20191103 20190903 20190810" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === MONTHLY (3)"
 	d="20191108 20191103 20191003 20191020 20190903 20190910 20190810 20190830"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 0 12 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191103 20191003 20190903 20190810"
+	testSpecificBackups $l "20191103 20191003 20190903 20190810" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === MONTHLY (4)"
 	d="20191111 20190903 20190708 20190503"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 0 5 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20191111 20190903 20190708"
+	testSpecificBackups $l "20191111 20190903 20190708" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === MONTHLY (5)"
 	d="20190111 20181203 20181108 20181003"
 	createSpecificBackups "$d"
 	faketime "2019-01-19" ../raspiBackup.sh --smartRecycleOptions "0 0 5 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20190111 20181203 20181108 20181003"
+	testSpecificBackups $l "20190111 20181203 20181108 20181003" $(wc -w <<< "$d")
 fi
 
 ###
@@ -361,28 +385,28 @@ if (( $YEARLY )); then
 	d="20190111 20181203 20171108 20161003"
 	createSpecificBackups "$d"
 	faketime "2019-01-19" ../raspiBackup.sh --smartRecycleOptions "0 0 1 0" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20190111"
+	testSpecificBackups $l "20190111" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === YEARLY (2)"
 	d="20190111 20181203 20171108 20161003"
 	createSpecificBackups "$d"
 	faketime "2019-01-19" ../raspiBackup.sh --smartRecycleOptions "0 0 0 3" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20190111 20181203 20171108"
+	testSpecificBackups $l "20190111 20181203 20171108" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === YEARLY (3)"
 	d="20190111 20181108 20181003"
 	createSpecificBackups "$d"
 	faketime "2019-01-19" ../raspiBackup.sh --smartRecycleOptions "0 0 0 3" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20190111 20181003"
+	testSpecificBackups $l "20190111 20181003" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === YEARLY (4)"
 	d="20190111 20181003 20161203"
 	createSpecificBackups "$d"
 	faketime "2019-01-19" ../raspiBackup.sh --smartRecycleOptions "0 0 0 5" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20190111 20181003 20161203"
+	testSpecificBackups $l "20190111 20181003 20161203" $(wc -w <<< "$d")
 fi
 
 #
@@ -399,7 +423,7 @@ if (( $MASS )); then
 	20191104 20191101 20191028 20191021 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	"
+	" $((365*2))
 
 	l=$LINENO
 	echo "$l === MASS Default var"
@@ -409,7 +433,7 @@ if (( $MASS )); then
 	20191111 20191104 20191101 20191028 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	"
+	" $((365*2))
 
 	l=$LINENO
 	echo "$l === MASS next day on default"
@@ -420,7 +444,7 @@ if (( $MASS )); then
 	20191111 20191104 20191101 20191028 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	"
+	" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === MASS addtl week on default"
@@ -430,7 +454,7 @@ if (( $MASS )); then
 	20191118 20191111 20191104 20191101 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	"
+	" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === MASS addtl month on default"
@@ -439,7 +463,7 @@ if (( $MASS )); then
 	testSpecificBackups $l "20191204 20191203 20191202 20191201 20191130 20191129 20191128 \
 	20191125 20191118 20191111 20191101 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
-	"
+	" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === MASS addtl month on default"
@@ -448,7 +472,7 @@ if (( $MASS )); then
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191201 \
 	20191101 20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 \
-	"
+	" $(wc -w <<< "$d")
 
 fi
 
@@ -465,11 +489,11 @@ if (( $TYPE )); then
 
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
-	" "rsync"
+	" "rsync" $(wc -w <<< "$d")
 
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
-	" "dd"
+	" "dd" $(wc -w <<< "$d")
 
 	l=$LINENO
 	echo "$l === TYPE rsync and dd at different time"
@@ -481,10 +505,10 @@ if (( $TYPE )); then
 
 	testSpecificBackups $l "20191204 20191203 20191202 20191201 20191130 20191129 20191128 \
 	20191125 20191118 20191111 20191104 \
-	" "rsync"
+	" "rsync" $(wc -w <<< "$d")
 
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
-	" "dd"
+	" "dd" $(wc -w <<< "$d")
 
 fi
