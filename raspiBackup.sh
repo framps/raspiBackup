@@ -5628,7 +5628,7 @@ function backup() {
 
 	START_TIME=$(date +%s)
 
-	if (( ! $FAKE_BACKUP )); then
+	if [[ -n $FAKE_BACKUP ]]; then
 		if (( ! $FAKE )); then
 			if (( ! $PARTITIONBASED_BACKUP )); then
 
