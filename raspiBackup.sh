@@ -5101,18 +5101,19 @@ function restore() {
 
 					if (( sourceSDSize != targetSDSize )); then
 
-	## partition table of /dev/mmcblk0
-	#unit: sectors
-
-	#/dev/mmcblk0p1 : start=     8192, size=   114688, Id= c
-	#/dev/mmcblk0p2 : start=   122880, size= 15523840, Id=83
-	#/dev/mmcblk0p3 : start=        0, size=        0, Id= 0
-	#/dev/mmcblk0p4 : start=        0, size=        0, Id= 0
+#						label: dos
+#						label-id: 0x3c3f4bdb
+#						device: /dev/mmcblk0
+#						unit: sectors
+#						sector-size: 512
+#
+#						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
+#						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
 						local sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
 						if [[ ${#sourceValues[@]} != 4 ]]; then
 							logCommand "cat $SF_FILE"
-							assertionFailed $LINENO "Expected 4 partitions in $SF_FILE"
+							assertionFailed $LINENO "Expected at least 2 partitions in $SF_FILE"
 						fi
 
 						# Backup partition has only one partition -> external root partition -> -R has to be specified
@@ -5121,7 +5122,7 @@ function restore() {
 							exitError $RC_MISC_ERROR
 						fi
 
-						local adjustedTargetPartitionBlockSize=$(( $targetSDSize / 512 - ${sourceValues[1]} - ${sourceValues[0]} ))
+						local adjustedTargetPartitionBlockSize=$(( $targetSDSize / 512 - ${sourceValues[1]} - ${sourceValues[0]} - ( ${sourceValues[2]} - ${sourceValues[1]} ) ))
 						logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 						logItem "sourceBlockSize: ${sourceValues[3]} - adjusted targetBlockSize: $adjustedTargetPartitionBlockSize"
 
