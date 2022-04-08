@@ -58,12 +58,12 @@ DIR="7412backups"
 LOG_FILE="$MYNAME.log"
 
 DEBUG=0
-DAILY=1
-WEEKLY=1
-MONTHLY=1
-YEARLY=1
+DAILY=0
+WEEKLY=0
+MONTHLY=0
+YEARLY=0
 MASS=1
-TYPE=1
+TYPE=0
 
 function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmmss] type dont_delete_flag
 
@@ -118,7 +118,7 @@ function createMassBackups() { # startdate count #per_day type dont_delete_flag
 	for i in $(seq 0 $c); do
 
 		local F_D=$(($3-1))
-		for y in $(seq 0 $F_D); do		# added rnd loop to make 1-5 backups each day - warning LOG/CONSOLE SPAM ! call test with echo to file
+		for y in $(seq 0 $F_D); do
 			if (( $3 > 1 )); then # create random times if #per > 1
 				local F_HR=$(shuf -i 0-24 -n 1)
 				local F_MI=$(shuf -i 0-59 -n 1)
@@ -174,7 +174,7 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 	else
 		static="$3"
 	fi
-	
+
 	echo "Testing for type $type and static $static..."
 
 	local f=$(ls $DIR/$(hostname)/ | grep $type | grep -v "_" | wc -l)
@@ -182,15 +182,15 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 
 	if (( f != $n )); then
 		echo "??? Test in line $l: Expected #$n $dtes but found $f backups of type $type"
-		ls -1 "$DIR/$(hostname)"
+		(( $DEBUG )) && s -1 "$DIR/$(hostname)"
 		exit 1
 	fi
 
 	local f=$(ls $DIR/$(hostname)/ | grep $type | grep "_" | wc -l)
-	
+
 	if (( f != $(($static*2)) )); then
-		echo "??? Test in line $l: Expected #$static statics but found $f statics of type $type"
-		ls -1 "$DIR/$(hostname)"
+		echo "??? Test in line $l: Expected #$(($static*2)) statics but found $f statics of type $type"
+		(( $DEBUG )) && ls -1 "$DIR/$(hostname)"
 		exit 1
 	fi
 
@@ -415,15 +415,19 @@ fi
 
 if (( $MASS )); then
 
+	DEBUG=0
+
+	cnt=$((365*2))
+
 	l=$LINENO
 	echo "$l === MASS Default"
-	createMassBackups "2019-11-17" $((365*2)) 1
+	createMassBackups "2019-11-17" $cnt 1
 	faketime "2019-11-17" ../raspiBackup.sh --smartRecycleOptions "7 4 12 1" $raspiOpts  >> $LOG_FILE
 	testSpecificBackups $l "20191117 20191116 20191115 20191114 20191113 20191112 20191111 \
 	20191104 20191101 20191028 20191021 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	" $((365*2))
+	" $((cnt+1))
 
 	l=$LINENO
 	echo "$l === MASS Default var"
@@ -433,7 +437,7 @@ if (( $MASS )); then
 	20191111 20191104 20191101 20191028 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	" $((365*2))
+	" $((cnt+1))
 
 	l=$LINENO
 	echo "$l === MASS next day on default"
@@ -444,7 +448,7 @@ if (( $MASS )); then
 	20191111 20191104 20191101 20191028 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	" $(wc -w <<< "$d")
+	" $((cnt+2))
 
 	l=$LINENO
 	echo "$l === MASS addtl week on default"
@@ -454,7 +458,7 @@ if (( $MASS )); then
 	20191118 20191111 20191104 20191101 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
 	20181201
-	" $(wc -w <<< "$d")
+	" $((cnt+2+7))
 
 	l=$LINENO
 	echo "$l === MASS addtl month on default"
@@ -463,7 +467,7 @@ if (( $MASS )); then
 	testSpecificBackups $l "20191204 20191203 20191202 20191201 20191130 20191129 20191128 \
 	20191125 20191118 20191111 20191101 \
 	20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 20190101 \
-	" $(wc -w <<< "$d")
+	" $((cnt+2+7+7))
 
 	l=$LINENO
 	echo "$l === MASS addtl month on default"
@@ -472,7 +476,7 @@ if (( $MASS )); then
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191201 \
 	20191101 20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 \
-	" $(wc -w <<< "$d")
+	" $((cnt+2+7+35))
 
 fi
 
