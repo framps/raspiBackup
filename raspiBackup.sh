@@ -5658,7 +5658,7 @@ function backup() {
 		fi
 	fi
 	END_TIME=$(date +%s)
-	
+
 	BACKUP_TIME=($(duration $START_TIME $END_TIME))
 	logItem "Backuptime: $BACKUP_TIME"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
@@ -8588,7 +8588,7 @@ while (( "$#" )); do
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
-  	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\:\.\-]/_}
+  	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
   	  ;;
 
 	-n|-n[-+])

@@ -58,12 +58,12 @@ DIR="7412backups"
 LOG_FILE="$MYNAME.log"
 
 DEBUG=0
-DAILY=0
-WEEKLY=0
-MONTHLY=0
-YEARLY=0
+DAILY=1
+WEEKLY=1
+MONTHLY=1
+YEARLY=1
 MASS=1
-TYPE=0
+TYPE=1
 
 function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmmss] type dont_delete_flag
 
@@ -85,9 +85,9 @@ function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmms
 		(( ${#d} <= 8 )) && t="$tc" || t=""
 		local h="$(hostname)/$(hostname)-${type}-backup-"$d$t
 		mkdir -p $DIR/$h
-		h="$(hostname)/$(hostname)-${type}-backup-"${d}-100000_before
+		h="$(hostname)/$(hostname)-${type}-backup-"${d}-100000_before_before
 		mkdir -p $DIR/$h
-		h="$(hostname)/$(hostname)-${type}-backup-"${d}-200000_after
+		h="$(hostname)/$(hostname)-${type}-backup-"${d}-200000_after_after
 		mkdir -p $DIR/$h
 	done
 
@@ -137,9 +137,9 @@ function createMassBackups() { # startdate count #per_day type dont_delete_flag
 				(( $DEBUG )) && echo "Next $TICKS ... $n ..."
 			fi
 			mkdir -p $DIR/$n
-			n="${h}100000_before"
+			n="${h}100000_before_before"
 			mkdir -p $DIR/$n
-			n="${h}200000_after"
+			n="${h}200000_after_after"
 			mkdir -p $DIR/$n
 		done
 	done
