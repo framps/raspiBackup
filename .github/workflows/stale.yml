@@ -28,7 +28,6 @@ jobs:
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
         exempt-issue-labels: 'Feature request,Enhancement,Development'
-        exempt-assignees: 'framps'
         exempt-milestones: true
         exempt-assignees: true
           
