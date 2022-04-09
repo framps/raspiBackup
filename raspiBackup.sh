@@ -5629,7 +5629,7 @@ function backup() {
 
 	START_TIME=$(date +%s)
 
-	if [[ -n $FAKE_BACKUP ]]; then
+	if [[ -z ${FAKE_BACKUP+x} ]]; then
 		if (( ! $FAKE )); then
 			if (( ! $PARTITIONBASED_BACKUP )); then
 
@@ -5658,7 +5658,7 @@ function backup() {
 		fi
 	fi
 	END_TIME=$(date +%s)
-
+	
 	BACKUP_TIME=($(duration $START_TIME $END_TIME))
 	logItem "Backuptime: $BACKUP_TIME"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
