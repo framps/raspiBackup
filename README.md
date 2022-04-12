@@ -28,7 +28,9 @@
     * Finnish
     * Chinese
     * French
-  * More than 270 messages inform about configuration and environment mismatches and runtime errors together with a lot of informational messages.
+    * Many thanks to all the raspiBackup users who translated raspiBackup messages into their native language 👍 
+    * Anybody who is interested to add language support for his native language is invited to read [this page](https://www.linux-tips-and-tricks.de/administrator/index.php?option=com_content&view=article&layout=edit&id=603)
+  * More than 270 messages inform about configuration and environment mismatches and runtime errors
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
 * Servicability
