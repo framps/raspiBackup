@@ -27,8 +27,8 @@
   * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
 * Usability
   * National language support:
-    * English (Default) [framp](https://github.com/framps)
-    * German [framp](https://github.com/framps)
+    * English (Default) ([framp](https://github.com/framps))
+    * German ([framp](https://github.com/framps))
     * Finnish ([teemue](https://github.com/teemue))
     * Chinese ([GoogleBeEvil](https://github.com/GoogleBeEvil))
     * French ([mgrafr](https://github.com/mgrafr))
