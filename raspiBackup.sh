@@ -1790,28 +1790,28 @@ MSG_EXTENSION_CALLED=267
 MSG_EN[$MSG_EXTENSION_CALLED]="RBK0267I: Extension %s called."
 MSG_DE[$MSG_EXTENSION_CALLED]="RBK0267I: Erweiterung %s wird aufgerufen."
 
-MSG_UNSUPPORTED_ENVIRONMENT=267
-MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Only Raspberries running Raspberry PI OS are supported. Use option --unsupportedEnvironment to invoke $MYNAME WITHOUT ANY SUPPORT."
-MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0267E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
-MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=268
-MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@ \
+MSG_UNSUPPORTED_ENVIRONMENT=268
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Only Raspberries running Raspberry PI OS are supported. Use option --unsupportedEnvironment to invoke $MYNAME WITHOUT ANY SUPPORT."
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
+MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=269
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0269W: @@@@@@@@@> NOTE  <@@@@@@@@@ \
 ${NL}!!! RBK0268W: Unsupported environment. $MYNAME may work but there is no support given! \
 ${NL}!!! RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@"
-MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@ \
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0269W: @@@@@@@@@> HINWEIS <@@@@@@@@@ \
 ${NL}!!! RBK0268W: Die Umgebung wird nicht unterstützt. $MYNAME kann korrekt funktionieren aber es wird keine Unterstützung gegeben! \
 ${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
-MSG_REBOOT_SYSTEM=268
-MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0268I: System will be rebooted at the end of the backup run."
-MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0268I: Das System wird am Ende des Backuplaufes neu gestartet."
-MSG_SMART_RECYCLE_WILL_BE_APPLIED=269
-MSG_EN[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0269I: Smart recycle strategy will be applied."
-MSG_DE[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0269I: Wende smarte Backupstrategie an."
 MSG_REBOOT_SYSTEM=270
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0270I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0270I: Das System wird am Ende des Backuplaufes neu gestartet."
-MSG_INVALID_BACKUPNAMES_DETECTED=271
-MSG_EN[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0271E: %s invalid backup directorie(s) found in %s."
-MSG_DE[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0271E: %s ungültige Backupverzeichnis(se) in %s gefunden."
+MSG_SMART_RECYCLE_WILL_BE_APPLIED=271
+MSG_EN[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0271I: Smart recycle strategy will be applied."
+MSG_DE[$MSG_SMART_RECYCLE_WILL_BE_APPLIED]="RBK0271I: Wende smarte Backupstrategie an."
+MSG_REBOOT_SYSTEM=272
+MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0272I: System will be rebooted at the end of the backup run."
+MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0272I: Das System wird am Ende des Backuplaufes neu gestartet."
+MSG_INVALID_BACKUPNAMES_DETECTED=273
+MSG_EN[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s invalid backup directorie(s) found in %s."
+MSG_DE[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s ungültige Backupverzeichnis(se) in %s gefunden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
