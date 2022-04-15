@@ -29,9 +29,9 @@
   * National language support:
     * English (Default)
     * German
-    * Finnish (teemue)
-    * Chinese (GoogleBeEvil)
-    * French (mgrafr)
+    * Finnish ([teemue](https://github.com/teemue))
+    * Chinese ([GoogleBeEvil](https://github.com/GoogleBeEvil))
+    * French ([mgrafr](https://github.com/mgrafr))
     * Many thanks to everybody who translated raspiBackup messages into their native language 👍 
     * Anybody who is interested to add language support for his native language is invited to read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
   * More than 270 messages inform about configuration and environment mismatches and runtime errors
