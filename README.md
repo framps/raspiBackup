@@ -18,7 +18,7 @@
   * Migrate a SD card backup image to an USB device during restore.
 * Backup strategies
   * Number of backup versions to keep is configurable.
-  * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle.
+  * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
 * Linux backup tools used
   * Standard Linux backup tools dd, tar and rsync are available to create a backup.
   * dd and tar are full backups. rsync uses hardlinks for incremental backups.
