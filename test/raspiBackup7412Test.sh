@@ -172,10 +172,11 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 		type="rsync"
 		static="$3"
 	else
-		static="$3"
+		type="$3"
+		static="$4"
 	fi
 
-	echo "Testing for type $type and static $static..."
+	echo "Testing for type $type and static $((2*$static)) ..."
 
 	local f=$(ls $DIR/$(hostname)/ | grep $type | grep -v "_" | wc -l)
 	local n=$(wc -w <<< "$dtes")
@@ -493,26 +494,25 @@ if (( $TYPE )); then
 
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
-	" "rsync" $(wc -w <<< "$d")
+	" "rsync" 31
 
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
-	" "dd" $(wc -w <<< "$d")
+	" "dd" 31
 
 	l=$LINENO
 	echo "$l === TYPE rsync and dd at different time"
 	createMassBackups "2019-12-04" $((30)) 1 "rsync" 1
 	createMassBackups "2020-01-01" $((30)) 1 "dd" 1
-	exit
 	faketime "2019-12-04" ../raspiBackup.sh --smartRecycleOptions "7 4 12 1" $raspiOpts -t "rsync" >> $LOG_FILE
 	faketime "2020-01-01" ../raspiBackup.sh --smartRecycleOptions "7 4 12 1" $raspiOpts -t "dd" >> $LOG_FILE
 
 	testSpecificBackups $l "20191204 20191203 20191202 20191201 20191130 20191129 20191128 \
 	20191125 20191118 20191111 20191104 \
-	" "rsync" $(wc -w <<< "$d")
+	" "rsync" 59
 
 	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
-	" "dd" $(wc -w <<< "$d")
+	" "dd" 31
 
 fi
