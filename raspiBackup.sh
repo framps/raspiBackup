@@ -2011,6 +2011,7 @@ function logFinish() {
 		# 2) fake
 		# 3) backup location was already deleted by SR
 		if [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then			# no -L used
+			logItem "$rc $LOG_OUTPUT $FAKE"
 			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
 				|| (( $FAKE )) \
 				|| [[ ! -e $BACKUPTARGET_DIR ]]; then
