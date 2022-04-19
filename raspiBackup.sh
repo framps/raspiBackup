@@ -2016,6 +2016,7 @@ function logFinish() {
 				|| (( $FAKE )) \
 				|| [[ ! -e $BACKUPTARGET_DIR ]]; then
 				LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
+				logItem "LOG_OUTPUT=$LOG_OUTPUT"
 			fi
 		fi
 
@@ -2880,7 +2881,11 @@ function urlencode() {
             *) printf '%%%02X' "'$c" ;;
         esac
     done
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 9aea6b0651088419f28d77d60c1fb08897eea648
     LC_COLLATE=$old_lc_collate
 }
 
@@ -3659,6 +3664,7 @@ function setupEnvironment() {
 
 		if (( $FAKE )) && [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
+			logItem "LOG_OUTPUT=$LOG_OUTPUT"
 		fi
 	fi
 
@@ -4609,17 +4615,20 @@ function checkImportantParameters() {
 		loa="$(tr '[:lower:]' '[:upper:]'<<< ${LOG_OUTPUT_ARGs[$lo]+abc})"
 		if [[ "$loa" == "ABC" ]]; then
 			LOG_OUTPUT=${LOG_OUTPUT_ARGs[$lo]}
+			logItem "LOG_OUTPUT=$LOG_OUTPUT"
 		fi
 	fi
 
 	if [[ ! "$LOG_OUTPUT" =~ $POSSIBLE_LOG_OUTPUT_NUMBERs ]]; then
 		if [[ ${LOG_OUTPUT:0:1} != "/" ]]; then
 			LOG_OUTPUT="$CURRENT_DIR/$LOG_OUTPUT"
+			logItem "LOG_OUTPUT=$LOG_OUTPUT"
 		fi
 
 		if ! touch "$LOG_OUTPUT" &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_FILE "$LOG_OUTPUT"
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
+			logItem "LOG_OUTPUT=$LOG_OUTPUT"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
