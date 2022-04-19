@@ -2881,11 +2881,7 @@ function urlencode() {
             *) printf '%%%02X' "'$c" ;;
         esac
     done
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 9aea6b0651088419f28d77d60c1fb08897eea648
     LC_COLLATE=$old_lc_collate
 }
 
