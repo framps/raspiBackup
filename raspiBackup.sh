@@ -4264,11 +4264,6 @@ function cleanupStartup() { # trap
 
 	cleanupTempFiles
 
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
-		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
-	fi
-
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
@@ -4276,6 +4271,11 @@ function cleanupStartup() { # trap
 	logFinish
 
 	logExit
+
+	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
+		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
+	fi
 
 	exit $rc
 }
@@ -4327,10 +4327,6 @@ function cleanup() { # trap
 
 	logItem "Terminate now with rc $CLEANUP_RC"
 	(( $CLEANUP_RC == 0 )) && saveVars
-
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
-	fi
 
 	if (( $rc != 0 )); then
 		if (( ! $MAIL_ON_ERROR_ONLY )); then
@@ -4393,11 +4389,6 @@ function cleanup() { # trap
 		fi # ! $RESTORE
 	fi
 
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		logItem "Umount of $DYNAMIC_MOUNT scheduled"
-		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
-	fi
-
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
@@ -4407,6 +4398,11 @@ function cleanup() { # trap
 	unLockMe
 
 	logExit
+
+	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
+		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
+	fi
 
 	exit $rc
 }
