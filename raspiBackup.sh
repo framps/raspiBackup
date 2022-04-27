@@ -379,6 +379,7 @@ RC_RESTORE_EXTENSION_FAILS=133
 RC_BACKUP_EXTENSION_FAILS=134
 RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
+RC_RESTORE_IMPOSSIBLE=137
 
 tty -s
 INTERACTIVE=!$?
@@ -867,11 +868,11 @@ MSG_EN[$MSG_RESTORE_DIRECTORY_INVALID]="RBK0087E: Restore directory %s was not c
 MSG_DE[$MSG_RESTORE_DIRECTORY_INVALID]="RBK0087E: Wiederherstellungsverzeichnis %s wurde nicht von $MYNAME erstellt."
 MSG_FI[$MSG_RESTORE_DIRECTORY_INVALID]="RBK0087E: $MYNAME ei luonut palautushakemistoa %s."
 MSG_FR[$MSG_RESTORE_DIRECTORY_INVALID]="RBK0087E: Le répertoire de restauration %s n'a pas été créé par.$MYNAME."
-MSG_RESTORE_DEVICE_NOT_VALID=88
-MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0088E: -R option not supported for partitionbased backup."
-MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0088E: Option -R wird nicht beim partitionbasierten Backup unterstützt."
-MSG_FI[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0088E: Valintaa -R ei tueta osiopohjaisille varmuuskopioille."
-MSG_FR[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0088E: L'option -R n'est pas prise en charge pour une sauvegarde basée sur une partition."
+MSG_RESTORE_DEVICE_NOT_ALLOWED=88
+MSG_EN[$MSG_RESTORE_DEVICE_NOT_ALLOWED]="RBK0088E: -R option not supported for partitionbased backup."
+MSG_DE[$MSG_RESTORE_DEVICE_NOT_ALLOWED]="RBK0088E: Option -R wird nicht beim partitionbasierten Backup unterstützt."
+MSG_FI[$MSG_RESTORE_DEVICE_NOT_ALLOWED]="RBK0088E: Valintaa -R ei tueta osiopohjaisille varmuuskopioille."
+MSG_FR[$MSG_RESTORE_DEVICE_NOT_ALLOWED]="RBK0088E: L'option -R n'est pas prise en charge pour une sauvegarde basée sur une partition."
 MSG_UNKNOWN_OPTION=89
 MSG_EN[$MSG_UNKNOWN_OPTION]="RBK0089E: Unknown option %s."
 MSG_DE[$MSG_UNKNOWN_OPTION]="RBK0089E: Unbekannte Option %s."
@@ -1812,6 +1813,12 @@ MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0272I: Das System wird am Ende des Backuplaufes n
 MSG_INVALID_BACKUPNAMES_DETECTED=273
 MSG_EN[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s invalid backup directorie(s) found in %s."
 MSG_DE[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s ungültige Backupverzeichnis(se) in %s gefunden."
+MSG_RESTORE_PARTITION_MOUNTED=274
+MSG_EN[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Restore device %s has mounted partitions. Note: Restore to the active system is not possible."
+MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemountete Partitionen. Hinweis: Ein Restore auf das aktive System ist nicht mogöich."
+MSG_RESTORE_DEVICE_NOT_VALID=275
+MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid device."
+MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6806,7 +6813,7 @@ function restorePartitionBasedBackup() {
 		fi
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
 		if [[ -n $ROOT_PARTITION ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_ALLOWED
 			exitError $RC_MISSING_FILES
 		fi
 	fi
@@ -7278,6 +7285,16 @@ function doitRestore() {
 	if [[ ! -d "$RESTOREFILE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_NO_DIRECTORY "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
+	fi
+
+	if mount | grep "^$RESTORE_DEVICE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
+		exitError $RC_RESTORE_IMPOSSIBLE
+	fi
+	
+	if [[ ! -b "$RESTORE_DEVICE" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$RESTORE_DEVICE"
+		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
 
 	logItem "ls $RESTOREFILE$NL$(ls $RESTOREFILE)"
