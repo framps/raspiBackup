@@ -2219,7 +2219,7 @@ function writeToConsole() {  # msglevel messagenumber message
 		fi
 	fi
 
-	if (( ! $INTERACTIVE )); then # don't write message twice into log
+	if (( ! $INTERACTIVE || $RESTORE )); then # don't write message twice into log for backup but once for restore
 		local line
 		while IFS= read -r line; do
 			logIntoOutput $LOG_TYPE_MSG "$line"
