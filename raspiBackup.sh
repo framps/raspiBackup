@@ -2252,10 +2252,10 @@ function isSupportedEnvironment() {
 	logItem "Architecture: $ARCH"
 
 	if [[ "$ARCH" == "armhf" ]]; then
-		grep -q -E -i "NAME=.*raspbian" $OSRELEASE
+		grep -q -E -i "^(NAME|ID)=.*raspbian" $OSRELEASE
 		return
 	elif [[ "$ARCH" == "arm64" ]]; then
-		grep -q -E -i "NAME=.*debian" $OSRELEASE
+		grep -q -E -i "^(NAME|ID)=.*debian" $OSRELEASE
 		return
 	fi
 
