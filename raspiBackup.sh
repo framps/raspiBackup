@@ -4092,6 +4092,77 @@ function cleanupBackupDirectory() {
 	logExit
 }
 
+function onlineVersions() {
+
+	local MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
+	local MYHOMEURL="https://$MYHOMEDOMAIN"
+	local DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-sh/download"
+	local BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta-sh/download"
+	local INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-sh/download"
+	local INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-beta-sh/download"
+	local PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
+	local CONF_DE_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-de-conf/download"
+	local CONF_EN_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-en-conf/download"
+
+	local DOWNLOAD_TIMEOUT=60 # seconds
+	local DOWNLOAD_RETRIES=3
+
+	local SHA="JFNoYTE6Cg=="
+	local DATE="JERhdGU6Cg=="
+
+	SHA="$(base64 -d <<< "$SHA")"
+	DATE="$(base64 -d <<< "$DATE")"
+
+	onlineVersion "raspiBackup" $DOWNLOAD_URL
+	onlineVersion "raspiBackup_beta" $BETA_DOWNLOAD_URL
+	onlineVersion "raspiBackupInstallUI" $INSTALLER_DOWNLOAD_URL
+	onlineVersion "raspiBackupInstallUI_beta" $INSTALLER_BETA_DOWNLOAD_URL
+	onlineVersion "raspiBackup0613.properties" $PROPERTIES_DOWNLOAD_URL
+	onlineVersion "raspiBackup_de.conf" $CONF_DE_DOWNLOAD_URL
+	onlineVersion "raspiBackup_en.conf" $CONF_EN_DOWNLOAD_URL
+
+}
+
+function onlineVersion() {
+
+	tmp=$(mktemp)
+	wget $2 -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmp
+
+	# GIT_COMMIT="$Sha1$"
+	sha="$(grep "^GIT_COMMIT=" "$tmp" | cut -f 2 -d ' '| sed  -e "s/[\$\"]//g")"
+	if [[ -z "$sha" ]]; then
+		sha="$(grep "GIT_COMMIT=" "$tmp" | cut -f 3-4 -d ' ' )"
+	fi
+	if [[ -z "$sha" ]]; then
+		sha="$(grep "$SHA" $tmp | cut -f 3-4 -d ' ' )"
+	fi
+
+	sha="$(sed  -e "s/[\$\"]//g" <<< "$sha")"
+
+	# VERSION="0.6.5-beta"	# -beta, -hotfix or -dev suffixes possible
+	version="$(grep -e "^VERSION=" "$tmp" | cut -f 2 -d = | sed  -e "s/\"//g" -e "s/[[:space:]]*#.*//")"
+	if [[ -z "$version" ]]; then
+		version="$(grep -e "^VERSION_CONFIG=" "$tmp" | cut -f 2 -d = | sed  -e "s/\"//g" -e "s/[[:space:]]*#.*//")"
+	fi
+
+	# GIT_DATE="$Date$"
+	date="$(grep "^GIT_DATE=" "$tmp" | cut -f 2-3 -d ' ' )"
+	if [[ -z "$date" ]]; then
+		date="$(grep "GIT_DATE=" "$tmp" | cut -f 3-4 -d ' ' )"
+	fi
+	if [[ -z "$date" ]]; then
+		date="$(grep "$DATE" $tmp | cut -f 3-4 -d ' ' )"
+	fi
+
+	[[ -z "$version" ]] && version="N/A"
+	[[ -z "$sha" ]] && sha="N/A"
+	[[ -z "$date" ]] && date="N/A"
+
+
+	printf "%-30s: Version: %-10s Date: %-20s Sha: %-10s\n" "$1" "$version" "$date" "$sha"
+	rm $tmp
+}
+
 # return text masqueraded
 #
 # Algorithm:
@@ -8351,6 +8422,7 @@ FORCE_UPDATE=0
 HELP=0
 INCLUDE_ONLY=0
 NO_YES_QUESTION=0
+ONLINE_VERSIONS=0
 PROGRESS=0
 REGRESSION_TEST=0
 RESTORE=0
@@ -8366,7 +8438,7 @@ VERSION_DEPRECATED=0
 WARNING_MESSAGE_WRITTEN=0
 CLEANUP_RC=0
 UPDATE_CONFIG=0
-UNSUPPORTED_ENVIRONMENT=0
+UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
 
 PARAMS=""
 
@@ -8655,6 +8727,10 @@ while (( "$#" )); do
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
+	--onlineVersions)
+	  ONLINE_VERSIONS=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
 	-p)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
@@ -8895,6 +8971,11 @@ if (( $UPDATE_MYSELF )); then
 	downloadPropertiesFile FORCE
 	updateScript
 	updateConfig
+	exitNormal
+fi
+
+if (( $ONLINE_VERSIONS )); then
+	onlineVersions
 	exitNormal
 fi
 
