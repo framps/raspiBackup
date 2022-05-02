@@ -136,7 +136,6 @@ CALLING_HOME="$(eval echo "~${CALLING_USER}")"
 
 PROPERTY_FILE="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
-LOCAL_PROPERTY_FILE="$CALLING_HOME/.$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 VARS_FILE="/tmp/$MYNAME.vars"
@@ -2946,41 +2945,39 @@ function isUpdatePossible() {
 
 function downloadPropertiesFile() { # FORCE
 
-	logEntry
+	logEntry "$1"
 
-	if existsLocalPropertiesFile; then
-		logItem "Using local property file $LOCAL_PROPERTY_FILE"
-		parsePropertiesFile "$LOCAL_PROPERTY_FILE"
-		NEW_PROPERTIES_FILE=1
+	NEW_PROPERTIES_FILE=0
 
-	else
+	if shouldRenewDownloadPropertiesFile "$1"  && (( ! $REGRESSION_TEST )); then # don't execute any update checks in regression test
 
-		NEW_PROPERTIES_FILE=0
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_FOR_NEW_VERSION
 
-		if shouldRenewDownloadPropertiesFile "$1"  && (( ! $REGRESSION_TEST )); then # don't execute any update checks in regression test
-
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_FOR_NEW_VERSION
-
-			if (( $DEFAULT_SEND_STATS )); then
-				local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
-				local type=$BACKUPTYPE
-				local keep=$KEEPBACKUPS
-				local func="B"; (( $RESTORE )) && func="R"
-				local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
-				local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
-				local downloadURL="${PROPERTY_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
-			else
-				local downloadURL="$PROPERTY_URL"
-			fi
-
-			if ! downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE"; then
-				exitError $RC_DOWNLOAD_FAILED
-			fi
-			NEW_PROPERTIES_FILE=1
+		if (( $DEFAULT_SEND_STATS )); then
+			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
+			local type=$BACKUPTYPE
+			local keep=$KEEPBACKUPS
+			local func="B"; (( $RESTORE )) && func="R"
+			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
+			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
+			local downloadURL="${PROPERTY_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
+		else
+			local downloadURL="$PROPERTY_URL"
 		fi
 
-		parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
-
+		local dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
+		local dlRC=$?
+		if (( $dlRC != 0 )); then
+			if [[ $1 == "FORCE" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
+				exitError $RC_DOWNLOAD_FAILED
+			else
+				: # silently ignore download error or property file
+			fi
+		else
+			NEW_PROPERTIES_FILE=1
+			parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
+		fi
 	fi
 
 	logExit "$NEW_PROPERTIES_FILE"
@@ -3084,27 +3081,29 @@ function verifyIsOnOff() { # arg
 }
 
 function downloadFile() { # url, targetFileName
-		logEntry "URL: $1, file: $2"
+		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
 		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
 		local rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
+
 		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$url" "$httpCode" $rc
+			(( $rc == 0 )) && rc=100
+		elif head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
+			httpCode="404"
+			rc=101
+		fi
+		if (( $rc != 0 )); then
 			rm $f &>>$LOG_FILE
-			logExit $httpCode
-			return $httpCode
+			echo "$httpCode"
+			logExit "$rc $httpCode"
+			return $rc
 		fi
 
-		if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$url" "404" 0
-			rm $f &>>$LOG_FILE
-			logExit 404
-			return 404
-		fi
 		mv $f $file &>>$LOG_FILE
+		echo "200"
 		logExit 0
 		return 0
 }
@@ -3360,7 +3359,10 @@ function updateScript() {
 			local file="${MYSELF}"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
 
-			if ! downloadFile "$DOWNLOAD_URL" "${MYSELF}~"; then
+			local dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${MYSELF}~")"
+			local dlRC=$?
+			if (( $dlRC != 0 )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$$DOWNLOAD_URL" "$dlHttpCode" $dlRC
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 				exitError $RC_DOWNLOAD_FAILED
 			fi
@@ -3483,10 +3485,6 @@ function isMounted() { # dir
 	fi
 	logExit "$rc"
 	return $rc
-}
-
-function existsLocalPropertiesFile() {
-	[[ -e "$LOCAL_PROPERTY_FILE" ]]
 }
 
 function getFsType() { # file or path
@@ -7291,7 +7289,7 @@ function doitRestore() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
 		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
-	
+
 	if [[ ! -b "$RESTORE_DEVICE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$RESTORE_DEVICE"
 		exitError $RC_RESTORE_IMPOSSIBLE
@@ -7640,8 +7638,10 @@ function updateConfig() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 		fi
 
-		if ! downloadFile "$DL_URL" "$NEW_CONFIG"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$httpCode" $rc
+		local dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
+		local dlRC=$?
+		if (( $dlRC != 0 )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
 			exitError $RC_DOWNLOAD_FAILED
 		fi
 
