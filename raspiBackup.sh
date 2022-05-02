@@ -2246,6 +2246,7 @@ function isSupportedEnvironment() {
 
 #	OS was built for a Raspberry
 	[[ ! -e $RPI_ISSUE ]] && return 1
+	logItem "$RPI_ISSUE: $(cat $RPI_ISSUE)"
 
 : <<SKIP
 	[[ ! -e $OSRELEASE ]] && return 1
@@ -2263,7 +2264,7 @@ function isSupportedEnvironment() {
 	fi
 SKIP
 
-	return 1
+	return 0
 }
 
 # Create a backupfile FILE.bak from FILE. If this file already exists rename this file to FILE.n.bak when n is next backup number
