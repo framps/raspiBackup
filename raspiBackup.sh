@@ -124,8 +124,12 @@ if [[ -n $URLTARGET ]]; then
 fi
 DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
 BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
-PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
 CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-sh/download"
+INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-beta-sh/download"
+PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
+CONF_DE_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-de-conf/download"
+CONF_EN_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-en-conf/download"
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
@@ -1794,12 +1798,14 @@ MSG_UNSUPPORTED_ENVIRONMENT=268
 MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Only Raspberries running Raspberry PI OS are supported. Use option --unsupportedEnvironment to invoke $MYNAME WITHOUT ANY SUPPORT."
 MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
 MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=269
-MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0269W: @@@@@@@@@> NOTE  <@@@@@@@@@ \
-${NL}!!! RBK0268W: Unsupported environment. $MYNAME may work but there is no support given! \
-${NL}!!! RBK0268W: @@@@@@@@@> NOTE  <@@@@@@@@@"
-MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="RBK0269W: @@@@@@@@@> HINWEIS <@@@@@@@@@ \
-${NL}!!! RBK0268W: Die Umgebung wird nicht unterstützt. $MYNAME kann korrekt funktionieren aber es wird keine Unterstützung gegeben! \
-${NL}!!! RBK0268W: @@@@@@@@@> HINWEIS <@@@@@@@@@"
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="\
+RBK0269W: @@@@@@@@@@@@> NOTE <@@@@@@@@@@@${NL}\
+!!! RBK0268W: @@@ Unsupported environment @@@${NL}\
+!!! RBK0269W: @@@@@@@@@@@@> NOTE <@@@@@@@@@@@${NL}"
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="\
+RBK0269W: @@@@@@@@@@@@> HINWEIS <@@@@@@@@@@@@${NL}\
+!!! RBK0268W: @@@ Nicht unterstützte Umgebung @@@${NL}\
+!!! RBK0269W: @@@@@@@@@@@@@> HINWEIS <@@@@@@@@@@@${NL}"
 MSG_REBOOT_SYSTEM=270
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0270I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0270I: Das System wird am Ende des Backuplaufes neu gestartet."
@@ -2960,9 +2966,9 @@ function downloadPropertiesFile() { # FORCE
 			local func="B"; (( $RESTORE )) && func="R"
 			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
-			local downloadURL="${PROPERTY_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
+			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
 		else
-			local downloadURL="$PROPERTY_URL"
+			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
 		fi
 
 		local dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
@@ -4090,77 +4096,6 @@ function cleanupBackupDirectory() {
 	fi
 
 	logExit
-}
-
-function onlineVersions() {
-
-	local MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
-	local MYHOMEURL="https://$MYHOMEDOMAIN"
-	local DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-sh/download"
-	local BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta-sh/download"
-	local INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-sh/download"
-	local INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-beta-sh/download"
-	local PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
-	local CONF_DE_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-de-conf/download"
-	local CONF_EN_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-en-conf/download"
-
-	local DOWNLOAD_TIMEOUT=60 # seconds
-	local DOWNLOAD_RETRIES=3
-
-	local SHA="JFNoYTE6Cg=="
-	local DATE="JERhdGU6Cg=="
-
-	SHA="$(base64 -d <<< "$SHA")"
-	DATE="$(base64 -d <<< "$DATE")"
-
-	onlineVersion "raspiBackup" $DOWNLOAD_URL
-	onlineVersion "raspiBackup_beta" $BETA_DOWNLOAD_URL
-	onlineVersion "raspiBackupInstallUI" $INSTALLER_DOWNLOAD_URL
-	onlineVersion "raspiBackupInstallUI_beta" $INSTALLER_BETA_DOWNLOAD_URL
-	onlineVersion "raspiBackup0613.properties" $PROPERTIES_DOWNLOAD_URL
-	onlineVersion "raspiBackup_de.conf" $CONF_DE_DOWNLOAD_URL
-	onlineVersion "raspiBackup_en.conf" $CONF_EN_DOWNLOAD_URL
-
-}
-
-function onlineVersion() {
-
-	tmp=$(mktemp)
-	wget $2 -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmp
-
-	# GIT_COMMIT="$Sha1$"
-	sha="$(grep "^GIT_COMMIT=" "$tmp" | cut -f 2 -d ' '| sed  -e "s/[\$\"]//g")"
-	if [[ -z "$sha" ]]; then
-		sha="$(grep "GIT_COMMIT=" "$tmp" | cut -f 3-4 -d ' ' )"
-	fi
-	if [[ -z "$sha" ]]; then
-		sha="$(grep "$SHA" $tmp | cut -f 3-4 -d ' ' )"
-	fi
-
-	sha="$(sed  -e "s/[\$\"]//g" <<< "$sha")"
-
-	# VERSION="0.6.5-beta"	# -beta, -hotfix or -dev suffixes possible
-	version="$(grep -e "^VERSION=" "$tmp" | cut -f 2 -d = | sed  -e "s/\"//g" -e "s/[[:space:]]*#.*//")"
-	if [[ -z "$version" ]]; then
-		version="$(grep -e "^VERSION_CONFIG=" "$tmp" | cut -f 2 -d = | sed  -e "s/\"//g" -e "s/[[:space:]]*#.*//")"
-	fi
-
-	# GIT_DATE="$Date$"
-	date="$(grep "^GIT_DATE=" "$tmp" | cut -f 2-3 -d ' ' )"
-	if [[ -z "$date" ]]; then
-		date="$(grep "GIT_DATE=" "$tmp" | cut -f 3-4 -d ' ' )"
-	fi
-	if [[ -z "$date" ]]; then
-		date="$(grep "$DATE" $tmp | cut -f 3-4 -d ' ' )"
-	fi
-
-	[[ -z "$version" ]] && version="N/A"
-	[[ -z "$sha" ]] && sha="N/A"
-	[[ -z "$date" ]] && date="N/A"
-
-
-	printf "%-30s: Version: %-10s Date: %-20s Sha: %-10s\n" "$1" "$version" "$date" "$sha"
-	rm $tmp
 }
 
 # return text masqueraded
@@ -8727,10 +8662,6 @@ while (( "$#" )); do
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
-	--onlineVersions)
-	  ONLINE_VERSIONS=$(getEnableDisableOption "$1"); shift 1
-	  ;;
-
 	-p)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
@@ -8844,7 +8775,7 @@ while (( "$#" )); do
 	  UPDATE_MYSELF=1; shift 1
 	  ;;
 
-	--unsupportedEnvironment)
+	--unsupportedEnvironment|--use)
 	  UNSUPPORTED_ENVIRONMENT=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
