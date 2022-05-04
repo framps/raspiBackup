@@ -6511,7 +6511,7 @@ function doitBackup() {
 	if (( $LINK_BOOTPARTITIONFILES )) &&  [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" ]] && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
 		touch $BACKUPPATH/47.$$
 		cp -l $BACKUPPATH/47.$$ $BACKUPPATH/11.$$ &>/dev/null
-		rc=$?
+		local rc=$?
 		rm $BACKUPPATH/47.$$ &>/dev/null
 		rm $BACKUPPATH/11.$$ &>/dev/null
 		if [[ $rc != 0 ]]; then
