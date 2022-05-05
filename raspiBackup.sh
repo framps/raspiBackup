@@ -2244,12 +2244,16 @@ function isSupportedEnvironment() {
 	local OSRELEASE=/etc/os-release
 	local RPI_ISSUE=/etc/rpi-issue
 
+#	Check it's Raspberry HW
 	[[ ! -e $MODELPATH ]] && return 1
 	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
+#	OS was built for a Raspberry
 	[[ ! -e $RPI_ISSUE ]] && return 1
+	logItem "$RPI_ISSUE: $(cat $RPI_ISSUE)"
 
+: <<SKIP
 	[[ ! -e $OSRELEASE ]] && return 1
 	logCommand "cat $OSRELEASE"
 
@@ -2257,14 +2261,15 @@ function isSupportedEnvironment() {
 	logItem "Architecture: $ARCH"
 
 	if [[ "$ARCH" == "armhf" ]]; then
-		grep -q -E -i "NAME=.*raspbian" $OSRELEASE
+		grep -q -E -i "^(NAME|ID)=.*(raspbian|debian)" $OSRELEASE
 		return
 	elif [[ "$ARCH" == "arm64" ]]; then
-		grep -q -E -i "NAME=.*debian" $OSRELEASE
+		grep -q -E -i "^(NAME|ID)=.*debian" $OSRELEASE
 		return
 	fi
+SKIP
 
-	return 1
+	return 0
 }
 
 # Create a backupfile FILE.bak from FILE. If this file already exists rename this file to FILE.n.bak when n is next backup number
