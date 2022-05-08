@@ -4292,7 +4292,7 @@ function unattendedInstall() {
 		if (( MODE_EXTENSIONS )); then
 			extensions_install_execute
 		fi
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTALLATION_FINISHED
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTALLATION_FINISHED $RASPIBACKUP_NAME
 	elif (( MODE_UPDATE )); then
 		update_installer_execute
 	elif (( MODE_EXTENSIONS )); then
