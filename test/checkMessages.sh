@@ -23,41 +23,63 @@
 #
 #######################################################################################################################
 
-errors=0
+error=0
 
 echo "Searching for message constants not used..."
 
-grep -E '^MSG_.*=[[:digit:]]+' ../raspiBackup.sh > messages.dat
-echo "" > msg.dat
+messagesFile=$(mktemp)
+msgFile=$(mktemp)
+
+messages=0
+notUsed=0
+notDefined=0
+
+# collect all messageids
+grep -E '^MSG_.*=[[:digit:]]+' ../raspiBackup.sh > $messagesFile
+echo "" > $msgFile
 
 while read line; do
    msg=$(cut -f 1 -d '=' <<< $line)
-   echo $msg >> msg.dat
-done < messages.dat
+   echo $msg >> $msgFile
+   ((messages++))
+done < $messagesFile
 
+echo "Messages defined: $messages "
+
+# check if messageid is used
+echo "Searching for messages not used..."
 while read line; do
    cnt=$(grep -c "[^\[]\$$line" ../raspiBackup.sh)
    if [[ $cnt == 0 ]]; then
 		if [[ $line != "MSG_UNDEFINED" ]];then
 			echo "Not used: $line"
+			((notUsed++))
 			error=1
 		fi
    fi
-done < msg.dat
+done < $msgFile
 
 echo "Searching for messages not defined..."
 
-grep -E 'writeToConsole.+MSG_.*' ../raspiBackup.sh | awk '{ print $3;}' | grep "MSG_" | sed 's/\$//' > messages.dat
+grep -E 'writeToConsole.+MSG_.*' ../raspiBackup.sh | awk '{ print $3;}' | grep "MSG_" | sed 's/\$//' > $messagesFile
 
 while read line; do
-   cnt=$(grep -c "$line" msg.dat)
+   cnt=$(grep -c "$line" $msgFile)
    if [[ $cnt == 0 ]]; then
    	echo "Not defined: $line"
+	((notDefined++))
    	error=1
    fi
-done < messages.dat
+done < $messagesFile
 
-rm msg.dat
-rm messages.dat
+rm $msgFile
+rm $messagesFile
+
+if (( $notUsed > 0)); then
+	echo "Unused messageids: $notUsed"
+fi
+if (( $notDefined > 0)); then
+	echo "Undefined messageids: $notDefined"
+fi
 
 exit $error

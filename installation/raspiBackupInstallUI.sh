@@ -363,7 +363,6 @@ MSG_FI[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Tarkistetaan verkkoyhte
 MSG_FR[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Vérification de la connexion Internet."
 MSG_ZH[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: 检查网络连接."
 
-
 MSG_SAMPLEEXTENSION_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Sample extension uninstall failed. %1"
 MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Beispielserweiterungsdeinstallation fehlgeschlagen. %1"
@@ -4280,6 +4279,12 @@ function unattendedInstall() {
 
 	logEntry
 
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECK_INTERNET_CONNECTION
+	isInternetAvailable
+	if (( $? != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_INTERNET_CONNECTION_FOUND
+		exit
+	fi
 	if (( MODE_INSTALL )); then
 		code_download_execute
 		config_download_execute
@@ -4287,6 +4292,7 @@ function unattendedInstall() {
 		if (( MODE_EXTENSIONS )); then
 			extensions_install_execute
 		fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTALLATION_FINISHED
 	elif (( MODE_UPDATE )); then
 		update_installer_execute
 	elif (( MODE_EXTENSIONS )); then

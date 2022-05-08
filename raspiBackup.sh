@@ -1799,13 +1799,13 @@ MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Only Raspberries running Raspber
 MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
 MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=269
 MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="\
-RBK0269W: @@@@@@@@@@@@> NOTE <@@@@@@@@@@@${NL}\
+RBK0269W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${NL}\
 !!! RBK0268W: @@@ Unsupported environment @@@${NL}\
-!!! RBK0269W: @@@@@@@@@@@@> NOTE <@@@@@@@@@@@${NL}"
+!!! RBK0269W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${NL}"
 MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="\
-RBK0269W: @@@@@@@@@@@@> HINWEIS <@@@@@@@@@@@@${NL}\
+RBK0269W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${NL}\
 !!! RBK0268W: @@@ Nicht unterstützte Umgebung @@@${NL}\
-!!! RBK0269W: @@@@@@@@@@@@@> HINWEIS <@@@@@@@@@@@${NL}"
+!!! RBK0269W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${NL}"
 MSG_REBOOT_SYSTEM=270
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0270I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0270I: Das System wird am Ende des Backuplaufes neu gestartet."
