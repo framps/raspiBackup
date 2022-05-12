@@ -3653,7 +3653,7 @@ function setupEnvironment() {
 
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
-		if [ ! -d "${BACKUPTARGET_DIR}" ] && (( ! $FAKE )); then
+		if [ ! -d "${BACKUPTARGET_DIR}" ] && (( ! $FAKE )) && (( ! $SMART_RECYCLE_DRYRUN )); then
 			if ! mkdir -p "${BACKUPTARGET_DIR}"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPTARGET_DIR}"
 				exitError $RC_CREATE_ERROR
