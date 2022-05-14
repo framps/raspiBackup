@@ -38,43 +38,26 @@ include $(CURRENT_DIR)/$(MAKEFILE).env
 # 2) LOCAL_REPO - local shadow repo
 # 3) MASTER_BRANCH - should be master
 # 4) BETA_BRANCH - should be beta
-# 5) DEPLOYMENT_LOCATION - directory the code is deployed
+# 5) BUILD_LOCATION - local directory the code is build
+# 6) DEPLOYMENT_LOCATION - directory the code is deployed
 
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-deploy: ## Deploy raspiBackup
+build: ## Build master raspiBackup
 
-	@echo "*** Deploying $(MASTER_BRANCH) ***"
-	
-	@rm $(DEPLOYMENT_LOCATION)/*
-	@$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm -f $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
+	@echo "*** Building $(MASTER_BRANCH) ***"
 
-	@git checkout -f $(MASTER_BRANCH)
+	@rm $(BUILD_LOCATION)/*
 
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Build $(file) "; cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
 	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar --owner=root --group =root -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
-	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+	@$(foreach file, $(PACKAGE_FILES), echo "Building $(file) "; cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
 
-deployBeta: ## Deploy raspiBackup beta
-
-	@echo "*** Deploying $(BETA_BRANCH) ***"
-
-	@$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm -f $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
-
-	@git checkout -f $(BETA_BRANCH)
-
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
-	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar --owner=root --group=root -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
-	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
-
-	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
+deploy: # Deploy build
+	@$(foreach file, $(wildcard $(BUILD_LOCATION)/*), echo "Deploy $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 
 syncLocal: ## Sync github with local shadow git
 	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
