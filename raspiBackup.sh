@@ -6548,8 +6548,9 @@ function doitBackup() {
 		 fi
 	fi
 
-	logCommand "ls -1 ${BACKUPPATH} | egrep -Ev \"$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}\""
+	logCommand "ls -1 ${BACKUPPATH}"
 	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" |wc -l)
+	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_INVALID_BACKUPNAMES_DETECTED $nonRaspiGeneratedDirs $BACKUPPATH
