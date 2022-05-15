@@ -6555,7 +6555,7 @@ function doitBackup() {
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_INVALID_BACKUPNAMES_DETECTED $nonRaspiGeneratedDirs $BACKUPPATH
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BACKUPNAMES_DETECTED $nonRaspiGeneratedDirs $BACKUPPATH
 		exitError $RC_BACKUP_DIRNAME_ERROR
 	fi
 
