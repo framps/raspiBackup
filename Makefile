@@ -6,7 +6,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2021-2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -44,15 +44,15 @@ include $(CURRENT_DIR)/$(MAKEFILE).env
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-build: ## Build master raspiBackup
+build: ## Build raspiBackup
    
-   ifndef BUILD_LOCATION
-      $(error BUILD_LOCATION is not set)
-   endif
+        ifndef BUILD_LOCATION
+           $(error BUILD_LOCATION is not set)
+        endif
 
-   ifndef BRANCH
-      $(error BRANCH is not set)
-   endif
+        ifndef BRANCH
+           $(error BRANCH is not set)
+        endif
 
 	@echo "*** Building $(BRANCH) in $(BUILD_LOCATION) ***"
 
@@ -69,7 +69,7 @@ build: ## Build master raspiBackup
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
 
-deploy: # Deploy build
+deploy: ## Deploy build
 
 	ifndef DEPLOYMENT_LOCATION
 		$(error DEPLOYMENT_LOCATION is not set)
