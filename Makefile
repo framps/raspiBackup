@@ -38,25 +38,49 @@ include $(CURRENT_DIR)/$(MAKEFILE).env
 # 2) LOCAL_REPO - local shadow repo
 # 3) MASTER_BRANCH - should be master
 # 4) BETA_BRANCH - should be beta
-# 5) BUILD_LOCATION - local directory the code is build
+# 5) BUILD_LOCATION - local directory the code is built
 # 6) DEPLOYMENT_LOCATION - directory the code is deployed
 
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 build: ## Build master raspiBackup
+   
+   ifndef BUILD_LOCATION
+      $(error BUILD_LOCATION is not set)
+   endif
 
-	@echo "*** Building $(MASTER_BRANCH) ***"
+   ifndef BRANCH
+      $(error BRANCH is not set)
+   endif
 
-	@rm $(BUILD_LOCATION)/*
+	@echo "*** Building $(BRANCH) in $(BUILD_LOCATION) ***"
 
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Build $(file) "; cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
+	@$(foreach file, $(PACKAGE_FILES), rm -f $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), rm -f $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), rm -f $(file);)
+
+	@git checkout -f $(BRANCH)
+
+	@rm -f $(BUILD_LOCATION)/*
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
 	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar --owner=root --group =root -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
-	@$(foreach file, $(PACKAGE_FILES), echo "Building $(file) "; cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
+	@$(foreach file, $(PACKAGE_FILES), cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
 
 deploy: # Deploy build
+
+	ifndef DEPLOYMENT_LOCATION
+		$(error DEPLOYMENT_LOCATION is not set)
+	endif
+
+	ifndef BRANCH
+		$(error BRANCH is not set)
+	endif
+
+	@echo "*** Deploying $(BRANCH) in $(DEPLOYMENT_LOCATION) ***"
+
 	@$(foreach file, $(wildcard $(BUILD_LOCATION)/*), echo "Deploy $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 
 syncLocal: ## Sync github with local shadow git
