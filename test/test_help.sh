@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo ./raspiBackup.sh --help
+sudo ../raspiBackup.sh --help

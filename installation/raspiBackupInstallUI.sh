@@ -36,9 +36,9 @@ if [ -z "$BASH_VERSION" ] ;then
 	exit 127
 fi
 
-MYSELF=${0##*/}
+MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.3.6"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.4"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -92,7 +92,6 @@ RASPIBACKUP_INSTALL_DEBUG=0 # just disable some code for debugging
 CURRENT_DIR=$(pwd)
 NL=$'\n'
 IGNORE_START_STOP_CHAR=":"
-FILE_TO_INSTALL_BETA="raspiBackup_beta.sh"
 declare -A CONFIG_DOWNLOAD_FILE=(['DE']="raspiBackup_de.conf" ['EN']="raspiBackup_en.conf")
 CONFIG_FILE="raspiBackup.conf"
 SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
@@ -109,12 +108,14 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
-PROPERTY_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta-sh/download"
+[[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
+
+PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
+BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-sh/download"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackupInstallUI.sh/download"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
 DOWNLOAD_TIMEOUT=60 # seconds
@@ -361,7 +362,6 @@ MSG_DE[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Teste Internetverbindun
 MSG_FI[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Tarkistetaan verkkoyhteyttä."
 MSG_FR[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Vérification de la connexion Internet."
 MSG_ZH[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: 检查网络连接."
-
 
 MSG_SAMPLEEXTENSION_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Sample extension uninstall failed. %1"
@@ -1062,6 +1062,10 @@ MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用
 4) 在 $MYHOMEDOMAIN$上关于$RASPIBACKUP_NAME的页面留言评论{NL}\
 5) 访问$RASPIBACKUP_NAME 的Facebook页面"
 
+MSG_FIRST_PARTITIONS_NOT_SELECTED=$((SCNT++))
+MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions have to be selected."
+MSG_DE[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Wenigstens die beiden ersten Partitionen müssen ausgewählt sein."
+
 declare -A MENU_EN
 declare -A MENU_DE
 declare -A MENU_FI
@@ -1529,6 +1533,13 @@ function logItem() { # message
 	log "$@"
 }
 
+function downloadURL() { # fileName
+	logEntry "$1"
+	local u="$MYHOMEURL/downloads$URLTARGET/$1/download"
+	echo "$u"
+	logExit "$u"
+}
+
 function isInternetAvailable() {
 
 	logEntry
@@ -1640,15 +1651,9 @@ function code_download_execute() {
 		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 	fi
 
-	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
-	local rc=$?
-	if (( $rc )); then
-		unrecoverableError $MSG_NO_INTERNET_CONNECTION_FOUND "$rc"
-		logExit
-		return
-	fi
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
+	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
 		logExit
 		return
 	fi
@@ -1723,9 +1728,10 @@ function update_script_execute() {
 		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
 	fi
 
-	httpCode=$(curl -s -o "/tmp/$FILE_TO_INSTALL" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$FILE_TO_INSTALL" 2>>"$LOG_FILE")
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$FILE_TO_INSTALL" "$httpCode"
+	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")"  "/tmp/$FILE_TO_INSTALL" )"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
+		logExit
 		return
 	fi
 
@@ -1745,15 +1751,39 @@ function update_script_execute() {
 
 }
 
+function downloadFile() { # url, targetFileName
+		logEntry "URL: $1, file: $2"
+		local url="$1"
+		local file="$2"
+		local f=$(mktemp)
+		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		local rc=$?
+		logItem "httpCode: $httpCode RC: $rc"
+		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
+			rm $f &>>$LOG_FILE
+			logExit $httpCode
+			return $httpCode
+		fi
+
+		if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
+			rm $f &>>$LOG_FILE
+			logExit 404
+			return 404
+		fi
+		mv $f $file &>>$LOG_FILE
+		logExit 0
+		return 0
+}
+
 function update_installer_execute() {
 
 	logEntry
 
 	local newName
 
-	httpCode=$(curl -s -o "/tmp/$MYSELF" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$INSTALLER_DOWNLOAD_URL" 2>>"$LOG_FILE")
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$MYSELF" "$httpCode"
+	local httpCode="$(downloadFile "$(downloadURL "$MYSELF")" "/tmp/$MYSELF")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$MYSELF")" "$httpCode"
 		return
 	fi
 
@@ -1804,11 +1834,9 @@ function config_download_execute() {
 		;;
 	esac
 
-	logItem "Downloading $confFile"
-
-	httpCode=$(curl -s -o $CONFIG_ABS_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$confFile" 2>>$LOG_FILE)
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$confFile" "$httpCode"
+	httpCode="$(downloadFile "$(downloadURL "$confFile")" "$CONFIG_ABS_FILE")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$confFile")" "$httpCode"
 		return
 	fi
 
@@ -1860,9 +1888,9 @@ function extensions_install_execute() {
 
 	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
 
-	httpCode=$(curl -s -o $SAMPLEEXTENSION_TAR_FILE -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$MYHOMEURL/$SAMPLEEXTENSION_TAR_FILE" 2>>$LOG_FILE)
-	if [[ ${httpCode:0:1} != "2" ]]; then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$SAMPLEEXTENSION_TAR_FILE" "$httpCode"
+	local httpCode="$(downloadFile "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$SAMPLEEXTENSION_TAR_FILE")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$httpCode"
 		return
 	fi
 
@@ -1872,6 +1900,11 @@ function extensions_install_execute() {
 	fi
 
 	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
+		return
+	fi
+
+	if ! chown root.root $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
 		return
 	fi
@@ -2277,6 +2310,10 @@ function uninstall_execute() {
 			writeToConsole $MSG_DELETE_FILE "$LATEST_TEMP_PROPERTY_FILE"
 			rm -f "$LATEST_TEMP_PROPERTY_FILE" 2>>$LOG_FILE
 		fi
+
+		rm /tmp/${RASPIBACKUP_NAME}*.* 2>>$LOG_FILE
+		rm /${FILE_TO_INSTALL_ABS_PATH}/${RASPIBACKUP_NAME}*.* 2>>$LOG_FILE
+
 		writeToConsole $MSG_UNINSTALL_FINISHED "$RASPIBACKUP_NAME"
 	else
 		writeToConsole $MSG_NOT_INSTALLED "$RASPIBACKUP_NAME"
@@ -3235,6 +3272,13 @@ function config_partitions_do() {
 			CONFIG_PARTITIONS_TO_BACKUP="$current"
 			[[ "$orgCurrent" == "$current" ]] # check the first partitions were not deselected
 			done=$(( ! $? ))
+
+			if (( ! $done )); then
+				local m="$(getMessageText $MSG_FIRST_PARTITIONS_NOT_SELECTED)"
+				local t=$(center $WINDOW_COLS "$m")
+				local tt="$(getMessageText $TITLE_INFORMATION)"
+				whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
+			fi
 		else
 			CONFIG_PARTITIONS_TO_BACKUP="$old"
 			done=1
@@ -3694,6 +3738,8 @@ function update_installer_do() {
 	INSTALL_DESCRIPTION=("Downloading $MYSELF ...")
 	progressbar_do "INSTALL_DESCRIPTION" "Updating $MYSELF" update_installer_execute
 
+	exec $INSTALLER_ABS_PATH/$MYSELF # restart installer, no return
+
 	logExit
 
 }
@@ -4081,13 +4127,12 @@ function downloadPropertiesFile_execute() {
 	NEW_PROPERTIES_FILE=0
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING_PROPERTYFILE
-	wget $PROPERTY_URL -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $LATEST_TEMP_PROPERTY_FILE
-	local rc=$?
-	if [[ $rc == 0 ]]; then
-		logItem "Download of $downloadURL successfull"
+	local httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
+	if (( ! $? )); then
 		NEW_PROPERTIES_FILE=1
 	else
-		logItem "Download of $downloadURL failed with rc $rc"
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$PROPERTY_URL")" "$httpCode"
+		logExit
 	fi
 
 	logExit "$NEW_PROPERTIES_FILE"
@@ -4234,6 +4279,12 @@ function unattendedInstall() {
 
 	logEntry
 
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECK_INTERNET_CONNECTION
+	isInternetAvailable
+	if (( $? != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_INTERNET_CONNECTION_FOUND
+		exit
+	fi
 	if (( MODE_INSTALL )); then
 		code_download_execute
 		config_download_execute
@@ -4241,6 +4292,7 @@ function unattendedInstall() {
 		if (( MODE_EXTENSIONS )); then
 			extensions_install_execute
 		fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTALLATION_FINISHED $RASPIBACKUP_NAME
 	elif (( MODE_UPDATE )); then
 		update_installer_execute
 	elif (( MODE_EXTENSIONS )); then

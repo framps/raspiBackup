@@ -1,12 +1,12 @@
+#!/bin/bash
+
 #######################################################################################################################
 #
-#   Property file for raspiBackup and raspiBackupInstallUI
-#
-#   See http://www.linux-tips-and-tricks.de/raspiBackup for details
+# 	Check if there are unused or undefined messaged messages in raspiBackupInstallUI
 #
 #######################################################################################################################
 #
-#    Copyright (C) 2015-2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,22 +22,25 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
-#
-# GIT_DATE="$Date$"
-# GIT_COMMIT="$Sha1$"
 
-VERSION="0.6.7"
-INCOMPATIBLE=""
-DEPRECATED=""
-BETA=""
+echo "Searching for message constants not used..."
 
-VERSION_INSTALLER="0.4.4"
-INCOMPATIBLE_INSTALLER=""
-DEPRECATED_INSTALLER=""
-BETA_INSTALLER=""
+grep -E '^.*=\$\(\(SCNT\+\+\)\)' ../installation/raspiBackupInstallUI.sh > messages.dat
+echo "" > msg.dat
 
-VERSION_CONF="0.1.6"
-INCOMPATIBLE_CONF=""
-DEPRECATED_CONF=""
-BETA_CONF=""
+while read line; do
+	if [[ "$line" =~ (.*)=\$\(\(SCNT\+\+\)\) ]]; then
+		name=${BASH_REMATCH[1]}
+	fi
+    echo $name >> msg.dat
+done < messages.dat
 
+while read line; do
+   cnt=$(grep -c "[^\[]\$$line" ../installation/raspiBackupInstallUI.sh)
+   if [[ $cnt == 0 ]]; then
+   	echo "$line: $cnt"
+   fi
+done < msg.dat | uniq
+
+rm msg.dat
+rm messages.dat

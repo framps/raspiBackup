@@ -6,7 +6,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2021-2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -38,37 +38,50 @@ include $(CURRENT_DIR)/$(MAKEFILE).env
 # 2) LOCAL_REPO - local shadow repo
 # 3) MASTER_BRANCH - should be master
 # 4) BETA_BRANCH - should be beta
-# 5) DEPLOYMENT_LOCATION - directory the code is deployed
+# 5) BUILD_LOCATION - local directory the code is built
+# 6) DEPLOYMENT_LOCATION - directory the code is deployed
 
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-deploy: ## Deploy raspiBackup
-	@rm $(DEPLOYMENT_LOCATION)/*
-	@$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
+build: ## Build raspiBackup
+   
+        ifndef BUILD_LOCATION
+           $(error BUILD_LOCATION is not set)
+        endif
 
-	@git checkout -f $(MASTER_BRANCH)
+        ifndef BRANCH
+           $(error BRANCH is not set)
+        endif
 
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
-	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
-	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
+	@echo "*** Building $(BRANCH) in $(BUILD_LOCATION) ***"
 
-	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
+	@$(foreach file, $(PACKAGE_FILES), rm -f $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), rm -f $(file);)
+	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), rm -f $(file);)
 
-deployBeta: ## Deploy raspiBackup beta
-	@$(foreach file, $(PACKAGE_FILES), echo "Deleting $(file) "; rm $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deleting $(file) "; rm $(file);)
-	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Deleting $(file) "; rm $(file);)
+	@git checkout -f $(BRANCH)
 
-	@git checkout -f $(BETA_BRANCH)
-
-	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
-	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
-	@$(foreach file, $(PACKAGE_FILES), echo "Deploying $(file) "; cp -a $(file) $(DEPLOYMENT_LOCATION)/$(basename $(notdir $(file)))_beta$(suffix $(notdir $(file)) );)
+	@rm -f $(BUILD_LOCATION)/*
+	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
+	@cd $(PACKAGE_EXTENSION_DIRECTORY) && tar --owner=root --group =root -cvzf raspiBackupSampleExtensions.tgz $(PACKAGE_EXTENSION_FILES_PREFIX)
+	@$(foreach file, $(PACKAGE_FILES), cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
+
+deploy: ## Deploy build
+
+	ifndef DEPLOYMENT_LOCATION
+		$(error DEPLOYMENT_LOCATION is not set)
+	endif
+
+	ifndef BRANCH
+		$(error BRANCH is not set)
+	endif
+
+	@echo "*** Deploying $(BRANCH) in $(DEPLOYMENT_LOCATION) ***"
+
+	@$(foreach file, $(wildcard $(BUILD_LOCATION)/*), echo "Deploy $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 
 syncLocal: ## Sync github with local shadow git
 	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash 
 
 #######################################################################################################################
 #
@@ -8,7 +8,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2020-2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2020-2022 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -26,11 +26,13 @@
 #######################################################################################################################
 
 MYSELF="install"
-VERSION="0.1.2"
+VERSION="0.1.3"
 
+[[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 URL="https://www.linux-tips-and-tricks.de"
 INSTALLER="raspiBackupInstallUI.sh"
-INSTALLER_DOWNLOAD_URL="$URL/$INSTALLER"
+INSTALLER_DOWNLOAD_URL="$URL/downloads${URLTARGET}/$INSTALLER/download"
+
 TO_BE_INSTALLED="raspiBackup.sh"
 LOG_FILE="$MYSELF.log"
 
@@ -67,20 +69,20 @@ trap cleanup SIGINT SIGTERM EXIT
 cd ~
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." > "$LOG_FILE"
-curl -LO "$INSTALLER_DOWNLOAD_URL" &>> "$LOG_FILE"
+curl -L "$INSTALLER_DOWNLOAD_URL" -o $INSTALLER &>> "$LOG_FILE"
 rc=$?
 
 if (( $rc )); then
-	echo "??? Download error for INSTALLER_DOWNLOAD_URL. RC: $rc" >> "$LOG_FILE"
+	echo "??? Download error for $INSTALLER_DOWNLOAD_URL. RC: $rc" >> "$LOG_FILE"
 	cat "$LOG_FILE"
 	exit 1
-fi	
+fi
 
 echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
-sudo bash "./$INSTALLER" "$1"
+sudo -E bash "./$INSTALLER" "$1"
 rc=$?
 if (( $rc )); then
 	echo "??? $INSTALLER failed. RC: $rc" >> "$LOG_FILE"
 	cat "$LOG_FILE"
 	exit 1
-fi	
+fi
