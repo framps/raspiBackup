@@ -5537,7 +5537,7 @@ function applyBackupStrategy() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILES "$numTobeDeletedBackups" "$numKeptBackups"
 			echo "$tobeDeletedBackups" | while read dir_to_delete; do
 				logItem "Recycling $BACKUPTARGET_ROOT/${dir_to_delete}"
-				if (( ! $SMART_RECYCLE_DRYRUN )); then
+				if (( ! $SMART_RECYCLE_DRYRUN && ! $FAKE )); then
 					writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
 					[[ -n $dir_to_delete ]] && rm -rf $BACKUPTARGET_ROOT/${dir_to_delete} # guard against whole backup dir deletion
 				else
@@ -5548,7 +5548,7 @@ function applyBackupStrategy() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_NO_FILES
 		fi
 
-		if (( $SMART_RECYCLE_DRYRUN )); then
+		if (( $SMART_RECYCLE_DRYRUN || $FAKE )); then
 			echo "$keptBackups" | while read dir_to_keep; do
 				[[ -n $dir_to_keep ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_KEPT "$BACKUPTARGET_ROOT/${dir_to_keep}"
 			done
