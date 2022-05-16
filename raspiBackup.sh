@@ -3257,7 +3257,7 @@ function startServices() {
 
 	if (( $STOPPED_SERVICES )); then
 		if [[ -n "$STARTSERVICES" ]]; then
-			if (( ! $RESTORE && $REBOOT_SYSTEM )); then
+			if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
 				:	# just ignore STARTSERVICES
 			elif [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STARTING_SERVICES
