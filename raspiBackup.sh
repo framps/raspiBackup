@@ -2386,11 +2386,7 @@ function executeRsync() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	if (( $PROGRESS && $INTERACTIVE )); then
-		executeCommandNoStdoutRedirect "$cmd" "$2"
-	else
-		executeCommandNoStderrRedirect "$cmd" "$2"
-	fi
+	executeCommand "$cmd" "$2"
 	rc=$?
 	logExit $rc
 	return $rc
