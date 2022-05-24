@@ -11,7 +11,7 @@
   * No manual intervention required. Backups are created via cron over night.
   * Important services can be stopped before starting the backup and will be restarted when the backup finished.
   * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
-  * Messages and completion status of backup run can be send in an eMail or to Telegram.
+  * Messages and completion status of backup sent via eMail or Telegram.
   * Extensionpoints allow to execute any additional logic at various steps in the backup and restore process.
 * Restore
   * Restore any of the created backup versions to get a system which boots up immediately.
