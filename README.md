@@ -14,7 +14,7 @@
   * Supported systems
     * SD card only
     * USB disk or SSD only (USB boot mode)
-    * SD card for boot and USB disk or SSD for root system
+    * SD card for boot and USB disk or SSD for root system (for Raspberries not able to use USB boot)
   * Messages and completion status of backup sent via eMail or Telegram.
   * Any additional logic can be added at various steps in the backup and restore process via extensionpoints.
   * Restored backup will boot immediately.
