@@ -13,21 +13,21 @@
   * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
   * Supported systems
     * SD card only
-    * USB disk or SSD disk only (USB boot mode)
+    * USB disk or SSD only (USB boot mode)
     * SD card for boot and USB disk or SSD for root system
   * Messages and completion status of backup sent via eMail or Telegram.
-  * Execute any additional logic at various steps in the backup and restore process via extensionpoints.
-  * Restored backup will boot up immediately.
+  * Any additional logic can be added at various steps in the backup and restore process via extensionpoints.
+  * Restored backup will boot immediately.
 * Backup strategies
-  * Define number of backup versions to keep.
+  * Number of backup versions to keep configurable either for sum of backups or on individual backup types
   * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
+  * Manual backup allows to create a kind of snapshot of the system just before major updated are done on a system.
 * Linux backup tools used
-  * Standard Linux backup tools dd, tar and rsync are available to create a backup.
+  * Standard Linux backup tools dd, tar and rsync can be used to create a backup.
   * dd and tar are full backups. rsync uses hardlinks for incremental backups.
   * dd backups can be restored with Windows tools.
-  * Any complex combination of backup strategies possible
 * Installation 
-  * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
+  * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more options can be configured in a configuration file.
 * Usability
   * National language support:
     * English (Default)
@@ -37,7 +37,11 @@
     * French ([mgrafr](https://github.com/mgrafr))
     * Many thanks to the folks above who translated raspiBackup messages into their native language 👍 
     * Anybody who is interested to add language support for other languages is invited to read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
-  * More than 270 messages inform about configuration and environment mismatches and runtime errors
+  * More than 270 messages inform about
+    *  Backup progress 
+    *  Configuration mismatches
+    *  Environment mismatches
+    *  Runtime errors
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
 * Servicability
