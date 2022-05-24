@@ -16,10 +16,10 @@
     * USB disk or SSD disk only (USB boot mode)
     * SD card for boot and USB disk or SSD for root system
   * Messages and completion status of backup sent via eMail or Telegram.
-  * Extensionpoints allow to execute any additional logic at various steps in the backup and restore process.
+  * Execute any additional logic at various steps in the backup and restore process via extensionpoints.
   * Restored backup will boot up immediately.
 * Backup strategies
-  * Number of backup versions to keep is configurable.
+  * Define number of backup versions to keep.
   * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
 * Linux backup tools used
   * Standard Linux backup tools dd, tar and rsync are available to create a backup.
@@ -35,8 +35,8 @@
     * Finnish ([teemue](https://github.com/teemue))
     * Chinese ([GoogleBeEvil](https://github.com/GoogleBeEvil))
     * French ([mgrafr](https://github.com/mgrafr))
-    * Many thanks to everybody who translated raspiBackup messages into their native language 👍 
-    * Anybody who is interested to add language support for his native language is invited to read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
+    * Many thanks to the folks above who translated raspiBackup messages into their native language 👍 
+    * Anybody who is interested to add language support for other languages is invited to read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
   * More than 270 messages inform about configuration and environment mismatches and runtime errors
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
