@@ -9016,6 +9016,9 @@ fi
 doit
 
 if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
+	if [[ -n "$DEFAULT_EMAIL" ]]; then
+		sleep 1m								# allow MTA to send notification email
+	fi
 	reboot
 fi
 
