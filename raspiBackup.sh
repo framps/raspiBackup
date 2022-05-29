@@ -7301,7 +7301,7 @@ function doitRestore() {
 		exitError $RC_MISSING_FILES
 	fi
 
-	if mount | grep "^$RESTORE_DEVICE"; then
+	if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
 		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
