@@ -53,8 +53,8 @@
 
 ## Support
 
-* [Issues](https://github.com/framps/raspiBackup/issues/new/choose)
-* [Question](https://github.com/framps/raspiBackup/discussions/categories)
+* [Create issues](https://github.com/framps/raspiBackup/issues/new/choose)
+* [Ask question](https://github.com/framps/raspiBackup/discussions/categories)
 
 ## Documentation
 
