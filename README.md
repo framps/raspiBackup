@@ -53,7 +53,7 @@
 
 ## Support
 
-Support is given only for raspiBackup related issues. For general Linux questions use other places. 
+Support is given **only** for raspiBackup related issues. For any other general questions (for example Linux questions) use other information sources. 
 
 * [Create issues](https://github.com/framps/raspiBackup/issues/new/choose)
 * [Ask questions](https://github.com/framps/raspiBackup/discussions/categories)
