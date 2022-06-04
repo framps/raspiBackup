@@ -32,12 +32,10 @@ function isSupportedEnvironment() {
 
 #	Check it's Raspberry HW
 	[[ ! -e $MODELPATH ]] && return 1
-	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
 #	OS was built for a Raspberry
 	[[ ! -e $RPI_ISSUE ]] && return 1
-	logItem "$RPI_ISSUE: $(cat $RPI_ISSUE)"
 
 	return 0
 }
