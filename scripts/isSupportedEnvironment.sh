@@ -24,7 +24,24 @@
 #######################################################################################################################
 
 
-. raspiBackup.sh --include
+function isSupportedEnvironment() {
+
+	local MODELPATH=/sys/firmware/devicetree/base/model
+	local OSRELEASE=/etc/os-release
+	local RPI_ISSUE=/etc/rpi-issue
+
+#	Check it's Raspberry HW
+	[[ ! -e $MODELPATH ]] && return 1
+	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
+	! grep -q -i "raspberry" $MODELPATH && return 1
+
+#	OS was built for a Raspberry
+	[[ ! -e $RPI_ISSUE ]] && return 1
+	logItem "$RPI_ISSUE: $(cat $RPI_ISSUE)"
+
+	return 0
+}
+
 
 if ! isSupportedEnvironment; then
 	echo ":-( Environment for raspiBackup not supported :-("
