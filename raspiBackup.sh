@@ -2082,7 +2082,9 @@ function logFinish() {
 			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 		fi
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
+		if (( !$INCLUDE_ONLY )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
+		fi
 
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
