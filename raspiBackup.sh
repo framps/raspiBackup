@@ -383,6 +383,7 @@ RC_BACKUP_EXTENSION_FAILS=134
 RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
+RC_INVALID_BOOTDEVICE=138
 
 tty -s
 INTERACTIVE=!$?
@@ -1824,6 +1825,9 @@ MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemou
 MSG_RESTORE_DEVICE_NOT_VALID=275
 MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid device."
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
+MSG_INVALID_BOOT_DEVICE=276
+MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported."
+MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootegerät %s ist nicht unterstützt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6212,7 +6216,15 @@ function inspect4Backup() {
 			fi
 		fi
 	else
-		logCommand "Using configured bootdevice $BOOT_DEVICE"
+		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
+		if [[ ! "$updatedBootdeviceName" =~ mmcblk[0-9]$|sd[a-z][0-9]$|nvme[0-9]n[0-9]$ ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
+			exitError $RC_INVALID_BOOTDEVICE
+		else
+			BOOT_DEVICE="$updatedBootdeviceName"
+		fi
+
+		logItem "Using configured bootdevice $BOOT_DEVICE"
 	fi
 
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
