@@ -6109,12 +6109,12 @@ function getRootPartition() {
 # 2: partition number (1 or 2)
 #
 
-function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3 or /dev/nvme0n1p1, returns 0:device (mmcblk0), 1: partition number
+function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3 or /dev/nvme0n1p1 or /dev/nvme0n1p1, returns 0:device (mmcblk0), 1: partition number
 
 	logEntry "$1"
 	local r=""
 
-	if [[ $1 =~ ^/dev/([^0-9]+)([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)p([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)n[0-9]+p([0-9]+)$ ]]; then
+	if [[ $1 =~ ^/dev/([^0-9]+)([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)p([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+n[0-9])+p([0-9]+)$ ]]; then
 		r="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
 	fi
 
@@ -6153,6 +6153,7 @@ function inspect4Backup() {
 		local rootDeviceNumber=$(mountpoint -d /)
 		logItem "bootDeviceNumber: $bootDeviceNumber"
 		logItem "rootDeviceNumber: $rootDeviceNumber"
+
 		if [ "$bootDeviceNumber" == "$rootDeviceNumber" ]; then	# /boot on same partition with root partition /
 			local rootDevice=$(for file in $(find /sys/dev/ -name $rootDeviceNumber); do source ${file}/uevent; echo $DEVNAME; done) # mmcblk0p1
 			logItem "Rootdevice: $rootDevice"
@@ -6161,13 +6162,12 @@ function inspect4Backup() {
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
 		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9])p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
-		else
 
 			logItem "Starting alternate boot discovery"
 
 			# test whether boot device is mounted
 			local bootMountpoint="/boot"
-			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1
+			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 			logItem "$bootMountpoint mounted? $bootPartition"
 
 			# test whether some other /boot path is mounted
@@ -6178,7 +6178,7 @@ function inspect4Backup() {
 			fi
 
 			# find root partition
-			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p1
+			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
 			logItem "/ mounted? $rootPartition"
 			if [[ $rootPartition == "/dev/root" ]]; then
 				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
@@ -6217,7 +6217,7 @@ function inspect4Backup() {
 		fi
 	else
 		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
-		if [[ ! "$updatedBootdeviceName" =~ mmcblk[0-9]$|sd[a-z][0-9]$|nvme[0-9]n[0-9]$ ]]; then
+		if [[ ! "$updatedBootdeviceName" =~ mmcblk[0-9]+$|sd[a-z][0-9]+$|nvme[0-9]+n[0-9]+$ ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
 			exitError $RC_INVALID_BOOTDEVICE
 		else
