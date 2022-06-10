@@ -1817,8 +1817,8 @@ MSG_REBOOT_SYSTEM=272
 MSG_EN[$MSG_REBOOT_SYSTEM]="RBK0272I: System will be rebooted at the end of the backup run."
 MSG_DE[$MSG_REBOOT_SYSTEM]="RBK0272I: Das System wird am Ende des Backuplaufes neu gestartet."
 MSG_INVALID_BACKUPNAMES_DETECTED=273
-MSG_EN[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s invalid backup directorie(s) found in %s."
-MSG_DE[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s ungültige Backupverzeichnis(se) in %s gefunden."
+MSG_EN[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s invalid backup directorie(s) or files found in %s."
+MSG_DE[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s ungültige Backupverzeichnis(se) oder Dateien in %s gefunden."
 MSG_RESTORE_PARTITION_MOUNTED=274
 MSG_EN[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Restore device %s has mounted partitions. Note: Restore to the active system is not possible."
 MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemountete Partitionen. Hinweis: Ein Restore auf das aktive System ist nicht mogöich."
@@ -2086,7 +2086,9 @@ function logFinish() {
 			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 		fi
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
+		if (( !$INCLUDE_ONLY )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
+		fi
 
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
@@ -3268,7 +3270,7 @@ function startServices() {
 
 	if (( $STOPPED_SERVICES )); then
 		if [[ -n "$STARTSERVICES" ]]; then
-			if (( ! $RESTORE && $REBOOT_SYSTEM )); then
+			if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
 				:	# just ignore STARTSERVICES
 			elif [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STARTING_SERVICES
@@ -7324,7 +7326,7 @@ function doitRestore() {
 		exitError $RC_MISSING_FILES
 	fi
 
-	if mount | grep -r "^$RESTORE_DEVICE"; then
+	if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
 		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
@@ -9039,6 +9041,9 @@ fi
 doit
 
 if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
+	if [[ -n "$DEFAULT_EMAIL" ]]; then
+		sleep 1m								# allow MTA to send notification email
+	fi
 	reboot
 fi
 
