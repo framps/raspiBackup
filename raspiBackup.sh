@@ -1821,7 +1821,7 @@ MSG_EN[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s invalid backup directori
 MSG_DE[$MSG_INVALID_BACKUPNAMES_DETECTED]="RBK0273E: %s ungültige Backupverzeichnis(se) oder Dateien in %s gefunden."
 MSG_RESTORE_PARTITION_MOUNTED=274
 MSG_EN[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Restore device %s has mounted partitions. Note: Restore to the active system is not possible."
-MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemountete Partitionen. Hinweis: Ein Restore auf das aktive System ist nicht mogöich."
+MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemountete Partitionen. Hinweis: Ein Restore auf das aktive System ist nicht möglich."
 MSG_RESTORE_DEVICE_NOT_VALID=275
 MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid device."
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
@@ -5258,7 +5258,7 @@ function restore() {
 				cmd="gunzip -c \"$ROOT_RESTOREFILE\" | dd of=$RESTORE_DEVICE $progressFlag bs=$DD_BLOCKSIZE $DD_PARMS"
 			fi
 
-			executeCommandDD "$cmd"
+			executeDD "$cmd"
 			rc=$?
 
 			if [[ $rc != 0 ]]; then
