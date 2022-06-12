@@ -5247,7 +5247,7 @@ function restore() {
 				cmd="gunzip -c \"$ROOT_RESTOREFILE\" | dd of=$RESTORE_DEVICE $progressFlag bs=$DD_BLOCKSIZE $DD_PARMS"
 			fi
 
-			executeCommandDD "$cmd"
+			executeDD "$cmd"
 			rc=$?
 
 			if [[ $rc != 0 ]]; then
