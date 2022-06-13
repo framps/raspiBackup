@@ -43,8 +43,8 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.7"												# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.6"								# required config version for script
+VERSION="0.6.8-dev-NVMe"										# -beta, -hotfix or -dev suffixes possible
+VERSION_SCRIPT_CONFIG="0.1.6"									# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -383,6 +383,7 @@ RC_BACKUP_EXTENSION_FAILS=134
 RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
+RC_INVALID_BOOTDEVICE=138
 
 tty -s
 INTERACTIVE=!$?
@@ -1824,6 +1825,9 @@ MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemou
 MSG_RESTORE_DEVICE_NOT_VALID=275
 MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid device."
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
+MSG_INVALID_BOOT_DEVICE=276
+MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported."
+MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootegerät %s ist nicht unterstützt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2523,12 +2527,13 @@ function logOptions() { # option state
 	logEntry "$1"
 
 	logItem "Options: $INVOCATIONPARMS"
+	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
 	logItem "APPEND_LOG=$APPEND_LOG"
 	logItem "APPEND_LOG_OPTION=$APPEND_LOG_OPTION"
 	logItem "BACKUPPATH=$BACKUPPATH"
 	logItem "BACKUPTYPE=$BACKUPTYPE"
-	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
+	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
 	logItem "COLOR_CODES="${COLOR_CODES[@]}""
  	logItem "COLORING=$COLORING"
@@ -2738,6 +2743,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 	# Name of backup partition to dynamically mount (e.g. /dev/sda1 or /backup)
 	DEFAULT_DYNAMIC_MOUNT=""
+	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nvme0n1 or /dev/sda) and turn off boot device autodiscovery
+	DEFAULT_BOOT_DEVICE=""
 	############# End default config section #############
 	logExit
 }
@@ -2750,6 +2757,7 @@ function copyDefaultConfigVariables() {
 	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
+	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
 	AFTER_STARTSERVICES="$DEFAULT_AFTER_STARTSERVICES"
 	BEFORE_STOPSERVICES="$DEFAULT_BEFORE_STOPSERVICES"
 	CHECK_FOR_BAD_BLOCKS="$DEFAULT_CHECK_FOR_BAD_BLOCKS"
@@ -2835,16 +2843,18 @@ function bootedFromSD() {
 # Input:
 # 	mmcblk0
 # 	sda
+#       nvme0n1
 # Output:
 # 	mmcblk0p
 # 	sda
+#       nvme0n1p
 
 function getPartitionPrefix() { # device
 
 	logEntry "$1"
-	if [[ $1 =~ ^(mmcblk|loop|sd[a-z]) ]]; then
+	if [[ $1 =~ ^(mmcblk|loop|nvme|sd[a-z]) ]]; then
 		local pref="$1"
-		[[ $1 =~ ^(mmcblk|loop) ]] && pref="${1}p"
+		[[ $1 =~ ^(mmcblk|loop|nvme) ]] && pref="${1}p"
 	else
 		logItem "device: $1"
 		assertionFailed $LINENO "Unable to retrieve partition prefix for device $1"
@@ -2858,6 +2868,7 @@ function getPartitionPrefix() { # device
 # Input:
 # 	/dev/mmcblk0p1
 #	/dev/sda2
+#       /dev/nvme0n1p1
 # Output:
 # 	1
 #	2
@@ -2866,7 +2877,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "$1"
 	local id
-	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) ]]; then
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
 		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -4143,7 +4154,7 @@ function masqueradeSensitiveInfoInLog() {
 	local xEnabled=0
 	if [ -o xtrace ]; then	# disable xtrace
 		xEnabled=1
-	        set +x
+        set +x
 	fi
 
 	# no logging any more
@@ -5479,7 +5490,7 @@ function restore() {
 
 			logCommand "parted -s $RESTORE_DEVICE print"
 
-			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk0" || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
+			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk[0-9]+" || $RESTORE_DEVICE =~ "/dev/loop[0-9]+" || $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" ]]; then
 				ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
 			else
 				ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
@@ -6096,12 +6107,12 @@ function getRootPartition() {
 # 2: partition number (1 or 2)
 #
 
-function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3, returns 0:device (mmcblk0), 1: partition number
+function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3 or /dev/nvme0n1p1 or /dev/nvme0n1p1, returns 0:device (mmcblk0), 1: partition number
 
 	logEntry "$1"
 	local r=""
 
-	if [[ $1 =~ ^/dev/([^0-9]+)([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)p([0-9]+)$ ]]; then
+	if [[ $1 =~ ^/dev/([^0-9]+)([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)p([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+n[0-9])+p([0-9]+)$ ]]; then
 		r="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
 	fi
 
@@ -6115,6 +6126,8 @@ function inspect4Backup() {
 
 	logCommand "ls -1 /dev/mmcblk*"
 	logCommand "ls -1 /dev/sd*"
+	logCommand "ls -1 /dev/nvme*"
+
 	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
 
 	if (( $REGRESSION_TEST )); then
@@ -6124,7 +6137,7 @@ function inspect4Backup() {
 	elif (( $RESTORE )); then
 		BOOT_DEVICE="mmcblk0"
 		logItem "Force BOOT_DEVICE to $BOOT_DEVICE"
-	else
+	elif [[ -z $BOOT_DEVICE ]]; then
 
 		#if ! areDevicesUnique; then
 		#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
@@ -6138,21 +6151,21 @@ function inspect4Backup() {
 		local rootDeviceNumber=$(mountpoint -d /)
 		logItem "bootDeviceNumber: $bootDeviceNumber"
 		logItem "rootDeviceNumber: $rootDeviceNumber"
+
 		if [ "$bootDeviceNumber" == "$rootDeviceNumber" ]; then	# /boot on same partition with root partition /
 			local rootDevice=$(for file in $(find /sys/dev/ -name $rootDeviceNumber); do source ${file}/uevent; echo $DEVNAME; done) # mmcblk0p1
 			logItem "Rootdevice: $rootDevice"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
-		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9])p ]]; then
+		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9]+)p || "$part" =~ /dev/(nvme[0-9]+n[0-9]+)p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
-		else
 
 			logItem "Starting alternate boot discovery"
 
 			# test whether boot device is mounted
 			local bootMountpoint="/boot"
-			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1
+			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 			logItem "$bootMountpoint mounted? $bootPartition"
 
 			# test whether some other /boot path is mounted
@@ -6163,7 +6176,7 @@ function inspect4Backup() {
 			fi
 
 			# find root partition
-			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p1
+			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
 			logItem "/ mounted? $rootPartition"
 			if [[ $rootPartition == "/dev/root" ]]; then
 				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
@@ -6200,6 +6213,15 @@ function inspect4Backup() {
 				SHARED_BOOT_DIRECTORY=1
 			fi
 		fi
+	else
+		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
+		BOOT_DEVICE="$updatedBootdeviceName"
+		logItem "Using configured bootdevice $BOOT_DEVICE"
+	fi
+
+	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z][0-9]+$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
+		exitError $RC_INVALID_BOOTDEVICE
 	fi
 
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
@@ -6718,7 +6740,7 @@ function restoreNonPartitionBasedBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
+	if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n1[0-9] ]]; then
 		BOOT_PARTITION="${RESTORE_DEVICE}p1"
 	else
 		BOOT_PARTITION="${RESTORE_DEVICE}1"
@@ -6727,7 +6749,7 @@ function restoreNonPartitionBasedBackup() {
 
 	ROOT_PARTITION_DEFINED=1
 	if [[ -z $ROOT_PARTITION ]]; then
-		if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
+		if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n1[0-9] ]]; then
 			ROOT_PARTITION="${RESTORE_DEVICE}p2"
 		else
 			ROOT_PARTITION="${RESTORE_DEVICE}2"
@@ -6763,7 +6785,7 @@ function restoreNonPartitionBasedBackup() {
 	if (( ! $ROOT_PARTITION_DEFINED )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN $RESTORE_DEVICE
 	else
-		if [[ $ROOT_DEVICE =~ /dev/mmcblk0 || $ROOT_DEVICE =~ "/dev/loop" ]]; then
+		if [[ $ROOT_DEVICE =~ /dev/mmcblk0 || $ROOT_DEVICE =~ "/dev/loop" || $ROOT_DEVICE =~ /dev/nvme0n1 ]]; then
 			ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
 		else
 			ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
@@ -7100,7 +7122,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 	local restoreDevice
 	restoreDevice=${RESTORE_DEVICE%dev%%}
-	[[ $restoreDevice =~ mmcblk0 || $restoreDevice =~ "loop" ]] && restoreDevice="${restoreDevice}p"
+	[[ $restoreDevice =~ mmcblk0 || $restoreDevice =~ "loop" || $restoreDevice =~ nvme0n1 ]] && restoreDevice="${restoreDevice}p"
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
@@ -7334,7 +7356,7 @@ function doitRestore() {
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logCommand "ls -1 $RESTOREFILE*"
 
-	if  ls -1 "$RESTOREFILE"* | egrep -q "^(sd[a-z]([0-9]+)|mmcblk[0-9]+p[0-9]+).*" 2>>"$LOG_FILE" ; then
+	if  ls -1 "$RESTOREFILE"* | egrep -q "^(sd[a-z]([0-9]+)|mmcblk[0-9]+p[0-9]+|nvme[0-9]+n[0-9]+p[0-9]+).*" 2>>"$LOG_FILE" ; then
 		PARTITIONBASED_BACKUP=1
 	else
 		PARTITIONBASED_BACKUP=0
@@ -7356,7 +7378,7 @@ function doitRestore() {
 
 	if ! (( $FAKE )); then
 		RESTORE_DEVICE=${RESTORE_DEVICE%/} # delete trailing /
-		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]$ ) && ! ( $RESTORE_DEVICE =~ "/dev/loop" ) ]]; then
+		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]+$ ) && ! ( $RESTORE_DEVICE =~ "/dev/loop[0-9]+" ) && ! ( $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" )]]; then
 			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/[a-zA-Z]+$ ]] ; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_PARTITION
 				exitError $RC_PARAMETER_ERROR
@@ -7796,7 +7818,7 @@ function synchronizeCmdlineAndfstab() {
 
 	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL newLABEL
 
-	if [[ $RESTORE_DEVICE =~ /dev/mmcblk0 || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
+	if [[ $RESTORE_DEVICE =~ /dev/mmcblk0 || $RESTORE_DEVICE =~ /dev/nvme0n1 || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
 		BOOT_PARTITION="${RESTORE_DEVICE}p1"
 	else
 		BOOT_PARTITION="${RESTORE_DEVICE}1"
