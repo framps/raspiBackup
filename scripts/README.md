@@ -9,3 +9,5 @@
 4. supportsACLs - check if filesystem used by a directory supports ACLs
 
 5. supportsFileAttributes - check if a filesystem used by a directory supports Linux fileattributes
+
+6. raspiBackupFromGitBranch - Download and invoke raspiBackup from a git branch. This script helps to easily call a test, hotfix or fix release of raspiBackup directly from github. First option has to be the branch name and all following options can be the normal raspiBackup options.
