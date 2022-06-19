@@ -53,6 +53,18 @@ fi
 
 chmod +x raspiBackup_$branch.sh
 
+sha="$(curl -s -H "Accept: application/vnd.github.VERSION.sha" "https://api.github.com/repos/framps/raspiBackup/commits/master")"
+
+if (( $? != 0 )); then
+	echo "??? Error retrieving sha"
+	exit 1
+fi	
+
+shaShort=${sha:0:7}
+sed -i "s/\$Sha1/\$Sha1${shaShort}/" ./raspiBackup_$branch.sh 
+
 sudo ./raspiBackup_$branch.sh $@
+
+# TODO: use curl https://api.github.com/repos/framps/raspiBackup/branches/master to extract sha and date
 
 
