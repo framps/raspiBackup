@@ -61,7 +61,7 @@ Support is given **only** for raspiBackup related issues. For any other general 
 ## Documentation
 
 ### English
-* [Installation]([https://www.linux-tips-and-tricks.de/en/installation/)
+* [Installation](https://www.linux-tips-and-tricks.de/en/installation/)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
 * [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/faq/rmessages/)
