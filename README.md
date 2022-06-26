@@ -66,15 +66,15 @@ Support is given **only** for raspiBackup related issues. For any other general 
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
 * [Error messages, root causes and suggested actions](https://linux-tips-and-tricks.de/en/raspibackupmessagese/)
 * [Smart recycle backup strategy](https://linux-tips-and-tricks.de/en/smart-recycle/)
-* [Use synology as backup space](https://linux-tips-and-tricks.de/en/synology/))
+* [Use synology as backup space](https://linux-tips-and-tricks.de/en/synology/)
 
 ### German
-* [Installation](https://www.linux-tips-and-tricks.de/de/raspibackup/schnellstart-rbk/)
-* [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
-* [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
-* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/faq/fehlermeldungen/)
-* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/raspibackup/rotationsstrategie/)
-* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/raspibackup/benutzung-von-synology/)
+* [Installation](https://linux-tips-and-tricks.de/de/installation/)
+* [Benutzerhandbuch](https://linux-tips-and-tricks.de/de/raspibackup/)
+* [FAQ](https://linux-tips-and-tricks.de/de/faq/)
+* [Fehlermeldungen, Ursachen und Behebung](https://linux-tips-and-tricks.de/de/raspibackupmeldungen/)
+* [Intelligente Rotationsstrategie](https://linux-tips-and-tricks.de/de/rotationsstrategie/)
+* [Benutzung von Synology als Backupspace](https://linux-tips-and-tricks.de/de/synology/)
 
 ### French
 
