@@ -64,9 +64,9 @@ Support is given **only** for raspiBackup related issues. For any other general 
 * [Installation](https://www.linux-tips-and-tricks.de/en/installation/)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
-* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/faq/rmessages/)
-* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/backup/smart-recycle/)
-* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/backup/synology-usage/)
+* [Error messages, root causes and suggested actions](https://linux-tips-and-tricks.de/en/raspibackupmessagese/)
+* [Smart recycle backup strategy](https://linux-tips-and-tricks.de/en/smart-recycle/)
+* [Use synology as backup space](https://linux-tips-and-tricks.de/en/synology/))
 
 ### German
 * [Installation](https://www.linux-tips-and-tricks.de/de/raspibackup/schnellstart-rbk/)
