@@ -106,8 +106,8 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 ## Much more detailed documentation
 
- * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
- * [German](https://www.linux-tips-and-tricks.de/de/alles-ueber-raspibackup/)
+ * [English](https://linux-tips-and-tricks.de/en/all-raspibackup-articles/)
+ * [German](https://linux-tips-and-tricks.de/de/alle-raspibackup-artikel/)
 
 ## Social media
 
