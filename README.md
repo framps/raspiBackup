@@ -44,7 +44,7 @@
     *  Runtime errors
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
-* Servicability
+* Serviceability
   * Extensive logging helps to isolate backup/restore issues. 
 * Much more features (see below).
 
