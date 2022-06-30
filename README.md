@@ -8,6 +8,10 @@
 
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.
+  * Backupy types 
+    * rsync
+    * tar/tgz
+    * dd/ddz
   * No manual intervention required. Backups are created via cron over night.
   * Important services can be stopped before starting the backup and will be restarted when the backup finished.
   * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
