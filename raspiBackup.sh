@@ -6137,6 +6137,7 @@ function inspect4Backup() {
 	if (( $REGRESSION_TEST )); then
 		[[ -e /dev/sda ]] && BOOT_DEVICE="sda"
 		[[ -e /dev/mmcblk0 ]] && BOOT_DEVICE="mmcblk0"
+		[[ -e /dev/nvme0n1 ]] && BOOT_DEVICE="nvme0n1"
 		logItem "Force BOOT_DEVICE to $BOOT_DEVICE"
 	elif (( $RESTORE )); then
 		BOOT_DEVICE="mmcblk0"
