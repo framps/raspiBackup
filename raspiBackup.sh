@@ -2250,13 +2250,21 @@ function isSupportedEnvironment() {
 	local OSRELEASE=/etc/os-release
 	local RPI_ISSUE=/etc/rpi-issue
 
+	logCommand "cat $OSRELEASE"
+
 #	Check it's Raspberry HW
-	[[ ! -e $MODELPATH ]] && return 1
+	if [[ ! -e $MODELPATH ]]; then
+		logItem "$MODELPATH not found"
+		return 1
+	fi
 	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
 #	OS was built for a Raspberry
-	[[ ! -e $RPI_ISSUE ]] && return 1
+	if [[ ! -e $RPI_ISSUE ]]; then
+		logItem "$RPI_ISSUE not found"
+		return 1
+	fi
 	logItem "$RPI_ISSUE: $(cat $RPI_ISSUE)"
 
 : <<SKIP
@@ -5550,7 +5558,7 @@ function applyBackupStrategy() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILES "$numTobeDeletedBackups" "$numKeptBackups"
 			echo "$tobeDeletedBackups" | while read dir_to_delete; do
 				logItem "Recycling $BACKUPTARGET_ROOT/${dir_to_delete}"
-				if (( ! $SMART_RECYCLE_DRYRUN && ! $FAKE )); then
+				if (( ! $SMART_RECYCLE_DRYRUN && ( ! $FAKE || $REGRESSION_TEST ) )); then
 					writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
 					[[ -n $dir_to_delete ]] && rm -rf $BACKUPTARGET_ROOT/${dir_to_delete} # guard against whole backup dir deletion
 				else
@@ -5584,7 +5592,7 @@ function applyBackupStrategy() {
 
 			if (( ! $FAKE )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "_" | head -n -$KEEPBACKUPS | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
+				pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
 
 				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
 				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
