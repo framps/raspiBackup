@@ -26,6 +26,7 @@ SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
 SMARTRECYCLE_TEST=1
+BACKUP_TEST=1
 RESTORE_TEST=1
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
@@ -56,51 +57,52 @@ function d() {
 function standardTest() {
 
 	local rc
-
-	echo "$(d) Starting BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-	./raspiBackupTest.sh "$1" "$2" "$3" "$4"
-	rc=$?
-	echo "@@@============================================================" >> $LOG_REGRESSION
-	echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
-	echo "@@@============================================================" >> $LOG_REGRESSION
-	cat raspiBackup.log >> $LOG_REGRESSION
-	echo "@@@================================================================" >> $LOG_REGRESSION
-	echo "@@@================== BACKUP raspiBackupTest.log ==================" >> $LOG_REGRESSION
-	echo "@@@================================================================" >> $LOG_REGRESSION
-	cat raspiBackupTest.log >> $LOG_REGRESSION
-
-	if [[ $rc != 0 ]]; then
-		echo "$(d) Failed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-		echo "??? Backup regression test failed"
-		echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
-		exit 127
-	fi
-
-	echo "$(d) Completed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-
-	if (( $RESTORE_TEST )); then
-		echo "$(d) Starting RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-		./raspiRestoreTest.sh
+	if (( $BACKUP_TEST )); then
+		echo "$(d) Starting BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+		./raspiBackupTest.sh "$1" "$2" "$3" "$4"
 		rc=$?
-		rc=0
-		echo "@@@=============================================================" >> $LOG_REGRESSION
-		echo "@@@================== RESTORE raspiBackup.log ==================" >> $LOG_REGRESSION
-		echo "@@@=============================================================" >> $LOG_REGRESSION
+		echo "@@@============================================================" >> $LOG_REGRESSION
+		echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
+		echo "@@@============================================================" >> $LOG_REGRESSION
 		cat raspiBackup.log >> $LOG_REGRESSION
-		echo "@@@=================================================================" >> $LOG_REGRESSION
-		echo "@@@================== RESTORE raspiBackupTest.log ==================" >> $LOG_REGRESSION
-		echo "@@@=================================================================" >> $LOG_REGRESSION
-		cat raspiRestoreTest.log >> $LOG_REGRESSION
+		echo "@@@================================================================" >> $LOG_REGRESSION
+		echo "@@@================== BACKUP raspiBackupTest.log ==================" >> $LOG_REGRESSION
+		echo "@@@================================================================" >> $LOG_REGRESSION
+		cat raspiBackupTest.log >> $LOG_REGRESSION
 
 		if [[ $rc != 0 ]]; then
-			echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-			echo "??? Restore regression test failed"
-			echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+			echo "$(d) Failed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+			echo "??? Backup regression test failed"
+			echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
 			exit 127
 		fi
+
+		echo "$(d) Completed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+
+		if (( $RESTORE_TEST )); then
+			echo "$(d) Starting RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
+			./raspiRestoreTest.sh
+			rc=$?
+			rc=0
+			echo "@@@=============================================================" >> $LOG_REGRESSION
+			echo "@@@================== RESTORE raspiBackup.log ==================" >> $LOG_REGRESSION
+			echo "@@@=============================================================" >> $LOG_REGRESSION
+			cat raspiBackup.log >> $LOG_REGRESSION
+			echo "@@@=================================================================" >> $LOG_REGRESSION
+			echo "@@@================== RESTORE raspiBackupTest.log ==================" >> $LOG_REGRESSION
+			echo "@@@=================================================================" >> $LOG_REGRESSION
+			cat raspiRestoreTest.log >> $LOG_REGRESSION
+
+			if [[ $rc != 0 ]]; then
+				echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
+				echo "??? Restore regression test failed"
+				echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+				exit 127
+			fi
+		fi
+		echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
+		losetup -D
 	fi
-	echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-	losetup -D
 }
 
 function smartRecycleTest() {
