@@ -83,7 +83,6 @@ function standardTest() {
 			echo "$(d) Starting RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
 			./raspiRestoreTest.sh
 			rc=$?
-			rc=0
 			echo "@@@=============================================================" >> $LOG_REGRESSION
 			echo "@@@================== RESTORE raspiBackup.log ==================" >> $LOG_REGRESSION
 			echo "@@@=============================================================" >> $LOG_REGRESSION

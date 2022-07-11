@@ -30,10 +30,10 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 CURRENT_DIR=$(pwd)
 
-if (( $# < 4 )); then
-	echo "Parms: environment type mode bootmode"
-	exit
-fi
+#if (( $# < 4 )); then
+#	echo "Parms: environment type mode bootmode"
+#	exit
+#fi
 
 if [[ $UID != 0 ]]; then
 	sudo $0 """"$@""""
