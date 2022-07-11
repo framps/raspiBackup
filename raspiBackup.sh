@@ -6142,7 +6142,13 @@ function inspect4Backup() {
 
 	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
 
-	if (( $REGRESSION_TEST )); then
+	logItem "BOOT_DEVICE: $BOOT_DEVICE"
+
+	if [[ -n "$BOOT_DEVICE" ]]; then
+		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
+		BOOT_DEVICE="$updatedBootdeviceName"
+		logItem "Using configured bootdevice $BOOT_DEVICE"
+	elif (( $REGRESSION_TEST )); then
 		[[ -e /dev/sda ]] && BOOT_DEVICE="sda"
 		[[ -e /dev/mmcblk0 ]] && BOOT_DEVICE="mmcblk0"
 		[[ -e /dev/nvme0n1 ]] && BOOT_DEVICE="nvme0n1"
@@ -6226,10 +6232,6 @@ function inspect4Backup() {
 				SHARED_BOOT_DIRECTORY=1
 			fi
 		fi
-	else
-		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
-		BOOT_DEVICE="$updatedBootdeviceName"
-		logItem "Using configured bootdevice $BOOT_DEVICE"
 	fi
 
 	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z][0-9]+$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
@@ -7391,9 +7393,9 @@ function doitRestore() {
 
 	if ! (( $FAKE )); then
 		RESTORE_DEVICE=${RESTORE_DEVICE%/} # delete trailing /
-		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]+$ ) && ! ( $RESTORE_DEVICE =~ "/dev/loop[0-9]+" ) && ! ( $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" )]]; then
+		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]+$ ) && ! ( $RESTORE_DEVICE =~ /dev/loop[0-9]+ ) && ! ( $RESTORE_DEVICE =~ /dev/nvme[0-9]+n[0-9]+ )]]; then
 			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/[a-zA-Z]+$ ]] ; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_PARTITION
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_PARTITION "$RESTORE_DEVICE"
 				exitError $RC_PARAMETER_ERROR
 			fi
 		fi
@@ -8535,6 +8537,12 @@ while (( "$#" )); do
 
 	-B|-B[-+])
 	  TAR_BOOT_PARTITION_ENABLED=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
+	--bootDevice)
+	  o=$(checkOptionParameter "$1" "$2")
+	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  BOOT_DEVICE="${o^^}"; shift 2
 	  ;;
 
 	-c|-c[-+])
