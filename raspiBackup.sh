@@ -6234,7 +6234,7 @@ function inspect4Backup() {
 		fi
 	fi
 
-	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z][0-9]+$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
+	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
 		exitError $RC_INVALID_BOOTDEVICE
 	fi
