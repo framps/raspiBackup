@@ -8542,7 +8542,7 @@ while (( "$#" )); do
 	--bootDevice)
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-	  BOOT_DEVICE="${o^^}"; shift 2
+	  BOOT_DEVICE="$o"; shift 2
 	  ;;
 
 	-c|-c[-+])
