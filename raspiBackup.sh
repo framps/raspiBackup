@@ -5115,7 +5115,7 @@ function backupRsync() { # partition number (for partition based backup)
 		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL}"
 	fi
 
-	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER\" \
+	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
 			--exclude=\"$excludeRoot/$log_file\" \
 			--exclude=\"$excludeRoot/$msg_file\" \
 			--exclude='.gvfs' \
