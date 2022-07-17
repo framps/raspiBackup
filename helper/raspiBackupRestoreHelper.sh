@@ -64,18 +64,52 @@ function backup(){
 			echo -e " -----------------------------------------------------------------$normal \n"
 			read partitions
 			echo ""
-			/usr/local/bin/raspiBackup.sh -P -T "1 2 $partitions"
+			backup_add_part_and_comment
 
 		else
-			/usr/local/bin/raspiBackup.sh --ignoreAdditionalPartitions
+			backup_add_comment
 
 			fi
 
 	else
-		/usr/local/bin/raspiBackup.sh
+		backup_add_comment
 
 	fi
 		exit 0
+}
+
+function backup_add_part_and_comment(){
+		echo -e "$yellow ----------------------------------------------------------------------- \n"
+		echo -e " $Quest_comment \n"
+		echo -e " -----------------------------------------------------------------------$normal \n"
+		read Quest_comment
+
+	if [[ ${Quest_comment,,} =~ [yj] ]]; then
+		echo -e "$yellow ----------------------------------------------------------------------- \n"
+		echo -e " $Quest_comment_text \n"
+		echo -e " -----------------------------------------------------------------------$normal \n"
+		read Quest_comment_text
+		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" -P -T "1 2 $partitions"
+	else
+		/usr/local/bin/raspiBackup.sh -P -T "1 1 $partitions"
+	fi
+}
+
+function backup_add_comment(){
+		echo -e "$yellow ----------------------------------------------------------------------- \n"
+		echo -e " $Quest_comment \n"
+		echo -e " -----------------------------------------------------------------------$normal \n"
+		read Quest_comment
+
+	if [[ ${Quest_comment,,} =~ [yj] ]]; then
+		echo -e "$yellow ----------------------------------------------------------------------- \n"
+		echo -e " $Quest_comment_text \n"
+		echo -e " -----------------------------------------------------------------------$normal \n"
+		read Quest_comment_text
+		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text"
+	else
+		/usr/local/bin/raspiBackup.sh
+	fi
 }
 
 function execution(){
@@ -205,6 +239,8 @@ function language(){
 		Quest_backup_more_than_2="Sollen mehr als die 2 Standardpartitionen gesichert werden?   j/N"
 		Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n  Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
 		Warn_only_drive="Bitte ein gueltiges Laufwerk eingeben"
+		Quest_comment="Soll ein Kommentar am Ende des Backup-Verzeichnisses eingefügt werden? \n Dieses Backup wird dann nicht automatisch recycled. \n j/N \n"
+		Quest_comment_text="Bitte gebe den Kommentar ein \n"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -223,7 +259,8 @@ function language(){
 		Quest_backup_more_than_2="Should more than the 2 standard partitions be backed up   y/N?"
 		Quest_additional_partitions="Please enter the partition number(s) that should be backed up \n  in addition to the default partitions. \n  If more than one, separate them with spaces. \n  Example:   3 4 5 "
 		Warn_only_drive="Please only enter a valid Drive"
-
+		Quest_comment="Should a comment be inserted at the end of the backup directory? \n This backup will then not be recycled automatically. \n y/N \n"
+		Quest_comment_text="Please enter the comment \n"
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
