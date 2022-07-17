@@ -4984,6 +4984,7 @@ function backupTar() {
 		--exclude=$devroot/tmp/* \
 		--exclude=$devroot/boot/* \
 		--exclude=$devroot/run/* \
+		--exclude=$devroot/media/* \
 		$EXCLUDE_LIST \
 		$source"
 
@@ -5125,6 +5126,7 @@ function backupRsync() { # partition number (for partition based backup)
 			--exclude=$excludeRoot/boot/* \
 			--exclude=$excludeRoot/tmp/* \
 			--exclude=$excludeRoot/run/* \
+			--exclude=$excludeRoot/media/* \
 			$excludeMeta \
 			$EXCLUDE_LIST \
 			$LINK_DEST \
