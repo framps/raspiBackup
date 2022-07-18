@@ -92,7 +92,7 @@ function backup_add_part_and_comment(){
 		read Quest_comment_text
 		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" -P -T "1 2 $partitions"
 	else
-		/usr/local/bin/raspiBackup.sh -P -T "1 1 $partitions"
+		/usr/local/bin/raspiBackup.sh -P -T "1 2 $partitions"
 	fi
 }
 
