@@ -67,7 +67,7 @@ function backup(){
 			backup_add_part_and_comment
 
 		else
-			ignore=ignoreAdditionalPartitions
+			ignore=--ignoreAdditionalPartitions
 			backup_add_comment "$ignore"
 
 			fi
@@ -107,9 +107,9 @@ function backup_add_comment(){
 		echo -e " $Quest_comment_text \n"
 		echo -e " -----------------------------------------------------------------------$normal \n"
 		read Quest_comment_text
-		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" --"$1"
+		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" "$1"
 	else
-		/usr/local/bin/raspiBackup.sh --"$1"
+		/usr/local/bin/raspiBackup.sh "$1"
 	fi
 }
 
