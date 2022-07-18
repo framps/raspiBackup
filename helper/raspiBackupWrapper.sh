@@ -2,8 +2,7 @@
 
 #######################################################################################################################
 #
-# 	Sample script to wrap raspiBackup.sh in order to mount and unmount the backup device
-# 	and start postprocessing programs like pishrink or raspiBackupRestore2Image
+# 	Sample script to wrap raspiBackup.sh in order to start any postprocessing programs like pishrink or raspiBackupRestore2Image
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
@@ -11,7 +10,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (c) 2013-2019 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2013-2022 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -32,7 +31,7 @@ set -euf -o pipefail
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.7"
+VERSION="0.2.8"
 
 set +u;GIT_DATE="$Date$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
@@ -69,23 +68,7 @@ function trapWithArg() { # function trap1 trap2 ... trapn
     done
 }
 
-function isMounted() {
-	local path
-	path=$1
-	while [[ $path != "" ]]; do
-		if mountpoint -q $path; then
-			return 0
-        fi
-        path=${path%/*}
-	done
-    return 1
-}
-
 function cleanup() { # trap
-	if (( ! $WAS_MOUNTED )); then
-		echo "--- Unmounting $BACKUP_MOUNT_POINT"
-		umount $BACKUP_MOUNT_POINT
-	fi
 	if (( $LOOP_MOUNTED )); then
 		losetup -d $LOOP_DEVICE
 		umount $LOOP_DEVICE
@@ -165,21 +148,6 @@ function pishrink() {
 # main program
 
 trapWithArg cleanup SIGINT SIGTERM EXIT
-
-# check if mountpoint is mounted
-if ! isMounted $BACKUP_MOUNT_POINT; then
-	WAS_MOUNTED=0
-	echo "--- Mounting $BACKUP_MOUNT_POINT"
-	mount $BACKUP_MOUNT_POINT	# no, mount it
-	if (( $? > 0 )); then
-		echo "??? Mount of $BACKUP_MOUNT_POINT failed"
-		exit 42
-	fi
-else
-	# was already mounted, don't unmount it at script end
-	WAS_MOUNTED=1
-	echo "--- $BACKUP_MOUNT_POINT already mounted"
-fi
 
 if [[ -n $LOOP_DISK_NAME ]]; then
 	# store backup in ext4 image on mounted partition to save ACLs
