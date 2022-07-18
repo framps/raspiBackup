@@ -3607,12 +3607,6 @@ function readConfigParameters() {
 		logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $ETC_CONFIG_FILE)"
 	fi
 
-	if [[ -z $UUID && $UID == 0 ]]; then
-		UUID="$(</proc/sys/kernel/random/uuid)"
-		echo -e "\n# GENERATED - DO NOT DELETE " >> "$ETC_CONFIG_FILE"
-		echo "UUID=$UUID" >> "$ETC_CONFIG_FILE"
-	fi
-
 	# Override default parms with parms in user config file
 
 	HOME_CONFIG_FILE_INCLUDED=0
