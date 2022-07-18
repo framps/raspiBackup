@@ -19,4 +19,4 @@ __Note:__ The scripts are provided as is by framps and raspiBackup users and are
   - Possible options --last or --select
     - Option --last -> the last backup is automatically selected without any prompt
     - Option --select -> the desired backup can be selected from a list
-  + See [this flowchart](./images/raspiBackopRestoreHelper_simple_flow-chart.pdf) for details
+    - See [this flowchart](./images/raspiBackopRestoreHelper_simple_flow-chart.pdf) for details
