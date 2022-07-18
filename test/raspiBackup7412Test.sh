@@ -47,7 +47,7 @@ if (( $UID != 0 )); then
 fi
 
 if ! which faketime 1>/dev/null; then
-	echo "Missing faketime"
+	echo "??? faketime program not found"
 	exit 1
 fi
 

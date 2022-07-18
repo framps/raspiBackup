@@ -8,23 +8,30 @@
 
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.
+  * Backupy types 
+    * rsync
+    * tar/tgz
+    * dd/ddz
   * No manual intervention required. Backups are created via cron over night.
   * Important services can be stopped before starting the backup and will be restarted when the backup finished.
   * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
-  * Messages and completion status of backup run can be send in an eMail or to Telegram.
-  * Extensionpoints allow to execute any additional logic at various steps in the backup and restore process.
-* Restore
-  * Restore any of the created backup versions to get a system which boots up immediately.
-  * Migrate a SD card backup image to an USB device during restore.
+  * Supported systems
+    * SD card only
+    * USB disk or SSD only (USB boot mode)
+    * SD card for boot and USB disk or SSD for root system (for Raspberries not able to use USB boot)
+  * Messages and completion status of backup sent via eMail or Telegram.
+  * Any additional logic can be added at various steps in the backup and restore process via extensionpoints.
+  * Restored backup will boot immediately.
 * Backup strategies
-  * Number of backup versions to keep is configurable.
+  * Number of backup versions to keep configurable either for sum of backups or on individual backup types
   * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
+  * Manual backup allows to create a kind of snapshot of the system just before major updated are done on a system.
 * Linux backup tools used
-  * Standard Linux backup tools dd, tar and rsync are available to create a backup.
+  * Standard Linux backup tools dd, tar and rsync can be used to create a backup.
   * dd and tar are full backups. rsync uses hardlinks for incremental backups.
   * dd backups can be restored with Windows tools.
 * Installation 
-  * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more configuration options can be configured in a configuration file.
+  * Menu driven installer installs and configures raspiBackup with all major options to get raspiBackup up and running in 5 minutes. Much more options can be configured in a configuration file.
 * Usability
   * National language support:
     * English (Default)
@@ -32,35 +39,46 @@
     * Finnish ([teemue](https://github.com/teemue))
     * Chinese ([GoogleBeEvil](https://github.com/GoogleBeEvil))
     * French ([mgrafr](https://github.com/mgrafr))
-    * Many thanks to everybody who translated raspiBackup messages into their native language 👍 
-    * Anybody who is interested to add language support for his native language is invited to read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
-  * More than 270 messages inform about configuration and environment mismatches and runtime errors
+    * Many thanks to the folks above who translated raspiBackup messages into their native language 👍 
+    * Anybody who is interested to add language support for other languages is invited to read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
+  * More than 270 messages inform about
+    *  Backup progress 
+    *  Configuration mismatches
+    *  Environment mismatches
+    *  Runtime errors
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
-* Servicability
+* Serviceability
   * Extensive logging helps to isolate backup/restore issues. 
 * Much more features (see below).
 
 ## Note
-**raspiBackup is supported only for RaspberryOS as operating system and Raspberry hardware. raspiBackup runs also successfully on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just try it and be happy if it works but don't ask for any support.**
+**raspiBackup is supported only for RaspberryOS as operating system and Raspberry hardware. raspiBackup runs successfully also on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just give it a try and be happy if it works but don't ask for any support. For details see [here](https://www.linux-tips-and-tricks.de/en/all-raspibackup-articles/609-supported-hard-and-software/).**
+
+## Support
+
+Support is given **only** for raspiBackup related issues. For any other general questions (for example Linux questions) use other information sources. 
+
+* [Create issues](https://github.com/framps/raspiBackup/issues/new/choose)
+* [Ask questions](https://github.com/framps/raspiBackup/discussions/categories)
 
 ## Documentation
 
 ### English
-* [Installation](https://www.linux-tips-and-tricks.de/en/backup/quickstart-rbk/)
+* [Installation](https://www.linux-tips-and-tricks.de/en/installation/)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
-* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/faq/rmessages/)
-* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/backup/smart-recycle/)
-* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/backup/synology-usage/)
+* [Error messages, root causes and suggested actions](https://linux-tips-and-tricks.de/en/raspibackupmessagese/)
+* [Smart recycle backup strategy](https://linux-tips-and-tricks.de/en/smart-recycle/)
+* [Use synology as backup space](https://linux-tips-and-tricks.de/en/synology/)
 
 ### German
-* [Installation](https://www.linux-tips-and-tricks.de/de/raspibackup/schnellstart-rbk/)
-* [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
-* [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
-* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/faq/fehlermeldungen/)
-* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/raspibackup/rotationsstrategie/)
-* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/raspibackup/benutzung-von-synology/)
+* [Installation](https://linux-tips-and-tricks.de/de/installation/)
+* [Benutzerhandbuch](https://linux-tips-and-tricks.de/de/raspibackup/)
+* [FAQ](https://linux-tips-and-tricks.de/de/faq/)
+* [Fehlermeldungen, Ursachen und Behebung](https://linux-tips-and-tricks.de/de/raspibackupmeldungen/)
+* [Intelligente Rotationsstrategie](https://linux-tips-and-tricks.de/de/rotationsstrategie/)
+* [Benutzung von Synology als Backupspace](https://linux-tips-and-tricks.de/de/synology/)
 
 ### French
 
@@ -92,8 +110,8 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 ## Much more detailed documentation
 
- * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
- * [German](https://www.linux-tips-and-tricks.de/de/alles-ueber-raspibackup/)
+ * [English](https://linux-tips-and-tricks.de/en/all-raspibackup-articles/)
+ * [German](https://linux-tips-and-tricks.de/de/alle-raspibackup-artikel/)
 
 ## Social media
 
