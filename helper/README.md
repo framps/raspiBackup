@@ -20,3 +20,13 @@ __Note:__ The scripts are provided as is by framps and raspiBackup users and are
       - Option --last -> the last backup is automatically selected without any prompt
       - Option --select -> the desired backup can be selected from a list
     - See [this flowchart](./images/raspiBackopRestoreHelper_simple_flow-chart.pdf) for details
+
+Upgrade 2022-07-22
+
+    Because of the -M function, with which a comment can be appended to the name of the backup directory (but these backups are not included in the backup strategy), I added an option --delete, with which a version can be selected from a list and deleted.
+    Before the final confirmation of the deletion process, the name of the directory to be deleted is displayed for checking purposes.
+    After the deletion process, the contents of the backup directory are displayed again via ls-la for checking purposes.
+
+    !! This dialogue can only be called up (as protection against accidental wrong entries) by using the --delete option.
+
+    I have also made a few optical changes and removed the completely superfluous dash lines.
