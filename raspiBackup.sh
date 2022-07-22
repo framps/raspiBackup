@@ -385,6 +385,7 @@ RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
+RC_CLEANUP_ERROR=140
 
 tty -s
 INTERACTIVE=!$?
@@ -1836,6 +1837,9 @@ MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootgerät %s ist nicht unterst�
 MSG_USBMOUNT_INSTALLED=277
 MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when 'usbmount' is installed."
 MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn 'usbmount' installiert ist."
+MSG_BACKUP_CLEANUP_FAILED=278
+MSG_EN[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Cleanup of backupdirectories failed. Manual deletion of the last backup directory is strongly recommended !"
+MSG_DE[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Fehler bei den Aufräumarbeiten am Backupverzeichnis. Das letzte Backupverzeichnis sollte dringend manuell gelöscht werden !"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5600,7 +5604,14 @@ function applyBackupStrategy() {
 
 			if (( ! $FAKE )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				pushd "$BACKUPPATH" 1>/dev/null; ls -d *-$BACKUPTYPE-* 2>/dev/null| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" 2>>"$LOG_FILE"; popd > /dev/null
+				pushd "$BACKUPPATH" &>>$LOG_FILE; ls -d *-$BACKUPTYPE-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; popd &>>$LOG_FILE
+
+				local rmRC=$?		
+				if (( $rmRC != 0 )); then
+					logItem "rmRC: $rmRC"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_CLEANUP_FAILED 
+					exitError $RC_CLEANUP_ERROR
+				fi					
 
 				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
 				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
@@ -5637,7 +5648,8 @@ function applyBackupStrategy() {
 				done
 				popd > /dev/null
 
-				logItem "post - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
+				logItem "Post cleanup"
+				logCommand "ls -d $BACKUPPATH/*"
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ALL_BACKUPS_KEPT "$BACKUPTYPE"
