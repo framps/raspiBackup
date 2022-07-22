@@ -32,7 +32,7 @@ fi
 
 if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
 	echo "Download and invoke raspiBackup.sh from github repository."
-	echo "First option defined the github repository to use."
+	echo "First option defines the github repository to use."
 	echo "All further options are passed on to raspiBackup."
 	exit 1
 fi
