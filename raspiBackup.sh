@@ -384,6 +384,7 @@ RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
+RC_ENVIRONMENT_ERROR=139
 
 tty -s
 INTERACTIVE=!$?
@@ -1791,10 +1792,14 @@ MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create 
 MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
+
+#
+# Non NLS messages
+#
+
 MSG_EXTENSION_CALLED=267
 MSG_EN[$MSG_EXTENSION_CALLED]="RBK0267I: Extension %s called."
 MSG_DE[$MSG_EXTENSION_CALLED]="RBK0267I: Erweiterung %s wird aufgerufen."
-
 MSG_UNSUPPORTED_ENVIRONMENT=268
 MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Only Raspberries running Raspberry PI OS are supported. Use option --unsupportedEnvironment to invoke $MYNAME WITHOUT ANY SUPPORT."
 MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
@@ -1827,7 +1832,10 @@ MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid d
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
 MSG_INVALID_BOOT_DEVICE=276
 MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported."
-MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootegerät %s ist nicht unterstützt."
+MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootgerät %s ist nicht unterstützt."
+MSG_USBMOUNT_INSTALLED=277
+MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when 'usbmount' is installed."
+MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn 'usbmount' installiert ist."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4464,8 +4472,12 @@ function cleanupRestore() { # trap
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
-		umount $BOOT_PARTITION &>>"$LOG_FILE"
-		umount $ROOT_PARTITION &>>"$LOG_FILE"
+		if isMounted $BOOT_PARTITION; then
+			umount $BOOT_PARTITION &>>"$LOG_FILE"
+		fi
+		if isMounted $ROOT_PARTITION; then
+			umount $ROOT_PARTITION &>>"$LOG_FILE"
+		fi
 	fi
 
 	logExit "$rc"
@@ -5431,7 +5443,7 @@ function restore() {
 				mkfs.ext4 $check $ROOT_PARTITION &>>$LOG_FILE
 			fi
 			rc=$?
-			if [ $rc != 0 ]; then
+			if (( $rc != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
@@ -7422,6 +7434,11 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ROOT_PARTITION_NOT_DIFFERENT "$RESTORE_DEVICE"
 			exitError $RC_DEVICES_NOTFOUND
 		fi
+	fi
+
+	if dpkg-query -W --showformat='${Status}\n' usbmount|grep "install ok installed" &>>$LOG_FILE; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
+		exitError $RC_ENVIRONMENT_ERROR
 	fi
 
 	BASE_DIR=$(dirname "$RESTOREFILE")
