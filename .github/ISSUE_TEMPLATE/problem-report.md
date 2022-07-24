@@ -11,7 +11,7 @@ If you run raspiBackup on RaspberryOS and a Raspberry please execute all followi
 
 * Check whether the error messages of raspiBackup were listed on the messages page and all suggested actions don't fixes the issue. [English](https://linux-tips-and-tricks.de/en/rmessages) - [German](https://linux-tips-and-tricks.de/de/fehlermeldungen)
 * Use your preferred search engine and look up the error message number
-* Attach raspiBackup debug log. Just drag and drop raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue.
+* Attach raspiBackup debug log. Just **DRAG AND DROP** raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue. Don'y copy and paste the log into the issue.
 
 #### If any requested information was not provided the issue will be rejected.
 
