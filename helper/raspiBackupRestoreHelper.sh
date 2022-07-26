@@ -229,24 +229,23 @@ function test_digit(){
 
 function backupdir_test(){
 	mountpoint="/bin/mountpoint"
-	$mountpoint -q "$backupdir"
+	$mountpoint -q "$1"
+	[[ $? == 0 ]]
 
-	if [[ $? == 0 ]]; then
-		test=ok
-	fi
 }
 
 function mount(){
-	backupdir_test
+	backupdir_test "$backupdir"
 
 	if [[ $unitname == "backup.mount" ]]; then
-		if [[ $test == ok ]]; then
+
+		if backupdir_test "$backupdir"; then
 			echo -e "$green $Info_already_mounted $normal \n"
 		else
 			systemctl start $unitname
-			backupdir_test
+			backupdir_test "$backupdir"
 
-			if [[ $test == ok ]]; then
+			if backupdir_test "$backupdir"; then
 				echo -e "$green $Info_is_mounted $normal \n"
                         mounted=ok
 			else
@@ -257,14 +256,15 @@ function mount(){
 fi
 
 if [[ $unitname == "fstab" ]]; then
-	if [[ $test == ok ]]; then
+
+	if backupdir_test "$backupdir"; then
 		echo -e "$green $Info_already_mounted $normal \n"
 
 	else
 		/usr/bin/mount -a
-		backupdir_test
+		backupdir_test "$backupdir"
 
-		if [[ $test == ok ]]; then
+		if backupdir_test "$backupdir"; then
 			echo -e "$green $Info_is_mounted $normal \n"
 			mounted=ok
 		else
