@@ -10,6 +10,32 @@
 # --delete (a backup can selected from a list of available backups to delete)
 #   This Option is only reachable with the option -- delete
 #
+# Update 2022_07_26
+#
+# Dynamic mount added.
+#
+# Possible are mount via mount-unit or via fstab.
+# Options
+# --mountfs "Name of an existing mount-unit" e.g. "backup.mount".
+# or
+# --mountfs "fstab
+#
+# For an automatic backup via cron, a --cron must be added to switch off the dialogue.
+# The backup is then done with the settings from raspiBackup.conf.
+#
+# Examples for dynamic mount:
+# sudo raspiBackupRestoreHelper.sh --mountfs "backup.mount"
+# (The mount directory will be mounted with an existing mount-unit".
+#
+# sudo raspiBackupRestoreHelper.sh --mountfs "fstab"
+# (The backup directory is mounted with an entry in fstab)
+#
+# Cron entry
+# * * * * /usr/local/bin/raspiBackupRestoreHelper.sh --mountfs "backup.unit or fstab" --cron
+#
+# The options --select, --backup, --last and --delete can still be used with the exception of the cron call and must be placed last.
+#
+#
 # Without option (The program asks whether a backup should be created or a backup should be restored.
 # All options (with exception --delete) are asked in the program by dialog).
 #
@@ -72,6 +98,7 @@ function backup(){
 		backup_add_comment
 
 	fi
+		unmount
 		exit 0
 }
 
@@ -114,7 +141,7 @@ function execution(){
 		echo -e "$red $destination $Warn_only_drive $normal"
 		execution
 	fi
-	
+
  	if [[ -b /dev/$destination ]]; then
 		echo -e "$green OK $normal \n"
 	else
@@ -126,7 +153,7 @@ function execution(){
 		echo -e "$red $destination $Warn_drive_mounted \n $normal".
 		exit 0
 	fi
-    
+
 	echo -e "$green $Info_backup_drive \n $backup_path \n >>> $destination \n $normal"
 
 	/usr/local/bin/raspiBackup.sh -d /dev/$destination /$backup_path      #Call raspiBackup.sh
@@ -137,7 +164,7 @@ function execution_select(){
 
 	declare -a backup_folder
 	backup_folder=( $(find $backupdir/$hostname/$hostname* -maxdepth 0 -type d))
-	
+
 	for i in "${!backup_folder[@]}"; do
 
 		v=$(( $i + 1 ))
@@ -162,7 +189,7 @@ function execution_select(){
 		echo -e "$red $Info_delete \n $backup_path\n\n"
 		echo -e " $Quest_sure $normal\n\n"
 		read input_sure
-		
+
 		if [[ ${input_sure,,} =~ [yj] ]]; then
 			echo -e "$yellow $backup_path \n $Info_Confirmation \n\n"
 			echo -e "$green $Info_update $normal"
@@ -171,11 +198,11 @@ function execution_select(){
 			ls -la $backupdir/$hostname
 			echo ""
 			exit 0
-			
+
 		else
 		exit 0
 		fi
-			
+
 	fi
 
 	if [[ -d "$backup_path" ]]; then
@@ -197,6 +224,61 @@ function test_digit(){
 	else
 		echo -e "$red $1 $Warn_no_number \n $normal"
 		execution_select
+	fi
+}
+
+function backupdir_test(){
+	mountpoint="/bin/mountpoint"
+	$mountpoint -q "$backupdir"
+
+	if [[ $? == 0 ]]; then
+		test=ok
+	fi
+}
+
+function mount(){
+	backupdir_test
+
+	if [[ $unitname == "backup.mount" ]]; then
+		if [[ $test == ok ]]; then
+			echo -e "$green $Info_already_mounted $normal \n"
+		else
+			systemctl start $unitname
+			backupdir_test
+
+			if [[ $test == ok ]]; then
+				echo -e "$green $Info_is_mounted $normal \n"
+                        mounted=ok
+			else
+				echo -e "$red $Info_not_mounted $normal \n"
+				exit 0
+			fi
+		fi
+fi
+
+if [[ $unitname == "fstab" ]]; then
+	if [[ $test == ok ]]; then
+		echo -e "$green $Info_already_mounted $normal \n"
+
+	else
+		/usr/bin/mount -a
+		backupdir_test
+
+		if [[ $test == ok ]]; then
+			echo -e "$green $Info_is_mounted $normal \n"
+			mounted=ok
+		else
+			echo -e "$red $Info_not_mounted $normal \n"
+			exit 0
+		fi
+	fi
+fi
+
+}
+
+function unmount(){
+	if [[ $mounted == ok ]]; then
+	/usr/bin/umount $backupdir
 	fi
 }
 
@@ -230,6 +312,9 @@ function language(){
 		Info_delete="Das folgende Backup wird gelöscht"
 		Quest_sure="Bist du wirklich sicher?   j/N"
 		Info_update="Das Backup wird jetzt endgültig gelöscht \n Das kann eine Weile dauern \n Im Anschluss wird dir das aktualisierte Backupverzeichnis noch einmal angezeigt \n \n"
+		Info_already_mounted="Das Backupverzeichnis ist bereits gemountet. Es wird im Anschluss nicht ausgehängt."
+		Info_is_mounted="Das Backupverzeichnis wurde gemountet. Es wird im Anschluss ausgehängt"
+		Info_not_mounted="Das Backupverzeichnis konnte nicht gemountet werden"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -253,13 +338,15 @@ function language(){
 		Info_delete="The following Backup will be deletet"
 		Quest_sure="Are you realy sure   y/N?"
 		Info_update="The backup is now finally deleted. \n This may take a while, \n Afterwards, the updated backup directory is displayed again. \n \n"
-	
+		Info_already_mounted="The backup directory is already mounted. It will not be unmounted afterwards"
+		Info_is_mounted="The backup directory was mounted. It will be unmounted afterwards"
+		Info_not_mounted="The backup directory could not be mounted"
 
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
 		language
-  
+
 	fi
 }
 
@@ -270,52 +357,76 @@ if (( $UID != 0 )); then
 	exit
 fi
 
+if [[ $3 != "--cron" ]]; then
 	language
+fi
 
 source $FILE
 backupdir=$DEFAULT_BACKUPPATH
 
+if [[ $1 == "--mountfs" ]]; then
+
+	if [[ $2 == *".mount"* ]] || [[ $2 == "fstab" ]]; then
+		unitname=$2
+		mount
+
+	else
+		echo "Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+		exit 0
+
+	fi
+fi
+
 backup_path="$(find $backupdir/$hostname/$hostname* -maxdepth 0 | sort -r | head -1)"  #Determine last backup
 
-if [[ $1 == "--last" ]]; then
+if [[ $3 == "--cron" ]]; then
+	/usr/local/bin/raspiBackup.sh
+	unmount
+	exit 0
+
+elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
 	execution
+	unmount
 	exit 0
 
-elif [[ $1 == "--select" ]]; then
+elif [[ $1 == "--select" ]] || [[ $3 == "--select" ]]; then
 	execution_select
+	unmount
 	exit 0
 
-elif [[ $1 == "--backup" ]]; then
+elif [[ $1 == "--backup" ]] || [[ $3 == "--backup" ]]; then
 	backup
+	unmount
 	exit 0
 
-elif [[ $1 == "--delete" ]]; then
+elif [[ $1 == "--delete" ]] || [[ $3 == "--delete" ]]; then
 	del=y
 	execution_select
+	unmount
 	exit 0
 fi
 
 	echo -e "$yellow $Quest_backup_or_restore \n"
 	echo -e " backup    1"
 	echo -e " restore   2 \n $normal"
-	
+
 	read backup_or_restore
 
 if (( $backup_or_restore  == 1 )); then
 	backup
-    
+
 elif (($backup_or_restore == 2 )); then
 	echo -e "$yellow $Quest_last_backup \n $normal"
 	read answer
-    
+
 else
 	echo -e "$red $Warn_false_number \n $normal"
 fi
 
 if [[ ${answer,,} =~ [yj] ]]; then
 	execution
-exit 0
-    
+	unmount
+	exit 0
 else
 	execution_select
 fi
