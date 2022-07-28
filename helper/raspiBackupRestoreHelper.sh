@@ -68,15 +68,14 @@ yellow='\033[1;33m'
 green='\033[1;32m'
 
 hostname="$(hostname)"           #Determine hostname
-
 FILE="/usr/local/etc/raspiBackup.conf"    #Determining the DEFAULT_BACKUPPATH from raspiBackup.conf
 
 function backup(){
-		echo ""
-		lsblk
-		echo ""
-		echo -e "$yellow $Quest_more_than_2_partitions \n \n $normal"
-		read input_partitions_more_then_2
+	echo ""
+	lsblk
+	echo ""
+	echo -e "$yellow $Quest_more_than_2_partitions \n \n $normal"
+	read input_partitions_more_then_2
 
 	if [[ ${input_partitions_more_then_2,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_backup_more_than_2 \n \n $normal"
@@ -87,24 +86,21 @@ function backup(){
 			read partitions
 			echo ""
 			backup_add_part_and_comment
-
 		else
 			ignore=--ignoreAdditionalPartitions
 			backup_add_comment "$ignore"
-
 		fi
-
 	else
 		backup_add_comment
-
 	fi
+
 		unmount
 		exit 0
 }
 
 function backup_add_part_and_comment(){
-		echo -e "$yellow $Quest_comment \n $normal"
-		read Quest_comment
+	echo -e "$yellow $Quest_comment \n $normal"
+	read Quest_comment
 
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_comment_text \n $normal"
@@ -116,8 +112,8 @@ function backup_add_part_and_comment(){
 }
 
 function backup_add_comment(){
-		echo -e "$yellow $Quest_comment \n $normal"
-		read Quest_comment
+	echo -e "$yellow $Quest_comment \n $normal"
+	read Quest_comment
 
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_comment_text \n $normal"
@@ -129,14 +125,12 @@ function backup_add_comment(){
 }
 
 function execution(){
-
-		lsblk                      #Output of lsblk to check the drive for restore
-		echo -e "$yellow $Quest_select_drive \n $normal"
-		read destination
+	lsblk                      #Output of lsblk to check the drive for restore
+	echo -e "$yellow $Quest_select_drive \n $normal"
+	read destination
 
 	if [[ "$destination" =~ ^(sd[a-f]|mmcblk[0-2])$ ]]; then
 		echo ""
-
 	else
 		echo -e "$red $destination $Warn_only_drive $normal"
 		execution
@@ -161,12 +155,10 @@ function execution(){
 }
 
 function execution_select(){
-
 	declare -a backup_folder
 	backup_folder=( $(find $backupdir/$hostname/$hostname* -maxdepth 0 -type d))
 
 	for i in "${!backup_folder[@]}"; do
-
 		v=$(( $i + 1 ))
 		echo "${backup_folder[$i]}  -> $v"
 	done
@@ -198,29 +190,25 @@ function execution_select(){
 			ls -la $backupdir/$hostname
 			echo ""
 			exit 0
-
 		else
-		exit 0
+			exit 0
 		fi
-
 	fi
 
 	if [[ -d "$backup_path" ]]; then
 		execution
 		echo -e "$red $Warn_drive_not_present \n $normal"
 		execution_select
-		fi
+	fi
 }
 
 function test_digit(){
-
 	if [[ "$1" =~ ^[0-9]+$ ]]; then            # regex: a number has to have
 
 		if (( $1 < $2 || $1 > $3 )); then
 			echo -e "$red $1 $Warn_invalid_number $2 > $3 \n $normal"
 			execution_select
 		fi
-
 	else
 		echo -e "$red $1 $Warn_no_number \n $normal"
 		execution_select
@@ -231,7 +219,6 @@ function backupdir_test(){
 	mountpoint="/bin/mountpoint"
 	$mountpoint -q "$1"
 	[[ $? == 0 ]]
-
 }
 
 function mount(){
@@ -247,33 +234,31 @@ function mount(){
 
 			if backupdir_test "$backupdir"; then
 				echo -e "$green $Info_is_mounted $normal \n"
-                        mounted=ok
+					mounted=ok
 			else
 				echo -e "$red $Info_not_mounted $normal \n"
 				exit 0
 			fi
 		fi
-fi
+	fi
 
-if [[ $unitname == "fstab" ]]; then
-
-	if backupdir_test "$backupdir"; then
-		echo -e "$green $Info_already_mounted $normal \n"
-
-	else
-		/usr/bin/mount -a
-		backupdir_test "$backupdir"
+	if [[ $unitname == "fstab" ]]; then
 
 		if backupdir_test "$backupdir"; then
-			echo -e "$green $Info_is_mounted $normal \n"
-			mounted=ok
+		echo -e "$green $Info_already_mounted $normal \n"
 		else
-			echo -e "$red $Info_not_mounted $normal \n"
-			exit 0
+			/usr/bin/mount -a
+			backupdir_test "$backupdir"
+
+			if backupdir_test "$backupdir"; then
+				echo -e "$green $Info_is_mounted $normal \n"
+				mounted=ok
+			else
+				echo -e "$red $Info_not_mounted $normal \n"
+				exit 0
+			fi
 		fi
 	fi
-fi
-
 }
 
 function unmount(){
@@ -283,12 +268,11 @@ function unmount(){
 }
 
 function language(){
-
-		echo -e "\n \n$yellow Please choose your preferred language"
-		echo -e " Bitte waehle deine bevorzugte Sprache \n \n"
-		echo -e " German  = 1"
-		echo -e " English = 2 \n \n $normal"
-		read lang
+	echo -e "\n \n$yellow Please choose your preferred language"
+	echo -e " Bitte waehle deine bevorzugte Sprache \n \n"
+	echo -e " German  = 1"
+	echo -e " English = 2 \n \n $normal"
+	read lang
 
 	if (( $lang == 1 )); then
 		Quest_last_backup="Soll das letzte Backup restored werden? j/N"
@@ -346,65 +330,62 @@ function language(){
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
 		language
-
 	fi
 }
 
-if (( $UID != 0 )); then
-	echo ""
-	echo -e "$red Script has to be called as root or with sudo $normal"
-	echo -e "$red Das Script muss als root oder mit sudo aufgerufen werden $normal"
-	exit
-fi
+	if (( $UID != 0 )); then
+		echo ""
+		echo -e "$red Script has to be called as root or with sudo $normal"
+		echo -e "$red Das Script muss als root oder mit sudo aufgerufen werden $normal"
+		exit
+	fi
 
-if [[ $3 != "--cron" ]]; then
-	language
-fi
+	if [[ $3 != "--cron" ]]; then
+		language
+	fi
 
-source $FILE
-backupdir=$DEFAULT_BACKUPPATH
+	source $FILE
+	backupdir=$DEFAULT_BACKUPPATH
 
-if [[ $1 == "--mountfs" ]]; then
+	if [[ $1 == "--mountfs" ]]; then
 
-	if [[ $2 == *".mount"* ]] || [[ $2 == "fstab" ]]; then
-		unitname=$2
-		mount
+		if [[ $2 == *".mount"* ]] || [[ $2 == "fstab" ]]; then
+			unitname=$2
+			mount
+		else
+			echo "Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+			exit 0
+		fi
+	fi
 
-	else
-		echo "Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+	backup_path="$(find $backupdir/$hostname/$hostname* -maxdepth 0 | sort -r | head -1)"  #Determine last backup
+
+	if [[ $3 == "--cron" ]]; then
+		/usr/local/bin/raspiBackup.sh
+		unmount
 		exit 0
 
+	elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
+		execution
+		unmount
+		exit 0
+
+	elif [[ $1 == "--select" ]] || [[ $3 == "--select" ]]; then
+		execution_select
+		unmount
+		exit 0
+
+	elif [[ $1 == "--backup" ]] || [[ $3 == "--backup" ]]; then
+		backup
+		unmount
+		exit 0
+
+	elif [[ $1 == "--delete" ]] || [[ $3 == "--delete" ]]; then
+		del=y
+		execution_select
+		unmount
+		exit 0
 	fi
-fi
-
-backup_path="$(find $backupdir/$hostname/$hostname* -maxdepth 0 | sort -r | head -1)"  #Determine last backup
-
-if [[ $3 == "--cron" ]]; then
-	/usr/local/bin/raspiBackup.sh
-	unmount
-	exit 0
-
-elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
-	execution
-	unmount
-	exit 0
-
-elif [[ $1 == "--select" ]] || [[ $3 == "--select" ]]; then
-	execution_select
-	unmount
-	exit 0
-
-elif [[ $1 == "--backup" ]] || [[ $3 == "--backup" ]]; then
-	backup
-	unmount
-	exit 0
-
-elif [[ $1 == "--delete" ]] || [[ $3 == "--delete" ]]; then
-	del=y
-	execution_select
-	unmount
-	exit 0
-fi
 
 	echo -e "$yellow $Quest_backup_or_restore \n"
 	echo -e " backup    1"
@@ -412,21 +393,20 @@ fi
 
 	read backup_or_restore
 
-if (( $backup_or_restore  == 1 )); then
-	backup
+	if (( $backup_or_restore  == 1 )); then
+		backup
 
-elif (($backup_or_restore == 2 )); then
-	echo -e "$yellow $Quest_last_backup \n $normal"
-	read answer
+	elif (($backup_or_restore == 2 )); then
+		echo -e "$yellow $Quest_last_backup \n $normal"
+		read answer
+	else
+		echo -e "$red $Warn_false_number \n $normal"
+	fi
 
-else
-	echo -e "$red $Warn_false_number \n $normal"
-fi
-
-if [[ ${answer,,} =~ [yj] ]]; then
-	execution
-	unmount
-	exit 0
-else
-	execution_select
-fi
+	if [[ ${answer,,} =~ [yj] ]]; then
+		execution
+		unmount
+		exit 0
+	else
+		execution_select
+	fi
