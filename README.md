@@ -8,6 +8,10 @@
 
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.
+  * Backupy types 
+    * rsync
+    * tar/tgz
+    * dd/ddz
   * No manual intervention required. Backups are created via cron over night.
   * Important services can be stopped before starting the backup and will be restarted when the backup finished.
   * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
@@ -44,7 +48,7 @@
     *  Runtime errors
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
-* Servicability
+* Serviceability
   * Extensive logging helps to isolate backup/restore issues. 
 * Much more features (see below).
 
@@ -61,20 +65,20 @@ Support is given **only** for raspiBackup related issues. For any other general 
 ## Documentation
 
 ### English
-* [Installation](https://www.linux-tips-and-tricks.de/en/backup/quickstart-rbk/)
+* [Installation](https://www.linux-tips-and-tricks.de/en/installation/)
 * [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
 * [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
-* [Error messages, root causes and suggested actions](https://www.linux-tips-and-tricks.de/en/faq/rmessages/)
-* [Smart recycle backup strategy](https://www.linux-tips-and-tricks.de/en/backup/smart-recycle/)
-* [Use synology as backup space](https://www.linux-tips-and-tricks.de/en/backup/synology-usage/)
+* [Error messages, root causes and suggested actions](https://linux-tips-and-tricks.de/en/raspibackupmessagese/)
+* [Smart recycle backup strategy](https://linux-tips-and-tricks.de/en/smart-recycle/)
+* [Use synology as backup space](https://linux-tips-and-tricks.de/en/synology/)
 
 ### German
-* [Installation](https://www.linux-tips-and-tricks.de/de/raspibackup/schnellstart-rbk/)
-* [Benutzerhandbuch](https://www.linux-tips-and-tricks.de/de/raspibackup)
-* [FAQ](https://www.linux-tips-and-tricks.de/de/faq)
-* [Fehlermeldungen, Ursachen und Behebung](https://www.linux-tips-and-tricks.de/de/faq/fehlermeldungen/)
-* [Intelligente Rotationsstrategie](https://www.linux-tips-and-tricks.de/de/raspibackup/rotationsstrategie/)
-* [Benutzung von Synology als Backupspace](https://www.linux-tips-and-tricks.de/de/raspibackup/benutzung-von-synology/)
+* [Installation](https://linux-tips-and-tricks.de/de/installation/)
+* [Benutzerhandbuch](https://linux-tips-and-tricks.de/de/raspibackup/)
+* [FAQ](https://linux-tips-and-tricks.de/de/faq/)
+* [Fehlermeldungen, Ursachen und Behebung](https://linux-tips-and-tricks.de/de/raspibackupmeldungen/)
+* [Intelligente Rotationsstrategie](https://linux-tips-and-tricks.de/de/rotationsstrategie/)
+* [Benutzung von Synology als Backupspace](https://linux-tips-and-tricks.de/de/synology/)
 
 ### French
 
@@ -106,8 +110,8 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 ## Much more detailed documentation
 
- * [English](https://www.linux-tips-and-tricks.de/en/all-pages-about-raspibackup/)
- * [German](https://www.linux-tips-and-tricks.de/de/alles-ueber-raspibackup/)
+ * [English](https://linux-tips-and-tricks.de/en/all-raspibackup-articles/)
+ * [German](https://linux-tips-and-tricks.de/de/alle-raspibackup-artikel/)
 
 ## Social media
 

@@ -37,11 +37,11 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2020-05-19 09:58:55 +0200$"
+GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: f822b75$"
+GIT_COMMIT="$Sha1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 LANG_EXT=${LANG^^*}
