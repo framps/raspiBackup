@@ -5604,7 +5604,7 @@ function applyBackupStrategy() {
 
 			if (( ! $FAKE )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				pushd "$BACKUPPATH" &>>$LOG_FILE; ls -d *-$BACKUPTYPE-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; popd &>>$LOG_FILE
+				pushd "$BACKUPPATH" &>>$LOG_FILE; ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; popd &>>$LOG_FILE
 
 				local rmRC=$?		
 				if (( $rmRC != 0 )); then
@@ -5648,8 +5648,7 @@ function applyBackupStrategy() {
 				done
 				popd > /dev/null
 
-				logItem "Post cleanup"
-				logCommand "ls -d $BACKUPPATH/*"
+				logItem "post - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ALL_BACKUPS_KEPT "$BACKUPTYPE"
@@ -6606,7 +6605,7 @@ function doitBackup() {
 	fi
 
 	logCommand "ls -1 ${BACKUPPATH}"
-	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" |wc -l)
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
