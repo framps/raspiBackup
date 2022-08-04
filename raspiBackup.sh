@@ -2408,6 +2408,9 @@ function executeRsync() { # cmd flagsToIgnore
 	return $rc
 }
 
+# Removing leading `/' from member names message is annoying. Use grep -v "Removing" and $PIPESTATUS 
+# to remove the message and catch the tar RC
+
 function executeTar() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
