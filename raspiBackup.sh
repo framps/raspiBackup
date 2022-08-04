@@ -2440,6 +2440,8 @@ function executeCommandNoStdoutRedirect() { # command - rc's to accept
 	return $?
 }
 
+// ((sh test.sh 2>&1 1>&3 | tee errors.log) 3>&1 | tee output.log) > /dev/null 2>&1
+
 function executeCmd() { # command - redirects - rc's to accept
 	local rc i
 	logEntry "Command: $1"
