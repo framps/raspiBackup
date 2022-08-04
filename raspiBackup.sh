@@ -2386,12 +2386,27 @@ function executeDD() { # cmd silent
 		else
 			executeCommandNoStdoutRedirect "$cmd"
 		fi
-	elif (( $PROGRESS && $INTERACTIVE)); then
-		executeCommandNoStderrRedirect "$cmd"
-	else
-		executeCommand "$cmd"
+	else 
+		( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
 	fi
 	rc=$?
+	logExit $rc
+	return $rc
+}
+
+# ignore tool error if configured
+function ignoreErrorRC() { # rc errors_to_ignore
+	logEntry
+	local rc="$1"
+	if (( $rc != 0 )); then
+		for i in ${@:2}; do
+			if (( $i == $rc )); then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
+				rc=0
+				break
+			fi
+		done
+	fi
 	logExit $rc
 	return $rc
 }
@@ -2403,6 +2418,7 @@ function executeRsync() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
+	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
 	return $rc
@@ -2416,6 +2432,7 @@ function executeTar() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
+	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
 	return $rc
