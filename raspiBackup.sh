@@ -2402,7 +2402,7 @@ function executeRsync() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	( eval "$cmd" 2>&1 1>&5 | tee $MSG_FILE ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
 	rc=$?
 	logExit $rc
 	return $rc
@@ -2412,7 +2412,7 @@ function executeTar() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	( eval "$cmd" 2>&1 1>&5 | tee $MSG_FILE ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
 	rc=$?
 	logExit $rc
 	return $rc
