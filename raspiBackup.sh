@@ -43,10 +43,10 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.8-dev-NVMe"										# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.8-dev"												# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.6"									# required config version for script
 
-VERSION_VARNAME="VERSION"									# has to match above var names
+VERSION_VARNAME="VERSION"										# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
 [ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
@@ -2408,14 +2408,14 @@ function executeRsync() { # cmd flagsToIgnore
 	return $rc
 }
 
-# Removing leading `/' from member names message is annoying. Use grep -v "Removing" and $PIPESTATUS 
-# to remove the message and catch the tar RC
+# Removing leading `/' from member names message is annoying. Use grep -v "Removing" to remove the message 
+# and use $PIPESTATUS and catch and return the tar RC
 
 function executeTar() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	rc=$?
 	logExit $rc
 	return $rc
