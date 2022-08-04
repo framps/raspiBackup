@@ -4884,7 +4884,7 @@ function backupDD() {
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 
 	local progressFlag=""
-	(( $PROGRESS )) && progressFlag="status=progress"
+	(( $PROGRESS && $INTERACTIVE )) && progressFlag="status=progress"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 
@@ -4927,13 +4927,13 @@ function backupDD() {
 			fi
 
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-				if (( $PROGRESS )); then
+				if (( $PROGRESS && $INTERACTIVE )); then
 					cmd="dd if=$BOOT_DEVICENAME bs=$blocksize count=$count | pv -fs $(fdisk -l $BOOT_DEVICENAME | grep Disk.*$BOOT_DEVICENAME | cut -d ' ' -f 5) | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
 				else
 					cmd="dd if=$BOOT_DEVICENAME bs=$blocksize count=$count | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
 				fi
 			else
-				if (( $PROGRESS )); then
+				if (( $PROGRESS && $INTERACTIVE )); then
 					cmd="dd if=$BOOT_DEVICENAME bs=$blocksize count=$count | pv -fs $(fdisk -l $BOOT_DEVICENAME | grep Disk.*$BOOT_DEVICENAME | cut -d ' ' -f 5) | dd of=\"$BACKUPTARGET_FILE\""
 				else
 					cmd="dd if=$BOOT_DEVICENAME bs=$blocksize count=$count of=\"$BACKUPTARGET_FILE\""
@@ -5159,7 +5159,7 @@ function backupRsync() { # partition number (for partition based backup)
 			$target \
 			"
 
-	if (( $PROGRESS )); then
+	if (( $PROGRESS && $INTERACTIVE )); then
 		cmd="rsync --info=progress2 $cmdParms"
 	else
 		cmd="rsync $cmdParms"
@@ -5270,7 +5270,7 @@ function restore() {
 		$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
 
 			local progressFlag=""
-			(( $PROGRESS )) && progressFlag="status=progress"
+			(( $PROGRESS && $INTERACTIVE )) && progressFlag="status=progress"
 
 			if [[ $BACKUPTYPE == $BACKUPTYPE_DD ]]; then
 				cmd="dd if=\"$ROOT_RESTOREFILE\" $progressFlag of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
@@ -5412,7 +5412,7 @@ function restore() {
 			if [[ -e "$DD_FILE" ]]; then
 				logItem "Restoring boot partition from $DD_FILE"
 				local progressFlag=""
-				(( $PROGRESS )) && progressFlag="status=progress"
+				(( $PROGRESS && $INTERACTIVE )) && progressFlag="status=progress"
 				local cmd="dd if="$DD_FILE" $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
 				executeDD "$cmd"
 				rc=$?
@@ -5421,7 +5421,7 @@ function restore() {
 				logItem "Restoring boot partition from $TAR_FILE to $BOOT_PARTITION"
 				mountAndCheck $BOOT_PARTITION "$MNT_POINT"
 				pushd "$MNT_POINT" &>>"$LOG_FILE"
-				if (( $PROGRESS )); then
+				if (( $PROGRESS && $INTERACTIVE )); then
 					local cmd="pv -f $TAR_FILE | tar -xf -"
 				else
 					local cmd="tar -xf  \"$TAR_FILE\""
@@ -5464,7 +5464,7 @@ function restore() {
 
 					pushd "$MNT_POINT" &>>"$LOG_FILE"
 					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
-					if (( $PROGRESS )); then
+					if (( $PROGRESS && $INTERACTIVE )); then
 						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
 					else
 						local cmd="tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
@@ -5478,7 +5478,7 @@ function restore() {
 					local excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
 					local progressFlag=""
-					(( $PROGRESS )) && progressFlag="--info=progress2"
+					(( $PROGRESS && $INTERACTIVE )) && progressFlag="--info=progress2"
 					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
 					executeRsync "$cmd"
 					rc=$?
@@ -6530,7 +6530,7 @@ function doitBackup() {
 
 		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
-		if (( $PROGRESS )) && [[ "$rsyncVersion" < "3.1" ]]; then
+		if (( $PROGRESS && $INTERACTIVE )) && [[ "$rsyncVersion" < "3.1" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
 			exitError $RC_PARAMETER_ERROR
 		fi
@@ -6554,7 +6554,7 @@ function doitBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )); then
+	if (( $PROGRESS && $INTERACTIVE )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
@@ -7250,13 +7250,13 @@ function restorePartitionBasedPartition() { # restorefile
 
 				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
 					if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ]]; then
-						if (( $PROGRESS )); then
+						if (( $PROGRESS && $INTERACTIVE )); then
 							cmd="if=\"$restoreFile\" $DD_PARMS | pv -fs $(stat -c %s "$restoreFile") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE"
 						else
 							cmd="if=\"$restoreFile\" $DD_PARMS of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE"
 						fi
 					else
-						if (( $PROGRESS )); then
+						if (( $PROGRESS && $INTERACTIVE )); then
 							cmd="gunzip -c \"$restoreFile\" | pv -fs $(stat -c %s "$restoreFile") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
 						else
 							cmd="gunzip -c \"$restoreFile\" | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
@@ -7278,7 +7278,7 @@ function restorePartitionBasedPartition() { # restorefile
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="z" || zip=""
 					cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
 
-					if (( $PROGRESS )); then
+					if (( $PROGRESS && $INTERACTIVE )); then
 						cmd="pv -f $restoreFile | $cmd -"
 					fi
 					executeCommand "$cmd"
@@ -7290,7 +7290,7 @@ function restorePartitionBasedPartition() { # restorefile
 					local archiveFlags="aH"						# -a <=> -rlptgoD, H = preserve hardlinks
 					[[ -n $fatSize  ]] && archiveFlags="rltD"	# no Hopg flags for fat fs
 					cmdParms="--numeric-ids -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
-					if (( $PROGRESS )); then
+					if (( $PROGRESS && $INTERACTIVE )); then
 						cmd="rsync --info=progress2 $cmdParms"
 					else
 						cmd="rsync $cmdParms"
@@ -7403,7 +7403,7 @@ function doitRestore() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if (( $PROGRESS )); then
+	if (( $PROGRESS && $INTERACTIVE )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_PARAMETER_ERROR
@@ -7461,7 +7461,7 @@ function doitRestore() {
 	DATE=$(basename "$RESTOREFILE" | sed -r 's/.*-[A-Za-z]+-backup-([0-9]+-[0-9]+).*/\1/')
 	logItem "Date: $DATE"
 
-	if (( $PROGRESS )); then
+	if (( $PROGRESS && $INTERACTIVE )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
@@ -7475,7 +7475,7 @@ function doitRestore() {
 		fi
 		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
-		if (( $PROGRESS )) && [[ "$rsyncVersion" < "3.1" ]]; then
+		if (( $PROGRESS && $INTERACTIVE )) && [[ "$rsyncVersion" < "3.1" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
 			exitError $RC_PARAMETER_ERROR
 		fi
