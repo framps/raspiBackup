@@ -2396,11 +2396,13 @@ function executeDD() { # cmd silent
 	return $rc
 }
 
+# ((sh test.sh 2>&1 1>&3 | tee errors.log) 3>&1 | tee output.log) > /dev/null 2>&1
+
 function executeRsync() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	executeCommand "$cmd" "$2"
+	( eval "$cmd" 2>&1 1>&5 | tee $MSG_FILE ) 5>&1
 	rc=$?
 	logExit $rc
 	return $rc
@@ -2410,7 +2412,7 @@ function executeTar() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
-	executeCommand "$cmd" "$2"
+	( eval "$cmd" 2>&1 1>&5 | tee $MSG_FILE ) 5>&1
 	rc=$?
 	logExit $rc
 	return $rc
@@ -2439,8 +2441,6 @@ function executeCommandNoStdoutRedirect() { # command - rc's to accept
 	executeCmd "$1" "2" "$2"
 	return $?
 }
-
-// ((sh test.sh 2>&1 1>&3 | tee errors.log) 3>&1 | tee output.log) > /dev/null 2>&1
 
 function executeCmd() { # command - redirects - rc's to accept
 	local rc i
