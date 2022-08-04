@@ -8,7 +8,7 @@
 
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.
-  * Backupy types 
+  * Backup types 
     * rsync
     * tar/tgz
     * dd/ddz
