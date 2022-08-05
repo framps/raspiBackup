@@ -2375,25 +2375,6 @@ function exitError() { # {rc}
 	exit $rc
 }
 
-function executeDD() { # cmd silent
-	logEntry
-	local rc cmd
-	cmd="$1"
-
-	if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-		if (( $PROGRESS && $INTERACTIVE )); then
-			executeCommandNoRedirect "$cmd"
-		else
-			executeCommandNoStdoutRedirect "$cmd"
-		fi
-	else 
-		( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
-	fi
-	rc=$?
-	logExit $rc
-	return $rc
-}
-
 # ignore tool error if configured
 function ignoreErrorRC() { # rc errors_to_ignore
 	logEntry
@@ -2407,6 +2388,17 @@ function ignoreErrorRC() { # rc errors_to_ignore
 			fi
 		done
 	fi
+	logExit $rc
+	return $rc
+}
+
+function executeDD() { # cmd silent
+	logEntry
+	local rc cmd
+	cmd="$1"
+	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
+	ignoreErrorRC $? "$2"
+	rc=$?
 	logExit $rc
 	return $rc
 }
@@ -2435,60 +2427,6 @@ function executeTar() { # cmd flagsToIgnore
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
-	return $rc
-}
-
-# write stdout and stderr into log if in background
-function executeCommand() { # command - rc's to accept
-	executeCmd "$1" "&" "$2"
-	return $?
-}
-
-# write nothing into log
-function executeCommandNoRedirect() { # command - rc's to accept
-	executeCmd "$1" "" "$2"
-	return $?
-}
-
-# write stdout into log if in background
-function executeCommandNoStderrRedirect() { # command - rc's to accept
-	executeCmd "$1" "1" "$2"
-	return $?
-}
-
-# gzip writes it's output into stdout thus don't redirect stdout into log, only stderr
-function executeCommandNoStdoutRedirect() { # command - rc's to accept
-	executeCmd "$1" "2" "$2"
-	return $?
-}
-
-function executeCmd() { # command - redirects - rc's to accept
-	local rc i
-	logEntry "Command: $1"
-	logItem "Redirect: $2 - Skips: $3"
-
-	if [[ $2 == "S" ]]; then			# silent mode
-		eval "$1 &>> $LOG_FILE"			# redirect 1 and/or 2 depending on $2
-
-	elif (( $INTERACTIVE )) || [[ -z "$2" ]]; then
-		eval "$1"						# no redirect at all
-
-	else
-		eval "$1 $2>> $LOG_FILE"		# redirect 1 and/or 2 depending on $2
-	fi
-	rc=$?
-	if (( $rc != 0 )); then
-		local error=1
-		for i in ${@:3}; do
-			if (( $i == $rc )); then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
-				rc=0
-				error=0
-				break
-			fi
-		done
-	fi
-	logExit "$rc"
 	return $rc
 }
 
@@ -4747,10 +4685,10 @@ function bootPartitionBackup() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
 					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
-					executeCmd "$cmd" "S" # silent mode
+					executeTar "$cmd" 
 				else
 					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
-					executeCmd "$cmd" "S" # silent mode
+					executeDD "$cmd"
 				fi
 				rc=$?
 				if [ $rc != 0 ]; then
@@ -7244,25 +7182,6 @@ function restorePartitionBasedPartition() { # restorefile
 
 			case $BACKUPTYPE in
 
-				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ)
-					if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ]]; then
-						if (( $PROGRESS )); then
-							cmd="if=\"$restoreFile\" $DD_PARMS | pv -fs $(stat -c %s "$restoreFile") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE"
-						else
-							cmd="if=\"$restoreFile\" $DD_PARMS of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE"
-						fi
-					else
-						if (( $PROGRESS )); then
-							cmd="gunzip -c \"$restoreFile\" | pv -fs $(stat -c %s "$restoreFile") | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-						else
-							cmd="gunzip -c \"$restoreFile\" | dd of=$RESTORE_DEVICE bs=$DD_BLOCKSIZE $DD_PARMS"
-						fi
-					fi
-
-					executeCommand "$cmd"
-					rc=$?
-					;;
-
 				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
 					local archiveFlags=""
 
@@ -7277,7 +7196,7 @@ function restorePartitionBasedPartition() { # restorefile
 					if (( $PROGRESS )); then
 						cmd="pv -f $restoreFile | $cmd -"
 					fi
-					executeCommand "$cmd"
+					executeTar "$cmd"
 					rc=$?
 					popd &>>"$LOG_FILE"
 					;;
@@ -7291,7 +7210,7 @@ function restorePartitionBasedPartition() { # restorefile
 					else
 						cmd="rsync $cmdParms"
 					fi
-					executeCommand "$cmd"
+					executeRsync "$cmd"
 					rc=$?
 					;;
 
