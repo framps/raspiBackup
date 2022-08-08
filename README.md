@@ -8,7 +8,7 @@
 
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.
-  * Backupy types 
+  * Backup types 
     * rsync
     * tar/tgz
     * dd/ddz
@@ -60,7 +60,7 @@
 Support is given **only** for raspiBackup related issues. For any other general questions (for example Linux questions) use other information sources. 
 
 * [Create issues](https://github.com/framps/raspiBackup/issues/new/choose)
-* [Ask questions](https://github.com/framps/raspiBackup/discussions/categories)
+* [Ask questions](https://github.com/framps/raspiBackup/discussions)
 
 ## Documentation
 
