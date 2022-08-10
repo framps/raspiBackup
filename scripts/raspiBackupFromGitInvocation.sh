@@ -2,9 +2,9 @@
 
 #######################################################################################################################
 #
-#  Download and start a raspiBackup version available on github
+#  Download and invoke a raspiBackup version available on github
 #
-# Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
+#  Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 #######################################################################################################################
 #
@@ -30,6 +30,11 @@ if [[ -z $1 ]]; then
 	exit 1
 fi
 
+if ! which jq; then
+	echo "??? Missing jq. Please install jq first."
+	exit 1
+fi
+
 if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
 	echo "Download and invoke raspiBackup.sh from github repository."
 	echo "First option defines the github repository to use."
@@ -45,6 +50,7 @@ downloadURL="https://raw.githubusercontent.com/framps/raspiBackup/$branch/raspiB
 echo "--- Downloading raspiBackup.sh from git branch $branch as raspiBackup_$branch.sh"
 wget $downloadURL -O raspiBackup_$branch.sh
 rc=$?
+trap 'rm -f raspiBackup_$branch.sh' SIGINT SIGTERM EXIT
 
 if (( $rc != 0 )); then
 	echo "??? Error occured downloading $downloadURL. RC: $rc"
@@ -53,18 +59,47 @@ fi
 
 chmod +x raspiBackup_$branch.sh
 
-sha="$(curl -s -H "Accept: application/vnd.github.VERSION.sha" "https://api.github.com/repos/framps/raspiBackup/commits/master")"
+jsonFile=$(mktemp)
+trap 'rm -f raspiBackup_$branch.sh; rm -f $jsonFile' SIGINT SIGTERM EXIT
 
-if (( $? != 0 )); then
-	echo "??? Error retrieving sha"
+TOKEN=""															# Personal token to get better rate limits 
+if [[ -n $TOKEN ]]; then
+	HTTP_CODE="$(curl -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
+else
+	HTTP_CODE="$(curl -w "%{http_code}" -o $jsonFile -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
+fi
+	
+rc=$?
+
+if (( $rc != 0 )); then
+	echo "??? Error retrieving commit information from github. curl RC: $rc"
+	exit 1
+fi
+
+if (( $HTTP_CODE != 200 )); then
+	echo "??? Error retrieveing commit information from github. HTTP response: $HTTP_CODE"
+	jq . $jsonFile
 	exit 1
 fi	
 
+sha="$(jq -r ".sha" "$jsonFile")"
+if [[ -z $sha ]]; then
+	echo "??? Error extracting sha from commit JSON"
+	exit 1
+fi
+
+date="$(jq -r ".commit.author.date" "$jsonFile")"
+
+if [[ -z $date ]]; then
+	echo "??? Error extracting date from commit JSON"
+	exit 1
+fi
+
 shaShort=${sha:0:7}
 sed -i "s/\$Sha1/\$Sha1${shaShort}/" ./raspiBackup_$branch.sh 
+dateShort="${date:0:10} ${date:11}"
+sed -i "s/\$Date/\$Date${dateShort}/" ./raspiBackup_$branch.sh 
 
 sudo ./raspiBackup_$branch.sh $@
-
-# TODO: use curl https://api.github.com/repos/framps/raspiBackup/branches/master to extract sha and date
 
 
