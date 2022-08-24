@@ -7402,7 +7402,6 @@ function doitRestore() {
 		findNonpartitionBackupBootAndRootpartitionFiles
 	fi
 
-	inspect4Backup
 	inspect4Restore
 
 	if (( $FORCE_SFDISK )); then
