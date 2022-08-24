@@ -7327,7 +7327,7 @@ function doitRestore() {
 
 	if ! (( $FAKE )); then
 		RESTORE_DEVICE=${RESTORE_DEVICE%/} # delete trailing /
-		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]+$ ) && ! ( $RESTORE_DEVICE =~ "/dev/loop[0-9]+" ) && ! ( $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" )]]; then
+		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]+$ ) && ! ( $RESTORE_DEVICE =~ /dev/loop[0-9]+ ) && ! ( $RESTORE_DEVICE =~ /dev/nvme[0-9]+n[0-9]+ )]]; then
 			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/[a-zA-Z]+$ ]] ; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_PARTITION
 				exitError $RC_PARAMETER_ERROR
