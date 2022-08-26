@@ -2396,6 +2396,7 @@ function executeDD() { # cmd silent
 	logEntry
 	local rc cmd
 	cmd="$1"
+	logItem "$cmd"
 	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
@@ -2409,6 +2410,7 @@ function executeRsync() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
+	logItem "$cmd"
 	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
@@ -2423,6 +2425,7 @@ function executeTar() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
 	cmd="$1"
+	logItem "$cmd"
 	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
