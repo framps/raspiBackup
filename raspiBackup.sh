@@ -383,6 +383,8 @@ RC_BACKUP_EXTENSION_FAILS=134
 RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
+RC_INITIAL_COMMAND_ERROR=138
+RC_FINAL_COMMAND_ERROR_ERROR=139
 
 tty -s
 INTERACTIVE=!$?
@@ -1824,6 +1826,12 @@ MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemou
 MSG_RESTORE_DEVICE_NOT_VALID=275
 MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid device."
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
+MSG_INITIAL_COMMAND_FAILED=276
+MSG_EN[$MSG_INITIAL_COMMAND_FAILED]="RBK0276E: Error occured executing initial command. RC %s."
+MSG_DE[$MSG_INITIAL_COMMAND_FAILED]="RBK276E: Ein Fehler trat beim Ausführen der initialen Befehle auf. RC %s."
+MSG_FINAL_COMMAND_FAILED=277
+MSG_EN[$MSG_FINAL_COMMAND_FAILED]="RBK0277W: Error occured executing final command. RC %s."
+MSG_DE[$MSG_FINAL_COMMAND_FAILED]="RBK0277W: Ein Fehler trat beim Ausführen der finalen Befehle auf. RC %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2558,8 +2566,10 @@ function logOptions() { # option state
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
 	logItem "FAKE=$FAKE"
+	logItem "FINAL_COMMANDS=$FINAL_COMMANDS"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
+	logItem "INITIAL_COMMANDS=$INITIAL_COMMANDS"
 	logItem "KEEPBACKUPS=$KEEPBACKUPS"
 	logItem "KEEPBACKUPS_DD=$KEEPBACKUPS_DD"
 	logItem "KEEPBACKUPS_DDZ=$KEEPBACKUPS_DDZ"
@@ -2645,6 +2655,10 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_BEFORE_STOPSERVICES=""
 	# commands to execute after backup start separated by &&
 	DEFAULT_AFTER_STARTSERVICES=""
+	# commands to execute at startup
+	DEFAULT_INITIAL_COMMANDS=""
+	# commands to execute just before terminating
+	DEFAULT_FINAL_COMMANDS=""
 	# HTML color and VT100 color for warning and error, yellow red
 	DEFAULT_COLOR_CODES=("#FF8000 33" "#FF0000 31")
 	# email to send completion status
@@ -3256,6 +3270,41 @@ function executeBeforeStopServices() {
 		fi
 		BEFORE_STOPPED_SERVICES=1
 	fi
+	logExit
+}
+
+function initialCommands() {
+
+	logEntry
+
+	if [[ -n "$INITIAL_COMMANDS" )); then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_INITIAL_COMMAND_FAILED "$INITIAL_COMMANDS"
+		logItem "$INITIAL_COMMANDS"
+		executeShellCommand "$INITIAL_COMMANDS"
+		local rc=$?
+		if [[ $rc != 0 ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INITIAL_COMMAND_FAILED "$rc"
+			exitError $RC_INITIAL_COMMAND_ERROR
+		fi
+	fi
+
+	logExit
+}
+
+function finalCommands() {
+
+	logEntry
+
+	if [[ -n "$FINAL_COMMANDS" )); then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_FINAL_COMMAND_FAILED "$FINAL_COMMANDS"
+		logItem "$FINAL_COMMANDS"
+		executeShellCommand "$FINAL_COMMANDS"
+		local rc=$?
+		if [[ $rc != 0 ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FINAL_COMMAND_FAILED "$rc"
+		fi
+	fi
+
 	logExit
 }
 
