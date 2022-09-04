@@ -43,7 +43,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.7"												# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.7-hotfix-535"									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.6"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -1828,8 +1828,8 @@ MSG_FINAL_COMMAND_FAILED=276
 MSG_EN[$MSG_FINAL_COMMAND_FAILED]="RBK0276W: Error occured executing final command. RC %s."
 MSG_DE[$MSG_FINAL_COMMAND_FAILED]="RBK0276W: Ein Fehler trat beim Ausführen der finalen Befehle auf. RC %s."
 MSG_FINAL_COMMAND_EXECUTED=277
-MSG_EN[$MSG_AFTER_STARTING_SERVICES]="RBK0277I: Executing final command: '%s'."
-MSG_DE[$MSG_AFTER_STARTING_SERVICES]="RBK0277I: Letzte ausgeführteBefehl: '%s'."
+MSG_EN[$MSG_FINAL_COMMAND_EXECUTED]="RBK0277I: Executing final command: '%s'."
+MSG_DE[$MSG_FINAL_COMMAND_EXECUTED]="RBK0277I: Finaler Befehl wird ausgeführt: '%s'."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2564,7 +2564,7 @@ function logOptions() { # option state
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
 	logItem "FAKE=$FAKE"
-	logItem "FINAL_COMMANDS=$FINAL_COMMANDS"
+	logItem "FINAL_COMMAND=$FINAL_COMMAND"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
 	logItem "KEEPBACKUPS=$KEEPBACKUPS"
@@ -2653,7 +2653,7 @@ function initializeDefaultConfigVariables() {
 	# commands to execute after backup start separated by &&
 	DEFAULT_AFTER_STARTSERVICES=""
 	# commands to execute just before terminating
-	DEFAULT_FINAL_COMMANDS=""
+	DEFAULT_FINAL_COMMAND=""
 	# HTML color and VT100 color for warning and error, yellow red
 	DEFAULT_COLOR_CODES=("#FF8000 33" "#FF0000 31")
 	# email to send completion status
@@ -2788,6 +2788,7 @@ function copyDefaultConfigVariables() {
 	EMAIL_SENDER="$DEFAULT_EMAIL_SENDER"
 	EXCLUDE_LIST="$DEFAULT_EXCLUDE_LIST"
 	EXTENSIONS="$DEFAULT_EXTENSIONS"
+	FINAL_COMMAND="$DEFAULT_FINAL_COMMAND"
 	IGNORE_ADDITIONAL_PARTITIONS="$DEFAULT_IGNORE_ADDITIONAL_PARTITIONS"
 	KEEPBACKUPS="$DEFAULT_KEEPBACKUPS"
 	KEEPBACKUPS_DD="$DEFAULT_KEEPBACKUPS_DD"
@@ -3268,14 +3269,14 @@ function executeBeforeStopServices() {
 	logExit
 }
 
-function finalCommands() {
+function finalCommand() {
 
 	logEntry
 
-	if [[ -n "$FINAL_COMMANDS" )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_FINAL_COMMAND_EXECUTED "$FINAL_COMMANDS"
-		logItem "$FINAL_COMMANDS"
-		executeShellCommand "$FINAL_COMMANDS"
+	if [[ -n "$FINAL_COMMAND" ]]; then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_FINAL_COMMAND_EXECUTED "$FINAL_COMMAND"
+		logItem "$FINAL_COMMAND"
+		executeShellCommand "$FINAL_COMMAND"
 		local rc=$?
 		if [[ $rc != 0 ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FINAL_COMMAND_FAILED "$rc"			
@@ -4377,6 +4378,8 @@ function cleanup() { # trap
 
 	cleanupTempFiles
 
+	finalCommand "$rc"
+
 	logItem "Terminate now with rc $CLEANUP_RC"
 	(( $CLEANUP_RC == 0 )) && saveVars
 
@@ -4440,8 +4443,6 @@ function cleanup() { # trap
 			sendEMail "" "$msg"
 		fi # ! $RESTORE
 	fi
-
-	finalCommands "$rc"
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
