@@ -100,6 +100,10 @@ sed -i "s/\$Sha1/\$Sha1${shaShort}/" ./raspiBackup.sh
 dateShort="${date:0:10} ${date:11}"
 sed -i "s/\$Date/\$Date${dateShort}/" ./raspiBackup.sh 
 
+rm -f $jsonFile
+
+trap - SIGINT SIGTERM EXIT
+
 sudo ./raspiBackup.sh $@
 
 
