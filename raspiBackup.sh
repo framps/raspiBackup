@@ -2270,10 +2270,8 @@ function writeToConsole() {  # msglevel messagenumber message
 function isUnsupportedVersion() {
 
 	logEntry
-	set -x
 	local rc=0
 	[[ "$GIT_COMMIT" != "$SHA_PLACEHOLDER"  && "$GIT_DATE" != "$DATE_PLACEHOLDER" ]] && rc=1
-	set +x
 	logExit $rc
 	return $rc
 }
