@@ -43,13 +43,8 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-<<<<<<< HEAD
-VERSION="0.6.7.1-dev"										# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.8-dev"												# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.6"									# required config version for script
-=======
-VERSION="0.6.7-hotfix-535"									# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.6"								# required config version for script
->>>>>>> master_535
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -79,11 +74,11 @@ IS_BETA=$(( ! $(grep -iq beta <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
-GIT_DATE="$Date$"
+GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1$"
+GIT_COMMIT='$Sha1$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -334,6 +329,12 @@ NEW_OPTION_TRAILER="# >>>>> NEW OPTION added in config version %s <<<<< "
 DELETED_OPTION_TRAILER="# >>>>> OPTION DELETED in config version %s <<<<< "
 
 TWO_TB=$((1024*1024*1024*1024*2))			# disks > 2TB reuquire gpt instead of mbr
+
+SHA_PLACEHOLDER="JFNoYTEkCg=="
+DATE_PLACEHOLDER="JERhdGUkCg=="
+
+SHA_PLACEHOLDER="$(base64 -d <<< "$SHA_PLACEHOLDER")"
+DATE_PLACEHOLDER="$(base64 -d <<< "$DATE_PLACEHOLDER")"
 
 # Commands used by raspiBackup and which have to be available
 # [command]=package
@@ -1836,7 +1837,6 @@ MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemou
 MSG_RESTORE_DEVICE_NOT_VALID=275
 MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid device."
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
-<<<<<<< HEAD
 MSG_INVALID_BOOT_DEVICE=276
 MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported."
 MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootgerät %s ist nicht unterstützt."
@@ -1846,14 +1846,15 @@ MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn 'usbm
 MSG_BACKUP_CLEANUP_FAILED=278
 MSG_EN[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Cleanup of backupdirectories failed. Manual deletion of the last backup directory is strongly recommended !"
 MSG_DE[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Fehler bei den Aufräumarbeiten am Backupverzeichnis. Das letzte Backupverzeichnis sollte dringend manuell gelöscht werden !"
-=======
-MSG_FINAL_COMMAND_FAILED=276
-MSG_EN[$MSG_FINAL_COMMAND_FAILED]="RBK0276W: Error occured executing final command. RC %s."
-MSG_DE[$MSG_FINAL_COMMAND_FAILED]="RBK0276W: Ein Fehler trat beim Ausführen der finalen Befehle auf. RC %s."
-MSG_FINAL_COMMAND_EXECUTED=277
-MSG_EN[$MSG_FINAL_COMMAND_EXECUTED]="RBK0277I: Executing final command: '%s'."
-MSG_DE[$MSG_FINAL_COMMAND_EXECUTED]="RBK0277I: Finaler Befehl wird ausgeführt: '%s'."
->>>>>>> master_535
+MSG_FINAL_COMMAND_FAILED=279
+MSG_EN[$MSG_FINAL_COMMAND_FAILED]="RBK0279W: Error occured executing final command. RC %s."
+MSG_DE[$MSG_FINAL_COMMAND_FAILED]="RBK0279W: Ein Fehler trat beim Ausführen der finalen Befehle auf. RC %s."
+MSG_FINAL_COMMAND_EXECUTED=280
+MSG_EN[$MSG_FINAL_COMMAND_EXECUTED]="RBK0280I: Executing final command: '%s'."
+MSG_DE[$MSG_FINAL_COMMAND_EXECUTED]="RBK0280I: Finaler Befehl wird ausgeführt: '%s'."
+MSG_UNSUPPORTED_VERSION=281
+MSG_EN[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Unsupported version of $MYSELF."
+MSG_DE[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Nicht unterstützte Version von $MYSELF."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2264,6 +2265,17 @@ function writeToConsole() {  # msglevel messagenumber message
 	fi
 
 	unset noNL
+}
+
+function isUnsupportedVersion() {
+
+	logEntry
+	set -x
+	local rc=0
+	[[ "$GIT_COMMIT" != "$SHA_PLACEHOLDER"  && "$GIT_DATE" != "$DATE_PLACEHOLDER" ]] && rc=1
+	set +x
+	logExit $rc
+	return $rc
 }
 
 function isSupportedEnvironment() {
@@ -5898,6 +5910,10 @@ function doit() {
 	logItem "Startingdirectory: $(pwd)"
 	logCommand "fdisk -l | grep -v "^$""
 	logCommand "mount"
+
+	if isUnsupportedVersion; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_VERSION
+	fi		
 
 	if (( $RESTORE )); then
 		doitRestore
