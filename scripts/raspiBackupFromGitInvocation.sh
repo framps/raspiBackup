@@ -38,7 +38,7 @@ fi
 if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
 	echo "Download and invoke raspiBackup.sh from github repository."
 	echo "First option defines the github repository to use."
-	echo "All further options are passed on to raspiBackup."
+	echo "All following options are passed through to raspiBackup."
 	exit 1
 fi
 
@@ -47,20 +47,20 @@ shift
 
 downloadURL="https://raw.githubusercontent.com/framps/raspiBackup/$branch/raspiBackup.sh"
 
-echo "--- Downloading raspiBackup.sh from git branch $branch as raspiBackup_$branch.sh"
-wget $downloadURL -O raspiBackup_$branch.sh
+echo "--- Downloading raspiBackup.sh from git branch $branch into current diryctory"
+wget $downloadURL -O raspiBackup.sh
 rc=$?
-trap 'rm -f raspiBackup_$branch.sh' SIGINT SIGTERM EXIT
+trap 'rm -f raspiBackup.sh' SIGINT SIGTERM EXIT
 
 if (( $rc != 0 )); then
 	echo "??? Error occured downloading $downloadURL. RC: $rc"
 	exit 1
 fi	
 
-chmod +x raspiBackup_$branch.sh
+chmod +x raspiBackup.sh
 
 jsonFile=$(mktemp)
-trap 'rm -f raspiBackup_$branch.sh; rm -f $jsonFile' SIGINT SIGTERM EXIT
+trap 'rm -f raspiBackup.sh; rm -f $jsonFile' SIGINT SIGTERM EXIT
 
 TOKEN=""															# Personal token to get better rate limits 
 if [[ -n $TOKEN ]]; then
@@ -96,10 +96,14 @@ if [[ -z $date ]]; then
 fi
 
 shaShort=${sha:0:7}
-sed -i "s/\$Sha1/\$Sha1${shaShort}/" ./raspiBackup_$branch.sh 
+sed -i "s/\$Sha1/\$Sha1${shaShort}/" ./raspiBackup.sh 
 dateShort="${date:0:10} ${date:11}"
-sed -i "s/\$Date/\$Date${dateShort}/" ./raspiBackup_$branch.sh 
+sed -i "s/\$Date/\$Date${dateShort}/" ./raspiBackup.sh 
 
-sudo ./raspiBackup_$branch.sh $@
+rm -f $jsonFile
+
+trap - SIGINT SIGTERM EXIT
+
+sudo ./raspiBackup.sh $@
 
 
