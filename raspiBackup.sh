@@ -330,11 +330,8 @@ DELETED_OPTION_TRAILER="# >>>>> OPTION DELETED in config version %s <<<<< "
 
 TWO_TB=$((1024*1024*1024*1024*2))			# disks > 2TB reuquire gpt instead of mbr
 
-SHA_PLACEHOLDER="JFNoYTEkCg=="
-DATE_PLACEHOLDER="JERhdGUkCg=="
-
-SHA_PLACEHOLDER="$(base64 -d <<< "$SHA_PLACEHOLDER")"
-DATE_PLACEHOLDER="$(base64 -d <<< "$DATE_PLACEHOLDER")"
+SHA_PLACEHOLDER="$(base64 -d <<< "JFNoYTEkCg==")"
+DATE_PLACEHOLDER="$(base64 -d <<< "JERhdGUkCg==")"
 
 # Commands used by raspiBackup and which have to be available
 # [command]=package
