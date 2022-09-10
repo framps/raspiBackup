@@ -5053,7 +5053,11 @@ function backupTar() {
 		$EXCLUDE_LIST \
 		$source"
 
-	(( $PARTITIONBASED_BACKUP )) && pushd $sourceDir &>>$LOG_FILE
+	if (( $PARTITIONBASED_BACKUP )); then
+		if ! pushd $sourceDir &>>$LOG_FILE; then
+				assertionFailed $LINENO "push to $sourceDir failed"
+		fi
+	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
@@ -5062,7 +5066,11 @@ function backupTar() {
 		rc=$?
 	fi
 
-	(( $PARTITIONBASED_BACKUP )) && popd &>>$LOG_FILE
+	if (( $PARTITIONBASED_BACKUP )); then
+		if ! popd &>>$LOG_FILE; then
+			assertionFailed $LINENO "pop failed"
+		fi
+	fi
 
 	logExit  "$rc"
 
@@ -5464,7 +5472,9 @@ function restore() {
 				ext=$BOOT_TAR_EXT
 				logItem "Restoring boot partition from $TAR_FILE to $BOOT_PARTITION"
 				mountAndCheck $BOOT_PARTITION "$MNT_POINT"
-				pushd "$MNT_POINT" &>>"$LOG_FILE"
+				if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
+					assertionFailed $LINENO "push to $MNT_POINT failed"
+				fi
 				if (( $PROGRESS && $INTERACTIVE )); then
 					local cmd="pv -f $TAR_FILE | tar -xf -"
 				else
@@ -5506,7 +5516,9 @@ function restore() {
 				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
 					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
-					pushd "$MNT_POINT" &>>"$LOG_FILE"
+					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
+						assertionFailed $LINENO "push to $MNT_POINT failed"
+					fi
 					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
 					if (( $PROGRESS && $INTERACTIVE )); then
 						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
@@ -5648,7 +5660,13 @@ function applyBackupStrategy() {
 
 			if (( ! $FAKE )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				pushd "$BACKUPPATH" &>>$LOG_FILE; ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; popd &>>$LOG_FILE
+				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+					assertionFailed $LINENO "push to $BACKUPPATH failed"
+				fi
+				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
+				if ! popd &>>$LOG_FILE; then
+					assertionFailed $LINENO "pop failed"
+				fi
 
 				local rmRC=$?		
 				if (( $rmRC != 0 )); then
@@ -5660,7 +5678,10 @@ function applyBackupStrategy() {
 				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
 				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
 
-				pushd "$BACKUPPATH" 1>/dev/null
+				if ! pushd "$BACKUPPATH" 1>/dev/null; then
+					assertionFailed $LINENO "push to $BACKUPPATH failed"
+				fi
+				
 				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
 
 					if [[ $imgFile =~ $regexDD ]]; then
@@ -7322,7 +7343,9 @@ function restorePartitionBasedPartition() { # restorefile
 						local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"	# fat32 doesn't know about this
 					fi
 
-					pushd "$MNT_POINT" &>>"$LOG_FILE"
+					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
+						assertionFailed $LINENO "push to $MNT_POINT failed"
+					fi
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="z" || zip=""
 					cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
 
