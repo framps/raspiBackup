@@ -5226,7 +5226,7 @@ function restore() {
 	rc=0
 	local verbose zip
 
-	(( $VERBOSE )) && verbose="-v" || verbose=""
+	(( $VERBOSE )) && verbose="v" || verbose=""
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE "$RESTOREFILE"
 	logCommand "ls -la $RESTOREFILE"
@@ -5440,11 +5440,11 @@ function restore() {
 					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
 					pushd "$MNT_POINT" &>>"$LOG_FILE"
-					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="-z" || zip=""
+					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
 					if (( $PROGRESS )); then
-						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x ${verbose} ${zip} -f -"
+						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						local cmd="tar --exclude /boot ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
+						local cmd="tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f \"$ROOT_RESTOREFILE\""
 					fi
 					executeTar "$cmd"
 					rc=$?
@@ -5456,7 +5456,7 @@ function restore() {
 					logItem "Excluding excludePattern"
 					local progressFlag=""
 					(( $PROGRESS )) && progressFlag="--info=progress2"
-					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS} ${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
 					executeRsync "$cmd"
 					rc=$?
 					;;
