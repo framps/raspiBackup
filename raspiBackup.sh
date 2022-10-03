@@ -4395,7 +4395,7 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-			if (( ! $RESTORE )); then
+			if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					sendEMail "$msg" "$msgTitle"
@@ -4422,7 +4422,7 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		if (( ! $RESTORE )); then
+		if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
