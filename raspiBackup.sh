@@ -391,7 +391,7 @@ RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 
 tty -s
-INTERACTIVE=!$?
+INTERACTIVE=$((!$?))
 
 # defaults
 MSG_LEVEL="$MSG_LEVEL_DETAILED"
@@ -8431,6 +8431,7 @@ DEPLOY=0
 DYNAMIC_MOUNT_EXECUTED=0
 EXCLUDE_DD=0
 FAKE=0
+FORCE_INTERACTIVE=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
 HELP=0
@@ -8661,6 +8662,10 @@ while (( "$#" )); do
 
 	--include|--include[+-])
 	  INCLUDE_ONLY=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
+	--interactive|--interactive[+-])
+	  FORCE_INTERACTIVE=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	-k)
@@ -8917,6 +8922,9 @@ while (( "$#" )); do
 	  ;;
   esac
 done
+
+# hack to force interactive mode if raspiBackup is called in a subshell
+INTERACTIVE=$(($INTERACTIVE || $FORCE_INTERACTIVE))
 
 if (( ! $INCLUDE_ONLY )); then
 

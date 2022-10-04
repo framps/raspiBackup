@@ -104,6 +104,6 @@ rm -f $jsonFile
 
 trap - SIGINT SIGTERM EXIT
 
-sudo ./raspiBackup.sh $@
+sudo ./raspiBackup.sh --interactive $@
 
 
