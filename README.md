@@ -52,12 +52,11 @@
   * Extensive logging helps to isolate backup/restore issues. 
 * Much more features (see below).
 
-## Note
-raspiBackup is supported **only** for RaspberryOS as operating system and **only** for Raspberry hardware. raspiBackup runs successfully also on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just give it a try and be happy if it works but don't ask for any support. For details see [here](https://www.linux-tips-and-tricks.de/en/all-raspibackup-articles/609-supported-hard-and-software/).
-
 ## Support
 
-Support is given **only** for raspiBackup related issues. For any other general questions (for example Linux questions) use other information sources. 
+raspiBackup is supported **only** for RaspberryOS as operating system and **only** for Raspberry hardware. raspiBackup runs successfully also on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just give it a try and be happy if it works but don't ask for any support. For details see [here](https://www.linux-tips-and-tricks.de/en/all-raspibackup-articles/609-supported-hard-and-software/).
+
+Support is also given **only** for raspiBackup specific issues. For general Linux related questions please use other information sources. 
 
 * [Create issues](https://github.com/framps/raspiBackup/issues/new/choose)
 * [Ask questions](https://github.com/framps/raspiBackup/discussions)
