@@ -99,7 +99,7 @@ function findUser() {
 
 # some general constants
 
-MYHOMEURL="https://www.linux-tips-and-tricks.de"
+readonly MYHOMEURL="https://www.linux-tips-and-tricks.de"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
