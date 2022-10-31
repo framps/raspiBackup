@@ -12,6 +12,6 @@ Credits to [DesertRider](https://github.com/DesertRider/)
 
 ## raspiBackup_docker
 
-A pre and post script that stops all running docker-container gracefully and starts them again after backupp is finished.
+A pre and post script that stops all running docker-container gracefully and starts them again after backup is finished.
 
 Povided by [Springjunky](https://github.com/Springjunky)
