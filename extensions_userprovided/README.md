@@ -14,4 +14,4 @@ Credits to [DesertRider](https://github.com/DesertRider/)
 
 A pre and post script that stops all running docker-container gracefully and starts them again after backupp is finished.
 
-Povide by [Springjunky](https://github.com/Springjunky)
+Povided by [Springjunky](https://github.com/Springjunky)
