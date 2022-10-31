@@ -38,8 +38,8 @@ MSG_EN[$MSG_EXT_DOCKER1]="RBK2000I: Starting before stopped docker-container: %s
 MSG_DE[$MSG_EXT_DOCKER1]="RBK2000I: Starte zuvor gestoppte Docker-Container: %s"
 
 MSG_EXT_DOCKER2="ext_docker_2"
-MSG_EN[$MSG_EXT_DOCKER2]="RBK2000I: Error with docker-container please check status: %s"
-MSG_DE[$MSG_EXT_DOCKER2]="RBK2000I: Fehler bei Docker-Container bitte Status prüfen: %s"
+MSG_EN[$MSG_EXT_DOCKER2]="RBK2001I: Error with docker-container please check status: %s"
+MSG_DE[$MSG_EXT_DOCKER2]="RBK2001I: Fehler bei Docker-Container bitte Status prüfen: %s"
 
 
 # $MSG_LEVEL_MINIMAL will write message all the time
