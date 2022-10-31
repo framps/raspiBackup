@@ -27,19 +27,19 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2022-05-12 21:36:43 +0200$"
-GIT_COMMIT="$Sha1: 993abe4$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
 # set any variables and prefix all names with ext_ and some unique prefix to use a different namespace than the script
 # list of docker container stored in ext_dockerContainer_pre
 
 MSG_EXT_DOCKER1="ext_docker_1"
-MSG_EN[$MSG_EXT_DOCKER1]="RBK2000I: Starting before stopped docker-container: %s "
-MSG_DE[$MSG_EXT_DOCKER1]="RBK2000I: Starte zuvor gestoppte Docker-Container: %s"
+MSG_EN[$MSG_EXT_DOCKER1]="RBK2001I: Starting before stopped docker-container: %s "
+MSG_DE[$MSG_EXT_DOCKER1]="RBK2001I: Starte zuvor gestoppte Docker-Container: %s"
 
 MSG_EXT_DOCKER2="ext_docker_2"
-MSG_EN[$MSG_EXT_DOCKER2]="RBK2001I: Error with docker-container please check status: %s"
-MSG_DE[$MSG_EXT_DOCKER2]="RBK2001I: Fehler bei Docker-Container bitte Status prüfen: %s"
+MSG_EN[$MSG_EXT_DOCKER2]="RBK2002I: Error with docker-container please check status: %s"
+MSG_DE[$MSG_EXT_DOCKER2]="RBK2002I: Fehler bei Docker-Container bitte Status prüfen: %s"
 
 
 # $MSG_LEVEL_MINIMAL will write message all the time

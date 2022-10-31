@@ -27,12 +27,12 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date: 2022-05-12 21:36:43 +0200$"
-GIT_COMMIT="$Sha1: 993abe4$"
+GIT_DATE="$Date$"
+GIT_COMMIT="$Sha1$"
 
-MSG_EXT_DOCKER1="ext_docker_1"
-MSG_EN[$MSG_EXT_DOCKER1]="RBK2000I: Stopping Docker-Container: %s "
-MSG_DE[$MSG_EXT_DOCKER1]="RBK2000I: Beende Docker-Container: %s"
+MSG_EXT_DOCKER3="ext_docker_3"
+MSG_EN[$MSG_EXT_DOCKER3]="RBK2003I: Stopping Docker-Container: %s "
+MSG_DE[$MSG_EXT_DOCKER3]="RBK2003I: Beende Docker-Container: %s"
 
 
 # gets a list of all running Docker container in one line sperated with blanks
@@ -52,7 +52,7 @@ function getRunningContainer () {
 function stopRunningContainer () { 
   local running_container=$1	
   if [[ -n "${running_container}" ]] ; then
-    writeToConsole  $MSG_LEVEL_MINIMAL $MSG_EXT_DOCKER1 "$running_container"
+    writeToConsole  $MSG_LEVEL_MINIMAL $MSG_EXT_DOCKER3 "$running_container"
     local docker_bin=$(which docker)
     $docker_bin container stop $running_container 2>&1>/dev/null
   fi
