@@ -8,3 +8,10 @@ A pre script is used to signal to Healthcheck.io that raspiBackup is starting an
 Maybe the code could already be adapted for this point...
 
 Credits to [DesertRider](https://github.com/DesertRider/)
+
+
+## raspiBackup_docker
+
+A pre and post script that stops all running docker-container gracefully and starts them again after backupp is finished.
+
+Povide by [Springjunky](https://github.com/Springjunky)
