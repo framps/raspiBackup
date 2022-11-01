@@ -50,7 +50,7 @@ if [[ -n "${ext_dockerContainer_pre}" ]]; then
        # the pre script checks, if docker was available at  /usr/bin/docker
        /usr/bin/docker start $container_to_start 2>&1>/dev/null
       if [[ $? -ne 0 ]] ; then
-        writeToConsole  $MSG_LEVEL_MINIMAL $MSG_EXT_DOCKER3 ${container_to_start}
+        writeToConsole  $MSG_LEVEL_MINIMAL $MSG_EXT_DOCKER2 ${container_to_start}
       fi
      done
 fi
