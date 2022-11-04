@@ -270,9 +270,8 @@ EMOJI_VERSION_DEPRECATED="$(echo -ne "\xf0\x9f\x92\x80\x0a")" # 💀
 
 PUSHOVER_NOTIFY_SUCCESS="S"
 PUSHOVER_NOTIFY_FAILURE="F"
-PUSHOVER_NOTIFY_MESSAGES="M"
-PUSHOVER_NOTIFY_MESSAGES2="m"
-PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE$PUSHOVER_NOTIFY_MESSAGES$PUSHOVER_NOTIFY_MESSAGES2"
+PUSHOVER_NOTIFY_MESSAGES="m"
+PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE$PUSHOVER_NOTIFY_MESSAGE"
 PUSHOVER_URL="https://api.pushover.net/1/messages.json"
 
 # convert emoji into hex
@@ -1833,6 +1832,24 @@ MSG_DE[$MSG_RESTORE_PARTITION_MOUNTED]="RBK0274E: Das Restoregerät %s hat gemou
 MSG_RESTORE_DEVICE_NOT_VALID=275
 MSG_EN[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Restore device %s is no valid device."
 MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein gültiges Gerät."
+MSG_PUSHOVER_SEND_FAILED=276
+MSG_EN[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Sent to pushover failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
+MSG_DE[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Senden an Pushover fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
+MSG_PUSHOVER_SEND_OK=277
+MSG_EN[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover notified."
+MSG_DE[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover benachrichtigt."
+MSG_PUSHOVER_OPTIONS_INCOMPLETE=278
+MSG_EN[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushover options not complete."
+MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushoveroptionen nicht vollständig"
+MSG_PUSHOVER_SEND_LOG_FAILED=279
+MSG_EN[$MSG_PUSHOVER_SEND_LOG_FAILED]="RBK0279W: Unable to send messages to Pushover. curl RC: %s."
+MSG_DE[$MSG_PUSHOVER_SEND_LOG_FAILED]="RBK0279W: Meldungen an Pushover konnten nicht gesendet werden. curl RC: %s."
+MSG_PUSHOVER_SEND_LOG_OK=280
+MSG_EN[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Messages sent to Pushover."
+MSG_DE[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Meldungen an Pushover gesendet."
+MSG_PUSHOVER_INVALID_NOTIFICATION=281
+MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Invalid Pushover notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2817,7 +2834,7 @@ function copyDefaultConfigVariables() {
 	PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
 	PUSHOVER_TOKEN="$DEFAULT_PUSHOVER_TOKEN"
-	PUSHOVER_USER="$DEFAULT_PUSHOVER_USER="
+	PUSHOVER_USER="$DEFAULT_PUSHOVER_USER"
 	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS="
 	PUSHOVER_SOUND_SUCCESS="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
 	PUSHOVER_SOUND_FAILURE="$DEFAULT_PUSHOVER_SOUND_FAILURE="
@@ -3991,6 +4008,80 @@ function sendTelegrammLogMessages() {
 
 }
 
+function sendPushover() { # subject
+
+	logEntry "$1"
+
+	if [[ -n "$PUSHOVER_TOKEN" ]] ; then
+		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
+		else
+			local smiley
+			if (( $WARNING_MESSAGE_WRITTEN )); then
+				smiley="$EMOJI_WARNING ${smiley}"
+			fi
+			if (( $UPDATE_POSSIBLE )); then
+				smiley="$EMOJI_UPDATE_POSSIBLE ${smiley}"
+			fi
+			if (( $BETA_AVAILABLE )); then
+				smiley="$EMOJI_BETA_AVAILABLE ${smiley}"
+			fi
+			if (( $RESTORETEST_REQUIRED )); then
+				smiley="$EMOJI_RESTORETEST_REQUIRED ${smiley}"
+			fi
+			if (( $VERSION_DEPRECATED )); then
+				smiley="$EMOJI_VERSION_DEPRECATED ${smiley}"
+			fi
+
+			sendPushoverMessage "${smiley}$1" 1 # html
+		fi
+	fi
+
+	logExit
+
+}
+
+# Send message, exit
+
+function sendPushoverMessage() { # message html(yes/no)
+
+		logEntry "$1"
+
+		local rsp cmd
+		
+		if [[ -z $2 ]]; then
+			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
+			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
+		else
+			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
+			local cmd=(--form-string message=$1)
+			cmd+=(--form-string "token=$PUSHOVER_TOKE" --form-string "user=$PUSHOVER_USER" --form-string "title=bla" --form-string "sound=classical" --form-string "priority=0")
+			rsp="$(curl -s "${cmd[@]}" https://api.pushover.net/1/messages.json)"
+		fi
+		local curlRC=$?
+
+		if (( $curlRC )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOOVER_SEND_FAILED "$curlRC" "N/A" "$rsp"
+		else
+			logItem "Pushover response:${NL}${rsp}"
+			local ok=$(jq .status <<< "$rsp")
+			if [[ $ok == "1" ]]; then
+				logItem "Message sent"
+				if [[ -n $2 ]]; then	# write message only for html, not for messages
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
+				fi
+			else
+				error_description="$(jq .errors <<< "$rsp")"
+				logItem "Error sending msg: $rsp"
+				set -x
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "N/A" "$error_description"
+				set +x
+			fi
+		fi
+
+		logExit
+}
+
 function sendEMail() { # content subject
 
 	logEntry
@@ -4406,12 +4497,17 @@ function cleanup() { # trap
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					sendEMail "$msg" "$msgTitle"
 				fi
-
 				if [[ -n "$TELEGRAM_TOKEN" ]]; then
 					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
 						sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
 						sendTelegrammLogMessages
+					fi
+				fi
+				if [[ -n "$PUSHOVER_TOKEN" ]]; then
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+						sendPushover "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
 					fi
 				fi
 			fi #  ! RESTORE
@@ -4434,6 +4530,12 @@ function cleanup() { # trap
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
 					sendTelegramm "${EMOJI_OK} $msg"
 					sendTelegrammLogMessages
+				fi
+			fi
+			if [[ -n "$PUSHOVER_TOKEN"  ]]; then
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
+					sendPushover "${EMOJI_OK} $msg"
 				fi
 			fi
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
