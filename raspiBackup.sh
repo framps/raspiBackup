@@ -270,8 +270,7 @@ EMOJI_VERSION_DEPRECATED="$(echo -ne "\xf0\x9f\x92\x80\x0a")" # 💀
 
 PUSHOVER_NOTIFY_SUCCESS="S"
 PUSHOVER_NOTIFY_FAILURE="F"
-PUSHOVER_NOTIFY_MESSAGES="m"
-PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE$PUSHOVER_NOTIFY_MESSAGE"
+PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE"
 PUSHOVER_URL="https://api.pushover.net/1/messages.json"
 
 # convert emoji into hex
@@ -2835,9 +2834,9 @@ function copyDefaultConfigVariables() {
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
 	PUSHOVER_TOKEN="$DEFAULT_PUSHOVER_TOKEN"
 	PUSHOVER_USER="$DEFAULT_PUSHOVER_USER"
-	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS="
+	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS"
 	PUSHOVER_SOUND_SUCCESS="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
-	PUSHOVER_SOUND_FAILURE="$DEFAULT_PUSHOVER_SOUND_FAILURE="
+	PUSHOVER_SOUND_FAILURE="$DEFAULT_PUSHOVER_SOUND_FAILURE"
 	REBOOT_SYSTEM="$DEFAULT_REBOOT_SYSTEM"
 	RESIZE_ROOTFS="$DEFAULT_RESIZE_ROOTFS"
 	RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
@@ -4016,24 +4015,7 @@ function sendPushover() { # subject
 		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
-			local smiley
-			if (( $WARNING_MESSAGE_WRITTEN )); then
-				smiley="$EMOJI_WARNING ${smiley}"
-			fi
-			if (( $UPDATE_POSSIBLE )); then
-				smiley="$EMOJI_UPDATE_POSSIBLE ${smiley}"
-			fi
-			if (( $BETA_AVAILABLE )); then
-				smiley="$EMOJI_BETA_AVAILABLE ${smiley}"
-			fi
-			if (( $RESTORETEST_REQUIRED )); then
-				smiley="$EMOJI_RESTORETEST_REQUIRED ${smiley}"
-			fi
-			if (( $VERSION_DEPRECATED )); then
-				smiley="$EMOJI_VERSION_DEPRECATED ${smiley}"
-			fi
-
-			sendPushoverMessage "${smiley}$1" 1 # html
+			sendPushoverMessage "$1"
 		fi
 	fi
 
@@ -4043,41 +4025,38 @@ function sendPushover() { # subject
 
 # Send message, exit
 
-function sendPushoverMessage() { # message html(yes/no)
+function sendPushoverMessage() { # message
 
 		logEntry "$1"
 
-		local rsp cmd
+		local rsp cmd httpCode o
 		
-		if [[ -z $2 ]]; then
-			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
-			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
-		else
-			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
-			local cmd=(--form-string message=$1)
-			cmd+=(--form-string "token=$PUSHOVER_TOKE" --form-string "user=$PUSHOVER_USER" --form-string "title=bla" --form-string "sound=classical" --form-string "priority=0")
-			rsp="$(curl -s "${cmd[@]}" https://api.pushover.net/1/messages.json)"
-		fi
+		o=$(mktemp)
+		local cmd=(--form-string message=$1)
+		cmd+=(--form-string "token=$PUSHOVER_TOKEN" --form-string "user=$PUSHOVER_USER" --form-string "html=1" --form-string "title=$MYNAME" --form-string "sound=classical" --form-string "priority=0")
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" https://api.pushover.net/1/messages.json)"
+
 		local curlRC=$?
 
 		if (( $curlRC )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOOVER_SEND_FAILED "$curlRC" "N/A" "$rsp"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
 			logItem "Pushover response:${NL}${rsp}"
-			local ok=$(jq .status <<< "$rsp")
+			local ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
 				if [[ -n $2 ]]; then	# write message only for html, not for messages
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
 				fi
 			else
-				error_description="$(jq .errors <<< "$rsp")"
+				error_description="$(jq .errors "$o" | tr -d '\n[]')"
 				logItem "Error sending msg: $rsp"
-				set -x
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "N/A" "$error_description"
-				set +x
+				logItem "ErrorDescription: $error_description"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
 			fi
 		fi
+
+		[[ -n $o ]] && rm $o
 
 		logExit
 }
@@ -4319,6 +4298,18 @@ function masqueradeSensitiveInfoInLog() {
 	if m="$(masquerade $TELEGRAM_CHATID)"; then
 		logItem "Masquerading telegram chatid"
 		sed -i -E "s/${TELEGRAM_CHATID}/${m}/g" $LOG_FILE
+	fi
+
+	# pushover token and user
+
+	if	m="$(masquerade $PUSHOVER_USER)"; then
+		logItem "Masquerading pushover user"
+		sed -i -E "s/${PUSHOVER_USER}/${m}/g" $LOG_FILE
+	fi
+
+	if m="$(masquerade $PUSHOVER_TOKEN)"; then
+		logItem "Masquerading pushover token"
+		sed -i -E "s/${PUSHOVER_TOKEN}/${m}/g" $LOG_FILE
 	fi
 
 	# In home directories usually first names are used
@@ -6580,6 +6571,18 @@ function doitBackup() {
 		local invalidNotification="$(tr -d "$TELEGRAM_POSSIBLE_NOTIFICATIONS" <<< "$TELEGRAM_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_INVALID_NOTIFICATION "$invalidNotification" "$TELEGRAM_POSSIBLE_NOTIFICATIONS"
+			exitError $RC_PARAMETER_ERROR
+		fi
+	fi
+
+	if [[ -n "$PUSHOVER_USER" && -n "$PUSHOVER_TOKEN" ]]; then
+		if ! which jq &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
+			exitError $RC_MISSING_COMMANDS
+		fi
+		local invalidNotification="$(tr -d "$PUSHOVER_POSSIBLE_NOTIFICATIONS" <<< "$PUSHOVER_NOTIFICATIONS")"
+		if [[ -n "$invalidNotification" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_INVALID_NOTIFICATION "$invalidNotification" "$PUSHOVER_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
