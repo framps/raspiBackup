@@ -45,8 +45,8 @@ if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
 	exit 1
 fi
 
-SHA="XFwkU2hhMQo="
-DATE="XFwkRGF0ZQo="
+SHA="XCRTaGExCg=="
+DATE="XCREYXRlCg=="
 
 SHA="$(base64 -d <<< "$SHA")"
 DATE="$(base64 -d <<< "$DATE")"
@@ -105,9 +105,9 @@ if [[ -z $date ]]; then
 fi
 
 shaShort=${sha:0:7}
-sed -i "s/$SHA/$SHA ${shaShort}/" ./raspiBackup.sh
+sed -i "s/$SHA/${SHA}: ${shaShort}/" ./raspiBackup.sh
 dateShort="${date:0:10} ${date:11}"
-sed -i "s/$DATE/$DATE ${dateShort}/" ./raspiBackup.sh
+sed -i "s/$DATE/${DATE}: ${dateShort}/" ./raspiBackup.sh
 
 rm -f $jsonFile
 
