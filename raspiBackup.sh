@@ -2774,22 +2774,22 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_TELEGRAM_CHATID=""
 	# Telegram notifications to send. S(uccess), F(ailure), M(messages as file), m(essages as text)
 	DEFAULT_TELEGRAM_NOTIFICATIONS="F"
+	# Pushover token
+	DEFAULT_PUSHOVER_TOKEN=""
+	# Pushover user
+	DEFAULT_PUSHOVER_USER=""
+	# Pushover notifications to send. S(uccess), F(ailure)
+	DEFAULT_PUSHOVER_NOTIFICATIONS="F"
+	# Pushover sound for success
+	DEFAULT_PUSHOVER_SOUND_SUCCESS=""
+	# Pushover sound for failure
+	DEFAULT_PUSHOVER_SOUND_FAILURE=""
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
 	# mail coloring scheme (SUBJECT or OPTION)
 	DEFAULT_EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 	# Name of backup partition to dynamically mount (e.g. /dev/sda1 or /backup)
 	DEFAULT_DYNAMIC_MOUNT=""
-	# Pushover token
-	DEFAULT_PUSHOVER_TOKEN=""
-	# Pushover user
-	DEFAULT_PUSHOVER_USER=""
-	# Pushover notifications to send. S(uccess), F(ailure)
-	DEFAULT_PUSHOVER_NOTIFICATIONS="SF"
-	# Pushover sound for success
-	DEFAULT_PUSHOVER_SOUND_SUCCESS=""
-	# Pushover sound for failure
-	DEFAULT_PUSHOVER_SOUND_FAILURE=""
 
 	############# End default config section #############
 	logExit
