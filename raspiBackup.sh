@@ -2780,11 +2780,15 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_EMAIL_COLORING="$EMAIL_COLORING_SUBJECT"
 	# Name of backup partition to dynamically mount (e.g. /dev/sda1 or /backup)
 	DEFAULT_DYNAMIC_MOUNT=""
-	# pushover
+	# Pushover token
 	DEFAULT_PUSHOVER_TOKEN=""
+	# Pushover user
 	DEFAULT_PUSHOVER_USER=""
-	DEFAULT_PUSHOVER_NOTIFICATIONS=""
+	# Pushover notifications to send. S(uccess), F(ailure)
+	DEFAULT_PUSHOVER_NOTIFICATIONS="SF"
+	# Pushover sound for success
 	DEFAULT_PUSHOVER_SOUND_SUCCESS=""
+	# Pushover sound for failure
 	DEFAULT_PUSHOVER_SOUND_FAILURE=""
 
 	############# End default config section #############
@@ -4007,15 +4011,15 @@ function sendTelegrammLogMessages() {
 
 }
 
-function sendPushover() { # subject
+function sendPushover() { # subject sucess/failure
 
-	logEntry "$1"
+	logEntry "$1" 
 
 	if [[ -n "$PUSHOVER_TOKEN" ]] ; then
 		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
-			sendPushoverMessage "$1"
+			sendPushoverMessage "$1" "$2"
 		fi
 	fi
 
@@ -4025,15 +4029,25 @@ function sendPushover() { # subject
 
 # Send message, exit
 
-function sendPushoverMessage() { # message
+function sendPushoverMessage() { # message 0/1->success/failure sound
 
 		logEntry "$1"
 
-		local rsp cmd httpCode o
+		local rsp cmd httpCode o sound
+		
+		sound="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
+		[[ -n $2 && "$2" == "1" ]] && sound="$DEFAULT_PUSHOVER_SOUND_FAILURE"
 		
 		o=$(mktemp)
 		local cmd=(--form-string message=$1)
-		cmd+=(--form-string "token=$PUSHOVER_TOKEN" --form-string "user=$PUSHOVER_USER" --form-string "html=1" --form-string "title=$MYNAME" --form-string "sound=classical" --form-string "priority=0")
+		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
+						--form-string "user=$PUSHOVER_USER"\
+						--form-string "html=1"\
+						--form-string "title=$MYNAME"\
+						--form-string "sound=$sound"\
+						--form-string "priority=0")
+						
+		logItem "Pushover curl call: ${cmd[@]}"
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" https://api.pushover.net/1/messages.json)"
 
 		local curlRC=$?
@@ -4041,7 +4055,7 @@ function sendPushoverMessage() { # message
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			logItem "Pushover response:${NL}${rsp}"
+			logItem "Pushover response:${NL}$(<$o)"
 			local ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
@@ -4498,7 +4512,7 @@ function cleanup() { # trap
 				if [[ -n "$PUSHOVER_TOKEN" ]]; then
 					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
-						sendPushover "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
+						sendPushover "${EMOJI_FAILED} <b><u> $msg </u></b>" 1		# add warning icon to message
 					fi
 				fi
 			fi #  ! RESTORE
@@ -4526,7 +4540,7 @@ function cleanup() { # trap
 			if [[ -n "$PUSHOVER_TOKEN"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
-					sendPushover "${EMOJI_OK} $msg"
+					sendPushover "${EMOJI_OK} $msg" 0
 				fi
 			fi
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
