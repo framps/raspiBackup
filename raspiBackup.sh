@@ -5112,7 +5112,7 @@ function backupRsync() { # partition number (for partition based backup)
 	local fs="$(getFsType "$BACKUPPATH")"
 	if [[ -e $PERSISTENT_JOURNAL && $fs =~ ^nfs* ]]; then
 		logItem "Excluding $PERSISTENT_JOURNAL for nfs"
-		EXCLUDE_LIST+=" --exclude $excludeRoot/$PERSISTENT_JOURNAL"
+		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL}"
 	fi
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER\" \
