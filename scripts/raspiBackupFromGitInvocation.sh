@@ -105,7 +105,7 @@ if [[ -z $date ]]; then
 fi
 
 shaShort=${sha:0:7}
-sed -i "s/$SHA/$SHA {shaShort}/" ./raspiBackup.sh
+sed -i "s/$SHA/$SHA ${shaShort}/" ./raspiBackup.sh
 dateShort="${date:0:10} ${date:11}"
 sed -i "s/$DATE/$DATE ${dateShort}/" ./raspiBackup.sh
 
