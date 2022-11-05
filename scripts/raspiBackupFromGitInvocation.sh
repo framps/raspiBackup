@@ -45,8 +45,8 @@ if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
 	exit 1
 fi
 
-SHA="XCRTaGExCg=="
-DATE="XCREYXRlCg=="
+SHA="XCRTaGExCg=="  	# backslash dollar Sha1
+DATE="XCREYXRlCg==" 	# backslash dollar Date
 
 SHA="$(base64 -d <<< "$SHA")"
 DATE="$(base64 -d <<< "$DATE")"
