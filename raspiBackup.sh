@@ -2607,6 +2607,7 @@ function logOptions() { # option state
 	logItem "PUSHOVER_NOTIFICATIONS=$PUSHOVER_NOTIFICATIONS"
 	logItem "PUSHOVER_SOUND_SUCCESS=$PUSHOVER_SOUND_SUCCESS"
 	logItem "PUSHOVER_SOUND_FAILURE=$PUSHOVER_SOUND_FAILURE"
+	logItem "PUSHOVER_PRIORITY=$PUSHOVER_PRIORITY"
 	logItem "REBOOT_SYSTEM=$REBOOT_SYSTEM"
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
@@ -2784,6 +2785,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_PUSHOVER_SOUND_SUCCESS=""
 	# Pushover sound for failure
 	DEFAULT_PUSHOVER_SOUND_FAILURE=""
+	# Pushover priority
+	DEFAULT_PUSHOVER_PRIORITY="0"
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
 	# mail coloring scheme (SUBJECT or OPTION)
@@ -2841,6 +2844,7 @@ function copyDefaultConfigVariables() {
 	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS"
 	PUSHOVER_SOUND_SUCCESS="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
 	PUSHOVER_SOUND_FAILURE="$DEFAULT_PUSHOVER_SOUND_FAILURE"
+	PUSHOVER_PRIORITY="$DEFAULT_PUSHOVER_PRIORITY"
 	REBOOT_SYSTEM="$DEFAULT_REBOOT_SYSTEM"
 	RESIZE_ROOTFS="$DEFAULT_RESIZE_ROOTFS"
 	RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
@@ -4042,6 +4046,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		local cmd=(--form-string message=$1)
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 						--form-string "user=$PUSHOVER_USER"\
+						--form-string "priority=$PUSHOVER_PRIORITY"\
 						--form-string "html=1"\
 						--form-string "title=$MYNAME"\
 						--form-string "sound=$sound"\
