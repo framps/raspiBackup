@@ -4045,12 +4045,12 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		o=$(mktemp)
 		local cmd=(--form-string message=$1)
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
-						--form-string "user=$PUSHOVER_USER"\
-						--form-string "priority=$PUSHOVER_PRIORITY"\
-						--form-string "html=1"\
-						--form-string "title=$MYNAME"\
-						--form-string "sound=$sound"\
-						--form-string "priority=0")
+				--form-string "user=$PUSHOVER_USER"\
+				--form-string "priority=$PUSHOVER_PRIORITY"\
+				--form-string "html=1"\
+				--form-string "message=$1"\
+				--form-string "title=$MYNAME"\
+				--form-string "sound=$sound")
 						
 		logItem "Pushover curl call: ${cmd[@]}"
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" https://api.pushover.net/1/messages.json)"
