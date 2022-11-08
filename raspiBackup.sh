@@ -4058,7 +4058,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		local curlRC=$?
 
 		if (( $curlRC )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
 			logItem "Pushover response:${NL}$(<$o)"
 			local ok=$(jq .status "$o")
@@ -6592,6 +6592,11 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_INVALID_NOTIFICATION "$invalidNotification" "$TELEGRAM_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
+	fi
+
+	if [[ -n "$PUSHOVER_USER" && -z "PUSHOVER_TOKEN" ]] || [[ -z "$PUSHOVER_USER" && -n "$PUSHOVER_TOKEN" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_OPTIONS_INCOMPLETE
+		exitError $RC_PARAMETER_ERROR
 	fi
 
 	if [[ -n "$PUSHOVER_USER" && -n "$PUSHOVER_TOKEN" ]]; then
