@@ -4043,13 +4043,14 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		[[ -n $2 && "$2" == "1" ]] && sound="$DEFAULT_PUSHOVER_SOUND_FAILURE"
 		
 		o=$(mktemp)
+				
 		local cmd=(--form-string message=$1)
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
 				--form-string "priority=$PUSHOVER_PRIORITY"\
 				--form-string "html=1"\
-				--form-string "message=$1"\
-				--form-string "title=$MYNAME"\
+				--form-string "message=$(tail -c 1024 $MSG_FILE)"\
+				--form-string "title=$1"\
 				--form-string "sound=$sound")
 						
 		logItem "Pushover curl call: ${cmd[@]}"
@@ -4517,7 +4518,7 @@ function cleanup() { # trap
 				if [[ -n "$PUSHOVER_TOKEN" ]]; then
 					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
-						sendPushover "${EMOJI_FAILED} <b><u> $msg </u></b>" 1		# add warning icon to message
+						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
 			fi #  ! RESTORE
