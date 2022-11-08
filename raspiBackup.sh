@@ -9143,6 +9143,9 @@ if (( "$NOTIFY_START" )) ; then
 	if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 		sendTelegramm "$msg"
 	fi
+	if [[ -n "$PUSHOVER_USER"  ]]; then
+		sendPushover "$msg"
+	fi
 fi
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
