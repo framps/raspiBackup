@@ -4044,7 +4044,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		
 		o=$(mktemp)
 				
-		local cmd=(--form-string message=$1)
+		local cmd=(--form-string message="$1")
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
 				--form-string "priority=$PUSHOVER_PRIORITY"\
