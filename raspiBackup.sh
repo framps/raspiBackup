@@ -3463,13 +3463,20 @@ function supportsFileAttributes() {	# directory
 	# following command will return an error and message
 	# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
 	cp -a /tmp/$MYNAME.fileattributes /$1 &>>"$LOG_FILE"
-	read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
-	attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
-	logItem "$attrsT # $ownerT # $groupT"
+	local rc=$?
+	if (( $rc )); then
+		logItem "cp failed with rc $rc"
+	else
+		read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
+		# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+		# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
+		# and a restored backup will populate these ACLs on the restored system which is wrong!
+		logItem "$attrsT # $ownerT # $groupT"
 
-	# check fileattributes and ownerships are identical
-	[[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]] && result=0
-
+		# check fileattributes and ownerships are identical
+		[[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]] && result=0
+	fi
+	
 	rm /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
 	rm /$1/$MYNAME.fileattributes &>>"$LOG_FILE"
 
