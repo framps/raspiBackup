@@ -43,8 +43,8 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.8-dev"												# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.6"									# required config version for script
+VERSION="0.6.8-dev"											# -beta, -hotfix or -dev suffixes possible
+VERSION_SCRIPT_CONFIG="0.1.6"								# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -265,6 +265,14 @@ EMOJI_UPDATE_POSSIBLE="$(echo -ne "\xf0\x9f\x98\x89\x0a")" # 😉
 EMOJI_BETA_AVAILABLE="$(echo -ne "\xf0\x9f\x98\x83\x0a")" # 😃
 EMOJI_RESTORETEST_REQUIRED="$(echo -ne "\xf0\x9f\x94\x94\x0a")" # 🔔
 EMOJI_VERSION_DEPRECATED="$(echo -ne "\xf0\x9f\x92\x80\x0a")" # 💀
+
+# Pushover options
+
+PUSHOVER_NOTIFY_SUCCESS="S"
+PUSHOVER_NOTIFY_FAILURE="F"
+PUSHOVER_NOTIFY_MESSAGES="M"
+PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE$PUSHOVER_NOTIFY_MESSAGES"
+PUSHOVER_URL="https://api.pushover.net/1/messages.json"
 
 # convert emoji into hex
 #printf "%s" "$EMOJI_WARNING"
@@ -1852,6 +1860,25 @@ MSG_DE[$MSG_FINAL_COMMAND_EXECUTED]="RBK0280I: Finaler Befehl wird ausgeführt: 
 MSG_UNSUPPORTED_VERSION=281
 MSG_EN[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Unsupported version of $MYSELF."
 MSG_DE[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Nicht unterstützte Version von $MYSELF."
+MSG_PUSHOVER_SEND_FAILED=282
+MSG_EN[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Sent to pushover failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
+MSG_DE[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Senden an Pushover fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
+MSG_PUSHOVER_SEND_OK=283
+MSG_EN[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover notified."
+MSG_DE[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover benachrichtigt."
+MSG_PUSHOVER_OPTIONS_INCOMPLETE=284
+MSG_EN[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushover options not complete."
+MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushoveroptionen nicht vollständig"
+MSG_PUSHOVER_SEND_LOG_FAILED=285
+MSG_EN[$MSG_PUSHOVER_SEND_LOG_FAILED]="RBK0279W: Unable to send messages to Pushover. curl RC: %s."
+MSG_DE[$MSG_PUSHOVER_SEND_LOG_FAILED]="RBK0279W: Meldungen an Pushover konnten nicht gesendet werden. curl RC: %s."
+MSG_PUSHOVER_SEND_LOG_OK=286
+MSG_EN[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Messages sent to Pushover."
+MSG_DE[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Meldungen an Pushover gesendet."
+MSG_PUSHOVER_INVALID_NOTIFICATION=287
+MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Invalid Pushover notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
+>>>>>>> master_pushover
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2575,6 +2602,12 @@ function logOptions() { # option state
 	logItem "NOTIFY_UPDATE=$NOTIFY_UPDATE"
 	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
 	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
+	logItem "PUSHOVER_TOKEN=$PUSHOVER_TOKEN"
+	logItem "PUSHOVER_USER=$PUSHOVER_USER"
+	logItem "PUSHOVER_NOTIFICATIONS=$PUSHOVER_NOTIFICATIONS"
+	logItem "PUSHOVER_SOUND_SUCCESS=$PUSHOVER_SOUND_SUCCESS"
+	logItem "PUSHOVER_SOUND_FAILURE=$PUSHOVER_SOUND_FAILURE"
+	logItem "PUSHOVER_PRIORITY=$PUSHOVER_PRIORITY"
 	logItem "REBOOT_SYSTEM=$REBOOT_SYSTEM"
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
@@ -2744,6 +2777,18 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_TELEGRAM_CHATID=""
 	# Telegram notifications to send. S(uccess), F(ailure), M(messages as file), m(essages as text)
 	DEFAULT_TELEGRAM_NOTIFICATIONS="F"
+	# Pushover token
+	DEFAULT_PUSHOVER_TOKEN=""
+	# Pushover user
+	DEFAULT_PUSHOVER_USER=""
+	# Pushover notifications to send. S(uccess), F(ailure), M(essages)
+	DEFAULT_PUSHOVER_NOTIFICATIONS="F"
+	# Pushover sound for success
+	DEFAULT_PUSHOVER_SOUND_SUCCESS=""
+	# Pushover sound for failure
+	DEFAULT_PUSHOVER_SOUND_FAILURE=""
+	# Pushover priority
+	DEFAULT_PUSHOVER_PRIORITY="0"
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
 	# mail coloring scheme (SUBJECT or OPTION)
@@ -2799,6 +2844,12 @@ function copyDefaultConfigVariables() {
 	NOTIFY_UPDATE="$DEFAULT_NOTIFY_UPDATE"
 	PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
+	PUSHOVER_TOKEN="$DEFAULT_PUSHOVER_TOKEN"
+	PUSHOVER_USER="$DEFAULT_PUSHOVER_USER"
+	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS"
+	PUSHOVER_SOUND_SUCCESS="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
+	PUSHOVER_SOUND_FAILURE="$DEFAULT_PUSHOVER_SOUND_FAILURE"
+	PUSHOVER_PRIORITY="$DEFAULT_PUSHOVER_PRIORITY"
 	REBOOT_SYSTEM="$DEFAULT_REBOOT_SYSTEM"
 	RESIZE_ROOTFS="$DEFAULT_RESIZE_ROOTFS"
 	RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
@@ -3990,6 +4041,78 @@ function sendTelegrammLogMessages() {
 
 }
 
+function sendPushover() { # subject sucess/failure
+
+	logEntry "$1" 
+
+	if [[ -n "$PUSHOVER_TOKEN" ]] ; then
+		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
+		else
+			sendPushoverMessage "$1" "$2"
+		fi
+	fi
+
+	logExit
+
+}
+
+# Send message, exit
+
+function sendPushoverMessage() { # message 0/1->success/failure sound
+
+		logEntry "$1"
+
+		local rsp cmd httpCode o sound
+		
+		sound="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
+		[[ -n $2 && "$2" == "1" ]] && sound="$DEFAULT_PUSHOVER_SOUND_FAILURE"
+		
+		o=$(mktemp)
+
+		local msg="-"
+
+		if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_MESSAGES ]]; then
+			msg="$(tail -c 1024 $MSG_FILE)"
+		fi
+				
+		local cmd=(--form-string message="$1")
+		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
+				--form-string "user=$PUSHOVER_USER"\
+				--form-string "priority=$PUSHOVER_PRIORITY"\
+				--form-string "html=1"\
+				--form-string "message=$msg"\
+				--form-string "title=$1"\
+				--form-string "sound=$sound")
+						
+		logItem "Pushover curl call: ${cmd[@]}"
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
+
+		local curlRC=$?
+
+		if (( $curlRC )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
+		else
+			logItem "Pushover response:${NL}$(<$o)"
+			local ok=$(jq .status "$o")
+			if [[ $ok == "1" ]]; then
+				logItem "Message sent"
+				if [[ -n $2 ]]; then	# write message only for html, not for messages
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
+				fi
+			else
+				error_description="$(jq .errors "$o" | tr -d '\n[]')"
+				logItem "Error sending msg: $rsp"
+				logItem "ErrorDescription: $error_description"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
+			fi
+		fi
+
+		[[ -n $o ]] && rm $o
+
+		logExit
+}
+
 function sendEMail() { # content subject
 
 	logEntry
@@ -4229,6 +4352,18 @@ function masqueradeSensitiveInfoInLog() {
 		sed -i -E "s/${TELEGRAM_CHATID}/${m}/g" $LOG_FILE
 	fi
 
+	# pushover token and user
+
+	if	m="$(masquerade $PUSHOVER_USER)"; then
+		logItem "Masquerading pushover user"
+		sed -i -E "s/${PUSHOVER_USER}/${m}/g" $LOG_FILE
+	fi
+
+	if m="$(masquerade $PUSHOVER_TOKEN)"; then
+		logItem "Masquerading pushover token"
+		sed -i -E "s/${PUSHOVER_TOKEN}/${m}/g" $LOG_FILE
+	fi
+
 	# In home directories usually first names are used
 
 	logItem "Masquerading home directory name"
@@ -4407,12 +4542,17 @@ function cleanup() { # trap
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					sendEMail "$msg" "$msgTitle"
 				fi
-
 				if [[ -n "$TELEGRAM_TOKEN" ]]; then
 					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
 						sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
 						sendTelegrammLogMessages
+					fi
+				fi
+				if [[ -n "$PUSHOVER_TOKEN" ]]; then
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
 			fi #  ! RESTORE
@@ -4435,6 +4575,12 @@ function cleanup() { # trap
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
 					sendTelegramm "${EMOJI_OK} $msg"
 					sendTelegrammLogMessages
+				fi
+			fi
+			if [[ -n "$PUSHOVER_TOKEN"  ]]; then
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
+					sendPushover "${EMOJI_OK} $msg" 0
 				fi
 			fi
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
@@ -6529,6 +6675,23 @@ function doitBackup() {
 		local invalidNotification="$(tr -d "$TELEGRAM_POSSIBLE_NOTIFICATIONS" <<< "$TELEGRAM_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_INVALID_NOTIFICATION "$invalidNotification" "$TELEGRAM_POSSIBLE_NOTIFICATIONS"
+			exitError $RC_PARAMETER_ERROR
+		fi
+	fi
+
+	if [[ -n "$PUSHOVER_USER" && -z "PUSHOVER_TOKEN" ]] || [[ -z "$PUSHOVER_USER" && -n "$PUSHOVER_TOKEN" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_OPTIONS_INCOMPLETE
+		exitError $RC_PARAMETER_ERROR
+	fi
+
+	if [[ -n "$PUSHOVER_USER" && -n "$PUSHOVER_TOKEN" ]]; then
+		if ! which jq &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
+			exitError $RC_MISSING_COMMANDS
+		fi
+		local invalidNotification="$(tr -d "$PUSHOVER_POSSIBLE_NOTIFICATIONS" <<< "$PUSHOVER_NOTIFICATIONS")"
+		if [[ -n "$invalidNotification" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_INVALID_NOTIFICATION "$invalidNotification" "$PUSHOVER_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
@@ -9057,6 +9220,9 @@ if (( "$NOTIFY_START" )) ; then
 	fi
 	if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 		sendTelegramm "$msg"
+	fi
+	if [[ -n "$PUSHOVER_USER"  ]]; then
+		sendPushover "$msg"
 	fi
 fi
 

@@ -32,7 +32,7 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.8"
+VERSION="v0.1.7"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -221,10 +221,10 @@ RC=$?
 # You can change PTUUID on a live system with fdisk
 # Extract from https://www.raspberrypi.org/forums/viewtopic.php?t=191775
 
-mkdir -p /tmp/mnt
-mount ${LOOP}p2 /tmp/mnt
-PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /tmp/mnt/etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
-umount /tmp/mnt
+mkdir -p /mnt1
+mount ${LOOP}p2 /mnt1
+PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /mnt1/etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
+umount /mnt1
 losetup -d $LOOP
 
 if [[ -z $PTUUID ]]; then
@@ -242,22 +242,37 @@ if (( ! $RC )); then
 	RC=$?
 	if (( $RC )); then
 		echo "??? Error $RC received from piShrink"
-	    RC1=42
+	    	RC=1
+		echo "Program ends wihn error 42"
 	fi
 else
 	echo "??? Error $RC received"
 	RC=1
 fi
 
+
+# pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
+if (( ! $RC )); then
+  LOOP=$(losetup -f)
+
+  echo "===> Patching image PARTUUID with $PTUUID"
+
+  losetup -P $LOOP $IMAGE_FILENAME
+  printf "x\ni\n0x$PTUUID\nr\nw\nq\n" | fdisk $LOOP
+  partprobe $LOOP
+  udevadm settle
+  sleep 3
+fi
+
 if (( $MAIL_EXTENSION_AVAILABLE )); then
-    IMAGE_NAME=${IMAGE_FILENAME##*/}
-    HOST_NAME=${IMAGE_NAME%%-*}
+    IMAGE_FILENAME=${IMAGE_FILENAME##*/}
+    HOST_NAME=${IMAGE_FILENAME%%-*}
     if (( $RC )); then
         status="with errors finished"
     else
         status="finished successfully"
     fi
-    BODY="raspiBackupRestore2Image.sh $IMAGE_NAME$NL$NL$(echo -e "$(cat $MSG_FILE)")"
+    BODY="raspiBackupRestore2Image.sh $IMAGE_FILENAME$NL$NL$(echo -e "$(cat $MSG_FILE)")"
     raspiImageMail.sh "$HOSTNAME - Restore $status"  "$BODY"
     if [[ $? = 0 ]]; then
         echo "-- Send email succeeded!"
@@ -265,20 +280,5 @@ if (( $MAIL_EXTENSION_AVAILABLE )); then
     fi
 fi
 
-# exit when pishrink failed
-(( $RC1 )) && exit $RC1
-
-# pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
-
-LOOP=$(losetup -f)
-
-echo "===> Patching image PARTUUID with $PTUUID"
-
-losetup -P $LOOP $IMAGE_FILENAME
-printf "x\ni\n0x$PTUUID\nr\nw\nq\n" | fdisk $LOOP
-sleep 1
-partprobe $LOOP
-udevadm settle
-sleep 3
-
 exit $RC
+
