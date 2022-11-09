@@ -270,7 +270,8 @@ EMOJI_VERSION_DEPRECATED="$(echo -ne "\xf0\x9f\x92\x80\x0a")" # 💀
 
 PUSHOVER_NOTIFY_SUCCESS="S"
 PUSHOVER_NOTIFY_FAILURE="F"
-PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE"
+PUSHOVER_NOTIFY_MESSAGES="M"
+PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE$PUSHOVER_NOTIFY_MESSAGES"
 PUSHOVER_URL="https://api.pushover.net/1/messages.json"
 
 # convert emoji into hex
@@ -2779,7 +2780,7 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_PUSHOVER_TOKEN=""
 	# Pushover user
 	DEFAULT_PUSHOVER_USER=""
-	# Pushover notifications to send. S(uccess), F(ailure)
+	# Pushover notifications to send. S(uccess), F(ailure), M(essages)
 	DEFAULT_PUSHOVER_NOTIFICATIONS="F"
 	# Pushover sound for success
 	DEFAULT_PUSHOVER_SOUND_SUCCESS=""
@@ -4043,18 +4044,24 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		[[ -n $2 && "$2" == "1" ]] && sound="$DEFAULT_PUSHOVER_SOUND_FAILURE"
 		
 		o=$(mktemp)
+
+		local msg="-"
+
+		if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_MESSAGES ]]; then
+			msg="$(tail -c 1024 $MSG_FILE)"
+		fi
 				
 		local cmd=(--form-string message="$1")
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
 				--form-string "priority=$PUSHOVER_PRIORITY"\
 				--form-string "html=1"\
-				--form-string "message=$(tail -c 1024 $MSG_FILE)"\
+				--form-string "message=$msg"\
 				--form-string "title=$1"\
 				--form-string "sound=$sound")
 						
 		logItem "Pushover curl call: ${cmd[@]}"
-		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" https://api.pushover.net/1/messages.json)"
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
 
 		local curlRC=$?
 
@@ -5251,10 +5258,10 @@ function backupRsync() { # partition number (for partition based backup)
 	local fs="$(getFsType "$BACKUPPATH")"
 	if [[ -e $PERSISTENT_JOURNAL && $fs =~ ^nfs* ]]; then
 		logItem "Excluding $PERSISTENT_JOURNAL for nfs"
-		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL}"
+		EXCLUDE_LIST+=" --exclude $PERSISTENT_JOURNAL"
 	fi
 
-	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
+	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER\" \
 			--exclude=\"$excludeRoot/$log_file\" \
 			--exclude=\"$excludeRoot/$msg_file\" \
 			--exclude='.gvfs' \
