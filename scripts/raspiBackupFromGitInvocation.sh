@@ -4,6 +4,9 @@
 #
 #  Download and invoke a raspiBackup version available on github
 #
+#  Example to download latest raspibackup.sh from master branch:
+#  curl https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupFromGitInvocation.sh | sudo bash -s -- master
+#
 #  Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 #######################################################################################################################
@@ -41,6 +44,12 @@ if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
 	echo "All following options are passed through to raspiBackup."
 	exit 1
 fi
+
+SHA="XCRTaGExCg=="  	# backslash dollar Sha1
+DATE="XCREYXRlCg==" 	# backslash dollar Date
+
+SHA="$(base64 -d <<< "$SHA")"
+DATE="$(base64 -d <<< "$DATE")"
 
 branch="$1"
 shift
@@ -96,9 +105,9 @@ if [[ -z $date ]]; then
 fi
 
 shaShort=${sha:0:7}
-sed -i "s/\$Sha1/\$Sha1${shaShort}/" ./raspiBackup.sh 
+sed -i "s/$SHA/${SHA}: ${shaShort}/" ./raspiBackup.sh
 dateShort="${date:0:10} ${date:11}"
-sed -i "s/\$Date/\$Date${dateShort}/" ./raspiBackup.sh 
+sed -i "s/$DATE/${DATE}: ${dateShort}/" ./raspiBackup.sh
 
 rm -f $jsonFile
 
