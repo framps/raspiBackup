@@ -4070,7 +4070,10 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		
 		o=$(mktemp)
 
-		local msg="-"
+		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+
+		[[ -n "$msgEnd" ]] && msg="$msgEnd"
 
 		if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_MESSAGES ]]; then
 			msg="$(tail -c 1024 $MSG_FILE)"
