@@ -1878,7 +1878,6 @@ MSG_DE[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Meldungen an Pushover gesendet."
 MSG_PUSHOVER_INVALID_NOTIFICATION=287
 MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Invalid Pushover notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
->>>>>>> master_pushover
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -8607,7 +8606,8 @@ FAKE=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
 HELP=0
-INCLUDE_ONLY=0
+[[ "${BASH_SOURCE[0]}" -ef "$0" ]]
+INCLUDE_ONLY=$?
 NO_YES_QUESTION=0
 ONLINE_VERSIONS=0
 PROGRESS=0
