@@ -40,6 +40,9 @@ if [ -z "$BASH" ] ;then
 	exit 127
 fi
 
+[[ "${BASH_SOURCE[0]}" -ef "$0" ]]
+INCLUDE_ONLY=$?
+
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
@@ -1878,7 +1881,6 @@ MSG_DE[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Meldungen an Pushover gesendet."
 MSG_PUSHOVER_INVALID_NOTIFICATION=287
 MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Invalid Pushover notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
->>>>>>> master_pushover
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
