@@ -1869,13 +1869,7 @@ MSG_DE[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover benachrichtigt."
 MSG_PUSHOVER_OPTIONS_INCOMPLETE=284
 MSG_EN[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushover options not complete."
 MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushoveroptionen nicht vollständig"
-MSG_PUSHOVER_SEND_LOG_FAILED=285
-MSG_EN[$MSG_PUSHOVER_SEND_LOG_FAILED]="RBK0279W: Unable to send messages to Pushover. curl RC: %s."
-MSG_DE[$MSG_PUSHOVER_SEND_LOG_FAILED]="RBK0279W: Meldungen an Pushover konnten nicht gesendet werden. curl RC: %s."
-MSG_PUSHOVER_SEND_LOG_OK=286
-MSG_EN[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Messages sent to Pushover."
-MSG_DE[$MSG_PUSHOVER_SEND_LOG_OK]="RBK0280I: Meldungen an Pushover gesendet."
-MSG_PUSHOVER_INVALID_NOTIFICATION=287
+MSG_PUSHOVER_INVALID_NOTIFICATION=285
 MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Invalid Pushover notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
 
