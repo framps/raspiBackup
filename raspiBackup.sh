@@ -2600,7 +2600,8 @@ function logOptions() { # option state
 	logItem "PUSHOVER_NOTIFICATIONS=$PUSHOVER_NOTIFICATIONS"
 	logItem "PUSHOVER_SOUND_SUCCESS=$PUSHOVER_SOUND_SUCCESS"
 	logItem "PUSHOVER_SOUND_FAILURE=$PUSHOVER_SOUND_FAILURE"
-	logItem "PUSHOVER_PRIORITY=$PUSHOVER_PRIORITY"
+	logItem "PUSHOVER_PRIORITY_SUCCESS=$PUSHOVER_PRIORITY_SUCCESS"
+	logItem "PUSHOVER_PRIORITY_FAILURE=$PUSHOVER_PRIORITY_FAILURE"
 	logItem "REBOOT_SYSTEM=$REBOOT_SYSTEM"
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
@@ -2780,8 +2781,9 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_PUSHOVER_SOUND_SUCCESS=""
 	# Pushover sound for failure
 	DEFAULT_PUSHOVER_SOUND_FAILURE=""
-	# Pushover priority
-	DEFAULT_PUSHOVER_PRIORITY="0"
+	# Pushover priorities
+	DEFAULT_PUSHOVER_PRIORITY_SUCCESS="0"
+	DEFAULT_PUSHOVER_PRIORITY_FAILURE="1"
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
 	# mail coloring scheme (SUBJECT or OPTION)
@@ -2842,7 +2844,8 @@ function copyDefaultConfigVariables() {
 	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS"
 	PUSHOVER_SOUND_SUCCESS="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
 	PUSHOVER_SOUND_FAILURE="$DEFAULT_PUSHOVER_SOUND_FAILURE"
-	PUSHOVER_PRIORITY="$DEFAULT_PUSHOVER_PRIORITY"
+	PUSHOVER_PRIORITY_SUCCESS="$DEFAULT_PUSHOVER_PRIORITY_SUCCESS"
+	PUSHOVER_PRIORITY_FAILURE="$DEFAULT_PUSHOVER_PRIORITY_FAILURE"
 	REBOOT_SYSTEM="$DEFAULT_REBOOT_SYSTEM"
 	RESIZE_ROOTFS="$DEFAULT_RESIZE_ROOTFS"
 	RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
@@ -4056,12 +4059,16 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 
 		logEntry "$1"
 
-		local rsp cmd httpCode o sound
+		local sound prio
+		if [[ -n $2 && "$2" == "1" ]]; then
+			sound="$PUSHOVER_SOUND_FAILURE"
+			prio="$PUSHOVER_PRIORITY_FAILURE"
+		else
+			sound="$PUSHOVER_SOUND_SUCCESS"
+			prio="$PUSHOVER_PRIORITY_SUCCESS"
+		fi
 		
-		sound="$DEFAULT_PUSHOVER_SOUND_SUCCESS"
-		[[ -n $2 && "$2" == "1" ]] && sound="$DEFAULT_PUSHOVER_SOUND_FAILURE"
-		
-		o=$(mktemp)
+		local o=$(mktemp)
 
 		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
 		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
@@ -4075,14 +4082,14 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		local cmd=(--form-string message="$1")
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
-				--form-string "priority=$PUSHOVER_PRIORITY"\
+				--form-string "priority=$prio"\
 				--form-string "html=1"\
 				--form-string "message=$msg"\
 				--form-string "title=$1"\
 				--form-string "sound=$sound")
 						
 		logItem "Pushover curl call: ${cmd[@]}"
-		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
+		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
 
 		local curlRC=$?
 
