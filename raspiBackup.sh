@@ -44,7 +44,7 @@ MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use l
 MYNAME=${MYSELF%.*}
 
 VERSION="0.6.8-beta"											# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.6"								# required config version for script
+VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
