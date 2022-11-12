@@ -5,7 +5,7 @@
 #  Download a raspiBackup version available on a github branch into current directory
 #
 #  Example to download latest raspibackup.sh from master branch:
-#  curl https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | sudo bash -s -- master
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | sudo bash -s -- master
 #
 #	Next invoke downloaded raspiBackup with sudo ./raspiBackup.sh <options>
 #
@@ -37,7 +37,7 @@ if [[ -z $1 ]]; then
 	exit 1
 fi
 
-if ! which jq; then
+if ! which jq >/dev/null; then
 	echo "??? Missing jq. Please install jq first."
 	exit 1
 fi
