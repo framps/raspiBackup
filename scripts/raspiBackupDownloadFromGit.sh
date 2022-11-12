@@ -119,4 +119,4 @@ rm -f $jsonFile
 
 trap - SIGINT SIGTERM EXIT
 
-
+echo "--- Use 'sudo ./$DOWNLOAD_FILE' now to start $(./$DOWNLOAD_FILE --version)"
