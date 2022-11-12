@@ -2,7 +2,7 @@
 
 #######################################################################################################################
 #
-#  Download a raspiBackup version available on github into current directory
+#  Download a raspiBackup version available on a github branch into current directory
 #
 #  Example to download latest raspibackup.sh from master branch:
 #  curl https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | sudo bash -s -- master
@@ -30,6 +30,8 @@
 #
 #######################################################################################################################
 
+DOWNLOAD_FILE="raspiBackup.sh"
+
 if [[ -z $1 ]]; then
 	echo "??? Missing git branch name"
 	exit 1
@@ -41,9 +43,8 @@ if ! which jq; then
 fi
 
 if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
-	echo "Download and invoke raspiBackup.sh from github repository."
-	echo "First option defines the github repository to use."
-	echo "All following options are passed through to raspiBackup."
+	echo "Download $DOWNLOAD_FILE from github repository."
+	echo "Option defines the github branch to use."
 	exit 1
 fi
 
@@ -56,12 +57,12 @@ DATE="$(base64 -d <<< "$DATE")"
 branch="$1"
 shift
 
-downloadURL="https://raw.githubusercontent.com/framps/raspiBackup/$branch/raspiBackup.sh"
+downloadURL="https://raw.githubusercontent.com/framps/raspiBackup/$branch/$DOWNLOAD_FILE"
 
-echo "--- Downloading raspiBackup.sh from git branch $branch into current diryctory"
-wget $downloadURL -O raspiBackup.sh
+echo "--- Downloading $DOWNLOAD_FILE from git branch $branch into current directory ..."
+wget -q $downloadURL -O raspiBackup.sh
 rc=$?
-trap 'rm -f raspiBackup.sh' SIGINT SIGTERM EXIT
+trap "rm -f $DOWNLOAD_FILE" SIGINT SIGTERM EXIT
 
 if (( $rc != 0 )); then
 	echo "??? Error occured downloading $downloadURL. RC: $rc"
@@ -71,13 +72,14 @@ fi
 chmod +x raspiBackup.sh
 
 jsonFile=$(mktemp)
-trap 'rm -f raspiBackup.sh; rm -f $jsonFile' SIGINT SIGTERM EXIT
+trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
 
+echo "--- Retrieving commit meta data of $DOWNLOAD_FILE ..."
 TOKEN=""															# Personal token to get better rate limits 
 if [[ -n $TOKEN ]]; then
-	HTTP_CODE="$(curl -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
+	HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
 else
-	HTTP_CODE="$(curl -w "%{http_code}" -o $jsonFile -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
+	HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
 fi
 	
 rc=$?
@@ -93,6 +95,8 @@ if (( $HTTP_CODE != 200 )); then
 	exit 1
 fi	
 
+echo "--- Inserting commit meta data into downloaded file $DOWNLOAD_FILE ..."
+
 sha="$(jq -r ".sha" "$jsonFile")"
 if [[ -z $sha ]]; then
 	echo "??? Error extracting sha from commit JSON"
@@ -107,14 +111,12 @@ if [[ -z $date ]]; then
 fi
 
 shaShort=${sha:0:7}
-sed -i "s/$SHA/${SHA}: ${shaShort}/" ./raspiBackup.sh
+sed -i "s/$SHA/${SHA}: ${shaShort}/" ./$DOWNLOAD_FILE
 dateShort="${date:0:10} ${date:11}"
-sed -i "s/$DATE/${DATE}: ${dateShort}/" ./raspiBackup.sh
+sed -i "s/$DATE/${DATE}: ${dateShort}/" ./$DOWNLOAD_FILE
 
 rm -f $jsonFile
 
 trap - SIGINT SIGTERM EXIT
-
-# sudo ./raspiBackup.sh $@
 
 
