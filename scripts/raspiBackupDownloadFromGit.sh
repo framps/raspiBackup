@@ -37,7 +37,7 @@ if [[ -z $1 ]]; then
 	exit 1
 fi
 
-if ! which jq >/dev/null; then
+if ! which jq &>/dev/null; then
 	echo "??? Missing jq. Please install jq first."
 	exit 1
 fi
