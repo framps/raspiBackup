@@ -264,6 +264,11 @@ EMOJI_BETA_AVAILABLE="$(echo -ne "\xf0\x9f\x98\x83\x0a")" # 😃
 EMOJI_RESTORETEST_REQUIRED="$(echo -ne "\xf0\x9f\x94\x94\x0a")" # 🔔
 EMOJI_VERSION_DEPRECATED="$(echo -ne "\xf0\x9f\x92\x80\x0a")" # 💀
 
+# convert emoji into hex
+#printf "%s" "$EMOJI_WARNING"
+#echo $(xxd -pu <<< "$EMOJI_WARNING")
+#exit
+
 # Pushover options
 
 PUSHOVER_NOTIFY_SUCCESS="S"
@@ -279,10 +284,13 @@ SLACK_NOTIFY_FAILURE="F"
 SLACK_NOTIFY_MESSAGES="M"
 SLACK_POSSIBLE_NOTIFICATIONS="$SLACK_NOTIFY_SUCCESS$SLACK_NOTIFY_FAILURE$SLACK_NOTIFY_MESSAGES"
 
-# convert emoji into hex
-#printf "%s" "$EMOJI_WARNING"
-#echo $(xxd -pu <<< "$EMOJI_WARNING")
-#exit
+SLACK_EMOJI_OK=":white_check_mark:"  # ✔️
+SLACK_EMOJI_WARNING=":warning:"  # ⚠️
+SLACK_EMOJI_FAILED=":x:" # ❌
+SLACK_EMOJI_UPDATE_POSSIBLE=":smirk:" # 😉
+SLACK_EMOJI_BETA_AVAILABLE=":laughhing:" # 😃
+SLACK_EMOJI_RESTORETEST_REQUIRED=":bell:" # 🔔
+SLACK_EMOJI_VERSION_DEPRECATED=":skull" # 💀
 
 # various other constants
 
@@ -4116,11 +4124,11 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
 
 		local curlRC=$?
+		logItem "Pushover response:${NL}$(<$o)"
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			logItem "Pushover response:${NL}$(<$o)"
 			local ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
@@ -4148,7 +4156,24 @@ function sendSlack() { # subject sucess/failure
 		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
-			sendSlackMessage "$1" "$2"
+			local smiley
+			if (( $WARNING_MESSAGE_WRITTEN )); then
+				smiley="$SLACK_EMOJI_WARNING ${smiley}"
+			fi
+			if (( $UPDATE_POSSIBLE )); then
+				smiley="$SLACK_EMOJI_UPDATE_POSSIBLE ${smiley}"
+			fi
+			if (( $BETA_AVAILABLE )); then
+				smiley="$SLACK_EMOJI_BETA_AVAILABLE ${smiley}"
+			fi
+			if (( $RESTORETEST_REQUIRED )); then
+				smiley="$SLACK_EMOJI_RESTORETEST_REQUIRED ${smiley}"
+			fi
+			if (( $VERSION_DEPRECATED )); then
+				smiley="$SLACK_EMOJI_VERSION_DEPRECATED ${smiley}"
+			fi
+
+			sendSlackMessage "${smiley}$1" "$2"
 		fi
 	fi
 
@@ -4162,12 +4187,25 @@ function sendSlackMessage() { # message 0/1->success/failure
 
 		logEntry "$1"
 
-		local msg_json
+		local msg_json emoji 
+		
+		local msg="$1"
 		
 		local o=$(mktemp)
 
+		if [[ -n $2 && "$2" == "1" ]]; then
+			emoji="$SLACK_EMOJI_FAILED$msg"
+		else
+			emoji="$SLACK_EMOJI_OK$msg"
+		fi
+
+		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+
+		[[ -n "$msgEnd" ]] && msg="$msgEnd"
+
 		if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_MESSAGES ]]; then
-			msg="$(tail 32 $MSG_FILE)"
+			msg="$(tail -n 32 $MSG_FILE)"
 		fi
 
 		read -r -d '' msg_json <<EOF
@@ -4177,26 +4215,26 @@ function sendSlackMessage() { # message 0/1->success/failure
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": ":white_check_mark: *1*\n$msg"
+				"text": "$emoji *$1*\n$msg"
 			}
 		}
 	]
 }
 EOF
 
-		local cmd=("-X POST -H 'Content-type: application/json' -w %{http_code} -o $o")
+		local cmd=(-X POST)
+		cmd+=(-H 'Content-type: application/json')
 		cmd+=(--data "$msg_json")
 		
 		logItem "Slack curl call: ${cmd[@]}"
-		local httpCode="$(curl $cmd $SLACK_WEBHOOCK_URL)"
+		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOCK_URL)"
 		local curlRC=$?
+		logItem "Slack response:${NL}$(<$o)"
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			logItem "Slack response:${NL}$(<$o)"
-			local ok=$(jq .status "$o")
-			if [[ $ok == "1" ]]; then
+			if [[ "ok" == $(<$o) ]]; then
 				logItem "Message sent"
 				if [[ -n $2 ]]; then	# write message only for html, not for messages
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
@@ -4657,7 +4695,7 @@ function cleanup() { # trap
 				if [[ -n "$SLACK_WEBHOOCK_URL" ]]; then
 					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
-						sendSlack "${EMOJI_FAILED} $msg" 1		# add warning icon to message
+						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi
 			fi #  ! RESTORE
@@ -6803,6 +6841,18 @@ function doitBackup() {
 		local invalidNotification="$(tr -d "$PUSHOVER_POSSIBLE_NOTIFICATIONS" <<< "$PUSHOVER_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_INVALID_NOTIFICATION "$invalidNotification" "$PUSHOVER_POSSIBLE_NOTIFICATIONS"
+			exitError $RC_PARAMETER_ERROR
+		fi
+	fi
+
+	if [[ -n "$SLACK_WEBHOOCK_URL" ]]; then
+		if ! which jq &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
+			exitError $RC_MISSING_COMMANDS
+		fi
+		local invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
+		if [[ -n "$invalidNotification" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACKOVER_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
