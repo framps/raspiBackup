@@ -272,6 +272,13 @@ PUSHOVER_NOTIFY_MESSAGES="M"
 PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE$PUSHOVER_NOTIFY_MESSAGES"
 PUSHOVER_URL="https://api.pushover.net/1/messages.json"
 
+# Slack options
+
+SLACK_NOTIFY_SUCCESS="S"
+SLACK_NOTIFY_FAILURE="F"
+SLACK_NOTIFY_MESSAGES="M"
+SLACK_POSSIBLE_NOTIFICATIONS="$SLACK_NOTIFY_SUCCESS$SLACK_NOTIFY_FAILURE$SLACK_NOTIFY_MESSAGES"
+
 # convert emoji into hex
 #printf "%s" "$EMOJI_WARNING"
 #echo $(xxd -pu <<< "$EMOJI_WARNING")
@@ -1859,17 +1866,29 @@ MSG_UNSUPPORTED_VERSION=281
 MSG_EN[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Unsupported version of $MYSELF."
 MSG_DE[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Nicht unterstützte Version von $MYSELF."
 MSG_PUSHOVER_SEND_FAILED=282
-MSG_EN[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Sent to pushover failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
-MSG_DE[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Senden an Pushover fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
+MSG_EN[$MSG_PUSHOVER_SEND_FAILED]="RBK0282W: Sent to pushover failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
+MSG_DE[$MSG_PUSHOVER_SEND_FAILED]="RBK0282W: Senden an Pushover fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
 MSG_PUSHOVER_SEND_OK=283
-MSG_EN[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover notified."
-MSG_DE[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover benachrichtigt."
+MSG_EN[$MSG_PUSHOVER_SEND_OK]="RBK0283I: Pushover notified."
+MSG_DE[$MSG_PUSHOVER_SEND_OK]="RBK0283I: Pushover benachrichtigt."
 MSG_PUSHOVER_OPTIONS_INCOMPLETE=284
-MSG_EN[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushover options not complete."
-MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushoveroptionen nicht vollständig"
+MSG_EN[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0284E: Pushover options not complete."
+MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0284E: Pushoveroptionen nicht vollständig"
 MSG_PUSHOVER_INVALID_NOTIFICATION=285
-MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Invalid Pushover notification %s detected. Valid notifications are %s."
-MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Invalid Pushover notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_SLACK_SEND_FAILED=286
+MSG_EN[$MSG_SLACK_SEND_FAILED]="RBK0286W: Sent to Slack failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
+MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
+MSG_SLACK_SEND_OK=287
+MSG_EN[$MSG_SLACK_SEND_OK]="RBK0287I: Slack notified."
+MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
+MSG_SLACK_OPTIONS_INCOMPLETE=288
+MSG_EN[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slack options not complete."
+MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständig"
+MSG_SLACK_INVALID_NOTIFICATION=289
+MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2610,6 +2629,8 @@ function logOptions() { # option state
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
  	logItem "SKIP_DEPRECATED=$SKIP_DEPRECATED"
  	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
+	logItem "SLACK_WEBHOOCK_URL=$SLACK_WEBHOOCK_URL"
+	logItem "SLACK_NOTIFICATIONS=$SLACK_NOTIFICATIONS"
  	logItem "SMART_RECYCLE=$SMART_RECYCLE"
  	logItem "SMART_RECYCLE_DRYRUN=$SMART_RECYCLE_DRYRUN"
  	logItem "SMART_RECYCLE_OPTIONS=$SMART_RECYCLE_OPTIONS"
@@ -2782,6 +2803,9 @@ function initializeDefaultConfigVariables() {
 	# Pushover priorities
 	DEFAULT_PUSHOVER_PRIORITY_SUCCESS="0"
 	DEFAULT_PUSHOVER_PRIORITY_FAILURE="1"
+	# Slack
+	DEFAULT_SLACK_WEBHOOCK_URL=""
+	DEFAULT_SLACK_NOTIFICATIONS=""
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
 	# mail coloring scheme (SUBJECT or OPTION)
@@ -2854,6 +2878,8 @@ function copyDefaultConfigVariables() {
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
 	SKIPLOCALCHECK="$DEFAULT_SKIPLOCALCHECK"
+	SLACK_WEBHOOCK_URL="$DEFAULT_SLACK_WEBHOOCK_URL"
+	SLACK_NOTIFICATIONS="$DEFAULT_SLACK_NOTIFICATIONS"
 	SMART_RECYCLE="$DEFAULT_SMART_RECYCLE"
 	SMART_RECYCLE_DRYRUN="$DEFAULT_SMART_RECYCLE_DRYRUN"
 	SMART_RECYCLE_OPTIONS="$DEFAULT_SMART_RECYCLE_OPTIONS"
@@ -4114,6 +4140,78 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		logExit
 }
 
+function sendSlack() { # subject sucess/failure
+
+	logEntry "$1" 
+
+	if [[ -n "$SLACK_WEBHOOCK_URL" ]] ; then
+		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
+		else
+			sendSlackMessage "$1" "$2"
+		fi
+	fi
+
+	logExit
+
+}
+
+# Send message, exit
+
+function sendSlackMessage() { # message 0/1->success/failure 
+
+		logEntry "$1"
+
+		local msg_json
+		
+		local o=$(mktemp)
+
+		if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_MESSAGES ]]; then
+			msg="$(tail 32 $MSG_FILE)"
+		fi
+
+		read -r -d '' msg_json <<EOF
+{
+	"blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":white_check_mark: *1*\n$msg"
+			}
+		}
+	]
+}
+EOF
+
+		local cmd=("-X POST -H 'Content-type: application/json' -w %{http_code} -o $o")
+		cmd+=(--data "$msg_json")
+		
+		logItem "Slack curl call: ${cmd[@]}"
+		local httpCode="$(curl $cmd $SLACK_WEBHOOCK_URL)"
+		local curlRC=$?
+
+		if (( $curlRC )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
+		else
+			logItem "Slack response:${NL}$(<$o)"
+			local ok=$(jq .status "$o")
+			if [[ $ok == "1" ]]; then
+				logItem "Message sent"
+				if [[ -n $2 ]]; then	# write message only for html, not for messages
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
+				fi
+			else
+				logItem "Error sending msg: $rsp"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
+			fi
+		fi
+
+		[[ -n $o ]] && rm $o
+
+		logExit
+}
+
 function sendEMail() { # content subject
 
 	logEntry
@@ -4556,6 +4654,12 @@ function cleanup() { # trap
 						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
+				if [[ -n "$SLACK_WEBHOOCK_URL" ]]; then
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+						sendSlack "${EMOJI_FAILED} $msg" 1		# add warning icon to message
+					fi
+				fi
 			fi #  ! RESTORE
 		fi
 
@@ -4582,6 +4686,12 @@ function cleanup() { # trap
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
 					sendPushover "${EMOJI_OK} $msg" 0
+				fi
+			fi
+			if [[ -n "$SLACK_WEBHOOCK_URL"  ]]; then
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
+					sendSlack "${EMOJI_OK} $msg" 0
 				fi
 			fi
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
@@ -9225,6 +9335,9 @@ if (( "$NOTIFY_START" )) ; then
 	fi
 	if [[ -n "$PUSHOVER_USER"  ]]; then
 		sendPushover "$msg"
+	fi
+	if [[ -n "$SLACK_WEBHOOCK_URL"  ]]; then
+		sendSlack "$msg"
 	fi
 fi
 
