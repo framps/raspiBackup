@@ -288,9 +288,9 @@ SLACK_EMOJI_OK=":white_check_mark:"  # ✔️
 SLACK_EMOJI_WARNING=":warning:"  # ⚠️
 SLACK_EMOJI_FAILED=":x:" # ❌
 SLACK_EMOJI_UPDATE_POSSIBLE=":smirk:" # 😉
-SLACK_EMOJI_BETA_AVAILABLE=":laughhing:" # 😃
+SLACK_EMOJI_BETA_AVAILABLE=":laughing:" # 😃
 SLACK_EMOJI_RESTORETEST_REQUIRED=":bell:" # 🔔
-SLACK_EMOJI_VERSION_DEPRECATED=":skull" # 💀
+SLACK_EMOJI_VERSION_DEPRECATED=":skull:" # 💀
 
 # various other constants
 
@@ -4187,16 +4187,14 @@ function sendSlackMessage() { # message 0/1->success/failure
 
 		logEntry "$1"
 
-		local msg_json emoji 
-		
-		local msg="$1"
+		local msg_json statusMsg
 		
 		local o=$(mktemp)
 
 		if [[ -n $2 && "$2" == "1" ]]; then
-			emoji="$SLACK_EMOJI_FAILED$msg"
+			statusMsg="${SLACK_EMOJI_FAILED}$1"
 		else
-			emoji="$SLACK_EMOJI_OK$msg"
+			statusMsg="${SLACK_EMOJI_OK}$1"
 		fi
 
 		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
@@ -4215,7 +4213,7 @@ function sendSlackMessage() { # message 0/1->success/failure
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "$emoji *$1*\n$msg"
+				"text": "*$statusMsg*\n$msg"
 			}
 		}
 	]
@@ -4241,6 +4239,7 @@ EOF
 				fi
 			else
 				logItem "Error sending msg: $rsp"
+				local error_description="$(<$o)"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
 			fi
 		fi
