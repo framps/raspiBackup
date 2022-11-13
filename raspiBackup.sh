@@ -1859,17 +1859,17 @@ MSG_UNSUPPORTED_VERSION=281
 MSG_EN[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Unsupported version of $MYSELF."
 MSG_DE[$MSG_UNSUPPORTED_VERSION]="RBK0281W: Nicht unterstützte Version von $MYSELF."
 MSG_PUSHOVER_SEND_FAILED=282
-MSG_EN[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Sent to pushover failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
-MSG_DE[$MSG_PUSHOVER_SEND_FAILED]="RBK0276W: Senden an Pushover fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
+MSG_EN[$MSG_PUSHOVER_SEND_FAILED]="RBK0282W: Sent to pushover failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
+MSG_DE[$MSG_PUSHOVER_SEND_FAILED]="RBK0282W: Senden an Pushover fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
 MSG_PUSHOVER_SEND_OK=283
-MSG_EN[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover notified."
-MSG_DE[$MSG_PUSHOVER_SEND_OK]="RBK0277I: Pushover benachrichtigt."
+MSG_EN[$MSG_PUSHOVER_SEND_OK]="RBK0283I: Pushover notified."
+MSG_DE[$MSG_PUSHOVER_SEND_OK]="RBK0283I: Pushover benachrichtigt."
 MSG_PUSHOVER_OPTIONS_INCOMPLETE=284
-MSG_EN[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushover options not complete."
-MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0278E: Pushoveroptionen nicht vollständig"
+MSG_EN[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0284E: Pushover options not complete."
+MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0284E: Pushoveroptionen nicht vollständig"
 MSG_PUSHOVER_INVALID_NOTIFICATION=285
-MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Invalid Pushover notification %s detected. Valid notifications are %s."
-MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0281E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Invalid Pushover notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
