@@ -4153,28 +4153,24 @@ function sendSlack() { # subject sucess/failure
 	logEntry "$1" 
 
 	if [[ -n "$SLACK_WEBHOOCK_URL" ]] ; then
-		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
-		else
-			local smiley
-			if (( $WARNING_MESSAGE_WRITTEN )); then
-				smiley="$SLACK_EMOJI_WARNING ${smiley}"
-			fi
-			if (( $UPDATE_POSSIBLE )); then
-				smiley="$SLACK_EMOJI_UPDATE_POSSIBLE ${smiley}"
-			fi
-			if (( $BETA_AVAILABLE )); then
-				smiley="$SLACK_EMOJI_BETA_AVAILABLE ${smiley}"
-			fi
-			if (( $RESTORETEST_REQUIRED )); then
-				smiley="$SLACK_EMOJI_RESTORETEST_REQUIRED ${smiley}"
-			fi
-			if (( $VERSION_DEPRECATED )); then
-				smiley="$SLACK_EMOJI_VERSION_DEPRECATED ${smiley}"
-			fi
-
-			sendSlackMessage "${smiley}$1" "$2"
+		local smiley
+		if (( $WARNING_MESSAGE_WRITTEN )); then
+			smiley="$SLACK_EMOJI_WARNING ${smiley}"
 		fi
+		if (( $UPDATE_POSSIBLE )); then
+			smiley="$SLACK_EMOJI_UPDATE_POSSIBLE ${smiley}"
+		fi
+		if (( $BETA_AVAILABLE )); then
+			smiley="$SLACK_EMOJI_BETA_AVAILABLE ${smiley}"
+		fi
+		if (( $RESTORETEST_REQUIRED )); then
+			smiley="$SLACK_EMOJI_RESTORETEST_REQUIRED ${smiley}"
+		fi
+		if (( $VERSION_DEPRECATED )); then
+			smiley="$SLACK_EMOJI_VERSION_DEPRECATED ${smiley}"
+		fi
+
+		sendSlackMessage "${smiley}$1" "$2"
 	fi
 
 	logExit
@@ -6845,10 +6841,6 @@ function doitBackup() {
 	fi
 
 	if [[ -n "$SLACK_WEBHOOCK_URL" ]]; then
-		if ! which jq &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
-			exitError $RC_MISSING_COMMANDS
-		fi
 		local invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACKOVER_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
