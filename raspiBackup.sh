@@ -2637,7 +2637,7 @@ function logOptions() { # option state
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
  	logItem "SKIP_DEPRECATED=$SKIP_DEPRECATED"
  	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
-	logItem "SLACK_WEBHOOCK_URL=$SLACK_WEBHOOCK_URL"
+	logItem "SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL"
 	logItem "SLACK_NOTIFICATIONS=$SLACK_NOTIFICATIONS"
  	logItem "SMART_RECYCLE=$SMART_RECYCLE"
  	logItem "SMART_RECYCLE_DRYRUN=$SMART_RECYCLE_DRYRUN"
@@ -2812,7 +2812,7 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_PUSHOVER_PRIORITY_SUCCESS="0"
 	DEFAULT_PUSHOVER_PRIORITY_FAILURE="1"
 	# Slack
-	DEFAULT_SLACK_WEBHOOCK_URL=""
+	DEFAULT_SLACK_WEBHOOK_URL=""
 	DEFAULT_SLACK_NOTIFICATIONS=""
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
@@ -2886,7 +2886,7 @@ function copyDefaultConfigVariables() {
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
 	SKIPLOCALCHECK="$DEFAULT_SKIPLOCALCHECK"
-	SLACK_WEBHOOCK_URL="$DEFAULT_SLACK_WEBHOOCK_URL"
+	SLACK_WEBHOOK_URL="$DEFAULT_SLACK_WEBHOOK_URL"
 	SLACK_NOTIFICATIONS="$DEFAULT_SLACK_NOTIFICATIONS"
 	SMART_RECYCLE="$DEFAULT_SMART_RECYCLE"
 	SMART_RECYCLE_DRYRUN="$DEFAULT_SMART_RECYCLE_DRYRUN"
@@ -4152,7 +4152,7 @@ function sendSlack() { # subject sucess/failure
 
 	logEntry "$1" 
 
-	if [[ -n "$SLACK_WEBHOOCK_URL" ]] ; then
+	if [[ -n "$SLACK_WEBHOOK_URL" ]] ; then
 		local smiley
 		if (( $WARNING_MESSAGE_WRITTEN )); then
 			smiley="$SLACK_EMOJI_WARNING ${smiley}"
@@ -4221,7 +4221,7 @@ EOF
 		cmd+=(--data "$msg_json")
 		
 		logItem "Slack curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOCK_URL)"
+		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
 		local curlRC=$?
 		logItem "Slack response:${NL}$(<$o)"
 
@@ -4687,7 +4687,7 @@ function cleanup() { # trap
 						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
-				if [[ -n "$SLACK_WEBHOOCK_URL" ]]; then
+				if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
 					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendSlack "$msg" 1		# add warning icon to message
@@ -4721,7 +4721,7 @@ function cleanup() { # trap
 					sendPushover "${EMOJI_OK} $msg" 0
 				fi
 			fi
-			if [[ -n "$SLACK_WEBHOOCK_URL"  ]]; then
+			if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
 					sendSlack "${EMOJI_OK} $msg" 0
@@ -6840,7 +6840,7 @@ function doitBackup() {
 		fi
 	fi
 
-	if [[ -n "$SLACK_WEBHOOCK_URL" ]]; then
+	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
 		local invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACKOVER_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
@@ -9377,7 +9377,7 @@ if (( "$NOTIFY_START" )) ; then
 	if [[ -n "$PUSHOVER_USER"  ]]; then
 		sendPushover "$msg"
 	fi
-	if [[ -n "$SLACK_WEBHOOCK_URL"  ]]; then
+	if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 		sendSlack "$msg"
 	fi
 fi
