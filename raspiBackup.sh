@@ -2448,7 +2448,7 @@ function executeDD() { # cmd silent
 	local rc cmd
 	cmd="$1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | grep -viE "records [in|out]| copied," | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -5020,7 +5020,8 @@ function partitionLayoutBackup() {
 		logItem "$(<"$FDISK_FILE")"
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_MBR_BACKUP "$MBR_FILE"
-		dd if=$BOOT_DEVICENAME of="$MBR_FILE" bs=512 count=1 &>>$LOG_FILE
+		cmd="dd if=$BOOT_DEVICENAME of="$MBR_FILE" bs=512 count=1"
+		executeDD "$cmd"
 		rc=$?
 		if [ $rc != 0 ]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".mbr" "$rc"
