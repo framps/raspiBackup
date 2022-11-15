@@ -4098,9 +4098,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			local ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
-				if [[ -n $2 ]]; then	# write message only for html, not for messages
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
-				fi
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
 			else
 				error_description="$(jq .errors "$o" | tr -d '\n[]')"
 				logItem "Error sending msg: $rsp"
