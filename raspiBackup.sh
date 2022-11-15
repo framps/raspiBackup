@@ -4939,7 +4939,8 @@ function bootPartitionBackup() {
 
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_MBR_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr"
-				dd if=$BOOT_DEVICENAME of="$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr" bs=512 count=1 &>>$LOG_FILE
+				cmd="dd if=$BOOT_DEVICENAME of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr\" bs=512 count=1"
+				executeDD "$cmd"
 				local rc=$?
 				if [ $rc != 0 ]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_DD_FAILED ".mbr" "$rc"
