@@ -38,7 +38,7 @@ if [[ -z $1 ]]; then
 fi
 
 if ! which jq &>/dev/null; then
-	echo "??? Missing jq. Please install jq first."
+	echo "??? Missing jq. Please install jq first. Try 'sudo apt-get install jq'."
 	exit 1
 fi
 
