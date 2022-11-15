@@ -74,11 +74,11 @@ IS_BETA=$(( ! $(grep -iq beta <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
-GIT_DATE='$Date$'
+GIT_DATE='$Date: 2022-11-14 10:26:46 +0100$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT='$Sha1$'
+GIT_COMMIT='$Sha1: 4998700$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1885,6 +1885,7 @@ MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0284E: Pushoveroptionen nicht volls
 MSG_PUSHOVER_INVALID_NOTIFICATION=285
 MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Invalid Pushover notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
+<<<<<<< HEAD
 MSG_SLACK_SEND_FAILED=286
 MSG_EN[$MSG_SLACK_SEND_FAILED]="RBK0286W: Sent to Slack failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
 MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
@@ -1897,6 +1898,8 @@ MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständi
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+=======
+>>>>>>> beta
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
