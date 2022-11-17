@@ -43,7 +43,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.8-beta"											# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.8-beta-ubuntu"									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
@@ -2293,30 +2293,48 @@ function isUnsupportedVersion() {
 
 function isSupportedEnvironment() {
 
+	logEntry
+	
 	if (( $REGRESSION_TEST )); then
+		logExit 0
 		return 0
 	fi
 
 	local MODELPATH=/sys/firmware/devicetree/base/model
 	local OSRELEASE=/etc/os-release
 	local RPI_ISSUE=/etc/rpi-issue
+	local OS_RELEASE=/etc/os-release
 
 	logCommand "cat $OSRELEASE"
 
 #	Check it's Raspberry HW
 	if [[ ! -e $MODELPATH ]]; then
 		logItem "$MODELPATH not found"
+		logExit 1
 		return 1
 	fi
 	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
-#	OS was built for a Raspberry
-	if [[ ! -e $RPI_ISSUE ]]; then
-		logItem "$RPI_ISSUE not found"
+#	OS was built for a Raspberry (RaspbainOS only)
+	if [[ -e $RPI_ISSUE ]]; then
+		logItem "$RPI_ISSUE: $(< $RPI_ISSUE)"
+		logExit 0
+		return 0
+	fi
+	logItem "$RPI_ISSUE not found"
+
+	if [[ ! -e $OS_RELEASE ]]; then
+		logItem "$OS_RELEASE not found" 
+		logExit 1
 		return 1
 	fi
-	logItem "$RPI_ISSUE: $(cat $RPI_ISSUE)"
+	
+	logItem $(<$OS_RELEASE)
+	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OS_RELEASE
+	local rc=$?
+	logExit $rc
+	return $rc
 
 : <<SKIP
 	[[ ! -e $OSRELEASE ]] && return 1
@@ -2333,8 +2351,6 @@ function isSupportedEnvironment() {
 		return
 	fi
 SKIP
-
-	return 0
 }
 
 # Create a backupfile FILE.bak from FILE. If this file already exists rename this file to FILE.n.bak when n is next backup number
@@ -4921,13 +4937,13 @@ function bootPartitionBackup() {
 					logItem "Stripping partitions > 2"
 					stripMultiple='| grep -v -E "[3-9] :"'
 				fi
-				eval "sfdisk -d $BOOT_DEVICENAME $stripMultiple" > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk" 2>>$LOG_FILE
+				sfdisk -d $BOOT_DEVICENAME $stripMultiple > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk" 2>>$LOG_FILE
 				local rc=$?
 				if [ $rc != 0 ]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
 					exitError $RC_COLLECT_PARTITIONS_FAILED
 				fi
-				logCommand "$(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")"
+				logItem "$(<"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")"
 
 				if (( $LINK_BOOTPARTITIONFILES )); then
 					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
@@ -4935,6 +4951,60 @@ function bootPartitionBackup() {
 			else
 				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk ..."
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
+			fi
+
+			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid"
+				blkid > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid" 2>>$LOG_FILE
+				local rc=$?
+				if [ $rc != 0 ]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "blkid" "$rc"
+					exitError $RC_COLLECT_PARTITIONS_FAILED
+				fi
+				logItem "$(<"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid")"
+
+				if (( $LINK_BOOTPARTITIONFILES )); then
+					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid"
+				fi
+			else
+				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid ..."
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid"
+			fi
+
+			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted"
+				parted -m "$BOOT_DEVICENAME" print > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted" 2>>$LOG_FILE
+				local rc=$?
+				if [ $rc != 0 ]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "parted" "$rc"
+					exitError $RC_COLLECT_PARTITIONS_FAILED
+				fi
+				logItem "$(<"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted")"
+
+				if (( $LINK_BOOTPARTITIONFILES )); then
+					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted"
+				fi
+			else
+				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted ..."
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted"
+			fi
+
+			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk"
+				fdisk -l "$BOOT_DEVICENAME" > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk" 2>>$LOG_FILE
+				local rc=$?
+				if [ $rc != 0 ]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "fdisk" "$rc"
+					exitError $RC_COLLECT_PARTITIONS_FAILED
+				fi
+				logItem "$(<"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk")"
+
+				if (( $LINK_BOOTPARTITIONFILES )); then
+					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk"
+				fi
+			else
+				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk ..."
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk"
 			fi
 
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr" ]]; then
@@ -5275,7 +5345,7 @@ function backupRsync() { # partition number (for partition based backup)
 		bootPartitionBackup
 		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
-		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
+		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
 
 	logItem "LastBackupDir: $lastBackupDir"
@@ -6378,9 +6448,11 @@ function inspect4Backup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
+		
 		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9]+)p || "$part" =~ /dev/(nvme[0-9]+n[0-9]+)p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
-
+		
+		else
 			logItem "Starting alternate boot discovery"
 
 			# test whether boot device is mounted
