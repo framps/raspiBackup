@@ -6521,9 +6521,11 @@ function inspect4Backup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
+		
 		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9]+)p || "$part" =~ /dev/(nvme[0-9]+n[0-9]+)p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
-
+		
+		else
 			logItem "Starting alternate boot discovery"
 
 			# test whether boot device is mounted
