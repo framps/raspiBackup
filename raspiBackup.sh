@@ -8109,7 +8109,7 @@ function synchronizeCmdlineAndfstab() {
 
 	local cmdline="$(cmdLinePath)"
 	cmdLineTrunc=${cmdline/\/boot/}
-	CMDLINE="$BOOT_MP/boot" # absolute path in mount, don't use firmware subdir for Ubuntu which is mounted at startup 
+	CMDLINE="$BOOT_MP" # absolute path in mount, don't use firmware subdir for Ubuntu which is mounted at startup 
 	cmdline="/boot$cmdLineTrunc" # path for message
 	local fstab="/etc/fstab" # path for message
 	FSTAB="$ROOT_MP$fstab" # absolute path in mount
