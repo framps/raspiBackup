@@ -3950,7 +3950,7 @@ function config_message_detail_do() {
 	[[ "$old" == "$CONFIG_MSG_LEVEL" ]]
 	local rc=$?
 	logExit "$rc - $CONFIG_MSG_LEVEL"
-	return
+	return $rc
 
 }
 
