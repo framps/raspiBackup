@@ -6255,7 +6255,7 @@ function inspect4Restore() {
 		fi
 	fi
 
-	if (( PARTITIONBASED_BACKUP )); then
+	if (( $PARTITIONBASED_BACKUP )); then
 		BLKID_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.blkid)
 		if [[ -z $BLKID_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
