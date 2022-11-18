@@ -7743,7 +7743,8 @@ function doitRestore() {
 		fi
 	fi
 
-	if dpkg-query -W --showformat='${Status}\n' usbmount|grep "install ok installed" &>>$LOG_FILE; then
+	local usbMount="$(dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
+	if grep -q "install ok installed" <<< "$usbMount" &>>$LOG_FILE; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
