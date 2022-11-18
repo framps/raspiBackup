@@ -2294,7 +2294,9 @@ function isUnsupportedVersion() {
 function cmdLinePath() {
 	logEntry
 	
-	echo "$(find /boot -name cmdline.txt)"
+	local f="$(find /boot -name cmdline.txt)" # either /boot or /boot/firmware
+	logItem "cmdLine: $f"
+	echo "$f"
 	
 	logExit
 }
@@ -8172,7 +8174,7 @@ function synchronizeCmdlineAndfstab() {
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
 	local cmdline="$(cmdLinePath)"
-	cmdLine=${cmdline/boot=/}
+	cmdLine=${cmdline/\/boot/}
 	CMDLINE="$BOOT_MP$cmdline" # absolute path in mount
 	cmdline="/boot$cmdline" # path for message
 	local fstab="/etc/fstab" # path for message
