@@ -3605,7 +3605,7 @@ function isMounted() { # dir
 	local rc
 	logEntry "$1"
 	if [[ -n "$1" ]]; then
-		logCommand "cat /proc/mounts"
+		#logCommand "cat /proc/mounts"
 		grep -qs "$1" /proc/mounts
 		rc=$?
 	else
@@ -8109,7 +8109,7 @@ function synchronizeCmdlineAndfstab() {
 
 	local cmdline="$(cmdLinePath)"
 	cmdLineTrunc=${cmdline/\/boot/}
-	CMDLINE="$BOOT_MP$cmdLineTrunc" # absolute path in mount
+	CMDLINE="$BOOT_MP/boot" # absolute path in mount, don't use firmware subdir for Ubuntu which is mounted at startup 
 	cmdline="/boot$cmdLineTrunc" # path for message
 	local fstab="/etc/fstab" # path for message
 	FSTAB="$ROOT_MP$fstab" # absolute path in mount
