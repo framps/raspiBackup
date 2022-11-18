@@ -152,6 +152,7 @@ TEMP_LOG_FILE="/tmp/$LOGFILE_NAME"
 TEMP_MSG_FILE="/tmp/$MSGFILE_NAME"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
 MODIFIED_SFDISK="/tmp/$$.sfdisk"
+UBUNTU_FIRMWARE_DIRECTORY="/boot/firmware"
 
 # timeouts
 
@@ -2343,6 +2344,10 @@ function isSupportedEnvironment() {
 	logItem $(<$OS_RELEASE)
 	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OS_RELEASE
 	local rc=$?
+	
+	IS_UBUNTU=$(( ! $rc ))
+	logItem "IS_UBUNTU: $IS_UBUNTU"
+	
 	logExit $rc
 	return $rc
 
@@ -5164,6 +5169,12 @@ function backupTar() {
 		target="\"$BACKUPTARGET_FILE\""
 	fi
 
+	local bootExclude="/boot"
+	if (( $IS_UBUNTU )); then
+		bootExclude="${UBUNTU_FIRMWARE_DIRECTORY}"
+	fi
+	logItem "bootExclude: $bootExclude"
+
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
@@ -5186,7 +5197,7 @@ function backupTar() {
 		--exclude=$devroot/sys/* \
 		--exclude=$devroot/dev/* \
 		--exclude=$devroot/tmp/* \
-		--exclude=$devroot/boot/* \
+		--exclude={$devroot}${bootExclude}/* \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
 		$EXCLUDE_LIST \
@@ -5320,6 +5331,12 @@ function backupRsync() { # partition number (for partition based backup)
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
 
+	local bootExclude="/boot"
+	if (( $IS_UBUNTU )); then
+		bootExclude="${UBUNTU_FIRMWARE_DIRECTORY}"
+	fi
+	logItem "bootExclude: $bootExclude"
+
 	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
 	local fs="$(getFsType "$BACKUPPATH")"
 	if [[ -e $PERSISTENT_JOURNAL && $fs =~ ^nfs* ]]; then
@@ -5335,7 +5352,7 @@ function backupRsync() { # partition number (for partition based backup)
 			--exclude=$excludeRoot/lost+found/* \
 			--exclude=$excludeRoot/sys/* \
 			--exclude=$excludeRoot/dev/* \
-			--exclude=$excludeRoot/boot/* \
+			--exclude=${excludeRoot}${bootExclude}/* \
 			--exclude=$excludeRoot/tmp/* \
 			--exclude=$excludeRoot/run/* \
 			--exclude=$excludeRoot/media/* \
@@ -5639,6 +5656,7 @@ function restore() {
 			else
 				mkfs.ext4 $check $ROOT_PARTITION &>>$LOG_FILE
 			fi
+			rc=0
 			rc=$?
 			if (( $rc != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
@@ -6557,6 +6575,10 @@ function inspect4Restore() {
 		BACKUP_BOOT_PARTITION_PREFIX="$(getPartitionPrefix $BACKUP_BOOT_DEVICE)"
 		logItem "BACKUP_BOOT_PARTITION_PREFIX: $BACKUP_BOOT_PARTITION_PREFIX"
 	fi
+
+	[[ -d "$UBUNTU_FIRMWARE_DIRECTORY" ]]
+	IS_UBUNTU=$(( ! $? ))
+	logItem "IS_UBUNTU: $IS_UBUNTU"
 
 	logExit
 
@@ -8086,9 +8108,9 @@ function synchronizeCmdlineAndfstab() {
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
 	local cmdline="$(cmdLinePath)"
-	cmdLine=${cmdline/\/boot/}
-	CMDLINE="$BOOT_MP$cmdline" # absolute path in mount
-	cmdline="/boot$cmdline" # path for message
+	cmdLineTrunc=${cmdline/\/boot/}
+	CMDLINE="$BOOT_MP$cmdLineTrunc" # absolute path in mount
+	cmdline="/boot$cmdLineTrunc" # path for message
 	local fstab="/etc/fstab" # path for message
 	FSTAB="$ROOT_MP$fstab" # absolute path in mount
 
@@ -8168,8 +8190,9 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
-			logItem "Write label $oldLABEL on $ROOT_PARTITION"
-			#e2label "$ROOT_PARTITION" "$oldLABEL" >> $LOG_FILE
+			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
@@ -8204,8 +8227,9 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
-			logItem "Write label $oldLABEL on $BOOT_PARTITION"
-			#e2label "$BOOT_PARTITION" "$oldLABEL" >> $LOG_FILE
+			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
+			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 		fi
@@ -8617,6 +8641,7 @@ FORCE_UPDATE=0
 HELP=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
+IS_UBUNTU=0
 NO_YES_QUESTION=0
 ONLINE_VERSIONS=0
 PROGRESS=0
