@@ -4963,60 +4963,6 @@ function bootPartitionBackup() {
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
 			fi
 
-			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid"
-				blkid > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid" 2>>$LOG_FILE
-				local rc=$?
-				if [ $rc != 0 ]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "blkid" "$rc"
-					exitError $RC_COLLECT_PARTITIONS_FAILED
-				fi
-				logItem "$(<"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid")"
-
-				if (( $LINK_BOOTPARTITIONFILES )); then
-					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid"
-				fi
-			else
-				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid ..."
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.blkid"
-			fi
-
-			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted"
-				parted -m "$BOOT_DEVICENAME" print > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted" 2>>$LOG_FILE
-				local rc=$?
-				if [ $rc != 0 ]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "parted" "$rc"
-					exitError $RC_COLLECT_PARTITIONS_FAILED
-				fi
-				logItem "$(<"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted")"
-
-				if (( $LINK_BOOTPARTITIONFILES )); then
-					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted"
-				fi
-			else
-				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted ..."
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.parted"
-			fi
-
-			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk"
-				fdisk -l "$BOOT_DEVICENAME" > "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk" 2>>$LOG_FILE
-				local rc=$?
-				if [ $rc != 0 ]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "fdisk" "$rc"
-					exitError $RC_COLLECT_PARTITIONS_FAILED
-				fi
-				logItem "$(<"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk")"
-
-				if (( $LINK_BOOTPARTITIONFILES )); then
-					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk"
-				fi
-			else
-				logItem "Found existing backup of partition layout $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk ..."
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXISTING_PARTITION_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk"
-			fi
-
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_MBR_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr"
 				cmd="dd if=$BOOT_DEVICENAME of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.mbr\" bs=512 count=1"
@@ -5280,40 +5226,6 @@ function waitForPartitionDefsChanged {
 	sleep 3
 	logItem "--- udevadm ---"
 	udevadm settle &>>$LOG_FILE
-	logExit
-}
-
-function updateCmndlineAndFstab() {
-	
-	logEntry
-	
-	local cmdlineFile="$(cmdLinePath)"
-	local rootLine="$(grep -E -o "root=\w+=\w+" $cmdlineFile)"
-	
-	if [[ -z "$rootLine" ]]; then
-		assertionFailed $LINENO "Unable to retrieve root type from $cmdlineFile"
-	fi
-	
-	logItem "rootLine: $rootLine" # root=PARTUUID=, root=UUID= or root=LABEL=
-	
-	local rootType="$(cut -f2 -d = <<< "$rootLine" )"
-	local rootArg="$(cut -f3 -d = <<< "$rootLine" )"
-	
-	logItem "rootType: $rootType - rootArg: $rootArg"
-	
-	case $rootType in
-	
-		PARTUUID)
-				;;
-		
-		UUID)
-				;;
-		
-		LABEL)
-				;;
-		*) assertionFailed $LINENO "Unknown rootType $rootType"
-	esac
-	
 	logExit
 }
 
@@ -8153,7 +8065,7 @@ function synchronizeCmdlineAndfstab() {
 
 	logEntry
 
-	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL newLABEL
+	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL
 
 	if [[ $RESTORE_DEVICE =~ /dev/mmcblk0 || $RESTORE_DEVICE =~ /dev/nvme0n1 || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
 		BOOT_PARTITION="${RESTORE_DEVICE}p1"
@@ -8211,14 +8123,7 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
-			newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
-			logItem "CMDLINE - newLABEL: $newLABEL, oldLABEL: $oldLABEL"
-			if [[ -z $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
-			elif [[ $oldLABEL != $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$cmdline"
-				sed -i "s/$oldLABEL/$newLABEL/" $CMDLINE &>> "$LOG_FILE"
-			fi
+			logItem "Label $oldLABEL detected in cmdline.txt"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
@@ -8226,6 +8131,12 @@ function synchronizeCmdlineAndfstab() {
 		logCommand "ls -la $BOOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
 	fi
+
+	if [[ -f "$CMDLINE" ]]; then
+		logItem "Upd $CMDLINE"
+		logCommand "cat $CMDLINE"
+	fi
+
 
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Org $FSTAB"
@@ -8257,16 +8168,8 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
-			newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
-			logItem "FSTAB root - newRootLABEL: $newLABEL, oldRootLABEL: $oldLABEL"
-			if [[ -z $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
-			elif [[ $oldLABEL != $newLABEL ]]; then
-				local oldlabelID="$(sed -E 's/-[0-9]+//' <<< "$oldLABEL")"
-				local newlabelID="$(sed -E 's/-[0-9]+//' <<< "$newLABEL")"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldlabelID" "$newlabelID" "$fstab"
-				sed -i "s/$oldlabelID/$newlabelID/g" $FSTAB &>> "$LOG_FILE"
-			fi
+			logItem "Write label $oldLABEL on $ROOT_PARTITION"
+			#e2label "$ROOT_PARTITION" "$oldLABEL" >> $LOG_FILE
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
@@ -8301,24 +8204,13 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
-			newLABEL=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
-			logItem "FSTAB boot - newBootLABEL: $newLABEL, oldBootLABEL: $oldLABEL"
-			if [[ -z $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-			elif [[ $oldLABEL != $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
-				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> "$LOG_FILE"
-			fi
+			logItem "Write label $oldLABEL on $BOOT_PARTITION"
+			#e2label "$BOOT_PARTITION" "$oldLABEL" >> $LOG_FILE
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 		fi
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-	fi
-
-	if [[ -f "$CMDLINE" ]]; then
-		logItem "Upd $CMDLINE"
-		logCommand "cat $CMDLINE"
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
