@@ -2291,6 +2291,14 @@ function isUnsupportedVersion() {
 	return $rc
 }
 
+function cmdLinePath() {
+	logEntry
+	
+	echo "$(find /boot -name cmdline.txt)"
+	
+	logExit
+}
+
 function isSupportedEnvironment() {
 
 	logEntry
@@ -5273,6 +5281,40 @@ function waitForPartitionDefsChanged {
 	logExit
 }
 
+function updateCmndlineAndFstab() {
+	
+	logEntry
+	
+	local cmdlineFile="$(cmdLinePath)"
+	local rootLine="$(grep -E -o "root=\w+=\w+" $cmdlineFile)"
+	
+	if [[ -z "$rootLine" ]]; then
+		assertionFailed $LINENO "Unable to retrieve root type from $cmdlineFile"
+	fi
+	
+	logItem "rootLine: $rootLine" # root=PARTUUID=, root=UUID= or root=LABEL=
+	
+	local rootType="$(cut -f2 -d = <<< "$rootLine" )"
+	local rootArg="$(cut -f3 -d = <<< "$rootLine" )"
+	
+	logItem "rootType: $rootType - rootArg: $rootArg"
+	
+	case $rootType in
+	
+		PARTUUID)
+				;;
+		
+		UUID)
+				;;
+		
+		LABEL)
+				;;
+		*) assertionFailed $LINENO "Unknown rootType $rootType"
+	esac
+	
+	logExit
+}
+
 function updateUUIDs() {
 	logEntry
 	if (( $UPDATE_UUIDS )); then
@@ -5932,8 +5974,8 @@ function backup() {
 		logCommand "fdisk -l $BOOT_DEVICENAME"
 	fi
 
-	if [[ -f "/boot/cmdline.txt" ]]; then
-		logCommand "cat /boot/cmdline.txt"
+	if [[ -f "$(cmdLinePath)" ]]; then
+		logCommand "cat $(cmdLinePath)"
 	fi
 
 	logItem "Starting $BACKUPTYPE backup..."
@@ -8128,7 +8170,8 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	local cmdline="/cmdline.txt"
+	local cmdline="$(cmdLinePath)"
+	cmdLine=${cmdline/boot=/}
 	CMDLINE="$BOOT_MP$cmdline" # absolute path in mount
 	cmdline="/boot$cmdline" # path for message
 	local fstab="/etc/fstab" # path for message
