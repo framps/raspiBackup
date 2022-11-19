@@ -8107,16 +8107,13 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	local cmdline="$(cmdLinePath)"
-	cmdLineTrunc=${cmdline/\/boot/}
-	CMDLINE="$BOOT_MP" # absolute path in mount, don't use firmware subdir for Ubuntu which is mounted at startup 
-	cmdline="/boot$cmdLineTrunc" # path for message
-	local fstab="/etc/fstab" # path for message
+	CMDLINE="$BOOT_MP/cmdline.txt" # absolute path in mount, don't use firmware subdir for Ubuntu which is mounted at startup 
 	FSTAB="$ROOT_MP$fstab" # absolute path in mount
 
+	local cmdline="/boot/cmdline.txt" # path for message
+	local fstab="/etc/fstab" # path for message
+	
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
-
-	logCommand "blkid -o udev $ROOT_PARTITION"
 
 	if [[ -f "$CMDLINE" ]]; then
 
@@ -8124,6 +8121,7 @@ function synchronizeCmdlineAndfstab() {
 		logCommand "cat $CMDLINE"
 
 		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
+			logCommand "blkid -o udev $ROOT_PARTITION"
 			oldPartUUID=${BASH_REMATCH[1]}
 			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
@@ -8134,6 +8132,7 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
+			logCommand "blkid -o udev $ROOT_PARTITION"
 			oldUUID=${BASH_REMATCH[1]}
 			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
@@ -8150,7 +8149,7 @@ function synchronizeCmdlineAndfstab() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
 	else
-		logCommand "ls -la $BOOT_MP"
+		logCommand "ls -la $CMDLINE"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
 	fi
 
