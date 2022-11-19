@@ -3067,7 +3067,8 @@ function downloadPropertiesFile() { # FORCE
 			local func="B"; (( $RESTORE )) && func="R"
 			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
-			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
+			local os="rsp"; [[ -n $IS_UBUNTU ]] && os="ubu"
+			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
 		else
 			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
 		fi
