@@ -8107,10 +8107,10 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	CMDLINE="$BOOT_MP/cmdline.txt" # absolute path in mount, don't use firmware subdir for Ubuntu which is mounted at startup 
-	FSTAB="$ROOT_MP$fstab" # absolute path in mount
+	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup 
+	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
-	local cmdline="/boot/cmdline.txt" # path for message
+	local cmdline="$(cmdLinePath)" # path for message
 	local fstab="/etc/fstab" # path for message
 	
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
