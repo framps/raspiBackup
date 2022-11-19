@@ -2293,10 +2293,13 @@ function isUnsupportedVersion() {
 }
 
 function cmdLinePath() {
+	
 	logEntry
 	
-	local f="$(find /boot -name cmdline.txt)" # either /boot or /boot/firmware
-	logItem "cmdLine: $f"
+	local f="$(find /boot -name cmdline.txt)" # either /boot/cmdline.txt or /boot/firmware/cmdline.txt
+	logItem "cmdLinePath: $f"
+	
+	f="${f/\/cmdline.txt/}" 	# remove filename
 	echo "$f"
 	
 	logExit
@@ -5907,7 +5910,7 @@ function backup() {
 	fi
 
 	if [[ -f "$(cmdLinePath)" ]]; then
-		logCommand "cat $(cmdLinePath)"
+		logCommand "cat $(cmdLinePath)/cmdline.txt"
 	fi
 
 	logItem "Starting $BACKUPTYPE backup..."
@@ -6430,7 +6433,7 @@ function inspect4Backup() {
 			logItem "Starting alternate boot discovery"
 
 			# test whether boot device is mounted
-			local bootMountpoint="/boot"
+			local bootMountpoint="$(cmdLinePath)"
 			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 			logItem "$bootMountpoint mounted? $bootPartition"
 
@@ -8110,7 +8113,7 @@ function synchronizeCmdlineAndfstab() {
 	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup 
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
-	local cmdline="$(cmdLinePath)" # path for message
+	local cmdline="$(cmdLinePath)/cmdline.txt" # path for message
 	local fstab="/etc/fstab" # path for message
 	
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
