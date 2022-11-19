@@ -43,7 +43,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.8-beta-ubuntu"									# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.9-beta-ubuntu"									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"										# has to match above var names
@@ -5659,7 +5659,6 @@ function restore() {
 			else
 				mkfs.ext4 $check $ROOT_PARTITION &>>$LOG_FILE
 			fi
-			rc=0
 			rc=$?
 			if (( $rc != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
@@ -5909,7 +5908,7 @@ function backup() {
 		logCommand "fdisk -l $BOOT_DEVICENAME"
 	fi
 
-	if [[ -f "$(cmdLinePath)" ]]; then
+	if [[ -f "$(cmdLinePath)/cmdline.txt" ]]; then
 		logCommand "cat $(cmdLinePath)/cmdline.txt"
 	fi
 
