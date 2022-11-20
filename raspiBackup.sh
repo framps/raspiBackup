@@ -8196,10 +8196,10 @@ function synchronizeCmdlineAndfstab() {
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-			local cmd="e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE"
-			$cmd
+			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
 			local rc=$?
 			if (( $rc )); then
+				local cmd="e2label $ROOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
 			fi
 		else
@@ -8238,10 +8238,10 @@ function synchronizeCmdlineAndfstab() {
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
-			local cmd="dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE"
-			$cmd
+			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
 			local rc=$?
 			if (( $rc )); then
+				local cmd="dosfslabel $ROOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
 			fi
 		else
