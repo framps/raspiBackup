@@ -8092,7 +8092,7 @@ function synchronizeCmdlineAndfstab() {
 
 	logEntry
 
-	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL
+	local CMDLINE FSTAB BOOT_MP ROOT_MP BOOT_PARTITION
 
 	if [[ $RESTORE_DEVICE =~ /dev/mmcblk0 || $RESTORE_DEVICE =~ /dev/nvme0n1 || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
 		BOOT_PARTITION="${RESTORE_DEVICE}p1"
@@ -8127,8 +8127,8 @@ function synchronizeCmdlineAndfstab() {
 
 		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
 			logCommand "blkid -o udev $ROOT_PARTITION"
-			oldPartUUID=${BASH_REMATCH[1]}
-			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -8138,8 +8138,8 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
 			logCommand "blkid -o udev $ROOT_PARTITION"
-			oldUUID=${BASH_REMATCH[1]}
-			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			local oldUUID=${BASH_REMATCH[1]}
+			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -8148,7 +8148,7 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
-			oldLABEL=${BASH_REMATCH[1]}
+			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Label $oldLABEL detected in cmdline.txt"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -8169,8 +8169,8 @@ function synchronizeCmdlineAndfstab() {
 		logItem "$(cat $FSTAB)"
 
 		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			oldPartUUID=${BASH_REMATCH[1]}
-			newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
@@ -8181,8 +8181,8 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldpartuuidID/$newpartuuidID/g" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			oldUUID=${BASH_REMATCH[1]}
-			newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			local oldUUID=${BASH_REMATCH[1]}
+			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
@@ -8193,10 +8193,15 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$olduuidID/$newuuidID/g" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			oldLABEL=${BASH_REMATCH[1]}
+			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			local cmd="e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE"
+			$cmd
+			local rc=$?
+			if (( $rc )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
@@ -8210,8 +8215,8 @@ function synchronizeCmdlineAndfstab() {
 		logItem "$(cat $FSTAB)"
 
 		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
-			oldPartUUID=${BASH_REMATCH[1]}
-			newPartUUID=$(blkid -o udev $BOOT_PARTITION | egrep ID_FS_PARTUUID= | cut -d= -f2)
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID=$(blkid -o udev $BOOT_PARTITION | egrep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
@@ -8220,8 +8225,8 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
-			oldUUID=${BASH_REMATCH[1]}
-			newUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			local oldUUID=${BASH_REMATCH[1]}
+			local newUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
@@ -8230,10 +8235,15 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
-			oldLABEL=${BASH_REMATCH[1]}
+			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
-			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			local cmd="dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE"
+			$cmd
+			local rc=$?
+			if (( $rc )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 		fi
