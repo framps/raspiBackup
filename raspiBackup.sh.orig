@@ -43,7 +43,11 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
+<<<<<<< HEAD
 VERSION="0.6.9-beta-ubuntu"									# -beta, -hotfix or -dev suffixes possible
+=======
+VERSION="0.6.8-beta"										# -beta, -hotfix or -dev suffixes possible
+>>>>>>> beta
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -74,11 +78,11 @@ IS_BETA=$(( ! $(grep -iq beta <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
-GIT_DATE='$Date$'
+GIT_DATE='$Date: 2022-11-20 13:58:18 +0100$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT='$Sha1$'
+GIT_COMMIT='$Sha1: 2aa3acd$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
