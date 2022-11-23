@@ -505,15 +505,15 @@ MSG_DE[$MSG_STOPPING_SERVICES]="RBK0008I: Services werden gestoppt: '%s'."
 MSG_FI[$MSG_STOPPING_SERVICES]="RBK0008I: Pysäytetään palvelut: '%s'."
 MSG_FR[$MSG_STOPPING_SERVICES]="RBK0008I: Arrêt des services: '%s'."
 MSG_STARTED=9
-MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) started at %s."
-MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) %s gestartet."
-MSG_FI[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) käynnistyi %s."
-MSG_FR[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) Début à %s."
+MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) started at %s."
+MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) %s gestartet."
+MSG_FI[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) käynnistyi %s."
+MSG_FR[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) Début à %s."
 MSG_STOPPED=10
-MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) stopped at %s with rc %s."
-MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) %s beendet mit Returncode %s."
-MSG_FI[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) pysäytettiin %s, vastauskoodi %s."
-MSG_FR[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) terminé avec le code de retour %s."
+MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) stopped at %s with rc %s."
+MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) %s beendet mit Returncode %s."
+MSG_FI[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) pysäytettiin %s, vastauskoodi %s."
+MSG_FR[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) terminé avec le code de retour %s."
 MSG_NO_BOOT_PARTITION=11
 MSG_EN[$MSG_NO_BOOT_PARTITION]="RBK0011E: No boot partition ${BOOT_PARTITION_PREFIX}1 found."
 MSG_DE[$MSG_NO_BOOT_PARTITION]="RBK0011E: Keine boot Partition ${BOOT_PARTITION_PREFIX}1 gefunden."
@@ -3107,8 +3107,9 @@ function downloadPropertiesFile() { # FORCE
 			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
 		fi
 
-		local dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
-		local dlRC=$?
+		local dlHttpCode dlRC
+		dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
+		dlRC=$?
 		if (( $dlRC != 0 )); then
 			if [[ $1 == "FORCE" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
@@ -3223,6 +3224,7 @@ function verifyIsOnOff() { # arg
 }
 
 function downloadFile() { # url, targetFileName
+
 		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
 		local url="$1"
 		local file="$2"
@@ -3231,20 +3233,30 @@ function downloadFile() { # url, targetFileName
 		local rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 
-		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
-			(( $rc == 0 )) && rc=100
-		elif head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
-			httpCode="404"
-			rc=101
+		# Some nasty code required because download plugin doesn't return 404 if file not found but a HTML doc
+
+		if (( $rc == 0 )); then
+			if [[ ! -f "$f" ]]; then
+					httpCode="404"
+					rc=101
+			elif [[ ${httpCode:0:1} == "2" ]]; then
+				if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then
+					httpCode="404"
+					rc=101
+				fi
+			else
+				rc=101
+			fi
 		fi
+
 		if (( $rc != 0 )); then
-			rm $f &>>$LOG_FILE
+			[[ -f $f ]] && rm $f &>>$LOG_FILE
 			echo "$httpCode"
 			logExit "$rc $httpCode"
 			return $rc
 		fi
 
-		mv $f $file &>>$LOG_FILE
+		[[ -f $f ]] && mv $f $file &>>$LOG_FILE
 		echo "200"
 		logExit 0
 		return 0
@@ -3518,14 +3530,14 @@ function updateScript() {
 			local file="${MYSELF}"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
 
-			local dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${MYSELF}~")"
-			local dlRC=$?
+			local dlHttpCode dlRC
+			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${MYSELF}~")"
+			dlRC=$?
 			if (( $dlRC != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$$DOWNLOAD_URL" "$dlHttpCode" $dlRC
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 				exitError $RC_DOWNLOAD_FAILED
 			fi
-
 			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
 			mv $SCRIPT_DIR/$MYSELF $newName
 			mv $MYSELF~ $SCRIPT_DIR/$MYSELF
@@ -4699,7 +4711,7 @@ function cleanup() { # trap
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_FAILED
 			fi
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 			if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
@@ -4737,7 +4749,7 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 		if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
@@ -6666,7 +6678,7 @@ function inspect4Restore() {
 		fi
 	fi
 
-	if (( PARTITIONBASED_BACKUP )); then
+	if (( $PARTITIONBASED_BACKUP )); then
 		BLKID_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.blkid)
 		if [[ -z $BLKID_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
