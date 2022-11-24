@@ -43,10 +43,10 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.8-dev"											# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.9-dev"											# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
-VERSION_VARNAME="VERSION"										# has to match above var names
+VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
 [ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
@@ -264,6 +264,11 @@ EMOJI_BETA_AVAILABLE="$(echo -ne "\xf0\x9f\x98\x83\x0a")" # 😃
 EMOJI_RESTORETEST_REQUIRED="$(echo -ne "\xf0\x9f\x94\x94\x0a")" # 🔔
 EMOJI_VERSION_DEPRECATED="$(echo -ne "\xf0\x9f\x92\x80\x0a")" # 💀
 
+# convert emoji into hex
+#printf "%s" "$EMOJI_WARNING"
+#echo $(xxd -pu <<< "$EMOJI_WARNING")
+#exit
+
 # Pushover options
 
 PUSHOVER_NOTIFY_SUCCESS="S"
@@ -272,10 +277,20 @@ PUSHOVER_NOTIFY_MESSAGES="M"
 PUSHOVER_POSSIBLE_NOTIFICATIONS="$PUSHOVER_NOTIFY_SUCCESS$PUSHOVER_NOTIFY_FAILURE$PUSHOVER_NOTIFY_MESSAGES"
 PUSHOVER_URL="https://api.pushover.net/1/messages.json"
 
-# convert emoji into hex
-#printf "%s" "$EMOJI_WARNING"
-#echo $(xxd -pu <<< "$EMOJI_WARNING")
-#exit
+# Slack options
+
+SLACK_NOTIFY_SUCCESS="S"
+SLACK_NOTIFY_FAILURE="F"
+SLACK_NOTIFY_MESSAGES="M"
+SLACK_POSSIBLE_NOTIFICATIONS="$SLACK_NOTIFY_SUCCESS$SLACK_NOTIFY_FAILURE$SLACK_NOTIFY_MESSAGES"
+
+SLACK_EMOJI_OK=":white_check_mark:"  # ✔️
+SLACK_EMOJI_WARNING=":warning:"  # ⚠️
+SLACK_EMOJI_FAILED=":x:" # ❌
+SLACK_EMOJI_UPDATE_POSSIBLE=":smirk:" # 😉
+SLACK_EMOJI_BETA_AVAILABLE=":laughing:" # 😃
+SLACK_EMOJI_RESTORETEST_REQUIRED=":bell:" # 🔔
+SLACK_EMOJI_VERSION_DEPRECATED=":skull:" # 💀
 
 # various other constants
 
@@ -489,15 +504,15 @@ MSG_DE[$MSG_STOPPING_SERVICES]="RBK0008I: Services werden gestoppt: '%s'."
 MSG_FI[$MSG_STOPPING_SERVICES]="RBK0008I: Pysäytetään palvelut: '%s'."
 MSG_FR[$MSG_STOPPING_SERVICES]="RBK0008I: Arrêt des services: '%s'."
 MSG_STARTED=9
-MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) started at %s."
-MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) %s gestartet."
-MSG_FI[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) käynnistyi %s."
-MSG_FR[$MSG_STARTED]="RBK0009I: %s: %s V%s (%s/%s) Début à %s."
+MSG_EN[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) started at %s."
+MSG_DE[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) %s gestartet."
+MSG_FI[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) käynnistyi %s."
+MSG_FR[$MSG_STARTED]="RBK0009I: %s: %s V%s - %s (%s) Début à %s."
 MSG_STOPPED=10
-MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) stopped at %s with rc %s."
-MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) %s beendet mit Returncode %s."
-MSG_FI[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) pysäytettiin %s, vastauskoodi %s."
-MSG_FR[$MSG_STOPPED]="RBK0010I: %s: %s V%s (%s) terminé avec le code de retour %s."
+MSG_EN[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) stopped at %s with rc %s."
+MSG_DE[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) %s beendet mit Returncode %s."
+MSG_FI[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) pysäytettiin %s, vastauskoodi %s."
+MSG_FR[$MSG_STOPPED]="RBK0010I: %s: %s V%s - %s (%s) terminé avec le code de retour %s."
 MSG_NO_BOOT_PARTITION=11
 MSG_EN[$MSG_NO_BOOT_PARTITION]="RBK0011E: No boot partition ${BOOT_PARTITION_PREFIX}1 found."
 MSG_DE[$MSG_NO_BOOT_PARTITION]="RBK0011E: Keine boot Partition ${BOOT_PARTITION_PREFIX}1 gefunden."
@@ -1870,6 +1885,18 @@ MSG_DE[$MSG_PUSHOVER_OPTIONS_INCOMPLETE]="RBK0284E: Pushoveroptionen nicht volls
 MSG_PUSHOVER_INVALID_NOTIFICATION=285
 MSG_EN[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Invalid Pushover notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_PUSHOVER_INVALID_NOTIFICATION]="RBK0285E: Ungültige Pushover Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_SLACK_SEND_FAILED=286
+MSG_EN[$MSG_SLACK_SEND_FAILED]="RBK0286W: Sent to Slack failed. curl RC: %s - HTTP CODE: %s - Error description: %s."
+MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %s - HTTP CODE: %s - Fehlerbeschreibung: %s."
+MSG_SLACK_SEND_OK=287
+MSG_EN[$MSG_SLACK_SEND_OK]="RBK0287I: Slack notified."
+MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
+MSG_SLACK_OPTIONS_INCOMPLETE=288
+MSG_EN[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slack options not complete."
+MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständig"
+MSG_SLACK_INVALID_NOTIFICATION=289
+MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2610,6 +2637,8 @@ function logOptions() { # option state
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
  	logItem "SKIP_DEPRECATED=$SKIP_DEPRECATED"
  	logItem "SKIPLOCALCHECK=$SKIPLOCALCHECK"
+	logItem "SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL"
+	logItem "SLACK_NOTIFICATIONS=$SLACK_NOTIFICATIONS"
  	logItem "SMART_RECYCLE=$SMART_RECYCLE"
  	logItem "SMART_RECYCLE_DRYRUN=$SMART_RECYCLE_DRYRUN"
  	logItem "SMART_RECYCLE_OPTIONS=$SMART_RECYCLE_OPTIONS"
@@ -2782,6 +2811,9 @@ function initializeDefaultConfigVariables() {
 	# Pushover priorities
 	DEFAULT_PUSHOVER_PRIORITY_SUCCESS="0"
 	DEFAULT_PUSHOVER_PRIORITY_FAILURE="1"
+	# Slack
+	DEFAULT_SLACK_WEBHOOK_URL=""
+	DEFAULT_SLACK_NOTIFICATIONS=""
 	# Colorize console output (C) and/or email (E)
 	DEFAULT_COLORING="CM"
 	# mail coloring scheme (SUBJECT or OPTION)
@@ -2854,6 +2886,8 @@ function copyDefaultConfigVariables() {
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
 	SKIPLOCALCHECK="$DEFAULT_SKIPLOCALCHECK"
+	SLACK_WEBHOOK_URL="$DEFAULT_SLACK_WEBHOOK_URL"
+	SLACK_NOTIFICATIONS="$DEFAULT_SLACK_NOTIFICATIONS"
 	SMART_RECYCLE="$DEFAULT_SMART_RECYCLE"
 	SMART_RECYCLE_DRYRUN="$DEFAULT_SMART_RECYCLE_DRYRUN"
 	SMART_RECYCLE_OPTIONS="$DEFAULT_SMART_RECYCLE_OPTIONS"
@@ -4090,11 +4124,11 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
 
 		local curlRC=$?
+		logItem "Pushover response:${NL}$(<$o)"
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			logItem "Pushover response:${NL}$(<$o)"
 			local ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
@@ -4104,6 +4138,103 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				logItem "Error sending msg: $rsp"
 				logItem "ErrorDescription: $error_description"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
+			fi
+		fi
+
+		[[ -n $o ]] && rm $o
+
+		logExit
+}
+
+function sendSlack() { # subject sucess/failure
+
+	logEntry "$1" 
+
+	if [[ -n "$SLACK_WEBHOOK_URL" ]] ; then
+		local smiley
+		if (( $WARNING_MESSAGE_WRITTEN )); then
+			smiley="$SLACK_EMOJI_WARNING ${smiley}"
+		fi
+		if (( $UPDATE_POSSIBLE )); then
+			smiley="$SLACK_EMOJI_UPDATE_POSSIBLE ${smiley}"
+		fi
+		if (( $BETA_AVAILABLE )); then
+			smiley="$SLACK_EMOJI_BETA_AVAILABLE ${smiley}"
+		fi
+		if (( $RESTORETEST_REQUIRED )); then
+			smiley="$SLACK_EMOJI_RESTORETEST_REQUIRED ${smiley}"
+		fi
+		if (( $VERSION_DEPRECATED )); then
+			smiley="$SLACK_EMOJI_VERSION_DEPRECATED ${smiley}"
+		fi
+
+		sendSlackMessage "${smiley}$1" "$2"
+	fi
+
+	logExit
+
+}
+
+# Send message, exit
+
+function sendSlackMessage() { # message 0/1->success/failure 
+
+		logEntry "$1"
+
+		local msg_json statusMsg
+		
+		local o=$(mktemp)
+
+		if [[ -n $2 && "$2" == "1" ]]; then
+			statusMsg="${SLACK_EMOJI_FAILED}$1"
+		else
+			statusMsg="${SLACK_EMOJI_OK}$1"
+		fi
+
+		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+
+		[[ -n "$msgEnd" ]] && msg="$msgEnd"
+
+		if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_MESSAGES ]]; then
+			msg="$(tail -n 32 $MSG_FILE)"
+		fi
+
+		read -r -d '' msg_json <<EOF
+{
+	"blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "*$statusMsg*\n$msg"
+			}
+		}
+	]
+}
+EOF
+
+		local cmd=(-X POST)
+		cmd+=(-H 'Content-type: application/json')
+		cmd+=(--data "$msg_json")
+		
+		logItem "Slack curl call: ${cmd[@]}"
+		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
+		local curlRC=$?
+		logItem "Slack response:${NL}$(<$o)"
+
+		if (( $curlRC )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
+		else
+			if [[ "ok" == $(<$o) ]]; then
+				logItem "Message sent"
+				if [[ -n $2 ]]; then	# write message only for html, not for messages
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
+				fi
+			else
+				logItem "Error sending msg: $rsp"
+				local error_description="$(<$o)"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
 			fi
 		fi
 
@@ -4533,7 +4664,7 @@ function cleanup() { # trap
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_FAILED
 			fi
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 			if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
@@ -4554,6 +4685,12 @@ function cleanup() { # trap
 						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
+				if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+						sendSlack "$msg" 1		# add warning icon to message
+					fi
+				fi
 			fi #  ! RESTORE
 		fi
 
@@ -4565,7 +4702,7 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 		if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
@@ -4580,6 +4717,12 @@ function cleanup() { # trap
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
 					sendPushover "${EMOJI_OK} $msg" 0
+				fi
+			fi
+			if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
+					sendSlack "${EMOJI_OK} $msg" 0
 				fi
 			fi
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
@@ -6474,7 +6617,7 @@ function inspect4Restore() {
 		fi
 	fi
 
-	if (( PARTITIONBASED_BACKUP )); then
+	if (( $PARTITIONBASED_BACKUP )); then
 		BLKID_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.blkid)
 		if [[ -z $BLKID_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
@@ -6695,6 +6838,14 @@ function doitBackup() {
 		local invalidNotification="$(tr -d "$PUSHOVER_POSSIBLE_NOTIFICATIONS" <<< "$PUSHOVER_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_INVALID_NOTIFICATION "$invalidNotification" "$PUSHOVER_POSSIBLE_NOTIFICATIONS"
+			exitError $RC_PARAMETER_ERROR
+		fi
+	fi
+
+	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+		local invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
+		if [[ -n "$invalidNotification" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACKOVER_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
@@ -7631,7 +7782,8 @@ function doitRestore() {
 		fi
 	fi
 
-	if dpkg-query -W --showformat='${Status}\n' usbmount|grep "install ok installed" &>>$LOG_FILE; then
+	local usbMount="$(dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
+	if grep -q "install ok installed" <<< "$usbMount" &>>$LOG_FILE; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
@@ -9227,6 +9379,9 @@ if (( "$NOTIFY_START" )) ; then
 	fi
 	if [[ -n "$PUSHOVER_USER"  ]]; then
 		sendPushover "$msg"
+	fi
+	if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
+		sendSlack "$msg"
 	fi
 fi
 
