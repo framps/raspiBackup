@@ -122,12 +122,13 @@ if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
 fi
-DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
-CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackupinstallui-sh/download"
-INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackupinstallui-beta-sh/download"
-PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup0613-properties/download"
+
+DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.sh"
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
+CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
+INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
+PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
@@ -3226,11 +3227,14 @@ function verifyIsOnOff() { # arg
 function downloadFile() { # url, targetFileName
 
 		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
+		
+		local httpCode rc
+		
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
-		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
-		local rc=$?
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 
 		# Some nasty code required because download plugin doesn't return 404 if file not found but a HTML doc
@@ -8113,8 +8117,9 @@ function updateConfig() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 		fi
 
-		local dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
-		local dlRC=$?
+		local dlHttpCode dlRC
+		dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
+		dlRC=$?
 		if (( $dlRC != 0 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
 			exitError $RC_DOWNLOAD_FAILED
