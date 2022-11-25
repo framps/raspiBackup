@@ -3108,8 +3108,9 @@ function downloadFile() { # url, targetFileName
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
-		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
-		local rc=$?
+		local httpCode rc
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 
 		# Some nasty code required because download plugin doesn't return 404 if file not found but a HTML doc
