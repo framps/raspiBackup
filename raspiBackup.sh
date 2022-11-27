@@ -3198,6 +3198,7 @@ function downloadFile() { # url, targetFileName
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
+		local httpCode rc
 		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
 		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"

@@ -34,13 +34,13 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
-DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-beta-sh/download"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-sh/download"
-INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackupinstallui-beta-sh/download"
-PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup0613-properties/download"
-CONF_DE_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-de-conf/download"
-CONF_EN_DOWNLOAD_URL="$MYHOMEURL/downloads/raspibackup-en-conf/download"
+DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup.sh"
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/beta/raspiBackup.sh"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackupInstallUI.sh"
+INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/beta/raspiBackupInstallUI.sh"
+PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup0613.properties"
+CONF_DE_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup_de.conf"
+CONF_EN_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup_en.conf"
 
 DOWNLOAD_TIMEOUT=60 # seconds
 DOWNLOAD_RETRIES=3
