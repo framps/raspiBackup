@@ -4014,7 +4014,7 @@ function sendTelegramMessage() { # message html(yes/no)
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "N/A" "N/A"
 		else
-			logItem "Telegram response:${NL}${rsp}"
+			#logItem "Telegram response:${NL}${rsp}"
 			local ok=$(jq .ok <<< "$rsp")
 			if [[ $ok == "true" ]]; then
 				logItem "Message sent"
@@ -9387,19 +9387,21 @@ logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
 
 setupEnvironment
 
-if (( "$NOTIFY_START" )) ; then
-	msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
-	if [[ -n "$EMAIL"  ]]; then
-		sendEMail "" "$msg"
-	fi
-	if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-		sendTelegramm "$msg"
-	fi
-	if [[ -n "$PUSHOVER_USER"  ]]; then
-		sendPushover "$msg"
-	fi
-	if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
-		sendSlack "$msg"
+if (( $NOTIFY_START )); then
+	if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
+		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
+		if [[ -n "$EMAIL"  ]]; then
+			sendEMail "" "$msg"
+		fi
+		if [[ -n "$TELEGRAM_TOKEN"  ]]; then
+			sendTelegramm "$msg"
+		fi
+		if [[ -n "$PUSHOVER_USER"  ]]; then
+			sendPushover "$msg"
+		fi
+		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
+			sendSlack "$msg"
+		fi
 	fi
 fi
 
