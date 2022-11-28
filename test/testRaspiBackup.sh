@@ -286,11 +286,15 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 	case $3 in
 		N)	buCnt=$(ls ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*.$extension 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
+			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
 			(( buCnt+=buCnt2 ))
+			(( buCnt+=buCnt3 ))
 			;;
 		P)	buCnt=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*mmcblk* 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
+			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
 			(( buCnt+=buCnt2 ))
+			(( buCnt+=buCnt3 ))
 			(( buCntToCheck=buCntToCheck*$PARTITIONS_PER_BACKUP ))
 			;;
 		*)	log "error - $1 $2 $3"
@@ -304,6 +308,7 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 		log "??? Missing raspibackup-$3-backup files for $extension: Backups found: $buCnt - expected: $buCntToCheck"
 		log "$(ls "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*".$extension")"
 		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"mmcblk"*)"
+		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"nvme"*)"
 	else
 		(( $DEBUG )) && log "--- Found $buCnt root backups"
 	fi
