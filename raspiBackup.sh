@@ -122,12 +122,13 @@ if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
 fi
-DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup.sh/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
-CONFIG_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_\$lang\.conf/download" # used in eval for late binding of URLTAGRET
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackupinstallui-sh/download"
-INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackupinstallui-beta-sh/download"
-PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspibackup0613-properties/download"
+
+DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.sh"
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
+CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
+INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
+PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
@@ -3072,8 +3073,9 @@ function downloadPropertiesFile() { # FORCE
 			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
 		fi
 
-		local dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
-		local dlRC=$?
+		local dlHttpCode dlRC
+		dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
+		dlRC=$?
 		if (( $dlRC != 0 )); then
 			if [[ $1 == "FORCE" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
@@ -3188,28 +3190,43 @@ function verifyIsOnOff() { # arg
 }
 
 function downloadFile() { # url, targetFileName
+
 		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
+		
+		local httpCode rc
+		
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
-		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
-		local rc=$?
+		local httpCode rc
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 
-		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
-			(( $rc == 0 )) && rc=100
-		elif head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
-			httpCode="404"
-			rc=101
+		# Some nasty code required because download plugin doesn't return 404 if file not found but a HTML doc
+
+		if (( $rc == 0 )); then
+			if [[ ! -f "$f" ]]; then
+					httpCode="404"
+					rc=101
+			elif [[ ${httpCode:0:1} == "2" ]]; then
+				if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then
+					httpCode="404"
+					rc=101
+				fi
+			else
+				rc=101
+			fi
 		fi
+
 		if (( $rc != 0 )); then
-			rm $f &>>$LOG_FILE
+			[[ -f $f ]] && rm $f &>>$LOG_FILE
 			echo "$httpCode"
 			logExit "$rc $httpCode"
 			return $rc
 		fi
 
-		mv $f $file &>>$LOG_FILE
+		[[ -f $f ]] && mv $f $file &>>$LOG_FILE
 		echo "200"
 		logExit 0
 		return 0
@@ -3483,14 +3500,14 @@ function updateScript() {
 			local file="${MYSELF}"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
 
-			local dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${MYSELF}~")"
-			local dlRC=$?
+			local dlHttpCode dlRC
+			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${MYSELF}~")"
+			dlRC=$?
 			if (( $dlRC != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$$DOWNLOAD_URL" "$dlHttpCode" $dlRC
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 				exitError $RC_DOWNLOAD_FAILED
 			fi
-
 			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
 			mv $SCRIPT_DIR/$MYSELF $newName
 			mv $MYSELF~ $SCRIPT_DIR/$MYSELF
@@ -3997,7 +4014,7 @@ function sendTelegramMessage() { # message html(yes/no)
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "N/A" "N/A"
 		else
-			logItem "Telegram response:${NL}${rsp}"
+			#logItem "Telegram response:${NL}${rsp}"
 			local ok=$(jq .ok <<< "$rsp")
 			if [[ $ok == "true" ]]; then
 				logItem "Message sent"
@@ -8048,8 +8065,9 @@ function updateConfig() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 		fi
 
-		local dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
-		local dlRC=$?
+		local dlHttpCode dlRC
+		dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
+		dlRC=$?
 		if (( $dlRC != 0 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
 			exitError $RC_DOWNLOAD_FAILED
@@ -9369,19 +9387,21 @@ logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
 
 setupEnvironment
 
-if (( "$NOTIFY_START" )) ; then
-	msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
-	if [[ -n "$EMAIL"  ]]; then
-		sendEMail "" "$msg"
-	fi
-	if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-		sendTelegramm "$msg"
-	fi
-	if [[ -n "$PUSHOVER_USER"  ]]; then
-		sendPushover "$msg"
-	fi
-	if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
-		sendSlack "$msg"
+if (( $NOTIFY_START )); then
+	if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
+		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
+		if [[ -n "$EMAIL"  ]]; then
+			sendEMail "" "$msg"
+		fi
+		if [[ -n "$TELEGRAM_TOKEN"  ]]; then
+			sendTelegramm "$msg"
+		fi
+		if [[ -n "$PUSHOVER_USER"  ]]; then
+			sendPushover "$msg"
+		fi
+		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
+			sendSlack "$msg"
+		fi
 	fi
 fi
 
