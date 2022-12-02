@@ -4762,6 +4762,10 @@ function cleanup() { # trap
 		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
 	fi
 
+	if (( ! $RESTORE && $REBOOT_SYSTEM )); then
+		shutdown -r +3						# wait some time to allow eMail to be sent 
+	fi
+
 	exit $rc
 }
 
@@ -9440,13 +9444,6 @@ if isVersionDeprecated "$VERSION"; then
 	NEWS_AVAILABLE=1
 fi
 
-doit
-
-if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
-	if [[ -n "$DEFAULT_EMAIL" ]]; then
-		sleep 1m								# allow MTA to send notification email
-	fi
-	reboot
-fi
+doit # no return 
 
 fi # ! INCLUDE_ONLY
