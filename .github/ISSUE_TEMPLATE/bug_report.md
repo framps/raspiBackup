@@ -4,8 +4,8 @@ body:
 - type: markdown
   attributes:
     value: |
-		## Note ##
-		raspiBackup is supported on RaspberryOS and Ubuntu as operating system and Raspberry HW only. There are environments out there which successfully run raspiBackup but any support requests or issues on unsupported environments will be rejected. 
+      ## Note ##
+      raspiBackup is supported on RaspberryOS and Ubuntu as operating system and Raspberry HW only. There are environments out there which successfully run raspiBackup but any support requests or issues on unsupported environments will be rejected. 
 
 - type: checkboxes
   id: Debug information
