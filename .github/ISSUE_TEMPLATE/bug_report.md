@@ -1,4 +1,4 @@
-_ Use English if possible. Aber Deutsch ist auch möglich (s.U.)_
+_Use English please if possible. Aber Deutsch ist auch möglich (s.U.)_
 
 ***************************************************************
 **Only Raspberries running RaspbianOS or Ubuntu are supported**
