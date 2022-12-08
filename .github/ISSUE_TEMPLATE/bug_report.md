@@ -1,4 +1,4 @@
-_Der Templatetext steht weiter unten un Deutsch_
+_ Use English if possible. Aber Deutsch ist auch möglich (s.U.)_
 
 ***************************************************************
 **Only Raspberries running RaspbianOS or Ubuntu are supported**
