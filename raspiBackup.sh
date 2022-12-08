@@ -4719,7 +4719,7 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-			if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
+			if (( ! $RESTORE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					sendEMail "$msg" "$msgTitle"
@@ -4757,7 +4757,7 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
+		if (( ! $RESTORE )); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
@@ -4795,6 +4795,10 @@ function cleanup() { # trap
 	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
 		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
+	fi
+
+	if (( ! $RESTORE && $REBOOT_SYSTEM )); then
+		shutdown -r +3						# wait some time to allow eMail to be sent 
 	fi
 
 	exit $rc
@@ -9434,7 +9438,7 @@ logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
 setupEnvironment
 
 if (( $NOTIFY_START )); then
-	if (( ! $RESTORE && ! $INTERACTIVE )) || (( $FAKE )); then
+	if (( ! $RESTORE )); then
 		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 		if [[ -n "$EMAIL"  ]]; then
 			sendEMail "" "$msg"
@@ -9486,13 +9490,6 @@ if isVersionDeprecated "$VERSION"; then
 	NEWS_AVAILABLE=1
 fi
 
-doit
-
-if (( ! $RESTORE && $REBOOT_SYSTEM && ! $FAKE )); then
-	if [[ -n "$DEFAULT_EMAIL" ]]; then
-		sleep 1m								# allow MTA to send notification email
-	fi
-	reboot
-fi
+doit # no return 
 
 fi # ! INCLUDE_ONLY
