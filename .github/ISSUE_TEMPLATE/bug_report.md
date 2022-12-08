@@ -1,14 +1,10 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: 'bug'
-assignees: 'framp'
+***************************************************************
+**Only Raspberries running RaspbianOS or Ubuntu are supported**
+***************************************************************
 
----
-
-**Attachment of the debug log is mandatory**
-Without a debuglog an issue is rejected.
+**Attach the debug log**
+ - Without a debuglog an issue is rejected. 
+ - Drag and drop the debug log file but don't copy the contents into the issue.
 
 **Describe the bug**
 Add a clear and concise description of what the bug is.
