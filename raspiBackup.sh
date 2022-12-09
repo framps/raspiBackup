@@ -8407,13 +8407,14 @@ function countLines() { # string
 # on https://opensource.com/article/18/8/automate-backups-raspberry-pi
 
 function SR_listYearlyBackups() { # directory
-	logEntry $SR_YEARLY $1
+	logEntry "$SR_YEARLY" "$1"
 	if (( $SR_YEARLY > 0 )); then
 		local i
 		for ((i=0;i<=$(( $SR_YEARLY-1 ));i++)); do
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
-			local d=$(date +%Y -d "${i} year ago")
+			local d
+			d=$(date +%Y -d "${i} year ago")
 			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
@@ -8421,7 +8422,7 @@ function SR_listYearlyBackups() { # directory
 }
 
 function SR_listMonthlyBackups() { # directory
-	logEntry $SR_MONTHLY $1
+	logEntry "$SR_MONTHLY" "$1"
 	if (( $SR_MONTHLY > 0 )); then
 		local i
 		for ((i=0;i<=$(( $SR_MONTHLY-1 ));i++)); do
@@ -8429,7 +8430,8 @@ function SR_listMonthlyBackups() { # directory
 			# ls ${BACKUPPATH} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
-			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
+			local d
+			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
 			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
 		done
 	fi
@@ -8437,7 +8439,7 @@ function SR_listMonthlyBackups() { # directory
 }
 
 function SR_listWeeklyBackups() { # directory
-	logEntry $SR_WEEKLY $1
+	logEntry "$SR_WEEKLY" "$1"
 	local d
 	if (( $SR_WEEKLY > 0 )); then
 		local i
@@ -8450,7 +8452,8 @@ function SR_listWeeklyBackups() { # directory
 			if (( $(date +"%u") == 1 )); then
 				last=""
 			fi
-			local mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
+			local mon
+			mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
 			local dl=""
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
 				dl="\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
@@ -8462,7 +8465,7 @@ function SR_listWeeklyBackups() { # directory
 }
 
 function SR_listDailyBackups() { # directory
-	logEntry $SR_DAILY $1
+	logEntry "$SR_DAILY" "$1"
 	if (( $SR_DAILY > 0 )); then
 		local i
 		for ((i=0;i<=$(( $SR_DAILY-1));i++)); do
@@ -8476,7 +8479,7 @@ function SR_listDailyBackups() { # directory
 }
 
 function SR_getAllBackups() { # directory
-	logEntry $1
+	logEntry "$1"
 	local yb="$(SR_listYearlyBackups $1)"
 	logItem "$yb"
 	local ybc="$(countLines "$yb")"
@@ -8501,8 +8504,9 @@ function SR_getAllBackups() { # directory
 }
 
 function SR_listUniqueBackups() { #directory
-	logEntry $1
-	local r="$(SR_getAllBackups "$1" | grep -Ev "_" | sort -u )"
+	logEntry "$1"
+	local r
+	r="$(SR_getAllBackups "$1" | grep -Ev "_" | sort -u )"
 	local rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
@@ -8510,8 +8514,9 @@ function SR_listUniqueBackups() { #directory
 }
 
 function SR_listBackupsToDelete() { # directory
-	logEntry $1
-	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	logEntry "$1"
+	local r
+	r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
@@ -8525,7 +8530,7 @@ function check4RequiredCommands() {
 	local missing_commands missing_packages
 
 	for cmd in "${!REQUIRED_COMMANDS[@]}"; do
-		if ! hash $cmd 2>/dev/null; then
+		if ! hash "$cmd" 2>/dev/null; then
 			missing_commands="$cmd $missing_commands "
 			missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
 		fi
@@ -8745,7 +8750,7 @@ function checkOptionParameter() { # option parameter
 		return 0
 	elif [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z "$2" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP "$MYSELF"
 		echo ""
 		logExit ""
 		return 1
@@ -8865,6 +8870,7 @@ while (( "$#" )); do		# check if option -f was used
   case "$1" in
 	-f)
 		o=$(checkOptionParameter "$1" "$2")
+		# shellcheck disable=SC2181
 		(( $? )) && exitError $RC_PARAMETER_ERROR
 		CUSTOM_CONFIG_FILE="$o"; shift 2
 		if [[ ! -f "$CUSTOM_CONFIG_FILE" ]]; then
@@ -8902,6 +8908,7 @@ while (( "$#" )); do
 
 	-a)
 	  o=$(checkOptionParameter "$1" "$2")
+  	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STARTSERVICES="$o"; shift 2
 	  ;;
@@ -8913,6 +8920,7 @@ while (( "$#" )); do
 
 	-b)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_BLOCKSIZE="$o"; shift 2
 	  ;;
@@ -8923,6 +8931,7 @@ while (( "$#" )); do
 
 	--bootDevice)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BOOT_DEVICE="$o"; shift 2
 	  ;;
@@ -8937,42 +8946,49 @@ while (( "$#" )); do
 
 	--coloring)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  COLORING="$o"; shift 2
 	  ;;
 
 	-d)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
 	  ;;
 
 	-D)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_PARMS="$o"; shift 2
 	  ;;
 
 	--dynamicMount)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DYNAMIC_MOUNT="$o"; shift 2
 	  ;;
 
 	-e)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL="$o"; shift 2
 	  ;;
 
 	-E)
 	  o=$(checkOptionParameter "$1" "$2");
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PARMS="$o"; shift 2
 	  ;;
 
 	--eMailColoring)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_COLORING="${o^^}"; shift 2
 	  ;;
@@ -8990,11 +9006,12 @@ while (( "$#" )); do
 
 	-G)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
 	  if ! containsElement "${LANGUAGE^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
-		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_LANGUAGE_NOT_SUPPORTED $LANGUAGE
+		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_LANGUAGE_NOT_SUPPORTED "$LANGUAGE"
 		  exitError $RC_PARAMETER_ERROR
 	  fi
 	  ;;
@@ -9013,42 +9030,49 @@ while (( "$#" )); do
 
 	-k)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
 	--keep_dd)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DD="$o"; shift 2
 	  ;;
 
 	--keep_ddz)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DDZ="$o"; shift 2
 	  ;;
 
 	--keep_tar)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TAR="$o"; shift 2
 	  ;;
 
 	--keep_tgz)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TGZ="$o"; shift 2
 	  ;;
 
 	--keep_rsync)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_RSYNC="$o"; shift 2
 	  ;;
 
 	-l)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
 	  checkImportantParameters
@@ -9056,6 +9080,7 @@ while (( "$#" )); do
 
 	-L)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
 	  checkImportantParameters
@@ -9063,6 +9088,7 @@ while (( "$#" )); do
 
 	-m)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
 	  checkImportantParameters
@@ -9070,6 +9096,7 @@ while (( "$#" )); do
 
 	-M)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
@@ -9081,6 +9108,7 @@ while (( "$#" )); do
 
 	-N)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXTENSIONS="$o"; shift 2
 	  ;;
@@ -9091,12 +9119,14 @@ while (( "$#" )); do
 
 	-o)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
 	-p)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPPATH="$o"; shift 2
 	  if [[ ! -d "$BACKUPPATH" ]]; then
@@ -9112,6 +9142,7 @@ while (( "$#" )); do
 
 	-r)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTOREFILE="$o"; shift 2
 	  if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
@@ -9123,6 +9154,7 @@ while (( "$#" )); do
 
 	-R)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  ROOT_PARTITION="$o"; shift 2
 	  ROOT_PARTITION_DEFINED=1
@@ -9138,6 +9170,7 @@ while (( "$#" )); do
 
 	-s)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PROGRAM="$o"; shift 2
 	  ;;
@@ -9156,6 +9189,7 @@ while (( "$#" )); do
 
 	--smartRecycleOptions)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  SMART_RECYCLE_OPTIONS="$o"; shift 2
 	  ;;
@@ -9166,6 +9200,7 @@ while (( "$#" )); do
 
 	-t)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
@@ -9176,30 +9211,35 @@ while (( "$#" )); do
 
 	-T)
 	  checkOptionParameter "$1" "$2"
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  PARTITIONS_TO_BACKUP="$2"; shift 2
 	  ;;
 
 	--telegramToken)
 	  o="$(checkOptionParameter "$1" "$2")"
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_TOKEN="$o"; shift 2
 	  ;;
 
 	--telegramChatID)
 	  o="$(checkOptionParameter "$1" "$2")"
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_CHATID="$o"; shift 2
 	  ;;
 
 	--telegramNotifications)
 	  o="$(checkOptionParameter "$1" "$2")"
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_NOTIFICATIONS="$o"; shift 2
 	  ;;
 
 	-u)
 	  o=$(checkOptionParameter "$1" "$2")
+	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
@@ -9345,7 +9385,7 @@ fi
 
 if (( $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH $RESTORE_DEVICE $YES_NO_RESTORE_DEVICE
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH "$RESTORE_DEVICE" $YES_NO_RESTORE_DEVICE
 		exitError $RC_MISC_ERROR
 	fi
 fi
@@ -9383,7 +9423,7 @@ trapWithArg cleanup SIGINT SIGTERM EXIT
 lockMe
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)"
-logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
+logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
 (( $IS_DEV )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_DEV_MESSAGE
@@ -9411,20 +9451,20 @@ fi
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"
-	logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $ETC_CONFIG_FILE)"
+	logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$ETC_CONFIG_FILE")"
 fi
 if (( $HOME_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE" # "$HOME_CONFIG_FILE_VERSION"
-	logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $HOME_CONFIG_FILE)"
+	logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$HOME_CONFIG_FILE")"
 fi
 if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE" # "$CURRENTDIR_CONFIG_FILE_VERSION"
-	logItem "Read ${CURRENTDIR_CONFIG_FILE} : ${CURRENTDIR_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CURRENTDIR_CONFIG_FILE)"
+	logItem "Read ${CURRENTDIR_CONFIG_FILE} : ${CURRENTDIR_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CURRENTDIR_CONFIG_FILE")"
 fi
 
 if (( $CUSTOM_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CUSTOM_CONFIG_FILE" # "$CUSTOM_CONFIG_FILE_VERSION"
-	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CUSTOM_CONFIG_FILE)"
+	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 fi
 
 logOptions "Invocation options"
