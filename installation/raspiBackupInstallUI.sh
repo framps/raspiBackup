@@ -38,7 +38,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.4"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.4.1"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -110,12 +110,12 @@ EOF
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 
-PROPERTY_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup0613.properties/download"
-BETA_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackup_beta.sh/download"
+PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/downloads${URLTARGET}/raspiBackupInstallUI.sh/download"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 
 DOWNLOAD_TIMEOUT=60 # seconds
@@ -3950,7 +3950,7 @@ function config_message_detail_do() {
 	[[ "$old" == "$CONFIG_MSG_LEVEL" ]]
 	local rc=$?
 	logExit "$rc - $CONFIG_MSG_LEVEL"
-	return
+	return $rc
 
 }
 

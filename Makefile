@@ -60,6 +60,7 @@ build: ## Build raspiBackup
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), rm -f $(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), rm -f $(file);)
 
+	@git checkout HEAD
 	@git checkout -f $(BRANCH)
 
 	@rm -f $(BUILD_LOCATION)/*

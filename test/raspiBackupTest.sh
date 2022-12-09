@@ -30,10 +30,10 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 CURRENT_DIR=$(pwd)
 
-if (( $# < 4 )); then
-	echo "Parms: environment type mode bootmode"
-	exit
-fi
+#if (( $# < 4 )); then
+#	echo "Parms: environment type mode bootmode"
+#	exit
+#fi
 
 if [[ $UID != 0 ]]; then
 	sudo $0 """"$@""""
@@ -100,7 +100,11 @@ if ! ping -c 1 $VM_IP; then
 			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
 			$VMs/start.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &
 			;;
-		# boot on SD card but use external root filesystem
+		nvme) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-nvme-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
+			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
+			$VMs/start.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &
+			;;
+			# boot on SD card but use external root filesystem
 		sdbootonly) qemu-img create -f qcow2 -b $IMAGES/raspianRaspiBackup-BootSDOnly-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
 			qemu-img create -f qcow2 -b $IMAGES/raspianRaspiBackup-RootSDOnly-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-RootSDOnly-snap-${RASPBIAN_OS}.qcow
 			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
@@ -119,11 +123,13 @@ if ! ping -c 1 $VM_IP; then
 	done
 fi
 
-SCRIPTS="raspiBackup.sh $TEST_SCRIPT constants.sh .raspiBackup.conf"
+SCRIPTS="raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
 
 for file in $SCRIPTS; do
-	echo "Uploading $file"
-	while ! scp $file root@$VM_IP:/root; do
+	target="root@$VM_IP:/root"
+	[[ $file == "raspiBackup.conf" ]] && target="root@$VM_IP:/usr/local/etc"
+	echo "Uploading $file to $target"
+	while ! scp $file $target; do
 		sleep 3
 	done
 done
