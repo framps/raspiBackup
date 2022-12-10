@@ -11,28 +11,31 @@
 #   This Option is only reachable with the option -- delete
 #
 # Update 2022_07_26
-#
+# ______________________________________________________________________________________
+# ______________________________________________________________________________________
 # Dynamic mount added.
 #
 # Possible are mount via mount-unit or via fstab.
 # Options
 # --mountfs "Name of an existing mount-unit" e.g. "backup.mount".
 # or
-# --mountfs "fstab
+# --mountfs "fstab"
 #
 # For an automatic backup via cron, a --cron must be added to switch off the dialogue.
 # The backup is then done with the settings from raspiBackup.conf.
 #
 # Examples for dynamic mount:
-# sudo raspiBackupRestoreHelper.sh --mountfs "backup.mount"
+# sudo raspiBackupDialog.sh --mountfs "backup.mount"
 # (The mount directory will be mounted with an existing mount-unit".
 #
-# sudo raspiBackupRestoreHelper.sh --mountfs "fstab"
+# sudo raspiBackupDialog.sh --mountfs "fstab"
 # (The backup directory is mounted with an entry in fstab)
 #
-# Cron entry
-# * * * * /usr/local/bin/raspiBackupRestoreHelper.sh --mountfs "backup.unit or fstab" --cron
-#
+# Cron entry  (only when use dynamic mount to switch off the dialogue, mount before and unmount after Backup)
+# * * * * /usr/local/bin/raspiBackupDialog.sh --mountfs "backup.unit or fstab" --cron
+# ______________________________________________________________________________________
+# ______________________________________________________________________________________
+
 # The options --select, --backup, --last and --delete can still be used with the exception of the cron call and must be placed last.
 #
 #
@@ -105,8 +108,11 @@ function backup_add_part_and_comment(){
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_comment_text \n $normal"
 		read Quest_comment_text
+		
+		echo -e "$Info_start \n"
 		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" -P -T "1 2 $partitions"
 	else
+		echo -e "$Info_start \n"
 		/usr/local/bin/raspiBackup.sh -P -T "1 2 $partitions"
 	fi
 }
@@ -118,8 +124,11 @@ function backup_add_comment(){
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_comment_text \n $normal"
 		read Quest_comment_text
+		echo -e "$Info_start \n"
+		
 		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" "$1"
 	else
+		echo -e "$Info_start \n"
 		/usr/local/bin/raspiBackup.sh "$1"
 	fi
 }
@@ -149,7 +158,7 @@ function execution(){
 	fi
 
 	echo -e "$green $Info_backup_drive \n $backup_path \n >>> $destination \n $normal"
-
+	echo -e "$Info_start \n"
 	/usr/local/bin/raspiBackup.sh -d /dev/$destination /$backup_path      #Call raspiBackup.sh
 	exit 0
 }
@@ -299,6 +308,8 @@ function language(){
 		Info_already_mounted="Das Backupverzeichnis ist bereits gemountet. Es wird im Anschluss nicht ausgehängt."
 		Info_is_mounted="Das Backupverzeichnis wurde gemountet. Es wird im Anschluss ausgehängt"
 		Info_not_mounted="Das Backupverzeichnis konnte nicht gemountet werden"
+		Info_start="raspiBackup wird jetzt gestartet"
+		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -325,7 +336,8 @@ function language(){
 		Info_already_mounted="The backup directory is already mounted. It will not be unmounted afterwards"
 		Info_is_mounted="The backup directory was mounted. It will be unmounted afterwards"
 		Info_not_mounted="The backup directory could not be mounted"
-
+		Info_start="raspiBackup will be started now"
+		Warn_not_mounted="The Backup directory is not mounted"
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
@@ -346,6 +358,13 @@ function language(){
 
 	source $FILE
 	backupdir=$DEFAULT_BACKUPPATH
+	
+	if cat /proc/mounts | grep $backupdir > /dev/null; then
+        	echo " "
+    	else
+        	echo -e "$red $Warn_not_mounted $normal"
+        	exit 0
+    	fi
 
 	if [[ $1 == "--mountfs" ]]; then
 
