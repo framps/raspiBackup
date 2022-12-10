@@ -309,6 +309,7 @@ function language(){
 		Info_is_mounted="Das Backupverzeichnis wurde gemountet. Es wird im Anschluss ausgehängt"
 		Info_not_mounted="Das Backupverzeichnis konnte nicht gemountet werden"
 		Info_start="raspiBackup wird jetzt gestartet"
+		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -336,6 +337,7 @@ function language(){
 		Info_is_mounted="The backup directory was mounted. It will be unmounted afterwards"
 		Info_not_mounted="The backup directory could not be mounted"
 		Info_start="raspiBackup will be started now"
+		Warn_not_mounted="The Backup directory is not mounted"
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
@@ -356,6 +358,13 @@ function language(){
 
 	source $FILE
 	backupdir=$DEFAULT_BACKUPPATH
+	
+	if cat /proc/mounts | grep $backupdir > /dev/null; then
+        	echo " "
+    	else
+        	echo -e "$red backupdirectory is not mountet $normal"
+        	exit 0
+    	fi
 
 	if [[ $1 == "--mountfs" ]]; then
 
