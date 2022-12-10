@@ -362,7 +362,7 @@ function language(){
 	if cat /proc/mounts | grep $backupdir > /dev/null; then
         	echo " "
     	else
-        	echo -e "$red backupdirectory is not mountet $normal"
+        	echo -e "$red $Warn_not_mounted $normal"
         	exit 0
     	fi
 
