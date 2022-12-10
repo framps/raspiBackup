@@ -2,13 +2,14 @@
 
 #######################################################################################################################
 #
-#  Download a raspiBackup version available on a github branch into current directory
+#  Download any latest file available on any raspiBackup repository github branch into current directory
 #
-#  Example to download latest raspibackup.sh from master branch:
-#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | sudo bash -s -- master
+#  Example to download latest raspiBackup.sh from master branch:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master
 #
-#	Next invoke downloaded raspiBackup with sudo ./raspiBackup.sh <options>
-#
+#  Example to download latest raspiBackupWrapper.s from master branch:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master /helper/raspiBackupWrapper.sh
+##
 #  Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 #######################################################################################################################
