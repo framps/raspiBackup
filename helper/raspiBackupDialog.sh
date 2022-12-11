@@ -31,7 +31,7 @@
 # sudo raspiBackupDialog.sh --mountfs "fstab"
 # (The backup directory is mounted with an entry in fstab)
 #
-# Cron entry  (only when use dynamic mount to switch off the dialogue, mount before and unmount after Backup)
+# Cron entry  (only when use dynamic mount) otherwise you must use "raspiBackup.sh"
 # * * * * /usr/local/bin/raspiBackupDialog.sh --mountfs "backup.unit or fstab" --cron
 # ______________________________________________________________________________________
 # ______________________________________________________________________________________
@@ -165,7 +165,7 @@ function execution(){
 
 function execution_select(){
 	declare -a backup_folder
-	backup_folder=( $(find $backupdir/$hostname/$hostname* -maxdepth 0 -type d))
+	backup_folder=( $(find $backupdir/$dir/$dir* -maxdepth 0 -type d))
 
 	for i in "${!backup_folder[@]}"; do
 		v=$(( $i + 1 ))
@@ -233,7 +233,7 @@ function backupdir_test(){
 function mount(){
 	backupdir_test "$backupdir"
 
-	if [[ $unitname == "backup.mount" ]]; then
+	if [[ $unitname == *".mount" ]]; then
 
 		if backupdir_test "$backupdir"; then
 			echo -e "$green $Info_already_mounted $normal \n"
@@ -243,7 +243,7 @@ function mount(){
 
 			if backupdir_test "$backupdir"; then
 				echo -e "$green $Info_is_mounted $normal \n"
-					mounted=ok
+				mounted=ok
 			else
 				echo -e "$red $Info_not_mounted $normal \n"
 				exit 0
@@ -274,6 +274,14 @@ function unmount(){
 	if [[ $mounted == ok ]]; then
 	/usr/bin/umount $backupdir
 	fi
+}
+
+function sel_dir(){
+    ls -1 $backupdir
+    echo ""
+    echo -e "$yellow $Quest_sel_dir \n $normal"
+    read dir
+	backup_path="$(find $backupdir/$dir/$dir* -maxdepth 0 | sort -r | head -1)"
 }
 
 function language(){
@@ -310,7 +318,7 @@ function language(){
 		Info_not_mounted="Das Backupverzeichnis konnte nicht gemountet werden"
 		Info_start="raspiBackup wird jetzt gestartet"
 		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet"
-
+		Quest_sel_dir="Bitte gebe den Namen des Backupverzeichnisses ein"
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
 		Quest_select_drive="Please enter the destination drive. e.g. mmcblk0,sda,sdb,sdc.... "
@@ -338,6 +346,7 @@ function language(){
 		Info_not_mounted="The backup directory could not be mounted"
 		Info_start="raspiBackup will be started now"
 		Warn_not_mounted="The Backup directory is not mounted"
+		Quest_sel_dir="Please enter the name of the backup-Directory"
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
@@ -352,20 +361,17 @@ function language(){
 		exit
 	fi
 
-	if [[ $3 != "--cron" ]]; then
-		language
-	fi
-
 	source $FILE
 	backupdir=$DEFAULT_BACKUPPATH
-	
-	if cat /proc/mounts | grep $backupdir > /dev/null; then
-        	echo " "
-    	else
-        	echo -e "$red $Warn_not_mounted $normal"
-        	exit 0
-    	fi
 
+	if [[ $3 == "--cron" ]]; then
+		/usr/local/bin/raspiBackup.sh
+		unmount
+		exit 0		
+	else
+		language
+	fi
+	
 	if [[ $1 == "--mountfs" ]]; then
 
 		if [[ $2 == *".mount"* ]] || [[ $2 == "fstab" ]]; then
@@ -373,23 +379,26 @@ function language(){
 			mount
 		else
 			echo "Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
-			exit 0
+		exit
 		fi
 	fi
+		
+	if cat /proc/mounts | grep $backupdir > /dev/null; then
+        	echo " "
+    else
+        echo -e "$red $Warn_not_mounted $normal"
+        exit
+    fi	
 
-	backup_path="$(find $backupdir/$hostname/$hostname* -maxdepth 0 | sort -r | head -1)"  #Determine last backup
 
-	if [[ $3 == "--cron" ]]; then
-		/usr/local/bin/raspiBackup.sh
-		unmount
-		exit 0
-
-	elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
+	if [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
+		sel_dir
 		execution
 		unmount
 		exit 0
 
 	elif [[ $1 == "--select" ]] || [[ $3 == "--select" ]]; then
+		sel_dir
 		execution_select
 		unmount
 		exit 0
@@ -414,8 +423,9 @@ function language(){
 
 	if (( $backup_or_restore  == 1 )); then
 		backup
-
+	
 	elif (($backup_or_restore == 2 )); then
+		sel_dir
 		echo -e "$yellow $Quest_last_backup \n $normal"
 		read answer
 	else
@@ -428,4 +438,7 @@ function language(){
 		exit 0
 	else
 		execution_select
+
 	fi
+
+
