@@ -385,6 +385,7 @@ function language(){
 		fi
 	fi
 
+	sel_dir
 	backup_path="$(find $backupdir/$dir/$dir* -maxdepth 0 | sort -r | head -1)"  #Determine last backup
 
 	if [[ $3 == "--cron" ]]; then
@@ -392,14 +393,12 @@ function language(){
 		unmount
 		exit 0
 
-	elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
-		sel_dir
+	elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; the
 		execution
 		unmount
 		exit 0
 
 	elif [[ $1 == "--select" ]] || [[ $3 == "--select" ]]; then
-		sel_dir
 		execution_select
 		unmount
 		exit 0
@@ -426,7 +425,6 @@ function language(){
 		backup
 
 	elif (($backup_or_restore == 2 )); then
-		sel_dir
 		echo -e "$yellow $Quest_last_backup \n $normal"
 		read answer
 	else
