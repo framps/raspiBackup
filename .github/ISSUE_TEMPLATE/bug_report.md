@@ -1,38 +1,20 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+**Note**
+raspiBackup is supported on RaspberryOS and Ubuntu as operating system and Raspberry HW only. There are environments out there which successfully run raspiBackup but any support requests or issues on unsupported environments will be rejected. 
 
----
+*If you have questions about raspiBackup please create a `discussion` entry instead of an `issue` entry in github*
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+If you have an issue with raspiBackup execute following actions first
+1. Read the FAQ pages of raspiBackup 
+   * [English](https://www.linux-tips-and-tricks.de/en/faq)
+   * [German](https://www.linux-tips-and-tricks.de/de/faq)
+1. Check whether the error messages of raspiBackup were listed on the messages page and all suggested actions don't fixes the issue
+   * [English](https://www.linux-tips-and-tricks.de/en/raspibackupmessagese)
+   * [German](https://www.linux-tips-and-tricks.de/de/raspibackupmeldungen)
+1. Use your preferred search engine and look up the error message number or the error message text you receive
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+If you still don't get any idea how to solve your issue with raspiBackup
+1. Explain in detail what's going wrong
+1. Attach raspiBackup debug log. Just **DRAG AND DROP** raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue. **If you don't attach a debug log the issue will be rejected**
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+**Note**
+Issues are closed automatically after 2 weeks if there is no activity any more
