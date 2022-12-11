@@ -165,7 +165,7 @@ function execution(){
 
 function execution_select(){
 	declare -a backup_folder
-	backup_folder=( $(find $backupdir/$hostname/$hostname* -maxdepth 0 -type d))
+	backup_folder=( $(find $backupdir/$dir/$dir* -maxdepth 0 -type d))
 
 	for i in "${!backup_folder[@]}"; do
 		v=$(( $i + 1 ))
