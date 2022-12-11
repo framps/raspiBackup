@@ -3547,6 +3547,9 @@ function supportsFileAttributes() {	# directory
 	local attrsT ownerT groupT
 	local result=1	# no
 
+	local MAXRETRY=3						# retries if first check fails
+	local retryCount=$(( MAXRETRY + 1 ))
+
 	touch /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
 	chown 65534:65534 /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
 	chmod 057 /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
@@ -3556,22 +3559,29 @@ function supportsFileAttributes() {	# directory
 
 	read attrs x owner group r <<< $(ls -la /tmp/$MYNAME.fileattributes)
 	logItem "$attrs # $owner # $group"
-	# following command will return an error and message
-	# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
-	cp -a /tmp/$MYNAME.fileattributes /$1 &>>"$LOG_FILE"
-	local rc=$?
-	if (( $rc )); then
-		logItem "cp failed with rc $rc"
-	else
-		read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
-		# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
-		# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
-		# and a restored backup will populate these ACLs on the restored system which is wrong!
-		logItem "$attrsT # $ownerT # $groupT"
 
-		# check fileattributes and ownerships are identical
-		[[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]] && result=0
-	fi
+	while (( retryCount-- > 0 && result == 1 )); do
+		# following command will return an error and message
+		# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
+		cp -a /tmp/$MYNAME.fileattributes /$1 &>>"$LOG_FILE"
+		local rc=$?
+		if (( $rc )); then
+			logItem "cp failed with rc $rc - retryCount"
+		else
+			read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
+			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
+			# and a restored backup will populate these ACLs on the restored system which is wrong!
+			logItem "$attrsT # $ownerT # $groupT"
+
+			# check fileattributes and ownerships are identical
+			if [[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]]; then
+				result=0
+				break
+			fi
+		fi
+		sleep 3s
+	done 		
 	
 	rm /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
 	rm /$1/$MYNAME.fileattributes &>>"$LOG_FILE"
