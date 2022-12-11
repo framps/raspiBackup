@@ -410,6 +410,7 @@ function language(){
 
 	elif [[ $1 == "--delete" ]] || [[ $3 == "--delete" ]]; then
 		del=y
+		sel_dir
 		execution_select
 		unmount
 		exit 0
