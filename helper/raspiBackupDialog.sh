@@ -393,7 +393,7 @@ function language(){
 		unmount
 		exit 0
 
-	elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; the
+	elif [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
 		execution
 		unmount
 		exit 0
