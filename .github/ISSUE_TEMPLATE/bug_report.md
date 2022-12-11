@@ -1,43 +1,38 @@
-_Use English please if possible. Aber Deutsch ist auch möglich (s.U.)_
+---
+name: Bug report
+about: Create a report to help us improve
+title: ''
+labels: ''
+assignees: ''
 
-***************************************************************
-**Only Raspberries running RaspbianOS or Ubuntu are supported**
-***************************************************************
-
-**Attach the debug log**
-Drag and drop the debug log file but don't copy the contents into the issue.
+---
 
 **Describe the bug**
-Add a clear and concise description of what the bug is.
+A clear and concise description of what the bug is.
+
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
+
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Environment used**
- - Hardware: [e.g. RaspberryPi3, RaspberryPi4, CM4, ...]
- - OS [RaspianOS lite 64 bit, Ubuntu desktop 64, ...]
+**Desktop (please complete the following information):**
+ - OS: [e.g. iOS]
+ - Browser [e.g. chrome, safari]
+ - Version [e.g. 22]
+
+**Smartphone (please complete the following information):**
+ - Device: [e.g. iPhone6]
+ - OS: [e.g. iOS8.1]
+ - Browser [e.g. stock browser, safari]
+ - Version [e.g. 22]
 
 **Additional context**
 Add any other context about the problem here.
-
-_Deutsch_
-
-****************************************************************
-**Nur Raspberries mit RaspbianOS oder Ubuntu werden untertützt**
-****************************************************************
-
-**Debug log sollte angehängt sein**
-Drag und drop nutzen für die debug log Datei und nicht den Inhalt in den Problembericht kopieren.
-
-**Beschreibung des Problems**
-Eine kurze und klare Bschreibung was der Fehler ist
-
-**Screenshots**
-Sofern es hilft sollten Screenshots angehängt werden.
-
-**Genutzte Umgebung**
- - Hardware: [z.B. RaspberryPi3, RaspberryPi4, CM4, ...]
- - OS [RaspianOS lite 64 bit, Ubuntu desktop 64, ...]
-
-**Weitere Informationen**
-Alle weiteren Informationen zu dem Problem
