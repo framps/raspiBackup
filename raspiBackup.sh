@@ -3572,7 +3572,7 @@ function supportsFileAttributes() {	# directory
 			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
 			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
 			# and a restored backup will populate these ACLs on the restored system which is wrong!
-			logItem "$attrsT # $ownerT # $groupT"
+			logItem "Remote: $attrsT # $ownerT # $groupT"
 
 			# check fileattributes and ownerships are identical
 			if [[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]]; then
