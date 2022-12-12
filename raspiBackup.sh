@@ -9026,10 +9026,6 @@ while (( "$#" )); do
 	  fi
 	  ;;
 
-	-h|--help)
-	  HELP=1; break
-	  ;;
-
 	--ignoreAdditionalPartitions|--ignoreAdditionalPartitions[+-])
 	  IGNORE_ADDITIONAL_PARTITIONS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
@@ -9223,6 +9219,7 @@ while (( "$#" )); do
 	  checkOptionParameter "$1" "$2"
 	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	   # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$2"; shift 2
 	  ;;
 
@@ -9303,7 +9300,7 @@ while (( "$#" )); do
 	  break
 	  ;;
 
-	-*|--*|+*|++*) # unknown option
+	--*|-*|++*|+*) # unknown option
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_OPTION "$1"
 		mentionHelp
 		exitError $RC_PARAMETER_ERROR
@@ -9331,8 +9328,7 @@ if (( $RESTORE )); then
 fi
 
 if (( ! $RESTORE )); then
-	exlock_now
-	if (( $? )); then
+	if ! exlock_now; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
 		exitError $RC_MISC_ERROR
 	fi
@@ -9354,11 +9350,11 @@ if [[ -n "$1" ]]; then
 	fi
 fi
 
-unusedParms="$@"
+unusedParms=( "$@" )
 
-if [[ -n "$unusedParms" ]]; then
+if (( ${#unusedParms[@]} > 0 )); then
 	usage
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNUSED_PARAMETERS "$unusedParms"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNUSED_PARAMETERS "${unusedParms[*]}"
 	exitError $RC_PARAMETER_ERROR
 fi
 
