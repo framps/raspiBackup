@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##########################################################################################################################################
-#Description
+#
 # Auxiliary - script for easy, dialog guided creating or restoring of a backup with   "framps raspiBackup"
 # Possible options
 # --backup (simple dialog guided creation of a backup)
