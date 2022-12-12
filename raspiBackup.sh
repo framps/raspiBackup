@@ -8571,8 +8571,8 @@ function lockingFramework() {
 	LOCKFD=99
 
 # PRIVATE
-	_lock()             { flock -$1 $LOCKFD; }
-	_no_more_locking()  { _lock u; _lock xn && rm -f $LOCKFILE ; }
+	_lock()             { flock -"$1" "$LOCKFD"; }
+	_no_more_locking()  { _lock u; _lock xn && rm -f "$LOCKFILE" ; }
 #	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\""; trap _no_more_locking EXIT; }
 	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\"" ; }
 
@@ -8601,9 +8601,9 @@ function usageEN() {
 	echo "-E \"{additional email call parameters}\" (default: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {config filename}"
 	echo "-g Display progress bar"
-	echo "-G {message language} (${SUPPORTED_LANGUAGES[@]}) (default: $LANGUAGE)"
+	echo '-G {message language} ('"${SUPPORTED_LANGUAGES[*]}"') ('"default: $LANGUAGE"')'
 	echo "-h display this help text"
-	echo "-l {log level} ($POSSIBLE_LOG_LEVELs_) (default: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
+	echo "-l {log level} ($POSSIBLE_LOG_LEVELs) (default: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-m {message level} ($POSSIBLE_MSG_LEVELs) (default: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
 	echo "-M {backup description}"
 	echo "-n notification if there is a newer scriptversion available for download (default: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
@@ -8651,7 +8651,7 @@ function usageDE() {
 	echo "-E \"{Zusätzliche eMail Aufrufparameter}\" (Standard: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {Konfig Dateiname}"
 	echo "-g Anzeige des Fortschritts"
-	echo "-G {Meldungssprache} (${SUPPORTED_LANGUAGES[@]}) (Standard: $LANGUAGE)"
+	echo '-G {Meldungssprache} ('"${SUPPORTED_LANGUAGES[*]}"') ('"Standard: $LANGUAGE)"')'
 	echo "-h Anzeige dieses Hilfstextes"
 	echo "-l {log Genauigkeit} ($POSSIBLE_LOG_LEVELs) (Standard: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-m {Meldungsgenauigkeit} ($POSSIBLE_MSG_LEVELs) (Standard: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
@@ -8700,9 +8700,9 @@ function usageFI() {
 	echo "-E \"{sähköpostitoiminnon lisäparametrit}\" (oletus: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {asetustiedoston tiedostonimi}"
 	echo "-g Näytä edistymispalkki"
-	echo "-G {viestien kieli} (${SUPPORTED_LANGUAGES[@]}) (oletus: $LANGUAGE)"
+	echo '-G {viestien kieli} ('"${SUPPORTED_LANGUAGES[*]}"') ('"oletus: $LANGUAGE)"')'
 	echo "-h Näytä tämä ohje"
-	echo "-l {lokitaso} ($POSSIBLE_LOG_LEVELs_) (oletus: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
+	echo "-l {lokitaso} ($POSSIBLE_LOG_LEVELs) (oletus: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-m {viestitaso} ($POSSIBLE_MSG_LEVELs) (oletus: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
 	echo "-M {varmuuskopion selite}"
 	echo "-n Ilmoita, jos skriptistä on uusi versio ladattavissa (oletus: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
@@ -8736,7 +8736,7 @@ function usageFI() {
 }
 
 function mentionHelp() {
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP "$MYSELF"
 }
 
 # there is an issue when a parameter starts with "-" which may a new option
@@ -8795,7 +8795,6 @@ EXCLUDE_DD=0
 FAKE=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
-HELP=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
 NO_YES_QUESTION=0
@@ -8830,7 +8829,9 @@ if (( $# == 1 )); then
 				echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
 				exitNormal
 				;;
-		*)	usage
+		*)
+			initializeDefaultConfigVariables
+			usage
 			exitNormal
 			;;
 		esac
@@ -8889,11 +8890,12 @@ while (( "$#" )); do		# check if option -f was used
 		fi
 		CUSTOM_CONFIG_FILE="$(readlink -f "$CUSTOM_CONFIG_FILE")"
 		set -e
+		# shellcheck source=/dev/null
 		. "$CUSTOM_CONFIG_FILE"
 		set +e
 		CUSTOM_CONFIG_FILE_INCLUDED=1
 		CUSTOM_CONFIG_FILE_VERSION="$(extractVersionFromFile "$CUSTOM_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-		logItem "Read config ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CUSTOM_CONFIG_FILE)"
+		logItem "Read config ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 
 		copyDefaultConfigVariables		# update variables with custom file contents
 		logOptions "Custome option file"
