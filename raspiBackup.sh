@@ -1,3 +1,5 @@
+				#SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
+				#shellcheck disable=SC2059
 #!/bin/bash
 #
 #######################################################################################################################
@@ -31,6 +33,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
+
+# $/${} is unnecessary on arithmetic variables
+# shellcheck disable=SC2004
 
 set -o pipefail
 
@@ -7458,11 +7463,11 @@ function getPartitionBootFilesystem() { # partition_no
 	logItem "BOOT_DEVICENAME: $BOOT_DEVICENAME"
 
 	local parted format
-	logItem "PARTED: $1 - $(parted -m $BOOT_DEVICENAME print 2>/dev/null)"
-	parted=$(grep "^${partitionNo}:" <(parted -m $BOOT_DEVICENAME print 2>/dev/null))
+	logItem "PARTED: $1 - $(parted -m "$BOOT_DEVICENAME" print 2>/dev/null)"
+	parted=$(grep "^${partitionNo}:" <(parted -m "$BOOT_DEVICENAME" print 2>/dev/null))
 	logItem "PARTED: $1 - $parted"
 
-	format=$(cut -d ":" -f 5 <<< $parted)
+	format=$(cut -d ":" -f 5 <<< "$parted")
 
 	echo "$format"
 
@@ -7478,7 +7483,7 @@ function lastUsedPartitionByte() { # device
 	local lastUsedPartitionByte=0
 
 	local line
-	while read line; do
+	while read -r line; do
 		if [[ -z $line ]]; then
 			continue
 		fi
@@ -7518,22 +7523,23 @@ function restorePartitionBasedPartition() { # restorefile
 	local verbose zip partitionLabel cmd
 
 	local restoreFile="$1"
-	local restorePartition="$(basename "$restoreFile")"
+	local restorePartition
+	restorePartition="$(basename "$restoreFile")"
 
 	logItem "restorePartition: $restorePartition"
 	local partitionNumber
-	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< $restorePartition)
+	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< "$restorePartition")
 	logItem "Partitionnumber: $partitionNumber"
 
 	local fileSystemsize
-	fileSystemsize=$(getBackupPartitionFilesystemSize $partitionNumber)
+	fileSystemsize=$(getBackupPartitionFilesystemSize "$partitionNumber")
 	logItem "Filesystemsize: $fileSystemsize"
 
 	restorePartition="${restorePartition%.*}"
 	logItem "RestorePartition: $restorePartition"
 
-	partitionLabel=$(getBackupPartitionLabel $restorePartition)
-	partitionFilesystem=$(getBackupPartitionFilesystem $restorePartition)
+	partitionLabel="$(getBackupPartitionLabel "$restorePartition")"
+	partitionFilesystem="$(getBackupPartitionFilesystem "$restorePartition")"
 
 	logItem "Label: $partitionLabel - Filesystem: $partitionFilesystem"
 
@@ -7543,7 +7549,7 @@ function restorePartitionBasedPartition() { # restorefile
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
-	mappedRestorePartition=$(sed "s%${BACKUP_BOOT_PARTITION_PREFIX}%${restoreDevice}%" <<< $restorePartition)
+	mappedRestorePartition=$(sed "s%${BACKUP_BOOT_PARTITION_PREFIX}%${restoreDevice}%" <<< "$restorePartition")
 
 	if [[ ! "$partitionFilesystem" =~ $SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_FILESYSTEM_FORMAT "$partitionFilesystem" "$mappedRestorePartition"
@@ -7559,7 +7565,7 @@ function restorePartitionBasedPartition() { # restorefile
 		local swapDetected=0
 		if [[ "$partitionFilesystem" =~ ^fat.* ]]; then
 			fs="vfat"
-			fatSize=$(sed 's/fat//' <<< $partitionFilesystem)
+			fatSize=$(sed 's/fat//' <<< "$partitionFilesystem")
 			fatCmd="-I -F $fatSize"
 			logItem "fs: $fs - fatSize: $fatSize - fatCmd: $fatCmd"
 			cmd="mkfs -t $fs $fatCmd"
@@ -7576,10 +7582,10 @@ function restorePartitionBasedPartition() { # restorefile
 			logItem "Normal partition with $partitionFilesystem"
 		fi
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" $fileSystemsize
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" "$fileSystemsize"
 		logItem "$cmd $mappedRestorePartition"
 
-		$cmd $mappedRestorePartition &>>"$LOG_FILE"
+		$cmd "$mappedRestorePartition" &>>"$LOG_FILE"
 
 		rc=$?
 		if (( $rc )); then
@@ -7607,18 +7613,18 @@ function restorePartitionBasedPartition() { # restorefile
 
 			if (( $labelPartition )); then
 				logItem "$cmd $mappedRestorePartition $partitionLabel"
-				$cmd $mappedRestorePartition $partitionLabel &>>"$LOG_FILE"
+				$cmd "$mappedRestorePartition" "$partitionLabel" &>>"$LOG_FILE"
 				rc=$?
 				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-					exitError $RC_LABEL_ERROR
+					exitError "$RC_LABEL_ERROR"
 				fi
 			else
 				logItem "Partition $mappedRestorePartition not labeled"
 			fi
 
 			logItem "mount $mappedRestorePartition $MNT_POINT"
-			mount $mappedRestorePartition $MNT_POINT
+			mount "$mappedRestorePartition" "$MNT_POINT"
 
 			logItem "Restoring file $restoreFile"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONFILE "$mappedRestorePartition"
@@ -7672,19 +7678,18 @@ function restorePartitionBasedPartition() { # restorefile
 			esac
 
 			if [[ $rc != 0 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR $BACKUPTYPE $rc
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR "$BACKUPTYPE" "$rc"
 				exitError $RC_NATIVE_BACKUP_FAILED
 			fi
 
 			sleep 1s					# otherwise umount fails
 
 			logItem "umount $mappedRestorePartition"
-			umount $mappedRestorePartition
+			umount "$mappedRestorePartition"
 
-			if isMounted $MNT_POINT; then
+			if isMounted "$MNT_POINT"; then
 				logItem "umount $MNT_POINT"
-				umount -f $MNT_POINT &>>$LOG_FILE
-				if [ $? -ne 0 ]; then
+				if ! umount -f "$MNT_POINT" &>>$LOG_FILE; then
 					assertionFailed $LINENO "Unable to umount $MNT_POINT"
 				fi
 			fi
@@ -7731,7 +7736,7 @@ function doitRestore() {
 		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
 
-	logItem "ls $RESTOREFILE$NL$(ls $RESTOREFILE)"
+	logItem "ls $RESTOREFILE$NL$(ls "$RESTOREFILE")"
 
 	local regex=""
 	for type in $POSSIBLE_TYPES; do
@@ -7756,6 +7761,7 @@ function doitRestore() {
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logCommand "ls -1 $RESTOREFILE*"
 
+	# shellcheck disable=SC2010
 	if  ls -1 "$RESTOREFILE"* | grep -E -q "^(sd[a-z]([0-9]+)|mmcblk[0-9]+p[0-9]+|nvme[0-9]+n[0-9]+p[0-9]+).*" 2>>"$LOG_FILE" ; then
 		PARTITIONBASED_BACKUP=1
 	else
@@ -7802,8 +7808,10 @@ function doitRestore() {
 			exitError $RC_DEVICES_NOTFOUND
 		fi
 
-		local rd=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
-		local rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
+		local rd
+		rc=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
+		local rr
+		rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
 
 		logItem "Restore devices: -d: $rd - -R: $rr"
 
@@ -7813,7 +7821,8 @@ function doitRestore() {
 		fi
 	fi
 
-	local usbMount="$(dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
+	local usbMount
+	usbMount"$(dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
 	if grep -q "install ok installed" <<< "$usbMount" &>>$LOG_FILE; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
@@ -7840,9 +7849,10 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_MISSING_COMMANDS
 		fi
-		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
+		local rsyncVersion
+		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
-		if (( $PROGRESS && $INTERACTIVE )) && [[ "$rsyncVersion" < "3.1" ]]; then
+		if (( $PROGRESS && $INTERACTIVE )) && $(bc <<< "$rsyncVersion < 3.1") == 1; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
 			exitError $RC_PARAMETER_ERROR
 		fi
@@ -7888,27 +7898,29 @@ function doitRestore() {
 
 	# adjust partition for tar and rsync backup in normal mode
 
-	if (( ! $PARTITIONBASED_BACKUP )) && [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]] && (( ! $ROOT_PARTITION_DEFINED )); then
+	if (( ! $PARTITIONBASED_BACKUP )) && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]] && (( ! $ROOT_PARTITION_DEFINED )); then
 
-		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+		local sourceSDSize
+		sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
+		local targetSDSize
+		targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
 		logItem "soureSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
 		if (( ! $FORCE_SFDISK && ! $SKIP_SFDISK )); then
 			if (( sourceSDSize != targetSDSize )); then
 				if (( sourceSDSize > targetSDSize )); then
 					if (( $RESIZE_ROOTFS )); then
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING "$RESTORE_DEVICE" "$(bytesToHuman "$targetSDSize")" "$(bytesToHuman "$sourceSDSize")"
 					else
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_DISABLED "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_DISABLED "$RESTORE_DEVICE" "$(bytesToHuman "$targetSDSize")" "$(bytesToHuman "$sourceSDSize")"
 						exitError $RC_PARAMETER_ERROR
 					fi
 				else
 					if (( $RESIZE_ROOTFS )); then
 						if (( $targetSDSize >= $TWO_TB )); then		# target should have gpt in order to use space > 2TB during expansion
-							writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_REQUIRES_GPT "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)"
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_REQUIRES_GPT "$RESTORE_DEVICE" "$(bytesToHuman "$targetSDSize")"
 						fi
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING2 "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING2 "$RESTORE_DEVICE" "$(bytesToHuman "$targetSDSize")" "$(bytesToHuman "$sourceSDSize")"
 					fi
 				fi
 			fi
@@ -7919,7 +7931,7 @@ function doitRestore() {
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
-		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
 			synchronizeCmdlineAndfstab
 		fi
 	else
@@ -7970,14 +7982,14 @@ function updateRestoreReminder() {
 	local now
 	now=$(date +%Y%m)
 	local rf
-	rf="$(<$reminder_file)"
+	rf="$(<"$reminder_file")"
 	if [[ -z "${rf}" ]]; then												# issue #316: reminder file exists but is empty
 		echo "$(date +%Y%m) 0" > "$reminder_file"
 		return
 	fi
-	rf=( $(<$reminder_file) )
+	rf=( $(<"$reminder_file") )
 	local diffMonths
-	diffMonths=$(calculateMonthDiff $now ${rf[0]} )
+	diffMonths=$(calculateMonthDiff "$now" "${rf[0]}" )
 
 	# check if reminder should be send
 	if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
@@ -8034,7 +8046,7 @@ function remount() { # device mountpoint
 	fi
 
 	logItem "Creating mountpoint $2"
-	mkdir -p $2
+	mkdir -p "$2"
 	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
 	logExit $rc
 
@@ -8071,7 +8083,6 @@ function updateConfig() {
 
 	if (( ! $localNewConfig )); then
 
-		local lang=${LANGUAGE,,}
 		eval "DL_URL=$CONFIG_URL"
 
 		# download new config file
@@ -8088,13 +8099,14 @@ function updateConfig() {
 		fi
 
 		# make sure new config file is readable by owner only
-		if ! chmod 600 $NEW_CONFIG &>>$LOG_FILE; then
+		if ! chmod 600 "$NEW_CONFIG" &>>$LOG_FILE; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
 			exitError $RC_FILE_OPERATION_ERROR
 		fi
 	fi
 
-	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
+	local newConfigVersion
+	newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
 
 	logItem "NewConfigVersion: $newConfigVersion"
 
@@ -8128,10 +8140,12 @@ function updateConfig() {
 	# process new config file and merge old options
 
 	logItem "Merging $NEW_CONFIG and $ORIG_CONFIG"
-	while read line; do
+	while read -r line; do
 		if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then			# skip comment or empty lines
-			local KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
-			local VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
+			local KW
+			KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
+			local VAL
+			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
 
 			logItem "KW: $KW - VAL: $VAL"
 			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# add new version number
@@ -8145,9 +8159,12 @@ function updateConfig() {
 			r=$?
 			logItem "grep old file rc:$s - contents: $OC_line"
 			if (( ! $r )); then											# new option found
-				local OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
+				local OW
+				OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
 				echo "$KW=$OW" >> $MERGED_CONFIG						# use old option value
 			else
+				# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
+				# shellcheck disable=SC2059
 				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
 				echo "$line" >> $MERGED_CONFIG						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
@@ -8161,21 +8178,27 @@ function updateConfig() {
 	# check in old config file which options were deleted in new config file
 
 	logItem "Checking for deleted options"
-	while read line; do
+	while read -r line; do
 		if [[ -n "$line" && ! "$line" =~ ^.*# ]]; then			# skip comment or empty lines
-			local KW="$(cut -d= -f1 <<< "$line")"							# retrieve keyword
-			local VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
+			local KW
+			KW="$(cut -d= -f1 <<< "$line")"		# retrieve keyword
+			local VAL
+			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
 
 			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# skip version number
 				continue
 			fi
 
-			local NC_line r
-			NC_line="$(grep "^$KW=" "$NEW_CONFIG")"					# check if it's still the new config file
+			local r
+			grep "^$KW=" "$NEW_CONFIG"					# check if it's still the new config file
 			r=$?
 			logItem "grep old file for deleted $KW rc:$r - contents: $OC_line"
 			if (( $r )) && [[ $KW != "UUID" ]]; then				# option not found, it was deleted
+				# SC2129: Consider using { cmd1; cmd2; } >> file instead of individual redirects.
+				# shellcheck disable=SC2129
 				echo "" >> $MERGED_CONFIG
+				# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
+				# shellcheck disable=SC2059
 				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
 				echo "# $line" >> $MERGED_CONFIG						# insert deleted config line as comment
 				(( deleted ++ ))
