@@ -1,5 +1,3 @@
-				#SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
-				#shellcheck disable=SC2059
 #!/bin/bash
 #
 #######################################################################################################################
@@ -3589,8 +3587,8 @@ function supportsFileAttributes() {	# directory
 		sleep 3s
 	done 		
 	
-	rm /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
-	rm /$1/$MYNAME.fileattributes &>>"$LOG_FILE"
+	rm "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
+	rm "/$1/$MYNAME.fileattributes" &>>"$LOG_FILE"
 
 	logExit $result
 
@@ -3611,8 +3609,8 @@ function supportsHardlinks() {	# directory
 	links=$(ls -la /$1/$MYNAME.hlinkfile | cut -f 2 -d ' ')
 	logItem "Links: $links"
 	[[ $links == 2 ]] && result=0
-	rm -f /$1/$MYNAME.hlinkfile &>/dev/null
-	rm -f /$1/$MYNAME.hlinklink &>/dev/null
+	rm -f "/$1/$MYNAME.hlinkfile" &>/dev/null
+	rm -f "/$1/$MYNAME.hlinklink" &>/dev/null
 
 	logExit "$result"
 
@@ -3626,11 +3624,11 @@ function supportsSymlinks() {	# directory
 	logEntry "$1"
 
 	local result=1	# no
-	touch /$1/$MYNAME.slinkfile &>>$LOG_FILE
-	ln -s /$1/$MYNAME.slinkfile /$1/$MYNAME.slinklink &>>$LOG_FILE
-	[[ -L /$1/$MYNAME.slinklink ]] && result=0
-	rm -f /$1/$MYNAME.slinkfile &>/dev/null
-	rm -f /$1/$MYNAME.slinklink &>/dev/null
+	touch "/$1/$MYNAME.slinkfile" &>>$LOG_FILE
+	ln -s "/$1/$MYNAME.slinkfile" /$1/$MYNAME.slinklink &>>$LOG_FILE
+	[[ -L "/$1/$MYNAME.slinklink" ]] && result=0
+	rm -f "/$1/$MYNAME.slinkfile" &>/dev/null
+	rm -f "/$1/$MYNAME.slinklink" &>/dev/null
 
 	logExit "$result"
 
@@ -4174,7 +4172,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			fi
 		fi
 
-		[[ -n $o ]] && rm $o
+		[[ -n $o ]] && rm "$o"
 
 		logExit
 }
@@ -4271,7 +4269,7 @@ EOF
 			fi
 		fi
 
-		[[ -n $o ]] && rm $o
+		[[ -n $o ]] && rm "$o"
 
 		logExit
 }
@@ -4580,7 +4578,6 @@ function masqueradeNonlocalIPs() {
 					n3="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n3")"
 					n4="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n4")"
 
-					local ip="$n1.$n2.$n3.$n4"
 					local masquip="%%%.%%%.$n3.$n4"
 
 					(( $n1 == 192 && $n2 == 168 )) \
@@ -4828,7 +4825,7 @@ function revertScriptVersion() {
 	logEntry
 
 	# SC2086: Double quote to prevent globbing and word splitting.
-	# shecllcheck disable=SC2086
+	# shellcheck disable=SC2086
 	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
 
 	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
@@ -5029,8 +5026,10 @@ function createLinks() { # backuptargetroot extension newfile
 
 	local possibleLinkTargetDirectory
 	# SC2012: Use find instead of ls to better handle non-alphanumeric filenames.
-	# shellcheck disable=SC2012
-	possibleLinkTargetDirectory=$(ls -d "$1/*-$BACKUPTYPE-backup-*" 2>/dev/null | tail -2 | head -1)
+	# SC2086: Double quote to prevent globbing and word splitting.
+	# shellcheck disable=SC2012,SC2086
+
+	possibleLinkTargetDirectory=$(ls -d $1/*-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
 
 	if [[ -z "$possibleLinkTargetDirectory" || $possibleLinkTargetDirectory == "$BACKUPTARGET_DIR" ]]; then
 		logItem "No possible link target directory found"
@@ -5430,6 +5429,8 @@ function updateUUID() {
 			newUUID="$(od -A n -t x -N 4 /dev/urandom | tr -d " " | sed -r 's/(.{4})/\1-/')"
 			newUUID="${newUUID^^*}"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "UUID" "$newUUID" "$BOOT_PARTITION"
+			# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo"
+			# shellcheck disable=SC2059
 			printf "\x${newUUID:7:2}\x${newUUID:5:2}\x${newUUID:2:2}\x${newUUID:0:2}" \
 				| dd bs=1 seek=67 count=4 conv=notrunc of="$BOOT_PARTITION" &>>"$LOG_FILE" # 39 for fat16, 67 for fat32
 			waitForPartitionDefsChanged
@@ -5953,7 +5954,7 @@ function applyBackupStrategy() {
 					fi
 					if [[ -n $dir_to_delete ]]; then
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
-						rm -rf "${BACKUPTARGET_ROOT:?}"/"$dir_to_delete" # guard against whole backup dir deletion
+						rm -rf ${BACKUPTARGET_ROOT:?}/$dir_to_delete # guard against whole backup dir deletion
 					fi
 				else
 					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
@@ -5990,8 +5991,9 @@ function applyBackupStrategy() {
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
 				# SC2010: Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-				# shellcheck disable=SC2010
-				ls -d "${HOSTNAME}"-"${BACKUPTYPE}"-backup-* 2>>$LOG_FILE | grep -vE "_" | head -n -"$keepBackups" | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
+				# SC2086: Double quote to prevent globbing and word splitting.
+				# shellcheck disable=SC2010,SC2086
+				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE | grep -vE "_" | head -n -"$keepBackups" | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
@@ -7041,11 +7043,11 @@ function doitBackup() {
 	fi
 
 	if (( $LINK_BOOTPARTITIONFILES )) &&  [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" ]] && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
-		touch "$BACKUPPATH"/47.$$
-		cp -l "$BACKUPPATH"/47.$$ "$BACKUPPATH"/11.$$ &>/dev/null
+		touch $BACKUPPATH/47.$$
+		cp -l $BACKUPPATH/47.$$ $BACKUPPATH/11.$$ &>/dev/null
 		local rc=$?
-		rm "BACKUPPATH"/47.$$ &>/dev/null
-		rm "BACKUPPATH"/11.$$ &>/dev/null
+		rm $BACKUPPATH/47.$$ &>/dev/null
+		rm $BACKUPPATH/11.$$ &>/dev/null
 		if [[ $rc != 0 ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_USE_HARDLINKS "$BACKUPPATH" "$rc"
 			exitError $RC_LINK_FILE_FAILED
