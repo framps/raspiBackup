@@ -4138,8 +4138,8 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				--form-string "sound=$sound")
 						
 		logItem "Pushover curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
-
+		local httpCode
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
 		local curlRC=$?
 		logItem "Pushover response:${NL}$(<$o)"
 
@@ -4236,7 +4236,8 @@ EOF
 		cmd+=(--data "$msg_json")
 		
 		logItem "Slack curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
+		local httpCode
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
 		local curlRC=$?
 		logItem "Slack response:${NL}$(<$o)"
 
