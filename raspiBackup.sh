@@ -4018,10 +4018,16 @@ function sendTelegramMessage() { # message html(yes/no)
 
 		if [[ -z $2 ]]; then
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
-			local rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
+			local rsp
+			# SC2086: Double quote to prevent globbing and word splitting.
+			# shellcheck disable=SC2086
+			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
 		else
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
-			local rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
+			local rsp
+			# SC2086: Double quote to prevent globbing and word splitting.
+			# shellcheck disable=SC2086
+			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 		fi
 		local curlRC=$?
 
@@ -4131,10 +4137,13 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			prio="$PUSHOVER_PRIORITY_SUCCESS"
 		fi
 		
-		local o=$(mktemp)
+		local o
+		o=$(mktemp)
 
-		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
-		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+		local msg
+		msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		local msgEnd
+		msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
 
 		[[ -n "$msgEnd" ]] && msg="$msgEnd"
 
@@ -4151,16 +4160,18 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				--form-string "title=$1"\
 				--form-string "sound=$sound")
 						
-		logItem "Pushover curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
+		logItem "Pushover curl call: ${cmd[*]}"
+		local httpCode
+		httpCode="$(curl -s -w %\{http_code\} -o "$o" "${cmd[@]}" $PUSHOVER_URL)"
 
 		local curlRC=$?
-		logItem "Pushover response:${NL}$(<$o)"
+		logItem "Pushover response:${NL}$(<"$o")"
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			local ok=$(jq .status "$o")
+			local ok
+			ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
@@ -4212,9 +4223,10 @@ function sendSlackMessage() { # message 0/1->success/failure
 
 		logEntry "$1"
 
-		local msg_json statusMsg
+		local msg_json statusMsg 
 		
-		local o=$(mktemp)
+		local o
+		o=$(mktemp)
 
 		if [[ -n $2 && "$2" == "1" ]]; then
 			statusMsg="${SLACK_EMOJI_FAILED}$1"
@@ -4222,8 +4234,10 @@ function sendSlackMessage() { # message 0/1->success/failure
 			statusMsg="${SLACK_EMOJI_OK}$1"
 		fi
 
-		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
-		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+		local msg
+		msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		local msgEnd
+		msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
 
 		[[ -n "$msgEnd" ]] && msg="$msgEnd"
 
@@ -4249,22 +4263,24 @@ EOF
 		cmd+=(-H 'Content-type: application/json')
 		cmd+=(--data "$msg_json")
 		
-		logItem "Slack curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
+		logItem "Slack curl call: ${cmd[*]})"
+		local httpCode
+		httpCode="$(curl -s -w %\{http_code\} -o "$o" "${cmd[@]}" $SLACK_WEBHOOK_URL)"
 		local curlRC=$?
-		logItem "Slack response:${NL}$(<$o)"
+		logItem "Slack response:${NL}$(<$"o")"
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			if [[ "ok" == $(<$o) ]]; then
+			if [[ "ok" == "$(<"$o")" ]]; then
 				logItem "Message sent"
 				if [[ -n $2 ]]; then	# write message only for html, not for messages
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
 				fi
 			else
 				logItem "Error sending msg: $rsp"
-				local error_description="$(<$o)"
+				local error_description
+				error_description="$(<$"o")"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
 			fi
 		fi
@@ -4278,7 +4294,7 @@ function sendEMail() { # content subject
 
 	logEntry
 
-	if [[ -n "$EMAIL" && rc != $RC_CTRLC ]]; then
+	if [[ -n "$EMAIL" && rc != "$RC_CTRLC" ]]; then
 		local attach content subject
 
 		local attach=""
@@ -4315,11 +4331,11 @@ function sendEMail() { # content subject
 				if [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_SUBJECT" ]]; then
 					contentType="${NL}MIME-Version: 1.0${NL}Content-Type: text/html; charset=utf-8"
 				elif [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_OPTION" ]]; then
-					coloringOption='-a "Content-Type: text/html"'
+					coloringOption=(-a "Content-Type: text/html")
 				else
 					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
 				fi
-				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: "$subject"${NL}coloring: ${coloringOption[@]}"
+				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: $subject${NL}coloring: ${coloringOption[*]}"
 			fi
 		fi
 
@@ -4345,27 +4361,30 @@ function sendEMail() { # content subject
 			logItem "eMail: $EMAIL"
 			logItem "eMail Program: $EMAIL_PROGRAM"
 			logItem "Subject: ${subject[0]}"
-			logItem "ColoringOption: ${coloringOption[@]}"
+			logItem "ColoringOption: ${coloringOption[*]}"
 			logItem "ContentType: $contentType"
 			logItem "Parms: $EMAIL_PARMS"
 
 			local rc
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
-					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
-					"$EMAIL_PROGRAM" ${coloringOption[@]} $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
+					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" "$attach" $EMAIL <<< "\"$content\""
+					# SC2068: Double quote array expansions to avoid re-splitting elements.
+					# SC2090: Quotes/backslashes in this variable will not be respected.
+					# shellcheck disable=SC2068,SC2090
+					"$EMAIL_PROGRAM" ${coloringOption[@]} $EMAIL_PARMS -s "$subject" "$attach" "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				$EMAIL_SENDEMAIL_PROGRAM)
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u "$subject" $attach -t $EMAIL"
-					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" $attach -t "$EMAIL"
+					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u \"$subject\" $attach -t $EMAIL"
+					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" "$attach" -t "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				$EMAIL_SSMTP_PROGRAM|$EMAIL_MSMTP_PROGRAM)
 					local msmtp_default=""
-					if [[ $EMAIL_PROGRAM == $EMAIL_MSMTP_PROGRAM ]]; then
+					if [[ $EMAIL_PROGRAM == "$EMAIL_MSMTP_PROGRAM" ]]; then
 						msmtp_default="-a default"
 					fi
 					if (( $APPEND_LOG )); then
@@ -4377,7 +4396,7 @@ function sendEMail() { # content subject
 						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
 						logItem "Sendig email with s/msmtp"
 						logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
-						echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
+						echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" "$msmtp_default" "$EMAIL"
 						rc=$?
 						logItem "$EMAIL_PROGRAM: RC: $rc"
 					fi
@@ -4406,7 +4425,7 @@ function cleanupBackupDirectory() {
 
 	logEntry
 
-	logCommand "ls -la "$BACKUPTARGET_DIR""
+	logCommand "ls -la $BACKUPTARGET_DIR"
 
 	if (( $rc != 0 )); then
 
@@ -4415,7 +4434,7 @@ function cleanupBackupDirectory() {
 				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
 			fi
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
-			rm -rfd $BACKUPTARGET_DIR # delete incomplete backupdir
+			rm -rfd "$BACKUPTARGET_DIR" # delete incomplete backupdir
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_DIR" "$rmrc"
@@ -4451,7 +4470,8 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 16 )); then
-		local m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		local m
+		m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -4555,44 +4575,45 @@ function masqueradeSensitiveInfoInLog() {
 function masqueradeNonlocalIPs() {
 
 	local masq=1
-	local f=$(mktemp)
+	local f
+	f="$(mktemp)"
 
-	cp $1 $f
+	cp "$1" "$f"
 
 	while (( $masq )); do
 
 		masq=0
 
-		cat $f | while read line; do
-				if [[ $line =~ ([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3}) ]]; then
-					local n1=${BASH_REMATCH[1]}
-					local n2=${BASH_REMATCH[2]}
-					local n3=${BASH_REMATCH[3]}
-					local n4=${BASH_REMATCH[4]}
-					local matchedIP="$n1.$n2.$n3.$n4"
+		while read -r line; do
+			if [[ $line =~ ([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3}) ]]; then
+				local n1=${BASH_REMATCH[1]}
+				local n2=${BASH_REMATCH[2]}
+				local n3=${BASH_REMATCH[3]}
+				local n4=${BASH_REMATCH[4]}
+				local matchedIP="$n1.$n2.$n3.$n4"
 
 #					strip leading 0s which will create errors in following == comparison
 #					because numbers will be interpreted as octal values by bash and 8s and 9s are invalid octal numbers
-					n1="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n1")"
-					n2="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n2")"
-					n3="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n3")"
-					n4="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n4")"
+				n1="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n1")"
+				n2="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n2")"
+				n3="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n3")"
+				n4="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n4")"
 
-					local masquip="%%%.%%%.$n3.$n4"
+				local masquip="%%%.%%%.$n3.$n4"
 
-					(( $n1 == 192 && $n2 == 168 )) \
-						|| (( $n1 == 10 )) \
-						|| (( $n1 == 127 )) \
-						|| (( $n1 == 0 )) \
-						|| (( $n1 == 255 )) \
-						|| ( (( $n1 == 172 )) && [[ $line =~ 172\.(1[6-9]|2[1-9]|3[0-1]) ]] ) && continue
+				(( $n1 == 192 && $n2 == 168 )) \
+					|| (( $n1 == 10 )) \
+					|| (( $n1 == 127 )) \
+					|| (( $n1 == 0 )) \
+					|| (( $n1 == 255 )) \
+					|| ( (( $n1 == 172 )) && [[ $line =~ 172\.(1[6-9]|2[1-9]|3[0-1]) ]] ) && continue
 
-					sed -i "s/$matchedIP/$masquip/g" "$1"
-					masq=1
-				fi
-		done
+				sed -i "s/$matchedIP/$masquip/g" "$1"
+				masq=1
+			fi
+		done < "$f"
 	done
-	rm $f
+	rm "$f"
 }
 
 function cleanupStartup() { # trap
@@ -4656,9 +4677,9 @@ function cleanup() { # trap
 	CLEANUP_RC=$rc
 
 	if (( $RESTORE )); then
-		cleanupRestore $1
+		cleanupRestore "$1"
 	else
-		cleanupBackup $1
+		cleanupBackup "$1"
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
 			if (( \
 				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
@@ -4695,7 +4716,7 @@ function cleanup() { # trap
 			fi
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
-			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
+			logger -t "$MYNAME" "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 			if (( ! $RESTORE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
@@ -4716,7 +4737,7 @@ function cleanup() { # trap
 					fi
 				fi
 				if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR "$HOSTNAME")
 					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
