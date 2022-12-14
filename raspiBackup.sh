@@ -2461,7 +2461,7 @@ function ignoreErrorRC() { # rc errors_to_ignore
 	if (( $rc != 0 )); then
 		for i in ${@:2}; do
 			if (( $i == $rc )); then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
 				rc=0
 				break
 			fi
@@ -4138,8 +4138,8 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				--form-string "sound=$sound")
 						
 		logItem "Pushover curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
-
+		local httpCode
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
 		local curlRC=$?
 		logItem "Pushover response:${NL}$(<$o)"
 
@@ -4236,7 +4236,8 @@ EOF
 		cmd+=(--data "$msg_json")
 		
 		logItem "Slack curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
+		local httpCode
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
 		local curlRC=$?
 		logItem "Slack response:${NL}$(<$o)"
 
@@ -5144,7 +5145,7 @@ function partitionLayoutBackup() {
 		sfdisk -d $BOOT_DEVICENAME > "$SF_FILE" 2>>$LOG_FILE
 		local rc=$?
 		if [ $rc != 0 ]; then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
 			exitError $RC_COLLECT_PARTITIONS_FAILED
 		fi
 		logItem "sfdisk"
@@ -5155,7 +5156,7 @@ function partitionLayoutBackup() {
 		blkid > "$BLKID_FILE"
 		local rc=$?
 		if [ $rc != 0 ]; then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "blkid" "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "blkid" "$rc"
 			exitError $RC_COLLECT_PARTITIONS_FAILED
 		fi
 		logItem "blkid"
@@ -5166,7 +5167,7 @@ function partitionLayoutBackup() {
 		parted -m $BOOT_DEVICENAME print > "$PARTED_FILE"
 		local rc=$?
 		if [ $rc != 0 ]; then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "parted" "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "parted" "$rc"
 			exitError $RC_COLLECT_PARTITIONS_FAILED
 		fi
 		logItem "parted"
@@ -5177,7 +5178,7 @@ function partitionLayoutBackup() {
 		fdisk -l $BOOT_DEVICENAME > "$FDISK_FILE"
 		local rc=$?
 		if [ $rc != 0 ] ; then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "fdisk" "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "fdisk" "$rc"
 			exitError $RC_COLLECT_PARTITIONS_FAILED
 		fi
 		logItem "fdisk"
@@ -5648,7 +5649,7 @@ function restore() {
 				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
 				rc=$?
 				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
 				fi
 
@@ -5713,7 +5714,7 @@ function restore() {
 					sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
 					rc=$?
 					if (( $rc )); then
-						writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 						exitError $RC_CREATE_PARTITIONS_FAILED
 					fi
 
@@ -6866,7 +6867,7 @@ function doitBackup() {
 	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
 		local invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACKOVER_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
@@ -7312,14 +7313,14 @@ function restorePartitionBasedBackup() {
 		logItem "Error: $error"
 		rm "$tmp" &>/dev/null
 		if [ $rc != 0 ]; then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "$error"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "$error"
 			exitError $RC_CREATE_PARTITIONS_FAILED
 		fi
 
 		waitForPartitionDefsChanged
 
 	else
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_SKIPPING_CREATING_PARTITIONS
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_CREATING_PARTITIONS
 	fi
 
 	if [[ "${RESTOREFILE: -1}" != "/" ]]; then
