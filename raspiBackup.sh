@@ -5861,17 +5861,17 @@ function restore() {
 			echo $(date -u +"%Y-%m-%d %T") > $MNT_POINT/etc/fake-hwclock.data
 
 			logItem "Force fsck on reboot"
-			touch $MNT_POINT/forcefsck
+			touch "$MNT_POINT"/forcefsck
 
 			logCommand "parted -s $RESTORE_DEVICE print"
 
-			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk[0-9]+" || $RESTORE_DEVICE =~ "/dev/loop[0-9]+" || $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" ]]; then
-				ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
+			if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9]+ || $RESTORE_DEVICE =~ /dev/loop[0-9]+ || $RESTORE_DEVICE =~ /dev/nvme[0-9]+n[0-9]+ ]]; then
+				ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< "$ROOT_PARTITION")
 			else
-				ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
+				ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< "$ROOT_PARTITION")
 			fi
 
-			if [[ $ROOT_DEVICE != $RESTORE_DEVICE ]]; then
+			if [[ "$ROOT_DEVICE" != "$RESTORE_DEVICE" ]]; then
 				logCommand "parted -s $ROOT_DEVICE print"
 			fi
 
@@ -5882,7 +5882,7 @@ function restore() {
 
 	if isMounted $MNT_POINT; then
 		logItem "Umount $MNT_POINT"
-		umount $MNT_POINT &>> "$LOG_FILE"
+		umount "$MNT_POINT" &>> "$LOG_FILE"
 	fi
 
 	logSystemDiskState
@@ -5893,37 +5893,47 @@ function restore() {
 
 function applyBackupStrategy() {
 
+	# SC2153: Possible misspelling: BACKUP_TARGETDIR may not be assigned, but BACKUPTARGET_DIR is.
+	# shellcheck disable=SC2153
 	logEntry "$BACKUP_TARGETDIR"
 
 	if (( $SMART_RECYCLE )); then
 
 		local dir_to_delete dir_to_keep
 
-		local p="${SMART_RECYCLE_PARMS[@]}"
-		logItem "SR Parms: $p"
+		logItem "SR Parms: $SMART_RECYCLE_PARMS[*]"
 		SR_DAILY="${SMART_RECYCLE_PARMS[0]}"
 		SR_WEEKLY="${SMART_RECYCLE_PARMS[1]}"
 		SR_MONTHLY="${SMART_RECYCLE_PARMS[2]}"
 		SR_YEARLY="${SMART_RECYCLE_PARMS[3]}"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_APPLYING_BACKUP_STRATEGY $SR_DAILY $SR_WEEKLY $SR_MONTHLY $SR_YEARLY
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_APPLYING_BACKUP_STRATEGY "$SR_DAILY" "$SR_WEEKLY" "$SR_MONTHLY" "$SR_YEARLY"
 
 		logCommand "ls -d $BACKUPPATH/*"
 
-		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
-		local numKeptBackups="$(countLines "$keptBackups")"
+		local keptBackups
+		keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
+		local numKeptBackups
+		numKeptBackups="$(countLines "$keptBackups")"
 		logItem "Keptbackups $numKeptBackups: $keptBackups"
 
-		local tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
-		local numTobeDeletedBackups="$(countLines "$tobeDeletedBackups")"
+		local tobeDeletedBackups
+		tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
+		local numTobeDeletedBackups
+		numTobeDeletedBackups="$(countLines "$tobeDeletedBackups")"
 		logItem "TobeDeletedBackups $numTobeDeletedBackups: $tobeDeletedBackups"
 
 		if [[ -n "$tobeDeletedBackups" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILES "$numTobeDeletedBackups" "$numKeptBackups"
-			echo "$tobeDeletedBackups" | while read dir_to_delete; do
+			echo "$tobeDeletedBackups" | while read -r dir_to_delete; do
 				logItem "Recycling $BACKUPTARGET_ROOT/${dir_to_delete}"
 				if (( ! $SMART_RECYCLE_DRYRUN && ( ! $FAKE || $REGRESSION_TEST ) )); then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
-					[[ -n $dir_to_delete ]] && rm -rf $BACKUPTARGET_ROOT/${dir_to_delete} # guard against whole backup dir deletion
+					if [[ -z $BACKUPTARGET_ROOT ]]; then
+						assertionFailed $LINENO "BACKUPTARGET_ROOT empty"
+					fi
+					if [[ -n $dir_to_delete ]]; then
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
+						rm -rf "${BACKUPTARGET_ROOT:?}"/"$dir_to_delete" # guard against whole backup dir deletion
+					fi
 				else
 					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
 				fi
@@ -5933,7 +5943,7 @@ function applyBackupStrategy() {
 		fi
 
 		if (( $SMART_RECYCLE_DRYRUN || $FAKE )); then
-			echo "$keptBackups" | while read dir_to_keep; do
+			echo "$keptBackups" | while read -r dir_to_keep; do
 				[[ -n $dir_to_keep ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_KEPT "$BACKUPTARGET_ROOT/${dir_to_keep}"
 			done
 		fi
@@ -5958,7 +5968,9 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
+				# SC2010: Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
+				# shellcheck disable=SC2010
+				ls -d "${HOSTNAME}"-"${BACKUPTYPE}"-backup-* 2>>$LOG_FILE | grep -vE "_" | head -n -"$keepBackups" | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
@@ -5977,7 +5989,7 @@ function applyBackupStrategy() {
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
 				
-				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
+				for imgFile in *.img *.mbr *.sfdisk *.log *.msg; do
 
 					if [[ $imgFile =~ $regexDD ]]; then
 						logItem "Skipping DD file $imgFile"
@@ -5999,7 +6011,9 @@ function applyBackupStrategy() {
 					fi
 					local file
 					# SC2010: Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-					# shellcheck disable=SC2010
+					# SC2035: Use ./*glob* or -- *glob* so names with dashes won't become options.
+					# SC2086: Double quote to prevent globbing and word splitting.
+					# shellcheck disable=SC2010,SC2035,SC2086
 					file=$(ls -d *-*-backup-$date* 2>/dev/null| grep -E -v "\.(log|msg|img|mbr|sfdisk)$");
 
 					if [[ -n "$file" ]];  then
