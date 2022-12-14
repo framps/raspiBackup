@@ -66,7 +66,9 @@ DEFAULT_PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
 if [[ -e /bin/grep ]]; then
 	pathElements=(${PATH//:/ })
 	for p in $DEFAULT_PATHES; do
-		if [[ ! " ${pathElements[@]} " =~ " ${p} " ]]; then
+		# SC2076: Don't quote right-hand side of =~, it'll match literally rather than as a regex.
+		# shellcheck disable=SC2076
+		if [[ ! " ${pathElements[*]} " =~ " ${p} " ]]; then
 			[[ -z $PATH ]] && PATH=$p || PATH="$p:$PATH"
 		fi
 	done
@@ -1911,6 +1913,8 @@ declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
 function trapWithArg() { # function trap1 trap2 ... trapn
 	logEntry "$*"
+	# SC2155: Declare and assign separately to avoid masking return values.
+	# shellcheck disable=SC2155
 	local func="$1" ; shift
 	for sig ; do
 		trap "$func $sig" "$sig"
@@ -1929,7 +1933,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	msgVar="MSG_${LANGUAGE}"
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]]; then
-		msgVar="$msgVar[$1]"
+		msgVar="${msgVar[$1]}"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
 			msg="${MSG_EN[$1]}" # fallback into english
@@ -1985,17 +1989,17 @@ function getMessage() { # messageNumber parm1 parm2
 }
 
 function logItem() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$@"
+	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$*"
 }
 
 function logEntry() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $@"
+	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $*"
 	(( LOG_INDENT+=LOG_INDENT_INC ))
 }
 
 function logExit() { # message
 	(( LOG_INDENT-=LOG_INDENT_INC ))
-	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $@"
+	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $*"
 }
 
 function logSystem() {
@@ -2010,9 +2014,11 @@ function logSystem() {
 
 function logCommand() { # command
 	(( LOG_INDENT+=LOG_INDENT_INC ))
-	local callerLineNo=${BASH_LINENO[0]}
+	local callerLineNo
+	callerLineNo=${BASH_LINENO[0]}
 	logIntoOutput $LOG_TYPE_DEBUG "***" $callerLineNo "$1"
-	local r="$($1 2>&1)"
+	local r
+	r="$($1 2>&1)"
 	logIntoOutput $LOG_TYPE_DEBUG "   " $callerLineNo "$r"
 	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
@@ -2034,6 +2040,9 @@ function logIntoOutput() { # logtype prefix lineno message
 
 	[[ $LOG_DEBUG != $LOG_LEVEL ]] && return
 
+	# SC2155: Declare and assign separately to avoid masking return values.
+	# shellcheck disable=SC2155
+	{
 	local type="${LOG_TYPEs[$1]}"
 	shift
 	local prefix="$1"
@@ -2044,6 +2053,7 @@ function logIntoOutput() { # logtype prefix lineno message
 	local dte=$(date +%Y%m%d-%H%M%S)
 	local indent=$(printf '%*s' "$LOG_INDENT")
 	local m
+	}
 
 	local line
 	while IFS= read -r line; do
@@ -2079,8 +2089,10 @@ function logEnable() {
 	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 	logItem "$GIT_CODEVERSION"
-	local sep="$(getMessage $MSG_SENSITIVE_SEPARATOR)"
-	local warn="$(getMessage $MSG_SENSITIVE_WARNING)"
+	local sep
+	sep="$(getMessage $MSG_SENSITIVE_SEPARATOR)"
+	local warn
+	warn="$(getMessage $MSG_SENSITIVE_WARNING)"
 	logItem "$sep"
 	logItem "$warn"
 	logItem "$sep"
@@ -2381,18 +2393,23 @@ function createBackupVersion() { # file
 	DIR=$(dirname "${file}")
 
 	if [[ -f "$file.bak" ]]; then														# .bak exists already
-		local versions="$(ls $file\.*\.* -1 2>/dev/null)"
+		local versions
+		versions="$(ls $file\.*\.* -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
 		else
-			local last="$basename $(tail -n 1 <<< "$versions")" 			# extract highest version number
-			local lastFile="$(basename "$last")"
-			local lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
+			local last=
+			last="$basename $(tail -n 1 <<< "$versions")" 			# extract highest version number
+			local lastFile
+			lastFile="$(basename "$last")"
+			local lastVersionNumber
+			lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
 			(( versionNumber = lastVersionNumber+1 ))							# use next version number
 		fi
 
-		local backupFile="$file.${versionNumber}.bak"
+		local backupFile
+		backupFile="$file.${versionNumber}.bak"
 		mv "$file.bak" "$backupFile"
 		(( $? )) && return 1
 	fi
@@ -2462,7 +2479,7 @@ function ignoreErrorRC() { # rc errors_to_ignore
 	logEntry
 	local rc="$1"
 	if (( $rc != 0 )); then
-		for i in ${@:2}; do
+		for i in "${@:2}"; do
 			if (( $i == $rc )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
 				rc=0
@@ -2588,7 +2605,7 @@ function logOptions() { # option state
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
-	logItem "COLOR_CODES="${COLOR_CODES[@]}""
+	logItem "COLOR_CODES="${COLOR_CODES[*]}""
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
  	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
@@ -3240,7 +3257,7 @@ function askYesNo() { # message message_parms
 	local yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
 	local addtlMsg=0
 
-	if [[ $# > 1 ]]; then
+	if (( $# > 1 )); then
 		local m="$1"
 		shift
 		addtlMsg=1
@@ -3653,11 +3670,13 @@ function getFsType() { # file or path
 
 	logEntry "$1"
 
-	local mp="$(findMountPath "$1")"
+	local mp
+	mp="$(findMountPath "$1")"
 	logItem "Mountpoint: $mp"
 
 	local dev fstype r
-	local df="$(df -T | grep "$mp")"
+	local df
+	df="$(df -T | grep "$mp")"
 	logItem "df -T: $df"
 	read dev fstype r <<< "$df"
 	echo $fstype
@@ -3951,7 +3970,7 @@ COLOR_OFF=("</span><br/>" "\e[0m")
 function colorOn() { # colortype color
 	local on="${COLOR_ON[$1]}"
 	local color="${COLOR_CODES[$2]}"
-	color=($color)
+	color=( "$color" )
 	# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
 	# shellcheck disable=SC2059
 	printf -v r "$on" "${color[$1]}"
@@ -5373,8 +5392,12 @@ function backupTar() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING "$BACKUPTYPE" "${target//\\/}"
 
+	# SC2155: Declare and assign separately to avoid masking return values.
+	# shellcheck disable=SC2155
+	{
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
+        }
 
 	cmd="tar \
 		$TAR_BACKUP_OPTIONS \
@@ -5527,9 +5550,13 @@ function backupRsync() { # partition number (for partition based backup)
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING "$BACKUPTYPE" "${target//\\/}"
 
+	# SC2155: Declare and assign separately to avoid masking return values.
+	# shellcheck disable=SC2155
+	{
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
-
+	}
+	
 	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
 	local fs
 	fs="$(getFsType "$BACKUPPATH")"
@@ -5756,6 +5783,8 @@ function restore() {
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
 						local sourceValues
+						# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+						# shellcheck disable=SC2207
 						sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
 						if [[ ${#sourceValues[@]} != 4 ]]; then
 							logCommand "cat $SF_FILE"
@@ -5821,7 +5850,8 @@ function restore() {
 				logItem "Restoring boot partition from $DD_FILE"
 				local progressFlag=""
 				(( $PROGRESS && $INTERACTIVE )) && progressFlag="status=progress"
-				local cmd="dd if=$DD_FILE $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
+				local cmd
+				cmd="dd if=$DD_FILE $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
 				executeDD "$cmd"
 				rc=$?
 			else
@@ -5831,10 +5861,11 @@ function restore() {
 				if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 					assertionFailed $LINENO "push to $MNT_POINT failed"
 				fi
+				local cmd
 				if (( $PROGRESS && $INTERACTIVE )); then
-					local cmd="pv -f $TAR_FILE | tar -xf -"
+					cmd="pv -f $TAR_FILE | tar -xf -"
 				else
-					local cmd="tar -xf  \"$TAR_FILE\""
+					cmd="tar -xf  \"$TAR_FILE\""
 				fi
 				executeTar "$cmd"
 				rc=$?
@@ -5870,16 +5901,18 @@ function restore() {
 			case $BACKUPTYPE in
 
 				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
-					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
+					local archiveFlags
+					archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
 					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 						assertionFailed $LINENO "push to $MNT_POINT failed"
 					fi
 					[[ $BACKUPTYPE == "$BACKUPTYPE_TGZ" ]] && zip="z" || zip=""
+					local cmd
 					if (( $PROGRESS && $INTERACTIVE )); then
-						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
+						cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						local cmd="tar --exclude /boot ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
+						cmd="tar --exclude /boot ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
 					fi
 					executeTar "$cmd"
 					rc=$?
@@ -5887,11 +5920,13 @@ function restore() {
 					;;
 
 				$BACKUPTYPE_RSYNC)
-					local excludePattern="--exclude=/$HOSTNAME-backup.*"
+					local excludePattern
+					excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
 					local progressFlag=""
 					(( $PROGRESS && $INTERACTIVE )) && progressFlag="--info=progress2"
-					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					local cmd
+					cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
 					executeRsync "$cmd"
 					rc=$?
 					;;
@@ -5962,7 +5997,7 @@ function applyBackupStrategy() {
 
 		local dir_to_delete dir_to_keep
 
-		logItem "SR Parms: $SMART_RECYCLE_PARMS[*]"
+		logItem "SR Parms: ${SMART_RECYCLE_PARMS[*]}"
 		SR_DAILY="${SMART_RECYCLE_PARMS[0]}"
 		SR_WEEKLY="${SMART_RECYCLE_PARMS[1]}"
 		SR_MONTHLY="${SMART_RECYCLE_PARMS[2]}"
@@ -6165,6 +6200,8 @@ function backup() {
 	fi
 	END_TIME=$(date +%s)
 
+	# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	# shellcheck disable=SC2207
 	BACKUP_TIME=( $(duration "$START_TIME" "$END_TIME") )
 	logItem "Backuptime: ${BACKUP_TIME[*]}"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
@@ -6391,9 +6428,14 @@ function collectPartitions() {
 #/dev/mmcblk0p3 : start=    21104640, size=    10485760, type=83
 #/dev/mmcblk0p4 : start=    31590400, size=    29161472, type=83
 
+	# SC1087: Use braces when expanding arrays, e.g. ${array[idx]} (or ${var}[.. to quiet).
+	# shellcheck disable=SC1087
 	local regexPartitionLine="($BOOT_DEVICENAME[a-z0-9]+).*start[^0-9]+([0-9]+).*size[^0-9]+([0-9]+).*(Id|type)=[ ]?([^,]+)"
 
 # /dev/mmvblk0p1 on /media/Log1 type ext2 (rw,nosuid,nodev,uhelper=udisks)
+
+	# SC1087: Use braces when expanding arrays, e.g. ${array[idx]} (or ${var}[.. to quiet).
+	# shellcheck disable=SC1087
 	local regexMountLine="($BOOT_DEVICENAME[a-z0-9]+).*on ([^ ]+)"
 
 	logItem "PARTITIONS_TO_BACKUP - 1: ${PARTITIONS_TO_BACKUP[*]}"
@@ -6405,7 +6447,7 @@ function collectPartitions() {
 	else
 		# SC2128: Expanding an array without an index only gives the first element.
 		# shellcheck disable=SC2128
-		PARTITIONS_TO_BACKUP=( $PARTITIONS_TO_BACKUP )
+		PARTITIONS_TO_BACKUP=( "$PARTITIONS_TO_BACKUP" )
 		backupAllPartitions=0
 	fi
 
@@ -6711,9 +6753,13 @@ function inspect4Backup() {
 				fi
 			fi
 
+			# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+			# shellcheck disable=SC2207
+			{
 			boot=( $(deviceInfo "$bootPartition") )
 			root=( $(deviceInfo "$rootPartition") )
-
+			}
+			
 			logItem "boot: ${boot[*]}"
 			logItem "root: ${root[*]}"
 
@@ -8116,6 +8162,8 @@ function updateRestoreReminder() {
 		echo "$(date +%Y%m) 0" > "$reminder_file"
 		return
 	fi
+	# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	# shellcheck disable=SC2207
 	rf=( $(<"$reminder_file") )
 	local diffMonths
 	diffMonths=$(calculateMonthDiff "$now" "${rf[0]}" )
@@ -8584,7 +8632,7 @@ function SR_listYearlyBackups() { # directory
 			# date +%Y -d "0 year ago" -> 2019
 			local d
 			d=$(date +%Y -d "${i} year ago")
-			# shellcheck disable=SC2010,SC2046
+			# shellcheck disable=SC2010,SC2046,SC1087
 			ls -1 "$1" | grep -E "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
@@ -8602,7 +8650,7 @@ function SR_listMonthlyBackups() { # directory
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			local d
 			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			# shellcheck disable=SC2010,SC2046
+			# shellcheck disable=SC2010,SC2046,SC1087
 			ls -1 "$1" | grep -E "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
 		done
 	fi
