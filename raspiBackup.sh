@@ -3202,7 +3202,7 @@ function downloadFile() { # url, targetFileName
 		local file="$2"
 		local f=$(mktemp)
 		local httpCode rc
-		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %\{http_code\} -L "$url" 2>>$LOG_FILE)
 		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 
@@ -3730,11 +3730,13 @@ function readConfigParameters() {
 	ETC_CONFIG_FILE_INCLUDED=0
 	if [ -f "$ETC_CONFIG_FILE" ]; then
 		set -e
-		. "$ETC_CONFIG_FILE"
+		# SC1090: Can't follow non-constant source. Use a directive to specify location.
+		# shellcheck disable=SC1090
+		source "$ETC_CONFIG_FILE"
 		set +e
 		ETC_CONFIG_FILE_INCLUDED=1
 		ETC_CONFIG_FILE_VERSION="$(extractVersionFromFile "$ETC_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-		logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' $ETC_CONFIG_FILE)"
+		logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$ETC_CONFIG_FILE")"
 	fi
 
 	# Override default parms with parms in user config file
@@ -3742,11 +3744,13 @@ function readConfigParameters() {
 	HOME_CONFIG_FILE_INCLUDED=0
 	if [ -f "$HOME_CONFIG_FILE" ]; then
 		set -e
-		. "$HOME_CONFIG_FILE"
+		# SC1090: Can't follow non-constant source. Use a directive to specify location.
+		# shellcheck disable=SC1090
+		source "$HOME_CONFIG_FILE"
 		set +e
 		HOME_CONFIG_FILE_INCLUDED=1
 		HOME_CONFIG_FILE_VERSION="$(extractVersionFromFile "$HOME_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-		logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' $HOME_CONFIG_FILE)"
+		logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$HOME_CONFIG_FILE")"
 
 	fi
 
@@ -3756,11 +3760,13 @@ function readConfigParameters() {
 	if [[ "$HOME_CONFIG_FILE" != "$CURRENTDIR_CONFIG_FILE" ]]; then
 		if [ -f "$CURRENTDIR_CONFIG_FILE" ]; then
 			set -e
-			. "$CURRENTDIR_CONFIG_FILE"
+			# SC1090: Can't follow non-constant source. Use a directive to specify location.
+			# shellcheck disable=SC1090
+			source "$CURRENTDIR_CONFIG_FILE"
 			set +e
 			CURRENTDIR_CONFIG_FILE_INCLUDED=1
 			CURRENTDIR_CONFIG_FILE_VERSION="$(extractVersionFromFile "$CURRENTDIR_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-			logItem "Read config ${CURRENTDIR_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' $CURRENTDIR_CONFIG_FILE)"
+			logItem "Read config ${CURRENTDIR_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CURRENTDIR_CONFIG_FILE")"
 		fi
 	fi
 
@@ -3774,7 +3780,7 @@ function setupEnvironment() {
 	if (( ! $RESTORE )); then
 		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
-			if [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_TAR ]]; then
+			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
 				BACKUPTYPE=${Z_TYPE_MAPPING[${BACKUPTYPE}]}	# tar-> tgz and dd -> ddz
 			else
 				ZIP_BACKUP_TYPE_INVALID=1
@@ -3844,8 +3850,8 @@ function deployMyself() {
 
 	for hostLogon in $DEPLOYMENT_HOSTS; do
 
-		host=$(cut -d '@' -f 2 <<< $hostLogon)
-		user=$(cut -d '@' -f 1 <<< $hostLogon)
+		host=$(cut -d '@' -f 2 <<< "$hostLogon")
+		user=$(cut -d '@' -f 1 <<< "$hostLogon")
 
 		if [[ -z "$host" || -z "$user" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYMENT_PARMS_ERROR
@@ -3854,11 +3860,13 @@ function deployMyself() {
 
 		if ping -c 1 $host &>/dev/null; then
 			if [[ $user == "root" ]]; then
-				scp -p $MYSELF $hostLogon:/usr/local/bin > /dev/null
+				scp -p "$MYSELF" $hostLogon:/usr/local/bin > /dev/null
 			else
-				scp -p $MYSELF $hostLogon:/home/$user > /dev/null
+				scp -p "$MYSELF" $hostLogon:/home/$user > /dev/null
 			fi
-			if [[ $? == 0 ]]; then
+			# SC2181: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
+			# shellcheck disable=SC2181
+			if (( $? == 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYED_HOST "$host" "$user"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYMENT_FAILED "$host" "$user"
@@ -3897,7 +3905,7 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 	local sumSize=0
 
 	local line
-	while IFS="" read line; do
+	while IFS="" read -r line; do
 		(( lineNo++ ))
 		if [[ -z $line ]]; then
 			continue
@@ -3920,7 +3928,7 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 			fi
 		fi
 
-	done < $file
+	done < "$file"
 
 	(( sumSize *= 512 ))
 
@@ -3937,13 +3945,15 @@ COLOR_ERROR=1
 COLOR_TYPE_HTML=0
 COLOR_TYPE_VT100=1
 
-COLOR_ON=("<span style="color:\%s">" "\e[1;%sm")
+COLOR_ON=("<span style=\"color:\%s\">" "\e[1;%sm")
 COLOR_OFF=("</span><br/>" "\e[0m")
 
 function colorOn() { # colortype color
 	local on="${COLOR_ON[$1]}"
 	local color="${COLOR_CODES[$2]}"
 	color=($color)
+	# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
+	# shellcheck disable=SC2059
 	printf -v r "$on" "${color[$1]}"
 	echo -e -n "$r"
 }
@@ -3964,14 +3974,14 @@ function colorAnnotation() { # colortype text
 	local line
 	while IFS= read -r line; do
 	  if [[ "$line" =~ RBK....W ]]; then
-			colorOn $colorType $COLOR_WARNING
+			colorOn "$colorType" "$COLOR_WARNING"
 			echo -n "$line"
-			colorOff $colorType
+			colorOff "$colorType"
 			echo
 		elif [[ "$line" =~ RBK....E ]]; then
-			colorOn $colorType $COLOR_ERROR
+			colorOn $colorType "$COLOR_ERROR"
 			echo -n "$line"
-			colorOff $colorType
+			colorOff "$colorType"
 			echo
 		else
 			if [[ $colorType == "$COLOR_TYPE_HTML" ]]; then
@@ -3989,7 +3999,8 @@ function sendTelegramDocument() { # filename
 		logEntry "$1"
 
 		logItem "Telegram curl call: curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE"
-		local rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
+		local rsp
+		rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
 		local curlRC=$?
 
 		if (( $curlRC )); then
@@ -4000,8 +4011,10 @@ function sendTelegramDocument() { # filename
 			if [[ $ok == "true" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_OK
 			else
-				local error_code="$(jq .error_code  <<< "$rsp")"
-				local error_description="$(jq .description <<< "$rsp")"
+				local error_code
+				error_code="$(jq .error_code  <<< "$rsp")"
+				local error_description
+				error_description="$(jq .description <<< "$rsp")"
 				logItem "Error sending msg: $rsp"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "$error_code" "$error_description"
 			fi
@@ -4017,17 +4030,21 @@ function sendTelegramMessage() { # message html(yes/no)
 		logEntry "$1"
 
 		if [[ -z $2 ]]; then
+			# SC2086: Double quote to prevent globbing and word splitting.
+			# shellcheck disable=SC2086
+			{
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
 			local rsp
+			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
+			}
+		else
 			# SC2086: Double quote to prevent globbing and word splitting.
 			# shellcheck disable=SC2086
-			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
-		else
+			{
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 			local rsp
-			# SC2086: Double quote to prevent globbing and word splitting.
-			# shellcheck disable=SC2086
 			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
+			}
 		fi
 		local curlRC=$?
 
@@ -4035,7 +4052,8 @@ function sendTelegramMessage() { # message html(yes/no)
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "N/A" "N/A"
 		else
 			#logItem "Telegram response:${NL}${rsp}"
-			local ok=$(jq .ok <<< "$rsp")
+			local ok
+			ok=$(jq .ok <<< "$rsp")
 			if [[ $ok == "true" ]]; then
 				logItem "Message sent"
 				if [[ -n $2 ]]; then	# write message only for html, not for messages
@@ -4151,7 +4169,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			msg="$(tail -c 1024 $MSG_FILE)"
 		fi
 				
-		local cmd=(--form-string message="$1")
+		local cmd=(--form-string "message=$1")
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
 				--form-string "priority=$prio"\
@@ -6629,9 +6647,8 @@ function inspect4Backup() {
 		logItem "Legacy boot discovery"
 
 		local d
-		# SC1090: Can't follow non-constant source. Use a directive to specify location.
 		# SC2044: For loops over find output are fragile. Use find -exec or a while read loop.
-		# shellcheck disable=SC1090,SC2044
+		# shellcheck disable=SC2044
 		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x "$d")" ] && echo "$d" && break; done)
 		logItem "part: $part"
 		local bootDeviceNumber
