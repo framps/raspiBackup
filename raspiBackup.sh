@@ -5073,10 +5073,12 @@ function bootPartitionBackup() {
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
-					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					local cmd
+					cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					executeTar "$cmd" 
 				else
-					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
+					local cmd
+					cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
 					executeDD "$cmd"
 				fi
 				rc=$?
@@ -5992,21 +5994,24 @@ function applyBackupStrategy() {
 					local date=${BASH_REMATCH[1]}
 					logItem "Extracted date: $date"
 
-					if [[ -z $date ]]; then
+					if [[ -z "$date" ]]; then
 						assert $LINENO "Unable to extract date from backup files"
 					fi
-					local file=$(ls -d *-*-backup-$date* 2>/dev/null| grep -E -v "\.(log|msg|img|mbr|sfdisk)$");
+					local file
+					# SC2010: Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
+					# shellcheck disable=SC2010
+					file=$(ls -d *-*-backup-$date* 2>/dev/null| grep -E -v "\.(log|msg|img|mbr|sfdisk)$");
 
-					if [[ -n $file ]];  then
+					if [[ -n "$file" ]];  then
 						logItem "Found backup for $imgFile"
 					else
 						logItem "Found NO backup for $imgFile - removing"
-						rm -f $imgFile &>>"$LOG_FILE"
+						rm -f "$imgFile" &>>"$LOG_FILE"
 					fi
 				done
 				popd > /dev/null
 
-				logItem "post - ls$NL$(ls -d $BACKUPPATH/* 2>/dev/null)"
+				logItem "post - ls$NL$(ls -d "$BACKUPPATH"/* 2>/dev/null)"
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ALL_BACKUPS_KEPT "$BACKUPTYPE"
@@ -6023,14 +6028,14 @@ function backup() {
 
 	executeBeforeStopServices
 	stopServices
-	callExtensions $PRE_BACKUP_EXTENSION "0"
+	callExtensions "$PRE_BACKUP_EXTENSION" "0"
 	rc=$?
 	PRE_BACKUP_EXTENSION_CALLED=1
 	if (( $rc )); then
 		exitError $RC_BACKUP_EXTENSION_FAILS
 	fi
 
-	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || (( $PARTITIONBASED_BACKUP )) ]]; then
+	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || (( $PARTITIONBASED_BACKUP )) ]]; then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_DIR"
 	else
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
@@ -6074,7 +6079,7 @@ function backup() {
 				esac
 
 				if [[ $rc != 0 ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR $BACKUPTYPE $rc
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR "$BACKUPTYPE" "$rc"
 					exitError $RC_NATIVE_BACKUP_FAILED
 				fi
 			else
@@ -6084,8 +6089,8 @@ function backup() {
 	fi
 	END_TIME=$(date +%s)
 
-	BACKUP_TIME=($(duration $START_TIME $END_TIME))
-	logItem "Backuptime: $BACKUP_TIME"
+	BACKUP_TIME=( $(duration "$START_TIME" "$END_TIME") )
+	logItem "Backuptime: ${BACKUP_TIME[*]}"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
 
 	logItem "Syncing"
@@ -6152,7 +6157,7 @@ function backupPartitions() {
 
 	local partition
 
-	logItem "PARTITIONS_TO_BACKUP: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
+	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[*]}"
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
@@ -6160,7 +6165,7 @@ function backupPartitions() {
 		partitionLayoutBackup
 	fi
 
-	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || $BACKUPTYPE == $BACKUPTYPE_TAR || $BACKUPTYPE == $BACKUPTYPE_TGZ ]]; then
+	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
 		mountSDPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
 
@@ -6168,15 +6173,17 @@ function backupPartitions() {
 
 		logItem "Processing partition $partition"
 
-		local fileSystem=$(getBackupPartitionFilesystem $partition)
-		local fileSystemSize=$(getBackupPartitionFilesystemSize $partition)
+		local fileSystem
+		fileSystem=$(getBackupPartitionFilesystem "$partition")
+		local fileSystemSize
+		fileSystemSize=$(getBackupPartitionFilesystemSize "$partition")
 
 		logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize"
 
 		if [[ -z $fileSystem ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" $fileSystemSize
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSize"
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PROCESSING_PARTITION "${BOOT_PARTITION_PREFIX}$partition" $fileSystemSize
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PROCESSING_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSize"
 
 			case "$BACKUPTYPE" in
 
@@ -6203,7 +6210,7 @@ function backupPartitions() {
 
 	done
 
-	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || $BACKUPTYPE == $BACKUPTYPE_TAR || $BACKUPTYPE == $BACKUPTYPE_TGZ ]]; then
+	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
 		umountSDPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
 
@@ -6249,16 +6256,20 @@ function getPartitionName() { # /etc/fstab first col
 
 	logEntry "$1"
 
-	local prfx="$(cut -f 1 -d '=' <<< $1)"
-	local id="$(cut -f 2 -d '=' <<< $1)"
+	# SC2155: Declare and assign separately to avoid masking return values.
+	# shellcheck disable=SC2155
+	{
+	local prfx="$(cut -f 1 -d '=' <<< "$1")"
+	local id="$(cut -f 2 -d '=' <<< "$1")"
 
 	local b="$(blkid)"
 
 	local match="$(grep "$prfx=\"$id\"" <<< "$b")"
 	local result="$1"
+	}
 
 	if [[ -n "$match" ]]; then
-		result="$(cut -f 1 -d ":" <<< $match)"
+		result="$(cut -f 1 -d ":" <<< "$match")"
 	fi
 
 	echo "$result"
@@ -6276,12 +6287,13 @@ function extractBootAndRootPartitionNames() {
 
 	logEntry
 
-	local pre="$(grep -E "^[^#]+\s(/|/boot)\s.*" /etc/fstab | xargs -I {} bash -c "echo {} | cut -f 1 -d ' '")"
+	local pre
+	pre="$(grep -E "^[^#]+\s(/|/boot)\s.*" /etc/fstab | xargs -I {} bash -c "echo {} | cut -f 1 -d ' '")"
 	logItem "$pre"
 	local p part
 	local result
-	for p in ${pre[@]}; do
-		part="$(getPartitionName $p)"
+	for p in "${pre[@]}"; do
+		part="$(getPartitionName "$p")"
 		result="$result $p $part"
 	done
 	echo "$result"
@@ -6308,14 +6320,16 @@ function collectPartitions() {
 # /dev/mmvblk0p1 on /media/Log1 type ext2 (rw,nosuid,nodev,uhelper=udisks)
 	local regexMountLine="($BOOT_DEVICENAME[a-z0-9]+).*on ([^ ]+)"
 
-	logItem "PARTITIONS_TO_BACKUP - 1: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
+	logItem "PARTITIONS_TO_BACKUP - 1: ${PARTITIONS_TO_BACKUP[*]}"
 
 	local backupAllPartitions
 	if [[ "$PARTITIONS_TO_BACKUP" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 		backupAllPartitions=1
 		PARTITIONS_TO_BACKUP=()
 	else
-		PARTITIONS_TO_BACKUP=($PARTITIONS_TO_BACKUP)
+		# SC2128: Expanding an array without an index only gives the first element.
+		# shellcheck disable=SC2128
+		PARTITIONS_TO_BACKUP=( $PARTITIONS_TO_BACKUP )
 		backupAllPartitions=0
 	fi
 
@@ -6323,28 +6337,27 @@ function collectPartitions() {
 
 	local mountLine partition size type
 	local line
-	while read line; do
+	while read -r line; do
 		if [[ $line =~ $regexPartitionLine ]]; then
 			partition=${BASH_REMATCH[1]}
 			size=${BASH_REMATCH[3]}
 			type=${BASH_REMATCH[5]}
 			logItem "partition: $partition - size: $size - type: $type"
-			if [[ $type != 5 && $type != 85 && $size > 0 ]]; then # skip empty and extended partitions
+			if (( $type != 5 && $type != 85 && $size > 0 )); then # skip empty and extended partitions
 				logItem "mount: $(mount)"
 				logItem "Partition: $partition"
-				mountLine=$(mount | grep $partition )
-				if ! (( $? )); then
+				if ! mountLine=$(mount | grep "$partition" ); then
 					logItem "mountline: $mountLine"
 					logItem "regexMountLIne: $regexMountLine"
 					if [[ $mountLine =~ $regexMountLine ]]; then
 						local mountPoint=${BASH_REMATCH[2]}
 						logItem "partition $partition mounted on $mountPoint"
-						mountPoints[$partition]=$mountPoint
+						mountPoints[$partition]="$mountPoint"
 					else
 						assertionFailed $LINENO "Unable to find mountpoint for $partition"
 					fi
 				else
-					if [[ $partition == $ROOT_PARTITION ]]; then
+					if [[ "$partition" == "$ROOT_PARTITION" ]]; then
 						mountPoints[$partition]="/"
 						logItem "partition $partition mounted on /"
 					else
@@ -6354,21 +6367,21 @@ function collectPartitions() {
 				fi
 
 				if (( $backupAllPartitions )); then
-					id=$(getPartitionNumber $partition)
+					id=$(getPartitionNumber "$partition")
 					logItem "Adding partition $id to list of partitions to backup"
 					PARTITIONS_TO_BACKUP["$id"]="$id"
 				fi
 			fi
 		fi
 
-	done < <(sfdisk -d $BOOT_DEVICENAME 2>>$LOG_FILE)
+	done < <(sfdisk -d "$BOOT_DEVICENAME" 2>>$LOG_FILE)
 
-	logItem "PARTITIONS_TO_BACKUP - 2: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
-	logItem "mountPoints: $(echo "${mountPoints[@]}")"
+	logItem "PARTITIONS_TO_BACKUP - 2: ${PARTITIONS_TO_BACKUP[*]}"
+	logItem "mountPoints: ${mountPoints[*]}"
 
-	if [[ ${#PARTITIONS_TO_BACKUP[@]} == 0 ]]; then
+	if (( ${#PARTITIONS_TO_BACKUP[@]} == 0 )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOPARTITIONS_TOBACKUP_FOUND
-		exitError $RC_
+		exitError $RC_MISC_ERROR
 	fi
 
 	logExit
@@ -6383,13 +6396,14 @@ function checksForPartitionBasedBackup() {
 
 	collectPartitions
 
-	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[@]}"
+	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[*]}"
 
 	SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX='^(ext[234]|fat(16|32)|btrfs|.*swap.*)$'
 
 	local error=0
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
-		local fileSystem=$(getPartitionBootFilesystem $partition)
+		local fileSystem
+		fileSystem="$(getPartitionBootFilesystem "$partition")"
 		if [[ -n $fileSystem && ! $fileSystem =~ $SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX ]]; then
 			error=1
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_FILESYSTEM_FORMAT "$fileSystem" "${BOOT_PARTITION_PREFIX}$partition"
@@ -6402,8 +6416,12 @@ function checksForPartitionBasedBackup() {
 
 	error=0
 
-	logItem "mountPoints: $(echo "${mountPoints[@]}")"
-	logItem "mountPoints - keys: $(echo "${!mountPoints[@]}")"
+	# SC2116: Useless echo? Instead of 'cmd $(echo foo)', just use 'cmd foo'.
+	#shellcheck disable=SC2116
+	{
+		logItem "mountPoints: $(echo "${mountPoints[@]}")"
+		logItem "mountPoints - keys: $(echo "${!mountPoints[@]}")"
+	}
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
 		logItem "Checking partition $partition"
 		if ! [[ $partition =~ ^[0-9]+ ]]; then
@@ -6424,7 +6442,11 @@ function checksForPartitionBasedBackup() {
 		local i
 		for ((i=0;i<${#pn[@]};i+=2)); do
 			local p=${pn[i]}
+			# SC2178: Variable was used as an array but is now assigned a string.
+			# shellcheck disable=SC2178
 			local d=${pn[$((i+1))]}
+			# SC2128: Expanding an array without an index only gives the first element.
+			# shellcheck disable=SC2128
 			if [[ $d =~ /dev/sd && ! $BOOT_DEVICENAME =~ /dev/sd  ]]; then # allow -P for USB boot (all partitions are external but write error of SD card is used
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_PARTITION_NOT_SAVED "$p" "$d"
 				error=1
@@ -6454,8 +6476,8 @@ function commonChecks() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EMAIL_PROG_NOT_SUPPORTED "$EMAIL_PROGRAM" "$SUPPORTED_MAIL_PROGRAMS"
 			exitError $RC_EMAILPROG_ERROR
 		fi
-		if [[ ! $(which $EMAIL_PROGRAM) && ( $EMAIL_PROGRAM != $EMAIL_EXTENSION_PROGRAM ) ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED $EMAIL_PROGRAM
+		if [[ ! $(which "$EMAIL_PROGRAM") && ( "$EMAIL_PROGRAM" != "$EMAIL_EXTENSION_PROGRAM" ) ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED "$EMAIL_PROGRAM"
 			exitError $RC_EMAILPROG_ERROR
 		fi
 		if [[ "$EMAIL_PROGRAM" == "$EMAIL_SSMTP_PROGRAM" || "$EMAIL_PROGRAM" == "$EMAIL_MSMTP_PROGRAM" ]] && (( $APPEND_LOG )); then
@@ -6466,7 +6488,8 @@ function commonChecks() {
 		fi
 	fi
 
-	local co="$(tr -d "$COLORING_VALID_OPTIONS" <<< $COLORING)"
+	local co
+	co="$(tr -d "$COLORING_VALID_OPTIONS" <<< $COLORING)"
 	if [[ -n "$COLORING" && -n "$co" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_COLORING_OPTION "$co"
 			exitError $RC_PARAMETER_ERROR
@@ -6482,7 +6505,8 @@ function getRootPartition() {
 #	cat /proc/cmdline
 #	dma.dmachans=0x7f35 bcm2708_fb.fbwidth=656 bcm2708_fb.fbheight=416 bcm2708.boardrev=0xf bcm2708.serial=0x3f3c9490 smsc95xx.macaddr=B8:27:EB:3C:94:90 bcm2708_fb.fbswap=1 sdhci-bcm2708.emmc_clock_freq=250000000 vc_mem.mem_base=0x1fa00000 vc_mem.mem_size=0x20000000  dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait
 
-	local cmdline=$(cat /proc/cmdline)
+	local cmdline
+	cmdline="$(cat /proc/cmdline)"
 	logCommand "cat /proc/cmdline"
 	if [[ $cmdline =~ .*(imgpart|root|datadev)=([^ ]+) ]]; then # berryboot and volumio
 		ROOT_PARTITION=${BASH_REMATCH[2]}
@@ -6526,7 +6550,8 @@ function inspect4Backup() {
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
 
 	if [[ -n "$BOOT_DEVICE" ]]; then
-		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
+		local updatedBootdeviceName
+		updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
 		BOOT_DEVICE="$updatedBootdeviceName"
 		logItem "Using configured bootdevice $BOOT_DEVICE"
 	elif (( $REGRESSION_TEST )); then
@@ -6537,7 +6562,7 @@ function inspect4Backup() {
 	elif (( $RESTORE )); then
 		BOOT_DEVICE="mmcblk0"
 		logItem "Force BOOT_DEVICE to $BOOT_DEVICE"
-	elif [[ -z $BOOT_DEVICE ]]; then
+	elif [[ -z "$BOOT_DEVICE" ]]; then
 
 		#if ! areDevicesUnique; then
 		#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
@@ -6545,15 +6570,26 @@ function inspect4Backup() {
 
 		logItem "Legacy boot discovery"
 
-		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x $d)" ] && echo $d && break; done)
+		local d
+		# SC1090: Can't follow non-constant source. Use a directive to specify location.
+		# SC2044: For loops over find output are fragile. Use find -exec or a while read loop.
+		# shellcheck disable=SC1090,SC2044
+		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x "$d")" ] && echo "$d" && break; done)
 		logItem "part: $part"
-		local bootDeviceNumber=$(mountpoint -d /boot)
-		local rootDeviceNumber=$(mountpoint -d /)
+		local bootDeviceNumber
+		bootDeviceNumber=$(mountpoint -d /boot)
+		local rootDeviceNumber
+		rootDeviceNumber=$(mountpoint -d /)
 		logItem "bootDeviceNumber: $bootDeviceNumber"
 		logItem "rootDeviceNumber: $rootDeviceNumber"
 
 		if [ "$bootDeviceNumber" == "$rootDeviceNumber" ]; then	# /boot on same partition with root partition /
-			local rootDevice=$(for file in $(find /sys/dev/ -name $rootDeviceNumber); do source ${file}/uevent; echo $DEVNAME; done) # mmcblk0p1
+			local rootDevice
+			local file
+			# SC1090: Can't follow non-constant source. Use a directive to specify location.
+			# SC2044: For loops over find output are fragile. Use find -exec or a while read loop.
+			# shellcheck disable=SC1090,SC2044
+			rootDevice=$(for file in $(find /sys/dev/ -name "$rootDeviceNumber"); do source "$file"/uevent; echo "$DEVNAME"; done) # mmcblk0p1
 			logItem "Rootdevice: $rootDevice"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
@@ -6567,21 +6603,24 @@ function inspect4Backup() {
 
 			# test whether boot device is mounted
 			local bootMountpoint="/boot"
-			local bootPartition=$(findmnt "$bootMountpoint" -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
+			local bootPartition
+			bootPartition=$(findmnt "$bootMountpoint" -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 			logItem "$bootMountpoint mounted? $bootPartition"
 
 			# test whether some other /boot path is mounted
-			if [[ -z $bootPartition ]]; then
+			if [[ -z "$bootPartition" ]]; then
 				bootPartition="$(mount | grep "/boot" | cut -f 1 -d ' ')"
 				bootMountpoint="$(mount | grep "/boot" | cut -f 3 -d ' ')"
 				logItem "Some path in /boot mounted? $bootPartition on $bootMountpoint"
 			fi
 
 			# find root partition
-			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
+			local rootPartition
+			rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
 			logItem "/ mounted? $rootPartition"
 			if [[ $rootPartition == "/dev/root" ]]; then
-				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
+				local rp
+				rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
 				rootPartition=${rp#/root=/}
 				logItem "/ mounted as /dev/root: $rootPartition"
 			fi
@@ -6600,17 +6639,17 @@ function inspect4Backup() {
 			boot=( $(deviceInfo "$bootPartition") )
 			root=( $(deviceInfo "$rootPartition") )
 
-			logItem "boot: ${boot[@]}"
-			logItem "root: ${root[@]}"
+			logItem "boot: ${boot[*]}"
+			logItem "root: ${root[*]}"
 
-			if [[  -z "$boot" || -z "$root" ]]; then
+			if [[ ${#boot[@]} == 0 || ${#root[@]} ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
 				exitError $RC_NO_BOOT_FOUND
 			fi
 
 			BOOT_DEVICE="${boot[0]}"
 
-			if [[ "${boot[@]}" == "${root[@]}" ]]; then
+			if [[ "${boot[*]}" == "${root[*]}" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "/dev/$BOOT_DEVICE"
 				SHARED_BOOT_DIRECTORY=1
 			fi
@@ -6629,7 +6668,7 @@ function inspect4Backup() {
 	logItem "BOOT_DEVICENAME: $BOOT_DEVICENAME"
 	BACKUP_BOOT_DEVICENAME="$BOOT_DEVICENAME"
 
-	BOOT_PARTITION_PREFIX="$(getPartitionPrefix $BOOT_DEVICE)" # mmcblk0p - sda
+	BOOT_PARTITION_PREFIX="$(getPartitionPrefix "$BOOT_DEVICE")" # mmcblk0p - sda
 	logItem "BOOT_PARTITION_PREFIX: $BOOT_PARTITION_PREFIX"
 	BACKUP_BOOT_PARTITION_PREFIX="$BOOT_PARTITION_PREFIX"
 
@@ -6642,13 +6681,13 @@ function inspect4Restore() {
 
 	if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
 		SF_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.sfdisk)
-		if [[ -z $SF_FILE ]]; then
+		if [[ -z "$SF_FILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.sfdisk"
 			exitError $RC_MISSING_FILES
 		fi
 
 		MBR_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.mbr)
-		if [[ -z $MBR_FILE ]]; then
+		if [[ -z "$MBR_FILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.mbr"
 			exitError $RC_MISSING_FILES
 		fi
@@ -6656,19 +6695,19 @@ function inspect4Restore() {
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		BLKID_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.blkid)
-		if [[ -z $BLKID_FILE ]]; then
+		if [[ -z "$BLKID_FILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
 			exitError $RC_MISSING_FILES
 		fi
 
 		PARTED_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.parted)
-		if [[ -z $PARTED_FILE ]]; then
+		if [[ -z "$PARTED_FILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.parted"
 			exitError $RC_MISSING_FILES
 		fi
 
-		FDISK_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.fdisk)
-		if [[ -z $FDISK_FILE ]]; then
+		FDISK_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.fdisk)
+		if [[ -z "$FDISK_FILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.fdisk"
 			exitError $RC_MISSING_FILES
 		fi
@@ -6708,7 +6747,7 @@ function inspect4Restore() {
 		BACKUP_BOOT_DEVICENAME="/dev/$BACKUP_BOOT_DEVICE"
 		logItem "BACKUP_BOOT_DEVICENAME: $BACKUP_BOOT_DEVICENAME"
 
-		BACKUP_BOOT_PARTITION_PREFIX="$(getPartitionPrefix $BACKUP_BOOT_DEVICE)"
+		BACKUP_BOOT_PARTITION_PREFIX="$(getPartitionPrefix "$BACKUP_BOOT_DEVICE")"
 		logItem "BACKUP_BOOT_PARTITION_PREFIX: $BACKUP_BOOT_PARTITION_PREFIX"
 	fi
 
@@ -7546,9 +7585,9 @@ function restorePartitionBasedPartition() { # restorefile
 	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< "$restorePartition")
 	logItem "Partitionnumber: $partitionNumber"
 
-	local fileSystemsize
-	fileSystemsize=$(getBackupPartitionFilesystemSize "$partitionNumber")
-	logItem "Filesystemsize: $fileSystemsize"
+	local fileSystemSize
+	fileSystemSize=$(getBackupPartitionFilesystemSize "$partitionNumber")
+	logItem "Filesystemsize: $fileSystemSize"
 
 	restorePartition="${restorePartition%.*}"
 	logItem "RestorePartition: $restorePartition"
@@ -7597,7 +7636,7 @@ function restorePartitionBasedPartition() { # restorefile
 			logItem "Normal partition with $partitionFilesystem"
 		fi
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" "$fileSystemsize"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" "$fileSystemSize"
 		logItem "$cmd $mappedRestorePartition"
 
 		$cmd "$mappedRestorePartition" &>>"$LOG_FILE"
