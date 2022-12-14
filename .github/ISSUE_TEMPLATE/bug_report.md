@@ -1,13 +1,16 @@
 ---
-name: Problem report
-about: Create an issue for raspiBackup
+name: Bug report
+about: Create a report to help us improve
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
-## Note
+**Note**
 raspiBackup is supported on RaspberryOS and Ubuntu as operating system and Raspberry HW only. There are environments out there which successfully run raspiBackup but any support requests or issues on unsupported environments will be rejected. 
 
-#### If you have questions about raspiBackup please create a `discussion` entry instead of an `issue` entry in github. 
+*If you have questions about raspiBackup please create a `discussion` entry instead of an `issue` entry in github*
 
 If you have an issue with raspiBackup execute following actions first
 1. Read the FAQ pages of raspiBackup 
@@ -22,6 +25,5 @@ If you still don't get any idea how to solve your issue with raspiBackup
 1. Explain in detail what's going wrong
 1. Attach raspiBackup debug log. Just **DRAG AND DROP** raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue. **If you don't attach a debug log the issue will be rejected**
 
-## Note
+**Note**
 Issues are closed automatically after 2 weeks if there is no activity any more
-
