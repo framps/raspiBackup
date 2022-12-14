@@ -4798,7 +4798,7 @@ function cleanupRestore() { # trap
 	fi
 
 	if [[ -n $MNT_POINT ]]; then
-		if isMounted $MNT_POINT; then
+		if isMounted "$MNT_POINT"; then
 			logItem "Umount $MNT_POINT"
 			umount "$MNT_POINT" &>>"$LOG_FILE"
 		fi
@@ -5954,7 +5954,7 @@ function applyBackupStrategy() {
 					fi
 					if [[ -n $dir_to_delete ]]; then
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
-						rm -rf ${BACKUPTARGET_ROOT:?}/$dir_to_delete # guard against whole backup dir deletion
+						rm -rf "${BACKUPTARGET_ROOT:?}/$dir_to_delete" # guard against whole backup dir deletion
 					fi
 				else
 					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
@@ -7043,11 +7043,11 @@ function doitBackup() {
 	fi
 
 	if (( $LINK_BOOTPARTITIONFILES )) &&  [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" ]] && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
-		touch $BACKUPPATH/47.$$
-		cp -l $BACKUPPATH/47.$$ $BACKUPPATH/11.$$ &>/dev/null
+		touch "$BACKUPPATH/47.$$"
+		cp -l "$BACKUPPATH/47.$$" "$BACKUPPATH/11.$$" &>/dev/null
 		local rc=$?
-		rm $BACKUPPATH/47.$$ &>/dev/null
-		rm $BACKUPPATH/11.$$ &>/dev/null
+		rm "$BACKUPPATH/47.$$" &>/dev/null
+		rm "$BACKUPPATH/11.$$" &>/dev/null
 		if [[ $rc != 0 ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_USE_HARDLINKS "$BACKUPPATH" "$rc"
 			exitError $RC_LINK_FILE_FAILED
