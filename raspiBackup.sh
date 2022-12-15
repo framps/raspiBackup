@@ -53,7 +53,9 @@ VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
 # SC2086: Double quote to prevent globbing and word splitting.
-# shellcheck disable=SC2086
+# SC2046: Quote this to prevent word splitting.
+# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
+# shellcheck disable=SC2086,SC2046,SC2059
 {
 [ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
 [ -z "${BASH_VERSINFO[0]}" ] && printf "\n\033[1;35m Make sure you're using \"bash\"! \033[m\n\n" >&2 && exit 255
@@ -83,12 +85,16 @@ IS_BETA=$(( ! $(grep -iq beta <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
+# SC2016: Expressions don't expand in single quotes, use double quotes for that.
+# shellcheck disable=SC2016
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
+GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE")
+# SC2016: Expressions don't expand in single quotes, use double quotes for that.
+# shellcheck disable=SC2016
 GIT_COMMIT='$Sha1$'
-GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
+GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
@@ -113,7 +119,7 @@ DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
 CURRENT_DIR=$(pwd)
-SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
+SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
 
 # Smileys used in eMail subject to notify about news/events
 
@@ -135,8 +141,6 @@ fi
 DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.sh"
 BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
-INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
 PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
 
 # dd warning website
@@ -178,7 +182,7 @@ POSSIBLE_LOG_LEVELs=""
 for K in "${!LOG_LEVELs[@]}"; do
 	POSSIBLE_LOG_LEVELs="$POSSIBLE_LOG_LEVELs|${LOG_LEVELs[$K]}"
 done
-POSSIBLE_LOG_LEVELs="$(cut -c 2- <<< $POSSIBLE_LOG_LEVELs)"
+POSSIBLE_LOG_LEVELs="$(cut -c 2- <<< "$POSSIBLE_LOG_LEVELs")"
 
 declare -A LOG_LEVEL_ARGs
 for K in "${!LOG_LEVELs[@]}"; do
@@ -1901,12 +1905,9 @@ MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %
 MSG_SLACK_SEND_OK=287
 MSG_EN[$MSG_SLACK_SEND_OK]="RBK0287I: Slack notified."
 MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
-MSG_SLACK_OPTIONS_INCOMPLETE=288
-MSG_EN[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slack options not complete."
-MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständig"
-MSG_SLACK_INVALID_NOTIFICATION=289
-MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
-MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_SLACK_INVALID_NOTIFICATION=288
+MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Invalid Slack notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
