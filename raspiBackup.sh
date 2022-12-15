@@ -1826,11 +1826,15 @@ MSG_EN[$MSG_DD_WARNING]="RBK0265W: It's not recommended to use the dd backup met
 MSG_DE[$MSG_DD_WARNING]="RBK0265W: dd als Backupmethode wird nicht empfohlen. Details dazu finden sich auf $DD_WARNING_URL_DE."
 MSG_FI[$MSG_DD_WARNING]="RBK0265W: DD-varmuuskopiota ei suositella. Lue lisätietoja osoitteesta $DD_WARNING_URL_EN." #Defaults to EN link.
 MSG_FR[$MSG_DD_WARNING]="RBK0265W: Il n'est pas recommandé d'utiliser la méthode de sauvegarde dd. Pour plus de détails, lisez $DD_WARNING_URL_EN." #Defaults to EN link.
+# SC2034: MSG_FI appears unused. Verify it or export it.
+# shellcheck disable=SC2034
+{
 MSG_NO_FILEATTRIBUTE_RIGHTS=266
 MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create fileattributes on %s (Filesystem: %s)."
 MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
+}
 
 #
 # Non NLS messages
@@ -1905,9 +1909,13 @@ MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %
 MSG_SLACK_SEND_OK=287
 MSG_EN[$MSG_SLACK_SEND_OK]="RBK0287I: Slack notified."
 MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
+# SC2034: MSG_FI appears unused. Verify it or export it.
+# shellcheck disable=SC2034
+{
 MSG_SLACK_INVALID_NOTIFICATION=288
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+}
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7088,7 +7096,7 @@ function doitBackup() {
 		local invalidNotification
 		invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL "$MSG_SLACK_INVALID_NOTIFICATION" "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi

@@ -61,13 +61,13 @@ done < $msgFile
 
 echo "Searching for messages not defined..."
 
-grep -E 'writeToConsole.+MSG_.*' ../raspiBackup.sh | awk '{ print $3;}' | grep "MSG_" | sed 's/\$//' > $messagesFile
+grep -E 'writeToConsole.+MSG_.*' ../raspiBackup.sh | awk '{ print $3;}' | grep "MSG_" | sed 's/\$//;s/\"//g' > $messagesFile
 
 while read line; do
    cnt=$(grep -c "$line" $msgFile)
-   if [[ $cnt == 0 ]]; then
-   	echo "Not defined: $line"
-	((notDefined++))
+   if (( $cnt == 0 )); then
+   	echo "Not defined: ->$line<-"
+		((notDefined++))
    	error=1
    fi
 done < $messagesFile
