@@ -3449,7 +3449,8 @@ function executeAfterStartServices() {
 }
 
 function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
-	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
+	local v
+	v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	[[ -z "$v" ]] && v="0.0.0.0"
 	echo "$v"
 }
@@ -3530,20 +3531,24 @@ function updateScript() {
 				exitError $RC_DOWNLOAD_FAILED
 			fi
 			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
-			mv $SCRIPT_DIR/$MYSELF $newName
-			mv $MYSELF~ $SCRIPT_DIR/$MYSELF
-			chown --reference=$newName $SCRIPT_DIR/$MYSELF
-			chmod --reference=$newName $SCRIPT_DIR/$MYSELF
+			mv "$SCRIPT_DIR/$MYSELF" "$newName"
+			mv "$MYSELF~" "$SCRIPT_DIR/$MYSELF"
+			chown --reference="$newName" "$SCRIPT_DIR/$MYSELF"
+			chmod --reference="$newName" "$SCRIPT_DIR/$MYSELF"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
 			# refresh version information from updated script
+			# SC2155: Declare and assign separately to avoid masking return values.
+			# shellcheck disable=SC2155
+			{
 			local properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
 			logItem "Updating VERSION from updated script to $VERSION"
-			local properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+			properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
 			logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
+			}
 		else
-			rm $MYSELF~ &>/dev/null
+			rm "$MYSELF~" &>/dev/null
 			if [[ $rc == 1 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
 			elif [[ $rc == 2 ]]; then
@@ -3571,25 +3576,29 @@ function supportsFileAttributes() {	# directory
 	local MAXRETRY=3						# retries if first check fails
 	local retryCount=$(( MAXRETRY + 1 ))
 
-	touch /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
-	chown 65534:65534 /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
-	chmod 057 /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
+	# SC2129: Consider using { cmd1; cmd2; } >> file instead of individual redirects.
+	# shellcheck disable=SC2129
+	touch "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
+	chown 65534:65534 "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
+	chmod 057 "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
 
 	# ls -la output
 	# ----r-xrwx 1 nobody nogroup 0 Oct 30 19:06 /tmp/supportsFileattributes.fileattributes
 
-	read attrs x owner group r <<< $(ls -la /tmp/$MYNAME.fileattributes)
+	read -r attrs x owner group r <<< "$(ls -la "/tmp/$MYNAME.fileattributes")"
 	logItem "$attrs # $owner # $group"
 
 	while (( retryCount-- > 0 && result == 1 )); do
 		# following command will return an error and message
 		# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
-		cp -a /tmp/$MYNAME.fileattributes /$1 &>>"$LOG_FILE"
+		cp -a "/tmp/$MYNAME.fileattributes" "/$1" &>>"$LOG_FILE"
 		local rc=$?
 		if (( $rc )); then
 			logItem "cp failed with rc $rc - retryCount"
 		else
-			read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
+			# SC2034: x appears unused. Verify it or export it.
+			# shellcheck disable=SC2034
+			read -r attrsT x ownerT groupT r <<< "$(ls -la "/$1/$MYNAME.fileattributes")"
 			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
 			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
 			# and a restored backup will populate these ACLs on the restored system which is wrong!
@@ -3621,9 +3630,14 @@ function supportsHardlinks() {	# directory
 	local links
 	local result=1 # no
 
-	touch /$1/$MYNAME.hlinkfile &>>$LOG_FILE
+	touch "/$1/$MYNAME.hlinkfile" &>>$LOG_FILE
+	# SC2012: Use find instead of ls to better handle non-alphanumeric filenames.
+	# SC2086: Double quote to prevent globbing and word splitting.
+	# shellcheck disable=SC2012,SC2086
+	{
 	cp -l /$1/$MYNAME.hlinkfile /$1/$MYNAME.hlinklink &>>$LOG_FILE
 	links=$(ls -la /$1/$MYNAME.hlinkfile | cut -f 2 -d ' ')
+	}
 	logItem "Links: $links"
 	[[ $links == 2 ]] && result=0
 	rm -f "/$1/$MYNAME.hlinkfile" &>/dev/null
@@ -3642,7 +3656,7 @@ function supportsSymlinks() {	# directory
 
 	local result=1	# no
 	touch "/$1/$MYNAME.slinkfile" &>>$LOG_FILE
-	ln -s "/$1/$MYNAME.slinkfile" /$1/$MYNAME.slinklink &>>$LOG_FILE
+	ln -s "/$1/$MYNAME.slinkfile" "/$1/$MYNAME.slinklink" &>>$LOG_FILE
 	[[ -L "/$1/$MYNAME.slinklink" ]] && result=0
 	rm -f "/$1/$MYNAME.slinkfile" &>/dev/null
 	rm -f "/$1/$MYNAME.slinklink" &>/dev/null
@@ -3678,8 +3692,8 @@ function getFsType() { # file or path
 	local df
 	df="$(df -T | grep "$mp")"
 	logItem "df -T: $df"
-	read dev fstype r <<< "$df"
-	echo $fstype
+	read -r dev fstype r <<< "$df"
+	echo "$fstype"
 
 	logExit "$fstype"
 
@@ -3877,11 +3891,11 @@ function deployMyself() {
 			exitError $RC_PARAMETER_ERROR
 		fi
 
-		if ping -c 1 $host &>/dev/null; then
+		if ping -c 1 "$host" &>/dev/null; then
 			if [[ $user == "root" ]]; then
-				scp -p "$MYSELF" $hostLogon:/usr/local/bin > /dev/null
+				scp -p "$MYSELF" "$hostLogon:/usr/local/bin" > /dev/null
 			else
-				scp -p "$MYSELF" $hostLogon:/home/$user > /dev/null
+				scp -p "$MYSELF" "$hostLogon:/home/$user" > /dev/null
 			fi
 			# SC2181: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
 			# shellcheck disable=SC2181
@@ -3998,7 +4012,7 @@ function colorAnnotation() { # colortype text
 			colorOff "$colorType"
 			echo
 		elif [[ "$line" =~ RBK....E ]]; then
-			colorOn $colorType "$COLOR_ERROR"
+			colorOn "$colorType" "$COLOR_ERROR"
 			echo -n "$line"
 			colorOff "$colorType"
 			echo
