@@ -70,7 +70,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 DEFAULT_PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
 
 if [[ -e /bin/grep ]]; then
-	pathElements=(${PATH//:/ })
+	pathElements=( "${PATH//:/ }" )
 	for p in $DEFAULT_PATHES; do
 		# SC2076: Don't quote right-hand side of =~, it'll match literally rather than as a regex.
 		# shellcheck disable=SC2076
@@ -1966,17 +1966,23 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
 	i=1
 	while [[ "$msg" =~ %s ]]; do
+		# SC2001: See if you can use ${variable//search/replace} instead.
+		# shellcheck disable=SC2001
 		msg="$(sed "s|%s|%$i|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 		(( i++ ))
 	done
 
 	for ((i = 1; $i <= $#; i++)); do # substitute all message parameters
 		p=${!i}
-		let s=$i
+		(( s=i ))
 		s="%$s"
+		# SC2001: See if you can use ${variable//search/replace} instead.
+		# shellcheck disable=SC2001
 		msg="$(sed "s|$s|$p|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 	done
 
+	# SC2001: See if you can use ${variable//search/replace} instead.
+	# shellcheck disable=SC2001
 	msg="$(sed "s/%[0-9]+//g" <<<"$msg" 2>/dev/null)" # delete trailing %n definitions
 
 	local msgPref=${msg:0:3}
@@ -2043,7 +2049,7 @@ function logCommand() { # command
 function logSystemServices() {
 	logEntry
 	if (( $SYSTEMSTATUS )); then
-		if ! which lsof &>/dev/null; then
+		if ! hash lsof &>/dev/null; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
 			else
 				logCommand "service --status-all 2>&1"
@@ -2068,6 +2074,8 @@ function logIntoOutput() { # logtype prefix lineno message
 	shift
 	[[ -z $lineno ]] && lineno=${BASH_LINENO[1]}
 	local dte=$(date +%Y%m%d-%H%M%S)
+	# SC2183: This format string has 2 variables, but is passed 1 arguments.
+	# shellcheck disable=SC2183
 	local indent=$(printf '%*s' "$LOG_INDENT")
 	local m
 	}
@@ -2237,7 +2245,7 @@ function callExtensions() { # extensionplugpoint rc
 		shift 1
 		local args=( "$@" )
 
-		if which "$extensionFileName" &>/dev/null; then
+		if hash "$extensionFileName" &>/dev/null; then
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 			$extensionFileName "${args[@]}"
 			rc=$?
@@ -2257,7 +2265,7 @@ function callExtensions() { # extensionplugpoint rc
 
 			local extensionFileName="${MYNAME}_${extension}_$1.sh"
 
-			if which "$extensionFileName" &>/dev/null; then
+			if hash "$extensionFileName" &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 				executeShellCommand ". $extensionFileName $2"
@@ -2285,7 +2293,7 @@ function usage() {
 	LANG_EXT="${LANG^^*}"
 	LANG_SUFF="${LANG_EXT:0:2}"
 
-	NO_YES=( $(getMessage $MSG_NO_YES) )
+	NO_YES=( "$(getMessage $MSG_NO_YES)" )
 
 	local func="usage${LANG_SUFF}"
 
@@ -2375,7 +2383,7 @@ function isSupportedEnvironment() {
 		logItem "$MODELPATH not found"
 		return 1
 	fi
-	logItem "Modelpath: $(sed 's/\x0/\n/g' <<< "$MODELPATH")"
+	logItem "Modelpath: $(strings "$MODELPATH")"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
 #	OS was built for a Raspberry
@@ -2459,7 +2467,7 @@ function bytesToHuman() {
 	while ((b > 1024)); do
 		d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
 		b=$((b / 1024))
-		let s++
+		(( s++ ))
 	done
 	if (( sign < 0 )); then
 		(( b=-b ))
@@ -2578,12 +2586,12 @@ function compareVersions() { # v1 v2
 	
 	local v1 v2
 	
-	v1="$(sed 's/-.*$//' <<< "$1")"
-	v2="$(sed 's/-.*$//' <<< "$2")"
+	v1="${1/-.*$//}"
+	v2="${2/-.*$//}"
 
 	local v1e v2e IFS rc
-	IFS="." v1e=( $v1 0 0 0 0)
-	IFS="." v2e=( $v2 0 0 0 0)
+	IFS="." v1e=( "$v1" 0 0 0 0)
+	IFS="." v2e=( "$v2" 0 0 0 0)
 
 	local rc=0
 	for (( i=0; i<=3; i++ )); do
@@ -3083,7 +3091,7 @@ function isUpdatePossible() {
 
 	logEntry
 
-	versions=( $(isNewVersionAvailable) )
+	versions=( "$(isNewVersionAvailable)" )
 	version_rc=$?
 	if [[ $version_rc == 0 ]]; then
 		NEWS_AVAILABLE=1
@@ -3128,6 +3136,8 @@ function downloadPropertiesFile() { # FORCE
 		dlRC=$?
 		if (( $dlRC != 0 )); then
 			if [[ $1 == "FORCE" ]]; then
+				# SC2001: See if you can use ${variable//search/replace} instead.
+				# shellcheck disable=SC2001
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
 				exitError $RC_DOWNLOAD_FAILED
 			else
@@ -3179,13 +3189,13 @@ function isVersionDeprecated() { # versionNumber
 
 	local rc=1	# no/failure
 
-	local deprecatedVersions=( $DEPRECATED_PROPERTY )
+	local deprecatedVersions=( "$DEPRECATED_PROPERTY" )
 	if containsElement "$1" "${deprecatedVersions[@]}"; then
 		rc=0
 		logItem "Version $1 is deprecated"
 	fi
 
-	local skip=( $SKIP_DEPRECATED )
+	local skip=( "$SKIP_DEPRECATED" )
 	if containsElement "$1" "${skip[@]}"; then
 		rc=1
 		logItem "Version $1 is deprecated but message is disabled"
@@ -3501,7 +3511,7 @@ function updateScript() {
 
 	if (( $NEW_PROPERTIES_FILE )) ; then
 
-		versions=( $(isNewVersionAvailable) )
+		versions=( "$(isNewVersionAvailable)" )
 		rc=$?
 
 		latestVersion=${versions[0]}
@@ -3511,7 +3521,7 @@ function updateScript() {
 		logItem "$rc - $latestVersion - $newVersion - $oldVersion"
 
 		if (( ! $FORCE_UPDATE )) ; then
-			local incompatibleVersions=( $INCOMPATIBLE_PROPERTY )
+			local incompatibleVersions=( "$INCOMPATIBLE_PROPERTY" )
 			if containsElement "$newVersion" "${incompatibleVersions[@]}"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPATIBLE_UPDATE "$newVersion" "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 				exitNormal
@@ -4143,7 +4153,7 @@ function sendTelegramm() { # subject
 	logEntry "$1"
 
 	if [[ -n "$TELEGRAM_TOKEN" ]] ; then
-		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
+		if ! hash jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
 			local smiley
@@ -4177,7 +4187,7 @@ function sendTelegrammLogMessages() {
 	logEntry
 
 	if [[ -n "$TELEGRAM_TOKEN" ]] ; then
-		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
+		if ! hash jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
 			if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_MESSAGES ]]; then
@@ -4197,7 +4207,7 @@ function sendPushover() { # subject sucess/failure
 	logEntry "$1" 
 
 	if [[ -n "$PUSHOVER_TOKEN" ]] ; then
-		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
+		if ! hash jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
 			sendPushoverMessage "$1" "$2"
@@ -4933,7 +4943,7 @@ function revertScriptVersion() {
 
 	# SC2086: Double quote to prevent globbing and word splitting.
 	# shellcheck disable=SC2086
-	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
+	local existingVersionFiles=( "$(ls $SCRIPT_DIR/$MYNAME.*sh)" )
 
 	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
 		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
@@ -4957,6 +4967,8 @@ function revertScriptVersion() {
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
 
+	# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	# shellcheck disable=SC2207
 	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
 
 	local min=0
@@ -6605,7 +6617,7 @@ function checksForPartitionBasedBackup() {
 	done
 
 	if (( ! $REGRESSION_TEST )); then # skip test in regressiontest because in qemu /dev/mmcblk0 is a symlink to /dev/sda
-		local pn=( $(extractBootAndRootPartitionNames) )
+		local pn=( "$(extractBootAndRootPartitionNames)" )
 		local i
 		for ((i=0;i<${#pn[@]};i+=2)); do
 			local p=${pn[i]}
@@ -6643,12 +6655,12 @@ function commonChecks() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EMAIL_PROG_NOT_SUPPORTED "$EMAIL_PROGRAM" "$SUPPORTED_MAIL_PROGRAMS"
 			exitError $RC_EMAILPROG_ERROR
 		fi
-		if [[ ! $(which "$EMAIL_PROGRAM") && ( "$EMAIL_PROGRAM" != "$EMAIL_EXTENSION_PROGRAM" ) ]]; then
+		if [[ ! $(hash "$EMAIL_PROGRAM") && ( "$EMAIL_PROGRAM" != "$EMAIL_EXTENSION_PROGRAM" ) ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED "$EMAIL_PROGRAM"
 			exitError $RC_EMAILPROG_ERROR
 		fi
 		if [[ "$EMAIL_PROGRAM" == "$EMAIL_SSMTP_PROGRAM" || "$EMAIL_PROGRAM" == "$EMAIL_MSMTP_PROGRAM" ]] && (( $APPEND_LOG )); then
-			if ! which mpack &>/dev/null; then
+			if ! hash mpack &>/dev/null; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MPACK_NOT_INSTALLED
 				APPEND_LOG=0
 			fi
@@ -7062,7 +7074,7 @@ function doitBackup() {
 	fi
 
 	if [[ -n "$TELEGRAM_CHATID" && -n "$TELEGRAM_TOKEN" ]]; then
-		if ! which jq &>/dev/null; then
+		if ! hash jq &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -7080,7 +7092,7 @@ function doitBackup() {
 	fi
 
 	if [[ -n "$PUSHOVER_USER" && -n "$PUSHOVER_TOKEN" ]]; then
-		if ! which jq &>/dev/null; then
+		if ! hash jq &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -7106,7 +7118,7 @@ function doitBackup() {
 	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
-		if ! which rsync &>/dev/null; then
+		if ! hash rsync &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -7159,7 +7171,7 @@ function doitBackup() {
 	fi
 
 	if (( $PROGRESS && $INTERACTIVE )); then
-		if ! which pv &>/dev/null; then
+		if ! hash pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -7187,7 +7199,7 @@ function doitBackup() {
 		fi
 	fi
 
-	if (( $SYSTEMSTATUS )) && ! which lsof &>/dev/null; then
+	if (( $SYSTEMSTATUS )) && ! hash lsof &>/dev/null; then
 		 writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
 		 exitError $RC_MISSING_COMMANDS
 	fi
@@ -7773,13 +7785,15 @@ function restorePartitionBasedPartition() { # restorefile
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
+	# SC2001: See if you can use ${variable//search/replace} instead.
+	# shellcheck disable=SC2001
 	mappedRestorePartition=$(sed "s%${BACKUP_BOOT_PARTITION_PREFIX}%${restoreDevice}%" <<< "$restorePartition")
 
 	if [[ ! "$partitionFilesystem" =~ $SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_FILESYSTEM_FORMAT "$partitionFilesystem" "$mappedRestorePartition"
 		exitError $RC_MISC_ERROR
 
-	elif [[ ! -z $partitionFilesystem ]]; then
+	elif [[ -n $partitionFilesystem ]]; then
 		logItem "partitionFilesystem: \"$partitionFilesystem\""
 
 		local fs="$partitionFilesystem"
@@ -7789,7 +7803,7 @@ function restorePartitionBasedPartition() { # restorefile
 		local swapDetected=0
 		if [[ "$partitionFilesystem" =~ ^fat.* ]]; then
 			fs="vfat"
-			fatSize=$(sed 's/fat//' <<< "$partitionFilesystem")
+			fatSize=${partitionFilesystem/fat//}
 			fatCmd="-I -F $fatSize"
 			logItem "fs: $fs - fatSize: $fatSize - fatCmd: $fatCmd"
 			cmd="mkfs -t $fs $fatCmd"
@@ -8000,7 +8014,7 @@ function doitRestore() {
 	fi
 
 	if (( $PROGRESS && $INTERACTIVE )); then
-		if ! which pv &>/dev/null; then
+		if ! hash pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_PARAMETER_ERROR
 		fi
@@ -8062,14 +8076,14 @@ function doitRestore() {
 	logItem "Date: $DATE"
 
 	if (( $PROGRESS && $INTERACTIVE )); then
-		if ! which pv &>/dev/null; then
+		if ! hash pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
 		fi
 	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
-		if ! which rsync &>/dev/null; then
+		if ! hash rsync &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -8083,7 +8097,7 @@ function doitRestore() {
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if ! which dosfslabel &>/dev/null; then
+		if ! hash dosfslabel &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "dosfslabel" "dosfstools"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -8481,7 +8495,7 @@ function synchronizeCmdlineAndfstab() {
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		ROOT_PARTITION="$(sed 's/1$/2/' <<< "$BOOT_PARTITION")"
+		ROOT_PARTITION=${BOOT_PARTITION/1$/2}
 	fi
 
 	logEntry "BOOT_PARTITION: $BOOT_PARTITION - ROOT_PARTITION: $ROOT_PARTITION"
