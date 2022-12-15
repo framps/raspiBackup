@@ -3261,14 +3261,14 @@ function askYesNo() { # message message_parms
 		local m="$1"
 		shift
 		addtlMsg=1
-		local args="$@"
+		local args="$*"
 	fi
 
 	local answer
 
 	if (( $addtlMsg )); then
 		noNL=1
-		writeToConsole $MSG_LEVEL_MINIMAL $m "$args" "$yes_no"
+		writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
 	fi
@@ -3276,7 +3276,7 @@ function askYesNo() { # message message_parms
 	if (( $NO_YES_QUESTION )); then
 		answer=$(getMessage $MSG_ANSWER_CHARS_YES)
 	else
-		read answer
+		read -r answer
 	fi
 
 	answer=${answer:0:1}	# first char only
@@ -3362,6 +3362,8 @@ function stopServices() {
 			STOPPED_SERVICES=1
 		fi
 	fi
+	# SC2119: Use logSystemServices "$@" if function's $1 should mean script's $1.
+	# shellcheck disable=SC2119
 	logSystemServices
 	logExit
 }
@@ -3377,7 +3379,6 @@ function executeBeforeStopServices() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BEFORE_STOP_SERVICES_FAILED "$rc"
 			exitError $RC_BEFORE_STOP_SERVICES_ERROR
 		fi
-		BEFORE_STOPPED_SERVICES=1
 	fi
 	logExit
 }
@@ -3403,6 +3404,8 @@ function startServices() {
 
 	logEntry
 
+	# SC2119: Use logSystemServices "$@" if function's $1 should mean script's $1.
+	# shellcheck disable=SC2119
 	logSystemServices
 
 	if (( $STOPPED_SERVICES )); then
@@ -3443,7 +3446,6 @@ function executeAfterStartServices() {
 				exitError $RC_BEFORE_START_SERVICES_ERROR
 			fi
 		fi
-		BEFORE_STOPPED_SERVICES=0
 	fi
 	logExit
 }
