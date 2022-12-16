@@ -4173,8 +4173,8 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				--form-string "sound=$sound")
 						
 		logItem "Pushover curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
-
+		local httpCode
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
 		local curlRC=$?
 		logItem "Pushover response:${NL}$(<$o)"
 
@@ -4271,7 +4271,8 @@ EOF
 		cmd+=(--data "$msg_json")
 		
 		logItem "Slack curl call: ${cmd[@]}"
-		local httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
+		local httpCode
+		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
 		local curlRC=$?
 		logItem "Slack response:${NL}$(<$o)"
 
@@ -6919,7 +6920,7 @@ function doitBackup() {
 	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
 		local invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACKOVER_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
