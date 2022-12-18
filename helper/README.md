@@ -12,13 +12,17 @@ __Note:__ The scripts are provided as is by framps and raspiBackup users and are
 
 5. stopStartAllServicesWrapper - Script wish either stops or starts all existing services.
 
-6. raspiBackupRestoreHelper.sh - Makes restore of backups much more convenient.
+6. raspiBackupDialog.sh - Makes backup and restore of backups much more convenient. (Old name: raspiBackupRestoreHelper.sh)
 
-    - Auxiliary script to restore a backup created by raspiBackup in a simple dialog-guided way.
-    - It can simply be started without options. Then a prompt appears whether the last backup should be restored. (y/N) For (N) an appropriate backup can be selected from a list. Then select the target medium and raspiBackup does the rest.
-    - Possible options --last or --select
-      - Option --last -> the last backup is automatically selected without any prompt
-      - Option --select -> the desired backup can be selected from a list
+Help script to create a backup or restore a backup created with raspiBackup in a simple, dialog-driven way.
+It can simply be started without any options. Then first a query appears whether a backup should be created or a restore should be performed. In case of a restore it is asked if the last backup should be restored. (y/N) At (N) a corresponding backup can be selected from a list. Then the target medium is selected and raspiBackup does the rest.
+
+Possible options --last , --select and --backup
+
+        Option --last -> the last backup will be selected automatically and the target medium is requested without
+                         further inquiry
+        Option --select -> the desired backup can be selected from a list
+        Option --backup -> some options are asked like more than two default partitions, comment in backup name....    
     - See [this flowchart](./images/raspiBackopRestoreHelper_simple_flow-chart.pdf) for details
 
 Upgrade 2022-07-22

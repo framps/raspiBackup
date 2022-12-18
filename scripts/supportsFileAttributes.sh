@@ -29,7 +29,7 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
 if (( $UID != 0 )); then
-	echo	"$MYSELF has to be called with sudo. Try \"sudo $@\""
+	echo	"$MYSELF has to be called with sudo. Try \"sudo $MYNAME.sh\""
 	exit 42
 fi
 
@@ -47,11 +47,22 @@ function supportsFileAttributes() {	# directory
 	# ----r-xrwx 1 nobody nogroup 0 Oct 30 19:06 /tmp/supportsFileattributes.fileattributes
 
 	read attrs x owner group r <<< $(ls -la /tmp/$MYNAME.fileattributes)
+	echo "Fileattributes of local file:"
+	echo "   Attributes: $attrs"
+	echo "   Owner: $owner"
+	echo "   Group: $group"
+
 	# following command will return an error and message
 	# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
 	cp -a /tmp/$MYNAME.fileattributes /$1 
+	
 	read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
 	attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+
+	echo "Fileattributes of remote file:"
+	echo "   Attributes: $attrsT"
+	echo "   Owner: $ownerT"
+	echo "   Group: $groupT"
 	
 	# check fileattributes and ownerships are identical
 	[[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]] && result=0
