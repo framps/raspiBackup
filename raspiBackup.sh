@@ -1948,7 +1948,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	msgVar="MSG_${LANGUAGE}"
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]]; then
-		msgVar="${msgVar[$1]}"
+		msgVar="$msgVar[$1]"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
 			msg="${MSG_EN[$1]}" # fallback into english
@@ -1960,7 +1960,6 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	if [[ -z $msg ]]; then
 		msg="${MSG_EN[$MSG_UNDEFINED]} $1"
 	fi
-
 	shift
 
 	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
