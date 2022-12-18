@@ -9632,11 +9632,11 @@ if [[ -n "$1" ]]; then
 	fi
 fi
 
-unusedParms=( "$@" )
+unusedParms="$*"
 
-if (( ${#unusedParms[@]} > 0 )); then
+if [[ -n "$unusedParms" ]]; then
 	usage
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNUSED_PARAMETERS "${unusedParms[*]}"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNUSED_PARAMETERS "$unusedParms"
 	exitError $RC_PARAMETER_ERROR
 fi
 
