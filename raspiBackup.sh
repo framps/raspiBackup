@@ -2589,8 +2589,8 @@ function compareVersions() { # v1 v2
 	v2="${2/-.*$//}"
 
 	local v1e v2e IFS rc
-	IFS="." v1e=( "$v1" 0 0 0 0)
-	IFS="." v2e=( "$v2" 0 0 0 0)
+	IFS="." v1e=( $v1 0 0 0 0)
+	IFS="." v2e=( $v2 0 0 0 0)
 
 	local rc=0
 	for (( i=0; i<=3; i++ )); do
