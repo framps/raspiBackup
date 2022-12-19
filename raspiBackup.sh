@@ -2292,7 +2292,7 @@ function usage() {
 	LANG_EXT="${LANG^^*}"
 	LANG_SUFF="${LANG_EXT:0:2}"
 
-	NO_YES=( "$(getMessage $MSG_NO_YES)" )
+	NO_YES=( $(getMessage $MSG_NO_YES) )
 
 	local func="usage${LANG_SUFF}"
 
@@ -8909,7 +8909,7 @@ function usageEN() {
 	echo "-0 SD card will not be formatted"
 	echo "-1 Formatting errors on SD card will be ignored"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="no"
-	echo "-C Formating of the restorepartitions will check for badblocks (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
+	echo "-C Formating of the restorepartitions will check for badblocks (Standard: ${NO_YES[DEFAULT_CHECK_FOR_BAD_BLOCKS]})"
 	echo "-d {restoreDevice} (default: $DEFAULT_RESTORE_DEVICE) (Example: /dev/sda)"
 	echo "-R {rootPartition} (default: restoreDevice) (Example: /dev/sdb1)"
 	echo $DEFAULT_RESIZE_ROOTFS
@@ -8960,7 +8960,7 @@ function usageDE() {
 	echo "-0 Keine Formatierung der SD Karte"
 	echo "-1 Fehler bei der Formatierung der SD Karte werden ignoriert"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="keiner"
-	echo "-C Beim Formatieren der Restorepartitionen wird auf Badblocks geprüft (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
+	echo "-C Beim Formatieren der Restorepartitionen wird auf Badblocks geprüft (Standard: ${NO_YES[DEFAULT_CHECK_FOR_BAD_BLOCKS]})"
 	echo "-d {restoreGerät} (Standard: $DEFAULT_RESTORE_DEVICE) (Beispiel: /dev/sda)"
 	echo "-R {rootPartition} (Standard: restoreDevice) (Beispiel: /dev/sdb1)"
 	echo "--resizeRootFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
@@ -9009,7 +9009,7 @@ function usageFI() {
 	echo "-0 SD-korttia ei alusteta"
 	echo "-1 SD-kortin alustuksen virheet ohitetaan"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="ei"
-	echo "-C Tarkistetaan palautettavien osioiden epäkelvot lohkot (oletus: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
+	echo "-C Tarkistetaan palautettavien osioiden epäkelvot lohkot (oletus: ${NO_YES[DEFAULT_CHECK_FOR_BAD_BLOCKS]})"
 	echo "-d {palautuslaite} (oletus: $DEFAULT_RESTORE_DEVICE) (Esimerkki: /dev/sda)"
 	echo "-R {juuriosio} (oletus: restoreDevice) (Esimerkki: /dev/sdb1)"
 	echo "--resizeRootFS (oletus: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
