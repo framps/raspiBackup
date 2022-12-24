@@ -1813,11 +1813,6 @@ MSG_EN[$MSG_DD_WARNING]="RBK0265W: It's not recommended to use the dd backup met
 MSG_DE[$MSG_DD_WARNING]="RBK0265W: dd als Backupmethode wird nicht empfohlen. Details dazu finden sich auf $DD_WARNING_URL_DE."
 MSG_FI[$MSG_DD_WARNING]="RBK0265W: DD-varmuuskopiota ei suositella. Lue lisätietoja osoitteesta $DD_WARNING_URL_EN." #Defaults to EN link.
 MSG_FR[$MSG_DD_WARNING]="RBK0265W: Il n'est pas recommandé d'utiliser la méthode de sauvegarde dd. Pour plus de détails, lisez $DD_WARNING_URL_EN." #Defaults to EN link.
-MSG_NO_FILEATTRIBUTE_RIGHTS=266
-MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create fileattributes on %s (Filesystem: %s)."
-MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
-MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
-MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
 #
 # Non NLS messages
@@ -6890,7 +6885,7 @@ function doitBackup() {
 			logItem "Filesystem: $fs"
 			if ! supportsFileAttributes $BACKUPPATH; then
 				if [[ $fs =~ ^nfs* ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTE_RIGHTS "$(findMountPath "$BACKUPPATH")" "$fs"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$(findMountPath "$BACKUPPATH")" "$fs"
 				else
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$fs" "$(findMountPath "$BACKUPPATH")"
 				fi
