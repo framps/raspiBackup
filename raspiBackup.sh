@@ -32,9 +32,6 @@
 #
 #######################################################################################################################
 
-# $/${} is unnecessary on arithmetic variables
-# shellcheck disable=SC2004
-
 set -o pipefail
 
 if [ -z "$BASH" ] ;then
@@ -52,16 +49,10 @@ VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
-# SC2086: Double quote to prevent globbing and word splitting.
-# SC2046: Quote this to prevent word splitting.
-# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
-# shellcheck disable=SC2086,SC2046,SC2059
-{
 [ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
 [ -z "${BASH_VERSINFO[0]}" ] && printf "\n\033[1;35m Make sure you're using \"bash\"! \033[m\n\n" >&2 && exit 255
 [ ${BASH_VERSINFO[0]} -lt 3 ] && printf "\n\033[1;35m Minimum requirement is bash 3.2. You have $BASH_VERSION \033[m\n\n"  >&2 && exit 255
 [ ${BASH_VERSINFO[0]} -le 3 ] && [ ${BASH_VERSINFO[1]} -le 1 ] && printf "\n\033[1;35m Minimum requirement is bash 3.2. You have $BASH_VERSION \033[m\n\n"  >&2 && exit 255
-}
 
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -70,11 +61,9 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 DEFAULT_PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
 
 if [[ -e /bin/grep ]]; then
-	pathElements=( "${PATH//:/ }" )
+	pathElements=(${PATH//:/ })
 	for p in $DEFAULT_PATHES; do
-		# SC2076: Don't quote right-hand side of =~, it'll match literally rather than as a regex.
-		# shellcheck disable=SC2076
-		if [[ ! " ${pathElements[*]} " =~ " ${p} " ]]; then
+		if [[ ! " ${pathElements[@]} " =~ " ${p} " ]]; then
 			[[ -z $PATH ]] && PATH=$p || PATH="$p:$PATH"
 		fi
 	done
@@ -85,14 +74,10 @@ IS_BETA=$(( ! $(grep -iq beta <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
-# SC2016: Expressions don't expand in single quotes, use double quotes for that.
-# shellcheck disable=SC2016
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE")
-# SC2016: Expressions don't expand in single quotes, use double quotes for that.
-# shellcheck disable=SC2016
 GIT_COMMIT='$Sha1$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
@@ -119,7 +104,7 @@ DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
 CURRENT_DIR=$(pwd)
-SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
+SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 
 # Smileys used in eMail subject to notify about news/events
 
@@ -182,7 +167,7 @@ POSSIBLE_LOG_LEVELs=""
 for K in "${!LOG_LEVELs[@]}"; do
 	POSSIBLE_LOG_LEVELs="$POSSIBLE_LOG_LEVELs|${LOG_LEVELs[$K]}"
 done
-POSSIBLE_LOG_LEVELs="$(cut -c 2- <<< "$POSSIBLE_LOG_LEVELs")"
+POSSIBLE_LOG_LEVELs="$(cut -c 2- <<< $POSSIBLE_LOG_LEVELs)"
 
 declare -A LOG_LEVEL_ARGs
 for K in "${!LOG_LEVELs[@]}"; do
@@ -199,7 +184,7 @@ POSSIBLE_MSG_LEVELs=""
 for K in "${!MSG_LEVELs[@]}"; do
 	POSSIBLE_MSG_LEVELs="$POSSIBLE_MSG_LEVELs|${MSG_LEVELs[$K]}"
 done
-POSSIBLE_MSG_LEVELs="$(cut -c 2- <<< "$POSSIBLE_MSG_LEVELs")"
+POSSIBLE_MSG_LEVELs="$(cut -c 2- <<< $POSSIBLE_MSG_LEVELs)"
 
 declare -A MSG_LEVEL_ARGs
 for K in "${!MSG_LEVELs[@]}"; do
@@ -213,7 +198,7 @@ LOG_OUTPUT_HOME=3
 POSSIBLE_LOG_OUTPUT_NUMBERs="^[$LOG_OUTPUT_BACKUPLOC|$LOG_OUTPUT_HOME|$LOG_OUTPUT_VARLOG]\$"
 
 LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX="[$LOG_OUTPUT_VARLOG$LOG_OUTPUT_BACKUPLOC$LOG_OUTPUT_HOME]"
-#declare -A LOG_OUTPUT_LOCs=( [$LOG_OUTPUT_VARLOG]="/var/log/raspiBackup/<hostname>.log" [$LOG_OUTPUT_BACKUPLOC]="<backupPath>" [$LOG_OUTPUT_HOME]="~/raspiBackup.log")
+declare -A LOG_OUTPUT_LOCs=( [$LOG_OUTPUT_VARLOG]="/var/log/raspiBackup/<hostname>.log" [$LOG_OUTPUT_BACKUPLOC]="<backupPath>" [$LOG_OUTPUT_HOME]="~/raspiBackup.log")
 
 declare -A LOG_OUTPUTs=( [$LOG_OUTPUT_VARLOG]="Varlog" [$LOG_OUTPUT_BACKUPLOC]="Backup" [$LOG_OUTPUT_HOME]="Current")
 declare -A LOG_OUTPUT_ARGs
@@ -226,7 +211,7 @@ POSSIBLE_LOG_OUTPUTs=""
 for K in "${!LOG_OUTPUTs[@]}"; do
 	POSSIBLE_LOG_OUTPUTs="$POSSIBLE_LOG_OUTPUTs|${LOG_OUTPUTs[$K]}"
 done
-POSSIBLE_LOG_OUTPUTs="$(cut -c 2- <<< "$POSSIBLE_LOG_OUTPUTs")"
+POSSIBLE_LOG_OUTPUTs="$(cut -c 2- <<< $POSSIBLE_LOG_OUTPUTs)"
 
 # message option constants
 
@@ -424,8 +409,6 @@ RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 
 tty -s
-# SC2181: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
-# shellcheck disable=SC2181
 INTERACTIVE=$((!$?))
 
 # defaults
@@ -1826,15 +1809,11 @@ MSG_EN[$MSG_DD_WARNING]="RBK0265W: It's not recommended to use the dd backup met
 MSG_DE[$MSG_DD_WARNING]="RBK0265W: dd als Backupmethode wird nicht empfohlen. Details dazu finden sich auf $DD_WARNING_URL_DE."
 MSG_FI[$MSG_DD_WARNING]="RBK0265W: DD-varmuuskopiota ei suositella. Lue lisätietoja osoitteesta $DD_WARNING_URL_EN." #Defaults to EN link.
 MSG_FR[$MSG_DD_WARNING]="RBK0265W: Il n'est pas recommandé d'utiliser la méthode de sauvegarde dd. Pour plus de détails, lisez $DD_WARNING_URL_EN." #Defaults to EN link.
-# SC2034: MSG_FI appears unused. Verify it or export it.
-# shellcheck disable=SC2034
-{
 MSG_NO_FILEATTRIBUTE_RIGHTS=266
 MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create fileattributes on %s (Filesystem: %s)."
 MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
-}
 
 #
 # Non NLS messages
@@ -1909,13 +1888,9 @@ MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %
 MSG_SLACK_SEND_OK=287
 MSG_EN[$MSG_SLACK_SEND_OK]="RBK0287I: Slack notified."
 MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
-# SC2034: MSG_FI appears unused. Verify it or export it.
-# shellcheck disable=SC2034
-{
 MSG_SLACK_INVALID_NOTIFICATION=288
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
-}
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1926,12 +1901,8 @@ declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
 function trapWithArg() { # function trap1 trap2 ... trapn
 	logEntry "$*"
-	# SC2155: Declare and assign separately to avoid masking return values.
-	# shellcheck disable=SC2155
 	local func="$1" ; shift
 	for sig ; do
-		# SC2064: Use single quotes, otherwise this expands now rather than when signalled.
-		# shellcheck disable=SC2064
 		trap "$func $sig" "$sig"
 	done
 	logExit
@@ -1965,8 +1936,6 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
 	i=1
 	while [[ "$msg" =~ %s ]]; do
-		# SC2001: See if you can use ${variable//search/replace} instead.
-		# shellcheck disable=SC2001
 		msg="$(sed "s|%s|%$i|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 		(( i++ ))
 	done
@@ -1975,13 +1944,9 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 		p=${!i}
 		(( s=i ))
 		s="%$s"
-		# SC2001: See if you can use ${variable//search/replace} instead.
-		# shellcheck disable=SC2001
 		msg="$(sed "s|$s|$p|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 	done
 
-	# SC2001: See if you can use ${variable//search/replace} instead.
-	# shellcheck disable=SC2001
 	msg="$(sed "s/%[0-9]+//g" <<<"$msg" 2>/dev/null)" # delete trailing %n definitions
 
 	local msgPref=${msg:0:3}
@@ -2009,17 +1974,17 @@ function getMessage() { # messageNumber parm1 parm2
 }
 
 function logItem() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$*"
+	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$@"
 }
 
 function logEntry() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $*"
+	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $@"
 	(( LOG_INDENT+=LOG_INDENT_INC ))
 }
 
 function logExit() { # message
 	(( LOG_INDENT-=LOG_INDENT_INC ))
-	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $*"
+	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $@"
 }
 
 function logSystem() {
@@ -2034,17 +1999,13 @@ function logSystem() {
 
 function logCommand() { # command
 	(( LOG_INDENT+=LOG_INDENT_INC ))
-	local callerLineNo
-	callerLineNo=${BASH_LINENO[0]}
+	local callerLineNo=${BASH_LINENO[0]}
 	logIntoOutput $LOG_TYPE_DEBUG "***" $callerLineNo "$1"
-	local r
-	r="$($1 2>&1)"
+	local r="$($1 2>&1)"
 	logIntoOutput $LOG_TYPE_DEBUG "   " $callerLineNo "$r"
 	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
 
-# SC2120: logSystemServices references arguments, but none are ever passed.
-# shellcheck disable=SC2120
 function logSystemServices() {
 	logEntry
 	if (( $SYSTEMSTATUS )); then
@@ -2060,11 +2021,8 @@ function logSystemServices() {
 
 function logIntoOutput() { # logtype prefix lineno message
 
-	[[ $LOG_DEBUG != "$LOG_LEVEL" ]] && return
+	[[ $LOG_DEBUG != $LOG_LEVEL ]] && return
 
-	# SC2155: Declare and assign separately to avoid masking return values.
-	# shellcheck disable=SC2155
-	{
 	local type="${LOG_TYPEs[$1]}"
 	shift
 	local prefix="$1"
@@ -2073,11 +2031,8 @@ function logIntoOutput() { # logtype prefix lineno message
 	shift
 	[[ -z $lineno ]] && lineno=${BASH_LINENO[1]}
 	local dte=$(date +%Y%m%d-%H%M%S)
-	# SC2183: This format string has 2 variables, but is passed 1 arguments.
-	# shellcheck disable=SC2183
 	local indent=$(printf '%*s' "$LOG_INDENT")
 	local m
-	}
 
 	local line
 	while IFS= read -r line; do
@@ -2131,15 +2086,15 @@ function logFinish() {
 
 	rm -f "$FINISH_LOG_FILE"
 
-	if [[ $LOG_LEVEL != "$LOG_NONE" ]]; then
+	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
 		# 1) error occured and logoutput is backup location which was deleted or fake mode
 		# 2) fake
 		# 3) backup location was already deleted by SR
 		if [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then			# no -L used
 			logItem "$rc $LOG_OUTPUT $FAKE"
-			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == "$LOG_OUTPUT_BACKUPLOC" )) ]] \
+			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
 				|| (( $FAKE )) \
-				|| [[ ! -e "$BACKUPTARGET_DIR" ]]; then
+				|| [[ ! -e $BACKUPTARGET_DIR ]]; then
 				LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
 				logItem "LOG_OUTPUT=$LOG_OUTPUT"
 			fi
@@ -2150,8 +2105,8 @@ function logFinish() {
 		case $LOG_OUTPUT in
 			$LOG_OUTPUT_VARLOG)
 				LOG_BASE="/var/log/$MYNAME"
-				if [ ! -d "$LOG_BASE" ]; then
-					if ! mkdir -p "$LOG_BASE" &>> "$FINISH_LOG_FILE"; then
+				if [ ! -d ${LOG_BASE} ]; then
+					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
 						exitError $RC_CREATE_ERROR
 					fi
@@ -2186,10 +2141,10 @@ function logFinish() {
 			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
-		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE" # make sure logfile is owned by caller
-		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE" # make sure msgfile is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
 
-		if [[ -e "$FINISH_LOG_FILE" ]]; then					# append optional final messages
+		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
 			cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
@@ -2199,7 +2154,7 @@ function logFinish() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 		fi
 
-		if [[ "$TEMP_LOG_FILE" != "$DEST_LOGFILE" ]]; then		# logfile was copied somewhere, delete temp logfile
+		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
 
@@ -2211,10 +2166,7 @@ function logFinish() {
 # Borrowed from http://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
 
 fn_exists() {
-	# SC2086: Double quote to prevent globbing and word splitting.
-	# SC2046: Quote this to prevent word splitting.
-	# shellcheck disable=SC2086,SC2046
-  [ $(type -t $1)"" == 'function' ]
+  [ `type -t $1`"" == 'function' ]
 }
 
 # Borrowed from http://blog.yjl.im/2012/01/printing-out-call-stack-in-bash.html
@@ -2225,8 +2177,6 @@ function logStack () {
 	local FRAMES=${#BASH_LINENO[@]}
 	# FRAMES-2 skips main, the last one in arrays
 	for ((i=FRAMES-2; i>=0; i--)); do
-		# SC2086: Double quote to prevent globbing and word splitting.
-		# shellcheck disable=SC2086
 		echo '  File' \"${BASH_SOURCE[i+1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i+1]}
 		# Grab the source code of the line
 		sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i+1]}"
@@ -2239,7 +2189,7 @@ function callExtensions() { # extensionplugpoint rc
 
 	local extension rc=0
 
-	if [[ $1 == "$EMAIL_EXTENSION" ]]; then
+	if [[ $1 == $EMAIL_EXTENSION ]]; then
 		local extensionFileName="${MYNAME}_${EMAIL_EXTENSION}.sh"
 		shift 1
 		local args=( "$@" )
@@ -2332,7 +2282,7 @@ function writeToConsole() {  # msglevel messagenumber message
 		if (( $INTERACTIVE )); then
 			local consoleMsg="$timestamp$msg"
 			if [[ "$COLORING" =~ $COLORING_CONSOLE ]]; then
-				consoleMsg="$(colorAnnotation "$COLOR_TYPE_VT100" "$consoleMsg")"
+				consoleMsg="$(colorAnnotation $COLOR_TYPE_VT100 "$consoleMsg")"
 			fi
 			if [[ $msgSev == "E" ]]; then
 				echo $noNL -e "$consoleMsg" >&2
@@ -2341,7 +2291,7 @@ function writeToConsole() {  # msglevel messagenumber message
 			fi
 		fi
 
-		if (( $LOG_LEVEL != "$LOG_NONE" )); then
+		if (( $LOG_LEVEL != $LOG_NONE )); then
 			echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
 		fi
 	fi
@@ -2423,14 +2373,12 @@ function createBackupVersion() { # file
 
 	if [[ -f "$file.bak" ]]; then														# .bak exists already
 		local versions
-		# SC2086: Double quote to prevent globbing and word splitting.
-		# shellcheck disable=SC2086
 		versions="$(ls $file\.*\.* -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
 		else
-			local last=
+			local last
 			last="$(tail -n 1 <<< "$versions")" 					# extract highest version number
 			local lastFile
 			lastFile="$(basename "$last")"
@@ -2448,8 +2396,7 @@ function createBackupVersion() { # file
 
 	cp -a "$file" "$file.bak"
 	local rc=$?
-	
-	echo "$file.bak"
+	(( $rc == 0 )) && echo "$file.bak"
 	return $rc	# return status of cp command
 }
 
@@ -2489,8 +2436,8 @@ function exitNormal() {
 
 function saveVars() {
 	if (( $UID == 0 )); then
-		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > "$VARS_FILE"
-		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> "$VARS_FILE"
+		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
+		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
 	fi
 }
 
@@ -2504,7 +2451,7 @@ function exitError() { # {rc}
 	fi
 
 	logExit "$rc"
-	exit "$rc"
+	exit $rc
 }
 
 # ignore tool error if configured
@@ -2512,9 +2459,9 @@ function ignoreErrorRC() { # rc errors_to_ignore
 	logEntry
 	local rc="$1"
 	if (( $rc != 0 )); then
-		for i in "${@:2}"; do
+		for i in ${@:2}; do
 			if (( $i == $rc )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" "$rc"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
 				rc=0
 				break
 			fi
@@ -2529,7 +2476,7 @@ function executeDD() { # cmd silent
 	local rc cmd
 	cmd="$1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | grep -viE "records [in|out]| copied," | tee -a $MSG_FILE; exit "${PIPESTATUS[0]}" ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | grep -viE "records [in|out]| copied," | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -2558,7 +2505,7 @@ function executeTar() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE; exit "${PIPESTATUS[0]}" ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -2582,11 +2529,8 @@ function executeShellCommand() { # command
 function compareVersions() { # v1 v2
 
 	logEntry "$1 $2"
-	
-	local v1 v2
-	
-	v1="${1/-.*$//}"
-	v2="${2/-.*$//}"
+	local v1="$(sed 's/-.*$//' <<< $1)"
+	local v2="$(sed 's/-.*$//' <<< $2)"
 
 	local v1e v2e IFS rc
 	IFS="." v1e=( $v1 0 0 0 0)
@@ -2609,8 +2553,8 @@ function compareVersions() { # v1 v2
 
 function repeat() { # char num
 	local s
-	s=$( yes "$1" | head "-$2" | tr -d "\n" )
-	echo "$s"
+	s=$( yes $1 | head -$2 | tr -d "\n" )
+	echo $s
 }
 
 # calculate time difference, return array with days, hours, minutes and seconds
@@ -3066,7 +3010,7 @@ function dynamic_mount() { # mountpoint
 
 	logEntry "$1"
 
-	if ! isMounted "$1"; then
+	if ! isMounted $1; then
 		mount "$1" &>> $LOG_FILE
 		rc=$?
 		if (( $rc != 0 )); then
@@ -3090,7 +3034,7 @@ function isUpdatePossible() {
 
 	logEntry
 
-	versions=( "$(isNewVersionAvailable)" )
+	versions=( $(isNewVersionAvailable) )
 	version_rc=$?
 	if [[ $version_rc == 0 ]]; then
 		NEWS_AVAILABLE=1
@@ -3135,8 +3079,6 @@ function downloadPropertiesFile() { # FORCE
 		dlRC=$?
 		if (( $dlRC != 0 )); then
 			if [[ $1 == "FORCE" ]]; then
-				# SC2001: See if you can use ${variable//search/replace} instead.
-				# shellcheck disable=SC2001
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
 				exitError $RC_DOWNLOAD_FAILED
 			else
@@ -3161,9 +3103,6 @@ function parsePropertiesFile() { # propertyFileName
 
 	logEntry
 
-	# SC2155: Declare and assign separately to avoid masking return values.
-	# shellcheck disable=SC2155
-	{
 	local properties="$(grep "^VERSION=" "$1" 2>/dev/null)"
 	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY=${BASH_REMATCH[1]}
 
@@ -3175,7 +3114,7 @@ function parsePropertiesFile() { # propertyFileName
 
 	properties="$(grep "^BETA=" "$1" 2>/dev/null)"
 	[[ $properties =~ $PROPERTY_REGEX ]] && BETA_PROPERTY=${BASH_REMATCH[1]}
-	}
+
 	logItem "Properties: v: $VERSION_PROPERTY i: $INCOMPATIBLE_PROPERTY d: $DEPRECATED_PROPERTY b: $BETA_PROPERTY"
 
 	logExit
@@ -3188,13 +3127,13 @@ function isVersionDeprecated() { # versionNumber
 
 	local rc=1	# no/failure
 
-	local deprecatedVersions=( "$DEPRECATED_PROPERTY" )
+	local deprecatedVersions=( $DEPRECATED_PROPERTY )
 	if containsElement "$1" "${deprecatedVersions[@]}"; then
 		rc=0
 		logItem "Version $1 is deprecated"
 	fi
 
-	local skip=( "$SKIP_DEPRECATED" )
+	local skip=( $SKIP_DEPRECATED )
 	if containsElement "$1" "${skip[@]}"; then
 		rc=1
 		logItem "Version $1 is deprecated but message is disabled"
@@ -3210,8 +3149,10 @@ function shouldRenewDownloadPropertiesFile() { # FORCE
 
 	local rc lastCheckTime currentTime
 
-	if [[ -e "$LATEST_TEMP_PROPERTY_FILE" ]]; then
-		lastCheckTime=$(stat -c %y "$LATEST_TEMP_PROPERTY_FILE" | cut -d ' ' -f 1 | sed 's/-//g')
+	local lastCheckTime
+
+	if [[ -e $LATEST_TEMP_PROPERTY_FILE ]]; then
+		lastCheckTime=$(stat -c %y $LATEST_TEMP_PROPERTY_FILE | cut -d ' ' -f 1 | sed 's/-//g')
 	else
 		lastCheckTime="00000000"
 	fi
@@ -3220,7 +3161,7 @@ function shouldRenewDownloadPropertiesFile() { # FORCE
 
 	logItem "$currentTime : $lastCheckTime"
 
-	if [[ $currentTime == "$lastCheckTime" && "$1" != "FORCE" ]]; then
+	if [[ $currentTime == $lastCheckTime && "$1" != "FORCE" ]]; then
 		logItem "Skip download"
 		rc=1		#  download already done today
 	else
@@ -3251,7 +3192,7 @@ function verifyIsOnOff() { # arg
 
 function downloadFile() { # url, targetFileName
 
-		logEntry "URL: $(sed -E "s/\?.*$//" <<<"$1"), file: $2"
+		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
 		
 		local httpCode rc
 		
@@ -3281,13 +3222,13 @@ function downloadFile() { # url, targetFileName
 		fi
 
 		if (( $rc != 0 )); then
-			[[ -f "$f" ]] && rm "$f" &>>$LOG_FILE
+			[[ -f $f ]] && rm $f &>>$LOG_FILE
 			echo "$httpCode"
 			logExit "$rc $httpCode"
 			return $rc
 		fi
 
-		[[ -f "$f" ]] && mv "$f" "$file" &>>$LOG_FILE
+		[[ -f $f ]] && mv $f $file &>>$LOG_FILE
 		echo "200"
 		logExit 0
 		return 0
@@ -3404,8 +3345,6 @@ function stopServices() {
 			STOPPED_SERVICES=1
 		fi
 	fi
-	# SC2119: Use logSystemServices "$@" if function's $1 should mean script's $1.
-	# shellcheck disable=SC2119
 	logSystemServices
 	logExit
 }
@@ -3446,8 +3385,6 @@ function startServices() {
 
 	logEntry
 
-	# SC2119: Use logSystemServices "$@" if function's $1 should mean script's $1.
-	# shellcheck disable=SC2119
 	logSystemServices
 
 	if (( $STOPPED_SERVICES )); then
@@ -3493,8 +3430,7 @@ function executeAfterStartServices() {
 }
 
 function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
-	local v
-	v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
+	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	[[ -z "$v" ]] && v="0.0.0.0"
 	echo "$v"
 }
@@ -3510,7 +3446,7 @@ function updateScript() {
 
 	if (( $NEW_PROPERTIES_FILE )) ; then
 
-		versions=( "$(isNewVersionAvailable)" )
+		versions=( $(isNewVersionAvailable) )
 		rc=$?
 
 		latestVersion=${versions[0]}
@@ -3520,18 +3456,17 @@ function updateScript() {
 		logItem "$rc - $latestVersion - $newVersion - $oldVersion"
 
 		if (( ! $FORCE_UPDATE )) ; then
-			local incompatibleVersions=( "$INCOMPATIBLE_PROPERTY" )
+			local incompatibleVersions=( $INCOMPATIBLE_PROPERTY )
 			if containsElement "$newVersion" "${incompatibleVersions[@]}"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPATIBLE_UPDATE "$newVersion" "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 				exitNormal
 			fi
 		fi
 
-		local betaVersion
-		betaVersion=$(isBetaAvailable)
+		local betaVersion=$(isBetaAvailable)
 
-		if [[ -n "$betaVersion" ]]; then
-			if [[ "${betaVersion}-beta" > "$oldVersion" ]]; then 			# beta version available
+		if [[ -n $betaVersion ]]; then
+			if [[ "${betaVersion}-beta" > $oldVersion ]]; then 			# beta version available
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
 				if askYesNo; then
 					DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
@@ -3575,24 +3510,20 @@ function updateScript() {
 				exitError $RC_DOWNLOAD_FAILED
 			fi
 			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
-			mv "$SCRIPT_DIR/$MYSELF" "$newName"
-			mv "$MYSELF~" "$SCRIPT_DIR/$MYSELF"
-			chown --reference="$newName" "$SCRIPT_DIR/$MYSELF"
-			chmod --reference="$newName" "$SCRIPT_DIR/$MYSELF"
+			mv $SCRIPT_DIR/$MYSELF $newName
+			mv $MYSELF~ $SCRIPT_DIR/$MYSELF
+			chown --reference=$newName $SCRIPT_DIR/$MYSELF
+			chmod --reference=$newName $SCRIPT_DIR/$MYSELF
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
 			# refresh version information from updated script
-			# SC2155: Declare and assign separately to avoid masking return values.
-			# shellcheck disable=SC2155
-			{
 			local properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
 			logItem "Updating VERSION from updated script to $VERSION"
-			properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+			local properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
 			logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
-			}
 		else
-			rm "$MYSELF~" &>/dev/null
+			rm $MYSELF~ &>/dev/null
 			if [[ $rc == 1 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
 			elif [[ $rc == 2 ]]; then
@@ -3620,8 +3551,6 @@ function supportsFileAttributes() {	# directory
 	local MAXRETRY=3						# retries if first check fails
 	local retryCount=$(( MAXRETRY + 1 ))
 
-	# SC2129: Consider using { cmd1; cmd2; } >> file instead of individual redirects.
-	# shellcheck disable=SC2129
 	touch "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
 	chown 65534:65534 "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
 	chmod 057 "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
@@ -3675,13 +3604,8 @@ function supportsHardlinks() {	# directory
 	local result=1 # no
 
 	touch "/$1/$MYNAME.hlinkfile" &>>$LOG_FILE
-	# SC2012: Use find instead of ls to better handle non-alphanumeric filenames.
-	# SC2086: Double quote to prevent globbing and word splitting.
-	# shellcheck disable=SC2012,SC2086
-	{
 	cp -l /$1/$MYNAME.hlinkfile /$1/$MYNAME.hlinklink &>>$LOG_FILE
 	links=$(ls -la /$1/$MYNAME.hlinkfile | cut -f 2 -d ' ')
-	}
 	logItem "Links: $links"
 	[[ $links == 2 ]] && result=0
 	rm -f "/$1/$MYNAME.hlinkfile" &>/dev/null
@@ -3807,13 +3731,11 @@ function readConfigParameters() {
 	ETC_CONFIG_FILE_INCLUDED=0
 	if [ -f "$ETC_CONFIG_FILE" ]; then
 		set -e
-		# SC1090: Can't follow non-constant source. Use a directive to specify location.
-		# shellcheck disable=SC1090
 		source "$ETC_CONFIG_FILE"
 		set +e
 		ETC_CONFIG_FILE_INCLUDED=1
 		ETC_CONFIG_FILE_VERSION="$(extractVersionFromFile "$ETC_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-		logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$ETC_CONFIG_FILE")"
+		logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $ETC_CONFIG_FILE)"
 	fi
 
 	# Override default parms with parms in user config file
@@ -3821,13 +3743,11 @@ function readConfigParameters() {
 	HOME_CONFIG_FILE_INCLUDED=0
 	if [ -f "$HOME_CONFIG_FILE" ]; then
 		set -e
-		# SC1090: Can't follow non-constant source. Use a directive to specify location.
-		# shellcheck disable=SC1090
 		source "$HOME_CONFIG_FILE"
 		set +e
 		HOME_CONFIG_FILE_INCLUDED=1
 		HOME_CONFIG_FILE_VERSION="$(extractVersionFromFile "$HOME_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-		logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$HOME_CONFIG_FILE")"
+		logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $HOME_CONFIG_FILE)"
 
 	fi
 
@@ -3837,13 +3757,11 @@ function readConfigParameters() {
 	if [[ "$HOME_CONFIG_FILE" != "$CURRENTDIR_CONFIG_FILE" ]]; then
 		if [ -f "$CURRENTDIR_CONFIG_FILE" ]; then
 			set -e
-			# SC1090: Can't follow non-constant source. Use a directive to specify location.
-			# shellcheck disable=SC1090
 			source "$CURRENTDIR_CONFIG_FILE"
 			set +e
 			CURRENTDIR_CONFIG_FILE_INCLUDED=1
 			CURRENTDIR_CONFIG_FILE_VERSION="$(extractVersionFromFile "$CURRENTDIR_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-			logItem "Read config ${CURRENTDIR_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CURRENTDIR_CONFIG_FILE")"
+			logItem "Read config ${CURRENTDIR_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CURRENTDIR_CONFIG_FILE)"
 		fi
 	fi
 
@@ -3857,7 +3775,7 @@ function setupEnvironment() {
 	if (( ! $RESTORE )); then
 		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
-			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
+			if [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_TAR ]]; then
 				BACKUPTYPE=${Z_TYPE_MAPPING[${BACKUPTYPE}]}	# tar-> tgz and dd -> ddz
 			else
 				ZIP_BACKUP_TYPE_INVALID=1
@@ -3941,8 +3859,6 @@ function deployMyself() {
 			else
 				scp -p "$MYSELF" "$hostLogon:/home/$user" > /dev/null
 			fi
-			# SC2181: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
-			# shellcheck disable=SC2181
 			if (( $? == 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPLOYED_HOST "$host" "$user"
 			else
@@ -4028,9 +3944,7 @@ COLOR_OFF=("</span><br/>" "\e[0m")
 function colorOn() { # colortype color
 	local on="${COLOR_ON[$1]}"
 	local color="${COLOR_CODES[$2]}"
-	color=( "$color" )
-	# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
-	# shellcheck disable=SC2059
+	color=($color)
 	printf -v r "$on" "${color[$1]}"
 	echo -e -n "$r"
 }
@@ -4051,14 +3965,14 @@ function colorAnnotation() { # colortype text
 	local line
 	while IFS= read -r line; do
 	  if [[ "$line" =~ RBK....W ]]; then
-			colorOn "$colorType" "$COLOR_WARNING"
+			colorOn $colorType $COLOR_WARNING
 			echo -n "$line"
-			colorOff "$colorType"
+			colorOff $colorType
 			echo
 		elif [[ "$line" =~ RBK....E ]]; then
-			colorOn "$colorType" "$COLOR_ERROR"
+			colorOn $colorType $COLOR_ERROR
 			echo -n "$line"
-			colorOff "$colorType"
+			colorOff $colorType
 			echo
 		else
 			if [[ $colorType == "$COLOR_TYPE_HTML" ]]; then
@@ -4107,21 +4021,13 @@ function sendTelegramMessage() { # message html(yes/no)
 		logEntry "$1"
 
 		if [[ -z $2 ]]; then
-			# SC2086: Double quote to prevent globbing and word splitting.
-			# shellcheck disable=SC2086
-			{
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
 			local rsp
 			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
-			}
 		else
-			# SC2086: Double quote to prevent globbing and word splitting.
-			# shellcheck disable=SC2086
-			{
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 			local rsp
 			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
-			}
 		fi
 		local curlRC=$?
 
@@ -4255,7 +4161,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				--form-string "title=$1"\
 				--form-string "sound=$sound")
 						
-		logItem "Pushover curl call: ${cmd[*]}"
+		logItem "Pushover curl call: ${cmd[@]}"
 		local httpCode
 		httpCode="$(curl -s -w %\{http_code\} -o "$o" "${cmd[@]}" $PUSHOVER_URL)"
 		local curlRC=$?
@@ -4357,7 +4263,7 @@ EOF
 		cmd+=(-H 'Content-type: application/json')
 		cmd+=(--data "$msg_json")
 		
-		logItem "Slack curl call: ${cmd[*]})"
+		logItem "Slack curl call: ${cmd[@]}"
 		local httpCode
 		httpCode="$(curl -s -w %\{http_code\} -o "$o" "${cmd[@]}" $SLACK_WEBHOOK_URL)"
 		local curlRC=$?
@@ -4425,11 +4331,11 @@ function sendEMail() { # content subject
 				if [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_SUBJECT" ]]; then
 					contentType="${NL}MIME-Version: 1.0${NL}Content-Type: text/html; charset=utf-8"
 				elif [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_OPTION" ]]; then
-					coloringOption=(-a "Content-Type: text/html")
+					coloringOption='-a "Content-Type: text/html"'
 				else
 					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
 				fi
-				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: $subject${NL}coloring: ${coloringOption[*]}"
+				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: "$subject"${NL}coloring: ${coloringOption[@]}"
 			fi
 		fi
 
@@ -4455,30 +4361,27 @@ function sendEMail() { # content subject
 			logItem "eMail: $EMAIL"
 			logItem "eMail Program: $EMAIL_PROGRAM"
 			logItem "Subject: ${subject[0]}"
-			logItem "ColoringOption: ${coloringOption[*]}"
+			logItem "ColoringOption: ${coloringOption[@]}"
 			logItem "ContentType: $contentType"
 			logItem "Parms: $EMAIL_PARMS"
 
 			local rc
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
-					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" "$attach" $EMAIL <<< "\"$content\""
-					# SC2068: Double quote array expansions to avoid re-splitting elements.
-					# SC2090: Quotes/backslashes in this variable will not be respected.
-					# shellcheck disable=SC2068,SC2090
-					"$EMAIL_PROGRAM" ${coloringOption[@]} $EMAIL_PARMS -s "$subject" "$attach" "$EMAIL" <<< "$content"
+					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
+					"$EMAIL_PROGRAM" ${coloringOption[@]} $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				$EMAIL_SENDEMAIL_PROGRAM)
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u \"$subject\" $attach -t $EMAIL"
-					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" "$attach" -t "$EMAIL"
+					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u "$subject" $attach -t $EMAIL"
+					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" $attach -t "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				$EMAIL_SSMTP_PROGRAM|$EMAIL_MSMTP_PROGRAM)
 					local msmtp_default=""
-					if [[ $EMAIL_PROGRAM == "$EMAIL_MSMTP_PROGRAM" ]]; then
+					if [[ $EMAIL_PROGRAM == $EMAIL_MSMTP_PROGRAM ]]; then
 						msmtp_default="-a default"
 					fi
 					if (( $APPEND_LOG )); then
@@ -4490,7 +4393,7 @@ function sendEMail() { # content subject
 						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
 						logItem "Sendig email with s/msmtp"
 						logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
-						echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" "$msmtp_default" "$EMAIL"
+						echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
 						rc=$?
 						logItem "$EMAIL_PROGRAM: RC: $rc"
 					fi
@@ -4564,8 +4467,7 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 16 )); then
-		local m
-		m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		local m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -4939,9 +4841,7 @@ function revertScriptVersion() {
 
 	logEntry
 
-	# SC2086: Double quote to prevent globbing and word splitting.
-	# shellcheck disable=SC2086
-	local existingVersionFiles=( "$(ls $SCRIPT_DIR/$MYNAME.*sh)" )
+	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
 
 	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
 		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
@@ -4956,7 +4856,7 @@ function revertScriptVersion() {
 	local version
 	for versionFile in "${existingVersionFiles[@]}"; do
 		version="$(extractVersionFromFile "$versionFile" "$VERSION_VARNAME" )"
-		if [[ $version != "$currentVersion" ]]; then
+		if [[ $version != $currentVersion ]]; then
 			versionsOfFiles+=([$version]=$versionFile)
 		fi
 	done
@@ -4965,8 +4865,6 @@ function revertScriptVersion() {
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
 
-	# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	# shellcheck disable=SC2207
 	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
 
 	local min=0
@@ -5017,7 +4915,7 @@ function isBetaAvailable() {
 		betaVersion=${BETA_PROPERTY//\"/}
 	fi
 
-	echo "$betaVersion"
+	echo $betaVersion
 
 	logExit "$betaVersion"
 
@@ -5067,7 +4965,7 @@ function checkImportantParameters() {
 	ll="${LOG_LEVEL^^}"
 	pll="^${POSSIBLE_LOG_LEVELs^^}\$"
 	if [[ "$ll" =~ $pll ]]; then
-		lla="$(tr '[:lower:]' '[:upper:]'<<< "${LOG_LEVEL_ARGs[$ll]+abc}")"
+		lla="$(tr '[:lower:]' '[:upper:]'<<< ${LOG_LEVEL_ARGs[$ll]+abc})"
 		if [[ "$lla" == "ABC" ]]; then
 			LOG_LEVEL=${LOG_LEVEL_ARGs[$ll]}
 		else
@@ -5087,7 +4985,7 @@ function checkImportantParameters() {
 	ml="${MSG_LEVEL^^}"
 	mll="^${POSSIBLE_MSG_LEVELs^^}\$"
 	if [[ "$ml" =~ $mll ]]; then
-		mla="$(tr '[:lower:]' '[:upper:]'<<< "${MSG_LEVEL_ARGs[$ml]+abc}")"
+		mla="$(tr '[:lower:]' '[:upper:]'<<< ${MSG_LEVEL_ARGs[$ml]+abc})"
 		if [[ "$mla" == "ABC" ]]; then
 			MSG_LEVEL=${MSG_LEVEL_ARGs[$ml]}
 		else
@@ -5107,7 +5005,7 @@ function checkImportantParameters() {
 	lo="${LOG_OUTPUT^^}"
 	plo="^${POSSIBLE_LOG_OUTPUTs^^}\$"
 	if [[ "$lo" =~ $plo ]]; then
-		loa="$(tr '[:lower:]' '[:upper:]'<<< "${LOG_OUTPUT_ARGs[$lo]+abc}")"
+		loa="$(tr '[:lower:]' '[:upper:]'<<< ${LOG_OUTPUT_ARGs[$lo]+abc})"
 		if [[ "$loa" == "ABC" ]]; then
 			LOG_OUTPUT=${LOG_OUTPUT_ARGs[$lo]}
 			logItem "LOG_OUTPUT=$LOG_OUTPUT"
@@ -5141,30 +5039,24 @@ function createLinks() { # backuptargetroot extension newfile
 	logEntry "$1 $2 $3"
 	local file
 
-	local possibleLinkTargetDirectory
-	# SC2012: Use find instead of ls to better handle non-alphanumeric filenames.
-	# SC2086: Double quote to prevent globbing and word splitting.
-	# shellcheck disable=SC2012,SC2086
+	local possibleLinkTargetDirectory=$(ls -d $1/*-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
 
-	possibleLinkTargetDirectory=$(ls -d $1/*-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
-
-	if [[ -z "$possibleLinkTargetDirectory" || $possibleLinkTargetDirectory == "$BACKUPTARGET_DIR" ]]; then
+	if [[ -z $possibleLinkTargetDirectory || $possibleLinkTargetDirectory == $BACKUPTARGET_DIR ]]; then
 		logItem "No possible link target directory found"
 		return
 	fi
 
 	logItem "PossibleLinkTargetDirectory: $possibleLinkTargetDirectory"
-	local possibleLinkTarget
-	possibleLinkTargetDirectory=$(find "$possibleLinkTargetDirectory/*" -maxdepth 1 -name "$HOSTNAME-backup.$2")
+	local possibleLinkTarget=$(find $possibleLinkTargetDirectory/* -maxdepth 1 -name $HOSTNAME-backup.$2)
 	logItem "Possible link target: $possibleLinkTarget"
 
-	if [[ -z "$possibleLinkTarget" ]]; then
+	if [[ -z $possibleLinkTarget ]]; then
 		logItem "No possible link target found"
 		return
 	fi
 
-	if cmp -s "$3" "$possibleLinkTarget"; then
-		rm "$3" &>/dev/null
+	if cmp -s $3 $possibleLinkTarget; then
+		rm $3 &>/dev/null
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_REPLACING_FILE_BY_HARDLINK "$3" "$possibleLinkTarget"
 		cp -l "$possibleLinkTarget" "$3" &>/dev/null
 		rc=$?
@@ -5172,8 +5064,7 @@ function createLinks() { # backuptargetroot extension newfile
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$rc"
 			exitError $RC_LINK_FILE_FAILED
 		fi
-		local links
-		li links="$(stat -c %h -- "$3")"
+		local links="$(stat -c %h -- "$3")"
 		if (( links < 2 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$rc"
 			exitError $RC_LINK_FILE_FAILED
@@ -5283,7 +5174,7 @@ function partitionLayoutBackup() {
 		FDISK_FILE="$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.fdisk"
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$SF_FILE"
-		sfdisk -d "$BOOT_DEVICENAME" > "$SF_FILE" 2>>$LOG_FILE
+		sfdisk -d $BOOT_DEVICENAME > "$SF_FILE" 2>>$LOG_FILE
 		local rc=$?
 		if [ $rc != 0 ]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
@@ -5305,7 +5196,7 @@ function partitionLayoutBackup() {
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$PARTED_FILE"
 		logItem "Saving parted"
-		parted -m "$BOOT_DEVICENAME" print > "$PARTED_FILE"
+		parted -m $BOOT_DEVICENAME print > "$PARTED_FILE"
 		local rc=$?
 		if [ $rc != 0 ]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "parted" "$rc"
@@ -5316,7 +5207,7 @@ function partitionLayoutBackup() {
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITION_BACKUP "$FDISK_FILE"
 		logItem "Saving fdisk"
-		fdisk -l "$BOOT_DEVICENAME" > "$FDISK_FILE"
+		fdisk -l $BOOT_DEVICENAME > "$FDISK_FILE"
 		local rc=$?
 		if [ $rc != 0 ] ; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "fdisk" "$rc"
@@ -5354,7 +5245,7 @@ function backupDD() {
 		partition="${BOOT_DEVICENAME}p$1"
 		partitionName="${BOOT_PARTITION_PREFIX}$1"
 
-		if [[ $BACKUPTYPE == "$BACKUPTYPE_DDZ" ]]; then
+		if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
 			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
 		else
 			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
@@ -5363,7 +5254,7 @@ function backupDD() {
 	else
 
 		if (( ! $DD_BACKUP_SAVE_USED_PARTITIONS_ONLY )); then
-			if [[ $BACKUPTYPE == "$BACKUPTYPE_DDZ" ]]; then
+			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
 				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
 			else
 				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"$BACKUPTARGET_FILE\""
@@ -5376,13 +5267,9 @@ function backupDD() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TRUNCATING_ERROR "$sdcardSizeHuman" "$spaceUsedHuman"
 				exitError $RC_MISC_ERROR
 			fi
-			# SC2155: Declare and assign separately to avoid masking return values.
-			# shellcheck disable=SC2155
-			{
 			local spaceUsedHuman=$(bytesToHuman "$lastByte")
 			local sdcardSize=$(blockdev --getsize64 "$BOOT_DEVICENAME")
 			local sdcardSizeHuman=$(bytesToHuman "$sdcardSize")
-			}
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY "$sdcardSizeHuman" "$spaceUsedHuman"
 
 			local count blocksize
@@ -5449,14 +5336,10 @@ function backupTar() {
 		target="\"$BACKUPTARGET_FILE\""
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING "$BACKUPTYPE" "${target//\\/}"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
-	# SC2155: Declare and assign separately to avoid masking return values.
-	# shellcheck disable=SC2155
-	{
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
-        }
 
 	cmd="tar \
 		$TAR_BACKUP_OPTIONS \
@@ -5482,7 +5365,7 @@ function backupTar() {
 		$source"
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if ! pushd "$sourceDir" &>>$LOG_FILE; then
+		if ! pushd $sourceDir &>>$LOG_FILE; then
 				assertionFailed $LINENO "push to $sourceDir failed"
 		fi
 	fi
@@ -5550,8 +5433,6 @@ function updateUUID() {
 			newUUID="$(od -A n -t x -N 4 /dev/urandom | tr -d " " | sed -r 's/(.{4})/\1-/')"
 			newUUID="${newUUID^^*}"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "UUID" "$newUUID" "$BOOT_PARTITION"
-			# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo"
-			# shellcheck disable=SC2059
 			printf "\x${newUUID:7:2}\x${newUUID:5:2}\x${newUUID:2:2}\x${newUUID:0:2}" \
 				| dd bs=1 seek=67 count=4 conv=notrunc of="$BOOT_PARTITION" &>>"$LOG_FILE" # 39 for fat16, 67 for fat32
 			waitForPartitionDefsChanged
@@ -5609,12 +5490,8 @@ function backupRsync() { # partition number (for partition based backup)
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING "$BACKUPTYPE" "${target//\\/}"
 
-	# SC2155: Declare and assign separately to avoid masking return values.
-	# shellcheck disable=SC2155
-	{
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
-	}
 	
 	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
 	local fs
@@ -5842,8 +5719,6 @@ function restore() {
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
 						local sourceValues
-						# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-						# shellcheck disable=SC2207
 						sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
 						if [[ ${#sourceValues[@]} != 4 ]]; then
 							logCommand "cat $SF_FILE"
@@ -6048,20 +5923,19 @@ function restore() {
 
 function applyBackupStrategy() {
 
-	# SC2153: Possible misspelling: BACKUP_TARGETDIR may not be assigned, but BACKUPTARGET_DIR is.
-	# shellcheck disable=SC2153
 	logEntry "$BACKUP_TARGETDIR"
 
 	if (( $SMART_RECYCLE )); then
 
 		local dir_to_delete dir_to_keep
 
-		logItem "SR Parms: ${SMART_RECYCLE_PARMS[*]}"
+		local p="${SMART_RECYCLE_PARMS[@]}"
+		logItem "SR Parms: $p"
 		SR_DAILY="${SMART_RECYCLE_PARMS[0]}"
 		SR_WEEKLY="${SMART_RECYCLE_PARMS[1]}"
 		SR_MONTHLY="${SMART_RECYCLE_PARMS[2]}"
 		SR_YEARLY="${SMART_RECYCLE_PARMS[3]}"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_APPLYING_BACKUP_STRATEGY "$SR_DAILY" "$SR_WEEKLY" "$SR_MONTHLY" "$SR_YEARLY"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_APPLYING_BACKUP_STRATEGY $SR_DAILY $SR_WEEKLY $SR_MONTHLY $SR_YEARLY
 
 		logCommand "ls -d $BACKUPPATH/*"
 
@@ -6123,9 +5997,6 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				# SC2010: Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-				# SC2086: Double quote to prevent globbing and word splitting.
-				# shellcheck disable=SC2010,SC2086
 				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE | grep -vE "_" | head -n -"$keepBackups" | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
@@ -6145,7 +6016,7 @@ function applyBackupStrategy() {
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
 				
-				for imgFile in *.img *.mbr *.sfdisk *.log *.msg; do
+				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
 
 					if [[ $imgFile =~ $regexDD ]]; then
 						logItem "Skipping DD file $imgFile"
@@ -6166,10 +6037,6 @@ function applyBackupStrategy() {
 						assert $LINENO "Unable to extract date from backup files"
 					fi
 					local file
-					# SC2010: Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-					# SC2035: Use ./*glob* or -- *glob* so names with dashes won't become options.
-					# SC2086: Double quote to prevent globbing and word splitting.
-					# shellcheck disable=SC2010,SC2035,SC2086
 					file=$(ls -d *-*-backup-$date* 2>/dev/null| grep -E -v "\.(log|msg|img|mbr|sfdisk)$");
 
 					if [[ -n "$file" ]];  then
@@ -6259,10 +6126,8 @@ function backup() {
 	fi
 	END_TIME=$(date +%s)
 
-	# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	# shellcheck disable=SC2207
-	BACKUP_TIME=( $(duration "$START_TIME" "$END_TIME") )
-	logItem "Backuptime: ${BACKUP_TIME[*]}"
+	BACKUP_TIME=($(duration $START_TIME $END_TIME))
+	logItem "Backuptime: $BACKUP_TIME"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
 
 	logItem "Syncing"
@@ -6329,7 +6194,7 @@ function backupPartitions() {
 
 	local partition
 
-	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[*]}"
+	logItem "PARTITIONS_TO_BACKUP: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
@@ -6428,9 +6293,6 @@ function getPartitionName() { # /etc/fstab first col
 
 	logEntry "$1"
 
-	# SC2155: Declare and assign separately to avoid masking return values.
-	# shellcheck disable=SC2155
-	{
 	local prfx="$(cut -f 1 -d '=' <<< "$1")"
 	local id="$(cut -f 2 -d '=' <<< "$1")"
 
@@ -6438,7 +6300,6 @@ function getPartitionName() { # /etc/fstab first col
 
 	local match="$(grep "$prfx=\"$id\"" <<< "$b")"
 	local result="$1"
-	}
 
 	if [[ -n "$match" ]]; then
 		result="$(cut -f 1 -d ":" <<< "$match")"
@@ -6464,8 +6325,8 @@ function extractBootAndRootPartitionNames() {
 	logItem "$pre"
 	local p part
 	local result
-	for p in "${pre[@]}"; do
-		part="$(getPartitionName "$p")"
+	for p in ${pre[@]}; do
+		part="$(getPartitionName $p)"
 		result="$result $p $part"
 	done
 	echo "$result"
@@ -6487,26 +6348,19 @@ function collectPartitions() {
 #/dev/mmcblk0p3 : start=    21104640, size=    10485760, type=83
 #/dev/mmcblk0p4 : start=    31590400, size=    29161472, type=83
 
-	# SC1087: Use braces when expanding arrays, e.g. ${array[idx]} (or ${var}[.. to quiet).
-	# shellcheck disable=SC1087
 	local regexPartitionLine="($BOOT_DEVICENAME[a-z0-9]+).*start[^0-9]+([0-9]+).*size[^0-9]+([0-9]+).*(Id|type)=[ ]?([^,]+)"
 
 # /dev/mmvblk0p1 on /media/Log1 type ext2 (rw,nosuid,nodev,uhelper=udisks)
-
-	# SC1087: Use braces when expanding arrays, e.g. ${array[idx]} (or ${var}[.. to quiet).
-	# shellcheck disable=SC1087
 	local regexMountLine="($BOOT_DEVICENAME[a-z0-9]+).*on ([^ ]+)"
 
-	logItem "PARTITIONS_TO_BACKUP - 1: ${PARTITIONS_TO_BACKUP[*]}"
+	logItem "PARTITIONS_TO_BACKUP - 1: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
 
 	local backupAllPartitions
 	if [[ "$PARTITIONS_TO_BACKUP" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 		backupAllPartitions=1
 		PARTITIONS_TO_BACKUP=()
 	else
-		# SC2128: Expanding an array without an index only gives the first element.
-		# shellcheck disable=SC2128
-		PARTITIONS_TO_BACKUP=( "$PARTITIONS_TO_BACKUP" )
+		PARTITIONS_TO_BACKUP=($PARTITIONS_TO_BACKUP)
 		backupAllPartitions=0
 	fi
 
@@ -6593,12 +6447,8 @@ function checksForPartitionBasedBackup() {
 
 	error=0
 
-	# SC2116: Useless echo? Instead of 'cmd $(echo foo)', just use 'cmd foo'.
-	#shellcheck disable=SC2116
-	{
-		logItem "mountPoints: $(echo "${mountPoints[@]}")"
-		logItem "mountPoints - keys: $(echo "${!mountPoints[@]}")"
-	}
+	logItem "mountPoints: $(echo "${mountPoints[@]}")"
+	logItem "mountPoints - keys: $(echo "${!mountPoints[@]}")"
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
 		logItem "Checking partition $partition"
 		if ! [[ $partition =~ ^[0-9]+ ]]; then
@@ -6615,15 +6465,11 @@ function checksForPartitionBasedBackup() {
 	done
 
 	if (( ! $REGRESSION_TEST )); then # skip test in regressiontest because in qemu /dev/mmcblk0 is a symlink to /dev/sda
-		local pn=( "$(extractBootAndRootPartitionNames)" )
+		local pn=( $(extractBootAndRootPartitionNames) )
 		local i
 		for ((i=0;i<${#pn[@]};i+=2)); do
 			local p=${pn[i]}
-			# SC2178: Variable was used as an array but is now assigned a string.
-			# shellcheck disable=SC2178
 			local d=${pn[$((i+1))]}
-			# SC2128: Expanding an array without an index only gives the first element.
-			# shellcheck disable=SC2128
 			if [[ $d =~ /dev/sd && ! $BOOT_DEVICENAME =~ /dev/sd  ]]; then # allow -P for USB boot (all partitions are external but write error of SD card is used
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_PARTITION_NOT_SAVED "$p" "$d"
 				error=1
@@ -6748,8 +6594,6 @@ function inspect4Backup() {
 		logItem "Legacy boot discovery"
 
 		local d
-		# SC2044: For loops over find output are fragile. Use find -exec or a while read loop.
-		# shellcheck disable=SC2044
 		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x "$d")" ] && echo "$d" && break; done)
 		logItem "part: $part"
 		local bootDeviceNumber
@@ -6762,9 +6606,6 @@ function inspect4Backup() {
 		if [ "$bootDeviceNumber" == "$rootDeviceNumber" ]; then	# /boot on same partition with root partition /
 			local rootDevice
 			local file
-			# SC1090: Can't follow non-constant source. Use a directive to specify location.
-			# SC2044: For loops over find output are fragile. Use find -exec or a while read loop.
-			# shellcheck disable=SC1090,SC2044
 			rootDevice=$(for file in $(find /sys/dev/ -name "$rootDeviceNumber"); do source "$file"/uevent; echo "$DEVNAME"; done) # mmcblk0p1
 			logItem "Rootdevice: $rootDevice"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
@@ -6812,12 +6653,8 @@ function inspect4Backup() {
 				fi
 			fi
 
-			# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-			# shellcheck disable=SC2207
-			{
 			boot=( $(deviceInfo "$bootPartition") )
 			root=( $(deviceInfo "$rootPartition") )
-			}
 			
 			logItem "boot: ${boot[*]}"
 			logItem "root: ${root[*]}"
@@ -7038,7 +6875,7 @@ function doitBackup() {
 		fi
 
 		eval "SMART_RECYCLE_PARMS=( $SMART_RECYCLE_OPTIONS )"
-		local p="${SMART_RECYCLE_PARMS[*]}"
+		local p="${SMART_RECYCLE_PARMS[@]}"
 		logItem "SMART_RECYCLE_PARMS: $p"
 		logItem "smart recycle parms: ${#SMART_RECYCLE_PARMS[@]}"
 
@@ -7220,8 +7057,6 @@ function doitBackup() {
 
 	logCommand "ls -1 ${BACKUPPATH}"
 	local nonRaspiGeneratedDirs
-	# SC2010: Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-   # shellcheck disable=SC2010
 	nonRaspiGeneratedDirs=$(ls -1 "${BACKUPPATH}" | grep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | grep -c -E "\-backup\-")
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
@@ -7783,8 +7618,6 @@ function restorePartitionBasedPartition() { # restorefile
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
-	# SC2001: See if you can use ${variable//search/replace} instead.
-	# shellcheck disable=SC2001
 	mappedRestorePartition=$(sed "s%${BACKUP_BOOT_PARTITION_PREFIX}%${restoreDevice}%" <<< "$restorePartition")
 
 	if [[ ! "$partitionFilesystem" =~ $SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX ]]; then
@@ -7821,7 +7654,7 @@ function restorePartitionBasedPartition() { # restorefile
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" "$fileSystemSize"
 		logItem "$cmd $mappedRestorePartition"
 
-		$cmd "$mappedRestorePartition" &>>"$LOG_FILE"
+		$cmd $mappedRestorePartition &>>"$LOG_FILE"
 
 		rc=$?
 		if (( $rc )); then
@@ -7849,7 +7682,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 			if (( $labelPartition )); then
 				logItem "$cmd $mappedRestorePartition $partitionLabel"
-				$cmd "$mappedRestorePartition" "$partitionLabel" &>>"$LOG_FILE"
+				$cmd $mappedRestorePartition $partitionLabel &>>"$LOG_FILE"
 				rc=$?
 				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
@@ -7997,7 +7830,6 @@ function doitRestore() {
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logCommand "ls -1 $RESTOREFILE*"
 
-	# shellcheck disable=SC2010
 	if  ls -1 "$RESTOREFILE"* | grep -E -q "^(sd[a-z]([0-9]+)|mmcblk[0-9]+p[0-9]+|nvme[0-9]+n[0-9]+p[0-9]+).*" 2>>"$LOG_FILE" ; then
 		PARTITIONBASED_BACKUP=1
 	else
@@ -8223,8 +8055,6 @@ function updateRestoreReminder() {
 		echo "$(date +%Y%m) 0" > "$reminder_file"
 		return
 	fi
-	# SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	# shellcheck disable=SC2207
 	rf=( $(<"$reminder_file") )
 	local diffMonths
 	diffMonths=$(calculateMonthDiff "$now" "${rf[0]}" )
@@ -8401,8 +8231,6 @@ function updateConfig() {
 				OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
 				echo "$KW=$OW" >> $MERGED_CONFIG						# use old option value
 			else
-				# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
-				# shellcheck disable=SC2059
 				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
 				echo "$line" >> $MERGED_CONFIG						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
@@ -8432,11 +8260,7 @@ function updateConfig() {
 			r=$?
 			logItem "grep old file for deleted $KW rc:$r - contents: $OC_line"
 			if (( $r )) && [[ $KW != "UUID" ]]; then				# option not found, it was deleted
-				# SC2129: Consider using { cmd1; cmd2; } >> file instead of individual redirects.
-				# shellcheck disable=SC2129
 				echo "" >> $MERGED_CONFIG
-				# SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
-				# shellcheck disable=SC2059
 				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
 				echo "# $line" >> $MERGED_CONFIG						# insert deleted config line as comment
 				(( deleted ++ ))
@@ -8493,7 +8317,7 @@ function synchronizeCmdlineAndfstab() {
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		ROOT_PARTITION=${BOOT_PARTITION/1$/2}
+		ROOT_PARTITION="$(sed 's/1$/2/' <<< "$BOOT_PARTITION")"
 	fi
 
 	logEntry "BOOT_PARTITION: $BOOT_PARTITION - ROOT_PARTITION: $ROOT_PARTITION"
@@ -8568,9 +8392,7 @@ function synchronizeCmdlineAndfstab() {
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-				# shellcheck disable=SC2155
 				local oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
-				# shellcheck disable=SC2155
 				local newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldpartuuidID" "$newpartuuidID" "$fstab"
 				sed -i "s/$oldpartuuidID/$newpartuuidID/g" $FSTAB &>> "$LOG_FILE"
@@ -8582,9 +8404,7 @@ function synchronizeCmdlineAndfstab() {
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				# shellcheck disable=SC2155
 				local olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
-				# shellcheck disable=SC2155
 				local newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
 				sed -i "s/$olduuidID/$newuuidID/g" $FSTAB &>> "$LOG_FILE"
@@ -8596,9 +8416,7 @@ function synchronizeCmdlineAndfstab() {
 			if [[ -z $newLABEL ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldLABEL" != "$newLABEL" ]]; then
-				# shellcheck disable=SC2155
 				local oldlabelID="$(sed -E 's/-[0-9]+//' <<< "$oldLABEL")"
-				# shellcheck disable=SC2155
 				local newlabelID="$(sed -E 's/-[0-9]+//' <<< "$newLABEL")"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldlabelID" "$newlabelID" "$fstab"
 				sed -i "s/$oldlabelID/$newlabelID/g" $FSTAB &>> "$LOG_FILE"
@@ -8691,9 +8509,7 @@ function SR_listYearlyBackups() { # directory
 		for ((i=0;i<=$(( $SR_YEARLY-1 ));i++)); do
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
-			local d
-			d=$(date +%Y -d "${i} year ago")
-			# shellcheck disable=SC2010,SC2046,SC1087
+			local d=$(date +%Y -d "${i} year ago")
 			ls -1 "$1" | grep -E "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
@@ -8709,9 +8525,7 @@ function SR_listMonthlyBackups() { # directory
 			# ls ${BACKUPPATH} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
-			local d
-			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			# shellcheck disable=SC2010,SC2046,SC1087
+			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
 			ls -1 "$1" | grep -E "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
 		done
 	fi
@@ -8732,14 +8546,12 @@ function SR_listWeeklyBackups() { # directory
 			if (( $(date +"%u") == 1 )); then
 				last=""
 			fi
-			local mon
-			mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
+			local mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
 			local dl=""
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
 				dl="\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
 			done
-			# shellcheck disable=SC2010,SC2046
-			ls -1 "$1" | grep -e "$(echo -n "$dl" | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
+			ls -1 "$1" | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
 		done
 	fi
 	logExit
@@ -8752,10 +8564,8 @@ function SR_listDailyBackups() { # directory
 		for ((i=0;i<=$(( $SR_DAILY-1));i++)); do
 			# today is 20191117
 			# date +%Y%m%d -d "-1 day" -> 20191116
-			local d
-			d=$(date +%Y%m%d -d "-${i} day") # get day
-			# shellcheck disable=SC2010,SC2046
-			ls -1 "$1" | grep "\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
+			local d=$(date +%Y%m%d -d "-${i} day") # get day
+			ls -1 "$1"| grep "\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
 		done
 	fi
 	logExit
@@ -8804,7 +8614,6 @@ function SR_listUniqueBackups() { #directory
 function SR_listBackupsToDelete() { # directory
 	logEntry "$1"
 	local r
-	# shellcheck disable=SC2010,SC2046
 	r="$(ls -1 "$1" | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc
 	rc="$(countLines "$r")"
@@ -9161,7 +8970,6 @@ while (( "$#" )); do		# check if option -f was used
   case "$1" in
 	-f)
 		o=$(checkOptionParameter "$1" "$2")
-		# shellcheck disable=SC2181
 		(( $? )) && exitError $RC_PARAMETER_ERROR
 		CUSTOM_CONFIG_FILE="$o"; shift 2
 		if [[ ! -f "$CUSTOM_CONFIG_FILE" ]]; then
@@ -9170,7 +8978,6 @@ while (( "$#" )); do		# check if option -f was used
 		fi
 		CUSTOM_CONFIG_FILE="$(readlink -f "$CUSTOM_CONFIG_FILE")"
 		set -e
-		# shellcheck source=/dev/null
 		. "$CUSTOM_CONFIG_FILE"
 		set +e
 		CUSTOM_CONFIG_FILE_INCLUDED=1
@@ -9200,7 +9007,6 @@ while (( "$#" )); do
 
 	-a)
 	  o=$(checkOptionParameter "$1" "$2")
-  	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STARTSERVICES="$o"; shift 2
 	  ;;
@@ -9212,7 +9018,6 @@ while (( "$#" )); do
 
 	-b)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_BLOCKSIZE="$o"; shift 2
 	  ;;
@@ -9223,7 +9028,6 @@ while (( "$#" )); do
 
 	--bootDevice)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BOOT_DEVICE="$o"; shift 2
 	  ;;
@@ -9238,49 +9042,42 @@ while (( "$#" )); do
 
 	--coloring)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  COLORING="$o"; shift 2
 	  ;;
 
 	-d)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
 	  ;;
 
 	-D)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_PARMS="$o"; shift 2
 	  ;;
 
 	--dynamicMount)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DYNAMIC_MOUNT="$o"; shift 2
 	  ;;
 
 	-e)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL="$o"; shift 2
 	  ;;
 
 	-E)
 	  o=$(checkOptionParameter "$1" "$2");
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PARMS="$o"; shift 2
 	  ;;
 
 	--eMailColoring)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_COLORING="${o^^}"; shift 2
 	  ;;
@@ -9298,7 +9095,6 @@ while (( "$#" )); do
 
 	-G)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
@@ -9318,49 +9114,42 @@ while (( "$#" )); do
 
 	-k)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
 	--keep_dd)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DD="$o"; shift 2
 	  ;;
 
 	--keep_ddz)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DDZ="$o"; shift 2
 	  ;;
 
 	--keep_tar)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TAR="$o"; shift 2
 	  ;;
 
 	--keep_tgz)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TGZ="$o"; shift 2
 	  ;;
 
 	--keep_rsync)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_RSYNC="$o"; shift 2
 	  ;;
 
 	-l)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
 	  checkImportantParameters
@@ -9368,7 +9157,6 @@ while (( "$#" )); do
 
 	-L)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
 	  checkImportantParameters
@@ -9376,7 +9164,6 @@ while (( "$#" )); do
 
 	-m)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
 	  checkImportantParameters
@@ -9384,7 +9171,6 @@ while (( "$#" )); do
 
 	-M)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
@@ -9396,7 +9182,6 @@ while (( "$#" )); do
 
 	-N)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXTENSIONS="$o"; shift 2
 	  ;;
@@ -9407,14 +9192,12 @@ while (( "$#" )); do
 
 	-o)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
 	-p)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPPATH="$o"; shift 2
 	  if [[ ! -d "$BACKUPPATH" ]]; then
@@ -9430,7 +9213,6 @@ while (( "$#" )); do
 
 	-r)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTOREFILE="$o"; shift 2
 	  if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
@@ -9442,7 +9224,6 @@ while (( "$#" )); do
 
 	-R)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  ROOT_PARTITION="$o"; shift 2
 	  ROOT_PARTITION_DEFINED=1
@@ -9458,7 +9239,6 @@ while (( "$#" )); do
 
 	-s)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PROGRAM="$o"; shift 2
 	  ;;
@@ -9477,7 +9257,6 @@ while (( "$#" )); do
 
 	--smartRecycleOptions)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  SMART_RECYCLE_OPTIONS="$o"; shift 2
 	  ;;
@@ -9488,7 +9267,6 @@ while (( "$#" )); do
 
 	-t)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
@@ -9499,36 +9277,30 @@ while (( "$#" )); do
 
 	-T)
 	  checkOptionParameter "$1" "$2"
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-	   # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$2"; shift 2
 	  ;;
 
 	--telegramToken)
 	  o="$(checkOptionParameter "$1" "$2")"
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_TOKEN="$o"; shift 2
 	  ;;
 
 	--telegramChatID)
 	  o="$(checkOptionParameter "$1" "$2")"
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_CHATID="$o"; shift 2
 	  ;;
 
 	--telegramNotifications)
 	  o="$(checkOptionParameter "$1" "$2")"
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_NOTIFICATIONS="$o"; shift 2
 	  ;;
 
 	-u)
 	  o=$(checkOptionParameter "$1" "$2")
-	   # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
@@ -9632,7 +9404,7 @@ if [[ -n "$1" ]]; then
 	fi
 fi
 
-unusedParms="$*"
+unusedParms="$@"
 
 if [[ -n "$unusedParms" ]]; then
 	usage
