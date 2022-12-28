@@ -1931,6 +1931,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	if [[ -z $msg ]]; then
 		msg="${MSG_EN[$MSG_UNDEFINED]} $1"
 	fi
+
 	shift
 
 	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
@@ -2068,10 +2069,8 @@ function logEnable() {
 	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 	logItem "$GIT_CODEVERSION"
-	local sep
-	sep="$(getMessage $MSG_SENSITIVE_SEPARATOR)"
-	local warn
-	warn="$(getMessage $MSG_SENSITIVE_WARNING)"
+	local sep="$(getMessage $MSG_SENSITIVE_SEPARATOR)"
+	local warn="$(getMessage $MSG_SENSITIVE_WARNING)"
 	logItem "$sep"
 	logItem "$warn"
 	logItem "$sep"
@@ -2270,10 +2269,8 @@ function writeToConsole() {  # msglevel messagenumber message
 # --- RBK0105I: Deleting new backup directory /backup/obelix/obelix-rsync-backup-20180912-215541.
 # ??? RBK0005E: Backup failed. Check previous error messages for details.
 
-		local msgNumber
-		msgNumber="$(cut -f 2 -d ' ' <<< "$msg")"
-		local msgSev
-		msgSev=${msgNumber:7:1}
+		local msgNumber=$(cut -f 2 -d ' ' <<< "$msg")
+		local msgSev=${msgNumber:7:1}
 
 		if (( $TIMESTAMPS )); then
 			timestamp="$(date +'%m-%d-%Y %T') "
@@ -2372,8 +2369,7 @@ function createBackupVersion() { # file
 	fi
 
 	if [[ -f "$file.bak" ]]; then														# .bak exists already
-		local versions
-		versions="$(ls $file\.*\.* -1 2>/dev/null)"
+		local versions="$(ls $file\.*\.* -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
@@ -2585,7 +2581,7 @@ function logOptions() { # option state
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
-	logItem "COLOR_CODES=\"${COLOR_CODES[*]}\""
+	logItem "COLOR_CODES="${COLOR_CODES[@]}""
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
  	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
@@ -3066,8 +3062,7 @@ function downloadPropertiesFile() { # FORCE
 			local type=$BACKUPTYPE
 			local keep=$KEEPBACKUPS
 			local func="B"; (( $RESTORE )) && func="R"
-			local srOptions
-			srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
+			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
 			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
 		else
@@ -3360,6 +3355,7 @@ function executeBeforeStopServices() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BEFORE_STOP_SERVICES_FAILED "$rc"
 			exitError $RC_BEFORE_STOP_SERVICES_ERROR
 		fi
+		BEFORE_STOPPED_SERVICES=1
 	fi
 	logExit
 }
@@ -3425,6 +3421,7 @@ function executeAfterStartServices() {
 				exitError $RC_BEFORE_START_SERVICES_ERROR
 			fi
 		fi
+		BEFORE_STOPPED_SERVICES=0
 	fi
 	logExit
 }
@@ -4223,7 +4220,7 @@ function sendSlackMessage() { # message 0/1->success/failure
 
 		logEntry "$1"
 
-		local msg_json statusMsg 
+		local msg_json statusMsg
 		
 		local o
 		o=$(mktemp)
@@ -5088,12 +5085,10 @@ function bootPartitionBackup() {
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
-					local cmd
-					cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					executeTar "$cmd" 
 				else
-					local cmd
-					cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
+					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
 					executeDD "$cmd"
 				fi
 				rc=$?
@@ -5416,8 +5411,7 @@ function updateUUIDs() {
 function updatePartUUID() {
 	logEntry
 	if (( $UPDATE_UUIDS )); then
-		local newUUID
-		newUUID=$(od -A n -t x -N 4 /dev/urandom | tr -d " ")
+		local newUUID=$(od -A n -t x -N 4 /dev/urandom | tr -d " ")
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "PARTUUID" "$newUUID" "$RESTORE_DEVICE"
 		echo -ne "x\ni\n0x$newUUID\nr\nw\nq\n" | fdisk "$RESTORE_DEVICE" &>> "$LOG_FILE"
 		waitForPartitionDefsChanged
@@ -5448,7 +5442,7 @@ function updateUUID() {
 
 function backupRsync() { # partition number (for partition based backup)
 
-	local verbose partition target source excludeRoot cmd cmdParms excludeMeta
+	local verbose partition target source excludeRoot cmd cmdParms excludeMeta lastBackupDir
 
 	logEntry
 
@@ -5492,10 +5486,9 @@ function backupRsync() { # partition number (for partition based backup)
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
-	
+
 	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
-	local fs
-	fs="$(getFsType "$BACKUPPATH")"
+	local fs="$(getFsType "$BACKUPPATH")"
 	if [[ -e $PERSISTENT_JOURNAL && $fs =~ ^nfs* ]]; then
 		logItem "Excluding $PERSISTENT_JOURNAL for nfs"
 		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL}"
@@ -5701,10 +5694,8 @@ function restore() {
 				logCommand "cat $MODIFIED_SFDISK"
 
 				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
-					local sourceSDSize
-					sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-					local targetSDSize
-					targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
+					local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
 					logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
 					if (( sourceSDSize != targetSDSize )); then
@@ -5718,8 +5709,7 @@ function restore() {
 #						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
-						local sourceValues
-						sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
+						local sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
 						if [[ ${#sourceValues[@]} != 4 ]]; then
 							logCommand "cat $SF_FILE"
 							assertionFailed $LINENO "Expected at least 2 partitions in $SF_FILE"
@@ -5731,15 +5721,12 @@ function restore() {
 							exitError $RC_MISC_ERROR
 						fi
 
-						local adjustedTargetPartitionBlockSize
-						adjustedTargetPartitionBlockSize=$(( $targetSDSize / 512 - ${sourceValues[1]} - ${sourceValues[0]} - ( ${sourceValues[2]} - ${sourceValues[1]} ) ))
+						local adjustedTargetPartitionBlockSize=$(( $targetSDSize / 512 - ${sourceValues[1]} - ${sourceValues[0]} - ( ${sourceValues[2]} - ${sourceValues[1]} ) ))
 						logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 						logItem "sourceBlockSize: ${sourceValues[3]} - adjusted targetBlockSize: $adjustedTargetPartitionBlockSize"
 
-						local newTargetPartitionSize
-						newTargetPartitionSize=$(( adjustedTargetPartitionBlockSize * 512 ))
-						local oldPartitionSourceSize
-						oldPartitionSourceSize=$(( ${sourceValues[3]} * 512 ))
+						local newTargetPartitionSize=$(( adjustedTargetPartitionBlockSize * 512 ))
+						local oldPartitionSourceSize=$(( ${sourceValues[3]} * 512 ))
 
 						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" "$MODIFIED_SFDISK"
 
@@ -5784,8 +5771,7 @@ function restore() {
 				logItem "Restoring boot partition from $DD_FILE"
 				local progressFlag=""
 				(( $PROGRESS && $INTERACTIVE )) && progressFlag="status=progress"
-				local cmd
-				cmd="dd if=$DD_FILE $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
+				local cmd="dd if="$DD_FILE" $progressFlag of=$BOOT_PARTITION bs=$DD_BLOCKSIZE"
 				executeDD "$cmd"
 				rc=$?
 			else
@@ -5835,8 +5821,7 @@ function restore() {
 			case $BACKUPTYPE in
 
 				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
-					local archiveFlags
-					archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
+					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
 					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 						assertionFailed $LINENO "push to $MNT_POINT failed"
@@ -5854,13 +5839,11 @@ function restore() {
 					;;
 
 				$BACKUPTYPE_RSYNC)
-					local excludePattern
-					excludePattern="--exclude=/$HOSTNAME-backup.*"
+					local excludePattern="--exclude=/$HOSTNAME-backup.*"
 					logItem "Excluding excludePattern"
 					local progressFlag=""
 					(( $PROGRESS && $INTERACTIVE )) && progressFlag="--info=progress2"
-					local cmd
-					cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
+					local cmd="rsync $progressFlag --numeric-ids ${RSYNC_BACKUP_OPTIONS}${verbose} ${RSYNC_BACKUP_ADDITIONAL_OPTIONS} $excludePattern \"$ROOT_RESTOREFILE/\" $MNT_POINT"
 					executeRsync "$cmd"
 					rc=$?
 					;;
@@ -5939,16 +5922,12 @@ function applyBackupStrategy() {
 
 		logCommand "ls -d $BACKUPPATH/*"
 
-		local keptBackups
-		keptBackups="$(SR_listUniqueBackups "$BACKUPTARGET_ROOT")"
-		local numKeptBackups
-		numKeptBackups="$(countLines "$keptBackups")"
+		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
+		local numKeptBackups="$(countLines "$keptBackups")"
 		logItem "Keptbackups $numKeptBackups: $keptBackups"
 
-		local tobeDeletedBackups
-		tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
-		local numTobeDeletedBackups
-		numTobeDeletedBackups="$(countLines "$tobeDeletedBackups")"
+		local tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
+		local numTobeDeletedBackups="$(countLines "$tobeDeletedBackups")"
 		logItem "TobeDeletedBackups $numTobeDeletedBackups: $tobeDeletedBackups"
 
 		if [[ -n "$tobeDeletedBackups" ]]; then
@@ -5997,7 +5976,7 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE | grep -vE "_" | head -n -"$keepBackups" | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
+				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
@@ -6210,10 +6189,8 @@ function backupPartitions() {
 
 		logItem "Processing partition $partition"
 
-		local fileSystem
-		fileSystem=$(getBackupPartitionFilesystem "$partition")
-		local fileSystemSize
-		fileSystemSize=$(getBackupPartitionFilesystemSize "$partition")
+		local fileSystem=$(getBackupPartitionFilesystem $partition)
+		local fileSystemSize=$(getBackupPartitionFilesystemSize $partition)
 
 		logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize"
 
@@ -6320,8 +6297,7 @@ function extractBootAndRootPartitionNames() {
 
 	logEntry
 
-	local pre
-	pre="$(grep -E "^[^#]+\s(/|/boot)\s.*" /etc/fstab | xargs -I {} bash -c "echo {} | cut -f 1 -d ' '")"
+	local pre="$(grep -E "^[^#]+\s(/|/boot)\s.*" /etc/fstab | xargs -I {} bash -c "echo {} | cut -f 1 -d ' '")"
 	logItem "$pre"
 	local p part
 	local result
@@ -6433,8 +6409,7 @@ function checksForPartitionBasedBackup() {
 
 	local error=0
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
-		local fileSystem
-		fileSystem="$(getPartitionBootFilesystem "$partition")"
+		local fileSystem=$(getPartitionBootFilesystem $partition)
 		if [[ -n $fileSystem && ! $fileSystem =~ $SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX ]]; then
 			error=1
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_FILESYSTEM_FORMAT "$fileSystem" "${BOOT_PARTITION_PREFIX}$partition"
@@ -6511,8 +6486,7 @@ function commonChecks() {
 		fi
 	fi
 
-	local co
-	co="$(tr -d "$COLORING_VALID_OPTIONS" <<< $COLORING)"
+	local co="$(tr -d "$COLORING_VALID_OPTIONS" <<< $COLORING)"
 	if [[ -n "$COLORING" && -n "$co" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_COLORING_OPTION "$co"
 			exitError $RC_PARAMETER_ERROR
@@ -6528,8 +6502,7 @@ function getRootPartition() {
 #	cat /proc/cmdline
 #	dma.dmachans=0x7f35 bcm2708_fb.fbwidth=656 bcm2708_fb.fbheight=416 bcm2708.boardrev=0xf bcm2708.serial=0x3f3c9490 smsc95xx.macaddr=B8:27:EB:3C:94:90 bcm2708_fb.fbswap=1 sdhci-bcm2708.emmc_clock_freq=250000000 vc_mem.mem_base=0x1fa00000 vc_mem.mem_size=0x20000000  dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait
 
-	local cmdline
-	cmdline="$(cat /proc/cmdline)"
+	local cmdline=$(cat /proc/cmdline)
 	logCommand "cat /proc/cmdline"
 	if [[ $cmdline =~ .*(imgpart|root|datadev)=([^ ]+) ]]; then # berryboot and volumio
 		ROOT_PARTITION=${BASH_REMATCH[2]}
@@ -6573,8 +6546,7 @@ function inspect4Backup() {
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
 
 	if [[ -n "$BOOT_DEVICE" ]]; then
-		local updatedBootdeviceName
-		updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
+		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
 		BOOT_DEVICE="$updatedBootdeviceName"
 		logItem "Using configured bootdevice $BOOT_DEVICE"
 	elif (( $REGRESSION_TEST )); then
@@ -6596,10 +6568,8 @@ function inspect4Backup() {
 		local d
 		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x "$d")" ] && echo "$d" && break; done)
 		logItem "part: $part"
-		local bootDeviceNumber
-		bootDeviceNumber=$(mountpoint -d /boot)
-		local rootDeviceNumber
-		rootDeviceNumber=$(mountpoint -d /)
+		local bootDeviceNumber=$(mountpoint -d /boot)
+		local rootDeviceNumber=$(mountpoint -d /)
 		logItem "bootDeviceNumber: $bootDeviceNumber"
 		logItem "rootDeviceNumber: $rootDeviceNumber"
 
@@ -6632,12 +6602,10 @@ function inspect4Backup() {
 			fi
 
 			# find root partition
-			local rootPartition
-			rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
+			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
 			logItem "/ mounted? $rootPartition"
 			if [[ $rootPartition == "/dev/root" ]]; then
-				local rp
-				rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
+				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
 				rootPartition=${rp#/root=/}
 				logItem "/ mounted as /dev/root: $rootPartition"
 			fi
@@ -6655,18 +6623,18 @@ function inspect4Backup() {
 
 			boot=( $(deviceInfo "$bootPartition") )
 			root=( $(deviceInfo "$rootPartition") )
-			
-			logItem "boot: ${boot[*]}"
-			logItem "root: ${root[*]}"
 
-			if [[ ${#boot[@]} == 0 || ${#root[@]} ]]; then
+			logItem "boot: ${boot[@]}"
+			logItem "root: ${root[@]}"
+
+			if [[  -z "$boot" || -z "$root" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
 				exitError $RC_NO_BOOT_FOUND
 			fi
 
 			BOOT_DEVICE="${boot[0]}"
 
-			if [[ "${boot[*]}" == "${root[*]}" ]]; then
+			if [[ "${boot[@]}" == "${root[@]}" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "/dev/$BOOT_DEVICE"
 				SHARED_BOOT_DIRECTORY=1
 			fi
@@ -6696,35 +6664,35 @@ function inspect4Restore() {
 
 	logEntry
 
-	if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
-		SF_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.sfdisk)
-		if [[ -z "$SF_FILE" ]]; then
+	if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+		SF_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.sfdisk)
+		if [[ -z $SF_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.sfdisk"
 			exitError $RC_MISSING_FILES
 		fi
 
-		MBR_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.mbr)
-		if [[ -z "$MBR_FILE" ]]; then
+		MBR_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.mbr)
+		if [[ -z $MBR_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.mbr"
 			exitError $RC_MISSING_FILES
 		fi
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		BLKID_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.blkid)
-		if [[ -z "$BLKID_FILE" ]]; then
+		BLKID_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.blkid)
+		if [[ -z $BLKID_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
 			exitError $RC_MISSING_FILES
 		fi
 
-		PARTED_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.parted)
-		if [[ -z "$PARTED_FILE" ]]; then
+		PARTED_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.parted)
+		if [[ -z $PARTED_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.parted"
 			exitError $RC_MISSING_FILES
 		fi
 
-		FDISK_FILE=$(ls -1 "$RESTOREFILE"/"$HOSTNAME"-backup.fdisk)
-		if [[ -z "$FDISK_FILE" ]]; then
+		FDISK_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.fdisk)
+		if [[ -z $FDISK_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.fdisk"
 			exitError $RC_MISSING_FILES
 		fi
@@ -6833,8 +6801,7 @@ function doitBackup() {
 			exitError $RC_SDCARD_ERROR
 		fi
 
-		local partitionsFound
-		partitionsFound=$(fdisk -l "$BOOT_DEVICENAME" | grep -c "^/dev/$BOOT_PARTITION_PREFIX")
+		local partitionsFound=$(fdisk -l $BOOT_DEVICENAME | grep "^/dev/$BOOT_PARTITION_PREFIX" | wc -l)
 		logItem "Found partitions on $BOOT_DEVICENAME: $partitionsFound"
 		if (( $partitionsFound > 2 )) && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
 			if ! (( $PARTITIONBASED_BACKUP || $IGNORE_ADDITIONAL_PARTITIONS )); then
@@ -6913,8 +6880,7 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 			exitError $RC_MISSING_COMMANDS
 		fi
-		local invalidNotification
-		invalidNotification="$(tr -d "$TELEGRAM_POSSIBLE_NOTIFICATIONS" <<< "$TELEGRAM_NOTIFICATIONS")"
+		local invalidNotification="$(tr -d "$TELEGRAM_POSSIBLE_NOTIFICATIONS" <<< "$TELEGRAM_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_INVALID_NOTIFICATION "$invalidNotification" "$TELEGRAM_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
@@ -6931,8 +6897,7 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 			exitError $RC_MISSING_COMMANDS
 		fi
-		local invalidNotification
-		invalidNotification="$(tr -d "$PUSHOVER_POSSIBLE_NOTIFICATIONS" <<< "$PUSHOVER_NOTIFICATIONS")"
+		local invalidNotification="$(tr -d "$PUSHOVER_POSSIBLE_NOTIFICATIONS" <<< "$PUSHOVER_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_INVALID_NOTIFICATION "$invalidNotification" "$PUSHOVER_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
@@ -6940,8 +6905,7 @@ function doitBackup() {
 	fi
 
 	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
-		local invalidNotification
-		invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
+		local invalidNotification="$(tr -d "$SLACK_POSSIBLE_NOTIFICATIONS" <<< "$SLACK_NOTIFICATIONS")"
 		if [[ -n "$invalidNotification" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_INVALID_NOTIFICATION "$invalidNotification" "$SLACK_POSSIBLE_NOTIFICATIONS"
 			exitError $RC_PARAMETER_ERROR
@@ -6962,7 +6926,7 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH"
 			exitError $RC_MISC_ERROR
 		else
-			local fs; fs="$(getFsType "$BACKUPPATH")"
+			local fs="$(getFsType "$BACKUPPATH")"
 			logItem "Filesystem: $fs"
 			if ! supportsFileAttributes "$BACKUPPATH"; then
 				if [[ $fs =~ ^nfs* ]]; then
@@ -6978,8 +6942,7 @@ function doitBackup() {
 			exitError $RC_PARAMETER_ERROR
 		fi
 
-		local rsyncVersion
-		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
+		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
 		if (( $PROGRESS && $INTERACTIVE )) && $(bc <<< "$rsyncVersion < 3.1") == 1; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
@@ -7056,8 +7019,7 @@ function doitBackup() {
 	fi
 
 	logCommand "ls -1 ${BACKUPPATH}"
-	local nonRaspiGeneratedDirs
-	nonRaspiGeneratedDirs=$(ls -1 "${BACKUPPATH}" | grep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | grep -c -E "\-backup\-")
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
@@ -7112,8 +7074,7 @@ function getPartitionTable() { # device
 	# <empty> -> no partition table
 
 	if [[ -n "$(partprobe -d -s "$1" | cut -f 4 -d ' ')" ]]; then
-		local table
-		table="$(IFS='' parted "$1" unit MB p 2>>$LOG_FILE | sed -r '/^($|[MSDP])/d')"
+		local table="$(IFS='' parted "$1" unit MB p 2>>$LOG_FILE | sed -r '/^($|[MSDP])/d')"
 		if (( $(wc -l <<< "$table") < 2 )); then
 			result=""
 		else
@@ -7348,10 +7309,8 @@ function restorePartitionBasedBackup() {
 	fi
 
 	if (( ! $SKIP_SFDISK && ! $FORCE_SFDISK )); then
-		local sourceSDSize
-		sourceSDSize="$(calcSumSizeFromSFDISK "$SF_FILE")"
-		local targetSDSize
-		targetSDSize="$(blockdev --getsize64 "$RESTORE_DEVICE")"
+		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
+		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
 		logItem "SourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
 		if (( targetSDSize < sourceSDSize )); then
@@ -7385,13 +7344,11 @@ function restorePartitionBasedBackup() {
 		local force=""
 		(( $FORCE_SFDISK )) && force="--force"
 
-		local tmp
-		tmp=$(mktemp)
+		local tmp=$(mktemp)
 		logItem "sfdisk"
 		sfdisk $force -uSL $RESTORE_DEVICE < "$SF_FILE" > "$tmp" 2>&1
 		rc=$?
-		local error
-		error="$(<"$tmp")"
+		local error=$(<$tmp)
 		echo "$error" >> "$LOG_FILE"
 		logItem "Error: $error"
 		rm "$tmp" &>/dev/null
@@ -7483,8 +7440,7 @@ function extractDataFromBackupPartedFile() { # partition fieldnumber
 
 	logEntry "$1 $2"
 
-	local partitionNo
-	partitionNo=$(sed -E "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" <<< "$1")
+	local partitionNo=$(sed -E "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" <<< "$1")
 	logItem "PartitionNo: $partitionNo"
 	local parted element
 	logItem "PARTED: $1 - $(<"$PARTED_FILE")"
@@ -7597,12 +7553,12 @@ function restorePartitionBasedPartition() { # restorefile
 
 	logItem "restorePartition: $restorePartition"
 	local partitionNumber
-	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< "$restorePartition")
+	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< $restorePartition)
 	logItem "Partitionnumber: $partitionNumber"
 
-	local fileSystemSize
-	fileSystemSize=$(getBackupPartitionFilesystemSize "$partitionNumber")
-	logItem "Filesystemsize: $fileSystemSize"
+	local fileSystemsize
+	fileSystemsize=$(getBackupPartitionFilesystemSize $partitionNumber)
+	logItem "Filesystemsize: $fileSystemsize"
 
 	restorePartition="${restorePartition%.*}"
 	logItem "RestorePartition: $restorePartition"
@@ -7876,10 +7832,8 @@ function doitRestore() {
 			exitError $RC_DEVICES_NOTFOUND
 		fi
 
-		local rd
-		rc=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
-		local rr
-		rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
+		local rd=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
+		local rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
 
 		logItem "Restore devices: -d: $rd - -R: $rr"
 
@@ -7889,8 +7843,7 @@ function doitRestore() {
 		fi
 	fi
 
-	local usbMount
-	usbMount"$(dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
+	local usbMount="$(dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
 	if grep -q "install ok installed" <<< "$usbMount" &>>$LOG_FILE; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
@@ -7917,8 +7870,7 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_MISSING_COMMANDS
 		fi
-		local rsyncVersion
-		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
+		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
 		if (( $PROGRESS && $INTERACTIVE )) && $(bc <<< "$rsyncVersion < 3.1") == 1; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
@@ -7968,10 +7920,8 @@ function doitRestore() {
 
 	if (( ! $PARTITIONBASED_BACKUP )) && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]] && (( ! $ROOT_PARTITION_DEFINED )); then
 
-		local sourceSDSize
-		sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-		local targetSDSize
-		targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
+		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
 		logItem "soureSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
 		if (( ! $FORCE_SFDISK && ! $SKIP_SFDISK )); then
@@ -8173,8 +8123,7 @@ function updateConfig() {
 		fi
 	fi
 
-	local newConfigVersion
-	newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
+	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
 
 	logItem "NewConfigVersion: $newConfigVersion"
 
@@ -8210,10 +8159,8 @@ function updateConfig() {
 	logItem "Merging $NEW_CONFIG and $ORIG_CONFIG"
 	while read -r line; do
 		if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then			# skip comment or empty lines
-			local KW
-			KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
-			local VAL
-			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
+			local KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
+			local VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
 
 			logItem "KW: $KW - VAL: $VAL"
 			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# add new version number
@@ -8227,8 +8174,7 @@ function updateConfig() {
 			r=$?
 			logItem "grep old file rc:$s - contents: $OC_line"
 			if (( ! $r )); then											# new option found
-				local OW
-				OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
+				local OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
 				echo "$KW=$OW" >> $MERGED_CONFIG						# use old option value
 			else
 				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
@@ -8246,10 +8192,8 @@ function updateConfig() {
 	logItem "Checking for deleted options"
 	while read -r line; do
 		if [[ -n "$line" && ! "$line" =~ ^.*# ]]; then			# skip comment or empty lines
-			local KW
-			KW="$(cut -d= -f1 <<< "$line")"		# retrieve keyword
-			local VAL
-			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
+			local KW="$(cut -d= -f1 <<< "$line")"							# retrieve keyword
+			local VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
 
 			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# skip version number
 				continue
@@ -8281,8 +8225,7 @@ function updateConfig() {
 	if askYesNo "$MSG_UPDATE_CONFIG" "$BACKUP_CONFIG"; then
 		# save old config
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_CURRENT_CONFIGURATION  "$ORIG_CONFIG" "$BACKUP_CONFIG"
-		local new_file
-		new_file=$(createBackupVersion "$ORIG_CONFIG")
+		local new_file=$(createBackupVersion "$ORIG_CONFIG")
 		local r=$?
 		if (( $rc )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_BACKUP_FAILED "$ORIG_CONFIG"
