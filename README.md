@@ -18,14 +18,14 @@
   * Supported systems
     * SD card only
     * USB disk or SSD only (USB boot mode)
-    * SD card for boot and USB disk or SSD for root system (for Raspberries not able to use USB boot)
+    * SD card for boot and USB disk or SSD for root system (for older Raspberries which don't support USB boot)
   * Messages and completion status of backup sent via eMail, Telegram. Pushover or Slack
   * Any additional logic can be added at various steps in the backup and restore process via extensionpoints.
   * Restored backup will boot immediately.
 * Backup strategies
   * Number of backup versions to keep configurable either for sum of backups or on individual backup types
   * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
-  * Manual backups allows to create a kind of snapshot (so called rasiBackup snapshots) of the system just before major updates are done on a system.
+  * Manual backups allows to create a kind of snapshot (so calledraspiBackup snapshots) of the system just before major updates are done on a system.
 * Linux backup tools used
   * Standard Linux backup tools dd, tar and rsync can be used to create a backup.
   * dd and tar are full backups. rsync uses hardlinks for incremental backups.
@@ -105,7 +105,7 @@ raspiBackup is maintained just by me - framp. If you find raspiBackup useful ple
 
 ## Feature requests
 
-Anybody is welcome to create feature requests in github. They are either immediately scheduled for the next release or moved into the [backog](https://github.com/framps/raspiBackup/issues?q=is%3Aissue+is%3Aclosed+label%3ABacklog). The backlog will be reviewed every time a new release is planned and some issues are picked up and will be implemented in the next release. If you find some features useful just add a comment to the issue with :+1:. This helps to prioritize the issues in the backlog.
+Anybody is welcome to create feature requests in github. They are either immediately scheduled for the next release or moved into the [backlog](https://github.com/framps/raspiBackup/issues?q=is%3Aissue+is%3Aclosed+label%3ABacklog). The backlog will be reviewed every time a new release is planned and some issues are picked up and will be implemented in the next release. If you find some features useful just add a comment to the issue with :+1:. This helps to prioritize the issues in the backlog.
 
 ## Much more detailed documentation
 
@@ -126,7 +126,7 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 * Sample script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
 
-* Convenient helper script to restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestoreHelper.sh)
+* Convenient helper script to restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupDialog.sh)
 
 ## Sample extensions
 
