@@ -4187,7 +4187,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 
 function sendSlack() { # subject sucess/failure
 
-	logEntry "$1" 
+	logEntry "$1 $2" 
 
 	if [[ -n "$SLACK_WEBHOOK_URL" ]] ; then
 		local smiley
@@ -4218,7 +4218,7 @@ function sendSlack() { # subject sucess/failure
 
 function sendSlackMessage() { # message 0/1->success/failure 
 
-		logEntry "$1"
+		logEntry "$1 $2"
 
 		local msg_json statusMsg
 		
@@ -4271,9 +4271,7 @@ EOF
 		else
 			if [[ "ok" == "$(<"$o")" ]]; then
 				logItem "Message sent"
-				if [[ -n $2 ]]; then	# write message only for html, not for messages
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
-				fi
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
 			else
 				logItem "Error sending msg: $rsp"
 				local error_description
