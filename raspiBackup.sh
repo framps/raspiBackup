@@ -8545,7 +8545,7 @@ function check4RequiredCommands() {
 	local missing_commands missing_packages
 
 	for cmd in "${!REQUIRED_COMMANDS[@]}"; do
-		if ! which "$cmd" 2>/dev/null; then
+		if ! which "$cmd" &>/dev/null; then
 			missing_commands="$cmd $missing_commands "
 			missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
 		fi
