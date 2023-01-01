@@ -2374,17 +2374,13 @@ function createBackupVersion() { # file
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
 		else
-			local last
-			last="$(tail -n 1 <<< "$versions")" 					# extract highest version number
-			local lastFile
-			lastFile="$(basename "$last")"
-			local lastVersionNumber
-			lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< "$lastFile" )"
+			local last="$basename $(tail -n 1 <<< "$versions")" 			# extract highest version number
+			local lastFile="$(basename "$last")"
+			local lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
 			(( versionNumber = lastVersionNumber+1 ))							# use next version number
 		fi
 
-		local backupFile
-		backupFile="$file.${versionNumber}.bak"
+		local backupFile="$file.${versionNumber}.bak"
 		if ! mv "$file.bak" "$backupFile"; then
 			return 1
 		fi
@@ -3193,8 +3189,7 @@ function downloadFile() { # url, targetFileName
 		
 		local url="$1"
 		local file="$2"
-		local f
-		f=$(mktemp)
+		local f=$(mktemp)
 		local httpCode rc
 		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %\{http_code\} -L "$url" 2>>$LOG_FILE)
 		rc=$?
@@ -3231,8 +3226,7 @@ function downloadFile() { # url, targetFileName
 
 function askYesNo() { # message message_parms
 
-	local yes_no
-	yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
+	local yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
 	local addtlMsg=0
 
 	if (( $# > 1 )); then
@@ -3259,8 +3253,7 @@ function askYesNo() { # message message_parms
 	answer=${answer:0:1}	# first char only
 	answer=${answer:-"n"}	# set default no
 
-	local yes
-	yes=$(getMessage $MSG_ANSWER_CHARS_YES)
+	local yes=$(getMessage $MSG_ANSWER_CHARS_YES)
 	if [[ ! $yes =~ $answer ]]; then
 		return 1
 	else
@@ -3649,13 +3642,11 @@ function getFsType() { # file or path
 
 	logEntry "$1"
 
-	local mp
-	mp="$(findMountPath "$1")"
+	local mp="$(findMountPath "$1")"
 	logItem "Mountpoint: $mp"
 
 	local dev fstype r
-	local df
-	df="$(df -T | grep "$mp")"
+	local df="$(df -T | grep "$mp")"
 	logItem "df -T: $df"
 	read -r dev fstype r <<< "$df"
 	echo "$fstype"
@@ -3999,10 +3990,8 @@ function sendTelegramDocument() { # filename
 			if [[ $ok == "true" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_OK
 			else
-				local error_code
-				error_code="$(jq .error_code  <<< "$rsp")"
-				local error_description
-				error_description="$(jq .description <<< "$rsp")"
+				local error_code="$(jq .error_code  <<< "$rsp")"
+				local error_description="$(jq .description <<< "$rsp")"
 				logItem "Error sending msg: $rsp"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "$error_code" "$error_description"
 			fi
@@ -4032,8 +4021,7 @@ function sendTelegramMessage() { # message html(yes/no)
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "N/A" "N/A"
 		else
 			#logItem "Telegram response:${NL}${rsp}"
-			local ok
-			ok=$(jq .ok <<< "$rsp")
+			local ok=$(jq .ok <<< "$rsp")
 			if [[ $ok == "true" ]]; then
 				logItem "Message sent"
 				if [[ -n $2 ]]; then	# write message only for html, not for messages
@@ -4135,13 +4123,10 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			prio="$PUSHOVER_PRIORITY_SUCCESS"
 		fi
 		
-		local o
-		o=$(mktemp)
+		local o=$(mktemp)
 
-		local msg
-		msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
-		local msgEnd
-		msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
 
 		[[ -n "$msgEnd" ]] && msg="$msgEnd"
 
@@ -4167,8 +4152,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			local ok
-			ok=$(jq .status "$o")
+			local ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
@@ -4231,10 +4215,8 @@ function sendSlackMessage() { # message 0/1->success/failure
 			statusMsg="${SLACK_EMOJI_OK}$1"
 		fi
 
-		local msg
-		msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
-		local msgEnd
-		msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
 
 		[[ -n "$msgEnd" ]] && msg="$msgEnd"
 
@@ -4278,7 +4260,6 @@ EOF
 				error_description="$(<$"o")"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
 			fi
-			set +x
 		fi
 
 		[[ -n $o ]] && rm "$o"
@@ -4567,8 +4548,7 @@ function masqueradeSensitiveInfoInLog() {
 function masqueradeNonlocalIPs() {
 
 	local masq=1
-	local f
-	f="$(mktemp)"
+	local f=$(mktemp)
 
 	cp "$1" "$f"
 
@@ -4843,8 +4823,7 @@ function revertScriptVersion() {
 		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
 	fi
 
-	local currentVersion
-	currentVersion="$(extractVersionFromFile "$SCRIPT_DIR/$MYSELF" "$VERSION_VARNAME")"
+	local currentVersion="$(extractVersionFromFile "$SCRIPT_DIR/$MYSELF" "$VERSION_VARNAME")"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_SCRIPT_VERSION "$currentVersion"
 
 	declare -A versionsOfFiles
@@ -5211,7 +5190,7 @@ function partitionLayoutBackup() {
 		logItem "$(<"$FDISK_FILE")"
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_MBR_BACKUP "$MBR_FILE"
-		cmd="dd if=$BOOT_DEVICENAME of=$MBR_FILE bs=512 count=1"
+		cmd="dd if=$BOOT_DEVICENAME of="$MBR_FILE" bs=512 count=1"
 		executeDD "$cmd"
 		rc=$?
 		if [ $rc != 0 ]; then
@@ -5255,8 +5234,7 @@ function backupDD() {
 			fi
 		else
 			logCommand "fdisk -l $BOOT_DEVICENAME"
-			local lastByte
-			lastByte=$(lastUsedPartitionByte "$BOOT_DEVICENAME")
+			local lastByte=$(lastUsedPartitionByte $BOOT_DEVICENAME)
 			if (( lastByte == 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TRUNCATING_ERROR "$sdcardSizeHuman" "$spaceUsedHuman"
 				exitError $RC_MISC_ERROR
@@ -6014,8 +5992,7 @@ function applyBackupStrategy() {
 					if [[ -z "$date" ]]; then
 						assert $LINENO "Unable to extract date from backup files"
 					fi
-					local file
-					file=$(ls -d *-*-backup-$date* 2>/dev/null| grep -E -v "\.(log|msg|img|mbr|sfdisk)$");
+					local file=$(ls -d *-*-backup-$date* 2>/dev/null| egrep -v "\.(log|msg|img|mbr|sfdisk)$");
 
 					if [[ -n "$file" ]];  then
 						logItem "Found backup for $imgFile"
@@ -6402,7 +6379,7 @@ function checksForPartitionBasedBackup() {
 
 	collectPartitions
 
-	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[*]}"
+	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[@]}"
 
 	SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX='^(ext[234]|fat(16|32)|btrfs|.*swap.*)$'
 
@@ -6564,8 +6541,7 @@ function inspect4Backup() {
 
 		logItem "Legacy boot discovery"
 
-		local d
-		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x "$d")" ] && echo "$d" && break; done)
+		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x $d)" ] && echo $d && break; done)
 		logItem "part: $part"
 		local bootDeviceNumber=$(mountpoint -d /boot)
 		local rootDeviceNumber=$(mountpoint -d /)
@@ -6589,8 +6565,7 @@ function inspect4Backup() {
 
 			# test whether boot device is mounted
 			local bootMountpoint="/boot"
-			local bootPartition
-			bootPartition=$(findmnt "$bootMountpoint" -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
+			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 			logItem "$bootMountpoint mounted? $bootPartition"
 
 			# test whether some other /boot path is mounted
@@ -6602,7 +6577,7 @@ function inspect4Backup() {
 
 			# find root partition
 			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
-			logItem "/ mounted $rootPartition"
+			logItem "/ mounted? $rootPartition"
 			if [[ $rootPartition == "/dev/root" ]]; then
 				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
 				rootPartition=${rp#/root=/}
@@ -7547,8 +7522,7 @@ function restorePartitionBasedPartition() { # restorefile
 	local verbose zip partitionLabel cmd
 
 	local restoreFile="$1"
-	local restorePartition
-	restorePartition="$(basename "$restoreFile")"
+	local restorePartition="$(basename "$restoreFile")"
 
 	logItem "restorePartition: $restorePartition"
 	local partitionNumber
