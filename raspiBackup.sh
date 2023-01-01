@@ -4264,7 +4264,7 @@ EOF
 		local httpCode
 		httpCode="$(curl -s -w %\{http_code\} -o "$o" "${cmd[@]}" $SLACK_WEBHOOK_URL)"
 		local curlRC=$?
-		logItem "Slack response:${NL}$(<$"o")"
+		logItem "Slack response:${NL}$(<"$o")"
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
@@ -4280,6 +4280,7 @@ EOF
 				error_description="$(<$"o")"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
 			fi
+			set +x
 		fi
 
 		[[ -n $o ]] && rm "$o"
@@ -6603,7 +6604,7 @@ function inspect4Backup() {
 
 			# find root partition
 			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
-			logItem "/ mounted? $rootPartition"
+			logItem "/ mounted $rootPartition"
 			if [[ $rootPartition == "/dev/root" ]]; then
 				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
 				rootPartition=${rp#/root=/}
