@@ -2010,7 +2010,7 @@ function logCommand() { # command
 function logSystemServices() {
 	logEntry
 	if (( $SYSTEMSTATUS )); then
-		if ! hash lsof &>/dev/null; then
+		if ! which lsof &>/dev/null; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
 			else
 				logCommand "service --status-all 2>&1"
@@ -2193,7 +2193,7 @@ function callExtensions() { # extensionplugpoint rc
 		shift 1
 		local args=( "$@" )
 
-		if hash "$extensionFileName" &>/dev/null; then
+		if which "$extensionFileName" &>/dev/null; then
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 			$extensionFileName "${args[@]}"
 			rc=$?
@@ -2213,7 +2213,7 @@ function callExtensions() { # extensionplugpoint rc
 
 			local extensionFileName="${MYNAME}_${extension}_$1.sh"
 
-			if hash "$extensionFileName" &>/dev/null; then
+			if which "$extensionFileName" &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 				executeShellCommand ". $extensionFileName $2"
@@ -4043,7 +4043,7 @@ function sendTelegramm() { # subject
 	logEntry "$1"
 
 	if [[ -n "$TELEGRAM_TOKEN" ]] ; then
-		if ! hash jq &>/dev/null; then # suppress error message when jq is not installed
+		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
 			local smiley
@@ -4077,7 +4077,7 @@ function sendTelegrammLogMessages() {
 	logEntry
 
 	if [[ -n "$TELEGRAM_TOKEN" ]] ; then
-		if ! hash jq &>/dev/null; then # suppress error message when jq is not installed
+		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
 			if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_MESSAGES ]]; then
@@ -4097,7 +4097,7 @@ function sendPushover() { # subject sucess/failure
 	logEntry "$1" 
 
 	if [[ -n "$PUSHOVER_TOKEN" ]] ; then
-		if ! hash jq &>/dev/null; then # suppress error message when jq is not installed
+		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 		else
 			sendPushoverMessage "$1" "$2"
@@ -6450,12 +6450,12 @@ function commonChecks() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EMAIL_PROG_NOT_SUPPORTED "$EMAIL_PROGRAM" "$SUPPORTED_MAIL_PROGRAMS"
 			exitError $RC_EMAILPROG_ERROR
 		fi
-		if [[ ! $(hash "$EMAIL_PROGRAM") && ( "$EMAIL_PROGRAM" != "$EMAIL_EXTENSION_PROGRAM" ) ]]; then
+		if [[ ! $(which "$EMAIL_PROGRAM") && ( "$EMAIL_PROGRAM" != "$EMAIL_EXTENSION_PROGRAM" ) ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED "$EMAIL_PROGRAM"
 			exitError $RC_EMAILPROG_ERROR
 		fi
 		if [[ "$EMAIL_PROGRAM" == "$EMAIL_SSMTP_PROGRAM" || "$EMAIL_PROGRAM" == "$EMAIL_MSMTP_PROGRAM" ]] && (( $APPEND_LOG )); then
-			if ! hash mpack &>/dev/null; then
+			if ! which mpack &>/dev/null; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MPACK_NOT_INSTALLED
 				APPEND_LOG=0
 			fi
@@ -6850,7 +6850,7 @@ function doitBackup() {
 	fi
 
 	if [[ -n "$TELEGRAM_CHATID" && -n "$TELEGRAM_TOKEN" ]]; then
-		if ! hash jq &>/dev/null; then
+		if ! which jq &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -6867,7 +6867,7 @@ function doitBackup() {
 	fi
 
 	if [[ -n "$PUSHOVER_USER" && -n "$PUSHOVER_TOKEN" ]]; then
-		if ! hash jq &>/dev/null; then
+		if ! which jq &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "jq" "jq"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -6891,7 +6891,7 @@ function doitBackup() {
 	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
-		if ! hash rsync &>/dev/null; then
+		if ! which rsync &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -6943,7 +6943,7 @@ function doitBackup() {
 	fi
 
 	if (( $PROGRESS && $INTERACTIVE )); then
-		if ! hash pv &>/dev/null; then
+		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -6971,7 +6971,7 @@ function doitBackup() {
 		fi
 	fi
 
-	if (( $SYSTEMSTATUS )) && ! hash lsof &>/dev/null; then
+	if (( $SYSTEMSTATUS )) && ! which lsof &>/dev/null; then
 		 writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
 		 exitError $RC_MISSING_COMMANDS
 	fi
@@ -7773,7 +7773,7 @@ function doitRestore() {
 	fi
 
 	if (( $PROGRESS && $INTERACTIVE )); then
-		if ! hash pv &>/dev/null; then
+		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_PARAMETER_ERROR
 		fi
@@ -7832,14 +7832,14 @@ function doitRestore() {
 	logItem "Date: $DATE"
 
 	if (( $PROGRESS && $INTERACTIVE )); then
-		if ! hash pv &>/dev/null; then
+		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
 			exitError $RC_MISSING_COMMANDS
 		fi
 	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
-		if ! hash rsync &>/dev/null; then
+		if ! which rsync &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -7852,7 +7852,7 @@ function doitRestore() {
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if ! hash dosfslabel &>/dev/null; then
+		if ! which dosfslabel &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "dosfslabel" "dosfstools"
 			exitError $RC_MISSING_COMMANDS
 		fi
@@ -8545,7 +8545,7 @@ function check4RequiredCommands() {
 	local missing_commands missing_packages
 
 	for cmd in "${!REQUIRED_COMMANDS[@]}"; do
-		if ! hash "$cmd" 2>/dev/null; then
+		if ! which "$cmd" 2>/dev/null; then
 			missing_commands="$cmd $missing_commands "
 			missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
 		fi
