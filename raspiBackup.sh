@@ -6329,7 +6329,8 @@ function collectPartitions() {
 			if (( $type != 5 && $type != 85 && $size > 0 )); then # skip empty and extended partitions
 				logItem "mount: $(mount)"
 				logItem "Partition: $partition"
-				if ! mountLine=$(mount | grep "$partition" ); then
+				mountLine=$(mount | grep $partition )
+				if ! (( $? )); then
 					logItem "mountline: $mountLine"
 					logItem "regexMountLIne: $regexMountLine"
 					if [[ $mountLine =~ $regexMountLine ]]; then
