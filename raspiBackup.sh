@@ -7564,7 +7564,7 @@ function restorePartitionBasedPartition() { # restorefile
 		local swapDetected=0
 		if [[ "$partitionFilesystem" =~ ^fat.* ]]; then
 			fs="vfat"
-			fatSize=${partitionFilesystem/fat//}
+			fatSize=$(sed 's/fat//' <<< $partitionFilesystem)
 			fatCmd="-I -F $fatSize"
 			logItem "fs: $fs - fatSize: $fatSize - fatCmd: $fatCmd"
 			cmd="mkfs -t $fs $fatCmd"
@@ -7581,7 +7581,7 @@ function restorePartitionBasedPartition() { # restorefile
 			logItem "Normal partition with $partitionFilesystem"
 		fi
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" "$fileSystemSize"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" "$fileSystemsize"
 		logItem "$cmd $mappedRestorePartition"
 
 		$cmd $mappedRestorePartition &>>"$LOG_FILE"
