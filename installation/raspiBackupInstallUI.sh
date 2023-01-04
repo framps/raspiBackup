@@ -1970,6 +1970,13 @@ function extensions_uninstall_execute() {
 
 function getActiveServices() {
 	logEntry
+	
+	local f=$(mktemp)
+	local httpCode rc
+	httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+	rc=$?
+	logItem "httpCode: $httpCode RC: $rc"
+
 	local as=""
 	IFS=" "
 	while read s r; do
@@ -1979,6 +1986,7 @@ function getActiveServices() {
 			fi
 		fi
 	done < <(systemctl list-units --type=service --state=active | grep -v "@")
+	rm $f
 	echo "$as"
 	logExit "$as"
 }
