@@ -141,7 +141,7 @@ if [[ -f $INCLUDE_SERVICES_REGEX_FILE ]]; then
 	INCLUDE_SERVICES_REGEX="$(<$INCLUDE_SERVICES_REGEX_FILE)"
 else
 read -r -d '' INCLUDE_SERVICES_REGEX <<-'EOF'
-apache\.*$
+apache.*$
 containerd$
 cron$
 cups$
