@@ -132,6 +132,7 @@ ntp
 smartmontools
 systemd-.*
 thermald
+unattendended\.*
 .*@.*
 EOF
 fi
@@ -140,7 +141,7 @@ if [[ -f $INCLUDE_SERVICES_REGEX_FILE ]]; then
 	INCLUDE_SERVICES_REGEX="$(<$INCLUDE_SERVICES_REGEX_FILE)"
 else
 read -r -d '' INCLUDE_SERVICES_REGEX <<-'EOF'
-apache$
+apache\.*$
 containerd$
 cron$
 cups$
@@ -3096,7 +3097,7 @@ function config_services_do() {
 		current=()
 		for srvc in ${as[@]}; do
 			logItem "Checking $srvc"
-			if grep -q "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then
+			if grep -q -i "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then
 				logItem "Adding $srvc"
 				current+=("$srvc")
 			fi
