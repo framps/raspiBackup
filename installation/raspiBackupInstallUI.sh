@@ -129,10 +129,11 @@ argononed
 dbus
 nfs-
 ntp
+pihole\.*
 smartmontools
-systemd-.*
+systemd-\.*
 thermald
-unattendended\.*
+unattended.*
 .*@.*
 EOF
 fi
@@ -154,7 +155,6 @@ mysql$
 nfs-kernel-server$
 nmdb$
 nginx$
-pihole\.*
 smbd$
 teamviewerd$
 wordpress$
