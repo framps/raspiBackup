@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2023 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -106,6 +106,12 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 # Create a backup once a week on Sunday morning at 5 am (default)
 #
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
+EOF
+
+read -r -d '' EXCLUDE_SERVCIES_REGEX <<-'EOF'
+alsa-state\.service
+systemd-.*\.service
+.*@.*\.service
 EOF
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
@@ -1535,7 +1541,7 @@ function logItem() { # message
 
 function downloadURL() { # fileName
 	logEntry "$1"
-	local u="$MYHOMEURL/downloads$URLTARGET/$1/download"
+	local u="$MYHOMEURL/raspiBackup$URLTARGET/$1"
 	echo "$u"
 	logExit "$u"
 }
@@ -1971,21 +1977,14 @@ function extensions_uninstall_execute() {
 function getActiveServices() {
 	logEntry
 	
-	local f=$(mktemp)
-	local httpCode rc
-	httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
-	rc=$?
-	logItem "httpCode: $httpCode RC: $rc"
-
+	logItem "$EXCLUDE_SERVCIES_REGEX"
 	local as=""
 	IFS=" "
 	while read s r; do
 		if [[ $s == *".service" ]]; then
-			if [[ $s != "systemd"* ]]; then
-				as+=" $(sed 's/.service//' <<< "$s")"
-			fi
+			as+=" $(sed 's/.service//' <<< "$s")"
 		fi
-	done < <(systemctl list-units --type=service --state=active | grep -v "@")
+	done < <(systemctl list-units --type=service --state=active | grep "active running" | grep -v "$EXCLUDE_SERVCIES_REGEX")
 	rm $f
 	echo "$as"
 	logExit "$as"
