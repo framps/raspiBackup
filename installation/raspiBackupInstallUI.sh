@@ -148,11 +148,14 @@ cups$
 fhem$
 influxd$
 iobroker$
+lighttpd$
 minidlna$
 mysql$
 nfs-kernel-server$
+nmdb$
 nginx$
-samba$
+pihole\.*
+smbd$
 teamviewerd$
 wordpress$
 EOF
