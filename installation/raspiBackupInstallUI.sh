@@ -125,6 +125,7 @@ if [[ -f $EXCLUDE_SERVICES_REGEX_FILE ]]; then
 else	
 read -r -d '' EXCLUDE_SERVICES_REGEX <<-'EOF'
 alsa-state
+argononed
 dbus
 nfs-
 ntp
@@ -140,6 +141,7 @@ if [[ -f $INCLUDE_SERVICES_REGEX_FILE ]]; then
 else
 read -r -d '' INCLUDE_SERVICES_REGEX <<-'EOF'
 apache$
+containerd$
 cron$
 cups$
 fhem$
