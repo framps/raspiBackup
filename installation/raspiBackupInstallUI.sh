@@ -153,7 +153,7 @@ lighttpd$
 minidlna$
 mysql$
 nfs-kernel-server$
-nmdb$
+nmbd$
 nginx$
 smbd$
 teamviewerd$
