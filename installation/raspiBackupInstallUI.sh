@@ -97,6 +97,18 @@ CONFIG_FILE="raspiBackup.conf"
 SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
 DEFAULT_IFS="$IFS"
 
+[[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
+
+PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
+PROPERTY_FILE_NAME="$MYNAME.properties"
+LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
+LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
+STABLE_CODE_URL="$FILE_TO_INSTALL"
+INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
+EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
+
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
 # Crontab entry for raspiBackup.sh
@@ -108,21 +120,40 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
-read -r -d '' EXCLUDE_SERVCIES_REGEX <<-'EOF'
-alsa-state\.service
-systemd-.*\.service
-.*@.*\.service
+if [[ -f $EXCLUDE_SERVICES_REGEX_FILE ]]; then
+	EXCLUDE_SERVICES_REGEX="$(<$EXCLUDE_SERVICES_REGEX_FILE)"
+else	
+read -r -d '' EXCLUDE_SERVICES_REGEX <<-'EOF'
+alsa-state
+dbus
+nfs-
+ntp
+smartmontools
+systemd-.*
+thermald
+.*@.*
 EOF
+fi
 
-[[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
-
-PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
-BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
-PROPERTY_FILE_NAME="$MYNAME.properties"
-LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
-LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
-STABLE_CODE_URL="$FILE_TO_INSTALL"
+if [[ -f $INCLUDE_SERVICES_REGEX_FILE ]]; then
+	INCLUDE_SERVICES_REGEX="$(<$INCLUDE_SERVICES_REGEX_FILE)"
+else
+read -r -d '' INCLUDE_SERVICES_REGEX <<-'EOF'
+apache$
+cron$
+cups$
+fhem$
+influxd$
+iobroker$
+minidlna$
+mysql$
+nfs-kernel-server$
+nginx$
+samba$
+teamviewerd$
+wordpress$
+EOF
+fi
 
 DOWNLOAD_TIMEOUT=60 # seconds
 DOWNLOAD_RETRIES=3
@@ -1977,15 +2008,14 @@ function extensions_uninstall_execute() {
 function getActiveServices() {
 	logEntry
 	
-	logItem "$EXCLUDE_SERVCIES_REGEX"
+	logItem "$EXCLUDE_SERVICES_REGEX"
 	local as=""
 	IFS=" "
 	while read s r; do
 		if [[ $s == *".service" ]]; then
 			as+=" $(sed 's/.service//' <<< "$s")"
 		fi
-	done < <(systemctl list-units --type=service --state=active | grep "active running" | grep -v "$EXCLUDE_SERVCIES_REGEX")
-	rm $f
+	done < <(systemctl list-units --type=service --state=active | grep "active running" | grep -v "$EXCLUDE_SERVICES_REGEX" | awk '{print $1}' )
 	echo "$as"
 	logExit "$as"
 }
@@ -3053,11 +3083,26 @@ function config_services_do() {
 	IFS=" "
 	local as=($(getActiveServices))
 	local state
+	local srvc
+
+	logItem "Active services: ${as[*]}"
 
 	getMenuText $MENU_CONFIG_SERVICES tt
 
-	[[ "$current" == "$IGNORE_START_STOP_CHAR" ]] && current=""
-	local c=( $current )
+	if ! isStartStopDefined; then
+		logItem "INCLUDE_SERVICES_REGEX: "${INCLUDE_SERVICES_REGEX[@]}""
+		current=()
+		for srvc in ${as[@]}; do
+			logItem "Checking $srvc"
+			if grep -q "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then
+				logItem "Adding $srvc"
+				current+=("$srvc")
+			fi
+		done
+	fi
+		
+	local c=("${current[@]}")   
+	#local c=( $current )
 	local cl=()
 
 	# insert selected services in front of list
