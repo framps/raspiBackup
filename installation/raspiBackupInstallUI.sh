@@ -129,9 +129,9 @@ argononed
 dbus
 nfs-
 ntp
-pihole\.*
+pihole.*
 smartmontools
-systemd-\.*
+systemd-.*
 thermald
 unattended.*
 .*@.*
