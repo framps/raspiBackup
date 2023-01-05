@@ -157,6 +157,7 @@ nfs-kernel-server$
 nmbd$
 nginx$
 smbd$
+snapd$
 teamviewerd$
 wordpress$
 EOF
