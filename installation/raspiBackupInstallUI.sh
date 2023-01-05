@@ -199,6 +199,7 @@ SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ZH")
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
 LANG_EXT="${LANG^^*}"
 LANG_SYSTEM="${LANG_EXT:0:2}"
+LANG_SYSTEM="DE"
 if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
 	LANG_SYSTEM="EN"
 fi
@@ -3125,7 +3126,7 @@ function config_services_do() {
 
 	# add other active services in list
 	for s in ${as[@]}; do
-		if containsElement "$s" "${c[@]}"; then
+		if containsElement "$s" ${c[@]}; then
 			continue
 		fi
 		state=off
