@@ -14,7 +14,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2022-2023 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@ MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use l
 MYNAME=${MYSELF%.*}
 
 DOWNLOAD_FILE="raspiBackup.sh"
+DOWNLOAD_FILE_INSTALLER="raspiBackupInstallUI.sh"
+
 updateGitInfo=1
 
 if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
@@ -48,7 +50,9 @@ fi
 
 if [[ -n "$2" ]]; then
 	DOWNLOAD_FILE="$2"
-	updateGitInfo=0
+	if [[ $(basename $DOWNLOAD_FILE) != $DOWNLOAD_FILE_INSTALLER ]]; then
+		updateGitInfo=0
+	fi
 else
 	if ! which jq &>/dev/null; then
 		echo "??? Missing jq. Please install jq first. Try 'sudo apt-get install jq'."
@@ -122,9 +126,9 @@ if (( $updateGitInfo )); then
 	fi
 
 	shaShort=${sha:0:7}
-	sed -i "s/$SHA/${SHA}: ${shaShort}/" ./$DOWNLOAD_FILE
+	sed -i "s/$SHA/${SHA}: ${shaShort}/" $targetFilename
 	dateShort="${date:0:10} ${date:11}"
-	sed -i "s/$DATE/${DATE}: ${dateShort}/" ./$DOWNLOAD_FILE
+	sed -i "s/$DATE/${DATE}: ${dateShort}/" $targetFilename
 
 	rm -f $jsonFile
 fi
