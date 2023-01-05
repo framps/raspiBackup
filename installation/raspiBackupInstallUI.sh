@@ -3109,8 +3109,7 @@ function config_services_do() {
 		done
 	fi
 		
-	local c=("${current[@]}")   
-	#local c=( $current )
+	local c=( ${current[@]} )   
 	local cl=()
 
 	# insert selected services in front of list
@@ -3125,7 +3124,7 @@ function config_services_do() {
 
 	# add other active services in list
 	for s in ${as[@]}; do
-		if containsElement "$s" ${c[@]}; then
+		if containsElement "$s" "${c[@]}"; then
 			continue
 		fi
 		state=off
