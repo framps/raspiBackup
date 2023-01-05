@@ -152,6 +152,7 @@ iobroker$
 lighttpd$
 minidlna$
 mysql$
+mariadb$
 nfs-kernel-server$
 nmbd$
 nginx$
