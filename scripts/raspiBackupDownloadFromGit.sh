@@ -141,8 +141,6 @@ if [[ "$targetFilename" == *\.sh ]]; then
 fi
 
 if (( updateGitInfo )); then
+	./$targetFilename --version
 	echo "--- Use 'sudo ./$targetFilename' now"
-	parm="-h"
-	[[ $targetFilename == $FILE_RASPIBACKUP ]] && parm="--version"
-	sudo ./$targetFilename $parm 
 fi
