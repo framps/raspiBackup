@@ -34,8 +34,8 @@
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-DOWNLOAD_FILE="raspiBackup.sh"
-DOWNLOAD_FILE_INSTALLER="raspiBackupInstallUI.sh"
+FILE_RASPIBACKUP="raspiBackup.sh"
+FILE_RASPIBACKUP_INSTALLER="raspiBackupInstallUI.sh"
 
 updateGitInfo=1
 
@@ -50,7 +50,7 @@ fi
 
 if [[ -n "$2" ]]; then
 	DOWNLOAD_FILE="$2"
-	if [[ $(basename $DOWNLOAD_FILE) != $DOWNLOAD_FILE_INSTALLER ]]; then
+	if [[ $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP_INSTALLER && $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP ]]; then
 		updateGitInfo=0
 	fi
 else
@@ -58,6 +58,7 @@ else
 		echo "??? Missing jq. Please install jq first. Try 'sudo apt-get install jq'."
 		exit 1
 	fi
+	DOWNLOAD_FILE="$FILE_RASPIBACKUP"
 fi
 
 SHA="XCRTaGExCg=="  	# backslash dollar Sha1
@@ -89,7 +90,7 @@ if (( $updateGitInfo )); then
 	jsonFile=$(mktemp)
 	trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
 
-	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE ..."
+	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE from $branch ..."
 	TOKEN=""															# Personal token to get better rate limits 
 	if [[ -n $TOKEN ]]; then
 		HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
@@ -110,7 +111,7 @@ if (( $updateGitInfo )); then
 		exit 1
 	fi	
 
-	echo "--- Inserting commit meta data into downloaded file $DOWNLOAD_FILE ..."
+	echo "--- Inserting commit meta data into downloaded file $targetFilename ..."
 
 	sha="$(jq -r ".sha" "$jsonFile")"
 	if [[ -z $sha ]]; then
@@ -140,5 +141,8 @@ if [[ "$targetFilename" == *\.sh ]]; then
 fi
 
 if (( updateGitInfo )); then
-	echo "--- Use 'sudo ./$targetFilename' now to start $(./$targetFilename --version)"
+	echo "--- Use 'sudo ./$targetFilename' now"
+	parm="-h"
+	[[ $targetFilename == $FILE_RASPIBACKUP ]] && parm="--version"
+	sudo ./$targetFilename $parm 
 fi
