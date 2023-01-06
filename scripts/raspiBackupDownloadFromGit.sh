@@ -43,7 +43,7 @@ if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?"
 	echo "Purpose: Download any file from any raspiBackup github repository branch."
 	echo "Syntax:  $MYSELF branchName [fileName]"
 	echo "Example: $MYSELF master helper/raspiBackupWrapper.sh"
-	echo "Default for fileName is $DOWNLOAD_FILE"
+	echo "Default for fileName is $FILE_RASPIBACKUP"
 	echo "If the file resides in a subdirectory prefix fileName with the directories."
 	exit 1
 fi
@@ -54,10 +54,6 @@ if [[ -n "$2" ]]; then
 		updateGitInfo=0
 	fi
 else
-	if ! which jq &>/dev/null; then
-		echo "??? Missing jq. Please install jq first. Try 'sudo apt-get install jq'."
-		exit 1
-	fi
 	DOWNLOAD_FILE="$FILE_RASPIBACKUP"
 fi
 
@@ -86,6 +82,11 @@ fi
 echo "--- Download finished successfully"
 
 if (( $updateGitInfo )); then
+
+	if ! which jq &>/dev/null; then
+		echo "??? jq required by $MYNAME. Please install jq first. Try 'sudo apt-get install jq'."
+		exit 1
+	fi
 
 	jsonFile=$(mktemp)
 	trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
