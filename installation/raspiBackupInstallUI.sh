@@ -4342,6 +4342,11 @@ MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 
+if [[ $1 == "--version" ]]; then
+	echo $GIT_CODEVERSION
+	exit
+fi
+
 while getopts "h?uUei" opt; do
     case "$opt" in
 	 h|\?)
