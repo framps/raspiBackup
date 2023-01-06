@@ -3097,18 +3097,18 @@ function config_services_do() {
 
 	getMenuText $MENU_CONFIG_SERVICES tt
 
-	if ! isStartStopDefined; then
+#	if ! isStartStopDefined; then
 		logItem "INCLUDE_SERVICES_REGEX: "${INCLUDE_SERVICES_REGEX[@]}""
 		current=()
 		for srvc in ${as[@]}; do
 			logItem "Checking $srvc"
 			if grep -q -i "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then
 				logItem "Adding $srvc"
-				current+=("$srvc")
+				current+=( "$srvc" )
 			fi
 		done
-	fi
-		
+#	fi
+
 	local c=( ${current[@]} )   
 	local cl=()
 
