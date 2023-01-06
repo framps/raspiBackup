@@ -14,7 +14,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2022-2023 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -34,7 +34,9 @@
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-DOWNLOAD_FILE="raspiBackup.sh"
+FILE_RASPIBACKUP="raspiBackup.sh"
+FILE_RASPIBACKUP_INSTALLER="raspiBackupInstallUI.sh"
+
 updateGitInfo=1
 
 if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
@@ -48,12 +50,15 @@ fi
 
 if [[ -n "$2" ]]; then
 	DOWNLOAD_FILE="$2"
-	updateGitInfo=0
+	if [[ $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP_INSTALLER && $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP ]]; then
+		updateGitInfo=0
+	fi
 else
 	if ! which jq &>/dev/null; then
 		echo "??? Missing jq. Please install jq first. Try 'sudo apt-get install jq'."
 		exit 1
 	fi
+	DOWNLOAD_FILE="$FILE_RASPIBACKUP"
 fi
 
 SHA="XCRTaGExCg=="  	# backslash dollar Sha1
@@ -85,7 +90,7 @@ if (( $updateGitInfo )); then
 	jsonFile=$(mktemp)
 	trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
 
-	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE ..."
+	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE from $branch ..."
 	TOKEN=""															# Personal token to get better rate limits 
 	if [[ -n $TOKEN ]]; then
 		HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
@@ -106,7 +111,7 @@ if (( $updateGitInfo )); then
 		exit 1
 	fi	
 
-	echo "--- Inserting commit meta data into downloaded file $DOWNLOAD_FILE ..."
+	echo "--- Inserting commit meta data into downloaded file $targetFilename ..."
 
 	sha="$(jq -r ".sha" "$jsonFile")"
 	if [[ -z $sha ]]; then
@@ -122,9 +127,9 @@ if (( $updateGitInfo )); then
 	fi
 
 	shaShort=${sha:0:7}
-	sed -i "s/$SHA/${SHA}: ${shaShort}/" ./$DOWNLOAD_FILE
+	sed -i "s/$SHA/${SHA}: ${shaShort}/" $targetFilename
 	dateShort="${date:0:10} ${date:11}"
-	sed -i "s/$DATE/${DATE}: ${dateShort}/" ./$DOWNLOAD_FILE
+	sed -i "s/$DATE/${DATE}: ${dateShort}/" $targetFilename
 
 	rm -f $jsonFile
 fi
@@ -136,5 +141,8 @@ if [[ "$targetFilename" == *\.sh ]]; then
 fi
 
 if (( updateGitInfo )); then
-	echo "--- Use 'sudo ./$targetFilename' now to start $(./$targetFilename --version)"
+	echo "--- Use 'sudo ./$targetFilename' now"
+	parm="-h"
+	[[ $targetFilename == $FILE_RASPIBACKUP ]] && parm="--version"
+	sudo ./$targetFilename $parm 
 fi
