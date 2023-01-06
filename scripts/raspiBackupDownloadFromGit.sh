@@ -143,8 +143,4 @@ fi
 if (( updateGitInfo )); then
 	./$targetFilename --version
 	echo "--- Use 'sudo ./$targetFilename' now"
-<<<<<<< HEAD
-	sudo ./$targetFilename --version
-=======
->>>>>>> master
 fi
