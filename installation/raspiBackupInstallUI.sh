@@ -3089,49 +3089,50 @@ function config_services_do() {
 	wtv=$(whiptail -v | cut -d " " -f 3)
 
 	IFS=" "
-	local as=($(getActiveServices))
+	local as=( $(getActiveServices) )												# sorted alphabetically
 	local state
-	local srvc
 
 	logItem "Active services: ${as[*]}"
 
 	getMenuText $MENU_CONFIG_SERVICES tt
 
-#	if ! isStartStopDefined; then
-		logItem "INCLUDE_SERVICES_REGEX: "${INCLUDE_SERVICES_REGEX[@]}""
-		current=()
-		for srvc in ${as[@]}; do
-			logItem "Checking $srvc"
-			if grep -q -i "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then
-				logItem "Adding $srvc"
-				current+=( "$srvc" )
-			fi
-		done
-#	fi
-
-	local c=( ${current[@]} )   
-	local cl=()
-
-	# insert selected services in front of list
-	for s in ${c[@]}; do
-		state=on
-		if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
-			cl+=("$s" "" "$state")
+	logItem "INCLUDE_SERVICES_REGEX: "${INCLUDE_SERVICES_REGEX[@]}""
+	local ci=() 					# list of included servcices
+	local cu=()						# unselected services
+	local css=( ${CONFIG_STOPSERVICES[*]} )										# already configured services
+	local srvc
+	for srvc in ${as[@]}; do
+		if grep -q -i "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then			# service should be included
+			ci+=( "$srvc" )
+		elif containsElement "$srvc" "${css[@]}"; then								
+			ci+=( "$srvc" )																# service was already configured to be included
 		else
-			cl+=("$s" "$s" "$state")
+			cu+=( "$srvc" )																# service was not included
 		fi
 	done
 
-	# add other active services in list
-	for s in ${as[@]}; do
-		if containsElement "$s" "${c[@]}"; then
-			continue
-		fi
-		state=off
-		if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
-			cl+=("$s" "" "$state")
+	local oldIFS="$IFS"
+	IFS=$'\n' sorted=($(sort <<<"${ci[*]}"))										# sort list of included services
+	IFS="$oldIFS"
+
+	ci+=( ${cu[@]} ) 													  					# append unselected sevices (already sorted)
+
+	# now build whiptail list, selected services first followed by unselected services
+
+	local c=()
+	for s in ${ci[@]}; do
+		if containsElement "$s" "${cu[@]}"; then
+			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
+				c+=("$s" "" "off")
+			else
+				c+=("$s" "$s" "off")
+			fi
 		else
-			cl+=("$s" "$s" "$state")
+			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
+				c+=("$s" "" "on")
+			else
+				c+=("$s" "$s" "on")
+			fi
 		fi
 	done
 
@@ -3140,7 +3141,7 @@ function config_services_do() {
 	local o1="$(getMessageText $BUTTON_OK)"
 
 	ANSWER=$(whiptail --notags --checklist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 7 \
-		"${cl[@]}" \
+		"${c[@]}" \
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
