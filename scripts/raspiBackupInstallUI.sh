@@ -3721,8 +3721,8 @@ function update_menu() {
 
 	while :; do
 
-		local b1=$(getMessageText $BUTTON_BACK)
-		local o1=$(getMessageText $BUTTON_SELECT)
+		local b1="$(getMessageText $BUTTON_BACK)"
+		local o1="$(getMessageText $BUTTON_SELECT)"
 
 		getMenuText $MENU_UPDATE_SCRIPT m1
 		getMenuText $MENU_UPDATE_INSTALLER m2
@@ -3981,6 +3981,9 @@ function config_message_detail_do() {
 			;;
 	esac
 
+	local o1="$(getMessageText $BUTTON_OK)"
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+
 	getMenuText $MENU_CONFIG_MESSAGE_N m1
 	getMenuText $MENU_CONFIG_MESSAGE_V m2
 
@@ -3990,7 +3993,7 @@ function config_message_detail_do() {
 	local s1="${m1[0]}"
 	local s2="${m2[0]}"
 
-	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS 2 \
+	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button $ROWS_MENU $WINDOW_COLS 2 \
 		"${m1[@]}" $normal_ \
 		"${m2[@]}" $detailed_ \
 		3>&1 1>&2 2>&3)

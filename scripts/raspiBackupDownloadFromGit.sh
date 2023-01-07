@@ -149,4 +149,9 @@ if (( updateGitInfo )); then
 	echo "--- $(./$targetFilename --version)" 
 fi	
 
-echo "--- Start $targetFilename with './$targetFilename' or 'sudo ./$targetFilename' now"
+SDO=""
+if [[ $targetFilename == "$FILE_RASPIBACKUP" || $targetFilename == "$FILE_RASPIBACKUP_INSTALLER" ]]; then
+	SDO="sudo "
+fi
+
+echo "--- Start $targetFilename with \`$SDO./$targetFilename\` now"
