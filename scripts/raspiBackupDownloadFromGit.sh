@@ -7,9 +7,12 @@
 #  Example to download latest raspiBackup.sh from master branch:
 #  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master
 #
-#  Example to download latest raspiBackupWrapper.s from master branch:
-#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master /helper/raspiBackupWrapper.sh
-##
+#  Example to download latest raspiBackupWrapper.sh from master branch:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master helper/raspiBackupWrapper.sh
+#
+#  Example to download latest raspiBackupInstallUI.sh from beta branch:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master beta/raspiBackupInstallUI.sh
+#
 #  Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 #######################################################################################################################
@@ -69,10 +72,11 @@ shift
 downloadURL="https://raw.githubusercontent.com/framps/raspiBackup/$branch/$DOWNLOAD_FILE"
 targetFilename="$(basename "$DOWNLOAD_FILE")"
 
+trap "rm -f $targetFilename" SIGINT SIGTERM EXIT
+
 echo "--- Downloading $DOWNLOAD_FILE from git branch $branch into current directory as $targetFilename ..."
 wget -q $downloadURL -O "$targetFilename"
 rc=$?
-trap "rm -f $targetFilename" SIGINT SIGTERM EXIT
 
 if (( $rc != 0 )); then
 	echo "??? Error occured downloading $downloadURL. RC: $rc"
@@ -142,6 +146,7 @@ if [[ "$targetFilename" == *\.sh ]]; then
 fi
 
 if (( updateGitInfo )); then
-	./$targetFilename --version
-	echo "--- Use 'sudo ./$targetFilename' now"
-fi
+	echo "--- $(./$targetFilename --version)" 
+fi	
+
+echo "--- Start $targetFilename with './$targetFilename' or 'sudo ./$targetFilename' now"
