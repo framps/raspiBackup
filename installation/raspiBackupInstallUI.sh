@@ -158,7 +158,6 @@ nmbd$
 nginx$
 smbd$
 snapd$
-teamviewerd$
 wordpress$
 EOF
 fi
