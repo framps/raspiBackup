@@ -147,12 +147,12 @@ DISCORD_JSON=""
 # these variables are set in function send_discord
 ###########################################
 function build_json() {
-        DISCORD_JSON=$(jq \
+        DISCORD_JSON="$(jq \
                         --arg cont "$DISC_CONTENT" \
                         --arg title "$DISC_TITLE" \
                         --arg color "$DISC_COLOR" \
                         --arg desc "$DISC_DESC" \
-                       '.content=$cont | .embeds[0].title=$title | .embeds[0].description=$desc | .embeds[0].color=$color' <<< "$DEFAULTJSON")
+                       '.content=$cont | .embeds[0].title=$title | .embeds[0].description=$desc | .embeds[0].color=$color' <<< "$DEFAULTJSON")"
 }
 ###########################################
 ### Function to set variables for JSON message, and calls JSON construction function: build_json
