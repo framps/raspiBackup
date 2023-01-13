@@ -57,21 +57,9 @@
 #
 #######################################################################################################################
 
-set -euf -o pipefail
-
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 VERSION="0.0.1"
-
-set +u;GIT_DATE="$Date$"; set -u
-GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1$";set -u
-GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
-
-GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
-
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -173,7 +161,7 @@ function build_json() {
 ###########################################
 function send_discord() { # $1:status of the operation, 0=) success, not 0 is failure
         local discord_color=$CONFIG_COLOR_DEFAULT
-        if [[ $1 -ne  0 ]]; then
+        if (( $1 != 0 )); then
                 discord_color=$CONFIG_COLOR_FAILURE
                 STATUS="FAILURE. Error code is: $1"
                 TITLE_SUFFIX="failed !!!"
