@@ -89,7 +89,10 @@ function readVars() {
 
 #### DISCORD SECTION
 
-# read config file
+# reads config file
+# the given sample configuration file shall be copied as discordWrapper.conf into /usr/local/etc/
+# the config file shall be adapted to reflect the proper Discord WebHook URL
+# the config file shall have permissions 0600 root:root to 'protect' access to the URL
 source /usr/local/etc/discordWrapper.conf
 
 ###########################################
