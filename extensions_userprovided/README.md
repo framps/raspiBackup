@@ -9,9 +9,14 @@ Maybe the code could already be adapted for this point...
 
 Credits to [DesertRider](https://github.com/DesertRider/)
 
-
 ## raspiBackup_docker
 
 A pre and post script that stops all running docker-container gracefully and starts them again after backup is finished.
 
 Povided by [Springjunky](https://github.com/Springjunky)
+
+## raspiBackupDiscordWrapper.sh
+
+A wrapper script which should be an extension but because of some missing support for extensions in raspiBackup (will be available in nbext release) it's provided as a wrapper script.
+
+raspiBackupDiscordWrapper supports to write raspiBackup success/failure notifications in Discord.
