@@ -17,6 +17,6 @@ Povided by [Springjunky](https://github.com/Springjunky)
 
 ## raspiBackupDiscordWrapper.sh
 
-A wrapper script which should be an extension but because of some missing support for extensions in raspiBackup (will be available in nbext release) it's provided as a wrapper script.
+A wrapper script which should be an extension but because of some missing support for extensions in raspiBackup (will be available in next release) it's provided as a wrapper script.
 
 raspiBackupDiscordWrapper supports to write raspiBackup success/failure notifications in Discord.
