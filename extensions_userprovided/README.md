@@ -15,3 +15,8 @@ Credits to [DesertRider](https://github.com/DesertRider/)
 A pre and post script that stops all running docker-container gracefully and starts them again after backup is finished.
 
 Povided by [Springjunky](https://github.com/Springjunky)
+
+## raspiBackupDiscordWrapper
+A wrapper calling raspiBackup.sh and sending Discord notification message.
+You need to create a Discord WebHook and put the URL in the configuration file.
+The configuration filee shoule have 0600 permissions
