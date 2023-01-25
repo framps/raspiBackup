@@ -2490,7 +2490,7 @@ function executeRsync() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE $LOG_FILE) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -2505,7 +2505,7 @@ function executeTar() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE $LOG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -5797,9 +5797,9 @@ function restore() {
 					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 						assertionFailed $LINENO "push to $MNT_POINT failed"
 					fi
-					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="z" || zip=""
+					[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="-z" || zip=""
 					if (( $PROGRESS && $INTERACTIVE )); then
-						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x${verbose}${zip}f -"
+						local cmd="pv -f $ROOT_RESTOREFILE | tar --exclude /boot ${archiveFlags} -x ${verbose} ${zip} -f -"
 					else
 						local cmd="tar --exclude /boot ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
 					fi
