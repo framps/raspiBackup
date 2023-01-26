@@ -7,14 +7,17 @@
 #  Example to download latest raspiBackup.sh from master branch:
 #  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master
 #
-#  Example to download latest raspiBackupWrapper.s from master branch:
-#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master /helper/raspiBackupWrapper.sh
-##
+#  Example to download latest raspiBackupWrapper.sh from master branch:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master helper/raspiBackupWrapper.sh
+#
+#  Example to download latest raspiBackupInstallUI.sh from beta branch:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master beta/raspiBackupInstallUI.sh
+#
 #  Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2022-2023 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -34,26 +37,27 @@
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-DOWNLOAD_FILE="raspiBackup.sh"
+FILE_RASPIBACKUP="raspiBackup.sh"
+FILE_RASPIBACKUP_INSTALLER="raspiBackupInstallUI.sh"
+
 updateGitInfo=1
 
 if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
 	echo "Purpose: Download any file from any raspiBackup github repository branch."
 	echo "Syntax:  $MYSELF branchName [fileName]"
 	echo "Example: $MYSELF master helper/raspiBackupWrapper.sh"
-	echo "Default for fileName is $DOWNLOAD_FILE"
+	echo "Default for fileName is $FILE_RASPIBACKUP"
 	echo "If the file resides in a subdirectory prefix fileName with the directories."
 	exit 1
 fi
 
 if [[ -n "$2" ]]; then
 	DOWNLOAD_FILE="$2"
-	updateGitInfo=0
-else
-	if ! which jq &>/dev/null; then
-		echo "??? Missing jq. Please install jq first. Try 'sudo apt-get install jq'."
-		exit 1
+	if [[ $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP_INSTALLER && $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP ]]; then
+		updateGitInfo=0
 	fi
+else
+	DOWNLOAD_FILE="$FILE_RASPIBACKUP"
 fi
 
 SHA="XCRTaGExCg=="  	# backslash dollar Sha1
@@ -68,10 +72,11 @@ shift
 downloadURL="https://raw.githubusercontent.com/framps/raspiBackup/$branch/$DOWNLOAD_FILE"
 targetFilename="$(basename "$DOWNLOAD_FILE")"
 
+trap "rm -f $targetFilename" SIGINT SIGTERM EXIT
+
 echo "--- Downloading $DOWNLOAD_FILE from git branch $branch into current directory as $targetFilename ..."
 wget -q $downloadURL -O "$targetFilename"
 rc=$?
-trap "rm -f $targetFilename" SIGINT SIGTERM EXIT
 
 if (( $rc != 0 )); then
 	echo "??? Error occured downloading $downloadURL. RC: $rc"
@@ -82,10 +87,15 @@ echo "--- Download finished successfully"
 
 if (( $updateGitInfo )); then
 
+	if ! which jq &>/dev/null; then
+		echo "??? jq required by $MYNAME. Please install jq first. Try 'sudo apt-get install jq'."
+		exit 1
+	fi
+
 	jsonFile=$(mktemp)
 	trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
 
-	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE ..."
+	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE from $branch ..."
 	TOKEN=""															# Personal token to get better rate limits 
 	if [[ -n $TOKEN ]]; then
 		HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
@@ -106,7 +116,7 @@ if (( $updateGitInfo )); then
 		exit 1
 	fi	
 
-	echo "--- Inserting commit meta data into downloaded file $DOWNLOAD_FILE ..."
+	echo "--- Inserting commit meta data into downloaded file $targetFilename ..."
 
 	sha="$(jq -r ".sha" "$jsonFile")"
 	if [[ -z $sha ]]; then
@@ -122,9 +132,9 @@ if (( $updateGitInfo )); then
 	fi
 
 	shaShort=${sha:0:7}
-	sed -i "s/$SHA/${SHA}: ${shaShort}/" ./$DOWNLOAD_FILE
+	sed -i "s/$SHA/${SHA}: ${shaShort}/" $targetFilename
 	dateShort="${date:0:10} ${date:11}"
-	sed -i "s/$DATE/${DATE}: ${dateShort}/" ./$DOWNLOAD_FILE
+	sed -i "s/$DATE/${DATE}: ${dateShort}/" $targetFilename
 
 	rm -f $jsonFile
 fi
@@ -136,5 +146,12 @@ if [[ "$targetFilename" == *\.sh ]]; then
 fi
 
 if (( updateGitInfo )); then
-	echo "--- Use 'sudo ./$targetFilename' now to start $(./$targetFilename --version)"
+	echo "--- $(./$targetFilename --version)" 
+fi	
+
+SDO=""
+if [[ $targetFilename == "$FILE_RASPIBACKUP" || $targetFilename == "$FILE_RASPIBACKUP_INSTALLER" ]]; then
+	SDO="sudo "
 fi
+
+echo "--- Start $targetFilename with \`$SDO./$targetFilename\` now"
