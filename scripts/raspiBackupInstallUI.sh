@@ -38,7 +38,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.5"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.5-beta"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -96,7 +96,6 @@ declare -A CONFIG_DOWNLOAD_FILE=(['DE']="raspiBackup_de.conf" ['EN']="raspiBacku
 CONFIG_FILE="raspiBackup.conf"
 SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
 DEFAULT_IFS="$IFS"
-MASQUERADE_STRING="@@@@"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 
@@ -1111,15 +1110,6 @@ MSG_FIRST_PARTITIONS_NOT_SELECTED=$((SCNT++))
 MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions have to be selected."
 MSG_DE[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Wenigstens die beiden ersten Partitionen müssen ausgewählt sein."
 
-MSG_SENSITIVE_WARNING=$((SCNT++))
-MSG_EN[$MSG_SENSITIVE_WARNING]="| ===> A lot of sensitive information is masqueraded in this log file. Nevertheless please check the log carefully before you distribute it <=== |"
-MSG_DE[$MSG_SENSITIVE_WARNING]="| ===>  Viele sensitive Informationen werden in dieser Logdatei maskiert. Vor dem Verteilen des Logs sollte es trotzdem ueberprueft werden  <=== |"
-MSG_FI[$MSG_SENSITIVE_WARNING]="| ===>            Sensitiivisiä tietoja on piilotettu tästä lokitiedostosta. Tarkista lisäksi loki huolellisesti ennen sen jakoa            <=== |"
-MSG_FR[$MSG_SENSITIVE_WARNING]="| ===>De nombreuses informations sensibles sont masquées dans ce fichier journal. Avant de distribuer le log, il faut quand même le vérifier<=== |"
-
-MSG_SENSITIVE_SEPARATOR=$((SCNT++))
-MSG_EN[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
-
 declare -A MENU_EN
 declare -A MENU_DE
 declare -A MENU_FI
@@ -2115,7 +2105,7 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 function parseConfig() {
 	logEntry
 
-	IFS="" matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS)=" "$CONFIG_ABS_FILE")
+	IFS="" matches=$(grep -E "MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS" "$CONFIG_ABS_FILE")
 	while IFS="=" read key value; do
 		key=${key//\"/}
 		key=${key/DEFAULT/CONFIG}
@@ -2540,8 +2530,6 @@ function cleanup() {
 	fi
 
 	(($EXTENSIONS_INSTALLED)) && rm $SAMPLEEXTENSION_TAR_FILE &>>$LOG_FILE || true
-
-	masqueradeSensitiveInfoInLog # and masquerade sensitive details in log file
 
 	if [[ "$signal" != "EXIT" ]]; then
 		writeToConsole $MSG_INSTALLATION_FAILED "$RASPIBACKUP_NAME" "$LOG_FILE"
@@ -3733,8 +3721,8 @@ function update_menu() {
 
 	while :; do
 
-		local b1=$(getMessageText $BUTTON_BACK)
-		local o1=$(getMessageText $BUTTON_SELECT)
+		local b1="$(getMessageText $BUTTON_BACK)"
+		local o1="$(getMessageText $BUTTON_SELECT)"
 
 		getMenuText $MENU_UPDATE_SCRIPT m1
 		getMenuText $MENU_UPDATE_INSTALLER m2
@@ -3993,6 +3981,9 @@ function config_message_detail_do() {
 			;;
 	esac
 
+	local o1="$(getMessageText $BUTTON_OK)"
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+
 	getMenuText $MENU_CONFIG_MESSAGE_N m1
 	getMenuText $MENU_CONFIG_MESSAGE_V m2
 
@@ -4002,7 +3993,7 @@ function config_message_detail_do() {
 	local s1="${m1[0]}"
 	local s2="${m2[0]}"
 
-	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS 2 \
+	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button $ROWS_MENU $WINDOW_COLS 2 \
 		"${m1[@]}" $normal_ \
 		"${m2[@]}" $detailed_ \
 		3>&1 1>&2 2>&3)
@@ -4244,75 +4235,6 @@ function error() {
 	cat "$LOG_FILE"
 }
 
-# return text masqueraded
-#
-# Algorithm:
-#
-# if string lenght < 8 return @@@@(<string length>)
-# if string lenght < 16 return first char followed by @*<string length-2> followed by last char
-# otherwise return first char followed by @@@@ followed by last char and (<string length>)
-
-function masquerade() { # text
-	
-	[[ -z "$1" ]] && return 1
-
-	local t="$1"
-	local l="${#t}"
-	local lm="\($l\)"
-
-	if (( $l < 4 )); then
-		echo "$MASQUERADE_STRING$l"
-		return 0
-	fi
-
-	local s=${t:0:1}
-	local e=${t: -1}
-
-	if (( $l < 8 )); then
-		local m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
-		echo "$s$m$e"
-	else
-		echo "$s$MASQUERADE_STRING$e$lm"
-	fi
-	return 0
-}
-
-function masqueradeSensitiveInfoInLog() {
-
-	local xEnabled=0
-	if [ -o xtrace ]; then	# disable xtrace
-		xEnabled=1
-        set +x
-	fi
-
-	# no logging any more
-
-	local m
-
-	# email
-
-	if [[ -n "$CONFIG_EMAIL" ]]; then
-		logItem "Masquerading eMail"
-		m="$(masquerade "$CONFIG_EMAIL")"
-		sed -i -E "s/$CONFIG_EMAIL/${m}/g" $LOG_FILE
-	fi
-
-	# In home directories usually first names are used
-
-	logItem "Masquerading home directory name"
-	sed -i -E "s/\/home\/([^\\/])+\/(.)/\/home\/@USER@\/\2/g" $LOG_FILE
-
-	# hostname may expose domain names
-
-	logItem "Masquerading hostname"
-	sed -i -E "s/$HOSTNAME/@HOSTNAME@/g" $LOG_FILE
-
-	if (( $xEnabled )); then	# enable xtrace again
-        	set -x
-	fi
-
-}
-
 #
 # Interactive use loop
 #
@@ -4526,12 +4448,6 @@ writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
 
 rm $LOG_FILE &>/dev/null
 logItem "$GIT_CODEVERSION"
-sep="$(getMessageText $MSG_SENSITIVE_SEPARATOR)"
-warn="$(getMessageText $MSG_SENSITIVE_WARNING)"
-logItem "$sep"
-logItem "$warn"
-logItem "$sep"
-
 logItem "whiptail version: $(whiptail -v)"
 
 checkRequiredDirectories
