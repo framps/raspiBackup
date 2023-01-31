@@ -4673,6 +4673,10 @@ function cleanup() { # trap
 
 	cleanupTempFiles
 
+	if (( $LOG_LEVEL == "$LOG_DEBUG" )); then
+		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
+	fi
+
 	finalCommand "$rc"
 
 	logItem "Terminate now with rc $CLEANUP_RC"
@@ -4760,10 +4764,6 @@ function cleanup() { # trap
 			msg=$(getMessage $MSG_TITLE_OK "$HOSTNAME")
 			sendEMail "" "$msg"
 		fi # ! $RESTORE
-	fi
-
-	if (( $LOG_LEVEL == "$LOG_DEBUG" )); then
-		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
 	logFinish
@@ -4953,14 +4953,17 @@ function checkImportantParameters() {
 		if [[ "$lla" == "ABC" ]]; then
 			LOG_LEVEL=${LOG_LEVEL_ARGs[$ll]}
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$LOG_LEVEL"
+			local lvl="$LOG_LEVEL"
+			LOG_LEVEL=$LOG_DEBUG
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$lvl"
 			LOG_LEVEL=$LOG_DEBUG
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
 	if [[ ! "$LOG_LEVEL" =~ $POSSIBLE_LOG_LEVEL_NUMBERs ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$LOG_LEVEL"
+		local lvl="$LOG_LEVEL"
 		LOG_LEVEL=$LOG_DEBUG
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$lvl"
 		exitError $RC_PARAMETER_ERROR
 	fi
 
@@ -4973,14 +4976,17 @@ function checkImportantParameters() {
 		if [[ "$mla" == "ABC" ]]; then
 			MSG_LEVEL=${MSG_LEVEL_ARGs[$ml]}
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$MSG_LEVEL"
+			local msg="$MSG_LEVEL"
 			MSG_LEVEL=$MSG_LEVEL_DETAILED
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$msg"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
+
 	if [[ ! "$MSG_LEVEL" =~ $POSSIBLE_MSG_LEVEL_NUMBERs ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$MSG_LEVEL"
+		local msg="$MSG_LEVEL"
 		MSG_LEVEL=$MSG_LEVEL_DETAILED
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$msg"
 		exitError $RC_PARAMETER_ERROR
 	fi
 
