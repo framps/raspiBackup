@@ -1830,8 +1830,8 @@ MSG_EXTENSION_CALLED=267
 MSG_EN[$MSG_EXTENSION_CALLED]="RBK0267I: Extension %s called."
 MSG_DE[$MSG_EXTENSION_CALLED]="RBK0267I: Erweiterung %s wird aufgerufen."
 MSG_UNSUPPORTED_ENVIRONMENT=268
-MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Only Raspberries running Raspberry PI OS are supported. Use option --unsupportedEnvironment to invoke $MYNAME WITHOUT ANY SUPPORT."
-MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
+MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Only Raspberries running Raspberry PI OS are supported. Use option --unsupportedEnvironment to invoke $MYNAME but WITHOUT ANY SUPPORT."
+MSG_DE[$MSG_UNSUPPORTED_ENVIRONMENT]="RBK0268E: Es werden nur Raspberries mit Raspberry PI OS unterstützt. Mit der Option --unsupportedEnvironment kann man $MYNAME aber OHNE JEGLICHE UNTERSTÜTZUNG aufrufen."
 MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED=269
 MSG_EN[$MSG_UNSUPPORTED_ENVIRONMENT_CONFIRMED]="\
 RBK0269W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${NL}\
