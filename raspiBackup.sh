@@ -8091,7 +8091,7 @@ function updateConfig() {
 		fi
 	fi
 
-	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
+	local newConfigVersion="$(extractVersionFromFile "$VERSION_SCRIPT_CONFIG $VERSION_CONFIG_VARNAME")"
 
 	logItem "NewConfigVersion: $newConfigVersion"
 
