@@ -8053,7 +8053,10 @@ function updateConfig() {
 	# use fileparameter as new config file
 	if [[ -n $customFile ]]; then
 		if [[ -f $customFile ]]; then
-			NEW_CONFIG="$customFile"
+			ORIG_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$ORIG_CONFIG")"
+			NEW_CONFIG="$(sed -e "s@$NEW_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
+			MERGED_CONFIG="$(sed -e "s@$MERGED_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
+			BACKUP_CONFIG="$(sed -e "s@$BACKUP_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
 			localNewConfig=1
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
