@@ -8037,18 +8037,7 @@ function updateConfig() {
 
 	local localNewConfig=0
 	local customFile="$CUSTOM_CONFIG_FILE"
-
-	logItem "Config: $ETC_CONFIG_FILE_VERSION - Required: $VERSION_SCRIPT_CONFIG"
-
-	compareVersions "$ETC_CONFIG_FILE_VERSION" "$VERSION_SCRIPT_CONFIG"
-	local cr=$?
-	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
-		logExit "Config version ok"
-		if (( $UPDATE_CONFIG )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
-		fi
-		return
-	fi
+	local etcConfigFileVersion="$ETC_CONFIG_FILE_VERSION"
 
 	# use fileparameter as new config file
 	if [[ -n $customFile ]]; then
@@ -8057,11 +8046,24 @@ function updateConfig() {
 			NEW_CONFIG="$(sed -e "s@$NEW_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
 			MERGED_CONFIG="$(sed -e "s@$MERGED_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
 			BACKUP_CONFIG="$(sed -e "s@$BACKUP_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
+			etcConfigFileVersion="$CUSTOM_CONFIG_FILE_VERSION"
 			localNewConfig=1
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
 			exitError $RC_MISSING_FILES
 		fi
+	fi
+
+	logItem "Config: $etcConfigFileVersion - Required: $VERSION_SCRIPT_CONFIG"
+
+	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
+	local cr=$?
+	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
+		logExit "Config version ok"
+		if (( $UPDATE_CONFIG )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
+		fi
+		return
 	fi
 
 	if (( ! $localNewConfig )); then
@@ -8093,10 +8095,10 @@ function updateConfig() {
 
 	logItem "NewConfigVersion: $newConfigVersion"
 
-	compareVersions "$ETC_CONFIG_FILE_VERSION" "$VERSION_SCRIPT_CONFIG"
+	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	local cr=$?
 	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
-		logItem "Config update required: $VERSION_SCRIPT_CONFIG - Available: $ETC_CONFIG_FILE_VERSION"
+		logItem "Config update required: $VERSION_SCRIPT_CONFIG - Available: $etcConfigFileVersion"
 
 		compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
 		cr=$?
@@ -8110,7 +8112,7 @@ function updateConfig() {
 	rm -f $MERGED_CONFIG &>/dev/null
 
 	# process NEW CONFIG FILE
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGING_VERSION  "v$ETC_CONFIG_FILE_VERSION" "v$VERSION_SCRIPT_CONFIG" "$MERGED_CONFIG"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGING_VERSION  "v$etcConfigFileVersion" "v$VERSION_SCRIPT_CONFIG" "$MERGED_CONFIG"
 	local merged=0
 	local deleted=0
 
