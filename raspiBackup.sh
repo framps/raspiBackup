@@ -8033,9 +8033,10 @@ function remount() { # device mountpoint
 
 function updateConfig() {
 
-	logEntry "$fileParameter"
+	logEntry "$CUSTOM_CONFIG_FILE"
 
 	local localNewConfig=0
+	local customFile="$CUSTOM_CONFIG_FILE"
 
 	logItem "Config: $ETC_CONFIG_FILE_VERSION - Required: $VERSION_SCRIPT_CONFIG"
 
@@ -8050,9 +8051,9 @@ function updateConfig() {
 	fi
 
 	# use fileparameter as new config file
-	if [[ -n $fileParameter ]]; then
-		if [[ -f $fileParameter ]]; then
-			NEW_CONFIG="$fileParameter"
+	if [[ -n $customFile ]]; then
+		if [[ -f $customFile ]]; then
+			NEW_CONFIG="$customFile"
 			localNewConfig=1
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
