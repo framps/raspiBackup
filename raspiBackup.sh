@@ -2667,8 +2667,6 @@ function logOptions() { # option state
 
 function initializeDefaultConfigVariables() {
 
-	logEntry
-
 	############# Begin default config section #############
 
 	# Part or whole of the following section can be put into
@@ -2825,12 +2823,9 @@ function initializeDefaultConfigVariables() {
 	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nvme0n1 or /dev/sda) and turn off boot device autodiscovery
 	DEFAULT_BOOT_DEVICE=""
 	############# End default config section #############
-	logExit
 }
 
 function copyDefaultConfigVariables() {
-
-	logEntry
 
 	APPEND_LOG="$DEFAULT_APPEND_LOG"
 	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
@@ -2913,7 +2908,6 @@ function copyDefaultConfigVariables() {
 
 	checkImportantParameters
 
-	logExit
 }
 
 function bootedFromSD() {
@@ -8837,6 +8831,11 @@ UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
 
 PARAMS=""
 
+# initialize default config
+initializeDefaultConfigVariables
+# assign default config to variables
+copyDefaultConfigVariables
+
 ##### Now do your job
 
 # handle options which don't require root access
@@ -8873,11 +8872,6 @@ for (( i=1; i<=$#; i++ )); do
 	p=${!i}
 	INVOCATIONPARMS="$INVOCATIONPARMS $p"
 done
-
-# initialize default config
-initializeDefaultConfigVariables
-# assign default config to variables
-copyDefaultConfigVariables
 
 readConfigParameters				# overwrite defaults with settings in config files
 copyDefaultConfigVariables			# and update variables with config file contents
