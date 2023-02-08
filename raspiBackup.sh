@@ -2519,12 +2519,12 @@ function executeShellCommand() { # command
 	else
 		eval "$1 &>> $LOG_FILE"
 	fi
-	local rc=$?
+	local zzrc=$?
 	logExit "$rc"
 	return $rc
 }
 
-# return 0 for ==, 1 for <, and 2 for >
+# return 0 for ==, -1 for <, and 1 for >
 # version format 0.1.2.3-ext, -ext will be discarded
 function compareVersions() { # v1 v2
 
@@ -2539,11 +2539,11 @@ function compareVersions() { # v1 v2
 	local rc=0
 	for (( i=0; i<=3; i++ )); do
 		if (( ${v1e[$i]} < ${v2e[$i]} )); then
-			rc=1
+			rc=-1
 			break
 		fi
 		if (( ${v1e[$i]} > ${v2e[$i]} )); then
-			rc=2
+			rc=1
 			break
 		fi
 	done
@@ -8035,7 +8035,6 @@ function updateConfig() {
 
 	logEntry "$CUSTOM_CONFIG_FILE"
 
-	local localNewConfig=0
 	local customFile="$CUSTOM_CONFIG_FILE"
 	local etcConfigFileVersion="$ETC_CONFIG_FILE_VERSION"
 
@@ -8047,7 +8046,6 @@ function updateConfig() {
 			MERGED_CONFIG="$(sed -e "s@$MERGED_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
 			BACKUP_CONFIG="$(sed -e "s@$BACKUP_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
 			etcConfigFileVersion="$CUSTOM_CONFIG_FILE_VERSION"
-			localNewConfig=1
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
 			exitError $RC_MISSING_FILES
@@ -8058,7 +8056,7 @@ function updateConfig() {
 
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	local cr=$?
-	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
+	if (( $cr != -1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
 		logExit "Config version ok"
 		if (( $UPDATE_CONFIG )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
@@ -8066,29 +8064,24 @@ function updateConfig() {
 		return
 	fi
 
-	if (( ! $localNewConfig )); then
+	local lang=${LANGUAGE,,}
+	eval "DL_URL=$CONFIG_URL"
 
-		local lang=${LANGUAGE,,}
-		eval "DL_URL=$CONFIG_URL"
+	# download new config file
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 
-		# download new config file
-		if (( $UPDATE_CONFIG )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
-		fi
+	local dlHttpCode dlRC
+	dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
+	dlRC=$?
+	if (( $dlRC != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
+		exitError $RC_DOWNLOAD_FAILED
+	fi
 
-		local dlHttpCode dlRC
-		dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
-		dlRC=$?
-		if (( $dlRC != 0 )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
-			exitError $RC_DOWNLOAD_FAILED
-		fi
-
-		# make sure new config file is readable by owner only
-		if ! chmod 600 $NEW_CONFIG &>>$LOG_FILE; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
-			exitError $RC_FILE_OPERATION_ERROR
-		fi
+	# make sure new config file is readable by owner only
+	if ! chmod 600 $NEW_CONFIG &>>$LOG_FILE; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
+		exitError $RC_FILE_OPERATION_ERROR
 	fi
 
 	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG $VERSION_CONFIG_VARNAME")"
@@ -8097,12 +8090,12 @@ function updateConfig() {
 
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	local cr=$?
-	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
+	if (( $cr == -1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
 		logItem "Config update required: $VERSION_SCRIPT_CONFIG - Available: $etcConfigFileVersion"
 
 		compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
 		cr=$?
-		if (( $cr == 1 || $cr == -1 )); then							# newConfigVersion < SCRIPT_CONFIG or newConfigVersion > SCRIPT_CONFIG
+		if (( $cr == -1 )); then							# newConfigVersion < SCRIPT_CONFIG
 			logItem "No config update possible: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
 			logExit
 			return
