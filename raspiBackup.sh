@@ -1950,6 +1950,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 
 	for ((i = 1; $i <= $#; i++)); do # substitute all message parameters
 		p=${!i}
+		p="$(sed 's/\&/\\\&/g' <<< "$p")" # escape &
 		let s=$i
 		s="%$s"
 		msg="$(sed "s|$s|$p|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
