@@ -364,6 +364,7 @@ declare -A REQUIRED_COMMANDS=( \
 		["dosfslabel"]="dosfstools" \
 		["fdisk"]="util-linux" \
 		["blkid"]="util-linux" \
+		["curl"]="curl" \
 		["sfdisk"]="util-linux" \
 		["xxd"]="xxd" \
 		)
