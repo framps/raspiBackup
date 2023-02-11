@@ -1895,9 +1895,15 @@ MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %
 MSG_SLACK_SEND_OK=287
 MSG_EN[$MSG_SLACK_SEND_OK]="RBK0287I: Slack notified."
 MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
-MSG_SLACK_INVALID_NOTIFICATION=288
-MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Invalid Slack notification %s detected. Valid notifications are %s."
-MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0288E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_SLACK_OPTIONS_INCOMPLETE=288
+MSG_EN[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slack options not complete."
+MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständig"
+MSG_SLACK_INVALID_NOTIFICATION=289
+MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
+MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=290
+MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0290I: Current configuration version %s has to be be updated to %s."
+MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0290I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3423,9 +3429,11 @@ function executeAfterStartServices() {
 }
 
 function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
+	logEntry "$@"
 	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	[[ -z "$v" ]] && v="0.0.0.0"
-	echo "$v"
+	echo "$v"	
+	logExit "$v"
 }
 
 # update script with latest version
@@ -8054,14 +8062,32 @@ function remount() { # device mountpoint
 
 function updateConfig() {
 
-	logEntry "$fileParameter"
+	logEntry "$CUSTOM_CONFIG_FILE"
 
-	local localNewConfig=0
+	local customFile="$CUSTOM_CONFIG_FILE"
+	local etcConfigFileVersion="$ETC_CONFIG_FILE_VERSION"
 
-	logItem "Config: $ETC_CONFIG_FILE_VERSION - Required: $VERSION_SCRIPT_CONFIG"
+	# use fileparameter as new config file
+	if [[ -n $customFile ]]; then
+		if [[ -f $customFile ]]; then
+			logItem "Using config file $customFile"
+			NEW_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
+			MERGED_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
+			BACKUP_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
+			etcConfigFileVersion="$CUSTOM_CONFIG_FILE_VERSION"
+			ORIG_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$ORIG_CONFIG")"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
+			exitError $RC_MISSING_FILES
+		fi
+	fi
 
-	compareVersions "$ETC_CONFIG_FILE_VERSION" "$VERSION_SCRIPT_CONFIG"
-	local cr=$?
+	logItem "Current config version: $etcConfigFileVersion - Required config version: $VERSION_SCRIPT_CONFIG"
+
+	local cr
+	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
+	cr=$?
+	
 	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
 		logExit "Config version ok"
 		if (( $UPDATE_CONFIG )); then
@@ -8070,33 +8096,21 @@ function updateConfig() {
 		return
 	fi
 
-	# use fileparameter as new config file
-	if [[ -n $fileParameter ]]; then
-		if [[ -f $fileParameter ]]; then
-			NEW_CONFIG="$fileParameter"
-			localNewConfig=1
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
-			exitError $RC_MISSING_FILES
-		fi
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"	
+
+	local lang=${LANGUAGE,,}
+	eval "DL_URL=$CONFIG_URL"
+
+	# download new config file
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
+
+	local dlHttpCode dlRC
+	dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
+	dlRC=$?
+	if (( $dlRC != 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
+		exitError $RC_DOWNLOAD_FAILED
 	fi
-
-	if (( ! $localNewConfig )); then
-
-		eval "DL_URL=$CONFIG_URL"
-
-		# download new config file
-		if (( $UPDATE_CONFIG )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
-		fi
-
-		local dlHttpCode dlRC
-		dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
-		dlRC=$?
-		if (( $dlRC != 0 )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
-			exitError $RC_DOWNLOAD_FAILED
-		fi
 
 		# make sure new config file is readable by owner only
 		if ! chmod 600 "$NEW_CONFIG" &>>$LOG_FILE; then
@@ -8107,16 +8121,17 @@ function updateConfig() {
 
 	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
 
-	logItem "NewConfigVersion: $newConfigVersion"
+	logItem "New config version of downloaded file: $newConfigVersion"
 
-	compareVersions "$ETC_CONFIG_FILE_VERSION" "$VERSION_SCRIPT_CONFIG"
-	local cr=$?
+	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
+	cr=$?
+	
 	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
-		logItem "Config update required: $VERSION_SCRIPT_CONFIG - Available: $ETC_CONFIG_FILE_VERSION"
+		logItem "Config update version in script: $VERSION_SCRIPT_CONFIG - Current config version : $etcConfigFileVersion"
 
 		compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
 		cr=$?
-		if (( $cr == 1 || $cr == -1 )); then							# newConfigVersion < SCRIPT_CONFIG or newConfigVersion > SCRIPT_CONFIG
+		if (( $cr == 1 )); then							# newConfigVersion < SCRIPT_CONFIG
 			logItem "No config update possible: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
 			logExit
 			return
@@ -8126,7 +8141,7 @@ function updateConfig() {
 	rm -f $MERGED_CONFIG &>/dev/null
 
 	# process NEW CONFIG FILE
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGING_VERSION  "v$ETC_CONFIG_FILE_VERSION" "v$VERSION_SCRIPT_CONFIG" "$MERGED_CONFIG"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGING_VERSION  "v$etcConfigFileVersion" "v$VERSION_SCRIPT_CONFIG" "$MERGED_CONFIG"
 	local merged=0
 	local deleted=0
 
