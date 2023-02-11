@@ -2519,7 +2519,7 @@ function executeShellCommand() { # command
 	else
 		eval "$1 &>> $LOG_FILE"
 	fi
-	local zzrc=$?
+	local rc=$?
 	logExit "$rc"
 	return $rc
 }
