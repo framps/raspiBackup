@@ -48,6 +48,7 @@ VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
+COMMIT_VARNAME="GIT_COMMIT_ONLY"							# used to loockup the SHA
 
 [ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
 [ -z "${BASH_VERSINFO[0]}" ] && printf "\n\033[1;35m Make sure you're using \"bash\"! \033[m\n\n" >&2 && exit 255
@@ -367,6 +368,7 @@ declare -A REQUIRED_COMMANDS=( \
 		["dosfslabel"]="dosfstools" \
 		["fdisk"]="util-linux" \
 		["blkid"]="util-linux" \
+		["curl"]="curl" \
 		["sfdisk"]="util-linux" \
 		["xxd"]="xxd" \
 		)
@@ -1901,9 +1903,12 @@ MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständi
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
-MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=290
-MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0290I: Current configuration version %s has to be be updated to %s."
-MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0290I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
+MSG_MINOR_UPDATE=290
+MSG_EN[$MSG_MINOR_UPDATE]="RBK0290I: There is a minor update of $MYNAME $VERSION available. Do you want to update $MYNAME?"
+MSG_DE[$MSG_MINOR_UPDATE]="RBK0290I: Es gibt einen kleinen Update von $MYNAME $VERSION. Soll $MYNAME updated werden?"
+MSG_SCRIPT_MINOR_UPDATE_OK=291
+MSG_EN[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Minor update of %s successfull"
+MSG_DE[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Kleiner Update von %s erfolgreich."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -1956,7 +1961,8 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 
 	for ((i = 1; $i <= $#; i++)); do # substitute all message parameters
 		p=${!i}
-		(( s=i ))
+		p="$(sed 's/\&/\\\&/g' <<< "$p")" # escape &
+		let s=$i
 		s="%$s"
 		msg="$(sed "s|$s|$p|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 	done
@@ -3444,6 +3450,7 @@ function updateScript() {
 
 	local rc versions latestVersion newVersion oldVersion newName
 	local updateNow=0
+	local minorUpdate=0
 
 	if (( $NEW_PROPERTIES_FILE )) ; then
 
@@ -3496,6 +3503,25 @@ function updateScript() {
 			if askYesNo; then
 				updateNow=1
 			fi
+		else
+			local dlHttpCode dlRC
+			local tmpFile="/tmp/${MYSELF}~"
+			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "$tmpFile")"
+			dlRC=$?
+			if (( $dlRC != 0 )); then
+				logItem "Ignoring download error $dlRC"
+			else
+				local latestSHA
+				latestSHA="$(extractVersionFromFile "$tmpFile" "$COMMIT_VARNAME")"
+				rm $tmpFile
+				if [[ $latestSHA != $GIT_COMMIT_ONLY ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_MINOR_UPDATE
+					if askYesNo; then
+						updateNow=1
+						minorUpdate=1
+					fi
+				fi
+			fi
 		fi
 
 		if (( $updateNow )); then
@@ -3515,7 +3541,11 @@ function updateScript() {
 			mv $MYSELF~ $SCRIPT_DIR/$MYSELF
 			chown --reference=$newName $SCRIPT_DIR/$MYSELF
 			chmod --reference=$newName $SCRIPT_DIR/$MYSELF
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
+			if (( ! $minorUpdate )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_MINOR_UPDATE_OK "$VERSION"
+			fi
 			# refresh version information from updated script
 			local properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
