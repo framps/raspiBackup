@@ -1898,6 +1898,9 @@ MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständi
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=290
+MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0290I: Current configuration version %s has to be be updated to %s."
+MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0290I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2524,7 +2527,7 @@ function executeShellCommand() { # command
 	return $rc
 }
 
-# return 0 for ==, -1 for <, and 1 for >
+# return 0 for ==, 1 for <, and 2 for >
 # version format 0.1.2.3-ext, -ext will be discarded
 function compareVersions() { # v1 v2
 
@@ -2539,11 +2542,11 @@ function compareVersions() { # v1 v2
 	local rc=0
 	for (( i=0; i<=3; i++ )); do
 		if (( ${v1e[$i]} < ${v2e[$i]} )); then
-			rc=-1
+			rc=1
 			break
 		fi
 		if (( ${v1e[$i]} > ${v2e[$i]} )); then
-			rc=1
+			rc=2
 			break
 		fi
 	done
@@ -3429,9 +3432,11 @@ function executeAfterStartServices() {
 }
 
 function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
+	logEntry "$@"
 	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	[[ -z "$v" ]] && v="0.0.0.0"
-	echo "$v"
+	echo "$v"	
+	logExit "$v"
 }
 
 # update script with latest version
@@ -8041,28 +8046,33 @@ function updateConfig() {
 	# use fileparameter as new config file
 	if [[ -n $customFile ]]; then
 		if [[ -f $customFile ]]; then
-			ORIG_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$ORIG_CONFIG")"
-			NEW_CONFIG="$(sed -e "s@$NEW_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
-			MERGED_CONFIG="$(sed -e "s@$MERGED_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
-			BACKUP_CONFIG="$(sed -e "s@$BACKUP_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
+			logItem "Using config file $customFile"
+			NEW_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
+			MERGED_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
+			BACKUP_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
 			etcConfigFileVersion="$CUSTOM_CONFIG_FILE_VERSION"
+			ORIG_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$ORIG_CONFIG")"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
 			exitError $RC_MISSING_FILES
 		fi
 	fi
 
-	logItem "Config: $etcConfigFileVersion - Required: $VERSION_SCRIPT_CONFIG"
+	logItem "Current config version: $etcConfigFileVersion - Required config version: $VERSION_SCRIPT_CONFIG"
 
+	local cr
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
-	local cr=$?
-	if (( $cr != -1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
+	cr=$?
+	
+	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
 		logExit "Config version ok"
 		if (( $UPDATE_CONFIG )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
 		fi
 		return
 	fi
+
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"	
 
 	local lang=${LANGUAGE,,}
 	eval "DL_URL=$CONFIG_URL"
@@ -8084,18 +8094,19 @@ function updateConfig() {
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
 
-	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG $VERSION_CONFIG_VARNAME")"
+	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
 
-	logItem "NewConfigVersion: $newConfigVersion"
+	logItem "New config version of downloaded file: $newConfigVersion"
 
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
-	local cr=$?
-	if (( $cr == -1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
-		logItem "Config update required: $VERSION_SCRIPT_CONFIG - Available: $etcConfigFileVersion"
+	cr=$?
+	
+	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
+		logItem "Config update version in script: $VERSION_SCRIPT_CONFIG - Current config version : $etcConfigFileVersion"
 
 		compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
 		cr=$?
-		if (( $cr == -1 )); then							# newConfigVersion < SCRIPT_CONFIG
+		if (( $cr == 1 )); then							# newConfigVersion < SCRIPT_CONFIG
 			logItem "No config update possible: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
 			logExit
 			return
