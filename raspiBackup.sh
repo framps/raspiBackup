@@ -4926,8 +4926,9 @@ function cleanupTempFiles() {
 
 function checkImportantParameters() {
 
-	local ll lla pll
+	local ll lla pll org
 
+	org="$LOG_LEVEL"
 	ll="${LOG_LEVEL^^}"
 	pll="^${POSSIBLE_LOG_LEVELs^^}\$"
 	if [[ "$ll" =~ $pll ]]; then
@@ -4935,19 +4936,20 @@ function checkImportantParameters() {
 		if [[ "$lla" == "ABC" ]]; then
 			LOG_LEVEL=${LOG_LEVEL_ARGs[$ll]}
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$LOG_LEVEL"
 			LOG_LEVEL=$LOG_DEBUG
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$org"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
 	if [[ ! "$LOG_LEVEL" =~ $POSSIBLE_LOG_LEVEL_NUMBERs ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$LOG_LEVEL"
 		LOG_LEVEL=$LOG_DEBUG
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$org"
 		exitError $RC_PARAMETER_ERROR
 	fi
 
 	local ml mla mll
 
+	org="$MSG_LEVEL"
 	ml="${MSG_LEVEL^^}"
 	mll="^${POSSIBLE_MSG_LEVELs^^}\$"
 	if [[ "$ml" =~ $mll ]]; then
@@ -4955,14 +4957,14 @@ function checkImportantParameters() {
 		if [[ "$mla" == "ABC" ]]; then
 			MSG_LEVEL=${MSG_LEVEL_ARGs[$ml]}
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$MSG_LEVEL"
 			MSG_LEVEL=$MSG_LEVEL_DETAILED
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$org"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
 	if [[ ! "$MSG_LEVEL" =~ $POSSIBLE_MSG_LEVEL_NUMBERs ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$MSG_LEVEL"
 		MSG_LEVEL=$MSG_LEVEL_DETAILED
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_MSG_LEVEL "$org"
 		exitError $RC_PARAMETER_ERROR
 	fi
 
