@@ -41,3 +41,5 @@ fi
 
 . raspiBackup_temp_pre.sh
 . raspiBackup_temp_post.sh
+
+. raspiBackup_sample_notify.sh 42

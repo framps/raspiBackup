@@ -24,18 +24,28 @@
 #
 #######################################################################################################################
 
-echo "-> Sample notification extension called"
+MSG_EXT_SAMPLE_NOTIFICATION="ext_sample_notification"
+MSG_EN[$MSG_EXT_SAMPLE_NOTIFICATION]="RBK1001I: Access %s: %s"
+MSG_DE[$MSG_EXT_SAMPLE_NOTIFICATION]="RBK1001I: Zugriff auf %s: %s"
+
+logEntry
 
 # Access log file"
-echo "-> LOG_FILE: $LOG_FILE"
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "LOG_FILE" "$LOG_FILE"
+
 head -n 100 $LOG_FILE
 
 # Acces message file"
-echo "-> MSG_FILE: $MSG_FILE"
-cat $MSG_FILE
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "MSG_FILE" "$MSG_FILE"
+
+startMsg="$(grep "RBK0009I" $MSG_FILE)"
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Startmessage" "$startMsg"
+
+stopMsg="$(grep "RBK0010I" $MSG_FILE)"
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Stopmessage" "$stopMsg"
 
 # access raspiBackup return code
-echo "-> RC: $rc"
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "RC" "$1"
 
-echo "-> Sample notification extension finished"
+logExit
 
