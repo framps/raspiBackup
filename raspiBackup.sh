@@ -155,7 +155,8 @@ MODIFIED_SFDISK="/tmp/$$.sfdisk"
 
 # timeouts
 
-DOWNLOAD_TIMEOUT=60 # seconds
+DOWNLOAD_TIMEOUT=5 # seconds
+DOWNLOAD_RETRIES=3
 
 # debug option constants
 
@@ -4976,8 +4977,9 @@ function cleanupTempFiles() {
 
 function checkImportantParameters() {
 
-	local ll lla pll
+	local ll lla pll org
 
+	org="$LOG_LEVEL"
 	ll="${LOG_LEVEL^^}"
 	pll="^${POSSIBLE_LOG_LEVELs^^}\$"
 	if [[ "$ll" =~ $pll ]]; then
@@ -4989,6 +4991,7 @@ function checkImportantParameters() {
 			LOG_LEVEL=$LOG_DEBUG
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$lvl"
 			LOG_LEVEL=$LOG_DEBUG
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_LOG_LEVEL "$org"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
@@ -5001,6 +5004,7 @@ function checkImportantParameters() {
 
 	local ml mla mll
 
+	org="$MSG_LEVEL"
 	ml="${MSG_LEVEL^^}"
 	mll="^${POSSIBLE_MSG_LEVELs^^}\$"
 	if [[ "$ml" =~ $mll ]]; then
