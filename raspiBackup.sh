@@ -156,7 +156,7 @@ MODIFIED_SFDISK="/tmp/$$.sfdisk"
 
 # timeouts
 
-DOWNLOAD_TIMEOUT=60 # seconds
+DOWNLOAD_TIMEOUT=5 # seconds
 DOWNLOAD_RETRIES=3
 
 # debug option constants
