@@ -341,10 +341,11 @@ SHARED_BOOT_DIRECTORY=0
 BOOT_TAR_EXT="tmg"
 BOOT_DD_EXT="img"
 
-ORIG_CONFIG="/usr/local/etc/raspiBackup.conf"
-NEW_CONFIG="/usr/local/etc/raspiBackup.conf.new"
-MERGED_CONFIG="/usr/local/etc/raspiBackup.conf.merged"
-BACKUP_CONFIG="/usr/local/etc/raspiBackup.conf.bak"
+CONFIG_DIR="/usr/local/etc"
+ORIG_CONFIG="$CONFIG_DIR/raspiBackup.conf"
+NEW_CONFIG="$CONFIG_DIRraspiBackup.conf.new"
+MERGED_CONFIG="$CONFIG_DIR/raspiBackup.conf.merged"
+BACKUP_CONFIG="$CONFIG_DIRraspiBackup.conf.bak"
 
 PERSISTENT_JOURNAL="/var/log/journal"
 
@@ -413,6 +414,7 @@ RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
+RC_EXTENSION_ERROR=141
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -1900,6 +1902,9 @@ MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständi
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+MSG_UNPROTECTED_PROPERTIESFILE=290
+MSG_EN[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Configuration file %s is unprotected."
+MSG_DE[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Konfigurationsdatei %s ist nicht geschützt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 

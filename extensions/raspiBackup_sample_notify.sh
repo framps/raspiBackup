@@ -24,6 +24,8 @@
 #
 #######################################################################################################################
 
+NOTIFICATION_EXTENSION_NAME="sample"
+
 MSG_EXT_SAMPLE_NOTIFICATION="ext_sample_notification"
 MSG_EN[$MSG_EXT_SAMPLE_NOTIFICATION]="RBK1001I: Access %s: %s"
 MSG_DE[$MSG_EXT_SAMPLE_NOTIFICATION]="RBK1001I: Zugriff auf %s: %s"
@@ -46,6 +48,21 @@ writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Stopmessage" "$s
 
 # access raspiBackup return code
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "RC" "$1"
+
+# access an extension specific config file which may contain sensitive data 
+# therefore test if it has mask 600
+read attrs r <<< $(ls -la $CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf)
+if [[ $attrs != "-rw-------" ]]; then
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE "$CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf"
+	exitError $RC_EXTENSION_ERROR		 
+fi
+
+set -x # turn off any trace 
+source $CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf
+set +x
+
+# access any definitions which should be in bash assignment syntax
+# example EXTENSION_PWD="mySecretPassword"
 
 logExit
 
