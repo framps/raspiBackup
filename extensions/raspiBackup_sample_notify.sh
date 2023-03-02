@@ -24,18 +24,31 @@
 #
 #######################################################################################################################
 
-NOTIFICATION_EXTENSION_NAME="sample"
+NOTIFICATION_EXTENSION_MYSELF="$(basename "${BASH_SOURCE}")"
+NOTIFICATION_EXTENSION_MYNAME=${NOTIFICATION_EXTENSION_MYSELF%.*}
+NOTIFICATION_EXTENSION_NAME="$(sed -E "s/.+_(.+)_.+/\1/" <<< "$NOTIFICATION_EXTENSION_MYNAME")"
+NOTIFICATION_EXTENSION_CONFIG_FILE="$CONFIG_DIR/${NOTIFICATION_EXTENSION_MYNAME}.conf"
 
-MSG_EXT_SAMPLE_NOTIFICATION="ext_sample_notification"
+MSG_EXT_SAMPLE_NOTIFICATION="${NOTIFICATION_EXTENSION_MYNAME}"
 MSG_EN[$MSG_EXT_SAMPLE_NOTIFICATION]="RBK1001I: Access %s: %s"
 MSG_DE[$MSG_EXT_SAMPLE_NOTIFICATION]="RBK1001I: Zugriff auf %s: %s"
 
+# ################################################################################################
+# ################################################################################################
+# ################################################################################################
+# NOTE : Don't log any sensitive information like access credentials to the notification service !
+# ################################################################################################
+# ################################################################################################
+# ################################################################################################
+
 logEntry
+
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "LOG_FILE" "$LOG_FILE"
 
 # Access log file"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "LOG_FILE" "$LOG_FILE"
 
-head -n 100 $LOG_FILE
+head -n 10 $LOG_FILE
 
 # Acces message file"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "MSG_FILE" "$MSG_FILE"
@@ -49,20 +62,23 @@ writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Stopmessage" "$s
 # access raspiBackup return code
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "RC" "$1"
 
+# source any configuration definitions
+# They have to be in bash assignment syntax
+# Example SAMPLE_NOTIFICATION_PWD="mySecretPassword"
+
+# access raspiBackup return code
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Config file:" "$NOTIFICATION_EXTENSION_CONFIG_FILE"
+
+if [[ -f $NOTIFICATION_EXTENSION_CONFIG_FILE ]]; then
 # access an extension specific config file which may contain sensitive data 
 # therefore test if it has mask 600
-read attrs r <<< $(ls -la $CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf)
-if [[ $attrs != "-rw-------" ]]; then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE "$CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf"
-	exitError $RC_EXTENSION_ERROR		 
+	read attrs r <<< $(ls -la $NOTIFICATION_EXTENSION_CONFIG_FILE)
+	if [[ $attrs != "-rw-------" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE "$CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf"
+		exitError $RC_EXTENSION_ERROR		 
+	fi
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Sourcing config file:" "$NOTIFICATION_EXTENSION_CONFIG_FILE"
+	source "$NOTIFICATION_EXTENSION_CONFIG_FILE"
 fi
 
-set -x # turn off any trace 
-source $CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf
-set +x
-
-# access any definitions which should be in bash assignment syntax
-# example EXTENSION_PWD="mySecretPassword"
-
 logExit
-

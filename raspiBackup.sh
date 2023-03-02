@@ -4607,7 +4607,15 @@ function cleanupStartup() { # trap
 	fi
 
 	if [[ -n "$EXTENSIONS"  ]]; then
+		xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi			
 		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
 	fi
 
 	logExit
@@ -4759,7 +4767,15 @@ function cleanup() { # trap
 	fi
 
 	if [[ -n "$EXTENSIONS"  ]]; then
+		xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi			
 		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
 	fi
 
 	logFinish
@@ -9420,7 +9436,15 @@ if (( $NOTIFY_START )); then
 			sendSlack "$msg"
 		fi
 		if [[ -n "$EXTENSIONS"  ]]; then
+			xEnabled=0
+			if [ -o xtrace ]; then	# disable xtrace
+				xEnabled=1
+				set +x
+			fi			
 			callExtensions $NOTIFICATION_BACKUP_EXTENSION "0"
+			if (( $xEnabled )); then	# enable xtrace again
+				set -x
+			fi
 		fi
 	fi
 fi

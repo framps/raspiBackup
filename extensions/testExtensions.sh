@@ -33,6 +33,7 @@ else
 	. raspiBackup.sh --include
 fi
 
+<< 'SKIP'
 . raspiBackup_disk_pre.sh
 . raspiBackup_disk_post.sh
 
@@ -41,5 +42,6 @@ fi
 
 . raspiBackup_temp_pre.sh
 . raspiBackup_temp_post.sh
+SKIP
 
 . raspiBackup_sample_notify.sh 42
