@@ -692,7 +692,7 @@ MSG_FI[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: Luodaan varmuuskopiota kohteeseen %
 MSG_FR[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: La partition de boot sera sauvegardée en %s."
 MSG_CREATING_PARTITION_BACKUP=45
 MSG_EN[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Creating backup of partition layout in %s."
-MSG_DE[$MSG_CREATING_PARTITION_BACKUP]="RBK0044I: Backup des Partitionlayouts wird in %s erstellt."
+MSG_DE[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Backup des Partitionlayouts wird in %s erstellt."
 MSG_FI[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Luodaan varmuuskopiota osioasettelusta kohteeseen %s"
 MSG_FR[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: La disposition de la partition sera sauvegardée sous %s"
 MSG_CREATING_MBR_BACKUP=46
@@ -1910,6 +1910,15 @@ MSG_DE[$MSG_MINOR_UPDATE]="RBK0290I: Es gibt einen kleinen Update von $MYNAME $V
 MSG_SCRIPT_MINOR_UPDATE_OK=291
 MSG_EN[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Minor update of %s successfull"
 MSG_DE[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Kleiner Update von %s erfolgreich."
+MSG_UNABLE_TO_MOVE_NEW_BACKUP=292
+MSG_EN[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Unable to move backup %1 to final directory %s."
+MSG_DE[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Backupverzeichnis %s kann nicht zu %s verschoben werden."
+MSG_INCOMPLET_BACKUP_EXISTS=293
+MSG_EN[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W: There exist incomplete backups in %s."
+MSG_DE[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W Es existieren unvollständige Backups in %s."
+MSG_MOVE_TEMPORARY_BACKUP=294
+MSG_EN[$MSG_MOVE_TEMPORARY_BACKUP]="RBK0294I: Moved new backup from %s to backup directory %s."
+MSG_DE[$MSG_MOVE_TEMPORARY_BACKUP]="RBK0294I: Neues Backup %s wurde in das Backupverzeichnis %s verschoben."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3826,42 +3835,40 @@ function setupEnvironment() {
 
 		BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
 		BACKUPTARGET_DIR="$BACKUPTARGET_ROOT/$BACKUPFILE"
-
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
-		if [[ ! -d "${BACKUPTARGET_DIR}" ]]; then
-			if (( $FAKE || ( $SMART_RECYCLE && $SMART_RECYCLE_DRYRUN ) )); then
-				: # don't create backupdirectory
-			else
-				if ! mkdir -p "${BACKUPTARGET_DIR}"; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPTARGET_DIR}"
-					exitError $RC_CREATE_ERROR
-				fi
-			fi
-		fi
+		logItem "Final backup target"
+		logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
+		logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
+
+		BACKUPTARGET_DIR_TEMP="$BACKUPPATH/tmp/$BACKUPFILE"
+		BACKUPTARGET_FILE_TEMP="$BACKUPTARGET_DIR_TEMP/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
+
+		# now start to use temp directory
+
+		logItem "Use temp backup directory now"
+
+		BACKUPTARGET_DIR_FINAL="$BACKUPTARGET_DIR"
+		BACKUPTARGET_FILE_FINAL="$BACKUPTARGET_FILE"
+
+		BACKUPTARGET_DIR="$BACKUPTARGET_DIR_TEMP"
+		BACKUPTARGET_FILE="$BACKUPTARGET_FILE_TEMP"
 
 		BACKUPPATH="$(sed -E 's@/+$@@g' <<< "$BACKUPPATH")"
 
-		if [[ ! -d "$BACKUPPATH" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$BACKUPPATH"
-			exitError $RC_MISSING_FILES
-		fi
+		logItem "Backup target temp"
+		logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
+		logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
 
-		if ! touch "$BACKUPPATH/$MYNAME.tmp" &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
-			exitError $RC_MISC_ERROR
-		else
-			rm -f "$BACKUPPATH/$MYNAME.tmp" &>/dev/null
-		fi
+		logItem "Backup target final"
+		logItem "BACKUPTARGET_DIR_FINAL: $BACKUPTARGET_DIR_FINAL"
+		logItem "BACKUPTARGET_FILE_FINAL: $BACKUPTARGET_FILE_FINAL"
 
 		if (( $FAKE )) && [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
 			logItem "LOG_OUTPUT=$LOG_OUTPUT"
 		fi
 	fi
-
-	logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
-	logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
 
 	logExit
 
@@ -4437,30 +4444,6 @@ function sendEMail() { # content subject
 
 }
 
-function cleanupBackupDirectory() {
-
-	logEntry
-
-	logCommand "ls -la $BACKUPTARGET_DIR"
-
-	if (( $rc != 0 )); then
-
-		if [[ -d "$BACKUPTARGET_DIR" ]]; then
-			if [[ -z "$BACKUPPATH" || -z "$BACKUPFILE" || -z "$BACKUPTARGET_DIR" || "$BACKUPFILE" == *"*"* || "$BACKUPPATH" == *"*"* || "$BACKUPTARGET_DIR" == *"*"* ]]; then
-				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
-			fi
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
-			rm -rfd "$BACKUPTARGET_DIR" # delete incomplete backupdir
-			local rmrc=$?
-			if (( $rmrc != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_DIR" "$rmrc"
-			fi
-		fi
-	fi
-
-	logExit
-}
-
 # return text masqueraded
 #
 # Algorithm:
@@ -4686,8 +4669,6 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
-
 	CLEANUP_RC=$rc
 
 	if (( $RESTORE )); then
@@ -4695,12 +4676,38 @@ function cleanup() { # trap
 	else
 		cleanupBackup "$1"
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
+		
+			logItem "Move temp backup directory"
+			
+			logItem "Backup target temp"
+			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
+			logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
+
+			logItem "Backup target final"
+			logItem "BACKUPTARGET_DIR_FINAL: $BACKUPTARGET_DIR_FINAL"
+			logItem "BACKUPTARGET_FILE_FINAL: $BACKUPTARGET_FILE_FINAL"			
+
+			if ! mv "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL" >> $LOG_FILE; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_MOVE_NEW_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"
+				exitError $RC_CREATE_ERROR			
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOVE_TEMPORARY_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"			
+			fi
+						
+			BACKUPTARGET_DIR="$BACKUPTARGET_DIR_FINAL"
+			BACKUPTARGET_FILE="$BACKUPTARGET_FILE_FINAL"
+						
 			if (( \
 				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
 				|| ! $SMART_RECYCLE \
 				)); then
-				applyBackupStrategy
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
+					applyBackupStrategy
 			fi
+		fi++		
+		if [[ -d "$BACKUPPATH/tmp" ]]; then
+			logItem "Removing temp backup directory"
+			rm -rf "${BACKUPPATH:?}/tmp" &>>$LOG_FILE 	# guard against whole tmp dir deletion
 		fi
 	fi
 
@@ -4956,8 +4963,6 @@ function cleanupBackup() { # trap
 	startServices "noexit"
 	executeAfterStartServices "noexit"
 
-	cleanupBackupDirectory
-
 	logExit
 
 }
@@ -4968,7 +4973,7 @@ function cleanupTempFiles() {
 
 	if [[ -f "$MYSELF~" ]]; then
 		logItem "Removing new version $MYSELF~"
-		rm -f "$MYSELF~" &>/dev/null
+		rm -f "$MYSELF~" &>>$LOG_FILE
 	fi
 
 	logExit
@@ -5351,12 +5356,12 @@ function backupTar() {
 		source="."
 		devroot="."
 		sourceDir="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
-		target="\"${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}\""
+		target="${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}"
 	else
 		bootPartitionBackup
 		source="/"
 		devroot=""
-		target="\"$BACKUPTARGET_FILE\""
+		target="$BACKUPTARGET_FILE"
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
@@ -5372,7 +5377,7 @@ function backupTar() {
 		-f $target \
 		--warning=no-xdev \
 		--numeric-owner \
-		--exclude=\"$BACKUPPATH_PARAMETER/*\" \
+		--exclude=\"$BACKUPPATH/*\" \
 		--exclude=\"$devroot/$log_file\" \
 		--exclude=\"$devroot/$msg_file\" \
 		--exclude='.gvfs' \
@@ -5483,14 +5488,14 @@ function backupRsync() { # partition number (for partition based backup)
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
-		target="\"${BACKUPTARGET_DIR}\""
+		target="${BACKUPTARGET_DIR}"
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
 
 		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name "$BACKUPFILE" 2>>/dev/null | sort | tail -n 1)
 		excludeRoot="/$partition"
 
 	else
-		target="\"${BACKUPTARGET_DIR}\""
+		target="${BACKUPTARGET_DIR}"
 		source="/"
 
 		bootPartitionBackup
@@ -5522,7 +5527,7 @@ function backupRsync() { # partition number (for partition based backup)
 		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL}"
 	fi
 
-	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
+	cmdParms="--exclude=\"$BACKUPPATH/*\" \
 			--exclude=\"$excludeRoot/$log_file\" \
 			--exclude=\"$excludeRoot/$msg_file\" \
 			--exclude='.gvfs' \
@@ -5933,7 +5938,7 @@ function restore() {
 
 function applyBackupStrategy() {
 
-	logEntry "$BACKUP_TARGETDIR"
+	logEntry "$BACKUPTARGET_DIR"
 
 	if (( $SMART_RECYCLE )); then
 
@@ -5947,7 +5952,7 @@ function applyBackupStrategy() {
 		SR_YEARLY="${SMART_RECYCLE_PARMS[3]}"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_APPLYING_BACKUP_STRATEGY $SR_DAILY $SR_WEEKLY $SR_MONTHLY $SR_YEARLY
 
-		logCommand "ls -d $BACKUPPATH/*"
+		logCommand "ls -d $BACKUPPATH/$HOSTNAME*"
 
 		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
 		local numKeptBackups="$(countLines "$keptBackups")"
@@ -5965,7 +5970,7 @@ function applyBackupStrategy() {
 					if [[ -z $BACKUPTARGET_ROOT ]]; then
 						assertionFailed $LINENO "BACKUPTARGET_ROOT empty"
 					fi
-					if [[ -n $dir_to_delete ]]; then
+					if [[ -n $dir_to_delete ]]; then					
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
 						rm -rf "${BACKUPTARGET_ROOT:?}/$dir_to_delete" # guard against whole backup dir deletion
 					fi
@@ -5993,15 +5998,15 @@ function applyBackupStrategy() {
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 
 		if (( $keepBackups != -1 )); then
-			logItem "Deleting oldest directory in $BACKUPPATH"
-			logCommand "ls -d $BACKUPPATH/*"
+			logItem "Deleting oldest directory in $BACKUPPATH/$HOSTNAME"
+			logCommand "ls -d $BACKUPPATH/$HOSTNAME*"
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
 			if (( ! $FAKE )); then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
-					assertionFailed $LINENO "push to $BACKUPPATH failed"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH/$HOSTNAME"
+				if ! pushd "$BACKUPPATH/$HOSTNAME" &>>$LOG_FILE; then
+					assertionFailed $LINENO "push to $BACKUPPATH/$HOSTNAME failed"
 				fi
 				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
 				if ! popd &>>$LOG_FILE; then
@@ -6018,8 +6023,8 @@ function applyBackupStrategy() {
 				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
 				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
 
-				if ! pushd "$BACKUPPATH" 1>/dev/null; then
-					assertionFailed $LINENO "push to $BACKUPPATH failed"
+				if ! pushd "$BACKUPPATH/$HOSTNAME" 1>/dev/null; then
+					assertionFailed $LINENO "push to $BACKUPPATH/$HOSTNAME failed"
 				fi
 				
 				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
@@ -6083,7 +6088,7 @@ function backup() {
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
 	fi
 
-	logItem "Storing backup in backuppath $BACKUPPATH"
+	logItem "Storing backup in backuppath $BACKUPPATH/$HOSTNAME"
 
 	if [[ -f $BOOT_DEVICENAME ]]; then
 		logCommand "fdisk -l $BOOT_DEVICENAME"
@@ -6142,9 +6147,6 @@ function backup() {
 	logItem "Backup created with return code: $rc"
 
 	logItem "Current directory: $(pwd)"
-	if [[ -z $BACKUPPATH || "$BACKUPPATH" == *"*"* ]]; then
-		assertionFailed $LINENO "Unexpected backup path $BACKUPPATH"
-	fi
 
 	logSystemDiskState
 
@@ -6810,10 +6812,33 @@ function doitBackup() {
 		exitError $RC_MISSING_FILES
 	fi
 
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
+
+	if [[ -d "$BACKUPPATH/tmp" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPLET_BACKUP_EXISTS "${BACKUPPATH}/tmp"
+	fi		
+	
+	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>/dev/null; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
+		exitError $RC_MISC_ERROR
+	else
+		rm -f "$BACKUPPATH/$MYNAME.tmp" &>>$LOG_FILE
+	fi
+
 	if [[ $(getFsType "$BACKUPPATH") == "vfat" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAX_4GB_LIMIT "$BACKUPPATH"
 	fi
 
+	if ! mkdir -p "$BACKUPPATH/tmp" >> $LOG_FILE; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPPATH}/tmp"
+			exitError $RC_CREATE_ERROR
+	fi
+
+	if ! mkdir $BACKUPTARGET_DIR_TEMP; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPTARGET_DIR_TEMP"
+			exitError $RC_CREATE_ERROR
+	fi		
+	
 	if (( ! $EXCLUDE_DD )); then
 
 		if [[ ! -b "$BOOT_DEVICENAME" ]]; then
@@ -7027,28 +7052,24 @@ function doitBackup() {
 		 exitError $RC_MISSING_COMMANDS
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
-
 	if (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
 		exitError $RC_MISC_ERROR
 	fi
 
-	BACKUPPATH_PARAMETER="$BACKUPPATH"
-	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
-	if [[ ! -d "$BACKUPPATH" ]]; then
-		 if ! mkdir -p "${BACKUPPATH}"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
+	if [[ ! -d "$BACKUPPATH/$HOSTNAME" ]]; then
+		 if ! mkdir -p "${BACKUPPATH}/${HOSTNAME}"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH/$HOSTNAME"
 			exitError $RC_CREATE_ERROR
 		 fi
 	fi
 
-	logCommand "ls -1 ${BACKUPPATH}"
-	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
+	logCommand "ls -1 ${BACKUPPATH/$HOSTNAME}"
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH/$HOSTNAME} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BACKUPNAMES_DETECTED "$nonRaspiGeneratedDirs" "$BACKUPPATH"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BACKUPNAMES_DETECTED "$nonRaspiGeneratedDirs" "$BACKUPPATH/$HOSTNAME"
 		exitError $RC_BACKUP_DIRNAME_ERROR
 	fi
 
@@ -7073,7 +7094,7 @@ function doitBackup() {
 	# now either execute a SR dryrun or start backup
 
 	if (( $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then # just apply backup strategy to test smart recycle
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH/$(hostname)"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH/$HOSTNAME"
 		applyBackupStrategy
 		rc=0
 	else
@@ -8146,11 +8167,10 @@ function updateConfig() {
 		exitError $RC_DOWNLOAD_FAILED
 	fi
 
-		# make sure new config file is readable by owner only
-		if ! chmod 600 "$NEW_CONFIG" &>>$LOG_FILE; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
-			exitError $RC_FILE_OPERATION_ERROR
-		fi
+	# make sure new config file is readable by owner only
+	if ! chmod 600 "$NEW_CONFIG" &>>$LOG_FILE; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
+		exitError $RC_FILE_OPERATION_ERROR
 	fi
 
 	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
