@@ -4704,7 +4704,7 @@ function cleanup() { # trap
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
 					applyBackupStrategy
 			fi
-		fi++		
+		fi
 		if [[ -d "$BACKUPPATH/tmp" ]]; then
 			logItem "Removing temp backup directory"
 			rm -rf "${BACKUPPATH:?}/tmp" &>>$LOG_FILE 	# guard against whole tmp dir deletion
