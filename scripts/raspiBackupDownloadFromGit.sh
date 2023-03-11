@@ -2,7 +2,7 @@
 
 #######################################################################################################################
 #
-#  Download any latest file available on any raspiBackup repository github branch into current directory
+#  Download any latest file available on any raspiBackup github repository branch into current directory
 #
 #  Example to download latest raspiBackup.sh from master branch:
 #  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master
@@ -111,7 +111,7 @@ if (( $updateGitInfo )); then
 	fi
 
 	if (( $HTTP_CODE != 200 )); then
-		echo "??? Error retrieveing commit information from github. HTTP response: $HTTP_CODE"
+		echo "??? Error retrieving commit information from github. HTTP response: $HTTP_CODE"
 		jq . $jsonFile
 		exit 1
 	fi	
