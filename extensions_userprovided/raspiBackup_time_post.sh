@@ -19,7 +19,7 @@ ext_TimeElapsed_post=$(getTimeElapsed)
 
 # set any messages and prefix message name with ext_ and some unique prefix to use a different namespace than the script
 MSG_EXT_TIME="ext_Time_1"
-MSG_EN[$MSG_EXT_TIME]="RBK2000I: Total runtime:: %s"
+MSG_EN[$MSG_EXT_TIME]="RBK2000I: Total runtime: %s"
 MSG_DE[$MSG_EXT_TIME]="RBK2000I: Gesamtlaufzeit: %s"
 
 # now write message to console and log and email
