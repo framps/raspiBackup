@@ -26,6 +26,3 @@ MSG_DE[$MSG_EXT_TIME]="RBK2000I: Gesamtlaufzeit: %s"
 # $MSG_LEVEL_MINIMAL will write message all the time
 # $MSG_LEVEL_DETAILED will write message only if -m 1 parameter was used
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_TIME "$ext_TimeElapsed_post"
-
-
-
