@@ -125,12 +125,18 @@ if [[ -f $EXCLUDE_SERVICES_REGEX_FILE ]]; then
 	EXCLUDE_SERVICES_REGEX="$(<$EXCLUDE_SERVICES_REGEX_FILE)"
 else
 read -r -d '' EXCLUDE_SERVICES_REGEX <<-'EOF'
+acpid
 alsa-state
+avahi.*
 argononed
+colord
 dbus
+dhcpd
 nfs-
 ntp
 pihole.*
+rpcbind
+rsyslog
 smartmontools
 systemd-.*
 thermald
