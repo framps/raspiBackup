@@ -137,12 +137,14 @@ hciuart
 nfs-
 ntp
 pihole.*
+rng-tools
 rpcbind
 rsyslog
 ssh
 smartmontools
 systemd-.*
 thermald
+triggerhappy
 unattended.*
 wpa_supplicant
 .*@.*
