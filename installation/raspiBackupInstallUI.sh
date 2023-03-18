@@ -131,7 +131,7 @@ avahi.*
 argononed
 colord
 dbus
-dhcpd
+dhcpcd
 nfs-
 ntp
 pihole.*
