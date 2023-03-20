@@ -2497,7 +2497,7 @@ function ignoreErrorRC() { # rc errors_to_ignore
 function executeDD() { # cmd silent
 	logEntry
 	local rc cmd
-	cmd="$1"
+	cmd="LC_ALL=C $1"
 	logItem "$cmd"
 	( eval "$cmd" 2>&1 1>&5 | grep -viE "records [in|out]| copied," | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
@@ -2526,7 +2526,7 @@ function executeRsync() { # cmd flagsToIgnore
 function executeTar() { # cmd flagsToIgnore
 	logEntry
 	local rc cmd
-	cmd="$1"
+	cmd="LC_ALL=C $1"
 	logItem "$cmd"
 	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE $LOG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
@@ -6137,7 +6137,6 @@ function backup() {
 	END_TIME=$(date +%s)
 
 	BACKUP_TIME=($(duration $START_TIME $END_TIME))
-	logItem "Backuptime: $BACKUP_TIME"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
 
 	logItem "Syncing"
@@ -7888,7 +7887,7 @@ function doitRestore() {
 		fi
 	fi
 
-	local usbMount="$(dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
+	local usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
 	if grep -q "install ok installed" <<< "$usbMount" &>>$LOG_FILE; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR

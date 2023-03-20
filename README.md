@@ -4,7 +4,7 @@
   <img src="./images/raspiBackupIcon_smaller.png" />
 </p>
 
-# raspiBackup - Backup and restore your running Raspberries
+# raspiBackup - Backup and restore your active Raspberries
 
 #### For a high level summary visit [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
 

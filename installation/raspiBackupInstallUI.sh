@@ -123,18 +123,30 @@ EOF
 
 if [[ -f $EXCLUDE_SERVICES_REGEX_FILE ]]; then
 	EXCLUDE_SERVICES_REGEX="$(<$EXCLUDE_SERVICES_REGEX_FILE)"
-else	
+else
 read -r -d '' EXCLUDE_SERVICES_REGEX <<-'EOF'
+acpid
 alsa-state
+avahi.*
 argononed
+bluetooth
+colord
 dbus
+dhcpcd
+hciuart
 nfs-
 ntp
 pihole.*
+rng-tools
+rpcbind
+rsyslog
+ssh
 smartmontools
 systemd-.*
 thermald
+triggerhappy
 unattended.*
+wpa_supplicant
 .*@.*
 EOF
 fi
@@ -143,23 +155,23 @@ if [[ -f $INCLUDE_SERVICES_REGEX_FILE ]]; then
 	INCLUDE_SERVICES_REGEX="$(<$INCLUDE_SERVICES_REGEX_FILE)"
 else
 read -r -d '' INCLUDE_SERVICES_REGEX <<-'EOF'
-apache.*$
-containerd$
-cron$
-cups$
-fhem$
-influxd$
-iobroker$
-lighttpd$
-minidlna$
-mysql$
-mariadb$
-nfs-kernel-server$
-nmbd$
-nginx$
-smbd$
-snapd$
-wordpress$
+apache.*
+containerd
+cron
+cups
+fhem
+influxd
+iobroker
+lighttpd
+minidlna
+mysql
+mariadb
+nfs-kernel-server
+nmbd
+nginx
+smbd
+snapd
+wordpress
 EOF
 fi
 
@@ -1002,23 +1014,28 @@ Tab key: Jump to buttons at the bottom"
 
 
 MSG_ABOUT=$((SCNT++))
-MSG_EN[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
+MSG_EN[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
+%1${NL}${NL}\
 This tool provides a straight-forward way of doing installation,${NL} updating and configuration of $RASPIBACKUP_NAME.${NL}${NL}\
 Visit https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}for details about all configuration options of $RASPIBACKUP_NAME.${NL}${NL}\
 Visit https://www.linux-tips-and-tricks.de/en/raspibackup${NL}for details about $RASPIBACKUP_NAME."
-MSG_DE[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
+MSG_DE[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
+%1${NL}${NL}\
 Dieses Tool ermöglicht es möglichst einfach $RASPIBACKUP_NAME zu installieren,${NL} zu updaten und die Konfiguration anzupassen.${NL}${NL}\
 Besuche https://www.linux-tips-and-tricks.de/de/raspibackup#parameter${NL}um alle Konfigurationsoptionen von $RASPIBACKUP_NAME kennenzulernen.${NL}${NL}\
 Besuche https://www.linux-tips-and-tricks.de/de/raspibackup${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
-MSG_FI[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
+MSG_FI[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
+%1${NL}${NL}\
 Tämä työkalu tarjoaa $RASPIBACKUP_NAME:n suoraviivaisen asennuksen,${NL} päivittämisen ja asetusten määrittämisen.${NL}${NL}\
 Kaikista $RASPIBACKUP_NAME:n asetuksista löydät tietoa osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
 Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup"
-MSG_FR[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
+MSG_FR[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
+%1${NL}${NL}\
 Cet outil facilite au maximum la mise en place de $RASPIBACKUP_NAME ,la mise à jour ,${NL} et la configuration.${NL}${NL}\
 Visitez https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}pour plus de détails sur toutes les options de configuration de $RASPIBACKUP_NAME.${NL}${NL}\
 Visitez https://www.linux-tips-and-tricks.de/en/raspibackup${NL}pour plus de détails sur $RASPIBACKUP_NAME."
-MSG_ZH[$MSG_ABOUT]="$GIT_CODEVERSION${NL}${NL}\
+MSG_ZH[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
+%1${NL}${NL}\
 此界面提供一个$RASPIBACKUP_NAME的安装引导,${NL}更新和设置页面.${NL}${NL}\
 $RASPIBACKUP_NAME的的详情设置请访问${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
 获取$RASPIBACKUP_NAME详情请访问:{NL}https://www.linux-tips-and-tricks.de/en/raspibackup "
@@ -2024,7 +2041,7 @@ function extensions_uninstall_execute() {
 
 function getActiveServices() {
 	logEntry
-	
+
 	logItem "$EXCLUDE_SERVICES_REGEX"
 	local as=""
 	IFS=" "
@@ -2454,10 +2471,28 @@ function testIfServicesExist() { # list of services
 	logExit "$fails"
 }
 
+function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
+	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
+	[[ -z "$v" ]] && v="0.0.0.0"
+	echo "$v"
+}
+
 function about_do() {
 
 	logEntry
-	local a="$(getMessageText $MSG_ABOUT)"
+
+	if [[ -f $FILE_TO_INSTALL_ABS_FILE ]]; then
+		local RASPI_GIT_DATE="$(grep "^GIT_DATE=" $FILE_TO_INSTALL_ABS_FILE)"
+		local RASPI_GIT_DATE_ONLY="${RASPI_GIT_DATE/: /}"
+		local RASPI_GIT_DATE_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_DATE")"
+		local RASPI_GIT_TIME_ONLY="$(cut -f 3 -d ' ' <<< "$RASPI_GIT_DATE")"
+		local RASPI_GIT_COMMIT="$(grep "^GIT_COMMIT=" $FILE_TO_INSTALL_ABS_FILE)"
+		local RASPI_GIT_COMMIT_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_COMMIT" | sed 's/\$//')"
+		local RASPI_VERSION="$(extractVersionFromFile $FILE_TO_INSTALL_ABS_FILE VERSION)"
+		local RASPI_GIT_CODEVERSION="$FILE_TO_INSTALL $RASPI_VERSION, $RASPI_GIT_DATE_ONLY/$RASPI_GIT_TIME_ONLY - $RASPI_GIT_COMMIT_ONLY"
+	fi
+
+	local a="$(getMessageText $MSG_ABOUT "$RASPI_GIT_CODEVERSION")"
 	local t=$(center $(($WINDOW_COLS * 2)) "$a")
 	whiptail --msgbox "$t" --title "About" $ROWS_ABOUT $(($WINDOW_COLS * 2)) 1
 	logExit
@@ -3115,7 +3150,7 @@ function config_services_do() {
 	for srvc in ${as[@]}; do
 		if grep -q -i "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then			# service should be included
 			ci+=( "$srvc" )
-		elif containsElement "$srvc" "${css[@]}"; then								
+		elif containsElement "$srvc" "${css[@]}"; then
 			ci+=( "$srvc" )																# service was already configured to be included
 		else
 			cu+=( "$srvc" )																# service was not included
@@ -4253,7 +4288,7 @@ function error() {
 # otherwise return first char followed by @@@@ followed by last char and (<string length>)
 
 function masquerade() { # text
-	
+
 	[[ -z "$1" ]] && return 1
 
 	local t="$1"
