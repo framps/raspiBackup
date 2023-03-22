@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -3638,13 +3639,11 @@ function getFsType() { # file or path
 	local mp="$(findMountPath "$1")"
 	logItem "Mountpoint: $mp"
 
-	local dev fstype r
 	local df="$(LC_ALL=C df --output=fstype,target | grep -E " ${mp}$" | cut -f 1 -d " ")"
 	logItem "df -T: $df"
-	read dev fstype r <<< "$df"
-	echo $fstype
+	echo $df
 
-	logExit "$fstype"
+	logExit "$df"
 
 }
 
