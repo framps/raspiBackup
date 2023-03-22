@@ -43,7 +43,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.8"										# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.8_hotfix_639"										# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
