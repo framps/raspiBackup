@@ -2520,7 +2520,7 @@ function executeRsync() { # cmd flagsToIgnore
 	return $rc
 }
 
-# Removing leading `/' from member names message is annoying. Use grep -v "Removing" to remove the message 
+# Removing leading `/' from member names message is annoying. Use grep -v "Removing" to remove the message
 # and use $PIPESTATUS and catch and return the tar RC
 
 function executeTar() { # cmd flagsToIgnore
@@ -3209,9 +3209,9 @@ function verifyIsOnOff() { # arg
 function downloadFile() { # url, targetFileName
 
 		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
-		
+
 		local httpCode rc
-		
+
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
@@ -3388,7 +3388,7 @@ function finalCommand() {
 		executeShellCommand "$FINAL_COMMAND"
 		local rc=$?
 		if [[ $rc != 0 ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FINAL_COMMAND_FAILED "$rc"			
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FINAL_COMMAND_FAILED "$rc"
 		fi
 	fi
 
@@ -3592,9 +3592,9 @@ function supportsFileAttributes() {	# directory
 	local MAXRETRY=3						# retries if first check fails
 	local retryCount=$(( MAXRETRY + 1 ))
 
-	touch "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
-	chown 65534:65534 "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
-	chmod 057 "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
+	touch /tmp/$MYNAME.fileattributes &>>$LOG_FILE
+	chown 65534:65534 /tmp/$MYNAME.fileattributes &>>$LOG_FILE
+	chmod 057 /tmp/$MYNAME.fileattributes &>>$LOG_FILE
 
 	# ls -la output
 	# ----r-xrwx 1 nobody nogroup 0 Oct 30 19:06 /tmp/supportsFileattributes.fileattributes
@@ -3627,8 +3627,8 @@ function supportsFileAttributes() {	# directory
 		sleep 3s
 	done 		
 	
-	rm "/tmp/$MYNAME.fileattributes" &>>"$LOG_FILE"
-	rm "/$1/$MYNAME.fileattributes" &>>"$LOG_FILE"
+	rm /tmp/$MYNAME.fileattributes &>>$LOG_FILE
+	rm /$1/$MYNAME.fileattributes &>>$LOG_FILE
 
 	logExit $result
 
@@ -3696,13 +3696,11 @@ function getFsType() { # file or path
 	local mp="$(findMountPath "$1")"
 	logItem "Mountpoint: $mp"
 
-	local dev fstype r
-	local df="$(df -T | grep "$mp")"
+	local df="$(LC_ALL=C df --output=fstype,target | grep -E " ${mp}$" | cut -f 1 -d " ")"
 	logItem "df -T: $df"
-	read -r dev fstype r <<< "$df"
-	echo "$fstype"
+	echo $df
 
-	logExit "$fstype"
+	logExit "$df"
 
 }
 
@@ -4143,7 +4141,7 @@ function sendTelegrammLogMessages() {
 
 function sendPushover() { # subject sucess/failure
 
-	logEntry "$1" 
+	logEntry "$1"
 
 	if [[ -n "$PUSHOVER_TOKEN" ]] ; then
 		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
@@ -4171,7 +4169,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			sound="$PUSHOVER_SOUND_SUCCESS"
 			prio="$PUSHOVER_PRIORITY_SUCCESS"
 		fi
-		
+
 		local o=$(mktemp)
 
 		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
@@ -4191,7 +4189,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				--form-string "message=$msg"\
 				--form-string "title=$1"\
 				--form-string "sound=$sound")
-						
+
 		logItem "Pushover curl call: ${cmd[@]}"
 		local httpCode
 		httpCode="$(curl -s -w %\{http_code\} -o "$o" "${cmd[@]}" $PUSHOVER_URL)"
@@ -4249,14 +4247,13 @@ function sendSlack() { # subject sucess/failure
 
 # Send message, exit
 
-function sendSlackMessage() { # message 0/1->success/failure 
+function sendSlackMessage() { # message 0/1->success/failure
 
 		logEntry "$1 $2"
 
 		local msg_json statusMsg
-		
-		local o
-		o=$(mktemp)
+
+		local o=$(mktemp)
 
 		if [[ -n $2 && "$2" == "1" ]]; then
 			statusMsg="${SLACK_EMOJI_FAILED}$1"
@@ -4290,7 +4287,7 @@ EOF
 		local cmd=(-X POST)
 		cmd+=(-H 'Content-type: application/json')
 		cmd+=(--data "$msg_json")
-		
+
 		logItem "Slack curl call: ${cmd[@]}"
 		local httpCode
 		httpCode="$(curl -s -w %\{http_code\} -o "$o" "${cmd[@]}" $SLACK_WEBHOOK_URL)"
@@ -4818,7 +4815,7 @@ function cleanup() { # trap
 	fi
 
 	if (( ! $RESTORE && $REBOOT_SYSTEM )); then
-		shutdown -r +3						# wait some time to allow eMail to be sent 
+		shutdown -r +3						# wait some time to allow eMail to be sent
 	fi
 
 	exit $rc
@@ -5120,7 +5117,7 @@ function bootPartitionBackup() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
 					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
-					executeTar "$cmd" 
+					executeTar "$cmd"
 				else
 					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
 					executeDD "$cmd"
@@ -6008,17 +6005,17 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH/$HOSTNAME" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH/$HOSTNAME failed"
 				fi
-				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
+				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
 
-				local rmRC=$?		
+				local rmRC=$?
 				if (( $rmRC != 0 )); then
 					logItem "rmRC: $rmRC"
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_CLEANUP_FAILED 
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_CLEANUP_FAILED
 					exitError $RC_CLEANUP_ERROR
-				fi					
+				fi
 
 				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
 				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
@@ -6026,7 +6023,7 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH/$HOSTNAME" 1>/dev/null; then
 					assertionFailed $LINENO "push to $BACKUPPATH/$HOSTNAME failed"
 				fi
-				
+
 				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
 
 					if [[ $imgFile =~ $regexDD ]]; then
@@ -6270,7 +6267,7 @@ function doit() {
 
 	if isUnsupportedVersion; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_VERSION
-	fi		
+	fi
 
 	if (( $RESTORE )); then
 		doitRestore
@@ -6608,10 +6605,10 @@ function inspect4Backup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
-		
+
 		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9]+)p || "$part" =~ /dev/(nvme[0-9]+n[0-9]+)p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
-		
+
 		else
 			logItem "Starting alternate boot discovery"
 
@@ -9536,6 +9533,6 @@ if isVersionDeprecated "$VERSION"; then
 	NEWS_AVAILABLE=1
 fi
 
-doit # no return 
+doit # no return
 
 fi # ! INCLUDE_ONLY
