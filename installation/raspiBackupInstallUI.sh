@@ -2487,7 +2487,7 @@ function about_do() {
 		local RASPI_GIT_DATE_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_DATE")"
 		local RASPI_GIT_TIME_ONLY="$(cut -f 3 -d ' ' <<< "$RASPI_GIT_DATE")"
 		local RASPI_GIT_COMMIT="$(grep "^GIT_COMMIT=" $FILE_TO_INSTALL_ABS_FILE)"
-		local RASPI_GIT_COMMIT_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_COMMIT" | sed 's/\$//')"
+		local RASPI_GIT_COMMIT_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_COMMIT" | sed 's/\$//' | sed "s/'//" )"
 		local RASPI_VERSION="$(extractVersionFromFile $FILE_TO_INSTALL_ABS_FILE VERSION)"
 		local RASPI_GIT_CODEVERSION="$FILE_TO_INSTALL $RASPI_VERSION, $RASPI_GIT_DATE_ONLY/$RASPI_GIT_TIME_ONLY - $RASPI_GIT_COMMIT_ONLY"
 	fi
