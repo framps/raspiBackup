@@ -124,6 +124,7 @@ function backup_add_comment(){
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_comment_text \n $normal"
 		read Quest_comment_text
+		Quest_comment_text="${Quest_comment_text//[\"\']}"
 		echo -e "$Info_start \n"
 		
 		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" "$1"
