@@ -5839,9 +5839,6 @@ function restore() {
 			logItem "Updating hw clock"
 			echo $(date -u +"%Y-%m-%d %T") > $MNT_POINT/etc/fake-hwclock.data
 
-			logItem "Force fsck on reboot"
-			touch $MNT_POINT/forcefsck
-
 			logCommand "parted -s $RESTORE_DEVICE print"
 
 			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk[0-9]+" || $RESTORE_DEVICE =~ "/dev/loop[0-9]+" || $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" ]]; then
