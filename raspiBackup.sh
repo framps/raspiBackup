@@ -155,7 +155,7 @@ MODIFIED_SFDISK="/tmp/$$.sfdisk"
 
 # timeouts
 
-DOWNLOAD_TIMEOUT=5 # seconds
+DOWNLOAD_TIMEOUT=30 # seconds
 DOWNLOAD_RETRIES=3
 
 # debug option constants
@@ -5901,9 +5901,6 @@ function restore() {
 
 			logItem "Updating hw clock"
 			date -u +"%Y-%m-%d %T" > "$MNT_POINT"/etc/fake-hwclock.data
-
-			logItem "Force fsck on reboot"
-			touch "$MNT_POINT"/forcefsck
 
 			logCommand "parted -s $RESTORE_DEVICE print"
 
