@@ -5827,9 +5827,10 @@ function restore() {
 
 			updateUUIDs
 
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_ROOT_CHECK_STARTED
-			fsck -av $ROOT_PARTITION &>>$LOG_FILE
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_STARTED
+			fsck -fpv $ROOT_PARTITION &>>$LOG_FILE
 			rc=$?
+			logItem "fsck rc: $rc"
 			if (( $rc > 1 )); then # 1: => Filesystem errors corrected
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_FAILED "$rc"
 				exitError $RC_NATIVE_RESTORE_FAILED
