@@ -335,6 +335,8 @@ function language(){
 		Info_start="raspiBackup wird jetzt gestartet"
 		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet"
 		Quest_sel_dir="Bitte gebe den Namen des Backupverzeichnisses ein"
+		Warn_input_mount_method="Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
 		Quest_select_drive="Please enter the destination drive. e.g. mmcblk0,sda,sdb,sdc.... "
@@ -363,6 +365,8 @@ function language(){
 		Info_start="raspiBackup will be started now"
 		Warn_not_mounted="The Backup directory is not mounted"
 		Quest_sel_dir="Please enter the name of the backup-Directory"
+		Warn_input_mount_method="Requires specification of how the drive is mounted. (mount-unit or fstab)"
+
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
@@ -394,7 +398,7 @@ function language(){
 			unitname=$2
 			mount
 		else
-			echo "Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+			echo "$Warn_input_mount_method"
 		exit
 		fi
 	fi
