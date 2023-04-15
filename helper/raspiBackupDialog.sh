@@ -120,11 +120,11 @@ function backup_add_part_and_comment(){
 function backup_add_comment(){
 	echo -e "$yellow $Quest_comment \n $normal"
 	read Quest_comment
+	Quest_comment_text="${Quest_comment_text//[\"\']}"
 
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_comment_text \n $normal"
 		read Quest_comment_text
-		Quest_comment_text="${Quest_comment_text//[\"\']}"
 		echo -e "$Info_start \n"
 		
 		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" "$1"
@@ -225,24 +225,18 @@ function test_digit(){
 	fi
 }
 
-function backupdir_test(){
-	mountpoint="/bin/mountpoint"
-	$mountpoint -q "$1"
-	[[ $? == 0 ]]
-}
 
 function mount(){
-	backupdir_test "$backupdir"
 
 	if [[ $unitname == *".mount" ]]; then
 
-		if backupdir_test "$backupdir"; then
-			echo -e "$green $Info_already_mounted $normal \n"
+		if isPathMounted $backupdir; then		
+		echo -e "$green $Info_already_mounted $normal \n"
+
 		else
 			systemctl start $unitname
-			backupdir_test "$backupdir"
 
-			if backupdir_test "$backupdir"; then
+			if isPathMounted $backupdir; then
 				echo -e "$green $Info_is_mounted $normal \n"
 				mounted=ok
 			else
@@ -254,18 +248,18 @@ function mount(){
 
 	if [[ $unitname == "fstab" ]]; then
 
-		if backupdir_test "$backupdir"; then
+		if isPathMounted $backupdir; then
 		echo -e "$green $Info_already_mounted $normal \n"
 		else
 			/usr/bin/mount -a
 			backupdir_test "$backupdir"
 
-			if backupdir_test "$backupdir"; then
+		if isPathMounted $backupdir; then
 				echo -e "$green $Info_is_mounted $normal \n"
 				mounted=ok
 			else
 				echo -e "$red $Info_not_mounted $normal \n"
-				exit 0
+				exit
 			fi
 		fi
 	fi
@@ -284,6 +278,27 @@ function sel_dir(){
     read dir
 	backup_path="$(find $backupdir/$dir/$dir* -maxdepth 0 | sort -r | head -1)"
 }
+
+function isPathMounted() {
+
+    local path
+    local rc=1
+    path=$1
+
+    # backup path has to be mount point of the file system (second field fs_file in /etc/fstab) and NOT fs_spec otherwise test algorithm will create endless loop
+    if [[ "${1:0:1}" == "/" ]]; then
+        while [[ "$path" != "" ]]; do
+            if mountpoint -q "$path"; then
+                rc=0
+                break
+            fi
+            path=${path%/*}
+        done
+    fi
+
+    return $rc
+}
+
 
 function language(){
 	echo -e "\n \n$yellow Please choose your preferred language"
@@ -310,7 +325,7 @@ function language(){
 		Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n Nur die zusätzlichen. Die Standardpartitionen werden automatisch berücksichtigt \n Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
 		Warn_only_drive="Bitte ein gueltiges Laufwerk eingeben"
 		Quest_comment="Soll ein Kommentar am Ende des Backup-Verzeichnisses eingefügt werden? \n Dieses Backup wird dann nicht in die backup-Strategie übernommen und nicht automatisch recycled. \n j/N \n"
-		Quest_comment_text="Bitte gebe den Kommentar ein \n Bitte nur den Text. Keine Anführungszeichen am Anfang und am Ende.\n"
+		Quest_comment_text="Bitte gebe den Kommentar ein \n"
 		Info_delete="Das folgende Backup wird gelöscht"
 		Quest_sure="Bist du wirklich sicher?   j/N"
 		Info_update="Das Backup wird jetzt endgültig gelöscht \n Das kann eine Weile dauern \n Im Anschluss wird dir das aktualisierte Backupverzeichnis noch einmal angezeigt \n \n"
@@ -338,7 +353,7 @@ function language(){
 		Quest_additional_partitions="Enter the partition number(s) to be backed up in addition to the standard partitions. \n Only the additional ones. The standard partitions are automatically taken. \n If more than one, separate them with spaces.  \n Example: 3 4 5 "
 		Warn_only_drive="Please only enter a valid Drive"
 		Quest_comment="Should a comment be inserted at the end of the backup directory? \n This backup will not be included in the backup strategy and will not be recycled automatically. \n y/N \n"
-		Quest_comment_text="Please enter the comment \nPlease only the text. No quotation marks at the beginning and at the end."
+		Quest_comment_text="Please enter the comment \n"
 		Info_delete="The following Backup will be deletet"
 		Quest_sure="Are you realy sure   y/N?"
 		Info_update="The backup is now finally deleted. \n This may take a while, \n Afterwards, the updated backup directory is displayed again. \n \n"
@@ -384,13 +399,12 @@ function language(){
 		fi
 	fi
 		
-	if cat /proc/mounts | grep $backupdir > /dev/null; then
-        	echo " "
-    else
-        echo -e "$red $Warn_not_mounted $normal"
+    if ! isPathMounted $backupdir; then
+        echo "$Warn_not_mounted"
         exit
-    fi	
-
+    else
+        echo ""
+    fi
 
 	if [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
 		sel_dir
