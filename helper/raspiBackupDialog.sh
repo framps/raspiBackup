@@ -252,7 +252,6 @@ function mount(){
 		echo -e "$green $Info_already_mounted $normal \n"
 		else
 			/usr/bin/mount -a
-			backupdir_test "$backupdir"
 
 		if isPathMounted $backupdir; then
 				echo -e "$green $Info_is_mounted $normal \n"
@@ -267,7 +266,7 @@ function mount(){
 
 function unmount(){
 	if [[ $mounted == ok ]]; then
-	/usr/bin/umount $backupdir
+		/usr/bin/umount $mountdir
 	fi
 }
 
@@ -289,6 +288,7 @@ function isPathMounted() {
     if [[ "${1:0:1}" == "/" ]]; then
         while [[ "$path" != "" ]]; do
             if mountpoint -q "$path"; then
+                mountdir=$path
                 rc=0
                 break
             fi
@@ -372,6 +372,7 @@ function language(){
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
+		
 		language
 	fi
 }
@@ -386,12 +387,8 @@ function language(){
 	source $FILE
 	backupdir=$DEFAULT_BACKUPPATH
 
-	if [[ $3 == "--cron" ]]; then
-		/usr/local/bin/raspiBackup.sh
-		unmount
-		exit 0		
-	else
-		language
+	if [[ $3 != "--cron" ]];then
+	language
 	fi
 	
 	if [[ $1 == "--mountfs" ]]; then
@@ -403,6 +400,12 @@ function language(){
 			echo -e "$red $Warn_input_mount_method $normal"
 		exit
 		fi
+		
+			if [[ $3 == "--cron" ]]; then
+				/usr/local/bin/raspiBackup.sh
+				unmount
+				exit 0		
+			fi
 	fi
 		
     if ! isPathMounted $backupdir; then
