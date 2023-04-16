@@ -333,9 +333,10 @@ function language(){
 		Info_is_mounted="Das Backupverzeichnis wurde gemountet. Es wird im Anschluss ausgehängt"
 		Info_not_mounted="Das Backupverzeichnis konnte nicht gemountet werden"
 		Info_start="raspiBackup wird jetzt gestartet"
-		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet"
+		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet \n Bitte erst mounten"
 		Quest_sel_dir="Bitte gebe den Namen des Backupverzeichnisses ein"
 		Warn_input_mount_method="Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+		Info_backup_path="\n Backup Pfad ist $backupdir\n"
 
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
@@ -363,9 +364,10 @@ function language(){
 		Info_is_mounted="The backup directory was mounted. It will be unmounted afterwards"
 		Info_not_mounted="The backup directory could not be mounted"
 		Info_start="raspiBackup will be started now"
-		Warn_not_mounted="The Backup directory is not mounted"
+		Warn_not_mounted="The Backup directory is not mounted \n please mount first"
 		Quest_sel_dir="Please enter the name of the backup-Directory"
 		Warn_input_mount_method="Requires specification of how the drive is mounted. (mount-unit or fstab)"
+		Info_backup_path="\n Backup Path is $backupdir\n"
 
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
@@ -398,16 +400,16 @@ function language(){
 			unitname=$2
 			mount
 		else
-			echo "$Warn_input_mount_method"
+			echo -e "$red $Warn_input_mount_method $normal"
 		exit
 		fi
 	fi
 		
     if ! isPathMounted $backupdir; then
-        echo "$Warn_not_mounted"
+        echo -e "$red $Warn_not_mounted $normal"
         exit
     else
-        echo ""
+        echo -e "$green $Info_backup_path"
     fi
 
 	if [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
