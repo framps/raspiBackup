@@ -134,6 +134,10 @@ colord
 dbus
 dhcpcd
 hciuart
+kernel.*
+LightDM
+lvm.*
+ModemManager
 nfs-
 ntp
 pihole.*
@@ -141,11 +145,14 @@ rng-tools
 rpcbind
 rsyslog
 ssh
+smartd
 smartmontools
 systemd-.*
 thermald
 triggerhappy
+udisks.*
 unattended.*
+upower
 wpa_supplicant
 .*@.*
 EOF
