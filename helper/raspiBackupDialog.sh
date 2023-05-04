@@ -120,11 +120,11 @@ function backup_add_part_and_comment(){
 function backup_add_comment(){
 	echo -e "$yellow $Quest_comment \n $normal"
 	read Quest_comment
+	Quest_comment_text="${Quest_comment_text//[\"\']}"
 
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
 		echo -e "$yellow $Quest_comment_text \n $normal"
 		read Quest_comment_text
-		Quest_comment_text="${Quest_comment_text//[\"\']}"
 		echo -e "$Info_start \n"
 		
 		/usr/local/bin/raspiBackup.sh -M "$Quest_comment_text" "$1"
@@ -225,24 +225,18 @@ function test_digit(){
 	fi
 }
 
-function backupdir_test(){
-	mountpoint="/bin/mountpoint"
-	$mountpoint -q "$1"
-	[[ $? == 0 ]]
-}
 
 function mount(){
-	backupdir_test "$backupdir"
 
 	if [[ $unitname == *".mount" ]]; then
 
-		if backupdir_test "$backupdir"; then
-			echo -e "$green $Info_already_mounted $normal \n"
+		if isPathMounted $backupdir; then		
+		echo -e "$green $Info_already_mounted $normal \n"
+
 		else
 			systemctl start $unitname
-			backupdir_test "$backupdir"
 
-			if backupdir_test "$backupdir"; then
+			if isPathMounted $backupdir; then
 				echo -e "$green $Info_is_mounted $normal \n"
 				mounted=ok
 			else
@@ -254,18 +248,17 @@ function mount(){
 
 	if [[ $unitname == "fstab" ]]; then
 
-		if backupdir_test "$backupdir"; then
+		if isPathMounted $backupdir; then
 		echo -e "$green $Info_already_mounted $normal \n"
 		else
 			/usr/bin/mount -a
-			backupdir_test "$backupdir"
 
-			if backupdir_test "$backupdir"; then
+		if isPathMounted $backupdir; then
 				echo -e "$green $Info_is_mounted $normal \n"
 				mounted=ok
 			else
 				echo -e "$red $Info_not_mounted $normal \n"
-				exit 0
+				exit
 			fi
 		fi
 	fi
@@ -273,7 +266,7 @@ function mount(){
 
 function unmount(){
 	if [[ $mounted == ok ]]; then
-	/usr/bin/umount $backupdir
+		/usr/bin/umount $mountdir
 	fi
 }
 
@@ -284,6 +277,28 @@ function sel_dir(){
     read dir
 	backup_path="$(find $backupdir/$dir/$dir* -maxdepth 0 | sort -r | head -1)"
 }
+
+function isPathMounted() {
+
+    local path
+    local rc=1
+    path=$1
+
+    # backup path has to be mount point of the file system (second field fs_file in /etc/fstab) and NOT fs_spec otherwise test algorithm will create endless loop
+    if [[ "${1:0:1}" == "/" ]]; then
+        while [[ "$path" != "" ]]; do
+            if mountpoint -q "$path"; then
+                mountdir=$path
+                rc=0
+                break
+            fi
+            path=${path%/*}
+        done
+    fi
+
+    return $rc
+}
+
 
 function language(){
 	echo -e "\n \n$yellow Please choose your preferred language"
@@ -310,7 +325,7 @@ function language(){
 		Quest_additional_partitions="Bitte die Partitionsnummer(n) eingeben, die zusaetzlich \n  zu den Standardpartitionen gesichert werde sollen. \n Nur die zusätzlichen. Die Standardpartitionen werden automatisch berücksichtigt \n Falls mehrere, dann getrennt durch Leerzeichen.  \n  Beispiel:  3 4 5 "
 		Warn_only_drive="Bitte ein gueltiges Laufwerk eingeben"
 		Quest_comment="Soll ein Kommentar am Ende des Backup-Verzeichnisses eingefügt werden? \n Dieses Backup wird dann nicht in die backup-Strategie übernommen und nicht automatisch recycled. \n j/N \n"
-		Quest_comment_text="Bitte gebe den Kommentar ein \n Bitte nur den Text. Keine Anführungszeichen am Anfang und am Ende.\n"
+		Quest_comment_text="Bitte gebe den Kommentar ein \n"
 		Info_delete="Das folgende Backup wird gelöscht"
 		Quest_sure="Bist du wirklich sicher?   j/N"
 		Info_update="Das Backup wird jetzt endgültig gelöscht \n Das kann eine Weile dauern \n Im Anschluss wird dir das aktualisierte Backupverzeichnis noch einmal angezeigt \n \n"
@@ -318,8 +333,11 @@ function language(){
 		Info_is_mounted="Das Backupverzeichnis wurde gemountet. Es wird im Anschluss ausgehängt"
 		Info_not_mounted="Das Backupverzeichnis konnte nicht gemountet werden"
 		Info_start="raspiBackup wird jetzt gestartet"
-		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet"
+		Warn_not_mounted="Das Backupverzeichnis ist nicht gemountet \n Bitte erst mounten"
 		Quest_sel_dir="Bitte gebe den Namen des Backupverzeichnisses ein"
+		Warn_input_mount_method="Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+		Info_backup_path="\n Backup Pfad ist $backupdir\n"
+
 	elif (( $lang == 2 )); then
 		Quest_last_backup="Should the last backup be restored? y/N "
 		Quest_select_drive="Please enter the destination drive. e.g. mmcblk0,sda,sdb,sdc.... "
@@ -338,7 +356,7 @@ function language(){
 		Quest_additional_partitions="Enter the partition number(s) to be backed up in addition to the standard partitions. \n Only the additional ones. The standard partitions are automatically taken. \n If more than one, separate them with spaces.  \n Example: 3 4 5 "
 		Warn_only_drive="Please only enter a valid Drive"
 		Quest_comment="Should a comment be inserted at the end of the backup directory? \n This backup will not be included in the backup strategy and will not be recycled automatically. \n y/N \n"
-		Quest_comment_text="Please enter the comment \nPlease only the text. No quotation marks at the beginning and at the end."
+		Quest_comment_text="Please enter the comment \n"
 		Info_delete="The following Backup will be deletet"
 		Quest_sure="Are you realy sure   y/N?"
 		Info_update="The backup is now finally deleted. \n This may take a while, \n Afterwards, the updated backup directory is displayed again. \n \n"
@@ -346,11 +364,15 @@ function language(){
 		Info_is_mounted="The backup directory was mounted. It will be unmounted afterwards"
 		Info_not_mounted="The backup directory could not be mounted"
 		Info_start="raspiBackup will be started now"
-		Warn_not_mounted="The Backup directory is not mounted"
+		Warn_not_mounted="The Backup directory is not mounted \n please mount first"
 		Quest_sel_dir="Please enter the name of the backup-Directory"
+		Warn_input_mount_method="Requires specification of how the drive is mounted. (mount-unit or fstab)"
+		Info_backup_path="\n Backup Path is $backupdir\n"
+
 	else
 		echo -e "$red False input. Please enter only 1 or 2"
 		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
+		
 		language
 	fi
 }
@@ -365,12 +387,8 @@ function language(){
 	source $FILE
 	backupdir=$DEFAULT_BACKUPPATH
 
-	if [[ $3 == "--cron" ]]; then
-		/usr/local/bin/raspiBackup.sh
-		unmount
-		exit 0		
-	else
-		language
+	if [[ $3 != "--cron" ]];then
+	language
 	fi
 	
 	if [[ $1 == "--mountfs" ]]; then
@@ -379,18 +397,23 @@ function language(){
 			unitname=$2
 			mount
 		else
-			echo "Angabe erforderlich wie das Laufwerk gemountet wird. (mount-unit oder fstab)"
+			echo -e "$red $Warn_input_mount_method $normal"
 		exit
 		fi
+		
+			if [[ $3 == "--cron" ]]; then
+				/usr/local/bin/raspiBackup.sh
+				unmount
+				exit 0		
+			fi
 	fi
 		
-	if cat /proc/mounts | grep $backupdir > /dev/null; then
-        	echo " "
-    else
+    if ! isPathMounted $backupdir; then
         echo -e "$red $Warn_not_mounted $normal"
         exit
-    fi	
-
+    else
+        echo -e "$green $Info_backup_path"
+    fi
 
 	if [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
 		sel_dir

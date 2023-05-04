@@ -1898,9 +1898,9 @@ MSG_DE[$MSG_SLACK_SEND_FAILED]="RBK0286W: Senden an Slack fehlerhaft. curl RC: %
 MSG_SLACK_SEND_OK=287
 MSG_EN[$MSG_SLACK_SEND_OK]="RBK0287I: Slack notified."
 MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
-MSG_SLACK_OPTIONS_INCOMPLETE=288
-MSG_EN[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slack options not complete."
-MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständig"
+#MSG_SLACK_OPTIONS_INCOMPLETE=288
+#MSG_EN[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slack options not complete."
+#MSG_DE[$MSG_SLACK_OPTIONS_INCOMPLETE]="RBK0288E: Slackoptionen nicht vollständig."
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
@@ -1919,6 +1919,12 @@ MSG_DE[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W Es existieren unvollständige Bac
 MSG_MOVE_TEMPORARY_BACKUP=294
 MSG_EN[$MSG_MOVE_TEMPORARY_BACKUP]="RBK0294I: Moved new backup from %s to backup directory %s."
 MSG_DE[$MSG_MOVE_TEMPORARY_BACKUP]="RBK0294I: Neues Backup %s wurde in das Backupverzeichnis %s verschoben."
+MSG_IMG_BOOT_FSCHECK_FAILED=295
+MSG_EN[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0295E: Bootpartition check failed with RC %s."
+MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0295E: Bootpartitioncheck endet fehlerhaft mit RC %s."
+MSG_IMG_BOOT_CHECK_STARTED=296
+MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0296I: Bootpartition check started."
+MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0296I: Bootpartitionscheck gestartet."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5128,6 +5134,26 @@ function bootPartitionBackup() {
 					exitError $RC_DD_IMG_FAILED
 				fi
 
+				if (( ! $TAR_BOOT_PARTITION_ENABLED )); then
+					writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_BOOT_CHECK_STARTED
+					local loopDev
+					loopDev="$(losetup -f)"
+					logItem "Loop device: $loopDev"
+					losetup -P $loopDev $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext &>>$LOG_FILE
+					rc=$?
+					if (( $rc != 0 )); then
+						losetup -d $loopDev &>>$LOG_FILE
+						assertionFailed $LINENO "Mount of boot partition backup file failed with rc $rc"
+					fi
+					fsck -fp $loopDev &>>$LOG_FILE
+					rc=$?
+					losetup -d $loopDev &>>$LOG_FILE
+					if (( $rc > 1 )); then
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_FSCHECK_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
+						exitError $RC_DD_IMG_FAILED
+					fi
+				fi
+
 				if (( $LINK_BOOTPARTITIONFILES )); then
 					createLinks "$BACKUPTARGET_ROOT" $ext "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				fi
@@ -5891,8 +5917,9 @@ function restore() {
 			updateUUIDs
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_ROOT_CHECK_STARTED
-			fsck -av "$ROOT_PARTITION" &>>$LOG_FILE
+			fsck -fpv $ROOT_PARTITION &>>$LOG_FILE
 			rc=$?
+			logItem "fsck rc: $rc"
 			if (( $rc > 1 )); then # 1: => Filesystem errors corrected
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_FAILED "$rc"
 				exitError $RC_NATIVE_RESTORE_FAILED
