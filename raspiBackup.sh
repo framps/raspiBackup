@@ -5740,6 +5740,7 @@ function restore() {
 						rc=$?
 						rm "/tmp/$SF_FILE"
 					fi
+				fi
 				if (( $rc )); then					
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
@@ -5813,6 +5814,7 @@ function restore() {
 							rc=$?
 							rm "/tmp/$SF_FILE"
 						fi
+					fi
 					if (( $rc )); then					
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 						exitError $RC_CREATE_PARTITIONS_FAILED
@@ -5956,7 +5958,7 @@ function restore() {
 			if [[ "$ROOT_DEVICE" != "$RESTORE_DEVICE" ]]; then
 				logCommand "parted -s $ROOT_DEVICE print"
 			fi
-
+		
 	esac
 
 	logItem "Syncing filesystems"
