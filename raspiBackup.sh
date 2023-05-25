@@ -5134,7 +5134,7 @@ function bootPartitionBackup() {
 					exitError $RC_DD_IMG_FAILED
 				fi
 
-				if (( ! $TAR_BOOT_PARTITION_ENABLED )); then
+				if (( ! $TAR_BOOT_PARTITION_ENABLED && ! $REGRESSION_TEST )); then
 					writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_BOOT_CHECK_STARTED
 					local loopDev
 					loopDev="$(losetup -f)"
