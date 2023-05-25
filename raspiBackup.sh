@@ -1719,11 +1719,11 @@ MSG_EN[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: Local configuration version v%s
 MSG_DE[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: Die lokale Konfigurationsversion v%s benötigt keine Aktualisierung."
 MSG_FI[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: Paikallinen asetustiedoston versio v%s ei vaadi päivitystä."
 MSG_FR[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: La version de configuration locale v%s ne nécessite pas de mise à jour."
-#MSG_CONFIG_VERSIONS=246
-#MSG_EN[$MSG_CONFIG_VERSIONS]="RBK0246I: Current configuration version: v%s. Required configuration version: v%s."
-#MSG_DE[$MSG_CONFIG_VERSIONS]="RBK0246I: Lokale Konfigurationsversion: v%s. Erforderliche Konfigurationsversion: v%s."
-#MSG_FI[$MSG_CONFIG_VERSIONS]="RBK0246I: Nykyisten asetusten versio: v%s. Vaaditaan versio v%s."
-#MSG_FR[$MSG_CONFIG_VERSIONS]="RBK0246I: Version de configuration actuelle : v%s. Version de configuration requise : v%s."
+MSG_CONFIG_VERSIONS=246
+MSG_EN[$MSG_CONFIG_VERSIONS]="RBK0246I: Current configuration version: v%s. Required configuration version: v%s."
+MSG_DE[$MSG_CONFIG_VERSIONS]="RBK0246I: Lokale Konfigurationsversion: v%s. Erforderliche Konfigurationsversion: v%s."
+MSG_FI[$MSG_CONFIG_VERSIONS]="RBK0246I: Nykyisten asetusten versio: v%s. Vaaditaan versio v%s."
+MSG_FR[$MSG_CONFIG_VERSIONS]="RBK0246I: Version de configuration actuelle : v%s. Version de configuration requise : v%s."
 MSG_ACTIVATE_CONFIG=247
 MSG_EN[$MSG_ACTIVATE_CONFIG]="RBK0247I: Now review %s and copy the configuration file to %s to finish the configuration update."
 MSG_DE[$MSG_ACTIVATE_CONFIG]="RBK0247I: Nun die zusammengefügte Konfigurationsdatei %s überprüfen und nach %s kopieren um den Konfigurationsupdate zu beenden."
@@ -8187,7 +8187,7 @@ function updateConfig() {
 		return
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"	
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_VERSIONS "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"	
 
 	local lang=${LANGUAGE,,}
 	eval "DL_URL=$CONFIG_URL"
