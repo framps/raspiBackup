@@ -6861,8 +6861,6 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPLET_BACKUP_CLEANUP_FAILED "${BACKUPPATH}/tmp" $rc
 		fi
 	fi
-
-	fi		
 	
 	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>/dev/null; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
