@@ -1914,8 +1914,8 @@ MSG_UNABLE_TO_MOVE_NEW_BACKUP=292
 MSG_EN[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Unable to move backup %1 to final directory %s."
 MSG_DE[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Backupverzeichnis %s kann nicht zu %s verschoben werden."
 MSG_INCOMPLET_BACKUP_EXISTS=293
-MSG_EN[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W: There exist incomplete backups in %s."
-MSG_DE[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W Es existieren unvollständige Backups in %s."
+MSG_EN[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W: There exist incomplete backups in %s. Cleaning them up now."
+MSG_DE[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W Es existieren unvollständige Backups in %s. Diese werden jetzt gelöscht."
 MSG_MOVE_TEMPORARY_BACKUP=294
 MSG_EN[$MSG_MOVE_TEMPORARY_BACKUP]="RBK0294I: Moved new backup from %s to backup directory %s."
 MSG_DE[$MSG_MOVE_TEMPORARY_BACKUP]="RBK0294I: Neues Backup %s wurde in das Backupverzeichnis %s verschoben."
@@ -1925,6 +1925,10 @@ MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0295E: Bootpartitioncheck endet fehlerh
 MSG_IMG_BOOT_CHECK_STARTED=296
 MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0296I: Bootpartition check started."
 MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0296I: Bootpartitionscheck gestartet."
+MSG_INCOMPLET_BACKUP_CLEANUP_FAILED=297
+MSG_EN[$MSG_INCOMPLET_BACKUP_CLEANUP_FAILED]="RBK0297W: Unable to cleanup incomplete backups in %s. RC %s."
+MSG_DE[$MSG_INCOMPLET_BACKUP_CLEANUP_FAILED]="RBK0297W Unvollständige Backups in %s können nicht gelösht werden. RC %s"
+
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4708,10 +4712,6 @@ function cleanup() { # trap
 					applyBackupStrategy
 			fi
 		fi
-		if [[ -d "$BACKUPPATH/tmp" ]]; then
-			logItem "Removing temp backup directory"
-			rm -rf "${BACKUPPATH:?}/tmp" &>>$LOG_FILE 	# guard against whole tmp dir deletion
-		fi
 	fi
 
 	cleanupTempFiles
@@ -6853,7 +6853,15 @@ function doitBackup() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
 	if [[ -d "$BACKUPPATH/tmp" ]]; then
+		local rc
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPLET_BACKUP_EXISTS "${BACKUPPATH}/tmp"
+		rm -rf "${BACKUPPATH:?}/tmp" &>>$LOG_FILE 	# guard against whole tmp dir deletion
+		rc=$?
+		if (( $rc )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPLET_BACKUP_CLEANUP_FAILED "${BACKUPPATH}/tmp" $rc
+		fi
+	fi
+
 	fi		
 	
 	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>/dev/null; then
