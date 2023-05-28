@@ -9,7 +9,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2019, 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2019, 2023 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -58,10 +58,11 @@ DIR="7412backups"
 LOG_FILE="$MYNAME.log"
 
 DEBUG=0
-DAILY=1
-WEEKLY=1
-MONTHLY=1
-YEARLY=1
+PER_BUCKET=1
+DAILY=$PER_BUCKET
+WEEKLY=$PER_BUCKET
+MONTHLY=$PER_BUCKET
+YEARLY=$PER_BUCKET
 MASS=1
 TYPE=1
 
@@ -183,7 +184,7 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 
 	if (( f != $n )); then
 		echo "??? Test in line $l: Expected #$n $dtes but found $f backups of type $type"
-		(( $DEBUG )) && s -1 "$DIR/$(hostname)"
+		(( $DEBUG )) && ls -1 "$DIR/$(hostname)"
 		exit 1
 	fi
 
@@ -474,7 +475,7 @@ if (( $MASS )); then
 	echo "$l === MASS addtl month on default"
 	createMassBackups "2020-01-01" $((30)) 1 "" 1
 	faketime "2020-01-01" ../raspiBackup.sh --smartRecycleOptions "7 4 12 1" $raspiOpts  >> $LOG_FILE
-	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
+	testSpecificBackups $l "20200101 20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191201 \
 	20191101 20191001 20190901 20190801 20190701 20190601 20190501 20190401 20190301 20190201 \
 	" $((cnt+2+7+35))
@@ -492,11 +493,11 @@ if (( $TYPE )); then
 	faketime "2020-01-01" ../raspiBackup.sh --smartRecycleOptions "7 4 12 1" $raspiOpts -t "rsync"  >> $LOG_FILE
 	faketime "2020-01-01" ../raspiBackup.sh --smartRecycleOptions "7 4 12 1" $raspiOpts -t "dd" >> $LOG_FILE
 
-	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
+	testSpecificBackups $l "20200101 20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
 	" "rsync" 31
 
-	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
+	testSpecificBackups $l "20200101 20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
 	" "dd" 31
 
@@ -511,7 +512,7 @@ if (( $TYPE )); then
 	20191125 20191118 20191111 20191104 \
 	" "rsync" 59
 
-	testSpecificBackups $l "20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
+	testSpecificBackups $l "20200101 20200101 20191231 20191230 20191229 20191228 20191227 20191226 \
 	20191223 20191216 20191209 20191202 \
 	" "dd" 31
 
