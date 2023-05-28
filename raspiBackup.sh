@@ -32,9 +32,9 @@
 #
 #######################################################################################################################
 
-set -o pipefail
-set -o nounset
-set -o errexit[
+#set -o pipefail
+#set -o nounset
+#set -o errexit
 
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
