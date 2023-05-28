@@ -1913,7 +1913,7 @@ MSG_SCRIPT_MINOR_UPDATE_OK=291
 MSG_EN[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Minor update of %s successfull"
 MSG_DE[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Kleiner Update von %s erfolgreich."
 MSG_UNABLE_TO_MOVE_NEW_BACKUP=292
-MSG_EN[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Unable to move backup %1 to final directory %s."
+MSG_EN[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Unable to move backup %s to final directory %s."
 MSG_DE[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Backupverzeichnis %s kann nicht zu %s verschoben werden."
 MSG_INCOMPLET_BACKUP_EXISTS=293
 MSG_EN[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W: There exist incomplete backups in %s. Cleaning them up now."
@@ -1930,6 +1930,9 @@ MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0296I: Bootpartitionscheck gestartet."
 MSG_INCOMPLET_BACKUP_CLEANUP_FAILED=297
 MSG_EN[$MSG_INCOMPLET_BACKUP_CLEANUP_FAILED]="RBK0297W: Unable to cleanup incomplete backups in %s. RC %s."
 MSG_DE[$MSG_INCOMPLET_BACKUP_CLEANUP_FAILED]="RBK0297W Unvollständige Backups in %s können nicht gelösht werden. RC %s"
+MSG_UNABLE_TO_DELETE_TEMP_BACKUP=298
+MSG_EN[$MSG_UNABLE_TO_DELETE_TEMP_BACKUP]="RBK0298W: Unable to delete temporary backup directory %s."
+MSG_DE[$MSG_UNABLE_TO_DELETE_TEMP_BACKUP]="RBK0298W: Temporäres Backupverzeichnis %s kann nicht gelöscht werden."
 
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
@@ -4701,6 +4704,9 @@ function cleanup() { # trap
 				exitError $RC_CREATE_ERROR
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_MOVE_TEMPORARY_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"
+				if ! rmdir "$BACKUPPATH/tmp" >> $LOG_FILE; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_DELETE_TEMP_BACKUP "$BACKUPPATH/tmp"
+				fi
 			fi
 
 			BACKUPTARGET_DIR="$BACKUPTARGET_DIR_FINAL"
