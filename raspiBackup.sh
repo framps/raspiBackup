@@ -33,6 +33,8 @@
 #######################################################################################################################
 
 set -o pipefail
+set -o nounset
+set -o errexit[
 
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
@@ -250,9 +252,9 @@ declare -A mountPoints
 # variables exported to pass on to extensions
 
 export BACKUP_TARGETDIR
-export BACKUP_TARGETFILE 
-export MSG_FILE 
-export LOG_FILE 
+export BACKUP_TARGETFILE
+export MSG_FILE
+export LOG_FILE
 
 # Telegram options
 
@@ -3458,7 +3460,7 @@ function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
 	logEntry "$@"
 	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	[[ -z "$v" ]] && v="0.0.0.0"
-	echo "$v"	
+	echo "$v"
 	logExit "$v"
 }
 
@@ -3635,8 +3637,8 @@ function supportsFileAttributes() {	# directory
 			fi
 		fi
 		sleep 3s
-	done 		
-	
+	done
+
 	rm /tmp/$MYNAME.fileattributes &>>$LOG_FILE
 	rm /$1/$MYNAME.fileattributes &>>$LOG_FILE
 
@@ -4190,7 +4192,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_MESSAGES ]]; then
 			msg="$(tail -c 1024 $MSG_FILE)"
 		fi
-				
+
 		local cmd=(--form-string "message=$1")
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
@@ -4228,7 +4230,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 
 function sendSlack() { # subject sucess/failure
 
-	logEntry "$1 $2" 
+	logEntry "$1 $2"
 
 	if [[ -n "$SLACK_WEBHOOK_URL" ]] ; then
 		local smiley
@@ -4683,27 +4685,27 @@ function cleanup() { # trap
 	else
 		cleanupBackup "$1"
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
-		
+
 			logItem "Move temp backup directory"
-			
+
 			logItem "Backup target temp"
 			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 			logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
 
 			logItem "Backup target final"
 			logItem "BACKUPTARGET_DIR_FINAL: $BACKUPTARGET_DIR_FINAL"
-			logItem "BACKUPTARGET_FILE_FINAL: $BACKUPTARGET_FILE_FINAL"			
+			logItem "BACKUPTARGET_FILE_FINAL: $BACKUPTARGET_FILE_FINAL"
 
 			if ! mv "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL" >> $LOG_FILE; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_MOVE_NEW_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"
-				exitError $RC_CREATE_ERROR			
+				exitError $RC_CREATE_ERROR
 			else
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_MOVE_TEMPORARY_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"			
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_MOVE_TEMPORARY_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"
 			fi
-						
+
 			BACKUPTARGET_DIR="$BACKUPTARGET_DIR_FINAL"
 			BACKUPTARGET_FILE="$BACKUPTARGET_FILE_FINAL"
-						
+
 			if (( \
 				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
 				|| ! $SMART_RECYCLE \
@@ -5741,7 +5743,7 @@ function restore() {
 						rm "/tmp/$SF_FILE"
 					fi
 				fi
-				if (( $rc )); then					
+				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
 				fi
@@ -5815,7 +5817,7 @@ function restore() {
 							rm "/tmp/$SF_FILE"
 						fi
 					fi
-					if (( $rc )); then					
+					if (( $rc )); then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 						exitError $RC_CREATE_PARTITIONS_FAILED
 					fi
@@ -5958,7 +5960,7 @@ function restore() {
 			if [[ "$ROOT_DEVICE" != "$RESTORE_DEVICE" ]]; then
 				logCommand "parted -s $ROOT_DEVICE print"
 			fi
-		
+
 	esac
 
 	logItem "Syncing filesystems"
@@ -6009,7 +6011,7 @@ function applyBackupStrategy() {
 					if [[ -z $BACKUPTARGET_ROOT ]]; then
 						assertionFailed $LINENO "BACKUPTARGET_ROOT empty"
 					fi
-					if [[ -n $dir_to_delete ]]; then					
+					if [[ -n $dir_to_delete ]]; then
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
 						rm -rf "${BACKUPTARGET_ROOT:?}/$dir_to_delete" # guard against whole backup dir deletion
 					fi
@@ -6861,7 +6863,7 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPLET_BACKUP_CLEANUP_FAILED "${BACKUPPATH}/tmp" $rc
 		fi
 	fi
-	
+
 	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>/dev/null; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
 		exitError $RC_MISC_ERROR
@@ -6881,8 +6883,8 @@ function doitBackup() {
 	if ! mkdir $BACKUPTARGET_DIR_TEMP; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPTARGET_DIR_TEMP"
 			exitError $RC_CREATE_ERROR
-	fi		
-	
+	fi
+
 	if (( ! $EXCLUDE_DD )); then
 
 		if [[ ! -b "$BOOT_DEVICENAME" ]]; then
@@ -8186,7 +8188,7 @@ function updateConfig() {
 	local cr
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	cr=$?
-	
+
 	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
 		logExit "Config version ok"
 		if (( $UPDATE_CONFIG )); then
@@ -8195,7 +8197,7 @@ function updateConfig() {
 		return
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_VERSIONS "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"	
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_VERSIONS "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 
 	local lang=${LANGUAGE,,}
 	eval "DL_URL=$CONFIG_URL"
@@ -8223,7 +8225,7 @@ function updateConfig() {
 
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	cr=$?
-	
+
 	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
 		logItem "Config update version in script: $VERSION_SCRIPT_CONFIG - Current config version : $etcConfigFileVersion"
 
