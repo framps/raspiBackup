@@ -6858,6 +6858,17 @@ function doitBackup() {
 		exitError $RC_MISSING_FILES
 	fi
 
+	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>>$LOG_FILE; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
+		exitError $RC_MISC_ERROR
+	else
+		rm -f "$BACKUPPATH/$MYNAME.tmp" &>>$LOG_FILE
+	fi
+
+	if [[ $(getFsType "$BACKUPPATH") == "vfat" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAX_4GB_LIMIT "$BACKUPPATH"
+	fi
+
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
 	if [[ -d "$BACKUPPATH/tmp" ]]; then
@@ -6868,17 +6879,6 @@ function doitBackup() {
 		if (( $rc )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPLET_BACKUP_CLEANUP_FAILED "${BACKUPPATH}/tmp" $rc
 		fi
-	fi
-
-	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>/dev/null; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
-		exitError $RC_MISC_ERROR
-	else
-		rm -f "$BACKUPPATH/$MYNAME.tmp" &>>$LOG_FILE
-	fi
-
-	if [[ $(getFsType "$BACKUPPATH") == "vfat" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAX_4GB_LIMIT "$BACKUPPATH"
 	fi
 
 	if ! mkdir -p "$BACKUPPATH/tmp" >> $LOG_FILE; then
