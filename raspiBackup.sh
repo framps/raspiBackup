@@ -1933,7 +1933,9 @@ MSG_DE[$MSG_INCOMPLET_BACKUP_CLEANUP_FAILED]="RBK0297W Unvollständige Backups i
 MSG_UNABLE_TO_DELETE_TEMP_BACKUP=298
 MSG_EN[$MSG_UNABLE_TO_DELETE_TEMP_BACKUP]="RBK0298W: Unable to delete temporary backup directory %s."
 MSG_DE[$MSG_UNABLE_TO_DELETE_TEMP_BACKUP]="RBK0298W: Temporäres Backupverzeichnis %s kann nicht gelöscht werden."
-
+MSG_VERSION_INFO=299
+MSG_EN[$MSG_VERSION_INFO]="RBK0299I: Local version: %s. Latest version: %s."
+MSG_DE[$MSG_VERSION_INFO]="RBK0299I: Lokale Version: %s. Letzte Version: %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3486,7 +3488,14 @@ function updateScript() {
 		newVersion=${versions[1]}
 		oldVersion=${versions[2]}
 
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VERSION_INFO "$oldVersion" "$newVersion"
+
 		logItem "$rc - $latestVersion - $newVersion - $oldVersion"
+
+		compareVersions "$latestVersion" "$newVersion"
+		if (( $? == 2 )); then			# current version mor current than latest
+				return
+		fi
 
 		if (( ! $FORCE_UPDATE )) ; then
 			local incompatibleVersions=( $INCOMPATIBLE_PROPERTY )
