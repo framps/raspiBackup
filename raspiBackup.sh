@@ -3038,6 +3038,7 @@ function dynamic_mount() { # mountpoint
 	logEntry "$1"
 
 	if ! isMounted $1; then
+		local rc	
 		mount "$1" &>> $LOG_FILE
 		rc=$?
 		if (( $rc != 0 )); then
