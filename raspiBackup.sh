@@ -34,7 +34,7 @@
 
 set -o pipefail
 #set -o nounset
-#set -o errexit
+#set -o errexitis
 
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
@@ -2378,9 +2378,17 @@ function isSupportedEnvironment() {
 	logItem "Modelpath: $(strings "$MODELPATH")"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
-#	OS was built for a Raspberry
-	if [[ ! -e $RPI_ISSUE ]]; then
-		logItem "$RPI_ISSUE not found"
+#	OS was built for a Raspberry (RaspbianOS only, not available on Ubuntu)
+	if [[ -e $RPI_ISSUE ]]; then
+		logItem "$RPI_ISSUE: $(< $RPI_ISSUE)"
+		logExit 0
+		return 0
+	fi
+	logItem "$RPI_ISSUE not found"
+
+	if [[ ! -e $OS_RELEASE ]]; then
+		logItem "$OS_RELEASE not found" 
+		logExit 1
 		return 1
 	fi
 	
