@@ -2383,7 +2383,16 @@ function isSupportedEnvironment() {
 		logItem "$RPI_ISSUE not found"
 		return 1
 	fi
-	logItem "$RPI_ISSUE: $(cat $RPI_ISSUE)"
+	
+	logItem $(<$OS_RELEASE)
+	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OS_RELEASE
+	local rc=$?
+	
+	IS_UBUNTU=$(( ! $rc ))
+	logItem "IS_UBUNTU: $IS_UBUNTU"
+	
+	logExit $rc
+	return $rc
 
 : <<SKIP
 	[[ ! -e $OSRELEASE ]] && return 1
