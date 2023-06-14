@@ -33,6 +33,8 @@
 #######################################################################################################################
 
 set -o pipefail
+#set -o nounset
+#set -o errexit
 
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
@@ -43,7 +45,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
-VERSION="0.6.9-dev"											# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.8"											# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -250,9 +252,9 @@ declare -A mountPoints
 # variables exported to pass on to extensions
 
 export BACKUP_TARGETDIR
-export BACKUP_TARGETFILE 
-export MSG_FILE 
-export LOG_FILE 
+export BACKUP_TARGETFILE
+export MSG_FILE
+export LOG_FILE
 
 # Telegram options
 
@@ -1911,7 +1913,7 @@ MSG_SCRIPT_MINOR_UPDATE_OK=291
 MSG_EN[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Minor update of %s successfull"
 MSG_DE[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0291I: Kleiner Update von %s erfolgreich."
 MSG_UNABLE_TO_MOVE_NEW_BACKUP=292
-MSG_EN[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Unable to move backup %1 to final directory %s."
+MSG_EN[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Unable to move backup %s to final directory %s."
 MSG_DE[$MSG_UNABLE_TO_MOVE_NEW_BACKUP]="RBK0292E: Backupverzeichnis %s kann nicht zu %s verschoben werden."
 MSG_INCOMPLET_BACKUP_EXISTS=293
 MSG_EN[$MSG_INCOMPLET_BACKUP_EXISTS]="RBK0293W: There exist incomplete backups in %s. Cleaning them up now."
@@ -1928,7 +1930,12 @@ MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0296I: Bootpartitionscheck gestartet."
 MSG_INCOMPLET_BACKUP_CLEANUP_FAILED=297
 MSG_EN[$MSG_INCOMPLET_BACKUP_CLEANUP_FAILED]="RBK0297W: Unable to cleanup incomplete backups in %s. RC %s."
 MSG_DE[$MSG_INCOMPLET_BACKUP_CLEANUP_FAILED]="RBK0297W Unvollständige Backups in %s können nicht gelösht werden. RC %s"
-
+MSG_UNABLE_TO_DELETE_TEMP_BACKUP=298
+MSG_EN[$MSG_UNABLE_TO_DELETE_TEMP_BACKUP]="RBK0298W: Unable to delete temporary backup directory %s."
+MSG_DE[$MSG_UNABLE_TO_DELETE_TEMP_BACKUP]="RBK0298W: Temporäres Backupverzeichnis %s kann nicht gelöscht werden."
+MSG_VERSION_INFO=299
+MSG_EN[$MSG_VERSION_INFO]="RBK0299I: Local version: %s. Latest version: %s."
+MSG_DE[$MSG_VERSION_INFO]="RBK0299I: Lokale Version: %s. Letzte Version: %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3459,7 +3466,7 @@ function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
 	logEntry "$@"
 	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	[[ -z "$v" ]] && v="0.0.0.0"
-	echo "$v"	
+	echo "$v"
 	logExit "$v"
 }
 
@@ -3482,7 +3489,14 @@ function updateScript() {
 		newVersion=${versions[1]}
 		oldVersion=${versions[2]}
 
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VERSION_INFO "$oldVersion" "$newVersion"
+
 		logItem "$rc - $latestVersion - $newVersion - $oldVersion"
+
+		compareVersions "$latestVersion" "$newVersion"
+		if (( $? == 2 )); then			# current version mor current than latest
+				return
+		fi
 
 		if (( ! $FORCE_UPDATE )) ; then
 			local incompatibleVersions=( $INCOMPATIBLE_PROPERTY )
@@ -3636,8 +3650,8 @@ function supportsFileAttributes() {	# directory
 			fi
 		fi
 		sleep 3s
-	done 		
-	
+	done
+
 	rm /tmp/$MYNAME.fileattributes &>>$LOG_FILE
 	rm /$1/$MYNAME.fileattributes &>>$LOG_FILE
 
@@ -4191,7 +4205,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_MESSAGES ]]; then
 			msg="$(tail -c 1024 $MSG_FILE)"
 		fi
-				
+
 		local cmd=(--form-string "message=$1")
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
@@ -4229,7 +4243,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 
 function sendSlack() { # subject sucess/failure
 
-	logEntry "$1 $2" 
+	logEntry "$1 $2"
 
 	if [[ -n "$SLACK_WEBHOOK_URL" ]] ; then
 		local smiley
@@ -4684,27 +4698,30 @@ function cleanup() { # trap
 	else
 		cleanupBackup "$1"
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
-		
+
 			logItem "Move temp backup directory"
-			
+
 			logItem "Backup target temp"
 			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 			logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
 
 			logItem "Backup target final"
 			logItem "BACKUPTARGET_DIR_FINAL: $BACKUPTARGET_DIR_FINAL"
-			logItem "BACKUPTARGET_FILE_FINAL: $BACKUPTARGET_FILE_FINAL"			
+			logItem "BACKUPTARGET_FILE_FINAL: $BACKUPTARGET_FILE_FINAL"
 
 			if ! mv "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL" >> $LOG_FILE; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_MOVE_NEW_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"
-				exitError $RC_CREATE_ERROR			
+				exitError $RC_CREATE_ERROR
 			else
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_MOVE_TEMPORARY_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"			
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_MOVE_TEMPORARY_BACKUP "$BACKUPTARGET_DIR" "$BACKUPTARGET_DIR_FINAL"
+				if ! rmdir "$BACKUPPATH/tmp" >> $LOG_FILE; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_DELETE_TEMP_BACKUP "$BACKUPPATH/tmp"
+				fi
 			fi
-						
+
 			BACKUPTARGET_DIR="$BACKUPTARGET_DIR_FINAL"
 			BACKUPTARGET_FILE="$BACKUPTARGET_FILE_FINAL"
-						
+
 			if (( \
 				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
 				|| ! $SMART_RECYCLE \
@@ -5742,7 +5759,7 @@ function restore() {
 						rm "/tmp/$SF_FILE"
 					fi
 				fi
-				if (( $rc )); then					
+				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
 				fi
@@ -5804,27 +5821,18 @@ function restore() {
 						fi
 
 					fi
-
-					sfdisk -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
-					rc=$?
-					if (( $rc )); then
-						if (( $rc == 1 )); then
-							cp "$MODIFIED_SFDISK" "/tmp/$SF_FILE"
-							sed -i 's/sector-size/d' "/tmp/$SF_FILE"
-							sfdisk -f "$RESTORE_DEVICE" < "/tmp/$SF_FILE" &>>"$LOG_FILE"
-							rc=$?
-							rm "/tmp/$SF_FILE"
-						fi
-					fi
-					if (( $rc )); then					
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
-						exitError $RC_CREATE_PARTITIONS_FAILED
-					fi
-
-					waitForPartitionDefsChanged
-
-					rm "$MODIFIED_SFDISK" &>/dev/null
 				fi
+
+				sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+				rc=$?
+				if (( $rc )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+					exitError $RC_CREATE_PARTITIONS_FAILED
+				fi
+
+				waitForPartitionDefsChanged
+
+				rm $MODIFIED_SFDISK &>/dev/null
 			fi
 
 			logItem "Targetpartitionlayout$NL$(fdisk -l $RESTORE_DEVICE)"
@@ -5959,7 +5967,7 @@ function restore() {
 			if [[ "$ROOT_DEVICE" != "$RESTORE_DEVICE" ]]; then
 				logCommand "parted -s $ROOT_DEVICE print"
 			fi
-		
+
 	esac
 
 	logItem "Syncing filesystems"
@@ -6010,7 +6018,7 @@ function applyBackupStrategy() {
 					if [[ -z $BACKUPTARGET_ROOT ]]; then
 						assertionFailed $LINENO "BACKUPTARGET_ROOT empty"
 					fi
-					if [[ -n $dir_to_delete ]]; then					
+					if [[ -n $dir_to_delete ]]; then
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_FILE_DELETE "$BACKUPTARGET_ROOT/${dir_to_delete}"
 						rm -rf "${BACKUPTARGET_ROOT:?}/$dir_to_delete" # guard against whole backup dir deletion
 					fi
@@ -6851,6 +6859,17 @@ function doitBackup() {
 		exitError $RC_MISSING_FILES
 	fi
 
+	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>>$LOG_FILE; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
+		exitError $RC_MISC_ERROR
+	else
+		rm -f "$BACKUPPATH/$MYNAME.tmp" &>>$LOG_FILE
+	fi
+
+	if [[ $(getFsType "$BACKUPPATH") == "vfat" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAX_4GB_LIMIT "$BACKUPPATH"
+	fi
+
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
 	if [[ -d "$BACKUPPATH/tmp" ]]; then
@@ -6862,17 +6881,6 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPLET_BACKUP_CLEANUP_FAILED "${BACKUPPATH}/tmp" $rc
 		fi
 	fi
-	
-	if ! touch "$BACKUPPATH/$MYNAME.tmp" &>/dev/null; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_WRITE "$BACKUPPATH"
-		exitError $RC_MISC_ERROR
-	else
-		rm -f "$BACKUPPATH/$MYNAME.tmp" &>>$LOG_FILE
-	fi
-
-	if [[ $(getFsType "$BACKUPPATH") == "vfat" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAX_4GB_LIMIT "$BACKUPPATH"
-	fi
 
 	if ! mkdir -p "$BACKUPPATH/tmp" >> $LOG_FILE; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPPATH}/tmp"
@@ -6882,8 +6890,8 @@ function doitBackup() {
 	if ! mkdir $BACKUPTARGET_DIR_TEMP; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPTARGET_DIR_TEMP"
 			exitError $RC_CREATE_ERROR
-	fi		
-	
+	fi
+
 	if (( ! $EXCLUDE_DD )); then
 
 		if [[ ! -b "$BOOT_DEVICENAME" ]]; then
@@ -8187,7 +8195,7 @@ function updateConfig() {
 	local cr
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	cr=$?
-	
+
 	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
 		logExit "Config version ok"
 		if (( $UPDATE_CONFIG )); then
@@ -8196,7 +8204,7 @@ function updateConfig() {
 		return
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_VERSIONS "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"	
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_VERSIONS "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 
 	local lang=${LANGUAGE,,}
 	eval "DL_URL=$CONFIG_URL"
@@ -8224,7 +8232,7 @@ function updateConfig() {
 
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	cr=$?
-	
+
 	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
 		logItem "Config update version in script: $VERSION_SCRIPT_CONFIG - Current config version : $etcConfigFileVersion"
 
