@@ -34,7 +34,7 @@
 
 set -o pipefail
 #set -o nounset
-#set -o errexit
+#set -o errexitis
 
 if [ -z "$BASH" ] ;then
 	echo "??? ERROR: Unable to execute script. bash interpreter missing."
@@ -1518,7 +1518,7 @@ MSG_FI[$MSG_TRUNCATING_ERROR]="RBK0204E: Typistetyn varmuuskopion kokoa ei voitu
 MSG_FR[$MSG_TRUNCATING_ERROR]="RBK0204E: Impossible de calculer la taille réduite de la sauvegarde."
 MSG_CLEANUP_BACKUP_VERSION=205
 MSG_EN[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Deleting oldest backup in %s. This may take some time. Please be patient."
-MSG_DE[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Älteste Backup %s in wird gelöscht. Das kann etwas dauern. Bitte Geduld."
+MSG_DE[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Ältestes Backup in %s wird gelöscht. Das kann etwas dauern. Bitte Geduld."
 MSG_FI[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Poistetaan vanhin varmuuskopio hakemistosta %s. Tämä saattaa kestää jonkin aikaa. Ole hyvä ja odota."
 MSG_FR[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Suppression de la sauvegarde la plus ancienne dans %s. Cela peut prendre du temps. SVP soyez patient."
 MSG_CREATING_UUID=206
@@ -2367,20 +2367,30 @@ function isSupportedEnvironment() {
 	local MODELPATH=/sys/firmware/devicetree/base/model
 	local OSRELEASE=/etc/os-release
 	local RPI_ISSUE=/etc/rpi-issue
+	local OS_RELEASE=/etc/os-release
 
 	logCommand "cat $OSRELEASE"
 
 #	Check it's Raspberry HW
 	if [[ ! -e "$MODELPATH" ]]; then
 		logItem "$MODELPATH not found"
+		logExit 1
 		return 1
 	fi
 	logItem "Modelpath: $(strings "$MODELPATH")"
 	! grep -q -i "raspberry" $MODELPATH && return 1
 
-#	OS was built for a Raspberry
-	if [[ ! -e $RPI_ISSUE ]]; then
-		logItem "$RPI_ISSUE not found"
+#	OS was built for a Raspberry (RaspbianOS only, not available on Ubuntu)
+	if [[ -e $RPI_ISSUE ]]; then
+		logItem "$RPI_ISSUE: $(< $RPI_ISSUE)"
+		logExit 0
+		return 0
+	fi
+	logItem "$RPI_ISSUE not found"
+
+	if [[ ! -e $OS_RELEASE ]]; then
+		logItem "$OS_RELEASE not found" 
+		logExit 1
 		return 1
 	fi
 	
@@ -6056,7 +6066,7 @@ function applyBackupStrategy() {
 
 		if (( $keepBackups != -1 )); then
 			logItem "Deleting oldest directory in $BACKUPPATH/$HOSTNAME"
-			logCommand "ls -d $BACKUPPATH/$HOSTNAME*"
+			logCommand "ls -d $BACKUPPATH/$HOSTNAME/*"
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
@@ -6115,7 +6125,7 @@ function applyBackupStrategy() {
 				done
 				popd > /dev/null
 
-				logItem "post - ls$NL$(ls -d "$BACKUPPATH"/* 2>/dev/null)"
+				logItem "post - ls$NL$(ls -d "$BACKUPPATH"/$HOSTNAME* 2>/dev/null)"
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ALL_BACKUPS_KEPT "$BACKUPTYPE"
