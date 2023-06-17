@@ -3122,7 +3122,8 @@ function downloadPropertiesFile() { # FORCE
 			local func="B"; (( $RESTORE )) && func="R"
 			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
-			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs"
+			local os="rsp"; [[ -n $IS_UBUNTU ]] && os="ubu"
+			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
 		else
 			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
 		fi
@@ -5424,6 +5425,12 @@ function backupTar() {
 		target="$BACKUPTARGET_FILE"
 	fi
 
+	local bootExclude="/boot"
+	if (( $IS_UBUNTU )); then
+		bootExclude="${UBUNTU_FIRMWARE_DIRECTORY}"
+	fi
+	logItem "bootExclude: $bootExclude"
+
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
@@ -5446,7 +5453,8 @@ function backupTar() {
 		--exclude=$devroot/sys/* \
 		--exclude=$devroot/dev/* \
 		--exclude=$devroot/tmp/* \
-		--exclude=$devroot/boot/* \
+		--exclude={$devroot}${bootExclude}/* \
+		--exclude=$devroot/swapfile \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
 		$EXCLUDE_LIST \
@@ -5580,6 +5588,12 @@ function backupRsync() { # partition number (for partition based backup)
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
 
+	local bootExclude="/boot"
+	if (( $IS_UBUNTU )); then
+		bootExclude="${UBUNTU_FIRMWARE_DIRECTORY}"
+	fi
+	logItem "bootExclude: $bootExclude"
+
 	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
 	local fs="$(getFsType "$BACKUPPATH")"
 	if [[ -e $PERSISTENT_JOURNAL && $fs =~ ^nfs* ]]; then
@@ -5595,7 +5609,8 @@ function backupRsync() { # partition number (for partition based backup)
 			--exclude=$excludeRoot/lost+found/* \
 			--exclude=$excludeRoot/sys/* \
 			--exclude=$excludeRoot/dev/* \
-			--exclude=$excludeRoot/boot/* \
+			--exclude=${excludeRoot}${bootExclude}/* \
+			--exclude=$excludeRoot/swapfile \
 			--exclude=$excludeRoot/tmp/* \
 			--exclude=$excludeRoot/run/* \
 			--exclude=$excludeRoot/media/* \
@@ -6828,6 +6843,10 @@ function inspect4Restore() {
 		BACKUP_BOOT_PARTITION_PREFIX="$(getPartitionPrefix "$BACKUP_BOOT_DEVICE")"
 		logItem "BACKUP_BOOT_PARTITION_PREFIX: $BACKUP_BOOT_PARTITION_PREFIX"
 	fi
+
+	[[ -d "$UBUNTU_FIRMWARE_DIRECTORY" ]]
+	IS_UBUNTU=$(( ! $? ))
+	logItem "IS_UBUNTU: $IS_UBUNTU"
 
 	logExit
 
@@ -8394,9 +8413,10 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	local cmdline="/cmdline.txt"
-	CMDLINE="$BOOT_MP$cmdline" # absolute path in mount
-	cmdline="/boot$cmdline" # path for message
+	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup 
+	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
+
+	local cmdline="$(cmdLinePath)/cmdline.txt" # path for message
 	local fstab="/etc/fstab" # path for message
 	FSTAB="$ROOT_MP$fstab" # absolute path in mount
 
@@ -8410,8 +8430,9 @@ function synchronizeCmdlineAndfstab() {
 		logCommand "cat $CMDLINE"
 
 		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
-			oldPartUUID=${BASH_REMATCH[1]}
-			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
+			logCommand "blkid -o udev $ROOT_PARTITION"
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -8420,8 +8441,9 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
-			oldUUID=${BASH_REMATCH[1]}
-			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
+			logCommand "blkid -o udev $ROOT_PARTITION"
+			local oldUUID=${BASH_REMATCH[1]}
+			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -8430,8 +8452,8 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
-			oldLABEL=${BASH_REMATCH[1]}
-			newLABEL=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_LABEL= | cut -d= -f2)
+			local oldLABEL=${BASH_REMATCH[1]}
+			local newLABEL=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_LABEL= | cut -d= -f2)
 			logItem "CMDLINE - newLABEL: $newLABEL, oldLABEL: $oldLABEL"
 			if [[ -z $newLABEL ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -8447,13 +8469,19 @@ function synchronizeCmdlineAndfstab() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
 	fi
 
+	if [[ -f "$CMDLINE" ]]; then
+		logItem "Upd $CMDLINE"
+		logCommand "cat $CMDLINE"
+	fi
+
+
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Org $FSTAB"
 		logItem "$(cat $FSTAB)"
 
 		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			oldPartUUID=${BASH_REMATCH[1]}
-			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
@@ -8951,6 +8979,7 @@ FORCE_SFDISK=0
 FORCE_UPDATE=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
+IS_UBUNTU=0
 NO_YES_QUESTION=0
 ONLINE_VERSIONS=0
 PROGRESS=0
