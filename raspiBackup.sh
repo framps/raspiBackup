@@ -154,6 +154,7 @@ TEMP_LOG_FILE="/tmp/$LOGFILE_NAME"
 TEMP_MSG_FILE="/tmp/$MSGFILE_NAME"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
 MODIFIED_SFDISK="/tmp/$$.sfdisk"
+UBUNTU_FIRMWARE_DIRECTORY="/boot/firmware"
 
 # timeouts
 
