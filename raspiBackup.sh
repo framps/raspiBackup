@@ -6983,10 +6983,21 @@ function doitBackup() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
-	if (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
-		exitError $RC_MISC_ERROR
+	if (( ! $SKIPLOCALCHECK )); then
+		logItem "BOOT_DEVICE: $BOOT_DEVICE"
+		set -x
+		local lsblkResult="$(lsblk -l -o name,mountpoint | grep "${BACKUPPATH}\$" | grep $BOOT_DEVICE)"
+		set +x
+		logItem "lsblkResult: $lsblkResult"
+		local di=($(deviceInfo /dev/$lsblkResult))
+		logItem "di: $di"
+		if [[ "$BOOT_DEVICE" == "${di[0]}" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
+			exitError $RC_MISC_ERROR
+		fi
 	fi
+
+	read
 
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
