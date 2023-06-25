@@ -1906,6 +1906,9 @@ MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartitioncheck endet fehlerh
 MSG_IMG_BOOT_CHECK_STARTED=291
 MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartition check started."
 MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartitionscheck gestartet."
+MSG_NO_PARTUUID_SYNCHRONIZED=292
+MSG_EN[$MSG_NO_PARTUUID_SYNCHRONIZED]="RBK0292W: No PARTUUID updated in %s for %s. Backup may not boot correctly."
+MSG_DE[$MSG_NO_PARTUUID_SYNCHRONIZED]="RBK0292W: Es konnte keine PARTUUID in %s für %s erneuert werden. Das Backup könnte nicht starten."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3662,7 +3665,7 @@ function isMounted() { # dir
 	local rc
 	logEntry "$1"
 	if [[ -n "$1" ]]; then
-		logCommand "cat /proc/mounts"
+		#logCommand "cat /proc/mounts"
 		grep -qs "$1" /proc/mounts
 		rc=$?
 	else
@@ -5504,7 +5507,7 @@ function backupRsync() { # partition number (for partition based backup)
 		bootPartitionBackup
 		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
-		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
+		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
 
 	logItem "LastBackupDir: $lastBackupDir"
@@ -5915,6 +5918,9 @@ function restore() {
 			logItem "Updating hw clock"
 			echo $(date -u +"%Y-%m-%d %T") > $MNT_POINT/etc/fake-hwclock.data
 
+			logItem "Force fsck on reboot"
+			touch $MNT_POINT/forcefsck
+
 			logCommand "parted -s $RESTORE_DEVICE print"
 
 			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk[0-9]+" || $RESTORE_DEVICE =~ "/dev/loop[0-9]+" || $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" ]]; then
@@ -6096,8 +6102,8 @@ function backup() {
 		logCommand "fdisk -l $BOOT_DEVICENAME"
 	fi
 
-	if [[ -f "/boot/cmdline.txt" ]]; then
-		logCommand "cat /boot/cmdline.txt"
+	if [[ -f "$(cmdLinePath)/cmdline.txt" ]]; then
+		logCommand "cat $(cmdLinePath)/cmdline.txt"
 	fi
 
 	logItem "Starting $BACKUPTYPE backup..."
@@ -6619,7 +6625,7 @@ function inspect4Backup() {
 			logItem "Starting alternate boot discovery"
 
 			# test whether boot device is mounted
-			local bootMountpoint="/boot"
+			local bootMountpoint="$(cmdLinePath)"
 			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 			logItem "$bootMountpoint mounted? $bootPartition"
 
@@ -8315,6 +8321,52 @@ function synchronizeCmdlineAndfstab() {
 
 	logCommand "blkid -o udev $ROOT_PARTITION"
 
+	if [[ -f "$FSTAB" ]]; then
+		logItem "Org $FSTAB"
+		logItem "$(cat $FSTAB)"
+
+		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
+			if [[ -z $newPartUUID ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab" "/"
+			elif [[ $oldPartUUID != $newPartUUID ]]; then
+				local oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
+				local newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldpartuuidID" "$newpartuuidID" "$fstab"
+				sed -i "s/$oldpartuuidID/$newpartuuidID/g" $FSTAB &>> "$LOG_FILE"
+			fi
+		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+			local oldUUID=${BASH_REMATCH[1]}
+			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
+			if [[ -z $newUUID ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
+			elif [[ $oldUUID != $newUUID ]]; then
+				local olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
+				local newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
+				sed -i "s/$olduuidID/$newuuidID/g" $FSTAB &>> "$LOG_FILE"
+			fi
+		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+			local oldLABEL=${BASH_REMATCH[1]}
+			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			local rc=$?
+			if (( $rc )); then
+				local cmd="e2label $ROOT_PARTITION $oldLABEL"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
+		fi
+	else
+		logCommand "ls -la $ROOT_MP"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab"
+	fi
+
 	if [[ -f "$CMDLINE" ]]; then
 
 		logItem "Org $CMDLINE"
@@ -8356,111 +8408,13 @@ function synchronizeCmdlineAndfstab() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
 	else
-		logCommand "ls -la $BOOT_MP"
+		logCommand "ls -la $CMDLINE"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
 	fi
 
 	if [[ -f "$CMDLINE" ]]; then
 		logItem "Upd $CMDLINE"
 		logCommand "cat $CMDLINE"
-	fi
-
-
-	if [[ -f "$FSTAB" ]]; then
-		logItem "Org $FSTAB"
-		logItem "$(cat $FSTAB)"
-
-		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
-			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
-			if [[ -z $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
-			elif [[ $oldPartUUID != $newPartUUID ]]; then
-				local oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
-				local newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldpartuuidID" "$newpartuuidID" "$fstab"
-				sed -i "s/$oldpartuuidID/$newpartuuidID/g" $FSTAB &>> "$LOG_FILE"
-			fi
-		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			local oldUUID=${BASH_REMATCH[1]}
-			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
-			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
-			if [[ -z $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
-			elif [[ $oldUUID != $newUUID ]]; then
-				local olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
-				local newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
-				sed -i "s/$olduuidID/$newuuidID/g" $FSTAB &>> "$LOG_FILE"
-			fi
-		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			local oldLABEL=${BASH_REMATCH[1]}
-			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
-			local rc=$?
-			if (( $rc )); then
-				local cmd="e2label $ROOT_PARTITION $oldLABEL"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-			fi
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
-		fi
-	else
-		logCommand "ls -la $ROOT_MP"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab"
-	fi
-
-	if [[ -f "$FSTAB" ]]; then
-		logItem "Org $FSTAB"
-		logItem "$(cat $FSTAB)"
-
-		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
-			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID=$(blkid -o udev $BOOT_PARTITION | egrep ID_FS_PARTUUID= | cut -d= -f2)
-			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
-			if [[ -z $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-			elif [[ $oldPartUUID != $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> "$LOG_FILE"
-			fi
-		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
-			local oldUUID=${BASH_REMATCH[1]}
-			local newUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
-			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
-			if [[ -z $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-			elif [[ $oldUUID != $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
-				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> "$LOG_FILE"
-			fi
-		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
-			local oldLABEL=${BASH_REMATCH[1]}
-			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
-			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
-			local rc=$?
-			if (( $rc )); then
-				local cmd="dosfslabel $ROOT_PARTITION $oldLABEL"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-			fi
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-		fi
-	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-	fi
-
-	if [[ -f "$CMDLINE" ]]; then
-		logItem "Upd $CMDLINE"
-		logCommand "cat $CMDLINE"
-	fi
-
-	if [[ -f "$FSTAB" ]]; then
-		logItem "Upd $FSTAB"
-		logCommand "cat $FSTAB"
 	fi
 
 	umount $BOOT_MP &>>"$LOG_FILE"
@@ -8862,6 +8816,7 @@ FORCE_UPDATE=0
 HELP=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
+IS_UBUNTU=0
 NO_YES_QUESTION=0
 ONLINE_VERSIONS=0
 PROGRESS=0
