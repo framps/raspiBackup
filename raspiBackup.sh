@@ -5720,8 +5720,17 @@ function restore() {
 
 			if (( $FORCE_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
-				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
+				sfdisk -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
 				rc=$?
+				if (( $rc )); then
+					if (( $rc == 1 )); then
+						cp "$SF_FILE" "/tmp/$SF_FILE"
+						sed -i 's/sector-size/d' "/tmp/$SF_FILE"
+						sfdisk -f "$RESTORE_DEVICE" < "/tmp/$SF_FILE" &>>"$LOG_FILE"
+						rc=$?
+						rm "/tmp/$SF_FILE"
+					fi
+				fi
 				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
