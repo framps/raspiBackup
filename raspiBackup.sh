@@ -249,6 +249,13 @@ done
 
 declare -A mountPoints
 
+# variables exported to pass on to extensions
+
+export BACKUP_TARGETDIR
+export BACKUP_TARGETFILE
+export MSG_FILE
+export LOG_FILE
+
 # Telegram options
 
 TELEGRAM_NOTIFY_SUCCESS="S"
@@ -2483,6 +2490,8 @@ function saveVars() {
 	if (( $UID == 0 )); then
 		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
 		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
+		echo "MSG_FILE=\"$MSG_FILE\"" >> $VARS_FILE
+		echo "LOG_FILE=\"$LOG_FILE\"" >> $VARS_FILE
 	fi
 }
 
