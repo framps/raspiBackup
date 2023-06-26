@@ -249,6 +249,13 @@ done
 
 declare -A mountPoints
 
+# variables exported to pass on to extensions
+
+export BACKUP_TARGETDIR
+export BACKUP_TARGETFILE
+export MSG_FILE
+export LOG_FILE
+
 # Telegram options
 
 TELEGRAM_NOTIFY_SUCCESS="S"
@@ -2483,6 +2490,8 @@ function saveVars() {
 	if (( $UID == 0 )); then
 		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
 		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
+		echo "MSG_FILE=\"$MSG_FILE\"" >> $VARS_FILE
+		echo "LOG_FILE=\"$LOG_FILE\"" >> $VARS_FILE
 	fi
 }
 
@@ -3587,34 +3596,46 @@ function supportsFileAttributes() {	# directory
 	local attrsT ownerT groupT
 	local result=1	# no
 
-	touch /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
-	chown 65534:65534 /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
-	chmod 057 /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
+	local MAXRETRY=3						# retries if first check fails
+	local retryCount=$(( MAXRETRY + 1 ))
+
+	touch /tmp/$MYNAME.fileattributes &>>$LOG_FILE
+	chown 65534:65534 /tmp/$MYNAME.fileattributes &>>$LOG_FILE
+	chmod 057 /tmp/$MYNAME.fileattributes &>>$LOG_FILE
 
 	# ls -la output
 	# ----r-xrwx 1 nobody nogroup 0 Oct 30 19:06 /tmp/supportsFileattributes.fileattributes
 
-	read attrs x owner group r <<< $(ls -la /tmp/$MYNAME.fileattributes)
+	read -r attrs x owner group r <<< "$(ls -la "/tmp/$MYNAME.fileattributes")"
 	logItem "$attrs # $owner # $group"
-	# following command will return an error and message
-	# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
-	cp -a /tmp/$MYNAME.fileattributes /$1 &>>"$LOG_FILE"
-	local rc=$?
-	if (( $rc )); then
-		logItem "cp failed with rc $rc"
-	else
-		read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
-		# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
-		# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
-		# and a restored backup will populate these ACLs on the restored system which is wrong!
-		logItem "$attrsT # $ownerT # $groupT"
 
-		# check fileattributes and ownerships are identical
-		[[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]] && result=0
-	fi
+	while (( retryCount-- > 0 && result == 1 )); do
+		# following command will return an error and message
+		# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
+		cp -a "/tmp/$MYNAME.fileattributes" "/$1" &>>"$LOG_FILE"
+		local rc=$?
+		if (( $rc )); then
+			logItem "cp failed with rc $rc - retryCount"
+		else
+			# SC2034: x appears unused. Verify it or export it.
+			# shellcheck disable=SC2034
+			read -r attrsT x ownerT groupT r <<< "$(ls -la "/$1/$MYNAME.fileattributes")"
+			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
+			# and a restored backup will populate these ACLs on the restored system which is wrong!
+			logItem "Remote: $attrsT # $ownerT # $groupT"
 
-	rm /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
-	rm /$1/$MYNAME.fileattributes &>>"$LOG_FILE"
+			# check fileattributes and ownerships are identical
+			if [[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]]; then
+				result=0
+				break
+			fi
+		fi
+		sleep 3s
+	done
+
+	rm /tmp/$MYNAME.fileattributes &>>$LOG_FILE
+	rm /$1/$MYNAME.fileattributes &>>$LOG_FILE
 
 	logExit $result
 
@@ -5720,8 +5741,17 @@ function restore() {
 
 			if (( $FORCE_SFDISK )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
-				sfdisk -f $RESTORE_DEVICE < "$SF_FILE" &>>"$LOG_FILE"
+				sfdisk -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
 				rc=$?
+				if (( $rc )); then
+					if (( $rc == 1 )); then
+						cp "$SF_FILE" "/tmp/$SF_FILE"
+						sed -i 's/sector-size/d' "/tmp/$SF_FILE"
+						sfdisk -f "$RESTORE_DEVICE" < "/tmp/$SF_FILE" &>>"$LOG_FILE"
+						rc=$?
+						rm "/tmp/$SF_FILE"
+					fi
+				fi
 				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
