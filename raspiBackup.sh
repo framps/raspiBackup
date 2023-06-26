@@ -3537,11 +3537,11 @@ function updateScript() {
 		fi
 
 		if (( $updateNow )); then
-			local file="${MYSELF}"
+			local tmpFile="/tmp/${MYSELF}~"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
 
 			local dlHttpCode dlRC
-			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${MYSELF}~")"
+			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${tmpFile}")"
 			dlRC=$?
 			if (( $dlRC != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$$DOWNLOAD_URL" "$dlHttpCode" $dlRC
@@ -3550,7 +3550,7 @@ function updateScript() {
 			fi
 			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
 			mv $SCRIPT_DIR/$MYSELF $newName
-			mv $MYSELF~ $SCRIPT_DIR/$MYSELF
+			mv $tmpFile $SCRIPT_DIR/$MYSELF
 			chown --reference=$newName $SCRIPT_DIR/$MYSELF
 			chmod --reference=$newName $SCRIPT_DIR/$MYSELF
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
@@ -3562,7 +3562,7 @@ function updateScript() {
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
 			logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
 		else
-			rm $MYSELF~ &>/dev/null
+			rm $tmpFile &>/dev/null
 			if [[ $rc == 1 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
 			elif [[ $rc == 2 ]]; then
