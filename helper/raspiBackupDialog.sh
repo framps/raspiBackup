@@ -3,6 +3,9 @@
 ##########################################################################################################################################
 #
 # Auxiliary - script for easy, dialog guided creating or restoring of a backup with   "framps raspiBackup"
+
+# Creation and maintenance by Franjo G (forum-raspberrypi.de)
+
 # Possible options
 # --backup (simple dialog guided creation of a backup)
 # --last (creation of a restore with selection of the target drive)
