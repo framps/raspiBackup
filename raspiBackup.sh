@@ -306,6 +306,7 @@ SLACK_EMOJI_VERSION_DEPRECATED=":skull:" # 💀
 PRE_BACKUP_EXTENSION="pre"
 POST_BACKUP_EXTENSION="post"
 READY_BACKUP_EXTENSION="ready"
+NOTIFICATION_BACKUP_EXTENSION="notify"
 EMAIL_EXTENSION="mail"
 PRE_RESTORE_EXTENSION="$PRE_BACKUP_EXTENSION"
 POST_RESTORE_EXTENSION="$POST_BACKUP_EXTENSION"
@@ -348,10 +349,11 @@ SHARED_BOOT_DIRECTORY=0
 BOOT_TAR_EXT="tmg"
 BOOT_DD_EXT="img"
 
-ORIG_CONFIG="/usr/local/etc/raspiBackup.conf"
-NEW_CONFIG="/usr/local/etc/raspiBackup.conf.new"
-MERGED_CONFIG="/usr/local/etc/raspiBackup.conf.merged"
-BACKUP_CONFIG="/usr/local/etc/raspiBackup.conf.bak"
+CONFIG_DIR="/usr/local/etc"
+ORIG_CONFIG="$CONFIG_DIR/raspiBackup.conf"
+NEW_CONFIG="$CONFIG_DIR/raspiBackup.conf.new"
+MERGED_CONFIG="$CONFIG_DIR/raspiBackup.conf.merged"
+BACKUP_CONFIG="$CONFIG_DIR/raspiBackup.conf.bak"
 
 PERSISTENT_JOURNAL="/var/log/journal"
 
@@ -420,6 +422,7 @@ RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
+RC_EXTENSION_ERROR=141
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -2653,7 +2656,6 @@ function logOptions() { # option state
 	logItem "EMAIL_PARMS=$EMAIL_PARMS"
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
 	logItem "EXTENSIONS=$EXTENSIONS"
-	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
 	logItem "FAKE=$FAKE"
 	logItem "FINAL_COMMAND=$FINAL_COMMAND"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
@@ -2685,6 +2687,7 @@ function logOptions() { # option state
 	logItem "REBOOT_SYSTEM=$REBOOT_SYSTEM"
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
+	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
@@ -4002,7 +4005,7 @@ function colorOff() { # colortype color
 
 function colorAnnotation() { # colortype text
 
-	logEntry "$1"
+	# logEntry "$1"
 
 	colorType="$1"
 	shift
@@ -4026,7 +4029,8 @@ function colorAnnotation() { # colortype text
 			fi
 		fi
 	done <<< "$@"
-	logExit
+
+	#logExit
 }
 
 function sendTelegramDocument() { # filename
@@ -4656,12 +4660,24 @@ function cleanupStartup() { # trap
 	fi
 
 	cleanupTempFiles
+	
+	logFinish
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
-	logFinish
+	if [[ -n "$EXTENSIONS"  ]]; then
+		xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi			
+		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
+	fi
 
 	logExit
 
@@ -4809,6 +4825,18 @@ function cleanup() { # trap
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
+	fi
+
+	if [[ -n "$EXTENSIONS"  ]]; then
+		xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi			
+		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
 	fi
 
 	logFinish
@@ -7072,9 +7100,21 @@ function doitBackup() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
-	if (( ! $SKIPLOCALCHECK )) && ! isPathMounted "$BACKUPPATH"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
-		exitError $RC_MISC_ERROR
+	if (( ! $SKIPLOCALCHECK )); then
+		if ! isPathMounted $BACKUPPATH; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
+			exitError $RC_MISC_ERROR
+		fi
+		# check if a mount to any partition on boot device exists
+		logItem "BOOT_DEVICE: $BOOT_DEVICE"
+		local lsblkResult="$(lsblk -l -o name,mountpoint | grep "${BACKUPPATH}" | grep $BOOT_DEVICE)"
+		logItem "lsblkResult: $lsblkResult"
+		local di=($(deviceInfo /dev/$lsblkResult))
+		logItem "di: $di"
+		if [[ "$BOOT_DEVICE" == "${di[0]}" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
+			exitError $RC_MISC_ERROR
+		fi
 	fi
 
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
@@ -9469,6 +9509,17 @@ if (( $NOTIFY_START )); then
 		fi
 		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 			sendSlack "$msg"
+		fi
+		if [[ -n "$EXTENSIONS"  ]]; then
+			xEnabled=0
+			if [ -o xtrace ]; then	# disable xtrace
+				xEnabled=1
+				set +x
+			fi			
+			callExtensions $NOTIFICATION_BACKUP_EXTENSION "0"
+			if (( $xEnabled )); then	# enable xtrace again
+				set -x
+			fi
 		fi
 	fi
 fi

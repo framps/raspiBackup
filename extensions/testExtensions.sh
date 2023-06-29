@@ -33,11 +33,15 @@ else
 	. raspiBackup.sh --include
 fi
 
-. raspiBackup_disk_pre.sh
-. raspiBackup_disk_post.sh
+<< 'SKIP'
+. ./raspiBackup_disk_pre.sh
+. ./raspiBackup_disk_post.sh
 
-. raspiBackup_mem_pre.sh
-. raspiBackup_mem_post.sh
+. ./raspiBackup_mem_pre.sh
+. ./raspiBackup_mem_post.sh
 
-. raspiBackup_temp_pre.sh
-. raspiBackup_temp_post.sh
+. ./raspiBackup_temp_pre.sh
+. ./raspiBackup_temp_post.sh
+SKIP
+
+. ./raspiBackup_sample_notify.sh 42
