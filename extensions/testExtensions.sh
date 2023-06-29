@@ -44,4 +44,4 @@ fi
 . raspiBackup_temp_post.sh
 SKIP
 
-. raspiBackup_sample_notify.sh 42
+. ./raspiBackup_sample_notify.sh 42

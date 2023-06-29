@@ -341,10 +341,11 @@ SHARED_BOOT_DIRECTORY=0
 BOOT_TAR_EXT="tmg"
 BOOT_DD_EXT="img"
 
-ORIG_CONFIG="/usr/local/etc/raspiBackup.conf"
-NEW_CONFIG="/usr/local/etc/raspiBackup.conf.new"
-MERGED_CONFIG="/usr/local/etc/raspiBackup.conf.merged"
-BACKUP_CONFIG="/usr/local/etc/raspiBackup.conf.bak"
+CONFIG_DIR="/usr/local/etc"
+ORIG_CONFIG="$CONFIG_DIR/raspiBackup.conf"
+NEW_CONFIG="$CONFIG_DIR/raspiBackup.conf.new"
+MERGED_CONFIG="$CONFIG_DIR/raspiBackup.conf.merged"
+BACKUP_CONFIG="$CONFIG_DIR/raspiBackup.conf.bak"
 
 PERSISTENT_JOURNAL="/var/log/journal"
 
@@ -3945,7 +3946,7 @@ function colorOff() { # colortype color
 
 function colorAnnotation() { # colortype text
 
-	logEntry "$1"
+	# logEntry "$1"
 
 	colorType="$1"
 	shift
@@ -3969,7 +3970,8 @@ function colorAnnotation() { # colortype text
 			fi
 		fi
 	done <<< "$@"
-	logExit
+
+	#logExit
 }
 
 function sendTelegramDocument() { # filename
