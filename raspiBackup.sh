@@ -298,6 +298,7 @@ SLACK_EMOJI_VERSION_DEPRECATED=":skull:" # 💀
 PRE_BACKUP_EXTENSION="pre"
 POST_BACKUP_EXTENSION="post"
 READY_BACKUP_EXTENSION="ready"
+NOTIFICATION_BACKUP_EXTENSION="notify"
 EMAIL_EXTENSION="mail"
 PRE_RESTORE_EXTENSION="$PRE_BACKUP_EXTENSION"
 POST_RESTORE_EXTENSION="$POST_BACKUP_EXTENSION"
@@ -412,6 +413,7 @@ RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
+RC_EXTENSION_ERROR=141
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -2607,7 +2609,6 @@ function logOptions() { # option state
 	logItem "EMAIL_PARMS=$EMAIL_PARMS"
 	logItem "EXCLUDE_LIST=$EXCLUDE_LIST"
 	logItem "EXTENSIONS=$EXTENSIONS"
-	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
 	logItem "FAKE=$FAKE"
 	logItem "FINAL_COMMAND=$FINAL_COMMAND"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
@@ -2639,6 +2640,7 @@ function logOptions() { # option state
 	logItem "REBOOT_SYSTEM=$REBOOT_SYSTEM"
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
+	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
@@ -4597,12 +4599,24 @@ function cleanupStartup() { # trap
 	fi
 
 	cleanupTempFiles
+	
+	logFinish
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
-	logFinish
+	if [[ -n "$EXTENSIONS"  ]]; then
+		xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi			
+		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
+	fi
 
 	logExit
 
@@ -4750,6 +4764,18 @@ function cleanup() { # trap
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
+	fi
+
+	if [[ -n "$EXTENSIONS"  ]]; then
+		xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi			
+		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
 	fi
 
 	logFinish
@@ -9437,6 +9463,17 @@ if (( $NOTIFY_START )); then
 		fi
 		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 			sendSlack "$msg"
+		fi
+		if [[ -n "$EXTENSIONS"  ]]; then
+			xEnabled=0
+			if [ -o xtrace ]; then	# disable xtrace
+				xEnabled=1
+				set +x
+			fi			
+			callExtensions $NOTIFICATION_BACKUP_EXTENSION "0"
+			if (( $xEnabled )); then	# enable xtrace again
+				set -x
+			fi
 		fi
 	fi
 fi
