@@ -2247,6 +2247,8 @@ function callExtensions() { # extensionplugpoint rc
 	else
 
 		local extensions="$EXTENSIONS"
+		local xEnabled
+		
 		(( $RESTORE )) && extensions="$RESTORE_EXTENSIONS"
 
 		for extension in $extensions; do
@@ -2255,9 +2257,31 @@ function callExtensions() { # extensionplugpoint rc
 
 			if which $extensionFileName &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
+
+				local extension_call=0
+
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"			
+				
+				if [[ ${extension} == $NOTIFICATION_BACKUP_EXTENSION  ]]; then
+					extensionCall=1
+				fi
+				
+				if (( extension_call )); then
+					xEnabled=0
+					if [ -o xtrace ]; then	# disable xtrace
+						xEnabled=1
+						set +x
+					fi			
+				fi				
+				
 				executeShellCommand ". $extensionFileName $2"
 				rc=$?
+				if (( extension_call )); then
+					if (( $xEnabled )); then	# enable xtrace again
+						set -x
+					fi
+				fi
+
 				logItem "Extension RC: $rc"
 				if (( $rc != 0 )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTENSION_FAILED "$extensionFileName" "$rc"
@@ -4703,18 +4727,6 @@ function cleanupStartup() { # trap
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
 	fi
 
-	if [[ -n "$EXTENSIONS"  ]]; then
-		xEnabled=0
-		if [ -o xtrace ]; then	# disable xtrace
-			xEnabled=1
-			set +x
-		fi			
-		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
-		if (( $xEnabled )); then	# enable xtrace again
-			set -x
-		fi
-	fi
-
 	logExit
 
 	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
@@ -4861,18 +4873,6 @@ function cleanup() { # trap
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
 		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
-	fi
-
-	if [[ -n "$EXTENSIONS"  ]]; then
-		xEnabled=0
-		if [ -o xtrace ]; then	# disable xtrace
-			xEnabled=1
-			set +x
-		fi			
-		callExtensions $NOTIFICATION_BACKUP_EXTENSION $rc
-		if (( $xEnabled )); then	# enable xtrace again
-			set -x
-		fi
 	fi
 
 	logFinish
@@ -9550,17 +9550,6 @@ if (( $NOTIFY_START )); then
 		fi
 		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 			sendSlack "$msg"
-		fi
-		if [[ -n "$EXTENSIONS"  ]]; then
-			xEnabled=0
-			if [ -o xtrace ]; then	# disable xtrace
-				xEnabled=1
-				set +x
-			fi			
-			callExtensions $NOTIFICATION_BACKUP_EXTENSION "0"
-			if (( $xEnabled )); then	# enable xtrace again
-				set -x
-			fi
 		fi
 	fi
 fi
