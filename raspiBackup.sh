@@ -2236,26 +2236,9 @@ function callExtensions() { # extensionplugpoint rc
 				local extension_call=0
 
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"			
-				
-				if [[ ${extension} == $NOTIFICATION_BACKUP_EXTENSION  ]]; then
-					extensionCall=1
-				fi
-				
-				if (( extension_call )); then
-					xEnabled=0
-					if [ -o xtrace ]; then	# disable xtrace
-						xEnabled=1
-						set +x
-					fi			
-				fi				
-				
+							
 				executeShellCommand ". $extensionFileName $2"
 				rc=$?
-				if (( extension_call )); then
-					if (( $xEnabled )); then	# enable xtrace again
-						set -x
-					fi
-				fi
 
 				logItem "Extension RC: $rc"
 				if (( $rc != 0 )); then
@@ -4609,6 +4592,25 @@ function masqueradeNonlocalIPs() {
 	rm $f
 }
 
+function callNotificationExtension() { # rc
+		logEntry "$1"
+		
+		local xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi			
+		callExtensions $NOTIFICATION_BACKUP_EXTENSION $1
+		local rc=$?
+		logItem "NotificationExtension rc: $rc"
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
+		
+		logExit $rc
+		return $rc
+}
+
 function cleanupStartup() { # trap
 
 	logEntry
@@ -4735,6 +4737,7 @@ function cleanup() { # trap
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi		
+				callNotificationExtension "$rc"
 			fi #  ! RESTORE
 		fi
 
@@ -4771,6 +4774,8 @@ function cleanup() { # trap
 			fi
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 			sendEMail "" "$msg"
+			
+			callNotificationExtension "$rc"
 		fi # ! $RESTORE
 	fi
 
@@ -9435,6 +9440,7 @@ if (( $NOTIFY_START )); then
 		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 			sendSlack "$msg"
 		fi
+		callNotificationExtension ß
 	fi
 fi
 
