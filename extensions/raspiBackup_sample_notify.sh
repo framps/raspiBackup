@@ -26,7 +26,6 @@
 
 NOTIFICATION_EXTENSION_MYSELF="$(basename "${BASH_SOURCE}")"
 NOTIFICATION_EXTENSION_MYNAME=${NOTIFICATION_EXTENSION_MYSELF%.*}
-NOTIFICATION_EXTENSION_NAME="$(sed -E "s/.+_(.+)_.+/\1/" <<< "$NOTIFICATION_EXTENSION_MYNAME")"
 NOTIFICATION_EXTENSION_CONFIG_FILE="$CONFIG_DIR/${NOTIFICATION_EXTENSION_MYNAME}.conf"
 
 MSG_EXT_SAMPLE_NOTIFICATION="${NOTIFICATION_EXTENSION_MYNAME}"
@@ -43,20 +42,18 @@ MSG_DE[$MSG_EXT_SAMPLE_NOTIFICATION]="RBK1001I: Zugriff auf %s: %s"
 
 logEntry
 
-writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "LOG_FILE" "$LOG_FILE"
-
 # Access log file"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "LOG_FILE" "$LOG_FILE"
-
-# head -n 3 $LOG_FILE
+head -n 3 $LOG_FILE
 
 # Acces message file"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "MSG_FILE" "$MSG_FILE"
+tail -n 3 $MSG_FILE
 
-startMsg="$(grep "RBK0009I" $MSG_FILE)"
+local startMsg="$(grep "RBK0009I" $MSG_FILE)"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Startmessage" "$startMsg"
 
-stopMsg="$(grep "RBK0010I" $MSG_FILE)"
+local stopMsg="$(grep "RBK0010I" $MSG_FILE)"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Stopmessage" "$stopMsg"
 
 # access raspiBackup return code
@@ -65,17 +62,16 @@ writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "RC" "$1"
 # source any configuration definitions
 # They have to be in bash assignment syntax
 # Example SAMPLE_NOTIFICATION_PWD="mySecretPassword"
-
-# access raspiBackup return code
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Config file:" "$NOTIFICATION_EXTENSION_CONFIG_FILE"
 
 if [[ -f $NOTIFICATION_EXTENSION_CONFIG_FILE ]]; then
-# access an extension specific config file which may contain sensitive data 
+# access an extension specific config file which may contain sensitive data
 # therefore test if it has mask 600
+	local attrs r
 	read attrs r <<< $(ls -la $NOTIFICATION_EXTENSION_CONFIG_FILE)
 	if [[ $attrs != "-rw-------" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE "$CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf"
-		exitError $RC_EXTENSION_ERROR		 
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE "$NOTIFICATION_EXTENSION_CONFIG_FILE"
+		exitError $RC_EXTENSION_ERROR
 	fi
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Sourcing config file:" "$NOTIFICATION_EXTENSION_CONFIG_FILE"
 	source "$NOTIFICATION_EXTENSION_CONFIG_FILE"

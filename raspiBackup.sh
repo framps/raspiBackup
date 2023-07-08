@@ -414,7 +414,6 @@ RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
-RC_EXTENSION_ERROR=141
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -2145,14 +2144,14 @@ function logFinish() {
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+			logItem "Moving Logfile: $LOG_FILE"
 			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
 			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
-			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
+			logItem "Moving Msgfile: $MSG_FILE"
 			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
 			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
-			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
@@ -2223,20 +2222,24 @@ function callExtensions() { # extensionplugpoint rc
 
 		local extensions="$EXTENSIONS"
 		local xEnabled
-		
+
 		(( $RESTORE )) && extensions="$RESTORE_EXTENSIONS"
 
 		for extension in $extensions; do
 
-			local extensionFileName="${MYNAME}_${extension}_$1.sh"
+			if [[ $1 == $NOTIFICATION_BACKUP_EXTENSION ]]; then
+				local extensionFileName="${MYNAME}_${extension}.sh" # notification has no pre, post and ready
+			else
+				local extensionFileName="${MYNAME}_${extension}_$1.sh"
+			fi
 
 			if which $extensionFileName &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
 
 				local extension_call=0
 
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"			
-							
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
+
 				executeShellCommand ". $extensionFileName $2"
 				rc=$?
 
@@ -2512,7 +2515,7 @@ function executeRsync() { # cmd flagsToIgnore
 	return $rc
 }
 
-# Removing leading `/' from member names message is annoying. Use grep -v "Removing" to remove the message 
+# Removing leading `/' from member names message is annoying. Use grep -v "Removing" to remove the message
 # and use $PIPESTATUS and catch and return the tar RC
 
 function executeTar() { # cmd flagsToIgnore
@@ -3201,9 +3204,9 @@ function verifyIsOnOff() { # arg
 function downloadFile() { # url, targetFileName
 
 		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
-		
+
 		local httpCode rc
-		
+
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
@@ -3381,7 +3384,7 @@ function finalCommand() {
 		executeShellCommand "$FINAL_COMMAND"
 		local rc=$?
 		if [[ $rc != 0 ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FINAL_COMMAND_FAILED "$rc"			
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FINAL_COMMAND_FAILED "$rc"
 		fi
 	fi
 
@@ -3581,7 +3584,7 @@ function supportsFileAttributes() {	# directory
 		# check fileattributes and ownerships are identical
 		[[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]] && result=0
 	fi
-	
+
 	rm /tmp/$MYNAME.fileattributes &>>"$LOG_FILE"
 	rm /$1/$MYNAME.fileattributes &>>"$LOG_FILE"
 
@@ -4097,7 +4100,7 @@ function sendTelegrammLogMessages() {
 
 function sendPushover() { # subject sucess/failure
 
-	logEntry "$1" 
+	logEntry "$1"
 
 	if [[ -n "$PUSHOVER_TOKEN" ]] ; then
 		if ! which jq &>/dev/null; then # suppress error message when jq is not installed
@@ -4125,7 +4128,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			sound="$PUSHOVER_SOUND_SUCCESS"
 			prio="$PUSHOVER_PRIORITY_SUCCESS"
 		fi
-		
+
 		local o=$(mktemp)
 
 		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
@@ -4136,7 +4139,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_MESSAGES ]]; then
 			msg="$(tail -c 1024 $MSG_FILE)"
 		fi
-				
+
 		local cmd=(--form-string message="$1")
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
 				--form-string "user=$PUSHOVER_USER"\
@@ -4145,7 +4148,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 				--form-string "message=$msg"\
 				--form-string "title=$1"\
 				--form-string "sound=$sound")
-						
+
 		logItem "Pushover curl call: ${cmd[@]}"
 		local httpCode
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $PUSHOVER_URL)"
@@ -4174,7 +4177,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 
 function sendSlack() { # subject sucess/failure
 
-	logEntry "$1" 
+	logEntry "$1"
 
 	if [[ -n "$SLACK_WEBHOOK_URL" ]] ; then
 		local smiley
@@ -4203,12 +4206,12 @@ function sendSlack() { # subject sucess/failure
 
 # Send message, exit
 
-function sendSlackMessage() { # message 0/1->success/failure 
+function sendSlackMessage() { # message 0/1->success/failure
 
 		logEntry "$1"
 
 		local msg_json statusMsg
-		
+
 		local o=$(mktemp)
 
 		if [[ -n $2 && "$2" == "1" ]]; then
@@ -4243,7 +4246,7 @@ EOF
 		local cmd=(-X POST)
 		cmd+=(-H 'Content-type: application/json')
 		cmd+=(--data "$msg_json")
-		
+
 		logItem "Slack curl call: ${cmd[@]}"
 		local httpCode
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" $SLACK_WEBHOOK_URL)"
@@ -4594,20 +4597,22 @@ function masqueradeNonlocalIPs() {
 
 function callNotificationExtension() { # rc
 		logEntry "$1"
-		
+
 		local xEnabled=0
 		if [ -o xtrace ]; then	# disable xtrace
 			xEnabled=1
 			set +x
-		fi			
+		fi
 		callExtensions $NOTIFICATION_BACKUP_EXTENSION $1
 		local rc=$?
 		logItem "NotificationExtension rc: $rc"
 		if (( $xEnabled )); then	# enable xtrace again
 			set -x
 		fi
-		
+
 		logExit $rc
+		echo "READ"
+		read
 		return $rc
 }
 
@@ -4625,7 +4630,7 @@ function cleanupStartup() { # trap
 	fi
 
 	cleanupTempFiles
-	
+
 	logFinish
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
@@ -4736,8 +4741,7 @@ function cleanup() { # trap
 					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
-				fi		
-				callNotificationExtension "$rc"
+				fi
 			fi #  ! RESTORE
 		fi
 
@@ -4772,10 +4776,10 @@ function cleanup() { # trap
 					sendSlack "${EMOJI_OK} $msg" 0
 				fi
 			fi
+
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 			sendEMail "" "$msg"
-			
-			callNotificationExtension "$rc"
+
 		fi # ! $RESTORE
 	fi
 
@@ -4785,9 +4789,11 @@ function cleanup() { # trap
 
 	logFinish
 
-	unLockMe
+	callNotificationExtension $NOTIFICATION_BACKUP_EXTENSION $rc
 
 	logExit
+
+	unLockMe
 
 	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
@@ -4795,7 +4801,7 @@ function cleanup() { # trap
 	fi
 
 	if (( ! $RESTORE && $REBOOT_SYSTEM )); then
-		shutdown -r +3						# wait some time to allow eMail to be sent 
+		shutdown -r +3						# wait some time to allow eMail to be sent
 	fi
 
 	exit $rc
@@ -5092,7 +5098,7 @@ function bootPartitionBackup() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
 					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
-					executeTar "$cmd" 
+					executeTar "$cmd"
 				else
 					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
 					executeDD "$cmd"
@@ -5974,17 +5980,17 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE"; 
+				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
 
-				local rmRC=$?		
+				local rmRC=$?
 				if (( $rmRC != 0 )); then
 					logItem "rmRC: $rmRC"
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_CLEANUP_FAILED 
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_CLEANUP_FAILED
 					exitError $RC_CLEANUP_ERROR
-				fi					
+				fi
 
 				local regex="\-([0-9]{8}\-[0-9]{6})\.(img|mbr|sfdisk|log)$"
 				local regexDD="\-dd\-backup\-([0-9]{8}\-[0-9]{6})\.img$"
@@ -5992,7 +5998,7 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" 1>/dev/null; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				
+
 				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
 
 					if [[ $imgFile =~ $regexDD ]]; then
@@ -6240,7 +6246,7 @@ function doit() {
 
 	if isUnsupportedVersion; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_VERSION
-	fi		
+	fi
 
 	if (( $RESTORE )); then
 		doitRestore
@@ -6576,10 +6582,10 @@ function inspect4Backup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
 			SHARED_BOOT_DIRECTORY=1
 			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
-		
+
 		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9]+)p || "$part" =~ /dev/(nvme[0-9]+n[0-9]+)p ]]; then
 			BOOT_DEVICE=${BASH_REMATCH[1]}
-		
+
 		else
 			logItem "Starting alternate boot discovery"
 
@@ -9440,7 +9446,9 @@ if (( $NOTIFY_START )); then
 		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 			sendSlack "$msg"
 		fi
-		callNotificationExtension ß
+
+		callNotificationExtension $NOTIFICATION_BACKUP_EXTENSION $rc
+
 	fi
 fi
 
@@ -9480,6 +9488,6 @@ if isVersionDeprecated "$VERSION"; then
 	NEWS_AVAILABLE=1
 fi
 
-doit # no return 
+doit # no return
 
 fi # ! INCLUDE_ONLY
