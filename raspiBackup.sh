@@ -4787,7 +4787,7 @@ function cleanup() { # trap
 
 	logFinish
 
-	callNotificationExtension $NOTIFICATION_BACKUP_EXTENSION $rc
+	callNotificationExtension $rc
 
 	logExit
 
@@ -9445,7 +9445,7 @@ if (( $NOTIFY_START )); then
 			sendSlack "$msg"
 		fi
 
-		callNotificationExtension $NOTIFICATION_BACKUP_EXTENSION $rc
+		callNotificationExtension $rc
 
 	fi
 fi
