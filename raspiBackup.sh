@@ -4611,8 +4611,6 @@ function callNotificationExtension() { # rc
 		fi
 
 		logExit $rc
-		echo "READ"
-		read
 		return $rc
 }
 
