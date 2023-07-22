@@ -4,7 +4,7 @@
   <img src="./images/raspiBackupIcon_smaller.png" />
 </p>
 
-# raspiBackup - Backup and restore your running Raspberries
+# raspiBackup - Backup and restore your active Raspberries
 
 #### For a high level summary visit [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
 
@@ -27,7 +27,7 @@
 * Backup strategies
   * Number of backup versions to keep configurable either for sum of backups or on individual backup types
   * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
-  * Manual backups allows to create a kind of snapshot (so calledraspiBackup snapshots) of the system just before major updates are done on a system.
+  * Manual backups allow to create a kind of snapshot (so called raspiBackup snapshots) of the system just before major updates are done on a system.
 * Linux backup tools used
   * Standard Linux backup tools dd, tar and rsync can be used to create a backup.
   * dd and tar are full backups. rsync uses hardlinks for incremental backups.
@@ -51,8 +51,8 @@
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
 * Serviceability
-  * Extensive logging helps to isolate backup/restore issues. 
-* Much more features (see below).
+  * Extensive logging helps to locate and fix backup/restore issues 
+* Much more features available (see below).
 
 ## Support
 

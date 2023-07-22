@@ -43,7 +43,11 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 
+<<<<<<< HEAD
 VERSION="0.6.8-dev-612"										# -beta, -hotfix or -dev suffixes possible
+=======
+VERSION="0.6.8"	            								# -beta, -hotfix or -dev suffixes possible
+>>>>>>> master
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -74,11 +78,11 @@ IS_BETA=$(( ! $(grep -iq beta <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
-GIT_DATE='$Date$'
+GIT_DATE='$Date: 2023-07-09 13:38:19 +0200$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT='$Sha1$'
+GIT_COMMIT='$Sha1: 64d7dc0$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1901,16 +1905,18 @@ MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
+<<<<<<< HEAD
 MSG_UNPROTECTED_PROPERTIESFILE=290
 MSG_EN[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Configuration file %s is unprotected."
 MSG_DE[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Konfigurationsdatei %s ist nicht geschützt."
-MSG_IMG_BOOT_FSCHECK_FAILED=291
+=======
+MSG_IMG_BOOT_FSCHECK_FAILED=290
 MSG_EN[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartition check failed with RC %s."
 MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartitioncheck endet fehlerhaft mit RC %s."
-MSG_IMG_BOOT_CHECK_STARTED=292
+MSG_IMG_BOOT_CHECK_STARTED=291
 MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartition check started."
 MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartitionscheck gestartet."
-
+>>>>>>> master
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2154,13 +2160,11 @@ function logFinish() {
 			logItem "Moving Logfile: $LOG_FILE"
 			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
 			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
-			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
 			logItem "Moving Msgfile: $MSG_FILE"
 			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
 			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
-			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
