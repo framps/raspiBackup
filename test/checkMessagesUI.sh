@@ -25,6 +25,8 @@
 
 echo "Searching for message constants not used..."
 
+messages=0
+
 grep -E '^.*=\$\(\(SCNT\+\+\)\)' ../installation/raspiBackupInstallUI.sh > messages.dat
 echo "" > msg.dat
 
@@ -33,6 +35,7 @@ while read line; do
 		name=${BASH_REMATCH[1]}
 	fi
     echo $name >> msg.dat
+    (( messages ++))
 done < messages.dat
 
 while read line; do
@@ -41,6 +44,8 @@ while read line; do
    	echo "$line: $cnt"
    fi
 done < msg.dat | uniq
+
+echo "Found messages: $messages"
 
 rm msg.dat
 rm messages.dat
