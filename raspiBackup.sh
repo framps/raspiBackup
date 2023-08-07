@@ -1911,10 +1911,13 @@ MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
-MSG_IMG_BOOT_FSCHECK_FAILED=290
+MSG_UNPROTECTED_PROPERTIESFILE=290
+MSG_EN[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Configuration file %s is unprotected."
+MSG_DE[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Konfigurationsdatei %s ist nicht geschützt."
+MSG_IMG_BOOT_FSCHECK_FAILED=291
 MSG_EN[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartition check failed with RC %s."
 MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartitioncheck endet fehlerhaft mit RC %s."
-MSG_IMG_BOOT_CHECK_STARTED=291
+MSG_IMG_BOOT_CHECK_STARTED=292
 MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartition check started."
 MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartitionscheck gestartet."
 MSG_NO_PARTUUID_SYNCHRONIZED=292
@@ -1929,6 +1932,7 @@ MSG_DE[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0293I: Kleiner Update von %s erfolgreich
 MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=295
 MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0295I: Current configuration version %s has to be be updated to %s."
 MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0295I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
+
 
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
@@ -2170,11 +2174,13 @@ function logFinish() {
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
+			logItem "Moving Logfile: $LOG_FILE"
 			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
 			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
 			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
+			logItem "Moving Msgfile: $MSG_FILE"
 			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
 			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
 			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
@@ -2248,12 +2254,16 @@ function callExtensions() { # extensionplugpoint rc
 
 		local extensions="$EXTENSIONS"
 		local xEnabled
-		
+
 		(( $RESTORE )) && extensions="$RESTORE_EXTENSIONS"
 
 		for extension in $extensions; do
 
-			local extensionFileName="${MYNAME}_${extension}_$1.sh"
+			if [[ $1 == $NOTIFICATION_BACKUP_EXTENSION ]]; then
+				local extensionFileName="${MYNAME}_${extension}.sh" # notification has no pre, post and ready
+			else
+				local extensionFileName="${MYNAME}_${extension}_$1.sh"
+			fi
 
 			if which $extensionFileName &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
@@ -4706,6 +4716,25 @@ function masqueradeNonlocalIPs() {
 	rm $f
 }
 
+function callNotificationExtension() { # rc
+		logEntry "$1"
+
+		local xEnabled=0
+		if [ -o xtrace ]; then	# disable xtrace
+			xEnabled=1
+			set +x
+		fi
+		callExtensions $NOTIFICATION_BACKUP_EXTENSION $1
+		local rc=$?
+		logItem "NotificationExtension rc: $rc"
+		if (( $xEnabled )); then	# enable xtrace again
+			set -x
+		fi
+
+		logExit $rc
+		return $rc
+}
+
 function cleanupStartup() { # trap
 
 	logEntry
@@ -4721,6 +4750,7 @@ function cleanupStartup() { # trap
 
 	cleanupTempFiles
 	
+
 	logFinish
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
@@ -4866,8 +4896,10 @@ function cleanup() { # trap
 					sendSlack "${EMOJI_OK} $msg" 0
 				fi
 			fi
+
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 			sendEMail "" "$msg"
+
 		fi # ! $RESTORE
 	fi
 
@@ -4877,9 +4909,11 @@ function cleanup() { # trap
 
 	logFinish
 
-	unLockMe
+	callNotificationExtension $rc
 
 	logExit
+
+	unLockMe
 
 	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
@@ -9551,8 +9585,12 @@ if (( $NOTIFY_START )); then
 		if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
 			sendSlack "$msg"
 		fi
+
+		callNotificationExtension $rc
+
 	fi
 fi
+
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"

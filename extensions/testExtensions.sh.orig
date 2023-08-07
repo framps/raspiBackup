@@ -24,8 +24,8 @@
 #
 #######################################################################################################################
 
-GIT_DATE="$Date$"
-GIT_COMMIT="$Sha1$"
+GIT_DATE="$Date: 2023-07-01 21:29:14 +0200$"
+GIT_COMMIT="$Sha1: 348c302$"
 
 if [[ -f ../raspiBackup.sh ]]; then
 	. ../raspiBackup.sh --include
@@ -40,8 +40,13 @@ fi
 . ./raspiBackup_mem_pre.sh
 . ./raspiBackup_mem_post.sh
 
+<<<<<<< HEAD
+. ./raspiBackup_temp_pre.sh
+. ./raspiBackup_temp_post.sh
+=======
 . raspiBackup_temp_pre.sh
 . raspiBackup_temp_post.sh
+>>>>>>> master_612
 SKIP
 
 . ./raspiBackup_sample_notify.sh 42
