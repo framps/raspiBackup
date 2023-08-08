@@ -45,18 +45,23 @@ MSG_DE[$MSG_EXT_SAMPLE_NOTIFICATION_UNPROTECTED_PROPERTYFILE]="RBK1002I: Ungesch
 
 logEntry
 
+# access raspiBackup return code
+rc="$1"
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "RC" "$rc"
+
 # Access log file"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "LOG_FILE" "$LOG_FILE"
+
 head -n 3 $LOG_FILE
 
 # Acces message file"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "MSG_FILE" "$MSG_FILE"
 tail -n 3 $MSG_FILE
 
-local startMsg="$(grep "RBK0009I" $MSG_FILE)"
+startMsg="$(grep "RBK0009I" $MSG_FILE)"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Startmessage" "$startMsg"
 
-local stopMsg="$(grep "RBK0010I" $MSG_FILE)"
+stopMsg="$(grep "RBK0010I" $MSG_FILE)"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Stopmessage" "$stopMsg"
 
 # access raspiBackup return code
@@ -67,10 +72,11 @@ writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "RC" "$1"
 # Example SAMPLE_NOTIFICATION_PWD="mySecretPassword"
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Config file:" "$NOTIFICATION_EXTENSION_CONFIG_FILE"
 
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Config file:" "$NOTIFICATION_EXTENSION_CONFIG_FILE"
+
 if [[ -f $NOTIFICATION_EXTENSION_CONFIG_FILE ]]; then
 # access an extension specific config file which may contain sensitive data
 # therefore test if it has mask 600
-	local attrs r
 	read attrs r <<< $(ls -la $NOTIFICATION_EXTENSION_CONFIG_FILE)
 	if [[ $attrs != "-rw-------" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION_UNPROTECTED_PROPERTYFILE "$CONFIG_DIR/raspiBackup_$NOTIFICATION_EXTENSION_NAME.conf"
