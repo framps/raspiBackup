@@ -6,7 +6,7 @@
 
 3. inspectSystem - Collects various system information
 
-4. isSuüpportedEnvironment - Checks whether the environment is supported by raspiBackup
+4. isSupportedEnvironment - Checks whether the environment is supported by raspiBackup
 
 5. raspiBackupDownloadFromGit.sh - Convenient helper to download latest code from raspiBackup repository and  any branch. Useful to quickly download any fix or enhancement provided in a dedicated branch.
 
