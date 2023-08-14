@@ -3670,7 +3670,7 @@ function supportsFileAttributes() {	# directory
 	local attrsT ownerT groupT
 	local result=1	# no
 
-	local MAXRETRY=3						# retries if first check fails
+	local MAXRETRY=3						# retries
 	local retryCount=$(( MAXRETRY + 1 ))
 
 	touch /tmp/$MYNAME.fileattributes &>>$LOG_FILE
@@ -3726,10 +3726,20 @@ function supportsHardlinks() {	# directory
 	local result=1 # no
 
 	touch /$1/$MYNAME.hlinkfile &>>$LOG_FILE
-	cp -l /$1/$MYNAME.hlinkfile /$1/$MYNAME.hlinklink &>>$LOG_FILE
-	links=$(ls -la /$1/$MYNAME.hlinkfile | cut -f 2 -d ' ')
-	logItem "Links: $links"
-	[[ $links == 2 ]] && result=0
+
+	local MAXRETRY=3						# retries
+	local retryCount=$(( MAXRETRY + 1 ))
+
+	while (( retryCount-- > 0 && result == 1 )); do
+		cp -l /$1/$MYNAME.hlinkfile /$1/$MYNAME.hlinklink &>>$LOG_FILE
+		links=$(ls -la /$1/$MYNAME.hlinkfile | cut -f 2 -d ' ')
+		logItem "Links: $links"
+		if (( $links == 2 )); then
+			result=0
+			break
+		fi
+	done
+
 	rm -f /$1/$MYNAME.hlinkfile &>/dev/null
 	rm -f /$1/$MYNAME.hlinklink &>/dev/null
 
