@@ -5271,7 +5271,7 @@ function bootPartitionBackup() {
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_COLLECT_PARTITIONINFO "sfdisk" "$rc"
 					exitError $RC_COLLECT_PARTITIONS_FAILED
 				fi
-				logCommand "$(cat "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk")"
+				logCommand "cat $BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
 
 				if (( $LINK_BOOTPARTITIONFILES )); then
 					createLinks "$BACKUPTARGET_ROOT" "sfdisk" "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.sfdisk"
