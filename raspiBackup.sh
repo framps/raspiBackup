@@ -3106,6 +3106,7 @@ function dynamic_mount() { # mountpoint
 
 	logEntry "$1"
 
+	local rc=0
 	if ! isMounted $1; then
 		mount "$1" &>> $LOG_FILE
 		rc=$?
@@ -5166,7 +5167,7 @@ function checkImportantParameters() {
 function createLinks() { # backuptargetroot extension newfile
 
 	logEntry "$1 $2 $3"
-	local file
+	local file rc
 
 	local possibleLinkTargetDirectory=$(ls -d $1/*-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
 
@@ -8980,6 +8981,7 @@ WARNING_MESSAGE_WRITTEN=0
 CLEANUP_RC=0
 UPDATE_CONFIG=0
 UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
+rc=0
 
 PARAMS=""
 

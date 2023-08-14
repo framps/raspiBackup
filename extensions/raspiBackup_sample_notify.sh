@@ -73,9 +73,10 @@ writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION "Config file:" "$
 
 if [[ -f $NOTIFICATION_EXTENSION_CONFIG_FILE ]]; then
 # access an extension specific config file which may contain sensitive data
-# therefore test if it has mask 600
-	read attrs r <<< $(ls -la $NOTIFICATION_EXTENSION_CONFIG_FILE)
-	if [[ $attrs != "-rw-------" ]]; then
+# therefore test if it has not any 077 bit set
+	attrs="$(stat -c %a $NOTIFICATION_EXTENSION_CONFIG_FILE)"
+	
+	if (( ( 0$attrs & 077 ) != 0 )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_SAMPLE_NOTIFICATION_UNPROTECTED_PROPERTYFILE "$NOTIFICATION_EXTENSION_CONFIG_FILE"
 		exitError $RC_EXTENSION_ERROR		 
 	fi
