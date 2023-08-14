@@ -5918,13 +5918,23 @@ function restore() {
 				sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
 				rc=$?
 				if (( $rc )); then
+					logItem "sfdisk first attempt fails with rc $rc"
+					if (( $rc == 1 )); then								# sector-size is new in bullseye and breaks restore with older OS
+						sed -i '/sector-size/d' "$MODIFIED_SFDISK"		# remove sector-size
+						logCommand "cat $MODIFIED_SFDISK"
+						sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+						rc=$?
+					fi
+				fi
+				rm $MODIFIED_SFDISK &>/dev/null
+				
+				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
 				fi
 
 				waitForPartitionDefsChanged
 
-				rm $MODIFIED_SFDISK &>/dev/null
 			fi
 
 			logItem "Targetpartitionlayout$NL$(fdisk -l $RESTORE_DEVICE)"
