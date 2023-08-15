@@ -8485,6 +8485,9 @@ function synchronizeCmdlineAndfstab() {
 	
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
+	partprobe $BOOT_PARTITION		# reload partition table
+	partprobe $ROOT_PARTITION		# reload partition table
+
 	logCommand "blkid -o udev $ROOT_PARTITION"
 
 	if [[ -f "$FSTAB" ]]; then
