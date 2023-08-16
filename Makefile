@@ -84,12 +84,12 @@ deploy: ## Deploy build
 
 	@$(foreach file, $(wildcard $(BUILD_LOCATION)/*), echo "Deploy $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 
-syncLocal: ## Sync github with local shadow git
+syncLocal: ## Sync github to local shadow git
 	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
 	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(GITHUB_REPO)/$(file) $(LOCAL_REPO)/$(file);)
 
-syncRemote: ## Sync local shadow git with github
+syncRemote: ## Sync local git to github
 	@$(foreach file, $(PACKAGE_FILES), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
 	@$(foreach file, $(wildcard $(PACKAGE_FILE_COLLECTIONS)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
 	@$(foreach file, $(wildcard $(PACKAGE_EXTENSION_FILES)), echo "Copying $(file) "; cp -a $(LOCAL_REPO)/$(file) $(GITHUB_REPO)/$(file) ;)
