@@ -423,6 +423,7 @@ RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 RC_EXTENSION_ERROR=141
+RC_UNPROTECTED_CONFIG=142
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -1922,15 +1923,9 @@ MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0292I: Bootpartitionscheck gestartet."
 MSG_NO_PARTUUID_SYNCHRONIZED=293
 MSG_EN[$MSG_NO_PARTUUID_SYNCHRONIZED]="RBK0293W: No PARTUUID updated in %s for %s. Backup may not boot correctly."
 MSG_DE[$MSG_NO_PARTUUID_SYNCHRONIZED]="RBK0293W: Es konnte keine PARTUUID in %s für %s erneuert werden. Das Backup könnte nicht starten."
-MSG_MINOR_UPDATE=294
-MSG_EN[$MSG_MINOR_UPDATE]="RBK0294I: There is a minor update of $MYNAME $VERSION available. Do you want to update $MYNAME?"
-MSG_DE[$MSG_MINOR_UPDATE]="RBK0294I: Es gibt einen kleinen Update von $MYNAME $VERSION. Soll $MYNAME updated werden?"
-MSG_SCRIPT_MINOR_UPDATE_OK=295
-MSG_EN[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0295I: Minor update of %s successfull"
-MSG_DE[$MSG_SCRIPT_MINOR_UPDATE_OK]="RBK0295I: Kleiner Update von %s erfolgreich."
-MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=296
-MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0296I: Current configuration version %s has to be be updated to %s."
-MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0296I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
+MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=294
+MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Current configuration version %s has to be be updated to %s."
+MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
 
 
 
@@ -3829,6 +3824,19 @@ function readConfigParameters() {
 	ETC_CONFIG_FILE="/usr/local/etc/${MYNAME}.conf"
 	HOME_CONFIG_FILE="$CALLING_HOME/.${MYNAME}.conf"
 	CURRENTDIR_CONFIG_FILE="$CURRENT_DIR/.${MYNAME}.conf"
+
+	local file
+	local files=($ETC_CONFIG_FILE $HOME_CONFIG_FILE $CURRENTDIR_CONFIG_FILE)
+
+	for file in ${files[@]}; do
+		if [[ -e $file ]]; then
+			local attrs="$(stat -c %a $file)"	
+			if (( ( 0$attrs & 077 ) != 0 )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE $file
+				exitError $RC_UNPROTECTED_CONFIG
+			fi
+		fi
+	done
 
 	# Override default parms with parms in global config file
 
