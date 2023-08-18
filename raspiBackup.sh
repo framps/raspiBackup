@@ -6761,6 +6761,9 @@ function inspect4Backup() {
 
 			# test whether boot device is mounted
 			local bootMountpoint="$(cmdLinePath)"
+			if [[ -z $bootMountpoint ]]; then	# enable non Raspbian Linux OS 
+				bootMountpoint="/boot"
+			fi
 			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 			logItem "$bootMountpoint mounted? $bootPartition"
 
