@@ -2264,20 +2264,20 @@ function callExtensions() { # extensionplugpoint rc
 
 				local extension_call=0
 
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"			
-				
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
+
 				if [[ ${extension} == $NOTIFICATION_BACKUP_EXTENSION  ]]; then
 					extensionCall=1
 				fi
-				
+
 				if (( extension_call )); then
 					xEnabled=0
 					if [ -o xtrace ]; then	# disable xtrace
 						xEnabled=1
 						set +x
-					fi			
-				fi				
-				
+					fi
+				fi
+
 				executeShellCommand ". $extensionFileName $2"
 				rc=$?
 				if (( extension_call )); then
@@ -2381,22 +2381,22 @@ function isUnsupportedVersion() {
 }
 
 function cmdLinePath() {
-	
+
 	logEntry
-	
+
 	local f="$(find /boot -name cmdline.txt)" # either /boot/cmdline.txt or /boot/firmware/cmdline.txt
 	logItem "cmdLinePath: $f"
-	
+
 	f="${f/\/cmdline.txt/}" 	# remove filename
 	echo "$f"
-	
+
 	logExit
 }
 
 function isSupportedEnvironment() {
 
 	logEntry
-	
+
 	if (( $REGRESSION_TEST )); then
 		logExit 0
 		return 0
@@ -2427,18 +2427,18 @@ function isSupportedEnvironment() {
 	logItem "$RPI_ISSUE not found"
 
 	if [[ ! -e $OS_RELEASE ]]; then
-		logItem "$OS_RELEASE not found" 
+		logItem "$OS_RELEASE not found"
 		logExit 1
 		return 1
 	fi
-	
+
 	logItem $(<$OS_RELEASE)
 	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OS_RELEASE
 	local rc=$?
-	
+
 	IS_UBUNTU=$(( ! $rc ))
 	logItem "IS_UBUNTU: $IS_UBUNTU"
-	
+
 	logExit $rc
 	return $rc
 
@@ -3830,7 +3830,7 @@ function readConfigParameters() {
 
 	for file in ${files[@]}; do
 		if [[ -e $file ]]; then
-			local attrs="$(stat -c %a $file)"	
+			local attrs="$(stat -c %a $file)"
 			if (( ( 0$attrs & 077 ) != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE $file
 				exitError $RC_UNPROTECTED_CONFIG
@@ -4744,7 +4744,7 @@ function cleanupStartup() { # trap
 	fi
 
 	cleanupTempFiles
-	
+
 
 	logFinish
 
@@ -5225,7 +5225,7 @@ function bootPartitionBackup() {
 				fi
 
 				if (( ! $TAR_BOOT_PARTITION_ENABLED )); then
-					if (( ! $REGRESSION_TEST )); then 
+					if (( ! $REGRESSION_TEST )); then
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_BOOT_CHECK_STARTED
 						local loopDev
 						loopDev="$(losetup -f)"
@@ -5923,7 +5923,7 @@ function restore() {
 					fi
 				fi
 				rm $MODIFIED_SFDISK &>/dev/null
-				
+
 				if (( $rc )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
 					exitError $RC_CREATE_PARTITIONS_FAILED
@@ -6761,7 +6761,7 @@ function inspect4Backup() {
 
 			# test whether boot device is mounted
 			local bootMountpoint="$(cmdLinePath)"
-			if [[ -z $bootMountpoint ]]; then	# enable non Raspbian Linux OS 
+			if [[ -z $bootMountpoint ]]; then	# enable non Raspbian Linux OS
 				bootMountpoint="/boot"
 			fi
 			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
@@ -8302,7 +8302,7 @@ function updateConfig() {
 		return
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"	
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 
 	local lang=${LANGUAGE,,}
 	eval "DL_URL=$CONFIG_URL"
@@ -8330,7 +8330,7 @@ function updateConfig() {
 
 	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 	cr=$?
-	
+
 	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
 		logItem "Config update version in script: $VERSION_SCRIPT_CONFIG - Current config version : $etcConfigFileVersion"
 
@@ -8402,7 +8402,7 @@ function updateConfig() {
 			fi
 
 			local r
-			grep "^$KW=" "$NEW_CONFIG"					# check if it's still the new config file
+			grep -q "^$KW=" "$NEW_CONFIG"					# check if it's still the new config file
 			r=$?
 			logItem "grep old file for deleted $KW rc:$r - contents: $OC_line"
 			if (( $r )) && [[ $KW != "UUID" ]]; then				# option not found, it was deleted
@@ -8473,12 +8473,12 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup 
+	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
 	local cmdline="$(cmdLinePath)/cmdline.txt" # path for message
 	local fstab="/etc/fstab" # path for message
-	
+
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
 	partprobe $BOOT_PARTITION		# reload partition table
