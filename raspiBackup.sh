@@ -8410,6 +8410,7 @@ function updateConfig() {
 				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
 				echo "# $line" >> $MERGED_CONFIG						# insert deleted config line as comment
 				(( deleted ++ ))
+				set +x
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DELETED_CONFIG_OPTION "$KW" "$VAL"
 			fi
 		fi
