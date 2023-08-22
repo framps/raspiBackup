@@ -3466,7 +3466,7 @@ function updateScript() {
 
 		local betaVersion=$(isBetaAvailable)
 
-		if [[ -n $betaVersion ]]; then
+		if (( ! $FORCE_UPDATE )) && [[ -n $betaVersion ]]; then
 			if [[ "${betaVersion}-beta" > $oldVersion ]]; then 			# beta version available
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
 				if askYesNo; then
