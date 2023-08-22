@@ -3558,8 +3558,8 @@ function updateScript() {
 
 		local betaVersion=$(isBetaAvailable)
 
-		if (( ! $FORCE_UPDATE )) && [[ -n $betaVersion ]]; then
-			if [[ "${betaVersion}-beta" > $oldVersion ]]; then 			# beta version available
+		if [[ -n $betaVersion ]]; then
+			if (( ! $FORCE_UPDATE )) && [[ "${betaVersion}-beta" > $oldVersion ]]; then 			# beta version available
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
 				if askYesNo; then
 					DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
@@ -3616,18 +3616,22 @@ function updateScript() {
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
 			logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
 		else
-			rm $tmpFile &>/dev/null
-			if [[ $rc == 1 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
-			elif [[ $rc == 2 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_REQUIRED "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion"
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
+			rm $MYSELF~ &>/dev/null
+			if (( $updateNow )); then
+				if [[ $rc == 1 ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
+				elif [[ $rc == 2 ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_REQUIRED "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
+				fi
 			fi
 		fi
 	fi
 
-	logExit
+	logExit $updateNow
+
+	return $updateNow
 
 }
 
@@ -9537,7 +9541,9 @@ fi
 if (( $UPDATE_MYSELF )); then
 	downloadPropertiesFile FORCE
 	updateScript
-	updateConfig
+	if (( $? )); then
+		updateConfig
+	fi
 	exitNormal
 fi
 
