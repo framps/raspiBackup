@@ -5073,7 +5073,6 @@ function bootPartitionBackup() {
 				fi
 
 				if (( ! $TAR_BOOT_PARTITION_ENABLED )); then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_BOOT_CHECK_STARTED
 					local loopDev
 					loopDev="$(losetup -f)"
 					logItem "Loop device: $loopDev"
@@ -5083,6 +5082,7 @@ function bootPartitionBackup() {
 						losetup -d $loopDev &>>$LOG_FILE
 						logItem "Mount of boot partition backup file failed with rc $rc" # silently ignore error
 					else
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_BOOT_CHECK_STARTED
 						fsck -fp $loopDev &>>$LOG_FILE
 						rc=$?
 						losetup -d $loopDev &>>$LOG_FILE
