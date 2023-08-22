@@ -5225,8 +5225,6 @@ function bootPartitionBackup() {
 				fi
 
 				if (( ! $TAR_BOOT_PARTITION_ENABLED )); then
-					if (( ! $REGRESSION_TEST )); then
-						writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_BOOT_CHECK_STARTED
 						local loopDev
 						loopDev="$(losetup -f)"
 						logItem "Loop device: $loopDev"
@@ -5234,14 +5232,16 @@ function bootPartitionBackup() {
 						rc=$?
 						if (( $rc != 0 )); then
 							losetup -d $loopDev &>>$LOG_FILE
-							assertionFailed $LINENO "Mount of boot partition backup file failed with rc $rc"
-						fi
-						fsck -fp $loopDev &>>$LOG_FILE
-						rc=$?
-						losetup -d $loopDev &>>$LOG_FILE
-						if (( $rc > 1 )); then
-							writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_FSCHECK_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
-							exitError $RC_DD_IMG_FAILED
+							logItem "Mount of boot partition backup file failed with rc $rc" # silently ignore losetup error
+						else
+							writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_BOOT_CHECK_STARTED
+							fsck -fp $loopDev &>>$LOG_FILE
+							rc=$?
+							losetup -d $loopDev &>>$LOG_FILE
+							if (( $rc > 1 )); then
+								writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_FSCHECK_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
+								exitError $RC_DD_IMG_FAILED
+							fi
 						fi
 					fi
 				fi
