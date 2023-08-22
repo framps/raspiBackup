@@ -5081,14 +5081,15 @@ function bootPartitionBackup() {
 					rc=$?
 					if (( $rc != 0 )); then
 						losetup -d $loopDev &>>$LOG_FILE
-						assertionFailed $LINENO "Mount of boot partition backup file failed with rc $rc"
-					fi
-					fsck -fp $loopDev &>>$LOG_FILE
-					rc=$?
-					losetup -d $loopDev &>>$LOG_FILE
-					if (( $rc > 1 )); then
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_FSCHECK_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
-						exitError $RC_DD_IMG_FAILED
+						logItem "Mount of boot partition backup file failed with rc $rc" # silently ignore error
+					else
+						fsck -fp $loopDev &>>$LOG_FILE
+						rc=$?
+						losetup -d $loopDev &>>$LOG_FILE
+						if (( $rc > 1 )); then
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_FSCHECK_FAILED "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" "$rc"
+							exitError $RC_DD_IMG_FAILED
+						fi
 					fi
 				fi
 
