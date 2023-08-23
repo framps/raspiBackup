@@ -74,6 +74,7 @@ MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OS_RELEASE=/etc/os-release
 
 GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
@@ -103,9 +104,11 @@ MASQUERADE_STRING="@@@@"
 PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
 BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
+DESKTOP_FILE_NAME="$MYNAME.desktop"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
+ICON_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.png"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
@@ -189,6 +192,8 @@ BIN_DIR="/usr/local/bin"
 ETC_DIR="/usr/local/etc"
 CRON_DIR="/etc/cron.d"
 LOG_FILE="$MYNAME.log"
+DESKTOP_DIR="~/Desktop"
+ICON_DIR="~/.icons"
 
 CONFIG_FILE_ABS_PATH="$ETC_DIR"
 CONFIG_ABS_FILE="$CONFIG_FILE_ABS_PATH/$CONFIG_FILE"
@@ -1740,6 +1745,67 @@ function code_download_execute() {
 		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
 		logExit
 		return
+	fi
+
+	# check whether desktop is available
+
+	if find /usr/bin/*session >> $LOG_FILE; then
+
+		logItem "Detected desktop environment"
+
+		# install icon
+		
+		FILE_TO_INSTALL="$ICON_DOWNLOAD_URL"
+		FILE_TO_INSTALL_ABS_FILE="$ICON_DIR"
+		if [[ ! -d "$ICON_DIR" ]]; then
+			mkdir -p "$ICON_DIR" >> $LOG_FILE
+			if (( 1 $? )); then
+				local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
+				if (( $? )); then
+					unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
+					logExit
+					return
+				fi
+				if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
+					unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+					logExit
+					return
+				fi
+			fi
+		fi
+
+		# install desktop file
+
+		local DESKTOP_EXEC_CMD=""
+		(( ! IS_UBUNTU )) && DESKTOP_EXEC_CMD="lxterminal -e "
+
+		read -r -d '' DESKTOP_CONTENTS <<-EOF
+[Desktop Entry]
+Type=Application
+Name=raspiBackup
+Comment=raspiBackup Installer
+Encoding=UTF-8
+Type=Application
+Terminal=true
+Icon=/home/$USER/.icons/raspiBackup.png
+Exec=${DESKTOP_EXEC_CMD}sudo /usr/local/bin/raspiBackupInstallUI.sh
+# ubuntu 
+#Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
+#Icon=/home/ubuntu/.icons/raspiBackupIcon.png
+# RaspbianOS
+#Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
+#Icon=/home/pi/.icons/raspiBackup.png
+EOF
+
+		mkdir -p "$DESKTOP_DIR" >> $LOG_FILE
+		if (( 1 $? )); then
+			echo $DESKTOP_CONTENTS > "$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+			if (( 1 $? )); then
+				unrecoverableError $MSG_MOVE_FAILED "$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+				logExit
+				return
+			fi
+		fi
 	fi
 
 	SCRIPT_INSTALLED=1
@@ -3874,7 +3940,7 @@ function install_do() {
 		fi
 	fi
 	INSTALLATION_STARTED=1
-	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
+	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." " ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
 	progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
 	INSTALLATION_SUCCESSFULL=1
 
@@ -4577,6 +4643,11 @@ logItem "$sep"
 logItem "whiptail version: $(whiptail -v)"
 
 checkRequiredDirectories
+
+logItem "$(<$OS_RELEASE)"
+grep -q -E -i "^(NAME|ID)=.*ubuntu" $OS_RELEASE
+IS_UBUNTU=$(( ! $? ))
+logItem "IS_UBUNTU: $IS_UBUNTU"
 
 if (( $MODE_UNATTENDED )); then
 	unattendedInstall
