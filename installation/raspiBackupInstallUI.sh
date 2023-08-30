@@ -334,6 +334,11 @@ MSG_FI[$MSG_CLEANUP]="${MSG_PRF}0008I: Puhdistetaan..."
 MSG_FR[$MSG_CLEANUP]="${MSG_PRF}0008I: Nettoyer..."
 MSG_ZH[$MSG_CLEANUP]="${MSG_PRF}0008I: 正在清理..."
 
+# new message without NLS support
+MSG_MKDIR_FAILED=$((SCNT++))
+MSG_EN[$MSG_MKDIR_FAILED]="${MSG_PRF}0009E: mkdir of %1 failed."
+MSG_DE[$MSG_MKDIR_FAILED]="${MSG_PRF}0009E: mkdir von %1 nicht möglich."
+
 MSG_INSTALLATION_FINISHED=$((SCNT++))
 MSG_EN[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation of %1 finished successfully."
 MSG_DE[$MSG_INSTALLATION_FINISHED]="${MSG_PRF}0009I: Installation von %1 erfolgreich beendet."
@@ -1759,19 +1764,23 @@ function code_download_execute() {
 		FILE_TO_INSTALL_ABS_FILE="$ICON_DIR"
 		if [[ ! -d "$ICON_DIR" ]]; then
 			mkdir -p "$ICON_DIR" >> $LOG_FILE
-			if (( 1 $? )); then
-				local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
-				if (( $? )); then
-					unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
-					logExit
-					return
-				fi
-				if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
-					unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-					logExit
-					return
-				fi
+			if (( $? )); then
+				unrecoverableError $MSG_MKDIR_FAILED "$ICON_DIR"
+				logExit
+				return
 			fi
+		fi
+			
+		local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
+		if (( $? )); then
+			unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
+			logExit
+			return
+		fi
+		if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+			logExit
+			return
 		fi
 
 		# install desktop file
@@ -1798,14 +1807,12 @@ Exec=${DESKTOP_EXEC_CMD}sudo /usr/local/bin/raspiBackupInstallUI.sh
 EOF
 
 		mkdir -p "$DESKTOP_DIR" >> $LOG_FILE
-		if (( 1 $? )); then
-			echo $DESKTOP_CONTENTS > "$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-			if (( 1 $? )); then
-				unrecoverableError $MSG_MOVE_FAILED "$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-				logExit
-				return
-			fi
+		if (( $? )); then
+			unrecoverableError $MSG_MKDIR_FAILED "$DESKTOP_DIR"
+			logExit
+			return
 		fi
+		echo $DESKTOP_CONTENTS > "$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 	fi
 
 	SCRIPT_INSTALLED=1
