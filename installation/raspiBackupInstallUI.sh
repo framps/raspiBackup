@@ -38,7 +38,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.5"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.6"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -105,10 +105,11 @@ PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
 BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 DESKTOP_FILE_NAME="$MYNAME.desktop"
+ICON_FILE_NAME="$MYNAME.png"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
-ICON_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.png"
+ICON_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/$ICON_FILE_NAME"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
@@ -192,8 +193,8 @@ BIN_DIR="/usr/local/bin"
 ETC_DIR="/usr/local/etc"
 CRON_DIR="/etc/cron.d"
 LOG_FILE="$MYNAME.log"
-DESKTOP_DIR="~/Desktop"
-ICON_DIR="~/.icons"
+DESKTOP_DIR="Desktop"
+ICON_DIR=".icons"
 
 CONFIG_FILE_ABS_PATH="$ETC_DIR"
 CONFIG_ABS_FILE="$CONFIG_FILE_ABS_PATH/$CONFIG_FILE"
@@ -1535,6 +1536,20 @@ function checkRequiredDirectories() {
 	done
 }
 
+function findUser() {
+
+	local u
+
+	if [[ -n "$SUDO_USER" ]]; then
+		u="$SUDO_USER"
+	else
+		u="$USER"
+	fi
+
+	echo "$u"
+
+}
+
 # Create message and substitute parameters
 
 function getMessageText() { # messagenumber parm1 parm2 ...
@@ -1752,36 +1767,69 @@ function code_download_execute() {
 		return
 	fi
 
+	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
+
+	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
+		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+		logExit
+		return
+	fi
+
+	if ! createSymLink "$FILE_TO_INSTALL_ABS_FILE"; then
+		logExit
+		return
+	fi
+
+	SCRIPT_INSTALLED=1
+
 	# check whether desktop is available
 
 	if find /usr/bin/*session >> $LOG_FILE; then
 
-		logItem "Detected desktop environment"
+		local os="RaspbianOS"
+		(( IS_UBUNTU )) && os="Ubuntu"
+
+		local CALLING_USER="$(findUser)"
+		local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
+
+		logItem "Detected desktop environment $os"
 
 		# install icon
+
+		logItem "Creating icon dir"
 		
-		FILE_TO_INSTALL="$ICON_DOWNLOAD_URL"
-		FILE_TO_INSTALL_ABS_FILE="$ICON_DIR"
-		if [[ ! -d "$ICON_DIR" ]]; then
-			mkdir -p "$ICON_DIR" >> $LOG_FILE
+		FILE_TO_INSTALL="$ICON_FILE_NAME"
+		FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
+		if [[ ! -d "$CALLING_HOME/$ICON_DIR" ]]; then
+			mkdir -p "$CALLING_HOME/$ICON_DIR" >> $LOG_FILE
 			if (( $? )); then
-				unrecoverableError $MSG_MKDIR_FAILED "$ICON_DIR"
+				unrecoverableError $MSG_MKDIR_FAILED "$CALLING_HOME/$ICON_DIR"
 				logExit
 				return
 			fi
+			chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$ICON_DIR" # make sure file is owned by caller
 		fi
-			
+
+		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
+
 		local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
 		if (( $? )); then
 			unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
 			logExit
 			return
 		fi
+
+		logItem "mv icon into dir"
+
 		if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+			unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL"
 			logExit
 			return
 		fi
+		chown "$CALLING_USER:$CALLING_USER" "$FILE_TO_INSTALL_ABS_FILE" # make sure file is owned by caller
+		chmod 755 "$FILE_TO_INSTALL_ABS_FILE"
+
+		writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
 
 		# install desktop file
 
@@ -1794,40 +1842,38 @@ Type=Application
 Name=raspiBackup
 Comment=raspiBackup Installer
 Encoding=UTF-8
-Type=Application
 Terminal=true
-Icon=/home/$USER/.icons/raspiBackup.png
-Exec=${DESKTOP_EXEC_CMD}sudo /usr/local/bin/raspiBackupInstallUI.sh
-# ubuntu 
-#Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
-#Icon=/home/ubuntu/.icons/raspiBackupIcon.png
-# RaspbianOS
-#Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
-#Icon=/home/pi/.icons/raspiBackup.png
+Icon=$CALLING_HOME/.icons/$MYNAME.png
+Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
+# --- ubuntu 
+# Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
+# --- RaspbianOS
+# Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/pi/.icons/raspiBackupInstallUI.png
 EOF
 
-		mkdir -p "$DESKTOP_DIR" >> $LOG_FILE
-		if (( $? )); then
-			unrecoverableError $MSG_MKDIR_FAILED "$DESKTOP_DIR"
-			logExit
-			return
+		logItem "Make desktop dir"
+
+		if [[ ! -d "$CALLING_HOME/$DESKTOP_DIR" ]]; then
+			mkdir -p "$CALLING_HOME/$DESKTOP_DIR" >> $LOG_FILE
+			if (( $? )); then
+				unrecoverableError $MSG_MKDIR_FAILED "$CALLING_HOME/$DESKTOP_DIR"
+				logExit
+				return
+			fi
+			chown "$CALLING_USER:$CALLING_USER" "CALLING_HOME/$DESKTOP_DIR" # make sure file is owned by caller
 		fi
-		echo $DESKTOP_CONTENTS > "$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-	fi
 
-	SCRIPT_INSTALLED=1
+		logItem "Create desktop file"
 
-	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
+		echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
-	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
-		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		logExit
-		return
-	fi
+		chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" # make sure file is owned by caller
+		chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
-	if ! createSymLink "$FILE_TO_INSTALL_ABS_FILE"; then
-		logExit
-		return
+		writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+
 	fi
 
 	if [[ -e "$MYDIR/$MYSELF" && "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
@@ -2256,7 +2302,6 @@ function config_update_execute() {
 	logItem "eMail: $CONFIG_EMAIL"
 	logItem "mailProgram: $CONFIG_MAIL_PROGRAM"
 	logItem "Resize: $CONFIG_RESIZE_ROOTFS"
-
 	sed -i -E "s/^(#?\s?)?DEFAULT_LANGUAGE=.*\$/DEFAULT_LANGUAGE=\"$CONFIG_LANGUAGE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONBASED_BACKUP=.*\$/DEFAULT_PARTITIONBASED_BACKUP=\"$CONFIG_PARTITIONBASED_BACKUP\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONS_TO_BACKUP=.*\$/DEFAULT_PARTITIONS_TO_BACKUP=\"$CONFIG_PARTITIONS_TO_BACKUP\"/" "$CONFIG_ABS_FILE"
