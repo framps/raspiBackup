@@ -38,7 +38,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.6"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.6-beta"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -1733,6 +1733,139 @@ function deleteSymLink() { # delete link from /usr/local/bin/<filename> to /usr/
 	rm -f $linkName &>/dev/null
 }
 
+function icon_uninstall_execute() {
+
+	logEntry
+	
+	local CALLING_USER="$(findUser)"
+	local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
+
+	if [[ -e "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
+		if ! rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" 2>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
+			logExit
+			return
+		fi
+	fi
+
+	if [[ -e "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+		if ! rm -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" 2>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+			logExit
+			return
+		fi
+	fi
+
+	logExit
+}
+
+
+function icon_uninstall_do() {
+
+	logItem "Detected desktop environment $os"
+
+	UPDATE_DESCRIPTION=("Deleting $RASPIBACKUP_NAME desktop icon ...")
+	progressbar_do "UPDATE_DESCRIPTION" "Deleting desktop icon" icon_uninstall_execute
+
+}
+
+function icon_download_execute() {
+
+	logEntry
+
+	local os="RaspbianOS"
+	(( IS_UBUNTU )) && os="Ubuntu"
+
+	local CALLING_USER="$(findUser)"
+	local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
+
+	logItem "Detected desktop environment $os"
+
+	# install icon
+
+	logItem "Creating icon dir"
+	
+	FILE_TO_INSTALL="$ICON_FILE_NAME"
+	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
+	if [[ ! -d "$CALLING_HOME/$ICON_DIR" ]]; then
+		mkdir -p "$CALLING_HOME/$ICON_DIR" >> $LOG_FILE
+		if (( $? )); then
+			unrecoverableError $MSG_MKDIR_FAILED "$CALLING_HOME/$ICON_DIR"
+			logExit
+			return
+		fi
+		chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$ICON_DIR" # make sure file is owned by caller
+	fi
+
+	writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
+
+	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
+	if (( $? )); then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
+		logExit
+		return
+	fi
+
+	logItem "mv icon into dir"
+
+	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL"
+		logExit
+		return
+	fi
+	chown "$CALLING_USER:$CALLING_USER" "$FILE_TO_INSTALL_ABS_FILE" # make sure file is owned by caller
+	chmod 755 "$FILE_TO_INSTALL_ABS_FILE"
+
+	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
+
+	# install desktop file
+
+	local DESKTOP_EXEC_CMD=""
+	(( ! IS_UBUNTU )) && DESKTOP_EXEC_CMD="lxterminal -e "
+
+	read -r -d '' DESKTOP_CONTENTS <<-EOF
+[Desktop Entry]
+Type=Application
+Name=raspiBackup
+Comment=raspiBackup Installer
+Encoding=UTF-8
+Terminal=true
+Icon=$CALLING_HOME/.icons/$MYNAME.png
+Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
+# --- ubuntu 
+# Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
+# --- RaspbianOS
+# Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/pi/.icons/raspiBackupInstallUI.png
+EOF
+
+	logItem "Make desktop dir"
+
+	if [[ ! -d "$CALLING_HOME/$DESKTOP_DIR" ]]; then
+		mkdir -p "$CALLING_HOME/$DESKTOP_DIR" >> $LOG_FILE
+		if (( $? )); then
+			unrecoverableError $MSG_MKDIR_FAILED "$CALLING_HOME/$DESKTOP_DIR"
+			logExit
+			return
+		fi
+		chown "$CALLING_USER:$CALLING_USER" "CALLING_HOME/$DESKTOP_DIR" # make sure file is owned by caller
+	fi
+
+	logItem "Create desktop file"
+
+	echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+
+	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" # make sure file is owned by caller
+	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+
+	writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+
+	logExit
+}
+
 function code_download_execute() {
 
 	logEntry
@@ -1781,100 +1914,6 @@ function code_download_execute() {
 	fi
 
 	SCRIPT_INSTALLED=1
-
-	# check whether desktop is available
-
-	if find /usr/bin/*session >> $LOG_FILE; then
-
-		local os="RaspbianOS"
-		(( IS_UBUNTU )) && os="Ubuntu"
-
-		local CALLING_USER="$(findUser)"
-		local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
-
-		logItem "Detected desktop environment $os"
-
-		# install icon
-
-		logItem "Creating icon dir"
-		
-		FILE_TO_INSTALL="$ICON_FILE_NAME"
-		FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
-		if [[ ! -d "$CALLING_HOME/$ICON_DIR" ]]; then
-			mkdir -p "$CALLING_HOME/$ICON_DIR" >> $LOG_FILE
-			if (( $? )); then
-				unrecoverableError $MSG_MKDIR_FAILED "$CALLING_HOME/$ICON_DIR"
-				logExit
-				return
-			fi
-			chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$ICON_DIR" # make sure file is owned by caller
-		fi
-
-		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
-
-		local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
-		if (( $? )); then
-			unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
-			logExit
-			return
-		fi
-
-		logItem "mv icon into dir"
-
-		if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL"
-			logExit
-			return
-		fi
-		chown "$CALLING_USER:$CALLING_USER" "$FILE_TO_INSTALL_ABS_FILE" # make sure file is owned by caller
-		chmod 755 "$FILE_TO_INSTALL_ABS_FILE"
-
-		writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
-
-		# install desktop file
-
-		local DESKTOP_EXEC_CMD=""
-		(( ! IS_UBUNTU )) && DESKTOP_EXEC_CMD="lxterminal -e "
-
-		read -r -d '' DESKTOP_CONTENTS <<-EOF
-[Desktop Entry]
-Type=Application
-Name=raspiBackup
-Comment=raspiBackup Installer
-Encoding=UTF-8
-Terminal=true
-Icon=$CALLING_HOME/.icons/$MYNAME.png
-Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
-# --- ubuntu 
-# Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
-# Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
-# --- RaspbianOS
-# Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
-# Icon=/home/pi/.icons/raspiBackupInstallUI.png
-EOF
-
-		logItem "Make desktop dir"
-
-		if [[ ! -d "$CALLING_HOME/$DESKTOP_DIR" ]]; then
-			mkdir -p "$CALLING_HOME/$DESKTOP_DIR" >> $LOG_FILE
-			if (( $? )); then
-				unrecoverableError $MSG_MKDIR_FAILED "$CALLING_HOME/$DESKTOP_DIR"
-				logExit
-				return
-			fi
-			chown "$CALLING_USER:$CALLING_USER" "CALLING_HOME/$DESKTOP_DIR" # make sure file is owned by caller
-		fi
-
-		logItem "Create desktop file"
-
-		echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-
-		chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" # make sure file is owned by caller
-		chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-
-		writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-
-	fi
 
 	if [[ -e "$MYDIR/$MYSELF" && "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
 		if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
@@ -3755,8 +3794,8 @@ function uninstall_do() {
 		return
 	fi
 
-	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
-	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute
+	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting $RASPIBACKUP_NAME desktop icon ..." "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
+	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute icon_uninstall_do misc_uninstall_execute uninstall_script_execute uninstall_execute
 
 	logExit
 
@@ -3992,8 +4031,15 @@ function install_do() {
 		fi
 	fi
 	INSTALLATION_STARTED=1
-	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." " ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
-	progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
+
+	# check whether desktop is available
+	if find /usr/bin/*session >> $LOG_FILE; then
+		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." " ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ..." "Creating $RASPIBACKUP_NAME desktop icon ...")
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute icon_download_execute
+	else
+		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." " ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
+	fi
 	INSTALLATION_SUCCESSFULL=1
 
 	logExit
@@ -4589,6 +4635,7 @@ function unattendedInstall() {
 		code_download_execute
 		config_download_execute
 		config_update_execute
+		icon_download_execute
 		if (( MODE_EXTENSIONS )); then
 			extensions_install_execute
 		fi
@@ -4601,6 +4648,7 @@ function unattendedInstall() {
 		extensions_uninstall_execute
 		cron_uninstall_execute
 		config_uninstall_execute
+		icon_uninstall_execute
 		uninstall_script_execute
 		uninstall_execute
 	fi
