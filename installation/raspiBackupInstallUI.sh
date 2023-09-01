@@ -1692,6 +1692,10 @@ function isCrontabEnabled() {
 	return $CRONTAB_ENABLED
 }
 
+function isDesktopEnvironment() {
+	find /usr/bin/*session >> $LOG_FILE
+}
+
 function isCrontabInstalled() {
 	[[ -f $CRON_ABS_FILE ]]
 	return
@@ -1735,41 +1739,20 @@ function deleteSymLink() { # delete link from /usr/local/bin/<filename> to /usr/
 
 function icon_uninstall_execute() {
 
-	logEntry
-	
 	local CALLING_USER="$(findUser)"
 	local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
 
-	if [[ -e "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" ]]; then
+	if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" ]]; then
 		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
-		if ! rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" 2>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
-			logExit
-			return
-		fi
+		rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" 2>>"$LOG_FILE"
 	fi
 
-	if [[ -e "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" ]]; then
+	if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" ]]; then
 		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-		if ! rm -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" 2>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-			logExit
-			return
-		fi
+		rm -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" 2>>"$LOG_FILE"
 	fi
-
-	logExit
 }
 
-
-function icon_uninstall_do() {
-
-	logItem "Detected desktop environment $os"
-
-	UPDATE_DESCRIPTION=("Deleting $RASPIBACKUP_NAME desktop icon ...")
-	progressbar_do "UPDATE_DESCRIPTION" "Deleting desktop icon" icon_uninstall_execute
-
-}
 
 function icon_download_execute() {
 
@@ -2145,10 +2128,7 @@ function extensions_install_execute() {
 		return
 	fi
 
-	if ! rm -f "$SAMPLEEXTENSION_TAR_FILE" 2>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$SAMPLEEXTENSION_TAR_FILE"
-		return
-	fi
+	rm -f "$SAMPLEEXTENSION_TAR_FILE" 2>>"$LOG_FILE"
 
 	sed -i -E "s/^(#?\s?)?DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_ABS_FILE
 
@@ -2187,10 +2167,7 @@ function extensions_uninstall_execute() {
 	local extensions="mem temp disk"
 
 	if ls $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh >&/dev/null; then
-		if ! rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_SAMPLEEXTENSION_UNINSTALL_FAILED "rm extensions"
-			return
-		fi
+		rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"
 		writeToConsole $MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS
 	fi
 
@@ -2443,10 +2420,7 @@ function cron_uninstall_execute() {
 
 	if [[ -e "$CRON_ABS_FILE" ]]; then
 		writeToConsole $MSG_UNINSTALLING_CRON_TEMPLATE "$CRON_ABS_FILE"
-		if ! rm -f "$CRON_ABS_FILE" 2>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$CRON_ABS_FILE"
-			return
-		fi
+		rm -f "$CRON_ABS_FILE" 2>>"$LOG_FILE"
 	fi
 	CRON_INSTALLED=0
 	logExit
@@ -2462,10 +2436,7 @@ function config_uninstall_execute() {
 	local pre=${CONFIG_ABS_FILE%%.*}
 	if ls $pre* &>/dev/null; then
 		writeToConsole $MSG_DELETE_FILE "$pre*"
-		if ! rm -f $pre* &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$pre*"
-			return
-		fi
+		rm -f $pre* &>>"$LOG_FILE"
 	fi
 	logExit
 }
@@ -2477,25 +2448,16 @@ function misc_uninstall_execute() {
 	# tmp files
 	if ls /tmp/$RASPIBACKUP_NAME* &>/dev/null; then
 		writeToConsole $MSG_DELETE_FILE "/tmp/$RASPIBACKUP_NAME*"
-		if ! rm -f /tmp/$RASPIBACKUP_NAME* &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "/tmp/$RASPIBACKUP_NAME*"
-			return
-		fi
+		rm -f /tmp/$RASPIBACKUP_NAME* &>>"$LOG_FILE"
 	fi
 
 	# reminder status file
 	if ls $VAR_LIB_DIRECTORY/* &>/dev/null; then
 		writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY/*"
-		if ! rm -f $VAR_LIB_DIRECTORY/* &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY/*"
-			return
-		fi
+		rm -f $VAR_LIB_DIRECTORY/* &>>"$LOG_FILE"
 		if [[ -d $VAR_LIB_DIRECTORY ]]; then
 			writeToConsole $MSG_DELETE_FILE "$VAR_LIB_DIRECTORY"
-			if ! rmdir $VAR_LIB_DIRECTORY &>>"$LOG_FILE"; then
-				unrecoverableError $MSG_UNINSTALL_FAILED "$VAR_LIB_DIRECTORY"
-				return
-			fi
+			rmdir $VAR_LIB_DIRECTORY &>>"$LOG_FILE"
 		fi
 	fi
 	logExit
@@ -2510,17 +2472,11 @@ function uninstall_script_execute() {
 
 	if ls $pre.$post* &>/dev/null; then
 		writeToConsole $MSG_DELETE_FILE "$pre.$post*"
-		if ! rm -f $pre.$post* 2>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$pre.$post*"
-			return
-		fi
+		rm -f $pre.$post* 2>>"$LOG_FILE"
 	fi
 	if [[ -e "$FILE_TO_INSTALL_ABS_FILE" ]]; then
 		writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_FILE"
-		if ! rm -f "$FILE_TO_INSTALL_ABS_FILE" 2>>$LOG_FILE; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-			return
-		fi
+		rm -f "$FILE_TO_INSTALL_ABS_FILE" 2>>$LOG_FILE
 	fi
 
 	deleteSymLink "$FILE_TO_INSTALL_ABS_FILE"
@@ -2535,10 +2491,8 @@ function uninstall_execute() {
 
 	if [[ -e "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
 		writeToConsole $MSG_DELETE_FILE "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		if ! rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-			return
-		fi
+		rm -f "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" 2>>$LOG_FILE
+
 		deleteSymLink "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
 
 		if [[ -f "$LATEST_TEMP_PROPERTY_FILE" ]]; then
@@ -3794,9 +3748,9 @@ function uninstall_do() {
 		return
 	fi
 
-	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting $RASPIBACKUP_NAME desktop icon ..." "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
-	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute icon_uninstall_do misc_uninstall_execute uninstall_script_execute uninstall_execute
-
+	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME desktop icon ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..." "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
+	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" icon_uninstall_execute extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute
+	
 	logExit
 
 }
@@ -4032,14 +3986,8 @@ function install_do() {
 	fi
 	INSTALLATION_STARTED=1
 
-	# check whether desktop is available
-	if find /usr/bin/*session >> $LOG_FILE; then
-		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." " ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ..." "Creating $RASPIBACKUP_NAME desktop icon ...")
-		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute icon_download_execute
-	else
-		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." " ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
-		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
-	fi
+	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ..." "Creating $RASPIBACKUP_NAME desktop icon ...")
+	progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute icon_download_execute
 	INSTALLATION_SUCCESSFULL=1
 
 	logExit
