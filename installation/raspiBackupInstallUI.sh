@@ -1825,8 +1825,6 @@ Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
 # Icon=/home/pi/.icons/raspiBackupInstallUI.png
 EOF
 
-	logItem "Make desktop dir"
-
 	if [[ ! -d "$CALLING_HOME/$DESKTOP_DIR" ]]; then
 		mkdir -p "$CALLING_HOME/$DESKTOP_DIR" >> $LOG_FILE
 		if (( $? )); then
@@ -1842,6 +1840,15 @@ EOF
 	echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
 	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" # make sure file is owned by caller
+
+	set -x
+	if (( IS_UBUNTU )) && isDesktopEnvironment; then
+		# gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted true	# set allow launching
+		sudo -u $CALLING_USER -g $CALLING_USER dbus-launch gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted yes
+		# runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
+	fi
+	set +x
+
 	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
 	writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
