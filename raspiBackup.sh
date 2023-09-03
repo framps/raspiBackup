@@ -1293,10 +1293,10 @@ MSG_DE[$MSG_CTRLC_DETECTED]="RBK0163E: Scriptausführung mit CTRL C abgebrochen.
 MSG_FI[$MSG_CTRLC_DETECTED]="RBK0163E: Skriptin suoritus peruutettu CTRL C-näppäinyhdistelmällä."
 MSG_FR[$MSG_CTRLC_DETECTED]="RBK0163E: Exécution du script interrompue avec CTRL C."
 MSG_HARDLINK_ERROR=164
-MSG_EN[$MSG_HARDLINK_ERROR]="RBK0164E: Unable to create hardlinks. RC %s."
-MSG_DE[$MSG_HARDLINK_ERROR]="RBK0164E: Es können keine Hardlinks erstellt werden. RC %s."
-MSG_FI[$MSG_HARDLINK_ERROR]="RBK0164E: Hardlink-tietojen luonti epäonnistui. RC %s."
-MSG_FR[$MSG_HARDLINK_ERROR]="RBK0164E: Les liens physiques ne peuvent pas être créés. Code erreur %s."
+MSG_EN[$MSG_HARDLINK_ERROR]="RBK0164E: Unable to create hardlinks on %s. RC %s."
+MSG_DE[$MSG_HARDLINK_ERROR]="RBK0164E: Es können keine Hardlinks auf %s erstellt werden. RC %s."
+MSG_FI[$MSG_HARDLINK_ERROR]="RBK0164E: Hardlink-tietojen luonti epäonnistui %s. RC %s."
+MSG_FR[$MSG_HARDLINK_ERROR]="RBK0164E: Les liens physiques ne peuvent pas être créés %s. Code erreur %s."
 MSG_INTRO_BETA_MESSAGE=165
 MSG_EN[$MSG_INTRO_BETA_MESSAGE]="RBK0165W: =========> NOTE  <========= \
 ${NL}!!! RBK0165W: This is a betaversion and should not be used in production. \
@@ -5189,12 +5189,12 @@ function createLinks() { # backuptargetroot extension newfile
 		cp -l "$possibleLinkTarget" "$3" &>/dev/null
 		rc=$?
 		if [[ $rc != 0 ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$1" "$rc"
 			exitError $RC_LINK_FILE_FAILED
 		fi
 		local links="$(stat -c %h -- "$3")"
 		if (( links < 2 )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$1" "$rc"
 			exitError $RC_LINK_FILE_FAILED
 		fi
 	fi
@@ -7105,7 +7105,7 @@ function doitBackup() {
 		fi
 
 		if ! supportsHardlinks "$BACKUPPATH"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH" "$RC_MISC_ERROR"
 			exitError $RC_MISC_ERROR
 		else
 			local fs="$(getFsType "$BACKUPPATH")"
