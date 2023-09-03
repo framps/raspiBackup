@@ -1912,8 +1912,8 @@ MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
 MSG_UNPROTECTED_PROPERTIESFILE=290
-MSG_EN[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Configuration file %s is unprotected."
-MSG_DE[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290E: Konfigurationsdatei %s ist nicht geschützt."
+MSG_EN[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290W: Configuration file %s is unprotected."
+MSG_DE[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290W: Konfigurationsdatei %s ist nicht geschützt."
 MSG_IMG_BOOT_FSCHECK_FAILED=291
 MSG_EN[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0291E: Bootpartition check failed with RC %s."
 MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0291E: Bootpartitioncheck endet fehlerhaft mit RC %s."
@@ -3837,7 +3837,6 @@ function readConfigParameters() {
 			local attrs="$(stat -c %a $file)"
 			if (( ( 0$attrs & 077 ) != 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE $file
-				exitError $RC_UNPROTECTED_CONFIG
 			fi
 		fi
 	done
