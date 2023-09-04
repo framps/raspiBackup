@@ -1843,9 +1843,13 @@ EOF
 
 	set -x
 	if (( IS_UBUNTU )) && isDesktopEnvironment; then
-		# gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted true	# set allow launching
-		sudo -u $CALLING_USER -g $CALLING_USER dbus-launch gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted yes
-		# runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
+		# see https://sleeplessbeastie.eu/2022/02/04/how-to-define-favorite-applications-on-ubuntu-desktop/
+		# copy desktop file into /usr/share/application
+		# gsettings get org.gnome.shell favorite-apps
+		# gsettings set org.gnome.shell favorite-apps "['firefox_firefox.desktop', 'thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'libreoffice-writer.desktop', 'snap-store_ubuntu-software.desktop', 'yelp.desktop', 'org.gnome.Terminal.desktop', 'raspiBackupInstallUI.desktop' ]"
+		sudo -H -u $CALLING_USER -g $CALLING_USER gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted true	# set allow launching
+		sudo -H -u $CALLING_USER -g $CALLING_USER bash -c "dbus-launch gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted yes"
+		runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
 	fi
 	set +x
 
