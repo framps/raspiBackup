@@ -1769,7 +1769,7 @@ function icon_download_execute() {
 	# install icon
 
 	logItem "Creating icon dir"
-	
+
 	FILE_TO_INSTALL="$ICON_FILE_NAME"
 	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
 	if [[ ! -d "$CALLING_HOME/$ICON_DIR" ]]; then
@@ -1817,7 +1817,7 @@ Encoding=UTF-8
 Terminal=true
 Icon=$CALLING_HOME/.icons/$MYNAME.png
 Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
-# --- ubuntu 
+# --- ubuntu
 # Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
 # Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
 # --- RaspbianOS
@@ -1841,7 +1841,6 @@ EOF
 
 	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" # make sure file is owned by caller
 
-	set -x
 	if (( IS_UBUNTU )) && isDesktopEnvironment; then
 		# see https://sleeplessbeastie.eu/2022/02/04/how-to-define-favorite-applications-on-ubuntu-desktop/
 		# copy desktop file into /usr/share/application
@@ -1851,7 +1850,6 @@ EOF
 		sudo -H -u $CALLING_USER -g $CALLING_USER bash -c "dbus-launch gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted yes"
 		runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
 	fi
-	set +x
 
 	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
@@ -3760,8 +3758,12 @@ function uninstall_do() {
 	fi
 
 	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME desktop icon ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..." "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
-	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" icon_uninstall_execute extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute
-	
+	local parms=( extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute)
+	if isDesktopEnvironment; then
+		parms+=( icon_uninstall_execute )
+	fi
+	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" "${parms[@]}"
+
 	logExit
 
 }
@@ -3998,7 +4000,11 @@ function install_do() {
 	INSTALLATION_STARTED=1
 
 	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ..." "Creating $RASPIBACKUP_NAME desktop icon ...")
-	progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute icon_download_execute
+	local parms=(code_download_execute config_download_execute config_update_execute cron_install_execute)
+	if isDesktopEnvironment; then
+		parms+=(icon_download_execute)
+	fi
+	progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" "${parms[@]}"
 	INSTALLATION_SUCCESSFULL=1
 
 	logExit
