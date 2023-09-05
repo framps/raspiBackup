@@ -48,15 +48,16 @@ fi
 # Commands used by raspiBackup and which have to be available
 # [command]=package
 declare -A REQUIRED_COMMANDS=( \
-		["parted"]="parted" \
-		["fsck.vfat"]="dosfstools" \
-		["e2label"]="e2fsprogs" \
-		["rsync"]="rsync" \
-		["whiptail"]="whiptail" \
-		["dosfslabel"]="dosfstools" \
-		["fdisk"]="util-linux" \
 		["blkid"]="util-linux" \
+		["curl"]="curl" \
+		["dosfslabel"]="dosfstools" \
+		["e2label"]="e2fsprogs" \
+		["fdisk"]="util-linux" \
+		["fsck.vfat"]="dosfstools" \
+		["parted"]="parted" \
+		["rsync"]="rsync" \
 		["sfdisk"]="util-linux" \
+		["whiptail"]="whiptail" \
 		["xxd"]="xxd" \
 		)
 
@@ -1841,15 +1842,15 @@ EOF
 
 	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" # make sure file is owned by caller
 
-	if (( IS_UBUNTU )) && isDesktopEnvironment; then
+	# if (( IS_UBUNTU )) && isDesktopEnvironment; then
 		# see https://sleeplessbeastie.eu/2022/02/04/how-to-define-favorite-applications-on-ubuntu-desktop/
 		# copy desktop file into /usr/share/application
 		# gsettings get org.gnome.shell favorite-apps
 		# gsettings set org.gnome.shell favorite-apps "['firefox_firefox.desktop', 'thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'libreoffice-writer.desktop', 'snap-store_ubuntu-software.desktop', 'yelp.desktop', 'org.gnome.Terminal.desktop', 'raspiBackupInstallUI.desktop' ]"
-		sudo -H -u $CALLING_USER -g $CALLING_USER gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted true	# set allow launching
-		sudo -H -u $CALLING_USER -g $CALLING_USER bash -c "dbus-launch gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted yes"
-		runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
-	fi
+		#sudo -H -u $CALLING_USER -g $CALLING_USER gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted true	# set allow launching
+		#sudo -H -u $CALLING_USER -g $CALLING_USER bash -c "dbus-launch gio set "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" metadata::trusted yes"
+		#runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
+	# fi
 
 	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
@@ -4697,7 +4698,7 @@ trapWithArg cleanup SIGINT SIGTERM EXIT
 
 writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
 
-rm $LOG_FILE &>/dev/null
+# rm $LOG_FILE &>/dev/null keep history now
 logItem "$GIT_CODEVERSION"
 sep="$(getMessageText $MSG_SENSITIVE_SEPARATOR)"
 warn="$(getMessageText $MSG_SENSITIVE_WARNING)"
