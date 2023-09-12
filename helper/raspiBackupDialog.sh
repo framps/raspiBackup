@@ -304,9 +304,9 @@ function isPathMounted() {
 
 
 function language(){
-	echo -e "\n \n$yellow Please choose your preferred language"
-	echo -e " Bitte waehle deine bevorzugte Sprache \n \n"
-	echo -e " German  = 1"
+	echo -e "\n \n$yellow Bitte waehle deine bevorzugte Sprache"
+	echo -e " Please chose your preferred language \n \n"
+	echo -e " Deutsch  = 1"
 	echo -e " English = 2 \n \n $normal"
 	read lang
 
