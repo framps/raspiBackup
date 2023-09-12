@@ -8628,7 +8628,7 @@ function usageEN() {
 	echo "-G {message language} (${SUPPORTED_LANGUAGES[@]}) (default: $LANGUAGE)"
 	echo "-h display this help text"
 	echo "-l {log level} ($POSSIBLE_LOG_LEVELs) (default: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
-	echo "-L {log target} ($POSSIBLE_LOG_OUTPUTs) (default: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
+	echo "-L {log targetdirectory} ($POSSIBLE_LOG_OUTPUTs) (default: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
 	echo "-m {message level} ($POSSIBLE_MSG_LEVELs) (default: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
 	echo "-M {backup description of snapshot}"
 	echo "-n notification if there is a newer scriptversion available for download (default: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
