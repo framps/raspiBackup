@@ -6,12 +6,10 @@
 
 3. inspectSystem - Collects various system information
 
-4. isSupportedEnvironment - Checks whether the environment is supported by raspiBackup
+4. raspiBackupDownloadFromGit.sh - Convenient helper to download latest code from raspiBackup repository and  any branch. Useful to quickly download any fix or enhancement provided in a dedicated branch.
 
-5. raspiBackupDownloadFromGit.sh - Convenient helper to download latest code from raspiBackup repository and  any branch. Useful to quickly download any fix or enhancement provided in a dedicated branch.
+5. raspiBackupOnlineVersions - Lists current versions and commit shas of raspiBackup files which are available online for download
 
-6. raspiBackupOnlineVersions - Lists current versions and commit shas of raspiBackup files which are available online for download
+6. supportsACLs - Checks if filesystem used by a directory supports ACLs
 
-4. supportsACLs - Checks if filesystem used by a directory supports ACLs
-
-5. supportsFileAttributes - Checks if a filesystem used by a directory supports Linux fileattributes
+7. supportsFileAttributes - Checks if a filesystem used by a directory supports Linux fileattributes
