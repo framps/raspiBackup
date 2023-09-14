@@ -126,6 +126,23 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
+read -r -d '' DESKTOP_CONTENTS <<-EOF
+[Desktop Entry]
+Type=Application
+Name=raspiBackupConfig
+Comment=raspiBackup Installer
+Encoding=UTF-8
+Terminal=true
+Icon=$CALLING_HOME/.icons/$MYNAME.png
+Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
+# --- ubuntu
+# Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
+# --- RaspbianOS
+# Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/pi/.icons/raspiBackupInstallUI.png
+EOF
+
 if [[ -f $EXCLUDE_SERVICES_REGEX_FILE ]]; then
 	EXCLUDE_SERVICES_REGEX="$(<$EXCLUDE_SERVICES_REGEX_FILE)"
 else
@@ -1754,7 +1771,6 @@ function icon_uninstall_execute() {
 	fi
 }
 
-
 function icon_download_execute() {
 
 	logEntry
@@ -1769,10 +1785,10 @@ function icon_download_execute() {
 
 	# install icon
 
-	logItem "Creating icon dir"
+	logItem "Creating icon dir $CALLING_HOME/$ICON_DIR"
 
 	FILE_TO_INSTALL="$ICON_FILE_NAME"
-	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
+	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/${ICON_FILE_NAME}"
 	if [[ ! -d "$CALLING_HOME/$ICON_DIR" ]]; then
 		mkdir -p "$CALLING_HOME/$ICON_DIR" >> $LOG_FILE
 		if (( $? )); then
@@ -1785,14 +1801,15 @@ function icon_download_execute() {
 
 	writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 
-	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
+	local fileToInstall="$(appendFileNumber "$FILE_TO_INSTALL" "$ICON_INSTALLDESKTOP")"
+	local httpCode="$(downloadFile "$(downloadURL "${fileToInstall}")" "/tmp/$FILE_TO_INSTALL")"
 	if (( $? )); then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "${fileToInstall}")" "$httpCode"
 		logExit
 		return
 	fi
 
-	logItem "mv icon into dir"
+	logItem "mv icon /tmp/$FILE_TO_INSTALL into dir $FILE_TO_INSTALL_ABS_FILE"
 
 	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL"
@@ -1809,23 +1826,6 @@ function icon_download_execute() {
 	local DESKTOP_EXEC_CMD=""
 	(( ! IS_UBUNTU )) && DESKTOP_EXEC_CMD="lxterminal -e "
 
-	read -r -d '' DESKTOP_CONTENTS <<-EOF
-[Desktop Entry]
-Type=Application
-Name=raspiBackup
-Comment=raspiBackup Installer
-Encoding=UTF-8
-Terminal=true
-Icon=$CALLING_HOME/.icons/$MYNAME.png
-Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
-# --- ubuntu
-# Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
-# Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
-# --- RaspbianOS
-# Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
-# Icon=/home/pi/.icons/raspiBackupInstallUI.png
-EOF
-
 	if [[ ! -d "$CALLING_HOME/$DESKTOP_DIR" ]]; then
 		mkdir -p "$CALLING_HOME/$DESKTOP_DIR" >> $LOG_FILE
 		if (( $? )); then
@@ -1836,7 +1836,7 @@ EOF
 		chown "$CALLING_USER:$CALLING_USER" "CALLING_HOME/$DESKTOP_DIR" # make sure file is owned by caller
 	fi
 
-	logItem "Create desktop file"
+	logItem "Create desktop file $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
 	echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
 
@@ -1978,6 +1978,13 @@ function update_script_execute() {
 
 	logExit
 
+}
+
+function appendFileNumber() { # file number
+	local filename=$(basename -- "$1")
+	local extension="${filename##*.}"
+	filename="${filename%.*}"
+	echo "${filename}_$2.$extension"
 }
 
 function downloadFile() { # url, targetFileName
@@ -4603,7 +4610,7 @@ function unattendedInstall() {
 			config_download_execute
 			config_update_execute
 		fi
-		icon_download_execute		
+		icon_download_execute
 		if (( MODE_EXTENSIONS && ! MODE_INSTALLDESKTOP )); then
 				extensions_install_execute
 		fi
@@ -4659,13 +4666,14 @@ MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 MODE_INSTALLDESKTOP=0
+ICON_INSTALLDESKTOP_DEFAULT=1 # default
 
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
 	exit
 fi
 
-while getopts "h?nuUei" opt; do
+while getopts "h?n:uUei" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -4685,6 +4693,11 @@ while getopts "h?nuUei" opt; do
 		 ;;
     n) MODE_INSTALLDESKTOP=1
 	   MODE_UNATTENDED=1
+	   ICON_INSTALLDESKTOP="$OPTARG"
+	   if [[ $ICON_INSTALLDESKTOP < 1 || $ICON_INSTALLDESKTOP > 2 ]]; then
+			echo "Invalid icon number detected. Use a number between 1 and 2"
+			exit 42
+	   fi
 		 ;;
 
 	*)  echo "Unknown option $op"
