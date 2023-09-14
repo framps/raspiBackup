@@ -4597,13 +4597,15 @@ function unattendedInstall() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_INTERNET_CONNECTION_FOUND
 		exit
 	fi
-	if (( MODE_INSTALL )); then
-		code_download_execute
-		config_download_execute
-		config_update_execute
-		icon_download_execute
-		if (( MODE_EXTENSIONS )); then
-			extensions_install_execute
+	if (( MODE_INSTALL || MODE_INSTALLDESKTOP )); then
+		if (( ! MODE_INSTALLDESKTOP )); then
+			code_download_execute
+			config_download_execute
+			config_update_execute
+		fi
+		icon_download_execute		
+		if (( MODE_EXTENSIONS && ! MODE_INSTALLDESKTOP )); then
+				extensions_install_execute
 		fi
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTALLATION_FINISHED $RASPIBACKUP_NAME
 	elif (( MODE_UPDATE )); then
@@ -4637,6 +4639,7 @@ function show_help() {
 	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
 	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
 	echo "-h: display this help"
+	echo "-n: unattended (re)install of desktop icon"
 	echo "-U: unattended update of $MYSELF"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
 }
@@ -4655,30 +4658,35 @@ MODE_UNATTENDED=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
+MODE_INSTALLDESKTOP=0
 
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
 	exit
 fi
 
-while getopts "h?uUei" opt; do
+while getopts "h?nuUei" opt; do
     case "$opt" in
 	 h|\?)
        show_help
        exit 0
        ;;
     i) MODE_INSTALL=1
-		 MODE_UNATTENDED=1
+	   MODE_UNATTENDED=1
        ;;
     e) MODE_EXTENSIONS=1
-		 MODE_UNATTENDED=1
+	   MODE_UNATTENDED=1
 		 ;;
     U) MODE_UPDATE=1
-		 MODE_UNATTENDED=1
+	   MODE_UNATTENDED=1
 		 ;;
     u) MODE_UNINSTALL=1
-		 MODE_UNATTENDED=1
+	   MODE_UNATTENDED=1
 		 ;;
+    n) MODE_INSTALLDESKTOP=1
+	   MODE_UNATTENDED=1
+		 ;;
+
 	*)  echo "Unknown option $op"
 		 show_help
 		 exit 1
