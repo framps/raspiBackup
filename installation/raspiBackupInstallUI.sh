@@ -1811,7 +1811,6 @@ read -r -d '' DESKTOP_CONTENTS <<-EOF
 Type=Application
 Name=raspiBackupConfig
 Comment=raspiBackup Installer
-Encoding=UTF-8
 Terminal=true
 Icon=$CALLING_HOME/.icons/$MYNAME.png
 Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
