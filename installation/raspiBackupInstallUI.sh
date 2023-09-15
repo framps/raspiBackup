@@ -126,23 +126,6 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
-read -r -d '' DESKTOP_CONTENTS <<-EOF
-[Desktop Entry]
-Type=Application
-Name=raspiBackupConfig
-Comment=raspiBackup Installer
-Encoding=UTF-8
-Terminal=true
-Icon=$CALLING_HOME/.icons/$MYNAME.png
-Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
-# --- ubuntu
-# Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
-# Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
-# --- RaspbianOS
-# Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
-# Icon=/home/pi/.icons/raspiBackupInstallUI.png
-EOF
-
 if [[ -f $EXCLUDE_SERVICES_REGEX_FILE ]]; then
 	EXCLUDE_SERVICES_REGEX="$(<$EXCLUDE_SERVICES_REGEX_FILE)"
 else
@@ -1822,6 +1805,23 @@ function icon_download_execute() {
 	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
 
 	# install desktop file
+
+read -r -d '' DESKTOP_CONTENTS <<-EOF
+[Desktop Entry]
+Type=Application
+Name=raspiBackupConfig
+Comment=raspiBackup Installer
+Encoding=UTF-8
+Terminal=true
+Icon=$CALLING_HOME/.icons/$MYNAME.png
+Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
+# --- ubuntu
+# Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
+# --- RaspbianOS
+# Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
+# Icon=/home/pi/.icons/raspiBackupInstallUI.png
+EOF
 
 	local DESKTOP_EXEC_CMD=""
 	(( ! IS_UBUNTU )) && DESKTOP_EXEC_CMD="lxterminal -e "
