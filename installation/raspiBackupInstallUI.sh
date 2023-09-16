@@ -105,15 +105,22 @@ MASQUERADE_STRING="@@@@"
 PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup0613.properties"
 BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
-DESKTOP_FILE_NAME="$MYNAME.desktop"
-ICON_FILE_NAME="$MYNAME.png"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
-ICON_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/$ICON_FILE_NAME"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
+
+DESKTOP_FILE_NAME_INSTALLER="$MYNAME.desktop"
+ICON_FILE_NAME_INSTALLER="$MYNAME.png"
+
+ICON_INSTALLDESKTOP_INSTALLER=1				# default
+ICON_INSTALLDESKTOP_INSTALLER_MAX=4			# max number of icons
+
+DESKTOP_FILE_NAME_RASPIBACKUP="$RASPIBACKUP_NAME.desktop"
+ICON_FILE_NAME_RASPIBACKUP="$RASPIBACKUP_NAME.png"
+
 
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
@@ -1743,14 +1750,14 @@ function icon_uninstall_execute() {
 	local CALLING_USER="$(findUser)"
 	local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
 
-	if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" ]]; then
-		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME"
-		rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME" 2>>"$LOG_FILE"
+	if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER"
+		rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER" 2>>"$LOG_FILE"
 	fi
 
-	if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" ]]; then
-		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
-		rm -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" 2>>"$LOG_FILE"
+	if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
+		rm -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" 2>>"$LOG_FILE"
 	fi
 }
 
@@ -1770,8 +1777,8 @@ function icon_download_execute() {
 
 	logItem "Creating icon dir $CALLING_HOME/$ICON_DIR"
 
-	FILE_TO_INSTALL="$ICON_FILE_NAME"
-	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/${ICON_FILE_NAME}"
+	FILE_TO_INSTALL="$ICON_FILE_NAME_INSTALLER"
+	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/${ICON_FILE_NAME_INSTALLER}"
 	if [[ ! -d "$CALLING_HOME/$ICON_DIR" ]]; then
 		mkdir -p "$CALLING_HOME/$ICON_DIR" >> $LOG_FILE
 		if (( $? )); then
@@ -1779,12 +1786,12 @@ function icon_download_execute() {
 			logExit
 			return
 		fi
-		chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$ICON_DIR" # make sure file is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$ICON_DIR" # make sure directory is owned by caller
 	fi
 
 	writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 
-	local fileToInstall="$(appendFileNumber "$FILE_TO_INSTALL" "$ICON_INSTALLDESKTOP")"
+	local fileToInstall="$(appendFileNumber "$FILE_TO_INSTALL" "$ICON_INSTALLDESKTOP_INSTALLER")"
 	local httpCode="$(downloadFile "$(downloadURL "${fileToInstall}")" "/tmp/$FILE_TO_INSTALL")"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "${fileToInstall}")" "$httpCode"
@@ -1794,6 +1801,10 @@ function icon_download_execute() {
 
 	logItem "mv icon /tmp/$FILE_TO_INSTALL into dir $FILE_TO_INSTALL_ABS_FILE"
 
+	if [[ -e "$FILE_TO_INSTALL_ABS_FILE" ]]; then
+		rm "$FILE_TO_INSTALL_ABS_FILE" &>> "$LOG_FILE"
+	fi
+	
 	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
 		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL"
 		logExit
@@ -1809,7 +1820,7 @@ function icon_download_execute() {
 read -r -d '' DESKTOP_CONTENTS <<-EOF
 [Desktop Entry]
 Type=Application
-Name=raspiBackupConfig
+Name=raspiBackupInstallUI
 Comment=raspiBackup Installer
 Terminal=true
 Icon=$CALLING_HOME/.icons/$MYNAME.png
@@ -1835,11 +1846,15 @@ EOF
 		chown "$CALLING_USER:$CALLING_USER" "CALLING_HOME/$DESKTOP_DIR" # make sure file is owned by caller
 	fi
 
-	logItem "Create desktop file $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+	logItem "Create desktop file $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
 
-	echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+	if [[ -e "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" ]]; then
+		rm "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" &>> "$LOG_FILE"
+	fi
+	
+	echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
 
-	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME" # make sure file is owned by caller
+	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" # make sure file is owned by caller
 
 	# if (( IS_UBUNTU )) && isDesktopEnvironment; then
 		# see https://sleeplessbeastie.eu/2022/02/04/how-to-define-favorite-applications-on-ubuntu-desktop/
@@ -1851,9 +1866,9 @@ EOF
 		#runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
 	# fi
 
-	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
 
-	writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+	writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
 
 	logExit
 }
@@ -4665,7 +4680,6 @@ MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 MODE_INSTALLDESKTOP=0
-ICON_INSTALLDESKTOP_DEFAULT=1 # default
 
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
@@ -4692,9 +4706,9 @@ while getopts "h?n:uUei" opt; do
 		 ;;
     n) MODE_INSTALLDESKTOP=1
 	   MODE_UNATTENDED=1
-	   ICON_INSTALLDESKTOP="$OPTARG"
-	   if [[ $ICON_INSTALLDESKTOP < 1 || $ICON_INSTALLDESKTOP > 2 ]]; then
-			echo "Invalid icon number detected. Use a number between 1 and 2"
+	   ICON_INSTALLDESKTOP_INSTALLER="$OPTARG"
+	   if [[ $ICON_INSTALLDESKTOP_INSTALLER < 1 || $ICON_INSTALLDESKTOP_INSTALLER > $ICON_INSTALLDESKTOP_INSTALLER_MAX ]]; then
+			echo "Invalid icon number detected. Use a number between 1 and $ICON_INSTALLDESKTOP_INSTALLER_MAX"
 			exit 42
 	   fi
 		 ;;
