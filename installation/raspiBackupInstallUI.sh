@@ -112,15 +112,13 @@ STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
 
-DESKTOP_FILE_NAME_INSTALLER="$MYNAME.desktop"
-ICON_FILE_NAME_INSTALLER="$MYNAME.png"
-
+ICON_FILE_NAME_INSTALLER="$MYNAME"
 ICON_INSTALLDESKTOP_INSTALLER=1				# default
 ICON_INSTALLDESKTOP_INSTALLER_MAX=2			# max number of icons
 
-DESKTOP_FILE_NAME_RASPIBACKUP="$RASPIBACKUP_NAME.desktop"
-ICON_FILE_NAME_RASPIBACKUP="$RASPIBACKUP_NAME.png"
-
+ICON_FILE_NAME_RASPIBACKUP="$RASPIBACKUP_NAME"
+ICON_INSTALLDESKTOP_RASPIBACKUP=2				# default
+ICON_INSTALLDESKTOP_RASPIBACKUP_MAX=2			# max number of icons
 
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
@@ -1750,35 +1748,46 @@ function icon_uninstall_execute() {
 	local CALLING_USER="$(findUser)"
 	local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
 
-	if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER" ]]; then
-		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER"
-		rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER" 2>>"$LOG_FILE"
+	if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER.png" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER.png"
+		rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_INSTALLER.png" 2>>"$LOG_FILE"
 	fi
 
-	if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" ]]; then
-		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
-		rm -f "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" 2>>"$LOG_FILE"
+	if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_INSTALLER.desktop" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_INSTALLER.desktop"
+		rm -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_INSTALLER.desktop" 2>>"$LOG_FILE"
 	fi
+
+	if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png"
+		rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png" 2>>"$LOG_FILE"
+	fi
+
+	if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop" ]]; then
+		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop"
+		rm -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop" 2>>"$LOG_FILE"
+	fi
+
 }
 
-function icon_download_execute() {
+function icon_install() { # fileToInstall iconNumber 1|2 
 
 	logEntry
-
-	local os="RaspbianOS"
-	(( IS_UBUNTU )) && os="Ubuntu"
-
+	
 	local CALLING_USER="$(findUser)"
 	local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
 
-	logItem "Detected desktop environment $os"
+	local iconFile="$1.png"
+	local desktopFile="$1.desktop"
+	local iconNumber="$2"
+	local desktopContentNumber="$3"
+	local desktopContents=""
 
 	# install icon
 
 	logItem "Creating icon dir $CALLING_HOME/$ICON_DIR"
 
-	FILE_TO_INSTALL="$ICON_FILE_NAME_INSTALLER"
-	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/${ICON_FILE_NAME_INSTALLER}"
+	local FILE_TO_INSTALL="$iconFile"
 	if [[ ! -d "$CALLING_HOME/$ICON_DIR" ]]; then
 		mkdir -p "$CALLING_HOME/$ICON_DIR" >> $LOG_FILE
 		if (( $? )); then
@@ -1791,7 +1800,9 @@ function icon_download_execute() {
 
 	writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 
-	local fileToInstall="$(appendFileNumber "$FILE_TO_INSTALL" "$ICON_INSTALLDESKTOP_INSTALLER")"
+	FILE_TO_INSTALL_ABS_FILE="$CALLING_HOME/$ICON_DIR/$iconFile"
+
+	local fileToInstall="$(appendFileNumber "$FILE_TO_INSTALL" "$iconNumber")"
 	local httpCode="$(downloadFile "$(downloadURL "${fileToInstall}")" "/tmp/$FILE_TO_INSTALL")"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "${fileToInstall}")" "$httpCode"
@@ -1817,14 +1828,18 @@ function icon_download_execute() {
 
 	# install desktop file
 
-read -r -d '' DESKTOP_CONTENTS <<-EOF
+	case $desktopContentNumber in
+
+		1) 
+
+		read -r -d '' desktopContents <<-EOF
 [Desktop Entry]
 Type=Application
 Name=raspiBackupInstallUI
 Comment=raspiBackup Installer
 Terminal=true
-Icon=$CALLING_HOME/.icons/$MYNAME.png
-Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
+Icon=$CALLING_HOME/.icons/$iconFile
+Exec=${DESKTOP_EXEC_CMD}sudo $FILE_TO_INSTALL_ABS_FILE
 # --- ubuntu
 # Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
 # Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
@@ -1832,7 +1847,33 @@ Exec=${DESKTOP_EXEC_CMD}sudo $INSTALLER_ABS_FILE
 # Exec=lxterminal -e sudo /usr/local/bin/raspiBackupInstallUI.sh
 # Icon=/home/pi/.icons/raspiBackupInstallUI.png
 EOF
+		;;
 
+		2) 
+		read -r -d '' desktopContents <<-EOF
+[Desktop Entry]
+Type=Application
+Name=raspiBackup
+Comment=raspiBackup
+Terminal=true
+Icon=$CALLING_HOME/.icons/$iconFile
+Exec=${DESKTOP_EXEC_CMD}sudo $FILE_TO_INSTALL_ABS_FILE
+# --- ubuntu
+# Exec=sudo /usr/local/bin/raspiBackup.sh
+# Icon=/home/ubuntu/.icons/raspiBackup.png
+# --- RaspbianOS
+# Exec=lxterminal -e sudo /usr/local/bin/raspiBackup.sh
+# Icon=/home/pi/.icons/raspiBackup.png
+EOF
+		;;
+
+		*)
+			echo "Invalid desktop number $desktopContentNumber detected"
+			exit 42
+			;;
+		
+	esac
+	
 	local DESKTOP_EXEC_CMD=""
 	(( ! IS_UBUNTU )) && DESKTOP_EXEC_CMD="lxterminal -e "
 
@@ -1846,15 +1887,15 @@ EOF
 		chown "$CALLING_USER:$CALLING_USER" "CALLING_HOME/$DESKTOP_DIR" # make sure file is owned by caller
 	fi
 
-	logItem "Create desktop file $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
+	logItem "Create desktop file $CALLING_HOME/$DESKTOP_DIR/$desktopFile"
 
-	if [[ -e "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" ]]; then
-		rm "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" &>> "$LOG_FILE"
+	if [[ -e "$CALLING_HOME/$DESKTOP_DIR/$desktopFile" ]]; then
+		rm "$CALLING_HOME/$DESKTOP_DIR/$desktopFile" &>> "$LOG_FILE"
 	fi
 	
-	echo "$DESKTOP_CONTENTS" > "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
+	echo "$desktopContents" > "$CALLING_HOME/$DESKTOP_DIR/$desktopFile"
 
-	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER" # make sure file is owned by caller
+	chown "$CALLING_USER:$CALLING_USER" "$CALLING_HOME/$DESKTOP_DIR/$desktopFile" # make sure file is owned by caller
 
 	# if (( IS_UBUNTU )) && isDesktopEnvironment; then
 		# see https://sleeplessbeastie.eu/2022/02/04/how-to-define-favorite-applications-on-ubuntu-desktop/
@@ -1866,9 +1907,25 @@ EOF
 		#runuser -l $CALLING_USER -c "gio set $CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME metadata::trusted yes"
 	# fi
 
-	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
+	chmod 755 "$CALLING_HOME/$DESKTOP_DIR/$desktopFile"
 
-	writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$DESKTOP_FILE_NAME_INSTALLER"
+	writeToConsole $MSG_CODE_INSTALLED "$CALLING_HOME/$DESKTOP_DIR/$desktopFile"
+
+	logExit
+}
+
+function icon_download_execute() {
+
+	logEntry
+
+	local os="RaspbianOS"
+	(( IS_UBUNTU )) && os="Ubuntu"
+
+	logItem "Detected desktop environment $os"
+
+	icon_install "$ICON_FILE_NAME_INSTALLER" "$ICON_INSTALLDESKTOP_INSTALLER" 1
+
+	icon_install "$ICON_FILE_NAME_RASPIBACKUP" "$ICON_INSTALLDESKTOP_RASPIBACKUP" 2
 
 	logExit
 }
