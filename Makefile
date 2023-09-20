@@ -44,7 +44,7 @@ include $(CURRENT_DIR)/$(MAKEFILE).env
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-build: ## Build raspiBackup
+build: ## Build raspiBackup {BRANCH=<branchName>}
    
         ifndef BUILD_LOCATION
            $(error BUILD_LOCATION is not set)
@@ -70,7 +70,7 @@ build: ## Build raspiBackup
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
 
-deploy: ## Deploy build
+deploy: ## Deploy build {BRANCH=<branchName>}
 
 	ifndef DEPLOYMENT_LOCATION
 		$(error DEPLOYMENT_LOCATION is not set)
