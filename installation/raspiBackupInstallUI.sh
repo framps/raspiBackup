@@ -1836,7 +1836,8 @@ function icon_install() { # fileToInstall iconnumber 1|2
 		read -r -d '' desktopContents <<-EOF
 [Desktop Entry]
 Type=Application
-Name=raspiBackupInstallUI
+#Name=raspiBackupInstallUI
+Name=raspiBackup
 Comment=raspiBackup Installer
 Terminal=true
 Icon=$CALLING_HOME/.icons/$iconFile
