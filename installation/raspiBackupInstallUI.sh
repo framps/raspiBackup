@@ -71,6 +71,8 @@ done
 
 (( $missingSomeCommands )) && exit
 
+RASPIBACKUP_INSTALL_DEBUG=0 # just disable some code for debugging
+
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
 
@@ -89,7 +91,6 @@ GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_O
 FILE_TO_INSTALL="raspiBackup.sh"
 
 RASPIBACKUP_NAME=${FILE_TO_INSTALL%.*}
-RASPIBACKUP_INSTALL_DEBUG=0 # just disable some code for debugging
 
 CURRENT_DIR=$(pwd)
 NL=$'\n'
@@ -114,11 +115,11 @@ EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
 
 ICON_FILE_NAME_INSTALLER="$MYNAME"
 ICON_INSTALLDESKTOP_INSTALLER=1				# default
-ICON_INSTALLDESKTOP_INSTALLER_MAX=2			# max number of icons
+ICON_INSTALLDESKTOP_INSTALLER_MAX=4			# max number of icons
 
 ICON_FILE_NAME_RASPIBACKUP="$RASPIBACKUP_NAME"
 ICON_INSTALLDESKTOP_RASPIBACKUP=2				# default
-ICON_INSTALLDESKTOP_RASPIBACKUP_MAX=2			# max number of icons
+ICON_INSTALLDESKTOP_RASPIBACKUP_MAX=4			# max number of icons
 
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
@@ -1758,21 +1759,21 @@ function icon_uninstall_execute() {
 		rm -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_INSTALLER.desktop" 2>>"$LOG_FILE"
 	fi
 
-	if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png" ]]; then
-		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png"
-		rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png" 2>>"$LOG_FILE"
-	fi
+	#if [[ -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png" ]]; then
+	#	writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png"
+	#	rm -f "$CALLING_HOME/$ICON_DIR/$ICON_FILE_NAME_RASPIBACKUP.png" 2>>"$LOG_FILE"
+	#fi
 
-	if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop" ]]; then
-		writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop"
-		rm -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop" 2>>"$LOG_FILE"
-	fi
+	#if [[ -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop" ]]; then
+	#	writeToConsole $MSG_DELETE_FILE "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop"
+	#	rm -f "$CALLING_HOME/$DESKTOP_DIR/$ICON_FILE_NAME_RASPIBACKUP.desktop" 2>>"$LOG_FILE"
+	#fi
 
 }
 
-function icon_install() { # fileToInstall iconNumber 1|2 
+function icon_install() { # fileToInstall iconnumber 1|2 
 
-	logEntry
+	logEntry "$1 - $2"
 	
 	local CALLING_USER="$(findUser)"
 	local CALLING_HOME="$(eval echo "~${CALLING_USER}")"
@@ -1839,7 +1840,7 @@ Name=raspiBackupInstallUI
 Comment=raspiBackup Installer
 Terminal=true
 Icon=$CALLING_HOME/.icons/$iconFile
-Exec=${DESKTOP_EXEC_CMD}sudo $FILE_TO_INSTALL_ABS_FILE
+Exec=${DESKTOP_EXEC_CMD}sudo raspiBackupInstallUI.sh
 # --- ubuntu
 # Exec=sudo /usr/local/bin/raspiBackupInstallUI.sh
 # Icon=/home/ubuntu/.icons/raspiBackupInstallUI.png
@@ -1857,7 +1858,7 @@ Name=raspiBackup
 Comment=raspiBackup
 Terminal=true
 Icon=$CALLING_HOME/.icons/$iconFile
-Exec=${DESKTOP_EXEC_CMD}sudo $FILE_TO_INSTALL_ABS_FILE
+Exec=${DESKTOP_EXEC_CMD}sudo raspiBackup.sh
 # --- ubuntu
 # Exec=sudo /usr/local/bin/raspiBackup.sh
 # Icon=/home/ubuntu/.icons/raspiBackup.png
@@ -1925,7 +1926,7 @@ function icon_download_execute() {
 
 	icon_install "$ICON_FILE_NAME_INSTALLER" "$ICON_INSTALLDESKTOP_INSTALLER" 1
 
-	icon_install "$ICON_FILE_NAME_RASPIBACKUP" "$ICON_INSTALLDESKTOP_RASPIBACKUP" 2
+	# icon_install "$ICON_FILE_NAME_RASPIBACKUP" "$ICON_INSTALLDESKTOP_RASPIBACKUP" 2
 
 	logExit
 }
@@ -4764,6 +4765,7 @@ while getopts "h?n:uUei" opt; do
     n) MODE_INSTALLDESKTOP=1
 	   MODE_UNATTENDED=1
 	   ICON_INSTALLDESKTOP_INSTALLER="$OPTARG"
+	   ICON_INSTALLDESKTOP_RASPIBACKUP="$OPTARG"
 	   if [[ $ICON_INSTALLDESKTOP_INSTALLER < 1 || $ICON_INSTALLDESKTOP_INSTALLER > $ICON_INSTALLDESKTOP_INSTALLER_MAX ]]; then
 			echo "Invalid icon number detected. Use a number between 1 and $ICON_INSTALLDESKTOP_INSTALLER_MAX"
 			exit 42
@@ -4789,7 +4791,9 @@ trapWithArg cleanup SIGINT SIGTERM EXIT
 
 writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
 
-# rm $LOG_FILE &>/dev/null keep history now
+if (( RASPIBACKUP_INSTALL_DEBUG )); then
+	rm $LOG_FILE &>/dev/null # keep history now
+fi	
 logItem "$GIT_CODEVERSION"
 sep="$(getMessageText $MSG_SENSITIVE_SEPARATOR)"
 warn="$(getMessageText $MSG_SENSITIVE_WARNING)"
