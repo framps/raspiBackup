@@ -2880,7 +2880,7 @@ function initializeDefaultConfigVariables() {
 	# Number of times restore reminder bothers you
 	DEFAULT_RESTORE_REMINDER_REPEAT=3
 	# update device UUIDs
-	DEFAULT_UPDATE_UUIDS=0
+	DEFAULT_UPDATE_UUIDS=1
 	# send stats
 	DEFAULT_SEND_STATS=1
 	# ignore partitions > 2 in normal mode
