@@ -4586,37 +4586,6 @@ function masqueradeNonlocalIPs() {
 	rm $f
 }
 
-function cleanupStartup() { # trap
-
-	logEntry
-
-	rc=${rc:-42}	# some failure during startup of script (RT error, option validation, ...)
-
-	if [[ $1 == "SIGINT" ]]; then
-		# ignore CTRL-C now
-		trap '' SIGINT SIGTERM EXIT
-		rc=$RC_CTRLC
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
-	fi
-
-	cleanupTempFiles
-
-	if (( $LOG_LEVEL == $LOG_DEBUG )); then
-		masqueradeSensitiveInfoInLog # and now masquerade sensitive details in log file
-	fi
-
-	logFinish
-
-	logExit
-
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
-		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
-	fi
-
-	exit $rc
-}
-
 function lockMe() {
 	logEntry
 	exlock_now
@@ -8876,7 +8845,7 @@ fi
 logEnable
 lockingFramework
 
-trapWithArg cleanupStartup SIGINT SIGTERM EXIT
+trapWithArg cleanup SIGINT SIGTERM EXIT
 
 INVOCATIONPARMS=""			# save passed opts for logging
 for (( i=1; i<=$#; i++ )); do
