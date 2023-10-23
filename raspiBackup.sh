@@ -362,10 +362,10 @@ declare -A REQUIRED_COMMANDS=( \
 		["fsck.vfat"]="dosfstools" \
 		["e2label"]="e2fsprogs" \
 		["dosfslabel"]="dosfstools" \
-		["fdisk"]="util-linux" \
+		["fdisk"]="fdisk" \
 		["blkid"]="util-linux" \
 		["curl"]="curl" \
-		["sfdisk"]="util-linux" \
+		["sfdisk"]="fdisk" \
 		)
 # ["btrfs"]="btrfs-tools"
 

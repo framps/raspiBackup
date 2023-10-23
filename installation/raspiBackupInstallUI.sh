@@ -54,9 +54,9 @@ declare -A REQUIRED_COMMANDS=( \
 		["rsync"]="rsync" \
 		["whiptail"]="whiptail" \
 		["dosfslabel"]="dosfstools" \
-		["fdisk"]="util-linux" \
+		["fdisk"]="fdisk" \
 		["blkid"]="util-linux" \
-		["sfdisk"]="util-linux" \
+		["sfdisk"]="fdisk" \
 		)
 
 missingSomeCommands=0
