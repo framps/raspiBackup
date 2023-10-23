@@ -366,7 +366,6 @@ declare -A REQUIRED_COMMANDS=( \
 		["blkid"]="util-linux" \
 		["curl"]="curl" \
 		["sfdisk"]="util-linux" \
-		["xxd"]="xxd" \
 		)
 # ["btrfs"]="btrfs-tools"
 

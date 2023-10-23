@@ -57,7 +57,6 @@ declare -A REQUIRED_COMMANDS=( \
 		["fdisk"]="util-linux" \
 		["blkid"]="util-linux" \
 		["sfdisk"]="util-linux" \
-		["xxd"]="xxd" \
 		)
 
 missingSomeCommands=0
