@@ -5353,7 +5353,6 @@ function backupTar() {
 		--exclude=$devroot/sys/* \
 		--exclude=$devroot/dev/* \
 		--exclude=$devroot/tmp/* \
-		--exclude=$devroot/boot/* \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
 		$EXCLUDE_LIST \
@@ -6530,8 +6529,6 @@ function inspect4Backup() {
 	logCommand "ls -1 /dev/sd*"
 	logCommand "ls -1 /dev/nvme*"
 
-	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
-
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
 
 	if [[ -n "$BOOT_DEVICE" ]]; then
@@ -6548,81 +6545,56 @@ function inspect4Backup() {
 		logItem "Force BOOT_DEVICE to $BOOT_DEVICE"
 	elif [[ -z $BOOT_DEVICE ]]; then
 
-		#if ! areDevicesUnique; then
-		#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
-		#fi
+		logItem "Starting boot discovery"
 
-		logItem "Legacy boot discovery"
+		# test whether boot device is mounted
+		local bootMountpoint="/boot"
+		local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
+		logItem "$bootMountpoint mounted? $bootPartition"
 
-		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x $d)" ] && echo $d && break; done)
-		logItem "part: $part"
-		local bootDeviceNumber=$(mountpoint -d /boot)
-		local rootDeviceNumber=$(mountpoint -d /)
-		logItem "bootDeviceNumber: $bootDeviceNumber"
-		logItem "rootDeviceNumber: $rootDeviceNumber"
+		# test whether some other /boot path is mounted
+		if [[ -z $bootPartition ]]; then
+			bootPartition=$(mount | grep "/boot" | cut -f 1 -d ' ')
+			bootMountpoint=$(mount | grep "/boot" | cut -f 3 -d ' ')
+			logItem "Some path in /boot mounted? $bootPartition on $bootMountpoint"
+		fi
 
-		if [ "$bootDeviceNumber" == "$rootDeviceNumber" ]; then	# /boot on same partition with root partition /
-			local rootDevice=$(for file in $(find /sys/dev/ -name $rootDeviceNumber); do source ${file}/uevent; echo $DEVNAME; done) # mmcblk0p1
-			logItem "Rootdevice: $rootDevice"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
+		# find root partition
+		local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
+		logItem "/ mounted? $rootPartition"
+		if [[ $rootPartition == "/dev/root" ]]; then
+			local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
+			rootPartition=${rp#/root=/}
+			logItem "/ mounted as /dev/root: $rootPartition"
+		fi
+
+		# check for /boot on root partition
+		if [[ -z "$bootPartition" ]]; then
+			if ! find $bootMountpoint -name cmdline.txt; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
+				exitError $RC_MISC_ERROR
+			else
+				bootPartition="$rootPartition"
+				logItem "Bootpartition is located on rootpartition $bootPartition"
+			fi
+		fi
+
+		boot=( $(deviceInfo "$bootPartition") )
+		root=( $(deviceInfo "$rootPartition") )
+
+		logItem "boot: ${boot[@]}"
+		logItem "root: ${root[@]}"
+
+		if [[  -z "$boot" || -z "$root" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
+			exitError $RC_NO_BOOT_FOUND
+		fi
+
+		BOOT_DEVICE="${boot[0]}"
+
+		if [[ "${boot[@]}" == "${root[@]}" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "/dev/$BOOT_DEVICE"
 			SHARED_BOOT_DIRECTORY=1
-			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
-
-		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9]+)p || "$part" =~ /dev/(nvme[0-9]+n[0-9]+)p ]]; then
-			BOOT_DEVICE=${BASH_REMATCH[1]}
-
-		else
-			logItem "Starting alternate boot discovery"
-
-			# test whether boot device is mounted
-			local bootMountpoint="/boot"
-			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
-			logItem "$bootMountpoint mounted? $bootPartition"
-
-			# test whether some other /boot path is mounted
-			if [[ -z $bootPartition ]]; then
-				bootPartition=$(mount | grep "/boot" | cut -f 1 -d ' ')
-				bootMountpoint=$(mount | grep "/boot" | cut -f 3 -d ' ')
-				logItem "Some path in /boot mounted? $bootPartition on $bootMountpoint"
-			fi
-
-			# find root partition
-			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
-			logItem "/ mounted? $rootPartition"
-			if [[ $rootPartition == "/dev/root" ]]; then
-				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
-				rootPartition=${rp#/root=/}
-				logItem "/ mounted as /dev/root: $rootPartition"
-			fi
-
-			# check for /boot on root partition
-			if [[ -z "$bootPartition" ]]; then
-				if ! find $bootMountpoint -name cmdline.txt; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
-					exitError $RC_MISC_ERROR
-				else
-					bootPartition="$rootPartition"
-					logItem "Bootpartition is located on rootpartition $bootPartition"
-				fi
-			fi
-
-			boot=( $(deviceInfo "$bootPartition") )
-			root=( $(deviceInfo "$rootPartition") )
-
-			logItem "boot: ${boot[@]}"
-			logItem "root: ${root[@]}"
-
-			if [[  -z "$boot" || -z "$root" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
-				exitError $RC_NO_BOOT_FOUND
-			fi
-
-			BOOT_DEVICE="${boot[0]}"
-
-			if [[ "${boot[@]}" == "${root[@]}" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "/dev/$BOOT_DEVICE"
-				SHARED_BOOT_DIRECTORY=1
-			fi
 		fi
 	fi
 
@@ -8292,7 +8264,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ $oldPartUUID != $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> "$LOG_FILE"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
 			oldUUID=${BASH_REMATCH[1]}
@@ -8302,7 +8274,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ $oldUUID != $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
-				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> "$LOG_FILE"
+				sed -i "s/$oldUUID/$newUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			oldLABEL=${BASH_REMATCH[1]}
@@ -8312,7 +8284,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ $oldLABEL != $newLABEL ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$cmdline"
-				sed -i "s/$oldLABEL/$newLABEL/" $CMDLINE &>> "$LOG_FILE"
+				sed -i "s/$oldLABEL/$newLABEL/" $(realpath $CMDLINE) &>> "$LOG_FILE"
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
