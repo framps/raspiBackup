@@ -5502,7 +5502,6 @@ function backupRsync() { # partition number (for partition based backup)
 			--exclude=$excludeRoot/lost+found/* \
 			--exclude=$excludeRoot/sys/* \
 			--exclude=$excludeRoot/dev/* \
-			--exclude=$excludeRoot/boot/* \
 			--exclude=$excludeRoot/tmp/* \
 			--exclude=$excludeRoot/run/* \
 			--exclude=$excludeRoot/media/* \
