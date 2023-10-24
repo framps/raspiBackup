@@ -153,7 +153,6 @@ TEMP_LOG_FILE="/tmp/$LOGFILE_NAME"
 TEMP_MSG_FILE="/tmp/$MSGFILE_NAME"
 FINISH_LOG_FILE="/tmp/${MYNAME}.logf"
 MODIFIED_SFDISK="/tmp/$$.sfdisk"
-UBUNTU_FIRMWARE_DIRECTORY="/boot/firmware"
 
 # timeouts
 
@@ -5645,12 +5644,6 @@ function backupRsync() { # partition number (for partition based backup)
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
 
-	local bootExclude="/boot"
-	if (( $IS_UBUNTU )); then
-		bootExclude="${UBUNTU_FIRMWARE_DIRECTORY}"
-	fi
-	logItem "bootExclude: $bootExclude"
-
 	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
 	local fs="$(getFsType "$BACKUPPATH")"
 	if [[ -e $PERSISTENT_JOURNAL && $fs =~ ^nfs* ]]; then
@@ -5666,7 +5659,6 @@ function backupRsync() { # partition number (for partition based backup)
 			--exclude=$excludeRoot/lost+found/* \
 			--exclude=$excludeRoot/sys/* \
 			--exclude=$excludeRoot/dev/* \
-			--exclude=${excludeRoot}${bootExclude}/* \
 			--exclude=$excludeRoot/swapfile \
 			--exclude=$excludeRoot/tmp/* \
 			--exclude=$excludeRoot/run/* \
