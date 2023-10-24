@@ -1150,10 +1150,10 @@ MSG_DE[$MSG_NO_ROOTBACKUPFILE_FOUND]="RBK0137E: Rootbackupdatei für den Typ %s 
 MSG_FI[$MSG_NO_ROOTBACKUPFILE_FOUND]="RBK0137E: Juurivarmuuskopiota ei löytynyt tyypille %s."
 MSG_FR[$MSG_NO_ROOTBACKUPFILE_FOUND]="RBK0137E: Fichier de sauvegarde Root pour le type %s introuvable."
 MSG_USING_ROOTBACKUPFILE=138
-MSG_EN[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Using bootbackup %s."
-MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Bootbackup %s wird benutzt."
+MSG_EN[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Using rootbackup %s."
+MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Rootbackup %s wird benutzt."
 MSG_FI[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Käytetään käynnistysvarmuuskopiota %s."
-MSG_FR[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: La sauvegarde Boot %s est en cours d'utilisation."
+MSG_FR[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: La sauvegarde Root %s est en cours d'utilisation."
 MSG_FORCING_CREATING_PARTITIONS=139
 MSG_EN[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partition creation ignores errors."
 MSG_DE[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partitionserstellung ignoriert Fehler."
@@ -5063,7 +5063,9 @@ function bootPartitionBackup() {
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
-					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					local bootMountpoint
+					[[ -d /boot/firmware ]] && bootMountpoint="/boot/firmware" || bootMountpoint="/boot"
+					local cmd="cd $bootMountpoint; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					executeTar "$cmd"
 				else
 					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
