@@ -6038,10 +6038,10 @@ function restore() {
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_ROOT_CHECK_STARTED
 			fsck -fpv $ROOT_PARTITION &>>$LOG_FILE
-			rc=$?
-			logItem "fsck rc: $rc"
-			if (( $rc > 1 )); then # 1: => Filesystem errors corrected
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_FAILED "$rc"
+			rc_fsck=$?
+			logItem "fsck rc: $rc_fsck"
+			if (( $rc_fsck > 1 )); then # 1: => Filesystem errors corrected
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_FAILED "$rc_fsck"
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
 			mountAndCheck $ROOT_PARTITION $MNT_POINT
