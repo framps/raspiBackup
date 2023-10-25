@@ -79,9 +79,11 @@ shift
 downloadURL="https://raw.githubusercontent.com/framps/raspiBackup/$branch/$DOWNLOAD_FILE"
 targetFilename="$(basename "$DOWNLOAD_FILE")"
 
+rm -f "$targetFilename"
+
 trap "rm -f $targetFilename" SIGINT SIGTERM EXIT
 
-echo "--- Downloading $DOWNLOAD_FILE from git branch $branch into current directory as $targetFilename ..."
+echo "--- Downloading $DOWNLOAD_FILE from git branch $branch into current directory ..."
 wget -q $downloadURL -O "$targetFilename"
 rc=$?
 

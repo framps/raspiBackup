@@ -2,7 +2,8 @@
 #
 #######################################################################################################################
 #
-# 	Create an image file which can be restored with dd or win32diskimager from a tar or rsync backup created by raspiBackup
+# 	Create an image file in backupdirectory with extension .dd which can be restored with dd or win32diskimager
+# 	from a tar or rsync backup created by raspiBackup
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup to get more details about raspiBackup
 #
@@ -10,7 +11,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (c) 2017-2020 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2017-2023 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -32,7 +33,7 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.7"
+VERSION="v0.1.8"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -68,7 +69,7 @@ if (( $MAIL_EXTENSION_AVAILABLE )); then
 fi
 
 function usage() {
-	echo "Syntax: $MYSELF <BackupDirectory> [<ImageFileDirectory>]"
+	echo "Syntax: $MYSELF <BackupDirectory>"
 }
 
 # query invocation parms
@@ -87,20 +88,13 @@ if [[ ! -d $BACKUP_DIRECTORY ]]; then
 	exit 1
 fi
 
-IMAGE_DIRECTORY="${2:-$BACKUP_DIRECTORY}"
-
-if [[ ! -d $IMAGE_DIRECTORY ]]; then
-	echo "??? Imagedirectory $IMAGE_DIRECTORY not found"
-	usage
-	exit 1
-fi
-
 SFDISK_FILE="$(ls $BACKUP_DIRECTORY/*.sfdisk 2>/dev/null)"
 if [[ -z "$SFDISK_FILE" ]]; then
 	echo "??? Incorrect backup path. .sfdisk file of backup not found"
 	usage
 	exit 1
 fi
+
 IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
 LOOP=$(losetup -f)
 

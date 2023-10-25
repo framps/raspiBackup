@@ -1,7 +1,7 @@
 ![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
 
 <p align="center">
-  <img src="./images/raspiBackupIcon_smaller.png" />
+  <img src="./images/Icon_rot_blau_final_128.png" />
 </p>
 
 # raspiBackup - Backup and restore your active Raspberries

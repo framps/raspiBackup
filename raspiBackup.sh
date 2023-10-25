@@ -1161,10 +1161,10 @@ MSG_DE[$MSG_NO_ROOTBACKUPFILE_FOUND]="RBK0137E: Rootbackupdatei für den Typ %s 
 MSG_FI[$MSG_NO_ROOTBACKUPFILE_FOUND]="RBK0137E: Juurivarmuuskopiota ei löytynyt tyypille %s."
 MSG_FR[$MSG_NO_ROOTBACKUPFILE_FOUND]="RBK0137E: Fichier de sauvegarde Root pour le type %s introuvable."
 MSG_USING_ROOTBACKUPFILE=138
-MSG_EN[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Using bootbackup %s."
-MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Bootbackup %s wird benutzt."
+MSG_EN[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Using rootbackup %s."
+MSG_DE[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Rootbackup %s wird benutzt."
 MSG_FI[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: Käytetään käynnistysvarmuuskopiota %s."
-MSG_FR[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: La sauvegarde Boot %s est en cours d'utilisation."
+MSG_FR[$MSG_USING_ROOTBACKUPFILE]="RBK0138I: La sauvegarde Root %s est en cours d'utilisation."
 MSG_FORCING_CREATING_PARTITIONS=139
 MSG_EN[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partition creation ignores errors."
 MSG_DE[$MSG_FORCING_CREATING_PARTITIONS]="RBK0139W: Partitionserstellung ignoriert Fehler."
@@ -1539,11 +1539,11 @@ MSG_EN[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: No UUID updated in %s for %s. Backu
 MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Es konnte keine UUID in %s für %s erneuert werden. Das Backup könnte nicht starten."
 MSG_FI[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: %s ei päivittänyt UUID-tunnusta kohteelle %s. Varmuuskopio ei välttämättä käynnisty oikein."
 MSG_FR[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Un UUID dans %s pour %s n'a pas pu être renouvelé. La sauvegarde n'a pas pu démarrer."
-MSG_UUIDS_NOT_UNIQUE=209
-MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs are not unique on devices and/or partitions and may cause issues. In case of error messages check them with 'sudo blkid' and make them unique."
-MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen und kann Probleme bereiten. Falls Fehlermeldungen auftreten sollten sie mit 'sudo blkid' überprüft und dann eindeutig gemacht werden."
-MSG_FI[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUID:t eivot ole uniikkeja laittella ja/tai osioilla ja saattavat aiheuttaa ongelmia. Virheiden ilmaantuessa tarkista ne komennolla 'sudo blkid' ja muuta ne yksilöllisiksi."
-MSG_FR[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: Les UUID ne sont pas uniques sur les appareils et/ou les partitions et peuvent causer des problèmes. Lors de messages d'erreurs vérifiez les UUID avec 'sudo blkid' et rendez-les uniques."
+#MSG_UUIDS_NOT_UNIQUE=209
+#MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs are not unique on devices and/or partitions and may cause issues. In case of error messages check them with 'sudo blkid' and make them unique."
+#MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen und kann Probleme bereiten. Falls Fehlermeldungen auftreten sollten sie mit 'sudo blkid' überprüft und dann eindeutig gemacht werden."
+#MSG_FI[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUID:t eivot ole uniikkeja laittella ja/tai osioilla ja saattavat aiheuttaa ongelmia. Virheiden ilmaantuessa tarkista ne komennolla 'sudo blkid' ja muuta ne yksilöllisiksi."
+#MSG_FR[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: Les UUID ne sont pas uniques sur les appareils et/ou les partitions et peuvent causer des problèmes. Lors de messages d'erreurs vérifiez les UUID avec 'sudo blkid' et rendez-les uniques."
 MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY=210
 MSG_EN[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: More than two partitions detected. Only first two partitions are saved."
 MSG_DE[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Es existieren mehr als zwei Partitionen. Nur die ersten beiden Partitionen werden gesichert."
@@ -5213,7 +5213,9 @@ function bootPartitionBackup() {
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
-					local cmd="cd /boot; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					local bootMountpoint
+					[[ -d /boot/firmware ]] && bootMountpoint="/boot/firmware" || bootMountpoint="/boot"
+					local cmd="cd $bootMountpoint; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					executeTar "$cmd"
 				else
 					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
@@ -5509,7 +5511,6 @@ function backupTar() {
 		--exclude=$devroot/sys/* \
 		--exclude=$devroot/dev/* \
 		--exclude=$devroot/tmp/* \
-		--exclude={$devroot}${bootExclude}/* \
 		--exclude=$devroot/swapfile \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
@@ -6710,8 +6711,6 @@ function inspect4Backup() {
 	logCommand "ls -1 /dev/sd*"
 	logCommand "ls -1 /dev/nvme*"
 
-	logItem "mountpoint /boot: $(mountpoint -d /boot) mountpoint /: $(mountpoint -d /)"
-
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
 
 	if [[ -n "$BOOT_DEVICE" ]]; then
@@ -6728,84 +6727,56 @@ function inspect4Backup() {
 		logItem "Force BOOT_DEVICE to $BOOT_DEVICE"
 	elif [[ -z $BOOT_DEVICE ]]; then
 
-		#if ! areDevicesUnique; then
-		#	writeToConsole $MSG_LEVEL_MINIMAL $MSG_UUIDS_NOT_UNIQUE
-		#fi
+		logItem "Starting boot discovery"
 
-		logItem "Legacy boot discovery"
+		# test whether boot device is mounted
+		local bootMountpoint="/boot"
+		local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
+		logItem "$bootMountpoint mounted? $bootPartition"
 
-		part=$(for d in $(find /dev -type b); do [ "$(mountpoint -d /boot)" = "$(mountpoint -x $d)" ] && echo $d && break; done)
-		logItem "part: $part"
-		local bootDeviceNumber=$(mountpoint -d /boot)
-		local rootDeviceNumber=$(mountpoint -d /)
-		logItem "bootDeviceNumber: $bootDeviceNumber"
-		logItem "rootDeviceNumber: $rootDeviceNumber"
+		# test whether some other /boot path is mounted
+		if [[ -z $bootPartition ]]; then
+			bootPartition=$(mount | grep "/boot" | cut -f 1 -d ' ')
+			bootMountpoint=$(mount | grep "/boot" | cut -f 3 -d ' ')
+			logItem "Some path in /boot mounted? $bootPartition on $bootMountpoint"
+		fi
 
-		if [ "$bootDeviceNumber" == "$rootDeviceNumber" ]; then	# /boot on same partition with root partition /
-			local rootDevice=$(for file in $(find /sys/dev/ -name $rootDeviceNumber); do source ${file}/uevent; echo $DEVNAME; done) # mmcblk0p1
-			logItem "Rootdevice: $rootDevice"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "$rootDevice"
+		# find root partition
+		local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
+		logItem "/ mounted? $rootPartition"
+		if [[ $rootPartition == "/dev/root" ]]; then
+			local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
+			rootPartition=${rp#/root=/}
+			logItem "/ mounted as /dev/root: $rootPartition"
+		fi
+
+		# check for /boot on root partition
+		if [[ -z "$bootPartition" ]]; then
+			if ! find $bootMountpoint -name cmdline.txt; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
+				exitError $RC_MISC_ERROR
+			else
+				bootPartition="$rootPartition"
+				logItem "Bootpartition is located on rootpartition $bootPartition"
+			fi
+		fi
+
+		boot=( $(deviceInfo "$bootPartition") )
+		root=( $(deviceInfo "$rootPartition") )
+
+		logItem "boot: ${boot[@]}"
+		logItem "root: ${root[@]}"
+
+		if [[  -z "$boot" || -z "$root" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
+			exitError $RC_NO_BOOT_FOUND
+		fi
+
+		BOOT_DEVICE="${boot[0]}"
+
+		if [[ "${boot[@]}" == "${root[@]}" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "/dev/$BOOT_DEVICE"
 			SHARED_BOOT_DIRECTORY=1
-			BOOT_DEVICE=${rootDevice/p*/} # mmcblk0
-
-		elif [[ "$part" =~ /dev/(sd[a-z]) || "$part" =~ /dev/(mmcblk[0-9]+)p || "$part" =~ /dev/(nvme[0-9]+n[0-9]+)p ]]; then
-			BOOT_DEVICE=${BASH_REMATCH[1]}
-
-		else
-			logItem "Starting alternate boot discovery"
-
-			# test whether boot device is mounted
-			local bootMountpoint="$(cmdLinePath)"
-			if [[ -z $bootMountpoint ]]; then	# enable non Raspbian Linux OS
-				bootMountpoint="/boot"
-			fi
-			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
-			logItem "$bootMountpoint mounted? $bootPartition"
-
-			# test whether some other /boot path is mounted
-			if [[ -z $bootPartition ]]; then
-				bootPartition=$(mount | grep "/boot" | cut -f 1 -d ' ')
-				bootMountpoint=$(mount | grep "/boot" | cut -f 3 -d ' ')
-				logItem "Some path in /boot mounted? $bootPartition on $bootMountpoint"
-			fi
-
-			# find root partition
-			local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
-			logItem "/ mounted? $rootPartition"
-			if [[ $rootPartition == "/dev/root" ]]; then
-				local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
-				rootPartition=${rp#/root=/}
-				logItem "/ mounted as /dev/root: $rootPartition"
-			fi
-
-			# check for /boot on root partition
-			if [[ -z "$bootPartition" ]]; then
-				if ! find $bootMountpoint -name cmdline.txt; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
-					exitError $RC_MISC_ERROR
-				else
-					bootPartition="$rootPartition"
-					logItem "Bootpartition is located on rootpartition $bootPartition"
-				fi
-			fi
-
-			boot=( $(deviceInfo "$bootPartition") )
-			root=( $(deviceInfo "$rootPartition") )
-
-			logItem "boot: ${boot[@]}"
-			logItem "root: ${root[@]}"
-
-			if [[  -z "$boot" || -z "$root" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
-				exitError $RC_NO_BOOT_FOUND
-			fi
-
-			BOOT_DEVICE="${boot[0]}"
-
-			if [[ "${boot[@]}" == "${root[@]}" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "/dev/$BOOT_DEVICE"
-				SHARED_BOOT_DIRECTORY=1
-			fi
 		fi
 	fi
 
@@ -8576,6 +8547,11 @@ function synchronizeCmdlineAndfstab() {
 	if [[ -f "$CMDLINE" ]]; then
 		logItem "Upd $CMDLINE"
 		logCommand "cat $CMDLINE"
+	fi
+
+	if [[ -f "$FSTAB" ]]; then
+		logItem "Upd $FSTAB"
+		logCommand "cat $FSTAB"
 	fi
 
 	umount $BOOT_MP &>>"$LOG_FILE"
