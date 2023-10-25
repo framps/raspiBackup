@@ -2338,6 +2338,11 @@ function isSupportedEnvironment() {
 
 	logCommand "cat $OSRELEASE"
 
+	if grep -iq bookworm $OSRELEASE; then
+		echo "Bookworm not supported right now. Please check https://github.com/framps/raspiBackup/issues/692"
+		exitError $RC_ASSERTION
+	fi
+
 #	Check it's Raspberry HW
 	if [[ ! -e $MODELPATH ]]; then
 		logItem "$MODELPATH not found"
