@@ -77,7 +77,7 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE | sed 's/\$//'))
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE | sed 's/\$//')
 GIT_COMMIT='$Sha1$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
@@ -1924,8 +1924,9 @@ MSG_DE[$MSG_NO_PARTUUID_SYNCHRONIZED]="RBK0293W: Es konnte keine PARTUUID in %s 
 MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=294
 MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Current configuration version %s has to be be updated to %s."
 MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
-
-
+MSG_SYNC_CMDLINE_FSTAB=295
+MSG_EN[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: Synchonizing %s and %s."
+MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2376,19 +2377,6 @@ function isUnsupportedVersion() {
 	[[ "$GIT_COMMIT" != "$SHA_PLACEHOLDER"  && "$GIT_DATE" != "$DATE_PLACEHOLDER" ]] && rc=1
 	logExit $rc
 	return $rc
-}
-
-function cmdLinePath() {
-
-	logEntry
-
-	local f="$(find /boot -name cmdline.txt)" # either /boot/cmdline.txt or /boot/firmware/cmdline.txt
-	logItem "cmdLinePath: $f"
-
-	f="${f/\/cmdline.txt/}" 	# remove filename
-	echo "$f"
-
-	logExit
 }
 
 function isSupportedEnvironment() {
@@ -6226,10 +6214,6 @@ function backup() {
 		logCommand "fdisk -l $BOOT_DEVICENAME"
 	fi
 
-	if [[ -f "$(cmdLinePath)/cmdline.txt" ]]; then
-		logCommand "cat $(cmdLinePath)/cmdline.txt"
-	fi
-
 	logItem "Starting $BACKUPTYPE backup..."
 
 	rc=0
@@ -8022,11 +8006,9 @@ function doitRestore() {
 		fi
 	fi
 
-	if (( $PARTITIONBASED_BACKUP )); then
-		if ! which dosfslabel &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "dosfslabel" "dosfstools"
-			exitError $RC_MISSING_COMMANDS
-		fi
+	if ! which dosfslabel &>/dev/null; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "dosfslabel" "dosfstools"
+		exitError $RC_MISSING_COMMANDS
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP	 )); then
@@ -8431,7 +8413,7 @@ function synchronizeCmdlineAndfstab() {
 	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
-	local cmdline="$(cmdLinePath)/cmdline.txt" # path for message
+	local cmdline="/boot/cmdline.txt" # path for message
 	local fstab="/etc/fstab" # path for message
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
@@ -8440,6 +8422,10 @@ function synchronizeCmdlineAndfstab() {
 	partprobe $ROOT_PARTITION		# reload partition table
 
 	logCommand "blkid -o udev $ROOT_PARTITION"
+
+	local rootLabelCreated=0
+
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC_CMDLINE_FSTAB "$cmdline" "$fstab"
 
 	if [[ -f "$CMDLINE" ]]; then
 
@@ -8468,13 +8454,15 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
-			local newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
-			logItem "CMDLINE - newLABEL: $newLABEL, oldLABEL: $oldLABEL"
-			if [[ -z $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
-			elif [[ $oldLABEL != $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$cmdline"
-				sed -i "s/$oldLABEL/$newLABEL/" $(realpath $CMDLINE) &>> "$LOG_FILE"
+			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			local rc=$?
+			if (( $rc )); then
+				local cmd="e2label $ROOT_PARTITION $oldLABEL"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+			else
+				rootLabelCreated=1
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -8513,14 +8501,18 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$olduuidID/$newuuidID/g" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
-			local oldLABEL=${BASH_REMATCH[1]}
-			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
-			local rc=$?
-			if (( $rc )); then
-				local cmd="e2label $ROOT_PARTITION $oldLABEL"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+			if (( ! $rootLabelCreated )) ; then
+				local oldLABEL=${BASH_REMATCH[1]}
+				logItem "Writing label $oldLABEL on $ROOT_PARTITION"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+				e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+				local rc=$?
+				if (( $rc )); then
+					local cmd="e2label $ROOT_PARTITION $oldLABEL"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+				else
+					rootLabelCreated=1
+				fi
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
@@ -8558,18 +8550,11 @@ function synchronizeCmdlineAndfstab() {
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
-			e2label "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
 			local rc=$?
 			if (( $rc )); then
-				local cmd="e2label $BOOT_PARTITION $oldLABEL"
+				local cmd="dosfslabel $BOOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-			fi
-
-			if [[ -z $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-			elif [[ $oldLABEL != $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
-				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> "$LOG_FILE"
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
