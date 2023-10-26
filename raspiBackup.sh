@@ -77,7 +77,7 @@ IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE | sed 's/\$//'))
 GIT_COMMIT='$Sha1$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
@@ -2403,7 +2403,6 @@ function isSupportedEnvironment() {
 	local MODELPATH=/sys/firmware/devicetree/base/model
 	local OSRELEASE=/etc/os-release
 	local RPI_ISSUE=/etc/rpi-issue
-	local OS_RELEASE=/etc/os-release
 
 	logCommand "cat $OSRELEASE"
 
@@ -2424,14 +2423,14 @@ function isSupportedEnvironment() {
 	fi
 	logItem "$RPI_ISSUE not found"
 
-	if [[ ! -e $OS_RELEASE ]]; then
-		logItem "$OS_RELEASE not found"
+	if [[ ! -e $OSRELEASE ]]; then
+		logItem "$OSRELEASE not found"
 		logExit 1
 		return 1
 	fi
 
-	logItem $(<$OS_RELEASE)
-	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OS_RELEASE
+	logItem $(<$OSRELEASE)
+	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OSRELEASE
 	local rc=$?
 
 	IS_UBUNTU=$(( ! $rc ))
@@ -5483,12 +5482,6 @@ function backupTar() {
 		target="\"$BACKUPTARGET_FILE\""
 	fi
 
-	local bootExclude="/boot"
-	if (( $IS_UBUNTU )); then
-		bootExclude="${UBUNTU_FIRMWARE_DIRECTORY}"
-	fi
-	logItem "bootExclude: $bootExclude"
-
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
@@ -6874,10 +6867,6 @@ function inspect4Restore() {
 		BACKUP_BOOT_PARTITION_PREFIX="$(getPartitionPrefix $BACKUP_BOOT_DEVICE)"
 		logItem "BACKUP_BOOT_PARTITION_PREFIX: $BACKUP_BOOT_PARTITION_PREFIX"
 	fi
-
-	[[ -d "$UBUNTU_FIRMWARE_DIRECTORY" ]]
-	IS_UBUNTU=$(( ! $? ))
-	logItem "IS_UBUNTU: $IS_UBUNTU"
 
 	logExit
 
@@ -8376,7 +8365,6 @@ function updateConfig() {
 				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
 				echo "# $line" >> $MERGED_CONFIG						# insert deleted config line as comment
 				(( deleted ++ ))
-				set +x
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DELETED_CONFIG_OPTION "$KW" "$VAL"
 			fi
 		fi
@@ -8453,6 +8441,49 @@ function synchronizeCmdlineAndfstab() {
 
 	logCommand "blkid -o udev $ROOT_PARTITION"
 
+	if [[ -f "$CMDLINE" ]]; then
+
+		logItem "Org $CMDLINE"
+		logCommand "cat $CMDLINE"
+
+		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
+			if [[ -z $newPartUUID ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+			elif [[ $oldPartUUID != $newPartUUID ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
+			fi
+		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
+			local oldUUID=${BASH_REMATCH[1]}
+			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
+			if [[ -z $newUUID ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+			elif [[ $oldUUID != $newUUID ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
+				sed -i "s/$oldUUID/$newUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
+			fi
+		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
+			local oldLABEL=${BASH_REMATCH[1]}
+			local newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
+			logItem "CMDLINE - newLABEL: $newLABEL, oldLABEL: $oldLABEL"
+			if [[ -z $newLABEL ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+			elif [[ $oldLABEL != $newLABEL ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$cmdline"
+				sed -i "s/$oldLABEL/$newLABEL/" $(realpath $CMDLINE) &>> "$LOG_FILE"
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+		fi
+	else
+		logCommand "ls -la $BOOT_MP"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
+	fi
+
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Org $FSTAB"
 		logItem "$(cat $FSTAB)"
@@ -8499,49 +8530,52 @@ function synchronizeCmdlineAndfstab() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab"
 	fi
 
-	if [[ -f "$CMDLINE" ]]; then
+	if [[ -f "$FSTAB" ]]; then
+		logItem "Org $FSTAB"
+		logItem "$(cat $FSTAB)"
 
-		logItem "Org $CMDLINE"
-		logCommand "cat $CMDLINE"
-
-		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
-			logCommand "blkid -o udev $ROOT_PARTITION"
+		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
-			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
+			local newPartUUID=$(blkid -o udev $BOOT_PARTITION | egrep ID_FS_PARTUUID= | cut -d= -f2)
+			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 			elif [[ $oldPartUUID != $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $CMDLINE &>> "$LOG_FILE"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
+				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
-			logCommand "blkid -o udev $ROOT_PARTITION"
+		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldUUID=${BASH_REMATCH[1]}
-			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
-			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
+			local newUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 			elif [[ $oldUUID != $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
-				sed -i "s/$oldUUID/$newUUID/" $CMDLINE &>> "$LOG_FILE"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
+				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
-			oldLABEL=${BASH_REMATCH[1]}
-			newLABEL=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_LABEL= | cut -d= -f2)
-			logItem "CMDLINE - newLABEL: $newLABEL, oldLABEL: $oldLABEL"
+		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
+			local oldLABEL=${BASH_REMATCH[1]}
+			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
+			e2label "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			local rc=$?
+			if (( $rc )); then
+				local cmd="e2label $BOOT_PARTITION $oldLABEL"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+			fi
+
 			if [[ -z $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 			elif [[ $oldLABEL != $newLABEL ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$cmdline"
-				sed -i "s/$oldLABEL/$newLABEL/" $CMDLINE &>> "$LOG_FILE"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "LABEL" "$oldLABEL" "$newLABEL" "$fstab"
+				sed -i "s/$oldLABEL/$newLABEL/" $FSTAB &>> "$LOG_FILE"
 			fi
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 		fi
 	else
-		logCommand "ls -la $CMDLINE"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 	fi
 
 	if [[ -f "$CMDLINE" ]]; then
