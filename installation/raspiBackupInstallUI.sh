@@ -4561,11 +4561,6 @@ if (( $UID != 0 )); then
 	exit 1
 fi
 
-if grep -iq bookworm /etc/os-release; then
-	echo "Bookworm not supported right now. Please check https://github.com/framps/raspiBackup/issues/692"
-	exit 1
-fi
-
 trapWithArg cleanup SIGINT SIGTERM EXIT
 
 writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
