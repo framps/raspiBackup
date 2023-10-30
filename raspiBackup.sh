@@ -422,6 +422,7 @@ RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 RC_EXTENSION_ERROR=141
 RC_UNPROTECTED_CONFIG=142
+RC_NOT_SUPPORTED=143
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -1927,6 +1928,9 @@ MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Aktuelle Konfigura
 MSG_SYNC_CMDLINE_FSTAB=295
 MSG_EN[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: Synchonizing %s and %s."
 MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
+OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
+MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem not supported."
+MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem is nicht supported."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6688,7 +6692,10 @@ function inspect4Backup() {
 	logCommand "ls -1 /dev/sd*"
 	logCommand "ls -1 /dev/nvme*"
 
-	logItem "BOOT_DEVICE: $BOOT_DEVICE"
+	if mount | grep -q "^overlay"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $OVERLAY_FILESYSTEM_NOT_SUPPORTED
+		exitError $RC_NOT_SUPPORTED
+	fi
 
 	if [[ -n "$BOOT_DEVICE" ]]; then
 		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
