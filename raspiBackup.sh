@@ -411,6 +411,7 @@ RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
+RC_NOT_SUPPORTED=141
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -1904,6 +1905,9 @@ MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartitioncheck endet fehlerh
 MSG_IMG_BOOT_CHECK_STARTED=291
 MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartition check started."
 MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartitionscheck gestartet."
+OVERLAY_FILESYSTEM_NOT_SUPPORTED=292
+MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlay filesystem not supported."
+MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlayfilesystem is nicht supported."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6531,7 +6535,10 @@ function inspect4Backup() {
 	logCommand "ls -1 /dev/sd*"
 	logCommand "ls -1 /dev/nvme*"
 
-	logItem "BOOT_DEVICE: $BOOT_DEVICE"
+	if mount | grep -q "^overlay"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $OVERLAY_FILESYSTEM_NOT_SUPPORTED
+		exitError $RC_NOT_SUPPORTED
+	fi
 
 	if [[ -n "$BOOT_DEVICE" ]]; then
 		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
