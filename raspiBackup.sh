@@ -6692,7 +6692,7 @@ function inspect4Backup() {
 	logCommand "ls -1 /dev/sd*"
 	logCommand "ls -1 /dev/nvme*"
 
-	if mount | grep -q "overlay.* on / type"; then
+	if mount | grep -q "^overlay.* on / type"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $OVERLAY_FILESYSTEM_NOT_SUPPORTED
 		exitError $RC_NOT_SUPPORTED
 	fi
