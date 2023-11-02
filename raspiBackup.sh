@@ -7963,44 +7963,47 @@ function updateRestoreReminder() {
 
 	local reminder_file="$VAR_LIB_DIRECTORY/$RESTORE_REMINDER_FILE"
 
-	# create directory to save state
-	if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-		mkdir -p "$VAR_LIB_DIRECTORY"
-	fi
+	if (( $RESTORE_REMINDER_INTERVAL > 0 )); then
 
-	# initialize reminder state
-	if [[ ! -e "$reminder_file" ]]; then
-		 echo "$(date +%Y%m) 0" > "$reminder_file"
-		 return
-	fi
+		# create directory to save state
+		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
+			mkdir -p "$VAR_LIB_DIRECTORY"
+		fi
 
-	# retrieve reminder state
-	local now
-	now=$(date +%Y%m)
-	local rf
-	rf="$(<$reminder_file)"
-	if [[ -z "${rf}" ]]; then												# issue #316: reminder file exists but is empty
-		echo "$(date +%Y%m) 0" > "$reminder_file"
-		return
-	fi
-	rf=( $(<$reminder_file) )
-	local diffMonths
-	diffMonths=$(calculateMonthDiff $now ${rf[0]} )
+		# initialize reminder state
+		if [[ ! -e "$reminder_file" ]]; then
+			 echo "$(date +%Y%m) 0" > "$reminder_file"
+			 return
+		fi
 
-	# check if reminder should be send
-	if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
-		if (( ${rf[1]} < $RESTORE_REMINDER_REPEAT )); then
-			# update reminder state
-			local nr=$(( ${rf[1]} + 1 ))
-			echo "${rf[0]} $nr" > "$reminder_file"
-			local left=$(( $RESTORE_REMINDER_REPEAT - $nr ))
-			NEWS_AVAILABLE=1
-			RESTORETEST_REQUIRED=1
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORETEST_REQUIRED $left
-		else
-			logItem "Reset reminder"
-			# reset reminder state
+		# retrieve reminder state
+		local now
+		now=$(date +%Y%m)
+		local rf
+		rf="$(<$reminder_file)"
+		if [[ -z "${rf}" ]]; then												# issue #316: reminder file exists but is empty
 			echo "$(date +%Y%m) 0" > "$reminder_file"
+			return
+		fi
+		rf=( $(<$reminder_file) )
+		local diffMonths
+		diffMonths=$(calculateMonthDiff $now ${rf[0]} )
+
+		# check if reminder should be send
+		if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
+			if (( ${rf[1]} < $RESTORE_REMINDER_REPEAT )); then
+				# update reminder state
+				local nr=$(( ${rf[1]} + 1 ))
+				echo "${rf[0]} $nr" > "$reminder_file"
+				local left=$(( $RESTORE_REMINDER_REPEAT - $nr ))
+				NEWS_AVAILABLE=1
+				RESTORETEST_REQUIRED=1
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORETEST_REQUIRED $left
+			else
+				logItem "Reset reminder"
+				# reset reminder state
+				echo "$(date +%Y%m) 0" > "$reminder_file"
+			fi
 		fi
 	fi
 
