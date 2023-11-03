@@ -1906,8 +1906,8 @@ MSG_IMG_BOOT_CHECK_STARTED=291
 MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartition check started."
 MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartitionscheck gestartet."
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=292
-MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlay filesystem not supported."
-MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlayfilesystem is nicht supported."
+MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlay filesystem is not supported."
+MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlayfilesystem wird nicht unterstützt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
