@@ -1929,8 +1929,8 @@ MSG_SYNC_CMDLINE_FSTAB=295
 MSG_EN[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: Synchonizing %s and %s."
 MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
-MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem not supported."
-MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem is nicht supported."
+MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem is not supported."
+MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem wird nicht unterstützt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
