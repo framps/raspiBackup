@@ -99,7 +99,7 @@ The installer uses menus, checklists and radiolists similar to raspi-config and 
 
 Installation of raspiBackup will started with following command:
 
-`curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
+`curl -o install -L https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh; sudo bash ./install`
 
 ## Donations
 
