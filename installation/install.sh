@@ -26,15 +26,17 @@
 #######################################################################################################################
 
 MYSELF="install"
-VERSION="0.1.3"
+VERSION="0.1.4"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 URL="https://www.linux-tips-and-tricks.de"
 INSTALLER="raspiBackupInstallUI.sh"
 INSTALLER_DOWNLOAD_URL="$URL/downloads${URLTARGET}/$INSTALLER/download"
 
+CURRENT_DIR=$(pwd)
+
 TO_BE_INSTALLED="raspiBackup.sh"
-LOG_FILE="$MYSELF.log"
+LOG_FILE="$CURRENT_DIR/$MYSELF.log"
 
 GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
@@ -46,10 +48,11 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
 function cleanup() {
-	[[ -f "$MYSELF" ]] && rm -f "$MYSELF" &>/dev/null
+		set -x
 	[[ -f "$INSTALLER" ]] && rm -f "$INSTALLER" &>/dev/null
-	[[ -f "$LOG_FILE" ]] && rm -f "$LOG_FILE" &>/dev/null
 	cd "$CURRENT_DIR"
+	[[ -f "$CURRENT_DIR/$MYSELF" ]] && rm -f "$CURRENT_DIR/$MYSELF" &>/dev/null
+	[[ -f "$LOG_FILE" ]] && rm -f "$LOG_FILE" &>/dev/null
 }
 
 if [[ $# == 1 && ( $1 == "-v" || $1 == "--version" ) ]]; then
@@ -61,8 +64,6 @@ if (( $UID != 0 )) && [[ $1 != "-h" ]]; then
 	echo "Root access required to install $TO_BE_INSTALLED. Please use 'sudo ./$MYSELF'."
 	exit 1
 fi
-
-CURRENT_DIR=$(pwd)
 
 trap cleanup SIGINT SIGTERM EXIT
 
