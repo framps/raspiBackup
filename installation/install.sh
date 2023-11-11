@@ -48,7 +48,6 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
 function cleanup() {
-		set -x
 	[[ -f "$INSTALLER" ]] && rm -f "$INSTALLER" &>/dev/null
 	cd "$CURRENT_DIR"
 	[[ -f "$CURRENT_DIR/$MYSELF" ]] && rm -f "$CURRENT_DIR/$MYSELF" &>/dev/null
