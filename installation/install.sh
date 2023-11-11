@@ -51,7 +51,6 @@ function cleanup() {
 	[[ -f "$INSTALLER" ]] && rm -f "$INSTALLER" &>/dev/null
 	cd "$CURRENT_DIR"
 	[[ -f "$CURRENT_DIR/$MYSELF" ]] && rm -f "$CURRENT_DIR/$MYSELF" &>/dev/null
-	[[ -f "$LOG_FILE" ]] && rm -f "$LOG_FILE" &>/dev/null
 }
 
 if [[ $# == 1 && ( $1 == "-v" || $1 == "--version" ) ]]; then
@@ -85,4 +84,6 @@ if (( $rc )); then
 	echo "??? $INSTALLER failed. RC: $rc" >> "$LOG_FILE"
 	cat "$LOG_FILE"
 	exit 1
+else
+	rm "$LOG_FILE"
 fi
