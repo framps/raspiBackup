@@ -60,6 +60,13 @@ else
 	DOWNLOAD_FILE="$FILE_RASPIBACKUP"
 fi
 
+if (( $updateGitInfo )); then
+	if ! which jq &>/dev/null; then
+		echo "??? jq required by $MYNAME. Please install jq first. Try 'sudo apt-get install jq'."
+		exit 1
+	fi
+fi
+
 SHA="XCRTaGExCg=="  	# backslash dollar Sha1
 DATE="XCREYXRlCg==" 	# backslash dollar Date
 
@@ -88,11 +95,6 @@ fi
 echo "--- Download finished successfully"
 
 if (( $updateGitInfo )); then
-
-	if ! which jq &>/dev/null; then
-		echo "??? jq required by $MYNAME. Please install jq first. Try 'sudo apt-get install jq'."
-		exit 1
-	fi
 
 	jsonFile=$(mktemp)
 	trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
