@@ -60,8 +60,15 @@ declare -A REQUIRED_COMMANDS=( \
 		)
 
 missingSomeCommands=0
+aptUpdated=0
 for cmd in "${!REQUIRED_COMMANDS[@]}"; do
 	if ! hash $cmd 2>/dev/null; then
+
+		if (( ! $aptUpdated )); then
+			apt update
+			aptUpdated=1
+		fi
+		
 		echo -n "$MYSELF depends on $cmd. Should ${REQUIRED_COMMANDS[$cmd]} be installed now? (Y/n) "
 		read answer
 		answer=${answer:0:1}	# first char only
@@ -71,7 +78,7 @@ for cmd in "${!REQUIRED_COMMANDS[@]}"; do
 			echo "Please install ${REQUIRED_COMMANDS[$cmd]} manually first and then start the installation of $MYNAME again."
 			missingSomeCommands=1
 		else
-			apt-get -y install ${REQUIRED_COMMANDS[$cmd]}
+			apt -y install ${REQUIRED_COMMANDS[$cmd]}
 			if (( $? )); then
 				echo "Installation of ${REQUIRED_COMMANDS[$cmd]} failed. Please install ${REQUIRED_COMMANDS[$cmd]} manually and then start the installation of $MYNAME again."
 				exit 1
