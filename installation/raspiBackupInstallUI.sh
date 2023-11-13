@@ -38,7 +38,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.5"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.6"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -62,12 +62,25 @@ declare -A REQUIRED_COMMANDS=( \
 missingSomeCommands=0
 for cmd in "${!REQUIRED_COMMANDS[@]}"; do
 	if ! hash $cmd 2>/dev/null; then
-		echo "$MYSELF depends on $cmd. Please install ${REQUIRED_COMMANDS[$cmd]} first."
-		missingSomeCommands=1
+		echo -n "$MYSELF depends on $cmd. Should ${REQUIRED_COMMANDS[$cmd]} be installed now? (Y/n) "
+		read answer
+		answer=${answer:0:1}	# first char only
+		answer=${answer:-"y"}	# set default yes
+		answer=${answer,,*}		# to lower
+		if [[ ! "yj" =~ $answer ]]; then
+			echo "Please install ${REQUIRED_COMMANDS[$cmd]} manually first and then start the installation of $MYNAME again."
+			missingSomeCommands=1
+		else
+			apt-get -y install ${REQUIRED_COMMANDS[$cmd]}
+			if (( $? )); then
+				echo "Installation of ${REQUIRED_COMMANDS[$cmd]} failed. Please install ${REQUIRED_COMMANDS[$cmd]} manually and then start the installation of $MYNAME again."
+				exit 1
+			fi
+		fi
 	fi
 done
 
-(( $missingSomeCommands )) && exit
+(( $missingSomeCommands )) && exit 1
 
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
@@ -4506,6 +4519,44 @@ function show_help() {
 	echo "-h: display this help"
 	echo "-U: unattended update of $MYSELF"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
+}
+
+function askYesNo() { # message message_parms
+
+	local yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
+	local addtlMsg=0
+
+	if [[ $# > 1 ]]; then
+		local m="$1"
+		shift
+		addtlMsg=1
+		local args="$@"
+	fi
+
+	local answer
+
+	if (( $addtlMsg )); then
+		noNL=1
+		writeToConsole $MSG_LEVEL_MINIMAL $m "$args" "$yes_no"
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
+	fi
+
+	if (( $NO_YES_QUESTION )); then
+		answer=$(getMessage $MSG_ANSWER_CHARS_YES)
+	else
+		read answer
+	fi
+
+	answer=${answer:0:1}	# first char only
+	answer=${answer:-"n"}	# set default no
+
+	local yes=$(getMessage $MSG_ANSWER_CHARS_YES)
+	if [[ ! $yes =~ $answer ]]; then
+		return 1
+	else
+		return 0
+	fi
 }
 
 INVOCATIONPARMS=""			# save passed opts for logging
