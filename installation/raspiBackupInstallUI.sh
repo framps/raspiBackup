@@ -59,35 +59,34 @@ declare -A REQUIRED_COMMANDS=( \
 		["sfdisk"]="fdisk" \
 		)
 
-missingSomeCommands=0
-aptUpdated=0
-for cmd in "${!REQUIRED_COMMANDS[@]}"; do
+requiredCmds=()
+for cmd in ${!REQUIRED_COMMANDS[@]}; do
 	if ! hash $cmd 2>/dev/null; then
-
-		if (( ! $aptUpdated )); then
-			apt update
-			aptUpdated=1
-		fi
-		
-		echo -n "$MYSELF depends on $cmd. Should ${REQUIRED_COMMANDS[$cmd]} be installed now? (Y/n) "
-		read answer
-		answer=${answer:0:1}	# first char only
-		answer=${answer:-"y"}	# set default yes
-		answer=${answer,,*}		# to lower
-		if [[ ! "yj" =~ $answer ]]; then
-			echo "Please install ${REQUIRED_COMMANDS[$cmd]} manually first and then start the installation of $MYNAME again."
-			missingSomeCommands=1
-		else
-			apt -y install ${REQUIRED_COMMANDS[$cmd]}
-			if (( $? )); then
-				echo "Installation of ${REQUIRED_COMMANDS[$cmd]} failed. Please install ${REQUIRED_COMMANDS[$cmd]} manually and then start the installation of $MYNAME again."
-				exit 1
-			fi
-		fi
+		requiredCmds+=($cmd)
 	fi
 done
 
-(( $missingSomeCommands )) && exit 1
+if (( ${#requiredCmds[@]} > 0 )); then
+	for cmd in ${requiredCmds[@]}; do
+			echo "$MYSELF depends on $cmd which is available in ${REQUIRED_COMMANDS[$cmd]}"
+	done
+
+	echo -n "Install all the missing package(s)? (Y/n) "
+	read answer
+	answer=${answer:0:1}		# first char only
+	answer=${answer:-"y"}	# set default yes
+	answer=${answer,,*}		# to lower
+	if [[ ! "yj" =~ $answer ]]; then
+		echo "Please install the required package(s) manually first and then invoke ./$MYSELF again."
+		exit 1
+	fi
+
+	apt -y install ${requiredCmds[@]}
+	if (( $? )); then
+		echo "Installation of missing package(s) failed. Please install them manually and then invoke ./$MYSELF again."
+		exit 1
+	fi
+fi
 
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
