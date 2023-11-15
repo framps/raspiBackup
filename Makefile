@@ -31,6 +31,7 @@ PACKAGE_FILE_COLLECTIONS = config/*
 PACKAGE_EXTENSION_DIRECTORY = extensions
 PACKAGE_EXTENSION_FILES_PREFIX = raspiBackup_*
 PACKAGE_EXTENSION_FILES = $(PACKAGE_EXTENSION_DIRECTORY)/$(PACKAGE_EXTENSION_FILES_PREFIX)
+FILES_TO_SIGN = raspiBackup.sh raspiBackupInstallUI.sh
 
 include $(CURRENT_DIR)/$(MAKEFILE).env
 # Has to define following environment constants:
@@ -44,7 +45,9 @@ include $(CURRENT_DIR)/$(MAKEFILE).env
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-build: ## Build raspiBackup {BRANCH=<branchName>}
+build: buildFiles signFiles
+
+buildFiles: ## Build raspiBackup {BRANCH=<branchName>}
    
         ifndef BUILD_LOCATION
            $(error BUILD_LOCATION is not set)
@@ -69,6 +72,9 @@ build: ## Build raspiBackup {BRANCH=<branchName>}
 	@$(foreach file, $(PACKAGE_FILES), cp -a $(file) $(BUILD_LOCATION)/$(notdir $(file));)
 
 	@rm $(PACKAGE_EXTENSION_DIRECTORY)/raspiBackupSampleExtensions.tgz
+
+signFiles: # sign files
+	@$(foreach file, $(FILES_TO_SIGN), gpg --sign --default-key $(SIGNER_EMAIL) $(BUILD_LOCATION)/$(file);)
 
 deploy: ## Deploy build {BRANCH=<branchName>}
 
