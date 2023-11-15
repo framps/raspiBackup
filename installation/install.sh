@@ -30,8 +30,11 @@ VERSION="0.1.4"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 URL="https://www.linux-tips-and-tricks.de"
-INSTALLER="raspiBackupInstallUI.sh"
+INSTALLER_FILENAME="raspiBackupInstallUI.sh"
+INSTALLER="$INSTALLER_FILENAME.gpg"
 INSTALLER_DOWNLOAD_URL="$URL/downloads${URLTARGET}/$INSTALLER/download"
+KEY_FILENAME="raspibackup.gpg"
+KEY_DOWNLOAD_URL="https://github.com/framps/raspiBackup/keys/$KEY_FILENAME"
 
 CURRENT_DIR=$(pwd)
 
@@ -66,6 +69,17 @@ fi
 trap cleanup SIGINT SIGTERM EXIT
 
 cd ~
+# download key
+echo "Downloading $KEY_DOWNLOAD_URL ..." > "$LOG_FILE"
+curl -L "$KEY_DOWNLOAD_URL" -o $KEY_FILENAME &>> "$LOG_FILE"
+rc=$?
+
+if (( $rc )); then
+	echo "??? Download error for $KEY_DOWNLOAD_URL. RC: $rc" >> "$LOG_FILE"
+	cat "$LOG_FILE"
+	exit 1
+fi
+
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." > "$LOG_FILE"
 curl -L "$INSTALLER_DOWNLOAD_URL" -o $INSTALLER &>> "$LOG_FILE"
@@ -76,6 +90,8 @@ if (( $rc )); then
 	cat "$LOG_FILE"
 	exit 1
 fi
+
+gpg --output $INSTALLER_FILENAME --decrypt $INSTALLER_FILENAME.gpg
 
 echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
 sudo -E bash "./$INSTALLER" "$1"
