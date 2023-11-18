@@ -69,16 +69,6 @@ fi
 trap cleanup SIGINT SIGTERM EXIT
 
 cd ~
-# download key
-echo "Downloading $KEY_DOWNLOAD_URL ..." > "$LOG_FILE"
-curl -L "$KEY_DOWNLOAD_URL" -o $KEY_FILENAME &>> "$LOG_FILE"
-rc=$?
-
-if (( $rc )); then
-	echo "??? Download error for $KEY_DOWNLOAD_URL. RC: $rc" >> "$LOG_FILE"
-	cat "$LOG_FILE"
-	exit 1
-fi
 
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." > "$LOG_FILE"
@@ -90,8 +80,6 @@ if (( $rc )); then
 	cat "$LOG_FILE"
 	exit 1
 fi
-
-gpg --output $INSTALLER_FILENAME --decrypt $INSTALLER_FILENAME.gpg
 
 echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
 sudo -E bash "./$INSTALLER" "$1"
