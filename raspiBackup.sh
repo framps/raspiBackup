@@ -419,13 +419,9 @@ RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
 RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
-<<<<<<< HEAD
 RC_EXTENSION_ERROR=141
 RC_UNPROTECTED_CONFIG=142
 RC_NOT_SUPPORTED=143
-=======
-RC_NOT_SUPPORTED=141
->>>>>>> master
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -1913,7 +1909,6 @@ MSG_DE[$MSG_SLACK_SEND_OK]="RBK0287I: Slack benachrichtigt."
 MSG_SLACK_INVALID_NOTIFICATION=289
 MSG_EN[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Invalid Slack notification %s detected. Valid notifications are %s."
 MSG_DE[$MSG_SLACK_INVALID_NOTIFICATION]="RBK0289E: Ungültige Slack Notification %s eingegeben. Mögliche Notifikationen sind %s."
-<<<<<<< HEAD
 MSG_UNPROTECTED_PROPERTIESFILE=290
 MSG_EN[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290W: Configuration file %s is unprotected."
 MSG_DE[$MSG_UNPROTECTED_PROPERTIESFILE]="RBK0290W: Konfigurationsdatei %s ist nicht geschützt."
@@ -1935,17 +1930,6 @@ MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
 MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem is not supported."
 MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem wird nicht unterstützt."
-=======
-MSG_IMG_BOOT_FSCHECK_FAILED=290
-MSG_EN[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartition check failed with RC %s."
-MSG_DE[$MSG_IMG_BOOT_FSCHECK_FAILED]="RBK0290E: Bootpartitioncheck endet fehlerhaft mit RC %s."
-MSG_IMG_BOOT_CHECK_STARTED=291
-MSG_EN[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartition check started."
-MSG_DE[$MSG_IMG_BOOT_CHECK_STARTED]="RBK0291I: Bootpartitionscheck gestartet."
-OVERLAY_FILESYSTEM_NOT_SUPPORTED=292
-MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlay filesystem is not supported."
-MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0292E: Overlayfilesystem wird nicht unterstützt."
->>>>>>> master
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4718,7 +4702,6 @@ function masqueradeNonlocalIPs() {
 	rm $f
 }
 
-<<<<<<< HEAD
 function callNotificationExtension() { # rc
 		logEntry "$1"
 
@@ -4770,8 +4753,6 @@ function cleanupStartup() { # trap
 	exit $rc
 }
 
-=======
->>>>>>> master
 function lockMe() {
 	logEntry
 	exlock_now
