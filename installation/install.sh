@@ -30,11 +30,8 @@ VERSION="0.1.4"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 URL="https://www.linux-tips-and-tricks.de"
-INSTALLER_FILENAME="raspiBackupInstallUI.sh"
-INSTALLER="$INSTALLER_FILENAME.gpg"
+INSTALLER="raspiBackupInstallUI.sh"
 INSTALLER_DOWNLOAD_URL="$URL/downloads${URLTARGET}/$INSTALLER/download"
-KEY_FILENAME="raspibackup.gpg"
-KEY_DOWNLOAD_URL="https://github.com/framps/raspiBackup/keys/$KEY_FILENAME"
 
 CURRENT_DIR=$(pwd)
 
@@ -69,7 +66,6 @@ fi
 trap cleanup SIGINT SIGTERM EXIT
 
 cd ~
-
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." > "$LOG_FILE"
 curl -L "$INSTALLER_DOWNLOAD_URL" -o $INSTALLER &>> "$LOG_FILE"
