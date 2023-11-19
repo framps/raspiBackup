@@ -354,7 +354,7 @@ MERGED_CONFIG="$CONFIG_DIR/raspiBackup.conf.merged"
 BACKUP_CONFIG="$CONFIG_DIR/raspiBackup.conf.bak"
 
 PERSISTENT_JOURNAL="/var/log/journal"
-PERSISTENT_JOURNAL_BOOKWORM="/var/hdd.log/journal"
+PERSISTENT_JOURNAL_LOG2RAM="/var/hdd.log/journal"
 
 NEW_OPTION_TRAILER="# >>>>> NEW OPTION added in config version %s <<<<< "
 DELETED_OPTION_TRAILER="# >>>>> OPTION DELETED in config version %s <<<<< "
@@ -5632,9 +5632,9 @@ function backupRsync() { # partition number (for partition based backup)
 
 	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
 	local fs="$(getFsType "$BACKUPPATH")"
-	if [[ ( -e $PERSISTENT_JOURNAL || -e $PERSISTENT_JOURNAL_BOOKWORM ) && $fs =~ ^nfs* ]]; then
-		logItem "Excluding $PERSISTENT_JOURNAL and $PERSISTENT_JOURNAL_BOOKWORM for nfs"
-		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL} --exclude ${excludeRoot}${PERSISTENT_JOURNAL_BOOKWORM}"
+	if [[ ( -e $PERSISTENT_JOURNAL || -e $PERSISTENT_JOURNAL_LOG2RAM ) && $fs =~ ^nfs* ]]; then
+		logItem "Excluding $PERSISTENT_JOURNAL and $PERSISTENT_JOURNAL_LOG2RAM for nfs"
+		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL} --exclude ${excludeRoot}${PERSISTENT_JOURNAL_LOG2RAM}"
 	fi
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
