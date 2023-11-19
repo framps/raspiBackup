@@ -38,7 +38,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.6"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.7"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -105,7 +105,7 @@ GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_O
 FILE_TO_INSTALL="raspiBackup.sh"
 
 RASPIBACKUP_NAME=${FILE_TO_INSTALL%.*}
-RASPIBACKUP_INSTALL_DEBUG=0 # just disable some code for debugging
+: "${RASPIBACKUP_INSTALL_DEBUG:=0}" # just disable some code for debugging
 
 CURRENT_DIR=$(pwd)
 NL=$'\n'
@@ -137,6 +137,31 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 # Create a backup once a week on Sunday morning at 5 am (default)
 #
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
+EOF
+
+read -r -d '' SYSTEMD_SERVICE <<-'EOF'
+[Unit]
+Description=Creation of a Raspberry backup with raspiBackup
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/raspiBackup.sh
+# For Use with Wrapper Script: ExecStart=/usr/local/bin/raspiBackupWrapper.sh
+[Install]
+WantedBy=multi-user.target
+EOF
+
+read -r -d '' SYSTEMD_TIMER <<-'EOF'
+[Unit]
+Description=Timer for raspiBackup.service to start backup
+
+[Timer]
+OnCalendar=Sun *-*-* 05:00:00
+#Every first Sunday on Month: OnCalendar=Sun *-*-01..07 00:15:00
+Unit=raspiBackup.service
+
+[Install]
+WantedBy=multi-user.target
 EOF
 
 if [[ -f $EXCLUDE_SERVICES_REGEX_FILE ]]; then
@@ -207,12 +232,19 @@ BIN_DIR="/usr/local/bin"
 ETC_DIR="/usr/local/etc"
 CRON_DIR="/etc/cron.d"
 LOG_FILE="$MYNAME.log"
+SYSTEMD_DIR="/etc/systemd/system"
 
 CONFIG_FILE_ABS_PATH="$ETC_DIR"
 CONFIG_ABS_FILE="$CONFIG_FILE_ABS_PATH/$CONFIG_FILE"
 FILE_TO_INSTALL_ABS_PATH="$BIN_DIR"
 FILE_TO_INSTALL_ABS_FILE="$FILE_TO_INSTALL_ABS_PATH/$FILE_TO_INSTALL"
 CRON_ABS_FILE="$CRON_DIR/$RASPIBACKUP_NAME"
+
+SYSTEMD_SERVICE_FILE_NAME="${RASPIBACKUP_NAME}.service"
+SYSTEMD_SERVICE_ABS_FILE="$SYSTEMD_DIR/SYSTEMD_SERVICE_FILE_NAME"
+SYSTEMD_TIMER_FILE_NAME="${RASPIBACKUP_NAME}.timer"
+SYSTEMD_TIMER_ABS_FILE="$SYSTEMD_DIR/SYSTEMD_TIMER_FILE_NAME"
+
 INSTALLER_ABS_PATH="$BIN_DIR"
 INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
@@ -487,6 +519,14 @@ MSG_FI[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 päivitetty viimeisimpään julka
 MSG_FR[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 a été remplacé par la version la plus récente."
 MSG_ZH[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: 更新 %1 到最新版本."
 
+MSG_INSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
+MSG_EN[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Creating systemd file %1."
+MSG_DE[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Systemddatei %1 wird erstellt."
+
+MSG_UNINSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
+MSG_EN[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Deleting systemd file %1."
+MSG_DE[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Systemddatei %1 wird gelöscht."
+
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
 MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${VERSION}"
@@ -674,7 +714,6 @@ MSG_DE[$MSG_INVALID_SMART_NUMBER_COUNT]="Vier durch Leerzeichen getrennte Zahlen
 MSG_FI[$MSG_INVALID_SMART_NUMBER_COUNT]="Vaaditaan neljä välilyönnein erotettua numeroa: päivittäinen, viikoittainen, kuukausittainen ja vuosittainen varmuuskopiointien lukumäärä"
 MSG_FR[$MSG_INVALID_SMART_NUMBER_COUNT]="Quatre nombres séparés par des espaces sont attendus : sauvegardes quotidiennes, hebdomadaires, mensuelles et annuelles."
 MSG_ZH[$MSG_INVALID_SMART_NUMBER_COUNT]="四个分隔数字分别代表：按日、按周、按月、按年的备份"
-
 
 MSG_INVALID_KEEP_NUMBER_COUNT=$((SCNT++))
 MSG_EN[$MSG_INVALID_KEEP_NUMBER_COUNT]="Enter one single number only."
@@ -1520,11 +1559,13 @@ CONFIG_INSTALLED=0
 SCRIPT_INSTALLED=0
 EXTENSIONS_INSTALLED=0
 CRON_INSTALLED=0
+SYSTEMD_INSTALLED=0
 PROGRESSBAR_DO=0
 
 INSTALL_EXTENSIONS=0
 BETA_INSTALL=0
 CRONTAB_ENABLED="undefined"
+SYSTEMD_ENABLED="undefined"
 
 function existsLocalPropertiesFile() {
 	[[ -e "$LOCAL_PROPERTY_FILE" ]]
@@ -1678,15 +1719,36 @@ function isCrontabEnabled() {
 			[[ ${l:0:1} != "#" ]]
 			CRONTAB_ENABLED=$?
 		else
-			CRONTAB_ENABLED=1
+			CRONTAB_ENABLED=0
 		fi
 	fi
 	logExit $CRONTAB_ENABLED
 	return $CRONTAB_ENABLED
 }
 
+function isSystemdEnabled() {
+	logEntry $SYSTEMD_ENABLED
+	if [[ "$SYSTEMD_ENABLED" == "undefined" ]]; then
+		if isSystemdInstalled; then
+			local state="$(systemctl status raspiBackup.timer | grep -E "\s+Active" | cut -f 2 -d : | cut -f 2 -d ' ')"
+			logItem "$state"			
+			[[ $state == "active" ]]
+			SYSTEMD_ENABLED=$?
+		else
+			SYSTEMD_ENABLED=0
+		fi
+	fi
+	logExit $SYSTEMD_ENABLED
+	return $SYSTEMD_ENABLED
+}
+
 function isCrontabInstalled() {
 	[[ -f $CRON_ABS_FILE ]]
+	return
+}
+
+function isSystemdInstalled() {
+	[[ -f $SYSTEMD_SERVICE_ABS_FILE && -f $SYSTEMD_TIMER_ABS_FILE ]]
 	return
 }
 
@@ -2298,6 +2360,30 @@ function cron_install_execute() {
 
 }
 
+function systemd_install_execute() {
+
+	logEntry
+
+	writeToConsole $MSG_INSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_SERVICE_ABS_FILE"
+	echo "$SYSTEMD_SERVICE" >"$SYSTEMD_SERVICE_ABS_FILE"
+	if ! chmod 655 $SYSTEMD_SERVICE_ABS_FILE &>>$LOG_FILE; then
+		unrecoverableError $MSG_CHMOD_FAILED "$SYSTEMD_SERVICE_ABS_FILE"
+		logExit
+		return
+	fi
+	writeToConsole $MSG_INSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_TIMER_ABS_FILE"
+	echo "$SYSTEMD_TIMER" >"$SYSTEMD_TIMER_ABS_FILE"
+	if ! chmod 655 $SYSTEMD_TIMER_ABS_FILE &>>$LOG_FILE; then
+		unrecoverableError $MSG_CHMOD_FAILED "$SYSTEMD_TIMER_ABS_FILE"
+		logExit
+		return
+	fi
+
+	SYSTEMD_INSTALLED=1
+	logExit
+
+}
+
 function cron_uninstall_execute() {
 
 	logEntry
@@ -2310,6 +2396,29 @@ function cron_uninstall_execute() {
 		fi
 	fi
 	CRON_INSTALLED=0
+	logExit
+
+}
+
+function systemd_uninstall_execute() {
+
+	logEntry
+
+	if [[ -e "$SYSTEMD_SERVICE_ABS_FILE" ]]; then
+		writeToConsole $MSG_UNINSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_SERVICE_ABS_FILE"
+		if ! rm -f "$SYSTEMD_SERVICE_ABS_FILE" 2>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$SYSTEMD_SERVICE_ABS_FILE"
+			return
+		fi
+	fi
+	if [[ -e "$SYSTEMD_TIMER_ABS_FILE" ]]; then
+		writeToConsole $MSG_UNINSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_TIMER_ABS_FILE"
+		if ! rm -f "$SYSTEMD_TIMER_ABS_FILE" 2>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$SYSTEMD_TIMER_ABS_FILE"
+			return
+		fi
+	fi
+	SYSTEMD_INSTALLED_INSTALLED=0
 	logExit
 
 }
@@ -2534,6 +2643,8 @@ function do_finish() {
 
 	logEntry
 
+	(( RASPIBACKUP_INSTALL_DEBUG )) && exit 0
+
 	if isRaspiBackupInstalled ; then
 		if ! isStartStopDefined; then
 			local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
@@ -2595,6 +2706,10 @@ function cleanup() {
 			(($CONFIG_INSTALLED)) && rm $CONFIG_ABS_FILE &>>"$LOG_FILE" || true
 			(($SCRIPT_INSTALLED)) && rm $FILE_TO_INSTALL_ABS_FILE &>>"$LOG_FILE" || true
 			(($CRON_INSTALLED)) && rm $CRON_ABS_FILE &>>"$LOG_FILE" || true
+			if (($SYSTEMD_INSTALLED)); then
+				rm $SYSTEMD_SERVICE_ABS_FILE &>>"$LOG_FILE" || true
+				rm $SYSTEMD_TIMER_ABS_FILE &>>"$LOG_FILE" || true
+			fi
 			(($EXTENSIONS_INSTALLED)) && rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE" || true
 		fi
 	fi
@@ -3893,7 +4008,11 @@ function install_do() {
 	fi
 	INSTALLATION_STARTED=1
 	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
-	progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
+	if (( $SYSTEMD )); then
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute systemd_install_execute
+	else
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
+	fi
 	INSTALLATION_SUCCESSFULL=1
 
 	logExit
@@ -4489,6 +4608,11 @@ function unattendedInstall() {
 		code_download_execute
 		config_download_execute
 		config_update_execute
+		if (( $SYSTEMD )); then
+			systemd_install_execute
+		else
+			cron_install_execute
+		fi
 		if (( MODE_EXTENSIONS )); then
 			extensions_install_execute
 		fi
@@ -4499,7 +4623,11 @@ function unattendedInstall() {
 		extensions_install_execute
 	else # uninstall
 		extensions_uninstall_execute
-		cron_uninstall_execute
+		if (( $SYSTEMD )); then
+			systemd_uninstall_execute
+		else
+			cron_uninstall_execute
+		fi
 		config_uninstall_execute
 		uninstall_script_execute
 		uninstall_execute
@@ -4579,6 +4707,7 @@ MODE_UNATTENDED=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
+[[ "$(ps --no-headers -o comm 1)" == "systemd" ]] && SYSTEMD=1 || SYSTEMD=0
 
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
@@ -4631,6 +4760,7 @@ logItem "$warn"
 logItem "$sep"
 
 logItem "whiptail version: $(whiptail -v)"
+logItem "SYSTEMD: $SYSTEMD"
 
 checkRequiredDirectories
 
