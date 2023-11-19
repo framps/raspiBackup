@@ -240,9 +240,9 @@ FILE_TO_INSTALL_ABS_FILE="$FILE_TO_INSTALL_ABS_PATH/$FILE_TO_INSTALL"
 CRON_ABS_FILE="$CRON_DIR/$RASPIBACKUP_NAME"
 
 SYSTEMD_SERVICE_FILE_NAME="${RASPIBACKUP_NAME}.service"
-SYSTEMD_SERVICE_ABS_FILE="$SYSTEMD_DIR/SYSTEMD_SERVICE_FILE_NAME"
+SYSTEMD_SERVICE_ABS_FILE="$SYSTEMD_DIR/$SYSTEMD_SERVICE_FILE_NAME"
 SYSTEMD_TIMER_FILE_NAME="${RASPIBACKUP_NAME}.timer"
-SYSTEMD_TIMER_ABS_FILE="$SYSTEMD_DIR/SYSTEMD_TIMER_FILE_NAME"
+SYSTEMD_TIMER_ABS_FILE="$SYSTEMD_DIR/$SYSTEMD_TIMER_FILE_NAME"
 
 INSTALLER_ABS_PATH="$BIN_DIR"
 INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
@@ -1729,9 +1729,9 @@ function isSystemdEnabled() {
 	logEntry $SYSTEMD_ENABLED
 	if [[ "$SYSTEMD_ENABLED" == "undefined" ]]; then
 		if isSystemdInstalled; then
-			local state="$(systemctl status raspiBackup.timer | grep -E "\s+Active" | cut -f 2 -d : | cut -f 2 -d ' ')"
+			local state="$(systemctl status raspiBackup.timer | grep -E "\s+Loaded" | cut -f 2 -d  ";" | xargs)"
 			logItem "$state"			
-			[[ $state == "active" ]]
+			[[ $state == "enabled" ]]
 			SYSTEMD_ENABLED=$?
 		else
 			SYSTEMD_ENABLED=0
@@ -2324,30 +2324,6 @@ function cron_update_execute() {
 	logExit
 }
 
-function cron_activate_execute() {
-
-	logEntry
-
-	local l="$(tail -n 1 < $CRON_ABS_FILE)"
-	local disabled
-	if isCrontabEnabled; then
-		disabled=""
-		logItem "Enabled cron"
-	else
-		disabled="#"
-		logItem "Disabled cron"
-	fi
-	local cron_day=$(( $CONFIG_CRON_DAY - 1 ))
-	(( $cron_day < 0 )) && cron_day="*"
-	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
-	local t=$(mktemp)
-	head -n -1 "$CRON_ABS_FILE" > $t
-	echo "$v" >> $t
-	mv $t $CRON_ABS_FILE
-	rm $t 2>/dev/null
-	logExit
-}
-
 function cron_install_execute() {
 
 	logEntry
@@ -2378,6 +2354,8 @@ function systemd_install_execute() {
 		return
 	fi
 
+	systemctl daemon-reload
+	
 	SYSTEMD_INSTALLED=1
 	logExit
 
@@ -2417,6 +2395,9 @@ function systemd_uninstall_execute() {
 			return
 		fi
 	fi
+
+	systemctl daemon-reload
+	
 	SYSTEMD_INSTALLED_INSTALLED=0
 	logExit
 
@@ -4065,32 +4046,6 @@ function cron_update_do() {
 	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME crontab configuration ...")
 	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME crontab configuration" cron_update_execute
 	logExit
-
-}
-
-function cron_activate_do() {
-
-	logEntry
-
-	if ! isCrontabInstalled; then
-		local m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
-		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
-		logExit
-		return 1
-	fi
-
-	if isCrontabEnabled; then
-		UPDATE_DESCRIPTION=("Enabling $RASPIBACKUP_NAME regular backup ...")
-	else
-		UPDATE_DESCRIPTION=("Disabling $RASPIBACKUP_NAME regular backup ...")
-	fi
-
-	progressbar_do "UPDATE_DESCRIPTION" "Updating cron configuration" cron_activate_execute
-	logExit
-
-	return 0
 
 }
 
