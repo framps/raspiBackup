@@ -31,7 +31,7 @@ VERSION="0.1.4"
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 URL="https://www.linux-tips-and-tricks.de"
 INSTALLER="raspiBackupInstallUI.sh"
-INSTALLER_DOWNLOAD_URL="$URL/downloads${URLTARGET}/$INSTALLER/download"
+INSTALLER_DOWNLOAD_URL="$URL/raspiBackup${URLTARGET}/$INSTALLER"
 
 CURRENT_DIR=$(pwd)
 
