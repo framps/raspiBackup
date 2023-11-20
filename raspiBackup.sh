@@ -8986,7 +8986,6 @@ HELP=0
 INCLUDE_ONLY=$?
 IS_UBUNTU=0
 NO_YES_QUESTION=0
-ONLINE_VERSIONS=0
 PROGRESS=0
 REGRESSION_TEST=0
 RESTORE=0
@@ -9540,11 +9539,6 @@ if (( $UPDATE_MYSELF )); then
 	if (( $? )); then
 		updateConfig
 	fi
-	exitNormal
-fi
-
-if (( $ONLINE_VERSIONS )); then
-	onlineVersions
 	exitNormal
 fi
 
