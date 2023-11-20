@@ -9039,7 +9039,7 @@ fi
 logEnable
 lockingFramework
 
-trapWithArg cleanup SIGINT SIGTERM EXIT
+trapWithArg cleanupStartup SIGINT SIGTERM EXIT
 
 INVOCATIONPARMS=""			# save passed opts for logging
 for (( i=1; i<=$#; i++ )); do
