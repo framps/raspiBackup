@@ -293,6 +293,9 @@ CONFIG_ZIP_BACKUP="0"
 CONFIG_CRON_HOUR="5"
 CONFIG_CRON_MINUTE="0"
 CONFIG_CRON_DAY="1" # Sun
+CONFIG_SYSTEMD_HOUR=$CONFIG_CRON_HOUR
+CONFIG_SYSTEMD_MINUTE=$CONFIG_CRON_MINUTE
+CONFIG_SYSTEMD_DAY="Sun"
 CONFIG_MAIL_PROGRAM="mail"
 CONFIG_EMAIL=""
 CONFIG_RESIZE_ROOTFS="1"
@@ -526,6 +529,10 @@ MSG_UNINSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Deleting systemd file %1."
 MSG_DE[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Systemddatei %1 wird gelöscht."
 
+MSG_UPDATING_SYSTEMD=$((SCNT++))
+MSG_EN[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Updating systemd configuration in %1."
+MSG_DE[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Systemd Konfigurationsdatei %1 wird angepasst."
+
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
 MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${VERSION}"
@@ -596,6 +603,10 @@ MSG_FI[$MSG_QUESTION_UPDATE_CRON]="Haluatko tallentaa nyt päivitetyt cron-asetu
 MSG_FR[$MSG_QUESTION_UPDATE_CRON]="Voulez-vous enregistrer les paramètres cron mis à jour pour $RASPIBACKUP_NAME maintenant ?"
 MSG_ZH[$MSG_QUESTION_UPDATE_CRON]="是否保存$RASPIBACKUP_NAME 更新的cron设置?"
 
+MSG_QUESTION_UPDATE_SYSTEMD=$((SCNT++))
+MSG_EN[$MSG_QUESTION_UPDATE_SYSTEMD]="Do you want to save the updated systemd settings for $RASPIBACKUP_NAME now?"
+MSG_DE[$MSG_QUESTION_UPDATE_SYSTEMD]="Soll die geänderte systemd Konfiguration für $RASPIBACKUP_NAME jetzt gespeichert werden?"
+
 MSG_SEQUENCE_OK=$((SCNT++))
 MSG_EN[$MSG_SEQUENCE_OK]="Stopcommands for services will be executed in following sequence. Startcommands will be executed in reverse sequence. Sequence OK?"
 MSG_DE[$MSG_SEQUENCE_OK]="Stopbefehle für die Services werden in folgender Reihenfolge ausgeführt. Startbefehle werden umgekehrt ausgeführt. Ist die Reihenfolge richtig?"
@@ -631,12 +642,12 @@ MSG_FI[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME ei ole asennettuna."
 MSG_FR[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME n'est pas installé."
 MSG_ZH[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME 尚未安装."
 
-MSG_CRON_NA=$((SCNT++))
-MSG_EN[$MSG_CRON_NA]="Weekly backup disabled."
-MSG_DE[$MSG_CRON_NA]="Wöchentliches Backup ist ausgeschaltet."
-MSG_FI[$MSG_CRON_NA]="Viikoittainen varmuuskopiointi ei ole käytössä."
-MSG_FR[$MSG_CRON_NA]="La sauvegarde hebdomadaire est désactivée."
-MSG_ZH[$MSG_CRON_NA]="每周备份已禁用."
+MSG_TIMER_NA=$((SCNT++))
+MSG_EN[$MSG_TIMER_NA]="Weekly backup disabled."
+MSG_DE[$MSG_TIMER_NA]="Wöchentliches Backup ist ausgeschaltet."
+MSG_FI[$MSG_TIMER_NA]="Viikoittainen varmuuskopiointi ei ole käytössä."
+MSG_FR[$MSG_TIMER_NA]="La sauvegarde hebdomadaire est désactivée."
+MSG_ZH[$MSG_TIMER_NA]="每周备份已禁用."
 
 MSG_CONFIG_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_CONFIG_NOT_INSTALLED]="No configuration found."
@@ -735,6 +746,10 @@ MSG_FI[$MSG_RUNASROOT]="$MYSELF tulee käynnistää root-oikeuksin. Käynnistä 
 MSG_FR[$MSG_RUNASROOT]="$MYSELF doit être démarré en tant que root. Utilisez 'sudo %1%2'."
 MSG_ZH[$MSG_RUNASROOT]="$MYSELF 必须以root身份开启. 请尝试 'sudo %1%2'."
 
+MSG_SYSTEMD_NOT_INSTALLED=$((SCNT++))
+MSG_EN[$MSG_SYSTEMD_NOT_INSTALLED]="No systemd configuration found."
+MSG_DE[$MSG_SYSTEMD_NOT_INSTALLED]="Keine systemd Konfiguration gefunden."
+
 DESCRIPTION_INSTALLATION=$((SCNT++))
 MSG_EN[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME allows to plug in custom extensions which are called before and after the backup process. \
 There exist sample extensions which report the memory usage, CPU temperature and disk usage of the backup partition. \
@@ -780,6 +795,12 @@ MSG_FR[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME doit être démarré réguliè
 Configurez la sauvegarde à exécuter quotidiennement ou hebdomadairement. Pour d'autres intervalles de sauvegardes vous devez modifier manuellement le fichier /etc/cron.d/raspiBackup ."
 MSG_ZH[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME 会在完成初始配置以及备份和恢复测试后定期启动. \
 配置每天或每周创建备份。对于其他备份间隔，您必须手动修改/etc/cron.d/raspiBackup."
+
+DESCRIPTION_SYSTEMD=$((SCNT++))
+MSG_EN[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
+Configure the backup to be created daily or weekly. For other backup intervals you have to modify /etc/systemd/system/raspiBackup.timer manually."
+MSG_DE[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME sollte regelmäßig gestartet werden wenn die initiale Konfiguration sowie Backup und Restore Tests beendet sind. \
+Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Intervalle muss die Datei /etc/systemd/system/raspiBackup.timer manuell geändert werden."
 
 DESCRIPTION_SMARTMODE=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMARTMODE]="${NL}There exist two different ways to define the number of backups. Just by defining the maximum number of backups to keep or \
@@ -2324,6 +2345,35 @@ function cron_update_execute() {
 	logExit
 }
 
+function systemd_update_execute() {
+
+	logEntry
+
+	writeToConsole $MSG_UPDATING_CRON "$SYSTEMD_TIMER_ABS_FILE"
+
+	logItem "systemd: $CONFIG_CRON_DAY $CONFIG_CRON_HOUR $CONFIG_CRON_MINUTE"
+
+	local l="$(tail -n 1 < $CRON_ABS_FILE)"
+	local enable=""
+	(( isSystemdEnabled)) && enable="enable" || enable="disable"
+
+	: @@@ TODO
+
+	local cron_day=$(( $CONFIG_CRON_DAY - 1 ))
+	(( $cron_day < 0 )) && cron_day="*"
+	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
+	logItem "cron update: $v"
+	local t=$(mktemp)
+	head -n -1 "$CRON_ABS_FILE" > $t
+	echo "$v" >> $t
+	mv $t $CRON_ABS_FILE
+	rm $t 2>/dev/null
+
+	systemctl $enable $SYSTEMD_TIMER_FILE_NAME
+
+	logExit
+}
+
 function cron_install_execute() {
 
 	logEntry
@@ -2720,7 +2770,7 @@ function config_menu() {
 	fi
 
 	CONFIG_UPDATED=0
-	CRON_UPDATED=0
+	TIMER_UPDATED=0
 
 	if isConfigInstalled; then
 		parseConfig
@@ -2739,6 +2789,22 @@ function config_menu() {
 		logItem "parsed hour: $CONFIG_CRON_HOUR"
 		logItem "parsed minute: $CONFIG_CRON_MINUTE"
 		logItem "parsed day: $CONFIG_CRON_DAY"
+	fi
+
+	if isSystemdInstalled; then
+		: @@ TODO
+		local l="$(tail -n 1 < $CRON_ABS_FILE)"
+		logItem "last line: $l"
+		local v=$(awk ' {print $1, $2, $5}' <<< "$l")
+		logItem "parsed $v"
+		CONFIG_CRON_MINUTE="$(cut -f 1 -d ' ' <<< $v)"
+		[[ ${CONFIG_CRON_MINUTE:0:1} == "#" ]] && CONFIG_CRON_MINUTE="${CONFIG_CRON_MINUTE:1}"
+		CONFIG_CRON_HOUR="$(cut -f 2 -d ' ' <<< $v)"
+		CONFIG_CRON_DAY=$(cut -f 3 -d ' ' <<< $v)
+		[[ "$CONFIG_CRON_DAY" == "*" ]] && CONFIG_CRON_DAY=0 || (( CONFIG_CRON_DAY ++ )) # 0 = Daily, 1 = Sun, 2 = Mon, ...
+		logItem "parsed hour: $CONFIG_CRON_HOUR"
+		logItem "parsed minute: $CONFIG_CRON_MINUTE"
+		logItem "parsed day: $CONFIG_CRON_DAY"	
 	fi
 
 	while :; do
@@ -2803,12 +2869,13 @@ function config_menu() {
 					config_update_do
 				fi
 			fi
-			if (($CRON_UPDATED)); then
-				local m="$(getMessageText $MSG_QUESTION_UPDATE_CRON)"
+			if (($TIMER_UPDATED)); then
+				local m
+				(( isCrontabInstalled )) && m="$(getMessageText $MSG_QUESTION_UPDATE_CRON)" ||  m="$(getMessageText $MSG_QUESTION_UPDATE_SYSTEMD)"
 				local t=$(center $WINDOW_COLS "$m")
 				local ttm="$(getMessageText $TITLE_CONFIRM)"
-				if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
-					cron_update_do
+				if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then					
+					timer_update_do
 				fi
 			fi
 			logExit
@@ -2824,7 +2891,7 @@ function config_menu() {
 				$s6) config_services_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s9) cron_menu; CRON_UPDATED=$? ;;
+				$s9) timer_menu; TIMER_UPDATED=$? ;;
 				$scp) config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
@@ -3043,6 +3110,19 @@ function config_backuppath_do() {
 
 }
 
+function config_time_do() {
+
+	logEntry
+	local rc
+	
+	(( $SYSTEMD_DETECTED )) && config_systemdtime_do || config_crontime_do
+	rc=$?
+
+	logExit $rc
+	return $rc	
+	
+}
+
 function config_crontime_do() {
 
 	local old=$(printf "%02d:%02d" $CONFIG_CRON_HOUR $CONFIG_CRON_MINUTE)
@@ -3086,6 +3166,53 @@ function config_crontime_do() {
 	[[ "$old" == "$CONFIG_CRON_HOUR:$CONFIG_CRON_MINUTE" ]]
 	local rc=$?
 	logExit "$rc - $CONFIG_CRON_HOUR:$CONFIG_CRON_MINUTE"
+	return $rc
+
+}
+
+function config_systemdtime_do() {
+
+	local old=$(printf "%02d:%02d" $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE)
+	current="$old"
+
+	logEntry "$old"
+
+	local b1="$(getMessageText $SELECT_TIME)"
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1="$(getMessageText $BUTTON_OK)"
+	getMenuText $MENU_CONFIG_TIME tt
+
+	while :; do
+		ANSWER=$(whiptail --inputbox "$b" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" 3>&1 1>&2 2>&3)
+		if [ $? -eq 0 ]; then
+			logItem "Answer: $ANSWER"
+			current="$ANSWER"
+			if [[ ! "$ANSWER" =~ ^[0-9]{1,2}:[0-9]{1,2}$ ]]; then
+				local m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
+				local t=$(center $WINDOW_COLS "$m")
+				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+			else
+				CONFIG_SYSTEMD_HOUR=$(cut -f1 -d: <<< "$ANSWER")
+				CONFIG_SYSTEMD_MINUTE=$(cut -f2 -d: <<< "$ANSWER")
+				if (( CONFIG_SYSTEMD_HOUR > 23 || CONFIG_SYSTEMD_MINUTE > 59 )); then
+					local m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				else
+					logItem "hour: $CONFIG_SYSTEMD_HOUR minute: $CONFIG_SYSTEMD_MINUTE"
+					break
+				fi
+			fi
+		else
+			break
+		fi
+	done
+
+	[[ "$old" == "$CONFIG_SYSTEMD_HOUR:$CONFIG_SYSTEMD_MINUTE" ]]
+	local rc=$?
+	logExit "$rc - $CONFIG_SYSTEMD_HOUR:$CONFIG_SYSTEMD_MINUTE"
 	return $rc
 
 }
@@ -3552,6 +3679,43 @@ function config_cronday_do() {
 	return $rc
 }
 
+function config_systemday_do() {
+
+	local old="$CONFIG_SYSTEMD_DAY"
+
+	logEntry "$old"
+
+	local days_=(off off off off off off off off)
+
+	: @@ TODO
+
+	getMenuText $MENU_DAYS_SHORT s
+	getMenuText $MENU_DAYS_LONG l
+	getMenuText $MENU_CONFIG_DAY tt
+
+	days_[$CONFIG_CRON_DAY]=on # 0 = Daily, 1 = Sun, 2 = Mon ...
+
+	ANSWER=$(whiptail --notags --radiolist "" --title "${tt[1]}" $WT_HEIGHT $(($WT_WIDTH/2)) 5 \
+		"${s[0]}" "${l[0]}" "${days_[0]}" \
+		"${s[1]}" "${l[1]}" "${days_[1]}" \
+		"${s[2]}" "${l[2]}" "${days_[2]}" \
+		"${s[3]}" "${l[3]}" "${days_[3]}" \
+		"${s[4]}" "${l[4]}" "${days_[4]}" \
+		"${s[5]}" "${l[5]}" "${days_[5]}" \
+		"${s[6]}" "${l[6]}" "${days_[6]}" \
+		"${s[7]}" "${l[7]}" "${days_[7]}" \
+		3>&1 1>&2 2>&3)
+	if [ $? -eq 0 ]; then
+		logItem "Answer: $ANSWER"
+		CONFIG_SYSTEMD_DAY=$(cut -d/ -f1 <<< ${s[@]/$ANSWER//} | wc -w | tr -d ' ')
+	fi
+
+	[[ "$old" == "$CONFIG_SYSTEMD_DAY" ]]
+	rc=$?
+	logExit "$rc - $CONFIG_SYSTEMD_DAY"
+	return $rc
+}
+
 function config_compress_do() {
 
 	logEntry "$CONFIG_ZIP_BACKUP"
@@ -3757,6 +3921,19 @@ function uninstall_do() {
 
 }
 
+function timer_menu() {
+
+	logEntry
+	local rc
+	
+	(( $SYSTEMD_DETECTED )) && systemd_menu || cron_menu
+	rc=$?
+
+	logExit $rc
+	return $rc	
+}	
+
+
 function cron_menu() {
 
 	logEntry
@@ -3781,7 +3958,7 @@ function cron_menu() {
 
 		local b1="$(getMessageText $BUTTON_BACK)"
 		local o1="$(getMessageText $BUTTON_SELECT)"
-		local m="$(getMessageText $MSG_CRON_NA)"
+		local m="$(getMessageText $MSG_TIMER_NA)"
 		local t=$(center $WINDOW_COLS "$m")
 		local d="$(getMessageText $DESCRIPTION_CRON)"
 
@@ -3823,6 +4000,75 @@ function cron_menu() {
 	logExit $cron_updated
 
 	return $cron_updated
+
+}
+
+function systemd_menu() {
+
+	logEntry
+
+	if ! isSystemdInstalled; then
+		local m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
+		local t=$(center $WINDOW_COLS "$m")
+		local tt="$(getMessageText $TITLE_INFORMATION)"
+		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
+		logExit
+		return 1
+	fi
+
+	local enabled
+	isSystemdEnabled
+	enabled=$(( !$? ))
+
+	local old=$enabled
+	local systemd_updated=0
+
+	while :; do
+
+		local b1="$(getMessageText $BUTTON_BACK)"
+		local o1="$(getMessageText $BUTTON_SELECT)"
+		local m="$(getMessageText $MSG_TIMER_NA)"
+		local t=$(center $WINDOW_COLS "$m")
+		local d="$(getMessageText $DESCRIPTION_SYSTEMD)"
+
+		getMenuText $MENU_REGULARBACKUP_ENABLE ct
+		getMenuText $MENU_CONFIG_DAY m1
+		getMenuText $MENU_CONFIG_TIME m2
+		getMenuText $MENU_CONFIG_CRON tt
+
+		if (( $enabled )); then
+			getMenuText $MENU_REGULARBACKUP_DISABLE ct
+			local s1="${m1[0]}"
+			local s2="${m2[0]}"
+		else
+			getMenuText $MENU_REGULARBACKUP_ENABLE ct
+			m1=(" " " ")
+			m2=(" " " ")
+		fi
+
+		FUN=$(whiptail --title "${tt[1]}" --menu "$d" $WT_HEIGHT $WT_WIDTH $((WT_MENU_HEIGHT-5)) --cancel-button "$b1" --ok-button "$o1" \
+			"${ct[@]}" \
+			"${m1[@]}" \
+			"${m2[@]}" \
+			3>&1 1>&2 2>&3)
+		RET=$?
+		if [ $RET -eq 1 ]; then
+			break
+		elif [ $RET -eq 0 ]; then
+			logItem "$FUN"
+			case "$FUN" in
+				$s1) config_systemday_do; systemd_updated=$(( $systemd_updated|$? )) ;;
+				$s2) config_systemtime_do; systemd_updated=$(( $systemd_updated|$? )) ;;
+				$ct) SYSTEMD_ENABLED=$((!$SYSTEMD_ENABLED)); enabled=$((!$enabled)); systemd_updated=$(( $old != $enabled || $systemd_updated )) ;;
+				\ *) whiptail --msgbox "$t" $ROWS_MENU $WINDOW_COLS 1 ;;
+				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
+			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
+		fi
+	done
+
+	logExit $systemd_updated
+
+	return $systemd_updated
 
 }
 
@@ -3988,7 +4234,7 @@ function install_do() {
 	fi
 	INSTALLATION_STARTED=1
 	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
-	if (( $SYSTEMD )); then
+	if (( $SYSTEMD_DETECTED )); then
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute systemd_install_execute
 	else
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
@@ -4030,6 +4276,18 @@ function config_update_do() {
 
 }
 
+function timer_update_do() {
+
+	logEntry
+	local rc
+	
+	(( $SYSTEMD_DETECTED )) && systemd_update_do || cron_update_do
+	rc=$?
+
+	logExit $rc
+	return $rc	
+}	
+
 function cron_update_do() {
 
 	logEntry
@@ -4045,6 +4303,25 @@ function cron_update_do() {
 
 	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME crontab configuration ...")
 	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME crontab configuration" cron_update_execute
+	logExit
+
+}
+
+function systemd_update_do() {
+
+	logEntry
+
+	if ! isSystemdInstalled; then
+		local m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
+		local t=$(center $WINDOW_COLS "$m")
+		local tt="$(getMessageText $TITLE_INFORMATION)"
+		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
+		logExit
+		return
+	fi
+
+	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME systemd configuration ...")
+	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME systemd configuration" systemd_update_execute
 	logExit
 
 }
@@ -4562,7 +4839,7 @@ function unattendedInstall() {
 		code_download_execute
 		config_download_execute
 		config_update_execute
-		if (( $SYSTEMD )); then
+		if (( $SYSTEMD_DETECTED )); then
 			systemd_install_execute
 		else
 			cron_install_execute
@@ -4577,7 +4854,7 @@ function unattendedInstall() {
 		extensions_install_execute
 	else # uninstall
 		extensions_uninstall_execute
-		if (( $SYSTEMD )); then
+		if (( $SYSTEMD_DETECTED )); then
 			systemd_uninstall_execute
 		else
 			cron_uninstall_execute
@@ -4657,11 +4934,11 @@ done
 CLEANUP_LOG=0
 
 MODE_UNATTENDED=0
-# MODE_UNINSTALL=0 is default
+MODE_UNINSTALL=0 
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
-[[ "$(ps --no-headers -o comm 1)" == "systemd" ]] && SYSTEMD=1 || SYSTEMD=0
+[[ "$(ps --no-headers -o comm 1)" == "systemd" ]] && SYSTEMD_DETECTED=1 || SYSTEMD_DETECTED=0
 
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
@@ -4714,7 +4991,7 @@ logItem "$warn"
 logItem "$sep"
 
 logItem "whiptail version: $(whiptail -v)"
-logItem "SYSTEMD: $SYSTEMD"
+logItem "SYSTEMD_DETECTED: $SYSTEMD_DETECTED"
 
 checkRequiredDirectories
 
