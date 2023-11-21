@@ -4422,7 +4422,7 @@ function sendEMail() { # content subject
 				if [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_SUBJECT" ]]; then
 					contentType="${NL}MIME-Version: 1.0${NL}Content-Type: text/html; charset=utf-8"
 				elif [[ "$EMAIL_COLORING" == "$EMAIL_COLORING_OPTION" ]]; then
-					coloringOption='-a "Content-Type: text/html"'
+					coloringOption=("-a" "Content-Type: text/html;")
 				else
 					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
 				fi
@@ -4460,7 +4460,7 @@ function sendEMail() { # content subject
 			case $EMAIL_PROGRAM in
 				$EMAIL_MAILX_PROGRAM)
 					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
-					"$EMAIL_PROGRAM" ${coloringOption[@]} $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
+					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
