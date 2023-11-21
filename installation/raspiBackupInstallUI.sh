@@ -36,6 +36,11 @@ if [ -z "$BASH_VERSION" ] ;then
 	exit 127
 fi
 
+[[ "$(ps --no-headers -o comm 1)" != "systemd" ]]
+: "${SYSTEMD_DETECTED:=$?}" # just disable some code for debugging
+
+: "${RASPIBACKUP_INSTALL_DEBUG:=0}" # just disable some code for debugging
+
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 VERSION="0.4.7"							 	# -beta, -hotfix or -dev suffixes possible
@@ -105,7 +110,6 @@ GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_O
 FILE_TO_INSTALL="raspiBackup.sh"
 
 RASPIBACKUP_NAME=${FILE_TO_INSTALL%.*}
-: "${RASPIBACKUP_INSTALL_DEBUG:=0}" # just disable some code for debugging
 
 CURRENT_DIR=$(pwd)
 NL=$'\n'
@@ -127,6 +131,8 @@ INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
+
+SYSTEMD_DAYS=("*" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat")
 
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
@@ -1404,12 +1410,12 @@ MENU_FI[$MENU_CONFIG_EMAIL]='"C8" "Sähköposti-ilmoitus"'
 MENU_FR[$MENU_CONFIG_EMAIL]='"C8" "Notification par courrier électronique"'
 MENU_ZH[$MENU_CONFIG_EMAIL]='"C8" "邮件通知"'
 
-MENU_CONFIG_CRON=$((MCNT++))
-MENU_EN[$MENU_CONFIG_CRON]='"C9" "Regular backup"'
-MENU_DE[$MENU_CONFIG_CRON]='"C9" "Regelmäßiges Backup"'
-MENU_FI[$MENU_CONFIG_CRON]='"C9" "Säännöllinen varmuuskopiointi"'
-MENU_FR[$MENU_CONFIG_CRON]='"C9" "Sauvegardes Régulières"'
-MENU_ZH[$MENU_CONFIG_CRON]='"C9" "定期备份"'
+MENU_CONFIG_REGULAR=$((MCNT++))
+MENU_EN[$MENU_CONFIG_REGULAR]='"C9" "Regular backup"'
+MENU_DE[$MENU_CONFIG_REGULAR]='"C9" "Regelmäßiges Backup"'
+MENU_FI[$MENU_CONFIG_REGULAR]='"C9" "Säännöllinen varmuuskopiointi"'
+MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
+MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 
 MENU_CONFIG_ZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP]='"C10" "Compression"'
@@ -2352,23 +2358,22 @@ function systemd_update_execute() {
 
 	writeToConsole $MSG_UPDATING_CRON "$SYSTEMD_TIMER_ABS_FILE"
 
-	logItem "systemd: $CONFIG_CRON_DAY $CONFIG_CRON_HOUR $CONFIG_CRON_MINUTE"
+	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
 
-	local l="$(tail -n 1 < $CRON_ABS_FILE)"
 	local enable=""
 	(( isSystemdEnabled)) && enable="enable" || enable="disable"
 
-	: @@@ TODO
+#	OnCalendar=Sun *-*-* 05:00:00
+	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
 
-	local cron_day=$(( $CONFIG_CRON_DAY - 1 ))
-	(( $cron_day < 0 )) && cron_day="*"
-	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
-	logItem "cron update: $v"
-	local t=$(mktemp)
-	head -n -1 "$CRON_ABS_FILE" > $t
-	echo "$v" >> $t
-	mv $t $CRON_ABS_FILE
-	rm $t 2>/dev/null
+	local systemd_day=${SYSTEMD_DAYS[$CONFIG_SYSTEMD_DAY]}
+
+	logItem "Day: $systemd_day"
+	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":00" }' <<< "$l")
+	logItem "systemd update: $v"
+	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
+
+	logItem "$(cat $SYSTEMD_TIMER_ABS_FILE)"
 
 	systemctl $enable $SYSTEMD_TIMER_FILE_NAME
 
@@ -2793,19 +2798,17 @@ function config_menu() {
 	fi
 
 	if isSystemdInstalled; then
-		: @@ TODO
-		local l="$(tail -n 1 < $CRON_ABS_FILE)"
-		logItem "last line: $l"
-		local v=$(awk ' {print $1, $2, $5}' <<< "$l")
-		logItem "parsed $v"
-		CONFIG_CRON_MINUTE="$(cut -f 1 -d ' ' <<< $v)"
-		[[ ${CONFIG_CRON_MINUTE:0:1} == "#" ]] && CONFIG_CRON_MINUTE="${CONFIG_CRON_MINUTE:1}"
-		CONFIG_CRON_HOUR="$(cut -f 2 -d ' ' <<< $v)"
-		CONFIG_CRON_DAY=$(cut -f 3 -d ' ' <<< $v)
-		[[ "$CONFIG_CRON_DAY" == "*" ]] && CONFIG_CRON_DAY=0 || (( CONFIG_CRON_DAY ++ )) # 0 = Daily, 1 = Sun, 2 = Mon, ...
-		logItem "parsed hour: $CONFIG_CRON_HOUR"
-		logItem "parsed minute: $CONFIG_CRON_MINUTE"
-		logItem "parsed day: $CONFIG_CRON_DAY"	
+		#	OnCalendar=Sun *-*-* 05:00:00
+		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00
+		logItem "parsed $l"
+		CONFIG_SYSTEMD_DAY="$(cut -f 1 -d ' ' <<< $l)" # Sun
+		local t="$(cut -f 3 -d " " <<< $l)" # 05:00:00
+		logItem "parsed $t"
+		CONFIG_SYSTEMD_HOUR="$(cut -f 1 -d ':' <<< $t)" # 05
+		CONFIG_SYSTEMD_MINUTE="$(cut -f 2 -d ':' <<< $t)" # 00
+		logItem "parsed hour: $CONFIG_SYSTEMD_HOUR"
+		logItem "parsed minute: $CONFIG_SYSTEMD_MINUTE"
+		logItem "parsed day: $CONFIG_SYSTEMD_DAY"	
 	fi
 
 	while :; do
@@ -2823,7 +2826,7 @@ function config_menu() {
 		getMenuText $MENU_CONFIG_SERVICES m6
 		getMenuText $MENU_CONFIG_MESSAGE m7
 		getMenuText $MENU_CONFIG_EMAIL m8
-		getMenuText $MENU_CONFIG_CRON m9
+		getMenuText $MENU_CONFIG_REGULAR m9
 
 		local p="${m1[0]}"
 		m1[0]="C${p:1}"
@@ -3116,7 +3119,11 @@ function config_time_do() {
 	logEntry
 	local rc
 	
-	(( $SYSTEMD_DETECTED )) && config_systemdtime_do || config_crontime_do
+	if (( $SYSTEMD_DETECTED )); then
+		config_systemdtime_do
+	else
+		config_crontime_do
+	fi
 	rc=$?
 
 	logExit $rc
@@ -3927,7 +3934,11 @@ function timer_menu() {
 	logEntry
 	local rc
 	
-	(( $SYSTEMD_DETECTED )) && systemd_menu || cron_menu
+	if (( $SYSTEMD_DETECTED )); then
+		systemd_timer_menu
+	else
+		cron_timer_menu
+	fi
 	rc=$?
 
 	logExit $rc
@@ -3935,7 +3946,7 @@ function timer_menu() {
 }	
 
 
-function cron_menu() {
+function cron_timer_menu() {
 
 	logEntry
 
@@ -4004,7 +4015,7 @@ function cron_menu() {
 
 }
 
-function systemd_menu() {
+function systemd_timer_menu() {
 
 	logEntry
 
@@ -4035,7 +4046,7 @@ function systemd_menu() {
 		getMenuText $MENU_REGULARBACKUP_ENABLE ct
 		getMenuText $MENU_CONFIG_DAY m1
 		getMenuText $MENU_CONFIG_TIME m2
-		getMenuText $MENU_CONFIG_CRON tt
+		getMenuText $MENU_CONFIG_REGULAR tt
 
 		if (( $enabled )); then
 			getMenuText $MENU_REGULARBACKUP_DISABLE ct
@@ -4059,7 +4070,7 @@ function systemd_menu() {
 			logItem "$FUN"
 			case "$FUN" in
 				$s1) config_systemday_do; systemd_updated=$(( $systemd_updated|$? )) ;;
-				$s2) config_systemtime_do; systemd_updated=$(( $systemd_updated|$? )) ;;
+				$s2) config_systemdtime_do; systemd_updated=$(( $systemd_updated|$? )) ;;
 				$ct) SYSTEMD_ENABLED=$((!$SYSTEMD_ENABLED)); enabled=$((!$enabled)); systemd_updated=$(( $old != $enabled || $systemd_updated )) ;;
 				\ *) whiptail --msgbox "$t" $ROWS_MENU $WINDOW_COLS 1 ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
@@ -4234,10 +4245,11 @@ function install_do() {
 		fi
 	fi
 	INSTALLATION_STARTED=1
-	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
 	if (( $SYSTEMD_DETECTED )); then
+		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME systemd config ...")
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute systemd_install_execute
 	else
+		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
 	fi
 	INSTALLATION_SUCCESSFULL=1
@@ -4282,7 +4294,11 @@ function timer_update_do() {
 	logEntry
 	local rc
 	
-	(( $SYSTEMD_DETECTED )) && systemd_update_do || cron_update_do
+	if (( $SYSTEMD_DETECTED )); then
+		systemd_update_do
+	else
+		cron_update_do
+	fi
 	rc=$?
 
 	logExit $rc
@@ -4939,7 +4955,6 @@ MODE_UNINSTALL=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
-[[ "$(ps --no-headers -o comm 1)" == "systemd" ]] && SYSTEMD_DETECTED=1 || SYSTEMD_DETECTED=0
 
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
