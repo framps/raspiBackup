@@ -132,7 +132,7 @@ STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
 
-SYSTEMD_DAYS=("*" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat")
+SYSTEMD_DAYS=("" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat")
 
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
@@ -2359,10 +2359,8 @@ function systemd_update_execute() {
 
 	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
 
-	local enable=""
-	(( isSystemdEnabled)) && enable="enable" || enable="disable"
-
 #	OnCalendar=Sun *-*-* 05:00:00
+#	OnCalendar= *-*-* 05:00:00
 	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
 
 	local systemd_day=${SYSTEMD_DAYS[$CONFIG_SYSTEMD_DAY]}
@@ -2374,7 +2372,19 @@ function systemd_update_execute() {
 
 	logItem "$(cat $SYSTEMD_TIMER_ABS_FILE)"
 
-	systemctl $enable $SYSTEMD_TIMER_FILE_NAME
+	local enable=""
+	if isSystemdEnabled; then
+		enable="enable"
+		systemctl start $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+	else
+		enable="disable"
+		systemctl stop $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+	fi
+
+	systemctl $enable $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+	systemctl daemon-reload &>>$LOG_FILE
+
+	systemctl status $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
 
 	logExit
 }
@@ -2798,11 +2808,15 @@ function config_menu() {
 
 	if isSystemdInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
-		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00
+		#	OnCalendar= *-*-* 05:00:00
+		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
 		logItem "parsed $l"
 		CONFIG_SYSTEMD_DAY="$(cut -f 1 -d ' ' <<< $l)" # Sun
-		local t="$(cut -f 3 -d " " <<< $l)" # 05:00:00
+		local t="$(cut -f 3 -d " " <<< $l)" # 05:00:00 or empty
 		logItem "parsed $t"
+		if [[ -z "$t" ]]; then
+			t="$(cut -f 2 -d " " <<< $l)" # 05:00:00
+		fi
 		CONFIG_SYSTEMD_HOUR="$(cut -f 1 -d ':' <<< $t)" # 05
 		CONFIG_SYSTEMD_MINUTE="$(cut -f 2 -d ':' <<< $t)" # 00
 		logItem "parsed hour: $CONFIG_SYSTEMD_HOUR"
@@ -3693,6 +3707,7 @@ function config_systemday_do() {
 	logEntry "$old"
 
 	local days_=(off off off off off off off off)
+	local i
 
 	: @@ TODO
 
@@ -3700,7 +3715,14 @@ function config_systemday_do() {
 	getMenuText $MENU_DAYS_LONG l
 	getMenuText $MENU_CONFIG_DAY tt
 
-	days_[$CONFIG_CRON_DAY]=on # 0 = Daily, 1 = Sun, 2 = Mon ...
+	if isSystemdEnabled; then
+		for (( i=0; i<${#SYSTEMD_DAYS[@]}; i++ )); do
+			[[ ${SYSTEMD_DAYS[$i]} == $CONFIG_SYSTEMD_DAY ]] && break
+		done
+		days_[$i]=on # 0/empty = Daily, 1/Sun = Sun, 2/Mon = Mon ...
+	else
+		days_[$CONFIG_CRON_DAY]=on # 0 = Daily, 1 = Sun, 2 = Mon ...
+	fi
 
 	ANSWER=$(whiptail --notags --radiolist "" --title "${tt[1]}" $WT_HEIGHT $(($WT_WIDTH/2)) 5 \
 		"${s[0]}" "${l[0]}" "${days_[0]}" \
