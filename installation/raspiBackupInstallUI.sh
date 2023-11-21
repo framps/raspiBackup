@@ -2864,18 +2864,32 @@ function config_menu() {
 
 		getMenuText $MENU_CONFIGURE tt
 
-		FUN=$(whiptail --title "${tt[1]}" --menu "" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button "$b1" --ok-button "$sel1" \
-			"${m1[@]}" \
-			"${m2[@]}" \
-			"${m3[@]}" \
-			"${m4[@]}" \
-			"${m5[@]}" \
-			"${m6[@]}" \
-			"${m7[@]}" \
-			"${m8[@]}" \
-			"${m9[@]}" \
-			"${mcp[@]}" \
-			3>&1 1>&2 2>&3)
+		if [[ -z "$scp" ]]; then
+			FUN=$(whiptail --title "${tt[1]}" --menu "" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button "$b1" --ok-button "$sel1" \
+				"${m1[@]}" \
+				"${m2[@]}" \
+				"${m3[@]}" \
+				"${m4[@]}" \
+				"${m5[@]}" \
+				"${m6[@]}" \
+				"${m7[@]}" \
+				"${m8[@]}" \
+				"${m9[@]}" \
+				3>&1 1>&2 2>&3)
+		else
+			FUN=$(whiptail --title "${tt[1]}" --menu "" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button "$b1" --ok-button "$sel1" \
+				"${m1[@]}" \
+				"${m2[@]}" \
+				"${m3[@]}" \
+				"${m4[@]}" \
+				"${m5[@]}" \
+				"${m6[@]}" \
+				"${m7[@]}" \
+				"${m8[@]}" \
+				"${m9[@]}" \
+				"${mcp[@]}" \
+				3>&1 1>&2 2>&3)
+		fi
 		RET=$?
 		if [ $RET -eq 1 ]; then
 			if (($CONFIG_UPDATED)); then
@@ -3708,8 +3722,6 @@ function config_systemday_do() {
 
 	local days_=(off off off off off off off off)
 	local i
-
-	: @@ TODO
 
 	getMenuText $MENU_DAYS_SHORT s
 	getMenuText $MENU_DAYS_LONG l
