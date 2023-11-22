@@ -1770,13 +1770,21 @@ function isSystemdEnabled() {
 }
 
 function isCrontabInstalled() {
+	logEntry
+	local rc
 	[[ -f $CRON_ABS_FILE ]]
-	return
+	rc=$?
+	logExit $rc
+	return $rc
 }
 
 function isSystemdInstalled() {
+	logEntry
+	local rc
 	[[ -f $SYSTEMD_SERVICE_ABS_FILE && -f $SYSTEMD_TIMER_ABS_FILE ]]
-	return
+	rc=$?
+	logExit $rc
+	return $rc
 }
 
 function isConfigInstalled() {
@@ -2805,9 +2813,7 @@ function config_menu() {
 		logItem "parsed hour: $CONFIG_CRON_HOUR"
 		logItem "parsed minute: $CONFIG_CRON_MINUTE"
 		logItem "parsed day: $CONFIG_CRON_DAY"
-	fi
-
-	if isSystemdInstalled; then
+	elif isSystemdInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
 		#	OnCalendar= *-*-* 05:00:00
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
@@ -3136,7 +3142,7 @@ function config_time_do() {
 	logEntry
 	local rc
 
-	if (( $SYSTEMD_DETECTED )); then
+	if (( $USE_SYSTEMD )); then
 		config_systemdtime_do
 	else
 		config_crontime_do
@@ -3717,7 +3723,7 @@ function config_systemday_do() {
 	getMenuText $MENU_DAYS_LONG l
 	getMenuText $MENU_CONFIG_DAY tt
 
-	if isSystemdEnabled; then
+	if (( $USE_SYSTEMD )); then
 		for (( i=0; i<${#SYSTEMD_DAYS[@]}; i++ )); do
 			[[ ${SYSTEMD_DAYS[$i]} == $CONFIG_SYSTEMD_DAY ]] && break
 		done
@@ -3957,7 +3963,7 @@ function timer_menu() {
 	logEntry
 	local rc
 
-	if (( $SYSTEMD_DETECTED )); then
+	if (( $USE_SYSTEMD )); then
 		systemd_timer_menu
 	else
 		cron_timer_menu
@@ -4268,7 +4274,7 @@ function install_do() {
 		fi
 	fi
 	INSTALLATION_STARTED=1
-	if (( $SYSTEMD_DETECTED )); then
+	if isSystemdEnabled; then
 		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME systemd config ...")
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute systemd_install_execute
 	else
@@ -4317,7 +4323,7 @@ function timer_update_do() {
 	logEntry
 	local rc
 
-	if (( $SYSTEMD_DETECTED )); then
+	if isSystemdEnabled; then
 		systemd_update_do
 	else
 		cron_update_do
@@ -4879,7 +4885,7 @@ function unattendedInstall() {
 		code_download_execute
 		config_download_execute
 		config_update_execute
-		if (( $SYSTEMD_DETECTED )); then
+		if isSystemdEnabled; then
 			systemd_install_execute
 		else
 			cron_install_execute
@@ -4894,7 +4900,7 @@ function unattendedInstall() {
 		extensions_install_execute
 	else # uninstall
 		extensions_uninstall_execute
-		if (( $SYSTEMD_DETECTED )); then
+		if isSystemdEnabled; then
 			systemd_uninstall_execute
 		else
 			cron_uninstall_execute
@@ -4980,6 +4986,14 @@ MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 
+USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
+if isCrontabInstalled; then # use cron if already installed
+	USE_SYSTEMD=0
+fi
+
+echo $USE_SYSTEMD
+read
+
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
 	exit
@@ -5004,9 +5018,9 @@ while getopts "t:h?uUei" opt; do
 		 MODE_UNATTENDED=1
 		 ;;
 	 t) case $OPTARG in
-			cron) SYSTEMD_DETECTED=0
+			cron) USE_SYSTEMD=0
 				;;
-			systemd) SYSTEMD_DETECTED=1
+			systemd) USE_SYSTEMD=1
 				;;
 			*) echo "Invalid parameter$OPTARG for option -t"
 				show_help
