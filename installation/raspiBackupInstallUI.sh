@@ -43,7 +43,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.7"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8-beta"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -133,6 +133,10 @@ INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
 
 SYSTEMD_DAYS=("" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat")
+declare -A SYSTEMD_DAYS_NUM
+for ((i=1; i<${#SYSTEMD_DAYS[@]}; i++)) ; do
+	SYSTEMD_DAYS_NUM[${SYSTEMD_DAYS[$i]}]=i
+done
 
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
@@ -1664,8 +1668,6 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 
 function getMenuText() { # menutextnumber varname
 
-	logEntry "$1 - $2"
-
 	local menu varname
 
 	local menuVar="MENU_${CONFIG_LANGUAGE}"
@@ -1683,7 +1685,6 @@ function getMenuText() { # menutextnumber varname
 
    eval "varname=( ${menu[@]} )"
 
-	logExit
 }
 
 function writeToConsole() {
@@ -1780,9 +1781,9 @@ function isSystemdEnabled() {
 	logEntry $SYSTEMD_ENABLED
 	if [[ "$SYSTEMD_ENABLED" == "undefined" ]]; then
 		if isSystemdConfigInstalled; then
-			local state="$(systemctl status raspiBackup.timer | grep -E "\s+Loaded" | cut -f 2 -d  ";" | xargs)"
-			logItem "$state"
-			[[ $state == "enabled" ]]
+			local state="$(systemctl show --no-pager $SYSTEMD_TIMER_FILE_NAME | grep -i "ActiveState" | cut -f 2 -d '=')"
+			logItem "Current systemd state: $state"
+			[[ $state == "active" ]]
 			SYSTEMD_ENABLED=$?
 		else
 			SYSTEMD_ENABLED=0
@@ -2395,7 +2396,8 @@ function systemd_update_execute() {
 #	OnCalendar= *-*-* 05:00:00
 	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
 
-	local systemd_day=${SYSTEMD_DAYS[$CONFIG_SYSTEMD_DAY]}
+	#local systemd_day=${SYSTEMD_DAYS[$CONFIG_SYSTEMD_DAY]}
+	local systemd_day="$CONFIG_SYSTEMD_DAY"
 
 	logItem "Day: $systemd_day"
 	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":00" }' <<< "$l")
@@ -2404,19 +2406,21 @@ function systemd_update_execute() {
 
 	logItem "$(cat $SYSTEMD_TIMER_ABS_FILE)"
 
+	logItem "Reload systemd daemon"
+	systemctl daemon-reload &>>$LOG_FILE
+
 	local enable=""
 	if isSystemdEnabled; then
 		enable="enable"
+		logItem "Starting $SYSTEMD_TIMER_FILE_NAME"
 		systemctl start $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
 		writeToConsole $MSG_SYSTEMD_ENABLED
 	else
 		enable="disable"
+		logItem "Stoping $SYSTEMD_TIMER_FILE_NAME"
 		systemctl stop $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
 		writeToConsole $MSG_SYSTEMD_DISABLED
 	fi
-
-	systemctl $enable $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
-	systemctl daemon-reload &>>$LOG_FILE
 
 	systemctl status $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
 
@@ -2445,14 +2449,14 @@ function systemd_install_execute() {
 
 	writeToConsole $MSG_INSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_SERVICE_ABS_FILE"
 	echo "$SYSTEMD_SERVICE" >"$SYSTEMD_SERVICE_ABS_FILE"
-	if ! chmod 655 $SYSTEMD_SERVICE_ABS_FILE &>>$LOG_FILE; then
+	if ! chmod 644 $SYSTEMD_SERVICE_ABS_FILE &>>$LOG_FILE; then
 		unrecoverableError $MSG_CHMOD_FAILED "$SYSTEMD_SERVICE_ABS_FILE"
 		logExit
 		return
 	fi
 	writeToConsole $MSG_INSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_TIMER_ABS_FILE"
 	echo "$SYSTEMD_TIMER" >"$SYSTEMD_TIMER_ABS_FILE"
-	if ! chmod 655 $SYSTEMD_TIMER_ABS_FILE &>>$LOG_FILE; then
+	if ! chmod 644 $SYSTEMD_TIMER_ABS_FILE &>>$LOG_FILE; then
 		unrecoverableError $MSG_CHMOD_FAILED "$SYSTEMD_TIMER_ABS_FILE"
 		logExit
 		return
@@ -2519,8 +2523,11 @@ function systemd_uninstall_execute() {
 	if (( $foundConfig )); then
 		if isSystemdEnabled; then
 			writeToConsole $MSG_SYSTEMD_DISABLED
+			logItem "Stopping FILE_TO_INSTALL" 
 			systemctl stop $FILE_TO_INSTALL &>>$LOG_FILE
+			logItem "Disable FILE_TO_INSTALL" 
 			systemctl disable $FILE_TO_INSTALL &>>$LOG_FILE
+			logItem "Relaod systemd daemon"
 			systemctl daemon-reload &>>$LOG_FILE
 		fi
 	fi
@@ -3802,7 +3809,8 @@ function config_systemday_do() {
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
-		CONFIG_SYSTEMD_DAY=$(cut -d/ -f1 <<< ${s[@]/$ANSWER//} | wc -w | tr -d ' ')
+		#CONFIG_SYSTEMD_DAY=$(cut -d/ -f1 <<< ${s[@]/$ANSWER//} | wc -w | tr -d ' ')
+		CONFIG_SYSTEMD_DAY="$ANSWER"
 	fi
 
 	[[ "$old" == "$CONFIG_SYSTEMD_DAY" ]]
@@ -4382,7 +4390,7 @@ function timer_update_do() {
 	logEntry
 	local rc
 
-	if isSystemdEnabled; then
+	if (( $USE_SYSTEMD )); then
 		systemd_update_do
 	else
 		cron_update_do
@@ -4712,15 +4720,17 @@ function downloadPropertiesFile_execute() {
 
 	NEW_PROPERTIES_FILE=0
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING_PROPERTYFILE
-	local httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
-	if (( ! $? )); then
-		NEW_PROPERTIES_FILE=1
-	else
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$PROPERTY_URL")" "$httpCode"
-		logExit
+	if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING_PROPERTYFILE
+		local httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
+		if (( ! $? )); then
+			NEW_PROPERTIES_FILE=1
+		else
+			unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$PROPERTY_URL")" "$httpCode"
+			logExit
+		fi
 	fi
-
+	
 	logExit "$NEW_PROPERTIES_FILE"
 	return
 }
@@ -4934,11 +4944,13 @@ function unattendedInstall() {
 
 	logEntry
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECK_INTERNET_CONNECTION
-	isInternetAvailable
-	if (( $? != 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_INTERNET_CONNECTION_FOUND
-		exit
+	if (( ! RASPIBACKUP_INSTALL_DEBUG )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECK_INTERNET_CONNECTION
+		isInternetAvailable
+		if (( $? != 0 )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_INTERNET_CONNECTION_FOUND
+			exit
+		fi
 	fi
 	if (( MODE_INSTALL )); then
 		code_download_execute
