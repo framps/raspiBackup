@@ -1758,7 +1758,7 @@ function isSystemdEnabled() {
 	if [[ "$SYSTEMD_ENABLED" == "undefined" ]]; then
 		if isSystemdInstalled; then
 			local state="$(systemctl status raspiBackup.timer | grep -E "\s+Loaded" | cut -f 2 -d  ";" | xargs)"
-			logItem "$state"			
+			logItem "$state"
 			[[ $state == "enabled" ]]
 			SYSTEMD_ENABLED=$?
 		else
@@ -2421,7 +2421,7 @@ function systemd_install_execute() {
 	fi
 
 	systemctl daemon-reload
-	
+
 	SYSTEMD_INSTALLED=1
 	logExit
 
@@ -2463,7 +2463,7 @@ function systemd_uninstall_execute() {
 	fi
 
 	systemctl daemon-reload
-	
+
 	SYSTEMD_INSTALLED_INSTALLED=0
 	logExit
 
@@ -2822,7 +2822,7 @@ function config_menu() {
 		CONFIG_SYSTEMD_MINUTE="$(cut -f 2 -d ':' <<< $t)" # 00
 		logItem "parsed hour: $CONFIG_SYSTEMD_HOUR"
 		logItem "parsed minute: $CONFIG_SYSTEMD_MINUTE"
-		logItem "parsed day: $CONFIG_SYSTEMD_DAY"	
+		logItem "parsed day: $CONFIG_SYSTEMD_DAY"
 	fi
 
 	while :; do
@@ -2895,7 +2895,7 @@ function config_menu() {
 				(( isCrontabInstalled )) && m="$(getMessageText $MSG_QUESTION_UPDATE_CRON)" ||  m="$(getMessageText $MSG_QUESTION_UPDATE_SYSTEMD)"
 				local t=$(center $WINDOW_COLS "$m")
 				local ttm="$(getMessageText $TITLE_CONFIRM)"
-				if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then					
+				if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
 					timer_update_do
 				fi
 			fi
@@ -3135,7 +3135,7 @@ function config_time_do() {
 
 	logEntry
 	local rc
-	
+
 	if (( $SYSTEMD_DETECTED )); then
 		config_systemdtime_do
 	else
@@ -3144,8 +3144,8 @@ function config_time_do() {
 	rc=$?
 
 	logExit $rc
-	return $rc	
-	
+	return $rc
+
 }
 
 function config_crontime_do() {
@@ -3956,7 +3956,7 @@ function timer_menu() {
 
 	logEntry
 	local rc
-	
+
 	if (( $SYSTEMD_DETECTED )); then
 		systemd_timer_menu
 	else
@@ -3965,8 +3965,8 @@ function timer_menu() {
 	rc=$?
 
 	logExit $rc
-	return $rc	
-}	
+	return $rc
+}
 
 
 function cron_timer_menu() {
@@ -4316,7 +4316,7 @@ function timer_update_do() {
 
 	logEntry
 	local rc
-	
+
 	if (( $SYSTEMD_DETECTED )); then
 		systemd_update_do
 	else
@@ -4325,8 +4325,8 @@ function timer_update_do() {
 	rc=$?
 
 	logExit $rc
-	return $rc	
-}	
+	return $rc
+}
 
 function cron_update_do() {
 
@@ -4918,12 +4918,13 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF ( -i [-e]? | -u | -U )"
+	echo "$MYSELF ( -i [-e]? | -u | -U | -t [cron|systemd] )"
 	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
 	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
 	echo "-h: display this help"
 	echo "-U: unattended update of $MYSELF"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
+	echo "-t: use either cron or systemd for regular backups"
 }
 
 function askYesNo() { # message message_parms
@@ -4974,7 +4975,7 @@ done
 CLEANUP_LOG=0
 
 MODE_UNATTENDED=0
-MODE_UNINSTALL=0 
+MODE_UNINSTALL=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
@@ -4984,7 +4985,7 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "h?uUei" opt; do
+while getopts "t:h?uUei" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -5001,6 +5002,17 @@ while getopts "h?uUei" opt; do
 		 ;;
     u) MODE_UNINSTALL=1
 		 MODE_UNATTENDED=1
+		 ;;
+	 t) case $OPTARG in
+			cron) SYSTEMD_DETECTED=0
+				;;
+			systemd) SYSTEMD_DETECTED=1
+				;;
+			*) echo "Invalid parameter$OPTARG for option -t"
+				show_help
+				exit 1
+				;;
+		 esac
 		 ;;
 	*)  echo "Unknown option $op"
 		 show_help
