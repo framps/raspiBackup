@@ -539,6 +539,14 @@ MSG_UPDATING_SYSTEMD=$((SCNT++))
 MSG_EN[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Updating systemd configuration in %1."
 MSG_DE[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Systemd Konfigurationsdatei %1 wird angepasst."
 
+MSG_SYSTEMD_ENABLED=$((SCNT++))
+MSG_EN[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd enabled."
+MSG_DE[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd eingeschaltet."
+
+MSG_SYSTEMD_DISABLED=$((SCNT++))
+MSG_EN[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: Systemd disabled."
+MSG_DE[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: Systemd ausgeschaltet."
+
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
 MSG_DE[$MSG_TITLE]="$RASPIBACKUP_NAME Installations- und Konfigurations Tool V${VERSION}"
@@ -1656,6 +1664,8 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 
 function getMenuText() { # menutextnumber varname
 
+	logEntry "$1 - $2"
+
 	local menu varname
 
 	local menuVar="MENU_${CONFIG_LANGUAGE}"
@@ -1671,8 +1681,9 @@ function getMenuText() { # menutextnumber varname
 		menu="${MENU_EN[$1]}" # fallback into english
 	fi
 
-        eval "varname=( ${menu[@]} )"
+   eval "varname=( ${menu[@]} )"
 
+	logExit
 }
 
 function writeToConsole() {
@@ -1736,10 +1747,23 @@ function center() { # <cols> <text>
 	done <<<"$@"
 }
 
+function isTimerEnabled() {
+	logEntry
+	local rc
+	if (( $USE_SYSTEMD )); then
+		isSystemdEnabled
+	else
+		isCrontabEnabled
+	fi
+	rc=$?
+	logExit $rc
+	return $rc
+}
+
 function isCrontabEnabled() {
 	logEntry $CRONTAB_ENABLED
 	if [[ "$CRONTAB_ENABLED" == "undefined" ]]; then
-		if isCrontabInstalled; then
+		if isCrontabConfigInstalled; then
 			local l="$(tail -n 1 < $CRON_ABS_FILE)"
 			logItem "$l"
 			[[ ${l:0:1} != "#" ]]
@@ -1755,7 +1779,7 @@ function isCrontabEnabled() {
 function isSystemdEnabled() {
 	logEntry $SYSTEMD_ENABLED
 	if [[ "$SYSTEMD_ENABLED" == "undefined" ]]; then
-		if isSystemdInstalled; then
+		if isSystemdConfigInstalled; then
 			local state="$(systemctl status raspiBackup.timer | grep -E "\s+Loaded" | cut -f 2 -d  ";" | xargs)"
 			logItem "$state"
 			[[ $state == "enabled" ]]
@@ -1768,7 +1792,7 @@ function isSystemdEnabled() {
 	return $SYSTEMD_ENABLED
 }
 
-function isCrontabInstalled() {
+function isCrontabConfigInstalled() {
 	logEntry
 	local rc
 	[[ -f $CRON_ABS_FILE ]]
@@ -1777,7 +1801,7 @@ function isCrontabInstalled() {
 	return $rc
 }
 
-function isSystemdInstalled() {
+function isSystemdConfigInstalled() {
 	logEntry
 	local rc
 	[[ -f $SYSTEMD_SERVICE_ABS_FILE && -f $SYSTEMD_TIMER_ABS_FILE ]]
@@ -2363,7 +2387,7 @@ function systemd_update_execute() {
 
 	logEntry
 
-	writeToConsole $MSG_UPDATING_CRON "$SYSTEMD_TIMER_ABS_FILE"
+	writeToConsole $MSG_UPDATING_SYSTEMD "$SYSTEMD_TIMER_ABS_FILE"
 
 	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
 
@@ -2384,9 +2408,11 @@ function systemd_update_execute() {
 	if isSystemdEnabled; then
 		enable="enable"
 		systemctl start $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+		writeToConsole $MSG_SYSTEMD_ENABLED
 	else
 		enable="disable"
 		systemctl stop $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+		writeToConsole $MSG_SYSTEMD_DISABLED
 	fi
 
 	systemctl $enable $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
@@ -2404,6 +2430,11 @@ function cron_install_execute() {
 	writeToConsole $MSG_INSTALLING_CRON_TEMPLATE "$CRON_ABS_FILE"
 	echo "$CRON_CONTENTS" >"$CRON_ABS_FILE"
 	CRON_INSTALLED=1
+
+	if (( $MODE_FORCE_TIMER )); then
+		systemd_uninstall_execute
+	fi
+
 	logExit
 
 }
@@ -2426,10 +2457,23 @@ function systemd_install_execute() {
 		logExit
 		return
 	fi
-
-	systemctl daemon-reload
-
 	SYSTEMD_INSTALLED=1
+
+	if (( $MODE_FORCE_TIMER )); then
+		cron_uninstall_execute
+	fi
+
+	logExit
+
+}
+
+function timer_uninstall_execute() {
+
+	logEntry
+
+	cron_uninstall_execute
+	systemd_uninstall_execute
+
 	logExit
 
 }
@@ -2454,7 +2498,9 @@ function systemd_uninstall_execute() {
 
 	logEntry
 
+	local foundConfig
 	if [[ -e "$SYSTEMD_SERVICE_ABS_FILE" ]]; then
+		foundConfig=1
 		writeToConsole $MSG_UNINSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_SERVICE_ABS_FILE"
 		if ! rm -f "$SYSTEMD_SERVICE_ABS_FILE" 2>>"$LOG_FILE"; then
 			unrecoverableError $MSG_UNINSTALL_FAILED "$SYSTEMD_SERVICE_ABS_FILE"
@@ -2462,6 +2508,7 @@ function systemd_uninstall_execute() {
 		fi
 	fi
 	if [[ -e "$SYSTEMD_TIMER_ABS_FILE" ]]; then
+		foundConfig=1
 		writeToConsole $MSG_UNINSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_TIMER_ABS_FILE"
 		if ! rm -f "$SYSTEMD_TIMER_ABS_FILE" 2>>"$LOG_FILE"; then
 			unrecoverableError $MSG_UNINSTALL_FAILED "$SYSTEMD_TIMER_ABS_FILE"
@@ -2469,9 +2516,17 @@ function systemd_uninstall_execute() {
 		fi
 	fi
 
-	systemctl daemon-reload
+	if (( $foundConfig )); then
+		if isSystemdEnabled; then
+			writeToConsole $MSG_SYSTEMD_DISABLED
+			systemctl stop $FILE_TO_INSTALL &>>$LOG_FILE
+			systemctl disable $FILE_TO_INSTALL &>>$LOG_FILE
+			systemctl daemon-reload &>>$LOG_FILE
+		fi
+	fi
 
 	SYSTEMD_INSTALLED_INSTALLED=0
+
 	logExit
 
 }
@@ -2799,7 +2854,7 @@ function config_menu() {
 		parseConfig
 	fi
 
-	if isCrontabInstalled; then
+	if isCrontabConfigInstalled; then
 		local l="$(tail -n 1 < $CRON_ABS_FILE)"
 		logItem "last line: $l"
 		local v=$(awk ' {print $1, $2, $5}' <<< "$l")
@@ -2812,7 +2867,7 @@ function config_menu() {
 		logItem "parsed hour: $CONFIG_CRON_HOUR"
 		logItem "parsed minute: $CONFIG_CRON_MINUTE"
 		logItem "parsed day: $CONFIG_CRON_DAY"
-	elif isSystemdInstalled; then
+	elif isSystemdConfigInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
 		#	OnCalendar= *-*-* 05:00:00
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
@@ -2897,7 +2952,11 @@ function config_menu() {
 			fi
 			if (($TIMER_UPDATED)); then
 				local m
-				(( isCrontabInstalled )) && m="$(getMessageText $MSG_QUESTION_UPDATE_CRON)" ||  m="$(getMessageText $MSG_QUESTION_UPDATE_SYSTEMD)"
+				if isCrontabConfigInstalled; then
+					m="$(getMessageText $MSG_QUESTION_UPDATE_CRON)"
+				else
+					m="$(getMessageText $MSG_QUESTION_UPDATE_SYSTEMD)"
+				fi
 				local t=$(center $WINDOW_COLS "$m")
 				local ttm="$(getMessageText $TITLE_CONFIRM)"
 				if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
@@ -3950,8 +4009,8 @@ function uninstall_do() {
 		return
 	fi
 
-	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME cron configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
-	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute cron_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute
+	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME timer configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
+	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute timer_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute
 
 	logExit
 
@@ -3978,7 +4037,7 @@ function cron_timer_menu() {
 
 	logEntry
 
-	if ! isCrontabInstalled; then
+	if ! isCrontabConfigInstalled; then
 		local m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
@@ -3988,7 +4047,7 @@ function cron_timer_menu() {
 	fi
 
 	local enabled
-	isCrontabEnabled
+	isTimerEnabled
 	enabled=$(( !$? ))
 
 	local old=$enabled
@@ -4005,7 +4064,7 @@ function cron_timer_menu() {
 		getMenuText $MENU_REGULARBACKUP_ENABLE ct
 		getMenuText $MENU_CONFIG_DAY m1
 		getMenuText $MENU_CONFIG_TIME m2
-		getMenuText $MENU_CONFIG_CRON tt
+		getMenuText $MENU_CONFIG_TIME tt
 
 		if (( $enabled )); then
 			getMenuText $MENU_REGULARBACKUP_DISABLE ct
@@ -4047,7 +4106,7 @@ function systemd_timer_menu() {
 
 	logEntry
 
-	if ! isSystemdInstalled; then
+	if ! isSystemdConfigInstalled; then
 		local m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
@@ -4273,7 +4332,8 @@ function install_do() {
 		fi
 	fi
 	INSTALLATION_STARTED=1
-	if isSystemdEnabled; then
+
+	if (( $USE_SYSTEMD )); then
 		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME systemd config ...")
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute systemd_install_execute
 	else
@@ -4337,7 +4397,7 @@ function cron_update_do() {
 
 	logEntry
 
-	if ! isCrontabInstalled; then
+	if ! isCrontabConfigInstalled; then
 		local m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
@@ -4356,7 +4416,7 @@ function systemd_update_do() {
 
 	logEntry
 
-	if ! isSystemdInstalled; then
+	if ! isSystemdConfigInstalled; then
 		local m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
@@ -4884,7 +4944,7 @@ function unattendedInstall() {
 		code_download_execute
 		config_download_execute
 		config_update_execute
-		if isSystemdEnabled; then
+		if (( $USE_SYSTEMD )); then
 			systemd_install_execute
 		else
 			cron_install_execute
@@ -4899,11 +4959,8 @@ function unattendedInstall() {
 		extensions_install_execute
 	else # uninstall
 		extensions_uninstall_execute
-		if isSystemdEnabled; then
-			systemd_uninstall_execute
-		else
-			cron_uninstall_execute
-		fi
+		systemd_uninstall_execute
+		cron_uninstall_execute
 		config_uninstall_execute
 		uninstall_script_execute
 		uninstall_execute
@@ -4984,14 +5041,12 @@ MODE_UNINSTALL=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
+MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
-if isCrontabInstalled; then # use cron if already installed
+if isCrontabConfigInstalled; then # use cron if already installed
 	USE_SYSTEMD=0
 fi
-
-echo $USE_SYSTEMD
-read
 
 if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
@@ -5018,8 +5073,10 @@ while getopts "t:h?uUei" opt; do
 		 ;;
 	 t) case $OPTARG in
 			cron) USE_SYSTEMD=0
+					MODE_FORCE_TIMER=1
 				;;
 			systemd) USE_SYSTEMD=1
+					MODE_FORCE_TIMER=1
 				;;
 			*) echo "Invalid parameter$OPTARG for option -t"
 				show_help
