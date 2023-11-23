@@ -306,10 +306,10 @@ CONFIG_RESIZE_ROOTFS="1"
 
 # Whiptail box sizes
 
-ROWS_MSGBOX=10
-ROWS_ABOUT=16
+ROWS_MSGBOX=20
+ROWS_ABOUT=20
 ROWS_MENU=20
-WINDOW_COLS=70
+WINDOW_COLS=60
 
 #
 # Messages
@@ -3242,7 +3242,7 @@ function config_crontime_do() {
 	getMenuText $MENU_CONFIG_TIME tt
 
 	while :; do
-		ANSWER=$(whiptail --inputbox "$b" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" 3>&1 1>&2 2>&3)
+		ANSWER=$(whiptail --inputbox "$b" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" $ROWS_MENU $WINDOW_COLS 2 3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			current="$ANSWER"
@@ -3289,7 +3289,7 @@ function config_systemdtime_do() {
 	getMenuText $MENU_CONFIG_TIME tt
 
 	while :; do
-		ANSWER=$(whiptail --inputbox "$b" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" 3>&1 1>&2 2>&3)
+		ANSWER=$(whiptail --inputbox "$b" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" $ROWS_MENU $WINDOW_COLS 2 3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			current="$ANSWER"
@@ -5072,13 +5072,13 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF ( -i [-e]? | -u | -U | -t [cron|systemd] )"
+	echo "$MYSELF ( -i [-e]? | -u | -U | -t [crond|systemd] )"
 	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
 	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
 	echo "-h: display this help"
 	echo "-U: unattended update of $MYSELF"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
-	echo "-t: use either cron or systemd for regular backups"
+	echo "-t: use either crond or systemd for backup timer"
 }
 
 function askYesNo() { # message message_parms
@@ -5165,7 +5165,7 @@ while getopts "t:h?uUei" opt; do
 		 ;;
 
 	 t) case $OPTARG in
-			cron) USE_SYSTEMD=0
+			crond) USE_SYSTEMD=0
 					MODE_FORCE_TIMER=1
 				;;
 			systemd) USE_SYSTEMD=1
