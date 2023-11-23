@@ -132,12 +132,6 @@ STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
 
-SYSTEMD_DAYS=("" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat")
-declare -A SYSTEMD_DAYS_NUM
-for ((i=1; i<${#SYSTEMD_DAYS[@]}; i++)) ; do
-	SYSTEMD_DAYS_NUM[${SYSTEMD_DAYS[$i]}]=i
-done
-
 read -r -d '' CRON_CONTENTS <<-'EOF'
 #
 # Crontab entry for raspiBackup.sh
@@ -306,7 +300,7 @@ CONFIG_CRON_MINUTE="0"
 CONFIG_CRON_DAY="1" # Sun
 CONFIG_SYSTEMD_HOUR=$CONFIG_CRON_HOUR
 CONFIG_SYSTEMD_MINUTE=$CONFIG_CRON_MINUTE
-CONFIG_SYSTEMD_DAY="Sun"
+CONFIG_SYSTEMD_DAY="1" # Sun
 CONFIG_MAIL_PROGRAM="mail"
 CONFIG_EMAIL=""
 CONFIG_RESIZE_ROOTFS="1"
@@ -549,8 +543,8 @@ MSG_EN[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd enabled."
 MSG_DE[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd eingeschaltet."
 
 MSG_SYSTEMD_DISABLED=$((SCNT++))
-MSG_EN[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: Systemd disabled."
-MSG_DE[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: Systemd ausgeschaltet."
+MSG_EN[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer disabled."
+MSG_DE[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer ausgeschaltet."
 
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
@@ -2372,8 +2366,7 @@ function cron_update_execute() {
 	if ! isCrontabEnabled; then
 		disabled="#"
 	fi
-	local cron_day=$(( $CONFIG_CRON_DAY - 1 ))
-	(( $cron_day < 0 )) && cron_day="*"
+	local cron_day="$(daynum_to_config_string "$CONFIG_CRON_DAY")"
 	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
 	logItem "cron update: $v"
 	local t=$(mktemp)
@@ -2385,27 +2378,8 @@ function cron_update_execute() {
 	logExit
 }
 
-function systemd_update_execute() {
-
+function systemd_timer_execute() {
 	logEntry
-
-	writeToConsole $MSG_UPDATING_SYSTEMD "$SYSTEMD_TIMER_ABS_FILE"
-
-	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
-
-#	OnCalendar=Sun *-*-* 05:00:00
-#	OnCalendar= *-*-* 05:00:00
-	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
-
-	#local systemd_day=${SYSTEMD_DAYS[$CONFIG_SYSTEMD_DAY]}
-	local systemd_day="$CONFIG_SYSTEMD_DAY"
-
-	logItem "Day: $systemd_day"
-	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":00" }' <<< "$l")
-	logItem "systemd update: $v"
-	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
-
-	logItem "$(cat $SYSTEMD_TIMER_ABS_FILE)"
 
 	logItem "Reload systemd daemon"
 	systemctl daemon-reload &>>$LOG_FILE
@@ -2423,7 +2397,34 @@ function systemd_update_execute() {
 		writeToConsole $MSG_SYSTEMD_DISABLED
 	fi
 
+	logItem "$enable $SYSTEMD_TIMER_FILE_NAME"
+	systemctl $enable $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+
 	systemctl status $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+
+	logExit
+}
+
+function systemd_update_execute() {
+
+	logEntry
+
+	writeToConsole $MSG_UPDATING_SYSTEMD "$SYSTEMD_TIMER_ABS_FILE"
+
+	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
+
+#	OnCalendar=Sun *-*-* 05:00:00
+#	OnCalendar= *-*-* 05:00:00
+	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
+
+	local systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
+
+	logItem "Day: $systemd_day"
+	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":00" }' <<< "$l")
+	logItem "systemd update: $v"
+	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
+
+	logItem "$(cat $SYSTEMD_TIMER_ABS_FILE)"
 
 	logExit
 }
@@ -2463,6 +2464,10 @@ function systemd_install_execute() {
 		return
 	fi
 	SYSTEMD_INSTALLED=1
+
+	systemctl disable $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
+
+	systemctl status $SYSTEMD_TIMER_FILE_NAME &>>$LOG_FILE
 
 	if (( $MODE_FORCE_TIMER )); then
 		cron_uninstall_execute
@@ -2524,9 +2529,9 @@ function systemd_uninstall_execute() {
 	if (( $foundConfig )); then
 		if isSystemdEnabled; then
 			writeToConsole $MSG_SYSTEMD_DISABLED
-			logItem "Stopping FILE_TO_INSTALL" 
+			logItem "Stopping FILE_TO_INSTALL"
 			systemctl stop $FILE_TO_INSTALL &>>$LOG_FILE
-			logItem "Disable FILE_TO_INSTALL" 
+			logItem "Disable FILE_TO_INSTALL"
 			systemctl disable $FILE_TO_INSTALL &>>$LOG_FILE
 			logItem "Relaod systemd daemon"
 			systemctl daemon-reload &>>$LOG_FILE
@@ -2870,8 +2875,8 @@ function config_menu() {
 		CONFIG_CRON_MINUTE="$(cut -f 1 -d ' ' <<< $v)"
 		[[ ${CONFIG_CRON_MINUTE:0:1} == "#" ]] && CONFIG_CRON_MINUTE="${CONFIG_CRON_MINUTE:1}"
 		CONFIG_CRON_HOUR="$(cut -f 2 -d ' ' <<< $v)"
-		CONFIG_CRON_DAY=$(cut -f 3 -d ' ' <<< $v)
-		[[ "$CONFIG_CRON_DAY" == "*" ]] && CONFIG_CRON_DAY=0 || (( CONFIG_CRON_DAY ++ )) # 0 = Daily, 1 = Sun, 2 = Mon, ...
+		local day=$(cut -f 3 -d ' ' <<< $v)
+		CONFIG_CRON_DAY=$(daynum_from_config_string "$day")
 		logItem "parsed hour: $CONFIG_CRON_HOUR"
 		logItem "parsed minute: $CONFIG_CRON_MINUTE"
 		logItem "parsed day: $CONFIG_CRON_DAY"
@@ -2880,12 +2885,17 @@ function config_menu() {
 		#	OnCalendar= *-*-* 05:00:00
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
 		logItem "parsed $l"
-		CONFIG_SYSTEMD_DAY="$(cut -f 1 -d ' ' <<< $l)" # Sun
+		local day="$(cut -f 1 -d ' ' <<< $l)" # Sun or *-*-*
+		logItem "day: $day"
 		local t="$(cut -f 3 -d " " <<< $l)" # 05:00:00 or empty
-		logItem "parsed $t"
+		logItem "parsed time $t"
 		if [[ -z "$t" ]]; then
 			t="$(cut -f 2 -d " " <<< $l)" # 05:00:00
+			day=""
 		fi
+		logItem "parsed time $t"
+
+		CONFIG_SYSTEMD_DAY="$(daynum_from_config_string "$day")"
 		CONFIG_SYSTEMD_HOUR="$(cut -f 1 -d ':' <<< $t)" # 05
 		CONFIG_SYSTEMD_MINUTE="$(cut -f 2 -d ':' <<< $t)" # 00
 		logItem "parsed hour: $CONFIG_SYSTEMD_HOUR"
@@ -2984,7 +2994,7 @@ function config_menu() {
 				$s6) config_services_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s9) timer_menu; TIMER_UPDATED=$? ;;
+				$s9) config_timer_menu; TIMER_UPDATED=$? ;;
 				$scp) config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
@@ -3767,7 +3777,7 @@ function config_cronday_do() {
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
-		CONFIG_CRON_DAY=$(cut -d/ -f1 <<< ${s[@]/$ANSWER//} | wc -w | tr -d ' ')
+		CONFIG_CRON_DAY="$(daynum_from_menu_string "$ANSWER")"
 	fi
 
 	[[ "$old" == "$CONFIG_CRON_DAY" ]]
@@ -3789,14 +3799,7 @@ function config_systemday_do() {
 	getMenuText $MENU_DAYS_LONG l
 	getMenuText $MENU_CONFIG_DAY tt
 
-	if (( $USE_SYSTEMD )); then
-		for (( i=0; i<${#SYSTEMD_DAYS[@]}; i++ )); do
-			[[ ${SYSTEMD_DAYS[$i]} == $CONFIG_SYSTEMD_DAY ]] && break
-		done
-		days_[$i]=on # 0/empty = Daily, 1/Sun = Sun, 2/Mon = Mon ...
-	else
-		days_[$CONFIG_CRON_DAY]=on # 0 = Daily, 1 = Sun, 2 = Mon ...
-	fi
+	days_[$CONFIG_SYSTEMD_DAY]=on # 0 = Daily, 1 = Sun, 2 = Mon ...
 
 	ANSWER=$(whiptail --notags --radiolist "" --title "${tt[1]}" $WT_HEIGHT $(($WT_WIDTH/2)) 5 \
 		"${s[0]}" "${l[0]}" "${days_[0]}" \
@@ -3810,8 +3813,7 @@ function config_systemday_do() {
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
-		#CONFIG_SYSTEMD_DAY=$(cut -d/ -f1 <<< ${s[@]/$ANSWER//} | wc -w | tr -d ' ')
-		CONFIG_SYSTEMD_DAY="$ANSWER"
+		CONFIG_SYSTEMD_DAY="$(daynum_from_menu_string "$ANSWER")"
 	fi
 
 	[[ "$old" == "$CONFIG_SYSTEMD_DAY" ]]
@@ -4025,7 +4027,7 @@ function uninstall_do() {
 
 }
 
-function timer_menu() {
+function config_timer_menu() {
 
 	logEntry
 	local rc
@@ -4434,8 +4436,8 @@ function systemd_update_do() {
 		return
 	fi
 
-	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME systemd configuration ...")
-	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME systemd configuration" systemd_update_execute
+	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME systemd configuration ..." "Configure systemd timer")
+	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME systemd configuration" systemd_update_execute systemd_timer_execute
 	logExit
 
 }
@@ -4731,7 +4733,7 @@ function downloadPropertiesFile_execute() {
 			logExit
 		fi
 	fi
-	
+
 	logExit "$NEW_PROPERTIES_FILE"
 	return
 }
@@ -4768,6 +4770,76 @@ function shouldRenewDownloadPropertiesFile() {
 function error() {
 	logStack
 	cat "$LOG_FILE"
+}
+
+DAYNUM_TO_MENU=("Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat")
+declare -A DAYNUM_FROM_MENU
+for ((i=0; i<${#DAYNUM_TO_MENU[@]}; i++)); do
+	DAYNUM_FROM_MENU[${DAYNUM_TO_MENU[$i]}]=$i
+done
+
+function daynum_from_menu_string() {
+
+	logEntry "$1"
+	local ret
+
+	ret=${DAYNUM_FROM_MENU[$1]}
+
+	logExit $ret
+	echo $ret
+
+}
+
+function daynum_to_config_string() {
+
+	logEntry $1
+	local ret
+
+	if (( $USE_SYSTEMD )); then
+		if (( $1 == 0 )); then
+			ret=""
+		else
+			ret="${DAYNUM_TO_MENU[$1]}"
+		fi
+	else
+		if (( $1 == 0 )); then
+			ret="*"
+		else
+			ret=$1
+		fi
+	fi
+
+	logExit $ret
+	echo $ret
+}
+
+function daynum_from_config_string() {
+
+	logEntry "$1"
+	local ret
+
+	if [[ -z $1 || "$1" == "*" ]]; then
+		ret="0"
+	else
+		if (( $USE_SYSTEMD )); then
+			ret=${DAYNUM_FROM_MENU[$1]}
+		else
+			ret="$1"
+		fi
+	fi
+
+	logExit $ret
+	echo $ret
+
+}
+
+function daynum_to_menu_string() {
+
+	logEntry "$1"
+	local ret=${DAYNUM_TO_MENU[$1]}
+
+	logExit $ret
+	echo $ret
 }
 
 # return text masqueraded
@@ -5066,6 +5138,30 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
+:<<SKIP
+for ((i=0; i<8; i++)); do
+	echo "$i: dtc $(daynum_to_config_string "$i")"
+	echo "$i: dtm $(daynum_to_menu_string "$i")"
+done
+
+for d in "${DAYNUM_TO_MENU[@]}"; do
+		echo "$d: dtm $(daynum_from_menu_string "$d")"
+done
+
+echo "*: dfm $(daynum_from_config_string "*")"
+for d in 1 2 3 4 5 6 7; do
+		echo "$d: dfm $(daynum_from_config_string "$d")"
+done
+
+USE_SYSTEMD=1
+echo "blank: dfm $(daynum_from_config_string "")"
+for d in Sun Mon Tue Wed Thu Fri Sat; do
+		echo "$d: dfm $(daynum_from_config_string "$d")"
+done
+
+exit
+SKIP
+
 while getopts "t:h?uUei" opt; do
     case "$opt" in
 	 h|\?)
@@ -5084,6 +5180,7 @@ while getopts "t:h?uUei" opt; do
     u) MODE_UNINSTALL=1
 		 MODE_UNATTENDED=1
 		 ;;
+
 	 t) case $OPTARG in
 			cron) USE_SYSTEMD=0
 					MODE_FORCE_TIMER=1
