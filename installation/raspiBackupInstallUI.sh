@@ -2528,9 +2528,9 @@ function systemd_uninstall_execute() {
 	if (( $foundConfig )); then
 		if isSystemdEnabled; then
 			writeToConsole $MSG_SYSTEMD_DISABLED
-			logItem "Stopping FILE_TO_INSTALL"
+			logItem "Stopping $FILE_TO_INSTALL"
 			systemctl stop $FILE_TO_INSTALL &>>$LOG_FILE
-			logItem "Disable FILE_TO_INSTALL"
+			logItem "Disable $FILE_TO_INSTALL"
 			systemctl disable $FILE_TO_INSTALL &>>$LOG_FILE
 			logItem "Relaod systemd daemon"
 			systemctl daemon-reload &>>$LOG_FILE
@@ -4048,6 +4048,10 @@ function cron_timer_menu() {
 	logEntry
 
 	if ! isCrontabConfigInstalled; then
+		INSTALL_DESCRIPTION=("Installing $RASPIBACKUP_NAME crond configurations ..."  )
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME crond configuration" cron_install_execute
+	fi
+	if ! isCrontabConfigInstalled; then		
 		local m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
@@ -4116,6 +4120,10 @@ function systemd_timer_menu() {
 
 	logEntry
 
+	if ! isSystemdConfigInstalled; then
+		INSTALL_DESCRIPTION=("Installing $RASPIBACKUP_NAME systemd configurations ..."  )
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" systemd_install_execute
+	fi
 	if ! isSystemdConfigInstalled; then
 		local m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
@@ -4784,14 +4792,14 @@ function daynum_from_menu_string() {
 
 	ret=${DAYNUM_FROM_MENU[$1]}
 
-	logExit $ret
-	echo $ret
+	logExit "$ret"
+	echo "$ret"
 
 }
 
 function daynum_to_config_string() {
 
-	logEntry $1
+	logEntry "$1"
 	local ret
 
 	if (( $USE_SYSTEMD )); then
@@ -4804,12 +4812,12 @@ function daynum_to_config_string() {
 		if (( $1 == 0 )); then
 			ret="*"
 		else
-			ret=$1
+			(( ret = $1 - 1 ))
 		fi
 	fi
 
-	logExit $ret
-	echo $ret
+	logExit "$ret"
+	echo "$ret"
 }
 
 function daynum_from_config_string() {
@@ -4823,12 +4831,12 @@ function daynum_from_config_string() {
 		if (( $USE_SYSTEMD )); then
 			ret=${DAYNUM_FROM_MENU[$1]}
 		else
-			ret="$1"
+			(( ret = $1 + 1 ))
 		fi
 	fi
 
-	logExit $ret
-	echo $ret
+	logExit "$ret"
+	echo "$ret"
 
 }
 
@@ -4837,8 +4845,8 @@ function daynum_to_menu_string() {
 	logEntry "$1"
 	local ret=${DAYNUM_TO_MENU[$1]}
 
-	logExit $ret
-	echo $ret
+	logExit "$ret"
+	echo "$ret"
 }
 
 # return text masqueraded
@@ -5136,30 +5144,6 @@ if [[ $1 == "--version" ]]; then
 	echo $GIT_CODEVERSION
 	exit
 fi
-
-:<<SKIP
-for ((i=0; i<8; i++)); do
-	echo "$i: dtc $(daynum_to_config_string "$i")"
-	echo "$i: dtm $(daynum_to_menu_string "$i")"
-done
-
-for d in "${DAYNUM_TO_MENU[@]}"; do
-		echo "$d: dtm $(daynum_from_menu_string "$d")"
-done
-
-echo "*: dfm $(daynum_from_config_string "*")"
-for d in 1 2 3 4 5 6 7; do
-		echo "$d: dfm $(daynum_from_config_string "$d")"
-done
-
-USE_SYSTEMD=1
-echo "blank: dfm $(daynum_from_config_string "")"
-for d in Sun Mon Tue Wed Thu Fri Sat; do
-		echo "$d: dfm $(daynum_from_config_string "$d")"
-done
-
-exit
-SKIP
 
 while getopts "t:h?uUei" opt; do
     case "$opt" in
