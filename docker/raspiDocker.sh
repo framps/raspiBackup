@@ -1,9 +1,31 @@
 #!/bin/bash
+#######################################################################################################################
+#
+# 	 Manage raspiBackup docker image
+#
+####################################################################################################
+#
+#    Copyright (c) 2023 framp at linux-tips-and-tricks dot de
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################################################################
 
 CMD="$1"
 ME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 CONTAINER_NAME="Raspberry"
-IMAGE_NAME="lukechilds/dockerpi"
+IMAGE_NAME="lukechilds/dockerpi:vm"
 
 case $CMD in
 
@@ -19,9 +41,11 @@ initialize) ## start vm in detached mode
    ;;
 
 interactive) ## start in interactive mode
-containerID=$(docker run -it $IMAGE_NAME)
+#	 docker run -it --name $CONTAINER_NAME $IMAGE_NAME
+	 docker run -it -v $(pwd)/2020-02-13-raspbian-buster-lite.img:/sdcard/filesystem.img lukechilds/dockerpi:vm
     ;;
 
+# exec qemu-system-arm   --machine versatilepb   --cpu arm1176   --m 256m   --drive format=raw,file=/sdcard/filesystem.img   --net nic --net user,hostfwd=tcp::5022-:22   --dtb /root/qemu-rpi-kernel/versatile-pb.dtb   --kernel /root/qemu-rpi-kernel/kernel-qemu-4.19.50-buster   --append rw earlyprintk loglevel=8 console=ttyAMA0,115200 dwc_otg.lpm_enable=0 root=/dev/sda2 rootwait panic=1    --no-reboot   --display none   --serial mon:stdio
 buildVM) ## build vm
 	cd ~/github.com/lukechilds/dockerpi
 	docker build -t lukechilds/dockerpi:vm --target dockerpi-vm .
