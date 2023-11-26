@@ -2,6 +2,8 @@
 *.msg
 *.env
 *.conf
+*.zip
+*.img
 constants.sh
 email.conf
 

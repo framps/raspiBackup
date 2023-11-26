@@ -158,7 +158,6 @@ lvm.*
 ModemManager
 nfs-
 ntp
-pihole.*
 rng-tools
 rpcbind
 rsyslog
