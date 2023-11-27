@@ -172,7 +172,6 @@ fi
 
 # NOTE:
 # Enable pishrink only if the created backup is of type dd. rsync or tar backup cannot be shrinked
-#pishrink
-# NOTE:
 # Enable raspiBackupRestore2Image only for backuptype tar or rsync but not for type dd
+#pishrink
 #raspiBackupRestore2Image
