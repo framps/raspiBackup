@@ -10,7 +10,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (c) 2013-2022 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2013-2023 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ set -euf -o pipefail
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.8"
+VERSION="0.2.9"
 
 set +u;GIT_DATE="$Date$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
