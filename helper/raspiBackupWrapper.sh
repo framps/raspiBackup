@@ -171,10 +171,8 @@ else
 fi
 
 # NOTE:
-# pishrink can be used only if the created backup is of type dd. rsync or tar backup cannot be shrinked
-# Use raspiBackupRestore2Image only for backuptype tar or rsync but not for type dd
-
-# enable one of the following two lines if you want to have pishrink or raspiBackupRestore2Image to postprocess the backup
-
+# Enable pishrink only if the created backup is of type dd. rsync or tar backup cannot be shrinked
 #pishrink
+# NOTE:
+# Enable raspiBackupRestore2Image only for backuptype tar or rsync but not for type dd
 #raspiBackupRestore2Image
