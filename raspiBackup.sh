@@ -6718,10 +6718,16 @@ function inspect4Backup() {
 		local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
 		logItem "$bootMountpoint mounted? $bootPartition"
 
+		if [[ -z $bootPartition ]]; then
+			bootMountpoint="/boot/firmware"
+			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
+			logItem "$bootMountpoint mounted? $bootPartition"
+		fi
+
 		# test whether some other /boot path is mounted
 		if [[ -z $bootPartition ]]; then
-			bootPartition=$(mount | grep "/boot" | cut -f 1 -d ' ')
-			bootMountpoint=$(mount | grep "/boot" | cut -f 3 -d ' ')
+			bootPartition=$(mount | grep "\s/boot" | cut -f 1 -d ' ')
+			bootMountpoint=$(mount | grep "\s/boot" | cut -f 3 -d ' ')
 			logItem "Some path in /boot mounted? $bootPartition on $bootMountpoint"
 		fi
 
