@@ -112,6 +112,7 @@ function mountLoopDevice() {
 function raspiBackupRestore2Image() {
 	if which raspiBackupRestore2Image.sh 2>&1 1>/dev/null; then
 
+		readVars
 		sudo raspiBackupRestore2Image.sh $BACKUP_TARGETDIR
 		rc=$?
 
