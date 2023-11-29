@@ -10,7 +10,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (c) 2013-2022 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2013-2023 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ set -euf -o pipefail
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-VERSION="0.2.8"
+VERSION="0.2.9"
 
 set +u;GIT_DATE="$Date$"; set -u
 GIT_DATE_ONLY=${GIT_DATE/: /}
@@ -112,6 +112,7 @@ function mountLoopDevice() {
 function raspiBackupRestore2Image() {
 	if which raspiBackupRestore2Image.sh 2>&1 1>/dev/null; then
 
+		readVars
 		sudo raspiBackupRestore2Image.sh $BACKUP_TARGETDIR
 		rc=$?
 
@@ -170,10 +171,7 @@ else
 fi
 
 # NOTE:
-# pishrink can be used only if the created backup is of type dd. rsync or tar backup cannot be shrinked
-# Use raspiBackupRestore2Image only for backuptype tar or rsync but not for type dd
-
-# enable one of the following two lines if you want to have pishrink or raspiBackupRestore2Image to postprocess the backup
-
+# Enable pishrink only if the created backup is of type dd. rsync or tar backup cannot be shrinked
+# Enable raspiBackupRestore2Image only for backuptype tar or rsync but not for type dd
 #pishrink
 #raspiBackupRestore2Image
