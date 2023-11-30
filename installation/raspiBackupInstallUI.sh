@@ -3901,7 +3901,7 @@ function progressbar_do() { # <name of description array> <menu title> <funcs to
 	declare todo=("${@}")
 	todo+=("finished")
 	num_todo=${#todo[*]}
-	local step=$((100 / (num_todo - 1)))
+	local step=$((100 / (num_todo - 1 ))
 	local idx=0
 	local counter=0
 	local desc
