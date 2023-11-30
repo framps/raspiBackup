@@ -1709,6 +1709,17 @@ function downloadURL() { # fileName
 	logExit "$u"
 }
 
+function check4InternetAvailable() {
+	if (( ! RASPIBACKUP_INSTALL_DEBUG )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECK_INTERNET_CONNECTION
+		isInternetAvailable
+		if (( $? != 0 )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_INTERNET_CONNECTION_FOUND
+			exit
+		fi
+	fi
+}
+
 function isInternetAvailable() {
 
 	logEntry
@@ -4051,7 +4062,7 @@ function cron_timer_menu() {
 		INSTALL_DESCRIPTION=("Installing $RASPIBACKUP_NAME crond configurations ..."  )
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME crond configuration" cron_install_execute
 	fi
-	if ! isCrontabConfigInstalled; then		
+	if ! isCrontabConfigInstalled; then
 		local m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
@@ -5024,15 +5035,8 @@ function unattendedInstall() {
 
 	logEntry
 
-	if (( ! RASPIBACKUP_INSTALL_DEBUG )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECK_INTERNET_CONNECTION
-		isInternetAvailable
-		if (( $? != 0 )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_INTERNET_CONNECTION_FOUND
-			exit
-		fi
-	fi
 	if (( MODE_INSTALL )); then
+		check4InternetAvailable
 		code_download_execute
 		config_download_execute
 		config_update_execute
@@ -5046,8 +5050,10 @@ function unattendedInstall() {
 		fi
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTALLATION_FINISHED $RASPIBACKUP_NAME
 	elif (( MODE_UPDATE )); then
+		check4InternetAvailable
 		update_installer_execute
 	elif (( MODE_EXTENSIONS )); then
+		check4InternetAvailable
 		extensions_install_execute
 	else # uninstall
 		extensions_uninstall_execute
