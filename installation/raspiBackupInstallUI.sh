@@ -2933,14 +2933,6 @@ function config_menu() {
 		local p="${m1[0]}"
 		m1[0]="C${p:1}"
 
-		if [[ $CONFIG_BACKUPTYPE == "dd" || $CONFIG_BACKUPTYPE == "tar" ]]; then
-			getMenuText $MENU_CONFIG_ZIP mcp
-			local scp="${mcp[0]}"
-		else
-			mcp=(" " " ")
-			local scp=""
-		fi
-
 		local s1="${m1[0]}"
 		local s2="${m2[0]}"
 		local s3="${m3[0]}"
@@ -2951,9 +2943,7 @@ function config_menu() {
 		local s8="${m8[0]}"
 		local s9="${m9[0]}"
 
-		getMenuText $MENU_CONFIGURE tt
-
-		FUN=$(whiptail --title "${tt[1]}" --menu "" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button "$b1" --ok-button "$sel1" \
+		local mx=( 	\
 			"${m1[@]}" \
 			"${m2[@]}" \
 			"${m3[@]}" \
@@ -2963,7 +2953,20 @@ function config_menu() {
 			"${m7[@]}" \
 			"${m8[@]}" \
 			"${m9[@]}" \
-			"${mcp[@]}" \
+			)
+
+		if [[ $CONFIG_BACKUPTYPE == "dd" || $CONFIG_BACKUPTYPE == "tar" ]]; then
+			getMenuText $MENU_CONFIG_ZIP mcp
+			local scp="${mcp[0]}"
+			mx+=("${mcp[@]}")
+		else
+			local scp=""
+		fi
+
+		getMenuText $MENU_CONFIGURE tt
+
+		FUN=$(whiptail --title "${tt[1]}" --menu "" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button "$b1" --ok-button "$sel1" \
+			"${mx[@]}" \
 			3>&1 1>&2 2>&3)
 		RET=$?
 		if [ $RET -eq 1 ]; then
