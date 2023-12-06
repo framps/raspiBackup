@@ -160,8 +160,8 @@ read -r -d '' SYSTEMD_TIMER <<-'EOF'
 Description=Timer for raspiBackup.service to start backup
 
 [Timer]
-OnCalendar=Sun *-*-* 05:00:00
-#Every first Sunday on Month: OnCalendar=Sun *-*-01..07 00:15:00
+OnCalendar=Sun *-*-* 05:00:42
+# Create a backup once a week on Sunday morning at 5 am (default)
 Unit=raspiBackup.service
 
 [Install]
@@ -2423,14 +2423,14 @@ function systemd_update_execute() {
 
 	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
 
-#	OnCalendar=Sun *-*-* 05:00:00
-#	OnCalendar= *-*-* 05:00:00
+#	OnCalendar=Sun *-*-* 05:00:00 # on sunday
+#	OnCalendar=*-*-* 05:00:00     # daily
 	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
 
 	local systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
 
 	logItem "Day: $systemd_day"
-	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":00" }' <<< "$l")
+	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day "*-*-*", hour":"minute":00" }' <<< "$l")
 	logItem "systemd update: $v"
 	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
 
@@ -2461,14 +2461,14 @@ function systemd_install_execute() {
 
 	writeToConsole $MSG_INSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_SERVICE_ABS_FILE"
 	echo "$SYSTEMD_SERVICE" >"$SYSTEMD_SERVICE_ABS_FILE"
-	if ! chmod 644 $SYSTEMD_SERVICE_ABS_FILE &>>$LOG_FILE; then
+	if ! chmod 755 $SYSTEMD_SERVICE_ABS_FILE &>>$LOG_FILE; then
 		unrecoverableError $MSG_CHMOD_FAILED "$SYSTEMD_SERVICE_ABS_FILE"
 		logExit
 		return
 	fi
 	writeToConsole $MSG_INSTALLING_SYSTEMD_TEMPLATE "$SYSTEMD_TIMER_ABS_FILE"
 	echo "$SYSTEMD_TIMER" >"$SYSTEMD_TIMER_ABS_FILE"
-	if ! chmod 644 $SYSTEMD_TIMER_ABS_FILE &>>$LOG_FILE; then
+	if ! chmod 755 $SYSTEMD_TIMER_ABS_FILE &>>$LOG_FILE; then
 		unrecoverableError $MSG_CHMOD_FAILED "$SYSTEMD_TIMER_ABS_FILE"
 		logExit
 		return
@@ -3768,6 +3768,7 @@ function config_cronday_do() {
 	logEntry "$old"
 
 	local days_=(off off off off off off off off)
+	local i
 
 	getMenuText $MENU_DAYS_SHORT s
 	getMenuText $MENU_DAYS_LONG l
@@ -3787,7 +3788,13 @@ function config_cronday_do() {
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
-		CONFIG_CRON_DAY="$(daynum_from_menu_string "$ANSWER")"
+		for (( i=0; i< ${#s[@]}; i++ )); do
+			if [[ "${s[$i]}" == "$ANSWER" ]]; then
+				CONFIG_SYSTEMD_DAY=$i
+				break;
+			fi
+		done
+		CONFIG_CRON_DAY="$i"
 	fi
 
 	[[ "$old" == "$CONFIG_CRON_DAY" ]]
@@ -3823,7 +3830,12 @@ function config_systemday_do() {
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
-		CONFIG_SYSTEMD_DAY="$(daynum_from_menu_string "$ANSWER")"
+		for (( i=0; i< ${#s[@]}; i++ )); do
+			if [[ "${s[$i]}" == "$ANSWER" ]]; then
+				CONFIG_SYSTEMD_DAY=$i
+				break;
+			fi
+		done
 	fi
 
 	[[ "$old" == "$CONFIG_SYSTEMD_DAY" ]]
@@ -4796,18 +4808,6 @@ for ((i=0; i<${#DAYNUM_TO_MENU[@]}; i++)); do
 	DAYNUM_FROM_MENU[${DAYNUM_TO_MENU[$i]}]=$i
 done
 
-function daynum_from_menu_string() {
-
-	logEntry "$1"
-	local ret
-
-	ret=${DAYNUM_FROM_MENU[$1]}
-
-	logExit "$ret"
-	echo "$ret"
-
-}
-
 function daynum_to_config_string() {
 
 	logEntry "$1"
@@ -4817,7 +4817,7 @@ function daynum_to_config_string() {
 		if (( $1 == 0 )); then
 			ret=""
 		else
-			ret="${DAYNUM_TO_MENU[$1]}"
+			ret="${DAYNUM_TO_MENU[$1]} " # addtl space to separate day
 		fi
 	else
 		if (( $1 == 0 )); then
