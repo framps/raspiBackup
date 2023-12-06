@@ -4986,24 +4986,24 @@ function uiInstall() {
 		local s5="${m5[0]}"
 		local s9="${m9[0]}"
 
-		if ! isRaspiBackupInstalled; then
-			m3=(" " " ")
-			m4=(" " " ")
+		local mx=( 	\
+			"${m1[@]}" \
+			"${m2[@]}" \
+			)
+
+		if isRaspiBackupInstalled; then
+			mx+=("${m3[@]}" "${m4[@]}")
 		fi
 
-		if ! isUpdatePossible; then
-			m5[0]=" "
-			m5[1]=" "
+		if isUpdatePossible; then
+			mx+=("${m5[@]}")
 		fi
+
+		mx+=("${m9[@]}")
 
 		TITLE="$(getMessageText $MSG_TITLE)"
 		FUN=$(whiptail --title "$TITLE" --menu "" $WT_HEIGHT $WT_WIDTH $((WT_MENU_HEIGHT-3)) --cancel-button "$f1" --ok-button "$sel1"\
-			"${m1[@]}" \
-			"${m2[@]}" \
-			"${m3[@]}" \
-			"${m4[@]}" \
-			"${m5[@]}" \
-			"${m9[@]}" \
+			"${mx[@]}" \
 			3>&1 1>&2 2>&3)
 		RET=$?
 		if [ $RET -eq 1 ]; then
