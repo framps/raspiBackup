@@ -2445,6 +2445,12 @@ function cron_install_execute() {
 
 	writeToConsole $MSG_INSTALLING_CRON_TEMPLATE "$CRON_ABS_FILE"
 	echo "$CRON_CONTENTS" >"$CRON_ABS_FILE"
+	if ! chmod 644 $CRON_ABS_FILE &>>$LOG_FILE; then
+		unrecoverableError $MSG_CHMOD_FAILED "$CRON_ABS_FILE"
+		logExit
+		return
+	fi
+
 	CRON_INSTALLED=1
 
 	if (( $MODE_FORCE_TIMER )); then
