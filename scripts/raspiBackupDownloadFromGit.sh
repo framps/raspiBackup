@@ -62,8 +62,12 @@ fi
 
 if (( $updateGitInfo )); then
 	if ! which jq &>/dev/null; then
-		echo "??? jq required by $MYNAME. Please install jq first. Try 'sudo apt-get install jq'."
-		exit 1
+		echo "... Installing jq required by $MYNAME."
+		sudo apt install jq
+		if ! which jq &>/dev/null; then
+			echo "??? jq required by $MYNAME. Automatic jq installation failed. Please install jq manually."
+			exit 1
+		fi
 	fi
 fi
 
@@ -90,7 +94,7 @@ rc=$?
 if (( $rc != 0 )); then
 	echo "??? Error occured downloading $downloadURL. RC: $rc"
 	exit 1
-fi	
+fi
 
 echo "--- Download finished successfully"
 
@@ -100,13 +104,13 @@ if (( $updateGitInfo )); then
 	trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
 
 	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE from $branch ..."
-	TOKEN=""															# Personal token to get better rate limits 
+	TOKEN=""															# Personal token to get better rate limits
 	if [[ -n $TOKEN ]]; then
 		HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
 	else
 		HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
 	fi
-		
+
 	rc=$?
 
 	if (( $rc != 0 )); then
@@ -118,7 +122,7 @@ if (( $updateGitInfo )); then
 		echo "??? Error retrieving commit information from github. HTTP response: $HTTP_CODE"
 		jq . $jsonFile
 		exit 1
-	fi	
+	fi
 
 	echo "--- Inserting commit meta data into downloaded file $targetFilename ..."
 
@@ -150,8 +154,8 @@ if [[ "$targetFilename" == *\.sh ]]; then
 fi
 
 if (( updateGitInfo )); then
-	echo "--- $(./$targetFilename --version)" 
-fi	
+	echo "--- $(./$targetFilename --version)"
+fi
 
 SDO=""
 if [[ $targetFilename == "$FILE_RASPIBACKUP" || $targetFilename == "$FILE_RASPIBACKUP_INSTALLER" ]]; then
