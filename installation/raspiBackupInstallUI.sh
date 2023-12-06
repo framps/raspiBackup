@@ -2423,14 +2423,14 @@ function systemd_update_execute() {
 
 	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
 
-#	OnCalendar=Sun *-*-* 05:00:00 # on sunday
-#	OnCalendar=*-*-* 05:00:00     # daily
+#	OnCalendar=Sun *-*-* 05:00:42 # on sunday
+#	OnCalendar=*-*-* 05:00:42     # daily
 	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
 
 	local systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
 
 	logItem "Day: $systemd_day"
-	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day "*-*-*", hour":"minute":00" }' <<< "$l")
+	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day "*-*-*", hour":"minute":42" }' <<< "$l")
 	logItem "systemd update: $v"
 	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
 
