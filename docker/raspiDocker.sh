@@ -42,9 +42,9 @@ initialize) ## start vm in detached mode
 
 interactive) ## start in interactive mode
 #	 docker run -it --name $CONTAINER_NAME $IMAGE_NAME
-#   docker volume create nfs
-	 docker container rm $CONTAINER_NAME
-	 #docker run -it --name $CONTAINER_NAME -v $(pwd)/2020-02-13-raspbian-buster-lite.img:/sdcard/filesystem.img -v nfs:/nfs $IMAGE_NAME
+	 docker volume create nfs
+	 #docker container rm $CONTAINER_NAME
+	 docker run -it --name $CONTAINER_NAME -v $(pwd)/2020-02-13-raspbian-buster-lite.img:/sdcard/filesystem.img -v nfs:/nfs $IMAGE_NAME
     docker run -it --name $CONTAINER_NAME -v $(pwd)/2020-02-13-raspbian-buster-lite.img:/sdcard/filesystem.img $IMAGE_NAME
     ;;
 
@@ -62,6 +62,10 @@ start) ## start raspberrypi
 	containerIP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_NAME)
 	echo "Raspberrypi ssh access: ssh -p 5022 pi@$containerIP"
     ;;
+
+inspect) ## Open bash shell in container
+	docker exec -it Raspberry /bin/sh
+	;;
 
 *) ##help
 	echo "Possible commands"
