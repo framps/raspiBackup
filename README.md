@@ -14,7 +14,7 @@
     * rsync
     * tar/tgz
     * dd/ddz
-  * No manual intervention required. Backups are created via cron over night.
+  * No manual intervention required. Backups are created via systemd timer over night.
   * Important services can be stopped before starting the backup and will be restarted when the backup finished.
   * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
   * Supported systems
@@ -136,7 +136,9 @@ There exist [sample extesions](./extensions) for raspiBackup which report for ex
 
 ## Systemd
 
-Instead of cron systemd can be used to start raspiBackup. See [here](installation/systemd) (thx [Hofei](https://github.com/Hofei90)) for details. 
+Starting with installer release 0.4.8 a systemd timer is used to start raspiBackup on a regular base. cron was used in previous installer releases. The installer is backward compatible and is able to handle systems with cron setup. In addition the installer can be forced to use cron instead of systemd during installation with invocation option `-t crond`. Thank you very much to [Hofei90](https://github.com/Hofei90) who helped to switch from cron to systemd timer.
+
+thx [Hofei](https://github.com/Hofei90)) 
 
 # REST API Server proof of concept
 
