@@ -26,6 +26,8 @@ CMD="$1"
 ME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 CONTAINER_NAME="Raspberry"
 IMAGE_NAME="lukechilds/dockerpi:vm"
+#OS_IMAGE_NAME="2022-01-28-raspios-bullseye-arm64-lite.img"
+OS_IMAGE_NAME="2020-02-13-raspbian-buster-lite.img"
 
 case $CMD in
 
@@ -37,15 +39,17 @@ portainer) # Install portainer
    ;;
 
 initialize) ## start vm in detached mode
-	docker run -d --name $CONTAINER_NAME -v $(pwd)/2020-02-13-raspbian-buster-lite.img:/sdcard/filesystem.img $IMAGE_NAME
+	docker run -d --name $CONTAINER_NAME -v $(pwd)/$OS_IMAGE_NAME:/sdcard/filesystem.img $IMAGE_NAME
    ;;
 
 interactive) ## start in interactive mode
-#	 docker run -it --name $CONTAINER_NAME $IMAGE_NAME
-	 docker volume create nfs
+	docker stop $CONTAINER_NAME 
+	docker rm $CONTAINER_NAME 
+	# docker run -it --name $CONTAINER_NAME $IMAGE_NAME
+	 #docker volume create nfs
 	 #docker container rm $CONTAINER_NAME
-	 docker run -it --name $CONTAINER_NAME -v $(pwd)/2020-02-13-raspbian-buster-lite.img:/sdcard/filesystem.img -v nfs:/nfs $IMAGE_NAME
-    docker run -it --name $CONTAINER_NAME -v $(pwd)/2020-02-13-raspbian-buster-lite.img:/sdcard/filesystem.img $IMAGE_NAME
+	 #docker run -it --name $CONTAINER_NAME -v $(pwd)/$OS_IMAGE_NAME:/sdcard/filesystem.img -v nfs:/nfs $IMAGE_NAME
+     docker run -it --name $CONTAINER_NAME -v $(pwd)/$OS_IMAGE_NAME:/sdcard/filesystem.img $IMAGE_NAME
     ;;
 
 # exec qemu-system-arm   --machine versatilepb   --cpu arm1176   --m 256m   --drive format=raw,file=/sdcard/filesystem.img   --net nic --net user,hostfwd=tcp::5022-:22   --dtb /root/qemu-rpi-kernel/versatile-pb.dtb   --kernel /root/qemu-rpi-kernel/kernel-qemu-4.19.50-buster   --append rw earlyprintk loglevel=8 console=ttyAMA0,115200 dwc_otg.lpm_enable=0 root=/dev/sda2 rootwait panic=1    --no-reboot   --display none   --serial mon:stdio
