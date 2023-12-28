@@ -376,7 +376,14 @@ declare -A REQUIRED_COMMANDS=( \
 		["curl"]="curl" \
 		["sfdisk"]="fdisk" \
 		)
-# ["btrfs"]="btrfs-tools"
+
+declare -A REQUIRED_COMMANDS_BTRFS=( \
+	["btrfs"]="btrfs-tools"
+)
+
+declare -A REQUIRED_COMMANDS_E2FS=( \
+	["f2fs"]="f2fs-tools"
+)
 
 # possible script exit codes
 
@@ -6556,7 +6563,7 @@ function checksForPartitionBasedBackup() {
 
 	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[@]}"
 
-	SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX='^(ext[234]|fat(16|32)|btrfs|.*swap.*)$'
+	SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX='^(ext[234]|fat(16|32)|btrfs|f2fs|.*swap.*)$'
 
 	local error=0
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
@@ -7739,12 +7746,16 @@ function restorePartitionBasedPartition() { # restorefile
 			swapDetected=1
 			logItem "Swap partition"
 		else
+			logItem "Normal partition with $partitionFilesystem"
 			if [[ $partitionFilesystem == "btrfs" ]]; then
+				check4RequiredCommands btrfs
 				cmd="mkfs.btrfs -f"
+			elif [[ $partitionFilesystem == "f2fs" ]]; then
+				check4RequiredCommands f2fs
+				cmd="mkfs.f2fs -f"
 			else
 				cmd="mkfs -t $fs"
 			fi
-			logItem "Normal partition with $partitionFilesystem"
 		fi
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" $fileSystemsize
@@ -7763,20 +7774,18 @@ function restorePartitionBasedPartition() { # restorefile
 
 			# Keep SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX in sync
 
-			local labelPartition=0
-			case $partitionFilesystem in
-				ext2|ext3|ext4) cmd="e2label"
-					labelPartition=1
-					;;
-				fat16|fat32) cmd="dosfslabel"
-					labelPartition=1
-					;;
-				btrfs) cmd="btrfs filesystem label"
-					labelPartition=1
-					;;
-			esac
+			if [[ -n $partitionLabel ]]; then
+				case $partitionFilesystem in
+					ext2|ext3|ext4) cmd="e2label"
+						;;
+					fat16|fat32) cmd="dosfslabel"
+						;;
+					btrfs) cmd="btrfs filesystem label"
+						;;
+					f2fs) assertionFailed $LINENO "No labels supported for f2fslabel" # f2fslabel not availabel of Raspbian
+						;;
+				esac
 
-			if (( $labelPartition )); then
 				logItem "$cmd $mappedRestorePartition $partitionLabel"
 				$cmd $mappedRestorePartition $partitionLabel &>>"$LOG_FILE"
 				rc=$?
@@ -7785,7 +7794,7 @@ function restorePartitionBasedPartition() { # restorefile
 					exitError $RC_LABEL_ERROR
 				fi
 			else
-				logItem "Partition $mappedRestorePartition not labeled"
+					logItem "Partition $mappedRestorePartition not labeled"
 			fi
 
 			logItem "mount $mappedRestorePartition $MNT_POINT"
@@ -8723,18 +8732,36 @@ function SR_listBackupsToDelete() { # directory
 	logExit "$rc"
 }
 
-function check4RequiredCommands() {
+function check4RequiredCommands() { # btrfs | f2fs
 
 	logEntry
 
 	local missing_commands missing_packages
 
-	for cmd in "${!REQUIRED_COMMANDS[@]}"; do
-		if ! hash $cmd 2>/dev/null; then
-			missing_commands="$cmd $missing_commands "
-			missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
-		fi
-	done
+	if [[ -z $1 ]]; then
+		for cmd in "${!REQUIRED_COMMANDS[@]}"; do
+			if ! hash $cmd 2>/dev/null; then
+				missing_commands="$cmd $missing_commands "
+				missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
+			fi
+		done
+	elif [[ "$1" == "btrfs" ]]; then
+		for cmd in "${!REQUIRED_COMMANDS_BTRFS[@]}"; do
+			if ! hash $cmd 2>/dev/null; then
+				missing_commands="$cmd $missing_commands "
+				missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
+			fi
+		done
+	elif [[ "$1" == "e2fs" ]]; then
+		for cmd in "${!REQUIRED_COMMANDS_E2FS[@]}"; do
+			if ! hash $cmd 2>/dev/null; then
+				missing_commands="$cmd $missing_commands "
+				missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
+			fi
+		done
+	else
+			assertionFailed $LINENO "Invalid arg"
+	fi
 
 	if [[ -n "$missing_commands" ]]; then
 		shopt -s extglob
