@@ -8753,7 +8753,7 @@ function check4RequiredCommands() { # btrfs | f2fs
 			fi
 		done
 	elif [[ "$1" == "e2fs" ]]; then
-		for cmd in "${!REQUIRED_COMMANDS_E2FS[@]}"; do
+		for cmd in "${!REQUIRED_COMMANDS_F2FS[@]}"; do
 			if ! hash $cmd 2>/dev/null; then
 				missing_commands="$cmd $missing_commands "
 				missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
