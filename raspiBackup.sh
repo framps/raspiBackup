@@ -381,7 +381,7 @@ declare -A REQUIRED_COMMANDS_BTRFS=( \
 	["btrfs"]="btrfs-tools"
 )
 
-declare -A REQUIRED_COMMANDS_E2FS=( \
+declare -A REQUIRED_COMMANDS_F2FS=( \
 	["f2fs"]="f2fs-tools"
 )
 
