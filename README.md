@@ -1,10 +1,12 @@
-![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
-
 <p align="center">
   <img src="./images/Icon_rot_blau_final_128.png" />
 </p>
 
 # raspiBackup - Backup and restore your active Raspberries
+![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) 
+![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) 
+![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
+
 
 #### For a high level summary visit [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
 
