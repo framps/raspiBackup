@@ -139,12 +139,3 @@ There exist [sample extesions](./extensions) for raspiBackup which report for ex
 ## Systemd
 
 Starting with installer release 0.4.8 a systemd timer is used to start raspiBackup on a regular base. cron was used in previous installer releases. The installer is backward compatible and is able to handle systems with cron setup. In addition the installer can be forced to use cron instead of systemd during installation with invocation option `-t crond`. Thank you very much to [Hofei](https://github.com/Hofei90) who helped to switch from cron to systemd timer.
-
-# REST API Server proof of concept
-
-Allows to start raspiBackup from a remote system or any web UI.
-1. Download executable from [RESTAPI directory](https://github.com/framps/raspiBackup/tree/master/RESTAPI) on your Raspberry which has raspiBackup installed
-2. Create a file /usr/local/etc/raspiBackup.auth and define access credentials for the API. For every user create a line userid:password
-3. Set file attributes for /usr/local/etc/raspiBackup.auth to 600
-4. Start the RESTAPI with ```raspiBackupRESTAPIListener```. Option -a can be used to define another listening port than :8080.
-5. Use ```curl -u userid:password -H "Content-Type: application/json" -X POST -d '{"target":"/backup","type":"tar", "keep": 3}' http://<raspiHost>:8080/v1/raspiBackup``` to start a backup run.
