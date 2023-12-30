@@ -1,5 +1,5 @@
 TARGET=raspiBackupRESTListener
-BIN_DIR=bin
+BIN_DIR=.
 
 default: build 
 
