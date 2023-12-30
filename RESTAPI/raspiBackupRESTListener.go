@@ -185,18 +185,14 @@ func BackupHandler(c *gin.Context) {
 	if parm.Type == nil {
 		parm.Type = &defaultType
 	}
-	if parm.Type != nil {
-		args = "-t " + *parm.Type
-	}
+	
+	args = "-t " + *parm.Type
 
-	if parm.Keep != nil {
-		args += "-k " + strconv.Itoa(*parm.Keep)
-	}
+	args += " -k " + strconv.Itoa(*parm.Keep)
 
 	args += " " + parm.Target
 
 	command := "sudo " + Executable
-	args = `"` + args + `"`
 	combined := command + " " + args
 
 	if testEnabled {
