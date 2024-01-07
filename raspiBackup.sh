@@ -382,7 +382,7 @@ declare -A REQUIRED_COMMANDS_BTRFS=( \
 )
 
 declare -A REQUIRED_COMMANDS_F2FS=( \
-	["f2fslabel"]="f2fs-tools"
+	["f2fstat"]="f2fs-tools"
 )
 
 # possible script exit codes
@@ -7750,9 +7750,14 @@ function restorePartitionBasedPartition() { # restorefile
 			if [[ $partitionFilesystem == "btrfs" ]]; then
 				check4RequiredCommands btrfs
 				cmd="mkfs.btrfs -f"
-			elif [[ $partitionFilesystem == "f2fs" ]]; then
-				check4RequiredCommands f2fs
-				cmd="mkfs.f2fs -f"
+                        elif [[ $partitionFilesystem == "f2fs" ]]; then
+                                check4RequiredCommands f2fs
+                                if [[ -n $partitionLabel ]]; then
+                                        logItem "Creating f2fs partition with label '$partitionLabel'"
+                                        cmd="mkfs.f2fs -f -l $partitionLabel "
+                                else
+                                        cmd="mkfs.f2fs -f"
+                                fi
 			else
 				cmd="mkfs -t $fs"
 			fi
@@ -7782,8 +7787,9 @@ function restorePartitionBasedPartition() { # restorefile
 						;;
 					btrfs) cmd="btrfs filesystem label"
 						;;
-					f2fs) assertionFailed $LINENO "No labels supported for f2fslabel" # f2fslabel not availabel of Raspbian
-						;;
+                                        f2fs) logItem "Creating dummy-command to not fail labeling f2fs partition"
+                                                cmd="echo 'Skipping f2fs label command, already done in mkfs.f2fs' #"
+                                                ;;
 				esac
 
 				logItem "$cmd $mappedRestorePartition $partitionLabel"
