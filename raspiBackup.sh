@@ -382,7 +382,7 @@ declare -A REQUIRED_COMMANDS_BTRFS=( \
 )
 
 declare -A REQUIRED_COMMANDS_F2FS=( \
-	["f2fs"]="f2fs-tools"
+	["f2fslabel"]="f2fs-tools"
 )
 
 # possible script exit codes
@@ -8749,18 +8749,18 @@ function check4RequiredCommands() { # btrfs | f2fs
 		for cmd in "${!REQUIRED_COMMANDS_BTRFS[@]}"; do
 			if ! hash $cmd 2>/dev/null; then
 				missing_commands="$cmd $missing_commands "
-				missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
+				missing_packages="${REQUIRED_COMMANDS_BTRFS[$cmd]} $missing_packages "
 			fi
 		done
-	elif [[ "$1" == "e2fs" ]]; then
+	elif [[ "$1" == "f2fs" ]]; then
 		for cmd in "${!REQUIRED_COMMANDS_F2FS[@]}"; do
 			if ! hash $cmd 2>/dev/null; then
 				missing_commands="$cmd $missing_commands "
-				missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
+				missing_packages="${REQUIRED_COMMANDS_F2FS[$cmd]} $missing_packages "
 			fi
 		done
 	else
-			assertionFailed $LINENO "Invalid arg"
+			assertionFailed $LINENO "Invalid arg: '$1'"
 	fi
 
 	if [[ -n "$missing_commands" ]]; then
