@@ -7753,7 +7753,6 @@ function restorePartitionBasedPartition() { # restorefile
                         elif [[ $partitionFilesystem == "f2fs" ]]; then
                                 check4RequiredCommands f2fs
                                 if [[ -n $partitionLabel ]]; then
-                                        logItem "Creating f2fs partition with label '$partitionLabel'"
                                         cmd="mkfs.f2fs -f -l $partitionLabel "
                                 else
                                         cmd="mkfs.f2fs -f"
@@ -7787,8 +7786,7 @@ function restorePartitionBasedPartition() { # restorefile
 						;;
 					btrfs) cmd="btrfs filesystem label"
 						;;
-                                        f2fs) logItem "Creating dummy-command to not fail labeling f2fs partition"
-                                                cmd="echo 'Skipping f2fs label command, already done in mkfs.f2fs' #"
+                                        f2fs) cmd=": noop until f2fs 1.5 is available on Raspberries # <f2fs label command>"
                                                 ;;
 				esac
 
