@@ -7786,8 +7786,8 @@ function restorePartitionBasedPartition() { # restorefile
 						;;
 					btrfs) cmd="btrfs filesystem label"
 						;;
-                                        f2fs) cmd=": noop until f2fs 1.5 is available on Raspberries # <f2fs label command>"
-                                                ;;
+                    f2fs) cmd=": noop until f2fs 1.5 is available on Raspberries # <f2fs label command>"
+                         ;;
 				esac
 
 				logItem "$cmd $mappedRestorePartition $partitionLabel"
