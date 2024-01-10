@@ -6,7 +6,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2021-2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2021-2024 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ include $(CURRENT_DIR)/$(MAKEFILE).env
 help: ## help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-build: buildFiles signFiles
+build: buildFiles
 
 buildFiles: ## Build raspiBackup {BRANCH=<branchName>}
    

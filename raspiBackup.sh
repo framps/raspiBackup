@@ -8501,7 +8501,7 @@ function synchronizeCmdlineAndfstab() {
 			elif [[ $oldPartUUID != $newPartUUID ]]; then
 				local oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
 				local newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldpartuuidID" "$newpartuuidID" "$fstab"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldpartuuidID/$newpartuuidID/g" $FSTAB &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
