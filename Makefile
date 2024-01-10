@@ -76,6 +76,16 @@ buildFiles: ## Build raspiBackup {BRANCH=<branchName>}
 signFiles: # sign files
 	@$(foreach file, $(FILES_TO_SIGN), gpg --sign --default-key $(SIGNER_EMAIL) $(BUILD_LOCATION)/$(file);)
 
+update: buildFiles ## Update one file {FILE=<filename>}
+# nasty make requirement to have no tabs here. Time to use another build language
+ifndef FILE
+$(error Missing FILE parameter)	
+endif
+    ifeq ("$(wildcard $(DEPLOYMENT_LOCATION))", "")
+		$(error Directory $(DEPLOYMENT_LOCATION) not mounted)
+    endif
+	@echo "Updating $(FILE) on $(DEPLOYMENT_LOCATION)"; cp $(FILE) $(DEPLOYMENT_LOCATION)/$(notdir $(FILE));
+
 deploy: ## Deploy build {BRANCH=<branchName>}
 
 	ifndef DEPLOYMENT_LOCATION
