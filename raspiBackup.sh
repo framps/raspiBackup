@@ -7328,7 +7328,7 @@ function restoreNonPartitionBasedBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n1[0-9] ]]; then
+	if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n[0-9] ]]; then
 		BOOT_PARTITION="${RESTORE_DEVICE}p1"
 	else
 		BOOT_PARTITION="${RESTORE_DEVICE}1"
@@ -7337,7 +7337,7 @@ function restoreNonPartitionBasedBackup() {
 
 	ROOT_PARTITION_DEFINED=1
 	if [[ -z $ROOT_PARTITION ]]; then
-		if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n1[0-9] ]]; then
+		if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n[0-9] ]]; then
 			ROOT_PARTITION="${RESTORE_DEVICE}p2"
 		else
 			ROOT_PARTITION="${RESTORE_DEVICE}2"
