@@ -38,7 +38,7 @@ DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup.sh"
 BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/beta/raspiBackup.sh"
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackupInstallUI.sh"
 INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/beta/raspiBackupInstallUI.sh"
-PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup0613.properties"
+PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup.properties"
 CONF_DE_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup_de.conf"
 CONF_EN_DOWNLOAD_URL="$MYHOMEURL/raspiBackup/raspiBackup_en.conf"
 
@@ -94,6 +94,6 @@ analyze "raspiBackup" $DOWNLOAD_URL
 analyze "raspiBackup_beta" $BETA_DOWNLOAD_URL
 analyze "raspiBackupInstallUI" $INSTALLER_DOWNLOAD_URL
 analyze "raspiBackupInstallUI_beta" $INSTALLER_BETA_DOWNLOAD_URL
-analyze "raspiBackup0613.properties" $PROPERTIES_DOWNLOAD_URL
+analyze "raspiBackup.properties" $PROPERTIES_DOWNLOAD_URL
 analyze "raspiBackup_de.conf" $CONF_DE_DOWNLOAD_URL
 analyze "raspiBackup_en.conf" $CONF_EN_DOWNLOAD_URL
