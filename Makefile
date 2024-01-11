@@ -26,7 +26,7 @@
 CURRENT_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 MAKEFILE := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 
-PACKAGE_FILES = installation/install.sh installation/raspiBackupInstallUI.sh raspiBackup.sh extensions/raspiBackupSampleExtensions.tgz properties/raspiBackup0613.properties
+PACKAGE_FILES = installation/install.sh installation/raspiBackupInstallUI.sh raspiBackup.sh extensions/raspiBackupSampleExtensions.tgz properties/raspiBackup.properties
 PACKAGE_FILE_COLLECTIONS = config/*
 PACKAGE_EXTENSION_DIRECTORY = extensions
 PACKAGE_EXTENSION_FILES_PREFIX = raspiBackup_*
