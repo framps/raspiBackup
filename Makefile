@@ -77,14 +77,10 @@ signFiles: # sign files
 	@$(foreach file, $(FILES_TO_SIGN), gpg --sign --default-key $(SIGNER_EMAIL) $(BUILD_LOCATION)/$(file);)
 
 update: buildFiles ## Update one file {FILE=<filename>}
-# nasty make requirement to have no tabs here. Time to use another build language
-ifndef FILE
-$(error Missing FILE parameter)	
-endif
     ifeq ("$(wildcard $(DEPLOYMENT_LOCATION))", "")
 		$(error Directory $(DEPLOYMENT_LOCATION) not mounted)
     endif
-	@echo "Updating $(FILE) on $(DEPLOYMENT_LOCATION)"; cp $(FILE) $(DEPLOYMENT_LOCATION)/$(notdir $(FILE));
+	@cp $(BUILD_LOCATION)/$(FILE) $(DEPLOYMENT_LOCATION)/$(notdir $(BUILD_LOCATION)/$(FILE)); echo "Updated $(FILE) on $(DEPLOYMENT_LOCATION)"; 
 
 deploy: ## Deploy build {BRANCH=<branchName>}
 
