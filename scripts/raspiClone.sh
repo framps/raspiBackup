@@ -32,19 +32,35 @@ function bytesToHuman() {
 #						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
-function parseSfdisk() { # device, e.g. /dev/mmcblk0
+function parseSfdisk() { # device, e.g. /dev/sda
 
-	local sourceValues=( $(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)") )
+	local device="$1"
 
-	local s=${#sourceValues[@]}
+	readonly REGEXPARTITIONLINE="($device[a-z0-9]+).*start[^0-9]+([0-9]+).*size[^0-9]+([0-9]+).*(Id|type)=[ ]?([^,]+)"
 
-	echo "${sourceValues[@]}"
+	partitionInfo=()
+
+	while read line; do
+	
+		if [[ $line =~ $REGEXPARTITIONLINE ]]; then
+			partition=${BASH_REMATCH[1]}
+			start=${BASH_REMATCH[2]}
+			size=${BASH_REMATCH[3]}
+			type=${BASH_REMATCH[5]}			
+
+			local newPartition=( $partition $start $size $type )
+			partitionInfo+=( "${newPartition[@]}" )
+		fi
+
+	done < <(sfdisk -d $1)
+
+	echo "${partitionInfo[@]}"
 }
 
 partitions=( $(parseSfdisk $1) )
 
-for (( i=0; i<${#partitions[@]}; i+=2 )); do
+for (( i=0; i<${#partitions[@]}; i+=4 )); do
 
-	echo "Partition $(( i/2 )): Size $(bytesToHuman $(( ${partitions[$((i+1))]} * 512 )) )"
+	echo "Partition $(( i/4 )): Start: ${partitions[$((i+1))]} Size $(bytesToHuman $(( ${partitions[$((i+2))]} * 512 )) ) Type: ${partitions[$((i+3))]}"
 
 done
