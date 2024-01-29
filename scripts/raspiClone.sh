@@ -41,12 +41,12 @@ function parseSfdisk() { # device, e.g. /dev/sda
 	partitionInfo=()
 
 	while read line; do
-	
+
 		if [[ $line =~ $REGEXPARTITIONLINE ]]; then
 			partition=${BASH_REMATCH[1]}
 			start=${BASH_REMATCH[2]}
 			size=${BASH_REMATCH[3]}
-			type=${BASH_REMATCH[5]}			
+			type=${BASH_REMATCH[5]}
 
 			local newPartition=( $partition $start $size $type )
 			partitionInfo+=( "${newPartition[@]}" )
@@ -57,10 +57,20 @@ function parseSfdisk() { # device, e.g. /dev/sda
 	echo "${partitionInfo[@]}"
 }
 
-partitions=( $(parseSfdisk $1) )
+readonly DEVICE="$1"
+
+partitions=( $(parseSfdisk $DEVICE) )
 
 for (( i=0; i<${#partitions[@]}; i+=4 )); do
-
 	echo "Partition $(( i/4 )): Start: ${partitions[$((i+1))]} Size $(bytesToHuman $(( ${partitions[$((i+2))]} * 512 )) ) Type: ${partitions[$((i+3))]}"
-
 done
+
+lastUsedPartitionIndex=$(( ${#partitions[@]} - 4 ))
+lastUsedByte=$(( ( ${partitions[$((lastUsedPartitionIndex+1))]} + ${partitions[$((lastUsedPartitionIndex+2))]} ) * 512 ))
+
+readonly DEVICE_SIZE=$(blockdev --getsize64 $DEVICE)
+
+echo "LastUsed: $lastUsedByte $( bytesToHuman $lastUsedByte)"
+echo "Total: $DEVICE_SIZE $(bytesToHuman $DEVICE_SIZE)"
+
+echo "diff: $(( ( DEVICE_SIZE - lastUsedByte ) )) $(bytesToHuman $(( ( DEVICE_SIZE - lastUsedByte ) )) )"
