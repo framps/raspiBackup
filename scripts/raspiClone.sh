@@ -57,20 +57,51 @@ function parseSfdisk() { # device, e.g. /dev/sda
 	echo "${partitionInfo[@]}"
 }
 
-readonly DEVICE="$1"
+readonly SOURCE_DEVICE="$1"
+readonly TARGET_DEVICE="/dev/sdb"
 
-partitions=( $(parseSfdisk $DEVICE) )
+readonly MIN_FREE_SPACE=$((8*1024*1024*1024))    # 8GB minimum space reuiqred for last partition
+
+partitions=( $(parseSfdisk $SOURCE_DEVICE) )
+
+sourceNumberOfPartitions=$(( ${#partitions[@]} / 4 ))
+
+if (( $sourceNumberOfPartitions < 2 )); then
+	echo "At least 2 partitions required"
+	exit 42
+fi
 
 for (( i=0; i<${#partitions[@]}; i+=4 )); do
-	echo "Partition $(( i/4 )): Start: ${partitions[$((i+1))]} Size $(bytesToHuman $(( ${partitions[$((i+2))]} * 512 )) ) Type: ${partitions[$((i+3))]}"
+	echo "$SOURCE_DEVICE - Partition $(( i/4 )): Start: ${partitions[$((i+1))]} Size $(bytesToHuman $(( ${partitions[$((i+2))]} * 512 )) ) Type: ${partitions[$((i+3))]}"
 done
 
 lastUsedPartitionIndex=$(( ${#partitions[@]} - 4 ))
+lastUsedSize=$(( ( ${partitions[$((lastUsedPartitionIndex+2))]} ) * 512 ))
 lastUsedByte=$(( ( ${partitions[$((lastUsedPartitionIndex+1))]} + ${partitions[$((lastUsedPartitionIndex+2))]} ) * 512 ))
+lastUsedStartByte=$(( ${partitions[$((lastUsedPartitionIndex+1))]} * 512 ))
 
-readonly DEVICE_SIZE=$(blockdev --getsize64 $DEVICE)
+readonly SOURCE_DEVICE_SIZE=$(blockdev --getsize64 $SOURCE_DEVICE)
+readonly TARGET_DEVICE_SIZE=$(blockdev --getsize64 $TARGET_DEVICE)
 
+echo "LastUsedStart: $lastUsedStartByte $( bytesToHuman $lastUsedStartByte)"
 echo "LastUsed: $lastUsedByte $( bytesToHuman $lastUsedByte)"
-echo "Total: $DEVICE_SIZE $(bytesToHuman $DEVICE_SIZE)"
+echo "Unused: $(( ( SOURCE_DEVICE_SIZE - lastUsedByte ) )) $(bytesToHuman $(( ( SOURCE_DEVICE_SIZE - lastUsedByte ) )) )"
 
-echo "diff: $(( ( DEVICE_SIZE - lastUsedByte ) )) $(bytesToHuman $(( ( DEVICE_SIZE - lastUsedByte ) )) )"
+echo "Total source: $SOURCE_DEVICE_SIZE $(bytesToHuman $SOURCE_DEVICE_SIZE)"
+echo "Total target: $TARGET_DEVICE_SIZE $(bytesToHuman $TARGET_DEVICE_SIZE)"
+
+newUsedByte=$(( $TARGET_DEVICE_SIZE - lastUsedStartByte ))
+
+echo "NewUsed: $newUsedByte $(bytesToHuman $newUsedByte)"
+
+if (( $newUsedByte <= 0 )); then
+	echo "Target device too small"
+	exit 42
+fi
+
+lastUsedSector=$(( lastUsedSize / 512 ))
+newUsedSector=$(( ( newUsedByte - lastUsedStartByte ) / 512 ))
+
+sfdisk -d $SOURCE_DEVICE
+
+sed "s/$lastUsedSector/$newUsedSector/" <<< $(sfdisk -d $SOURCE_DEVICE)
