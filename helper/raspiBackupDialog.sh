@@ -142,7 +142,7 @@ function execution(){
 	echo -e "$yellow $Quest_select_drive \n $normal"
 	read destination
 
-	if [[ "$destination" =~ ^(sd[a-f]|mmcblk[0-2])$ ]]; then
+	if [[ "$destination" =~ ^(sd[a-f]|mmcblk[0-2]|nvme0n[0-2])$ ]]; then
 		echo ""
 	else
 		echo -e "$red $destination $Warn_only_drive $normal"
