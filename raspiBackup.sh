@@ -8429,7 +8429,9 @@ function synchronizeCmdlineAndfstab() {
 	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
-	local cmdline="/boot/cmdline.txt" # path for message
+	local cmdline # path for message
+	[[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware ]] && cmdline="/boot/firmware/cmdline.txt"  || cmdline="/boot/cmdline.txt"
+
 	local fstab="/etc/fstab" # path for message
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
