@@ -2,8 +2,9 @@
 #
 #######################################################################################################################
 #
-# 	Create an image file in backupdirectory with extension .dd which can be restored with dd or win32diskimager
+# 	Either create an image file in backupdirectory with extension .dd which can be restored with dd or win32diskimager
 # 	from a tar or rsync backup created by raspiBackup
+#  or restore the backup immediately to another device, e.g. SD card or USB flashdrive to have a cold SD backup
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup to get more details about raspiBackup
 #
@@ -11,7 +12,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (c) 2017-2023 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2017-2024 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -33,7 +34,10 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.1.8"
+VERSION="v0.2.0"
+
+CREATE_DD_BACKUP=1 # set to 0 if a clone should be created and update following variable according your environment
+CLONE_TARGET_DEVICE="/dev/sda"
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -46,14 +50,7 @@ if [[ -e /bin/grep ]]; then
    done
 fi
 
-GIT_DATE="$Date$"
-GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1$"
-GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
-
-GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
+GIT_CODEVERSION="$MYSELF $VERSION"
 
 echo "$GIT_CODEVERSION"
 
@@ -95,15 +92,21 @@ if [[ -z "$SFDISK_FILE" ]]; then
 	exit 1
 fi
 
-IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
-LOOP=$(losetup -f)
+if (( CREATE_DD_BACKUP )); then
+	IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
+	RBRI_RESTOREDEVICE=$(losetup -f)
+else
+	RBRI_RESTOREDEVICE="$CLONE_TARGET_DEVICE"
+fi
 
 function cleanup() {
 	local rc=$?
 	echo "--- Cleaning up"
-	(( $rc )) && rm $IMAGE_FILENAME &>/dev/null
-	if losetup $LOOP &>/dev/null; then
-		losetup -d "$LOOP"
+	if (( CREATE_DD_BACKUP )); then
+		(( $rc )) && rm $IMAGE_FILENAME &>/dev/null
+		if losetup $RBRI_RESTOREDEVICE &>/dev/null; then
+			losetup -d "$RBRI_RESTOREDEVICE"
+		fi
 	fi
     rm -f $MSG_FILE &>/dev/null
 }
@@ -169,11 +172,13 @@ if [[ ! $(which pishrink.sh) ]]; then
 	exit 1
 fi
 
-# wheezy does not discover more than one partition as default
-if grep -q "wheezy" /etc/os-release; then
-	if ! grep -q "loop.max_part=" /boot/cmdline.txt; then
-		echo "Add 'loop.max_part=15' in /boot/cmndline.txt first and reboot"
-		exit 1
+if (( CREATE_DD_BACKUP )); then
+	# wheezy does not discover more than one partition as default
+	if grep -q "wheezy" /etc/os-release; then
+		if ! grep -q "RBRI_RESTOREDEVICE.max_part=" /boot/cmdline.txt; then
+			echo "Add 'RBRI_RESTOREDEVICE.max_part=15' in /boot/cmndline.txt first and reboot"
+			exit 1
+		fi
 	fi
 fi
 
@@ -181,81 +186,80 @@ fi
 
 trap cleanup SIGINT SIGTERM EXIT
 
-rm "$IMAGE_FILENAME" &>/dev/null
+if (( CREATE_DD_BACKUP )); then
+	rm "$IMAGE_FILENAME" &>/dev/null
 
-# calculate required image dis size
+	# calculate required image dis size
 
-SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK $SFDISK_FILE)
+	SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK $SFDISK_FILE)
 
-mb=$(( $SOURCE_DISK_SIZE / 1024 / 1024 )) # calc MB
-echo "===> Backup source disk size: $mb (MiB)"
+	mb=$(( $SOURCE_DISK_SIZE / 1024 / 1024 )) # calc MB
+	echo "===> Backup source disk size: $mb (MiB)"
 
-# create image file
+	# create image file
 
-dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
-losetup $LOOP $IMAGE_FILENAME
+	dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
+	losetup $RBRI_RESTOREDEVICE $IMAGE_FILENAME
+fi
 
-# prime partitions
+# restore backup now
 
-sfdisk -uSL -f $LOOP < "$SFDISK_FILE"
+if (( CREATE_DD_BACKUP )); then
+	echo "===> Restoring backup into $IMAGE_FILENAME"
+else
+	echo "===> Restoring backup into $RBRI_RESTOREDEVICE"
+fi
 
-echo "===> Reloading new partition table"
-partprobe $LOOP
-udevadm settle
-sleep 3
-
-# restore backup into image
-
-echo "===> Restoring backup into $IMAGE_FILENAME"
-raspiBackup.sh -1 -Y -d $LOOP "$BACKUP_DIRECTORY"
+raspiBackup.sh -1 -Y -d $RBRI_RESTOREDEVICE "$BACKUP_DIRECTORY"
 RC=$?
 
-# The disk identifier is the Partition UUID (PTUUID displayed in blkid) and is stored just prior to the partition table in the MBR
-# The PARTUUID's aren't actually stored anywhere, they're simply PTUUID-01 for partition 1 and PTUUID-02 for partition 2
-# You can change PTUUID on a live system with fdisk
-# Extract from https://www.raspberrypi.org/forums/viewtopic.php?t=191775
+if (( CREATE_DD_BACKUP )); then
+	# The disk identifier is the Partition UUID (PTUUID displayed in blkid) and is stored just prior to the partition table in the MBR
+	# The PARTUUID's aren't actually stored anywhere, they're simply PTUUID-01 for partition 1 and PTUUID-02 for partition 2
+	# You can change PTUUID on a live system with fdisk
+	# Extract from https://www.raspberrypi.org/forums/viewtopic.php?t=191775
 
-mkdir -p /mnt1
-mount ${LOOP}p2 /mnt1
-PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /mnt1/etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
-umount /mnt1
-losetup -d $LOOP
+	mkdir -p /mnt1
+	mount ${RBRI_RESTOREDEVICE}p2 /mnt1
+	PTUUID=$(grep -E "^[^#]+\s(/)\s.*" /mnt1/etc/fstab | cut -f 1 -d ' ' | sed 's/PARTUUID=//;s/\-.\+//')
+	umount /mnt1
+	losetup -d $RBRI_RESTOREDEVICE
 
-if [[ -z $PTUUID ]]; then
-	echo "??? Unrecoverable error. Unable to find PARTUUID of / in image"
-	RC=1
-fi
-
-# now shrink image
-
-if (( ! $RC )); then
-	echo "===> PARTUUID to patch into image after pishrink: $PTUUID"
-	echo
-	echo "===> Shrinking Image $IMAGE_FILENAME"
-	pishrink.sh "$IMAGE_FILENAME"
-	RC=$?
-	if (( $RC )); then
-		echo "??? Error $RC received from piShrink"
-	    	RC=1
-		echo "Program ends wihn error 42"
+	if [[ -z $PTUUID ]]; then
+		echo "??? Unrecoverable error. Unable to find PARTUUID of / in image"
+		RC=1
 	fi
-else
-	echo "??? Error $RC received"
-	RC=1
-fi
 
+	# now shrink image
 
-# pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
-if (( ! $RC )); then
-  LOOP=$(losetup -f)
+	if (( ! $RC )); then
+		echo "===> PARTUUID to patch into image after pishrink: $PTUUID"
+		echo
+		echo "===> Shrinking Image $IMAGE_FILENAME"
+		pishrink.sh "$IMAGE_FILENAME"
+		RC=$?
+		if (( $RC )); then
+			echo "??? Error $RC received from piShrink"
+				RC=1
+			echo "Program ends wihn error 42"
+		fi
+	else
+		echo "??? Error $RC received"
+		RC=1
+	fi
 
-  echo "===> Patching image PARTUUID with $PTUUID"
+	# pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
+	if (( ! $RC )); then
+	  RBRI_RESTOREDEVICE=$(losetup -f)
 
-  losetup -P $LOOP $IMAGE_FILENAME
-  printf "x\ni\n0x$PTUUID\nr\nw\nq\n" | fdisk $LOOP
-  partprobe $LOOP
-  udevadm settle
-  sleep 3
+	  echo "===> Patching image PARTUUID with $PTUUID"
+
+	  losetup -P $RBRI_RESTOREDEVICE $IMAGE_FILENAME
+	  printf "x\ni\n0x$PTUUID\nr\nw\nq\n" | fdisk $RBRI_RESTOREDEVICE
+	  partprobe $RBRI_RESTOREDEVICE
+	  udevadm settle
+	  sleep 3
+	fi
 fi
 
 if (( $MAIL_EXTENSION_AVAILABLE )); then
