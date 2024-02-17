@@ -34,10 +34,20 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.2.0"
+VERSION="v0.2.1"
 
-CREATE_DD_BACKUP=1 # set to 0 if a clone should be created and update following variable according your environment
-CLONE_TARGET_DEVICE="/dev/sda"
+# following two variables control the script logic
+#
+# either create a dd file in the backup directory or restore the backup directly to a device, i.e. another SD card
+#
+
+CREATE_DD_BACKUP=1 # set to 0 if a clone should be created
+CLONE_TARGET_DEVICE="" # target device (e.g. /dev/sda) if backup should be restored to device instead of dd file
+
+if [[ -z $CLONE_TARGET_DEVICE ]]; then
+	echo "??? CLONE_TARGET_DEVICE not set in script (e.g. /dev/sda)"
+	exit 42
+fi
 
 # add pathes if not already set (usually not set in crontab)
 
@@ -209,6 +219,15 @@ if (( CREATE_DD_BACKUP )); then
 else
 	echo "===> Restoring backup into $RBRI_RESTOREDEVICE"
 fi
+
+# prime partitions
+
+sfdisk -uSL -f $RBRI_RESTOREDEVICE < "$SFDISK_FILE"
+
+echo "===> Reloading new partition table"
+partprobe $$RBRI_RESTOREDEVICE
+udevadm settle
+sleep 3
 
 raspiBackup.sh -1 -Y -d $RBRI_RESTOREDEVICE "$BACKUP_DIRECTORY"
 RC=$?
