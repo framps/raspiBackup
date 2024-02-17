@@ -1,0 +1,9 @@
+--- RBK0009I: @HOSTNAME@: raspiBackup.sh V0.6.9.1 - 2024-01-02 (2e7040a) started at Fri 16 Feb 18:30:03 CET 2024.
+--- RBK0031I: Checking whether a new version of raspiBackup.sh is available.
+--- RBK0151I: Using backuppath /backup with partition type fuse.
+--- RBK0085I: Backup of type ddz started. Please be patient.
+--- RBK0078I: Backup time: 03:25:26.
+--- RBK0033I: Please wait until cleanup has finished.
+--- RBK0159I: 10 backups kept for ddz backup type. Please be patient.
+--- RBK0017I: Backup finished successfully.
+--- RBK0010I: @HOSTNAME@: raspiBackup.sh V0.6.9.1 - 2024-01-02 (2e7040a) stopped at Fri 16 Feb 21:55:50 CET 2024 with rc 0.
