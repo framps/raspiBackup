@@ -9037,7 +9037,7 @@ if (( $# == 1 )); then
 	fi
 fi
 
-if (( $UID != 0 )); then
+if (( $UID != 0 && ! INCLUDE_ONLY )); then
 	LOG_LEVEL=$LOG_NONE
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
 	exitError $RC_MISC_ERROR
