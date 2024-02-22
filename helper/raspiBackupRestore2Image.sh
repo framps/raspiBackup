@@ -41,14 +41,6 @@ VERSION="v0.2.1"
 # either create a dd file in the backup directory or restore the backup directly to a device, i.e. another SD card
 #
 
-CREATE_DD_BACKUP=1 # set to 0 if a clone should be created
-CLONE_TARGET_DEVICE="" # target device (e.g. /dev/sda) if backup should be restored to device instead of dd file
-
-if [[ -z $CLONE_TARGET_DEVICE ]]; then
-	echo "??? CLONE_TARGET_DEVICE not set in script (e.g. /dev/sda)"
-	exit 42
-fi
-
 # add pathes if not already set (usually not set in crontab)
 
 if [[ -e /bin/grep ]]; then
@@ -76,18 +68,16 @@ if (( $MAIL_EXTENSION_AVAILABLE )); then
 fi
 
 function usage() {
-	echo "Syntax: $MYSELF <BackupDirectory>"
+	echo "Syntax: $MYSELF <BackupDirectory> [ <restoredevice> (e.g. /dev/sda, /dev/mmcblk1, /dev/nvme0n1) ]"
 }
 
 # query invocation parms
 
-if [[ $# < 1 ]]; then
+if (( $# < 1 )); then
 	echo "??? Missing parameter Backupdirectory"
 	usage
 	exit 1
 fi
-
-BACKUP_DIRECTORY="$1"
 
 if [[ ! -d $BACKUP_DIRECTORY ]]; then
 	echo "??? Backupdirectory $BACKUP_DIRECTORY not found"
@@ -102,11 +92,20 @@ if [[ -z "$SFDISK_FILE" ]]; then
 	exit 1
 fi
 
-if (( CREATE_DD_BACKUP )); then
+BACKUP_DIRECTORY="$1"
+
+if (( $# < 2 )); then
+	CREATE_DD_BACKUP=1
 	IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
 	RBRI_RESTOREDEVICE=$(losetup -f)
 else
-	RBRI_RESTOREDEVICE="$CLONE_TARGET_DEVICE"
+	CREATE_DD_BACKUP=0
+	RBRI_RESTOREDEVICE="$2"
+	if [[ ! -b $RBRI_RESTOREDEVICE ]]; then
+		echo "??? Incorrect restore device"
+		usage
+		exit 1
+	fi
 fi
 
 function cleanup() {
@@ -225,7 +224,7 @@ fi
 sfdisk -uSL -f $RBRI_RESTOREDEVICE < "$SFDISK_FILE"
 
 echo "===> Reloading new partition table"
-partprobe $$RBRI_RESTOREDEVICE
+partprobe $RBRI_RESTOREDEVICE
 udevadm settle
 sleep 3
 
