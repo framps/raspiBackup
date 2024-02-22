@@ -4,7 +4,7 @@
 #
 # 	Either create an image file in backupdirectory with extension .dd which can be restored with dd or win32diskimager
 # 	from a tar or rsync backup created by raspiBackup
-#  or restore the backup immediately to another device, e.g. SD card or USB flashdrive to have a cold SD backup
+#   or restore the backup to another device, e.g. SD card or USB flashdrive to have a cold SD backup
 #
 # 	Visit http://www.linux-tips-and-tricks.de/raspiBackup to get more details about raspiBackup
 #
@@ -36,77 +36,9 @@ MYNAME=${MYSELF%.*}
 
 VERSION="v0.2.1"
 
-# following two variables control the script logic
-#
-# either create a dd file in the backup directory or restore the backup directly to a device, i.e. another SD card
-#
-
-# add pathes if not already set (usually not set in crontab)
-
-if [[ -e /bin/grep ]]; then
-   PATHES="/bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin"
-   for p in $PATHES; do
-      if ! /bin/grep -E -q "[\^:]$p[:$]" <<< $PATH; then
-         [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
-      fi
-   done
-fi
-
-GIT_CODEVERSION="$MYSELF $VERSION"
-
-echo "$GIT_CODEVERSION"
-
-NL=$'\n'
-MAIL_EXTENSION_AVAILABLE=0
-[[ $(which raspiImageMail.sh) ]] && MAIL_EXTENSION_AVAILABLE=1
-
-if (( $MAIL_EXTENSION_AVAILABLE )); then
-	# output redirection for email
-	MSG_FILE=/tmp/msg$$.txt
-	exec 1> >(stdbuf -i0 -o0 -e0 tee -a "$MSG_FILE" >&1)
-	exec 2> >(stdbuf -i0 -o0 -e0 tee -a "$MSG_FILE" >&2)
-fi
-
-function usage() {
+function usage() {	
 	echo "Syntax: $MYSELF <BackupDirectory> [ <restoredevice> (e.g. /dev/sda, /dev/mmcblk1, /dev/nvme0n1) ]"
 }
-
-# query invocation parms
-
-if (( $# < 1 )); then
-	echo "??? Missing parameter Backupdirectory"
-	usage
-	exit 1
-fi
-
-if [[ ! -d $BACKUP_DIRECTORY ]]; then
-	echo "??? Backupdirectory $BACKUP_DIRECTORY not found"
-	usage
-	exit 1
-fi
-
-SFDISK_FILE="$(ls $BACKUP_DIRECTORY/*.sfdisk 2>/dev/null)"
-if [[ -z "$SFDISK_FILE" ]]; then
-	echo "??? Incorrect backup path. .sfdisk file of backup not found"
-	usage
-	exit 1
-fi
-
-BACKUP_DIRECTORY="$1"
-
-if (( $# < 2 )); then
-	CREATE_DD_BACKUP=1
-	IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
-	RBRI_RESTOREDEVICE=$(losetup -f)
-else
-	CREATE_DD_BACKUP=0
-	RBRI_RESTOREDEVICE="$2"
-	if [[ ! -b $RBRI_RESTOREDEVICE ]]; then
-		echo "??? Incorrect restore device"
-		usage
-		exit 1
-	fi
-fi
 
 function cleanup() {
 	local rc=$?
@@ -159,14 +91,73 @@ function calcSumSizeFromSFDISK() { # sfdisk filename
 
 }
 
-if (( $# < 1 )); then
-	usage
-	exit 0
+# add pathes if not already set (usually not set in crontab)
+
+if [[ -e /bin/grep ]]; then
+   PATHES="/bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin"
+   for p in $PATHES; do
+      if ! /bin/grep -E -q "[\^:]$p[:$]" <<< $PATH; then
+         [[ -z $PATH ]] && export PATH=$p || export PATH="$p:$PATH"
+      fi
+   done
 fi
+
+NL=$'\n'
+MAIL_EXTENSION_AVAILABLE=0
+[[ $(which raspiImageMail.sh) ]] && MAIL_EXTENSION_AVAILABLE=1
+
+if (( $MAIL_EXTENSION_AVAILABLE )); then
+	# output redirection for email
+	MSG_FILE=/tmp/msg$$.txt
+	exec 1> >(stdbuf -i0 -o0 -e0 tee -a "$MSG_FILE" >&1)
+	exec 2> >(stdbuf -i0 -o0 -e0 tee -a "$MSG_FILE" >&2)
+fi
+
+
+GIT_CODEVERSION="$MYSELF $VERSION"
+
+echo "$GIT_CODEVERSION"
 
 if (( $UID != 0 )); then
 	echo "$MYSELF has to be invoked via sudo"
 	exit
+fi
+
+# query invocation parms
+
+if (( $# < 1 )); then
+	echo "??? Missing parameter Backupdirectory"
+	usage
+	exit 1
+fi
+
+BACKUP_DIRECTORY="$1"
+
+if [[ ! -d $BACKUP_DIRECTORY ]]; then
+	echo "??? Backupdirectory $BACKUP_DIRECTORY not found"
+	usage
+	exit 1
+fi
+
+SFDISK_FILE="$(ls $BACKUP_DIRECTORY/*.sfdisk 2>/dev/null)"
+if [[ -z "$SFDISK_FILE" ]]; then
+	echo "??? Incorrect backup path. .sfdisk file of backup not found"
+	usage
+	exit 1
+fi
+
+if (( $# < 2 )); then
+	CREATE_DD_BACKUP=1
+	IMAGE_FILENAME="${SFDISK_FILE%.*}.dd"
+	RBRI_RESTOREDEVICE=$(losetup -f)
+else
+	CREATE_DD_BACKUP=0
+	RBRI_RESTOREDEVICE="$2"
+	if [[ ! -b $RBRI_RESTOREDEVICE ]]; then
+		echo "??? Incorrect restore device"
+		usage
+		exit 1
+	fi
 fi
 
 # check for prerequisites
@@ -228,8 +219,11 @@ partprobe $RBRI_RESTOREDEVICE
 udevadm settle
 sleep 3
 
-raspiBackup.sh -1 -Y -d $RBRI_RESTOREDEVICE "$BACKUP_DIRECTORY"
+f=$(mktemp)
+echo 'DEFAULT_YES_NO_RESTORE_DEVICE=""' > $f
+raspiBackup.sh -1 -Y -d $RBRI_RESTOREDEVICE -f $f "$BACKUP_DIRECTORY"
 RC=$?
+rm $f
 
 if (( CREATE_DD_BACKUP )); then
 	# The disk identifier is the Partition UUID (PTUUID displayed in blkid) and is stored just prior to the partition table in the MBR
