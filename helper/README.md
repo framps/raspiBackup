@@ -6,7 +6,7 @@ __Note:__ Most of the scripts are provided by framps as is and raspiBackup users
 
 2. raspiBackupNfsWrapper - Wrapper for raspiBackup which dynamically mounts and umounts a nfs backup drive
 
-3. raspiBackupRestore2Image - Script which builds a dd image from a tar or rsync backup created with raspiBackup or restores a rsync or tar backup on a device like a SD card or SSD and can be used as a cold backup.
+3. raspiBackupRestore2Image - Script which builds a dd image from a tar or rsync backup in the backup directory or restores a rsync or tar backup on a device like a SD card or SSD which then can be used as a cold backup.
 
 4. raspiImageMail - Send an email using the functions from raspiBackup, based of version 0.6.4
 
