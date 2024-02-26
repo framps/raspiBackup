@@ -10,6 +10,8 @@
 #	  FI - teemue
 #	  ZH - GoogleBeEvil
 #	  FR - mgrafr
+#	  IT - diegofrances
+#	  ES - diegofrances
 #
 #######################################################################################################################
 #
@@ -266,7 +268,7 @@ function containsElement () {
 # NLS: Either use system language if language is supported and use English otherwise
 #
 
-SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ZH")
+SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ZH" "IT" "ES")
 
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
 LANG_EXT="${LANG^^*}"
@@ -317,6 +319,8 @@ WINDOW_COLS=60
 # To add a new language just execute following steps:
 # 1) Add new language id LL (e.g. FI for Finnish) in variable SUPPORTED_LANGUAGES (see above)
 # 2) For every MSG_ add a new message MSG_LL
+# 3) Declare menu array MENU_LL
+# 4) Declare MENU_CONFIG_LANGUAGE_LL
 #
 
 MSG_PRF="RBI"
@@ -328,6 +332,8 @@ MSG_DE[$MSG_UNDEFINED]="${MSG_PRF}0000E: Unbekannte Meldungsid."
 MSG_FI[$MSG_UNDEFINED]="${MSG_PRF}0000E: Viestitunnus puuttuu."
 MSG_FR[$MSG_UNDEFINED]="${MSG_PRF}0000E: ID de message non défini."
 MSG_ZH[$MSG_UNDEFINED]="${MSG_PRF}0000E: 未定义的错误ID."
+MSG_IT[$MSG_UNDEFINED]="${MSG_PRF}0000E: Messaggio indefinito."
+MSG_ES[$MSG_UNDEFINED]="${MSG_PRF}0000E: Mensaje indefinido."
 
 MSG_VERSION=$((SCNT++))
 MSG_EN[$MSG_VERSION]="${MSG_PRF}0001I: %1"
@@ -1238,6 +1244,8 @@ declare -A MENU_DE
 declare -A MENU_FI
 declare -A MENU_FR
 declare -A MENU_ZH
+declare -A MENU_IT
+declare -A MENU_ES
 
 MCNT=0
 MENU_UNDEFINED=$((MCNT++))
@@ -1351,6 +1359,24 @@ MENU_DE[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "Chinesisch"'
 MENU_FI[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "Kiina"'
 MENU_FR[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "Chinois"'
 MENU_ZH[$MENU_CONFIG_LANGUAGE_ZH]='"ZH" "中文"'
+
+MENU_CONFIG_LANGUAGE_IT=$((MCNT++))
+MENU_EN[$MENU_CONFIG_LANGUAGE_IT]='"IT" "ItalianEN"'
+MENU_DE[$MENU_CONFIG_LANGUAGE_IT]='"IT" "ItalianDE"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_IT]='"IT" "ItalianFI"'
+MENU_FR[$MENU_CONFIG_LANGUAGE_IT]='"IT" "ItalianFR"'
+MENU_ZH[$MENU_CONFIG_LANGUAGE_IT]='"IT" "英语ZH"'
+MENU_IT[$MENU_CONFIG_LANGUAGE_IT]='"IT" "ItalianIT"'
+MENU_ES[$MENU_CONFIG_LANGUAGE_IT]='"IT" "ItalianES"'
+
+MENU_CONFIG_LANGUAGE_ES=$((MCNT++))
+MENU_EN[$MENU_CONFIG_LANGUAGE_ES]='"ES" "SpanishEN"'
+MENU_DE[$MENU_CONFIG_LANGUAGE_ES]='"ES" "SpanishDE"'
+MENU_FI[$MENU_CONFIG_LANGUAGE_ES]='"ES" "SpanishFI"'
+MENU_FR[$MENU_CONFIG_LANGUAGE_ES]='"ES" "SpanishFR"'
+MENU_ZH[$MENU_CONFIG_LANGUAGE_ES]='"ES" "英语ZH"'
+MENU_IT[$MENU_CONFIG_LANGUAGE_ES]='"ES" "SpanishIT"'
+MENU_ES[$MENU_CONFIG_LANGUAGE_ES]='"ES" "Spanish"'
 
 MENU_CONFIG_MESSAGE_N=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MESSAGE_N]='"Normal" "Display important messages only"'
