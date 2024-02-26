@@ -313,8 +313,9 @@ ROWS_ABOUT=20
 ROWS_MENU=20
 WINDOW_COLS=60
 
+######################################################################################################
 #
-# Messages
+# Messages start
 #
 # To add a new language just execute following steps:
 # 1) Add new language id LL (e.g. FI for Finnish) in variable SUPPORTED_LANGUAGES (see above)
@@ -322,6 +323,7 @@ WINDOW_COLS=60
 # 3) Declare menu array MENU_LL
 # 4) Declare MENU_CONFIG_LANGUAGE_LL
 #
+######################################################################################################
 
 MSG_PRF="RBI"
 
@@ -1239,6 +1241,12 @@ MSG_FR[$MSG_SENSITIVE_WARNING]="| ===>De nombreuses informations sensibles sont 
 MSG_SENSITIVE_SEPARATOR=$((SCNT++))
 MSG_EN[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
 
+######################################################################################################
+#
+# Menus
+#
+######################################################################################################
+
 declare -A MENU_EN
 declare -A MENU_DE
 declare -A MENU_FI
@@ -1324,6 +1332,12 @@ MENU_DE[$MENU_CONFIG_TIME]='"R3" "Zeit des regelmäßigen Backups"'
 MENU_FI[$MENU_CONFIG_TIME]='"R3" "Säännöllisen varmuuskopioinnin kellonaika"'
 MENU_FR[$MENU_CONFIG_TIME]='"R3" "Choisir une heure pour la sauvegarde "'
 MENU_ZH[$MENU_CONFIG_TIME]='"R3" "定期备份间隔"'
+
+######################################################################################################
+#
+# Translation of language by every language
+#
+######################################################################################################
 
 MENU_CONFIG_LANGUAGE_EN=$((MCNT++))
 MENU_EN[$MENU_CONFIG_LANGUAGE_EN]='"EN" "English"'
@@ -1608,6 +1622,12 @@ MENU_DE[$MENU_UPDATE_INSTALLER]='"P2" "Aktualisiere $MYSELF"'
 MENU_FI[$MENU_UPDATE_INSTALLER]='"P2" "Päivitä $MYSELF"'
 MENU_FR[$MENU_UPDATE_INSTALLER]='"P2" "Mettre à jour $MYSELF"'
 MENU_ZH[$MENU_UPDATE_INSTALLER]='"P2" "更新 $MYSELF"'
+
+######################################################################################################
+#
+# End messages
+#
+######################################################################################################
 
 declare -A MSG_HEADER=(['I']="---" ['W']="!!!" ['E']="???")
 
