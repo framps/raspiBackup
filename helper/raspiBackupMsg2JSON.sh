@@ -1,58 +1,77 @@
 #!/bin/bash
 
+#######################################################################################################################
+#
+# 	Sample script to convert raspiBackup messages into JSON format
+#
+# 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
+#
+#	NOTE: This is sample code and is provided as is with no support.
+#
+#######################################################################################################################
+#
+#   Copyright (c) 2024 framp at linux-tips-and-tricks dot de
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################################################################
+
 set -eou pipefail
 
-OUTPUT="json"
+OUTPUT="$1"
 
-echo "" > $OUTPUT
+[[ -e $OUTPUT ]] && rm $OUTPUT &>>/dev/null
 
-started=0
+echo "[" >> $OUTPUT
+first=1
+
+rbkSource="$(which raspiBackup.sh)"
 
 while read sep id message; do
-	msg="$id $message"
-	tpl="$(egrep "^MSG_EN.+$id" ../raspiBackup.sh | cut -f 2 -d = | sed 's/^"//; s/"$//')"
 
-	#echo $msg
+	msg="$id $message"
+	tpl="$(egrep "^MSG_EN.+$id" "$rbkSource" | cut -f 2 -d = | sed 's/^"//; s/"$//')"
 
 	msga=( $msg )
 	tpla=( $tpl )
 
-	id="$(sed 's/:$//' <<< $id)"
-	echo "{" >> $OUTPUT
-	echo "\"id\" : \"$id\" ," >> $OUTPUT
-	echo -n "\"text\" : \"$message\"" >> $OUTPUT
-
-	if (( started )); then
-		echo -n ", " >> $OUTPUT
-	fi
-
-	parms=0
-	startedParms=0
-
+	ID="$(sed 's/:$//' <<< $id)"
+	TEXT="$message"
+	PARMS=()
+	
 	for (( i=1; i< ${#tpla[@]}; i++ )); do
 		m="${msga[$i]}"
 		t="${tpla[$i]}"
 		if [[ $m != $t ]]; then
-			if (( startedParms )); then
-				echo " , " >> $OUTPUT
-			fi
-			if (( ! parms )); then
-				parms=1
-				echo "\"parms\" : [" >> $OUTPUT
-				echo -n "     \"$m\"" >> $OUTPUT
-			else
-				echo -n "     \"$m\"" >> $OUTPUT
-			fi
-			startedParms=1
+			PARMS+=("$m")
 		fi
 	done
-	if (( parms )); then
-		if (( startedParms )); then
-			echo >> $OUTPUT
-		fi
-		echo "     ]" >> $OUTPUT
+	
+	final=$(jq -n --arg id "$ID" \
+              --arg text "$TEXT" \
+              --argjson parms "$(jq -nc ' $ARGS.positional ' --args ${PARMS[@]})" \
+              '$ARGS.named' )
+
+	if (( ! $first )); then
+		echo "," >> $OUTPUT
+	else
+		echo >> $OUTPUT
 	fi
-	echo "}" >> $OUTPUT
+	first=0
+             
+	echo -n $final >> $OUTPUT
+
 done < messages
 
-cat $OUTPUT
+echo "]" >> $OUTPUT
