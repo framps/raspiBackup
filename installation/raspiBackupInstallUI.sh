@@ -334,8 +334,8 @@ MSG_DE[$MSG_UNDEFINED]="${MSG_PRF}0000E: Unbekannte Meldungsid."
 MSG_FI[$MSG_UNDEFINED]="${MSG_PRF}0000E: Viestitunnus puuttuu."
 MSG_FR[$MSG_UNDEFINED]="${MSG_PRF}0000E: ID de message non défini."
 MSG_ZH[$MSG_UNDEFINED]="${MSG_PRF}0000E: 未定义的错误ID."
-MSG_IT[$MSG_UNDEFINED]="${MSG_PRF}0000E: Messaggio indefinito."
-MSG_ES[$MSG_UNDEFINED]="${MSG_PRF}0000E: Mensaje indefinido."
+MSG_IT[$MSG_UNDEFINED]="${MSG_PRF}0000E: ID Messaggio non definito."
+MSG_ES[$MSG_UNDEFINED]="${MSG_PRF}0000E: ID Mensaje no definido."
 
 MSG_VERSION=$((SCNT++))
 MSG_EN[$MSG_VERSION]="${MSG_PRF}0001I: %1"
@@ -361,6 +361,8 @@ MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: %1 kann nicht aus dem Netz gelade
 MSG_FI[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Kohteen %1 lataus epäonnistui. HTTP-koodi: %2."
 MSG_FR[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Le téléchargement de %1 a échoué. Code HTTP : %2."
 MSG_ZH[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: 下载 %1 失败. HTTP-代码: %2."
+MSG_IT[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Download di %1 non riuscito. Code HTTP: %2."
+MSG_ES[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Descarga de %1 fallida. Código HTTP: %2."
 
 MSG_INSTALLATION_FAILED=$((SCNT++))
 MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation of %1 failed. Check %2."
