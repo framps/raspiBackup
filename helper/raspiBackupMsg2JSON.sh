@@ -26,14 +26,106 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
+#
+# --- RBK0009I: @HOSTNAME@: raspiBackup.sh V0.6.9.1 - 2024-01-02 (2e7040a) started at Fri 16 Feb 18:30:03 CET 2024.
+# --- RBK0031I: Checking whether a new version of raspiBackup.sh is available.
+# --- RBK0151I: Using backuppath /backup with partition type fuse.
+# --- RBK0085I: Backup of type ddz started. Please be patient.
+# --- RBK0078I: Backup time: 03:25:26.
+# --- RBK0033I: Please wait until cleanup has finished.
+# --- RBK0159I: 10 backups kept for ddz backup type. Please be patient.
+# --- RBK0017I: Backup finished successfully.
+# --- RBK0010I: @HOSTNAME@: raspiBackup.sh V0.6.9.1 - 2024-01-02 (2e7040a) stopped at Fri 16 Feb 21:55:50 CET 2024 with rc 0.
+#
+# will create
+#[
+#  {
+#    "id": "RBK0009I",
+#    "text": "@HOSTNAME@: raspiBackup.sh V0.6.9.1 - 2024-01-02 (2e7040a) started at Fri 16 Feb 18:30:03 CET 2024.",
+#    "parms": [
+#      "@HOSTNAME@:",
+#      "raspiBackup.sh",
+#      "V0.6.9.1",
+#      "2024-01-02",
+#      "(2e7040a)",
+#      "Fri"
+#    ]
+#  },
+#  {
+#    "id": "RBK0031I",
+#    "text": "Checking whether a new version of raspiBackup.sh is available.",
+#    "parms": [
+#      "raspiBackup.sh"
+#    ]
+#  },
+#  {
+#    "id": "RBK0151I",
+#    "text": "Using backuppath /backup with partition type fuse.",
+#    "parms": [
+#      "/backup",
+#      "fuse."
+#    ]
+#  },
+#  {
+#    "id": "RBK0085I",
+#    "text": "Backup of type ddz started. Please be patient.",
+#    "parms": [
+#      "ddz"
+#    ]
+#  },
+#  {
+#    "id": "RBK0078I",
+#    "text": "Backup time: 03:25:26.",
+#    "parms": [
+#      "03:25:26."
+#    ]
+#  },
+#  {
+#    "id": "RBK0033I",
+#    "text": "Please wait until cleanup has finished.",
+#    "parms": []
+#  },
+#  {
+#    "id": "RBK0159I",
+#    "text": "10 backups kept for ddz backup type. Please be patient.",
+#    "parms": [
+#      "10",
+#      "ddz"
+#    ]
+#  },
+#  {
+#    "id": "RBK0017I",
+#    "text": "Backup finished successfully.",
+#    "parms": []
+#  },
+#  {
+#    "id": "RBK0010I",
+#    "text": "@HOSTNAME@: raspiBackup.sh V0.6.9.1 - 2024-01-02 (2e7040a) stopped at Fri 16 Feb 21:55:50 CET 2024 with rc 0.",
+#    "parms": [
+#      "@HOSTNAME@:",
+#      "raspiBackup.sh",
+#      "V0.6.9.1",
+#      "2024-01-02",
+#      "(2e7040a)",
+#      "Fri",
+#      "16",
+#      "Feb",
+#      "21:55:50"
+#    ]
+#  }
+#]
+#
 
 set -eou pipefail
 
-OUTPUT="$1"
+SOURCE="$1"
+DESTINATION="$2"
 
-[[ -e $OUTPUT ]] && rm $OUTPUT &>>/dev/null
+[[ ! -e $SOURCE ]] && { echo "$SOURCE does not exist"; exit 1; }
 
-echo "[" >> $OUTPUT
+TEMP_OUTPUT=$(mktemp)
+
+echo "[" >> $TEMP_OUTPUT
 first=1
 
 rbkSource="$(which raspiBackup.sh)"
@@ -64,14 +156,21 @@ while read sep id message; do
               '$ARGS.named' )
 
 	if (( ! $first )); then
-		echo "," >> $OUTPUT
-	else
-		echo >> $OUTPUT
+		echo "," >> $TEMP_OUTPUT
 	fi
 	first=0
              
-	echo -n $final >> $OUTPUT
+	echo -n $final >> $TEMP_OUTPUT
 
-done < messages
+done < "$SOURCE"
 
-echo "]" >> $OUTPUT
+echo >> $TEMP_OUTPUT
+echo "]" >> $TEMP_OUTPUT
+
+[[ -e "$DESTINATION" ]] && rm "$DESTINATION" &>>/dev/null
+
+jq "." "$TEMP_OUTPUT"  > "$DESTINATION"
+rm "$TEMP_OUTPUT" &>>/dev/null
+
+
+
