@@ -4737,7 +4737,6 @@ function cleanupStartup() { # trap
 
 	cleanupTempFiles
 
-
 	logFinish
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
@@ -4802,7 +4801,6 @@ function cleanup() { # trap
 	finalCommand "$rc"
 
 	logItem "Terminate now with rc $CLEANUP_RC"
-	(( $CLEANUP_RC == 0 )) && saveVars
 
 	if (( $rc != 0 )); then
 		if (( ! $MAIL_ON_ERROR_ONLY )); then
@@ -4895,6 +4893,8 @@ function cleanup() { # trap
 	fi
 
 	logFinish
+
+	saveVars
 
 	callNotificationExtension $rc
 
