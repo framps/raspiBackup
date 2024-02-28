@@ -1,15 +1,12 @@
 #!/bin/bash
 #
-echo "Still under development ..."
-exit 1
-#
 #######################################################################################################################
 #
-# 	Sample script to call raspiBackup.sh to create a backup and create a clone to a device (e.g. SD card or USB disk) afterwards
+#  Sample script which calls raspiBackup.sh to create a backup and restores the backup to a device (e.g. SD card or USB disk) afterwards
 #
-# 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
+#  Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
-#	NOTE: This is sample code how to extend functionality of raspiBackup and is provided as is with no support.
+#  NOTE: This is sample code how to extend functionality of raspiBackup and is provided as is with no support.
 #
 #######################################################################################################################
 #
@@ -57,48 +54,48 @@ if [[ -e /bin/grep ]]; then
 fi
 
 function readVars() {
-	if [[ -f /tmp/raspiBackup.vars ]]; then
-		source /tmp/raspiBackup.vars						# retrieve some variables from raspiBackup for further processing
+   if [[ -f /tmp/raspiBackup.vars ]]; then
+      source /tmp/raspiBackup.vars                 # retrieve some variables from raspiBackup for further processing
 # now following variables are available for further backup processing
 # BACKUP_TARGETDIR refers to the backupdirectory just created
 # BACKUP_TARGETFILE refers to the dd backup file just created
-	else
-		echo "/tmp/raspiBackup.vars not found"
-		exit 42
-	fi
+# MSG_FILE refers to message file just created
+# LOG_FILE referes to logfile just created
+   else
+      echo "/tmp/raspiBackup.vars not found"
+      exit 42
+   fi
 }
 
 # main program
 
 if ! which raspiBackup &>/dev/null; then
-	echo "??? Missing raspiBackup.sh"
-	exit 1
-fi
-	
-if ! which raspiBackupRestore2Image.sh &>/dev/null; then
-	echo "??? Missing raspiBackupRestore2Image.sh"
-	exit 1
+   echo "??? Missing raspiBackup.sh"
+   exit 1
 fi
 
 if (( $# < 1 )); then
-	echo "??? Missing clone device"
-	exit 1
-fi	
+   echo "??? Missing clone device"
+   exit 1
+fi
 
 CLONE_DEVICE="$1"
 
 if [[ ! -b $CLONE_DEVICE ]]; then
-	echo "??? $CLONE_DEVICE (e.g. /dev/sda or /dev/nvme0n1) does not exist"
-	exit 1
+   echo "??? $CLONE_DEVICE (e.g. /dev/sda or /dev/nvme0n1) does not exist"
+   exit 1
 fi
 
-echo "Creating system backup and clone on $CLONE_DEVICE ..."
+echo "Creating backup and restore backup afterwards on $CLONE_DEVICE ..."
 
-# create backup 
-raspiBackup.sh      	 					
-
-readVars
-# BACKUP_TARGETDIR now refers to the just created backup
-
-# now restore backup to device
-raspiBackupRestore2Image.sh $BACKUP_TARGETDIR $CLONE_DEVICE
+# create backup
+raspiBackup.sh
+if (( ! $? )); then
+   readVars
+   # BACKUP_TARGETDIR now refers to the just created backup
+   # now restore backup to device
+   f=$(mktemp)
+   echo "DEFAULT_YES_NO_RESTORE_DEVICE=$CLONE_DEVICE" > $f
+   raspiBackup.sh -Y -d $CLONE_DEVICE -f $f "$BACKUP_TARGETDIR"
+   rm $f
+fi
