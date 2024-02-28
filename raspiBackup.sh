@@ -5821,11 +5821,12 @@ function restore() {
 				rc=$?
 				if (( $rc )); then
 					if (( $rc == 1 )); then
-						cp "$SF_FILE" "/tmp/$SF_FILE"
-						sed -i 's/sector-size/d' "/tmp/$SF_FILE"
-						sfdisk -f "$RESTORE_DEVICE" < "/tmp/$SF_FILE" &>>"$LOG_FILE"
+						local tmpSF="$(basename $SF_FILE)"
+						cp "$SF_FILE" "/tmp/$tmpSF"
+						sed -i 's/sector-size/d' "/tmp/$tmpSF"
+						sfdisk -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
 						rc=$?
-						rm "/tmp/$SF_FILE"
+						rm "/tmp/$tmpSF"
 					fi
 				fi
 				if (( $rc )); then
