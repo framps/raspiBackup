@@ -1,12 +1,12 @@
 #!/bin/bash
-
+#
 #######################################################################################################################
 #
-# 	Sample script to convert raspiBackup messages into JSON format
+#  Sample script to convert raspiBackup messages into JSON format
 #
-# 	Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
+#  Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
-#	NOTE: This is sample code and is provided as is with no support.
+#  NOTE: This is sample code and is provided as is with no support.
 #
 #######################################################################################################################
 #
@@ -132,35 +132,35 @@ rbkSource="$(which raspiBackup.sh)"
 
 while read sep id message; do
 
-	msg="$id $message"
-	tpl="$(egrep "^MSG_EN.+$id" "$rbkSource" | cut -f 2 -d = | sed 's/^"//; s/"$//')"
+   msg="$id $message"
+   tpl="$(egrep "^MSG_EN.+$id" "$rbkSource" | cut -f 2 -d = | sed 's/^"//; s/"$//')"
 
-	msga=( $msg )
-	tpla=( $tpl )
+   msga=( $msg )
+   tpla=( $tpl )
 
-	ID="$(sed 's/:$//' <<< $id)"
-	TEXT="$message"
-	PARMS=()
-	
-	for (( i=1; i< ${#tpla[@]}; i++ )); do
-		m="${msga[$i]}"
-		t="${tpla[$i]}"
-		if [[ $m != $t ]]; then
-			PARMS+=("$m")
-		fi
-	done
-	
-	final=$(jq -n --arg id "$ID" \
+   ID="$(sed 's/:$//' <<< $id)"
+   TEXT="$message"
+   PARMS=()
+
+   for (( i=1; i< ${#tpla[@]}; i++ )); do
+      m="${msga[$i]}"
+      t="${tpla[$i]}"
+      if [[ $m != $t ]]; then
+         PARMS+=("$m")
+      fi
+   done
+
+   final=$(jq -n --arg id "$ID" \
               --arg text "$TEXT" \
               --argjson parms "$(jq -nc ' $ARGS.positional ' --args ${PARMS[@]})" \
               '$ARGS.named' )
 
-	if (( ! $first )); then
-		echo "," >> $TEMP_OUTPUT
-	fi
-	first=0
-             
-	echo -n $final >> $TEMP_OUTPUT
+   if (( ! $first )); then
+      echo "," >> $TEMP_OUTPUT
+   fi
+   first=0
+
+   echo -n $final >> $TEMP_OUTPUT
 
 done < "$SOURCE"
 
