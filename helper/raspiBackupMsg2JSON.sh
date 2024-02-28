@@ -123,6 +123,11 @@ DESTINATION="$2"
 
 [[ ! -e $SOURCE ]] && { echo "$SOURCE does not exist"; exit 1; }
 
+if ! which jq &>/dev/null; then
+   echo "??? Missing jq"
+   exit 1
+fi
+
 TEMP_OUTPUT=$(mktemp)
 
 echo "[" >> $TEMP_OUTPUT
