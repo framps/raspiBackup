@@ -86,7 +86,7 @@ if [[ ! -b $CLONE_DEVICE ]]; then
    exit 1
 fi
 
-echo "Creating backup and restore backup afterwards on $CLONE_DEVICE ..."
+echo "Creating backup and restore backup afterwards to $CLONE_DEVICE ..."
 
 # create backup
 raspiBackup.sh
@@ -96,6 +96,15 @@ if (( ! $? )); then
    # now restore backup to device
    f=$(mktemp)
    echo "DEFAULT_YES_NO_RESTORE_DEVICE=$CLONE_DEVICE" > $f
+   source /usr/local/etc/raspiBackup.conf
+   mounted=0
+   if ! mount | grep "$DEFAULT_BACKUPPATH"; then
+		sudo mount "$DEFAULT_BACKUPPATH"
+		mounted=1
+   fi
    raspiBackup.sh -Y -d $CLONE_DEVICE -f $f "$BACKUP_TARGETDIR"
    rm $f
+   if (( $mounted )); then
+		sudo umount "$DEFAULT_BACKUPPATH"
+   fi	
 fi
