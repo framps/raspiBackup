@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+echo "Still under development"
+exit 42
+#
 #######################################################################################################################
 #
 #  Sample script which calls raspiBackup.sh to create a backup and restores the backup to a device (e.g. SD card or USB disk) afterwards
