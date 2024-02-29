@@ -62,12 +62,17 @@ function readVars() {
 # MSG_FILE refers to message file just created
 # LOG_FILE referes to logfile just created
    else
-      echo "/tmp/raspiBackup.vars not found"
+      echo "??? /tmp/raspiBackup.vars not found"
       exit 42
    fi
 }
 
 # main program
+
+if (( $UID != 0 )); then
+      echo "--- Call me as root or with sudo"
+      exit 1
+fi
 
 if ! which raspiBackup &>/dev/null; then
    echo "??? Missing raspiBackup.sh"

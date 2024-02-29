@@ -1,8 +1,5 @@
 #!/bin/bash
 #
-echo "Still under development"
-exit 42
-#
 #######################################################################################################################
 #
 #  Sample script which calls raspiBackup.sh to create a backup and restores the backup to a device (e.g. SD card or USB disk) afterwards
@@ -45,6 +42,11 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
+if (( $UID != 0 )); then
+      echo "--- Call me as root or with sudo"
+      exit 1
+fi
+
 # add pathes if not already set (usually not set in crontab)
 
 if [[ -e /bin/grep ]]; then
@@ -65,7 +67,7 @@ function readVars() {
 # MSG_FILE refers to message file just created
 # LOG_FILE referes to logfile just created
    else
-      echo "/tmp/raspiBackup.vars not found"
+      echo "??? /tmp/raspiBackup.vars not found"
       exit 42
    fi
 }
@@ -89,7 +91,7 @@ if [[ ! -b $CLONE_DEVICE ]]; then
    exit 1
 fi
 
-echo "Creating backup and restore backup afterwards to $CLONE_DEVICE ..."
+echo "--- Creating backup and restore backup afterwards to $CLONE_DEVICE ..."
 
 # create backup
 raspiBackup.sh
