@@ -1931,6 +1931,9 @@ MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
 MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem is not supported."
 MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem wird nicht unterstützt."
+MSG_UNSUPPORTED_PARTITIONING=297
+MSG_EN[$MSG_UNSUPPORTED_PARTITIONING]="RBK0297E: Filesystem %1 on boot and/or %2 on root not supported."
+MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0297E: Filesystem %1 auf boot und/oder %2 auf root ist nicht unterstützt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3757,6 +3760,23 @@ function getFsType() { # file or path
 
 	logExit "$df"
 
+}
+
+function checkPartitioning() {
+
+	logEntry
+
+	local bootFS="$(findmnt --fstab --evaluate | egrep "^/boot" | awk '{print $3}')"
+	local rootFS="$(findmnt --fstab --evaluate | egrep "^/ " | awk '{print $3}')"
+
+	logItem "$bootFS - $rootFS"
+	[[ "$bootFS" == "vfat" && "$rootFS" == "ext4" ]]
+	local rc=$?
+
+	echo "$bootFS $rootFS"
+
+	logExit $rc
+	return $rc
 }
 
 # check if directory is located on a mounted device
@@ -6899,10 +6919,16 @@ function doitBackup() {
 
 	checkImportantParameters
 
-	getRootPartition
 	inspect4Backup
 
 	commonChecks
+
+	local fs
+	fs=( $(checkPartitioning) )
+	if (( $? )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_PARTITIONING "${fs[0]}" "${fs[1]}"
+		exitError $RC_MISC_ERROR
+	fi
 
 	if hasSpaces "$BACKUPPATH"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_CONTAINS_SPACES "$BACKUPPATH"
