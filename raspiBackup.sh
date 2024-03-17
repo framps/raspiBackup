@@ -140,6 +140,7 @@ PROPERTY_FILE="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
+BROADCAST_STATE_FILE="broadcast.state"
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp"
 LOGFILE_EXT=".log"
@@ -2681,6 +2682,7 @@ function logOptions() { # option state
 	logItem "BACKUPPATH=$BACKUPPATH"
 	logItem "BACKUPTYPE=$BACKUPTYPE"
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
+	logItem "BROADCAST_MAXNUM=$BROADCAST_MAXNUM"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
 	logItem "COLOR_CODES="${COLOR_CODES[@]}""
@@ -2772,6 +2774,8 @@ function initializeDefaultConfigVariables() {
 
 	# path to store the backupfile
 	DEFAULT_BACKUPPATH="/backup"
+	# Max broadcasts
+	DEFAULT_BROADCAST_MAXNUM=7
 	# how many backups to keep of all backup types
 	DEFAULT_KEEPBACKUPS=3
 	# how many backups to keep of the specific backup type. If zero DEFAULT_KEEPBACKUPS is used
@@ -2928,6 +2932,7 @@ function copyDefaultConfigVariables() {
 	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
+	BROADCAST_MAXNUM="$DEFAULT_BROADCAST_MAXNUM"
 	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
 	AFTER_STARTSERVICES="$DEFAULT_AFTER_STARTSERVICES"
 	BEFORE_STOPSERVICES="$DEFAULT_BEFORE_STOPSERVICES"
@@ -3192,6 +3197,9 @@ function downloadPropertiesFile() { # FORCE
 #DEPRECATED=""
 #BETA="0.6.3.2"
 
+#BROADCAST_REGEX="0.6.*"
+#BROADCAST_FILE="bc_6"
+
 function parsePropertiesFile() { # propertyFileName
 
 	logEntry
@@ -3209,6 +3217,14 @@ function parsePropertiesFile() { # propertyFileName
 	[[ $properties =~ $PROPERTY_REGEX ]] && BETA_PROPERTY=${BASH_REMATCH[1]}
 
 	logItem "Properties: v: $VERSION_PROPERTY i: $INCOMPATIBLE_PROPERTY d: $DEPRECATED_PROPERTY b: $BETA_PROPERTY"
+
+	properties="$(grep "^BROADCAST_REGEX=" "$1" 2>/dev/null)"
+	[[ $properties =~ $PROPERTY_REGEX ]] && BROADCAST_REGEX_PROPERTY=${BASH_REMATCH[1]}
+
+	properties="$(grep "^BROADCAST_FILE=" "$1" 2>/dev/null)"
+	[[ $properties =~ $PROPERTY_REGEX ]] && BROADCAST_FILE_PROPERTY=${BASH_REMATCH[1]}
+
+	logItem "Properties: r: \"$BROADCAST_REGEX_PROPERTY\" f: \"$BROADCAST_FILE_PROPERTY\""
 
 	logExit
 
@@ -8213,7 +8229,61 @@ function calculateMonthDiff() { # fromDate toDate
 	echo $diff
 }
 
-function updateRestoreReminder() {
+function handleBroadcast() {
+
+	logEntry
+
+	local reminder_file="$VAR_LIB_DIRECTORY/$BROADCAST_STATE_FILE"
+
+	if (( $RESTORE_REMINDER_INTERVAL > 0 )); then
+
+		# create directory to save state
+		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
+			mkdir -p "$VAR_LIB_DIRECTORY"
+		fi
+
+		# initialize reminder state
+		if [[ ! -e "$reminder_file" ]]; then
+			 echo "$(date +%Y%m) 0" > "$reminder_file"
+			 return
+		fi
+
+		# retrieve reminder state
+		local now
+		now=$(date +%Y%m)
+		local rf
+		rf="$(<$reminder_file)"
+		if [[ -z "${rf}" ]]; then												# issue #316: reminder file exists but is empty
+			echo "$(date +%Y%m) 0" > "$reminder_file"
+			return
+		fi
+		rf=( $(<$reminder_file) )
+		local diffMonths
+		diffMonths=$(calculateMonthDiff $now ${rf[0]} )
+
+		# check if reminder should be send
+		if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
+			if (( ${rf[1]} < $RESTORE_REMINDER_REPEAT )); then
+				# update reminder state
+				local nr=$(( ${rf[1]} + 1 ))
+				echo "${rf[0]} $nr" > "$reminder_file"
+				local left=$(( $RESTORE_REMINDER_REPEAT - $nr ))
+				NEWS_AVAILABLE=1
+				RESTORETEST_REQUIRED=1
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORETEST_REQUIRED $left
+			else
+				logItem "Reset reminder"
+				# reset reminder state
+				echo "$(date +%Y%m) 0" > "$reminder_file"
+			fi
+		fi
+	fi
+
+	logExit
+
+}
+
+function handleRestoreReminder() {
 
 	logEntry
 
@@ -9756,7 +9826,8 @@ logSystem
 
 downloadPropertiesFile
 
-updateRestoreReminder
+handleRestoreReminder
+handleBroadcast
 
 reportNews
 
