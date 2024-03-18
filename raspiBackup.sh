@@ -128,6 +128,7 @@ CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used 
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
 INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
 PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
+BROADCAST_DOWNLOAD_DIRECTORY="$MYHOMEURL/raspiBackup${URLTARGET}/broadcast"
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
@@ -1946,8 +1947,12 @@ MSG_UNSUPPORTED_PARTITIONING=298
 MSG_EN[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 on boot and/or %2 on root not supported."
 MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 auf boot und/oder %2 auf root ist nicht unterstützt."
 MSG_BROADCAST=299W
-MSG_EN[$MSG_BROADCAST]="RBK0299W: Important message %1."
-MSG_DE[$MSG_BROADCAST]="RBK0299W: Wichtige Meldung %1."
+MSG_EN[$MSG_BROADCAST]="RBK0299W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${NL}\
+!!! RBK0299W: @@@ Important message: %1.${NL}\
+!!! RBK0299W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+MSG_DE[$MSG_BROADCAST]="RBK0299W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${NL}\
+!!! RBK0299W: @@@ Wichtige Meldung: %1.${NL}\
+!!! RBK0299W: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3406,9 +3411,11 @@ function isNewVersionAvailable() {
 		latestVersion=$(echo -e "$newVersion\n$version" | sort -V | tail -1)
 		logItem "new: $newVersion runtime: $version latest: $latestVersion"
 
-		if [[ $version < $newVersion ]]; then
+		compareVersions "$version" "$newVersion"
+		local compare=$?
+		if (( $compare == 1 )); then                # version < newVersion
 			rc=0	# new version available
-		elif [[ $version > $newVersion ]]; then
+		elif (( $compare == 2 )); then              # version > newVersion
 			rc=2	# current version is a newer version
 		else	    # versions are identical
 			if [[ -z $suffix ]]; then
@@ -8242,19 +8249,35 @@ function handleBroadcast() {
 
 	logItem "BC_REGEX: "$BROADCAST_REGEX_PROPERTY""
 	logItem "BC_FILES: "$BROADCAST_FILE_PROPERTY""
+	logItem "VERSION: "$VERSION""
+
+	local v=$(cut -f 1 -d - <<< "$VERSION")
 
 	if [[ -n $BROADCAST_REGEX_PROPERTY ]]; then
-		local bcList=( $BROADCAST_REGEX_PROPERTY )
-		local bcFileList=( $BROADCAST_FILE_PROPERTY )
 
-		for (( i=0; i<${#BROADCAST_REGEX_PROPERTY[@]}; i++ )); do
+		local bcList bcFileList
+
+		readarray -t bcList < <(for a in ${BROADCAST_REGEX_PROPERTY[@]}; do echo "$a"; done )
+		readarray -t bcFileList < <(for a in ${BROADCAST_FILE_PROPERTY[@]}; do echo "$a"; done )
+
+		for (( i=0; i<${#bcList[@]}; i++ )); do
 			bcItem="${bcList[$i]}"
 			bcFile="${bcFileList[$i]}"
 			logItem "Processing bcItem "$bcItem" - "$bcFile""
 			local r="$(sed 's/\./\\./g' <<< $bcItem)"
 
-			if egrep "$r" <<< "$VERSION"; then
-				echo "### $bcItem $bcFile"
+			logItem "$r - $v"
+			if egrep "$r" <<< "$v"; then
+				local bcTemp=$(mktemp)
+				local httpCode dlRC
+				httpCode=$(downloadFile "${BROADCAST_DOWNLOAD_DIRECTORY}/$bcFile" "$bcTemp")
+				dlRC=$?
+				if (( $dlRC != 0 )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "${BROADCAST_DOWNLOAD_DIRECTORY}/$bcFile" "$dlHttpCode" $dlRC
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BROADCAST "$(<$bcTemp)"
+				fi
+				rm $bcTemp
 			fi
 		done
 	fi
@@ -9808,7 +9831,6 @@ downloadPropertiesFile
 
 handleRestoreReminder
 handleBroadcast
-exit
 
 reportNews
 
