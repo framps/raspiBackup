@@ -1945,6 +1945,9 @@ MSG_DE[$MSG_PARTITIONS_EXTEND_DISK_SIZE]="RBK0297E: Partitionierung größer als
 MSG_UNSUPPORTED_PARTITIONING=298
 MSG_EN[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 on boot and/or %2 on root not supported."
 MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 auf boot und/oder %2 auf root ist nicht unterstützt."
+MSG_BROADCAST=299W
+MSG_EN[$MSG_BROADCAST]="RBK0299W: Important message %1."
+MSG_DE[$MSG_BROADCAST]="RBK0299W: Wichtige Meldung %1."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -8233,50 +8236,27 @@ function handleBroadcast() {
 
 	logEntry
 
+	local bcItem bcFile i
+
 	local reminder_file="$VAR_LIB_DIRECTORY/$BROADCAST_STATE_FILE"
 
-	if (( $RESTORE_REMINDER_INTERVAL > 0 )); then
+	logItem "BC_REGEX: "$BROADCAST_REGEX_PROPERTY""
+	logItem "BC_FILES: "$BROADCAST_FILE_PROPERTY""
 
-		# create directory to save state
-		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			mkdir -p "$VAR_LIB_DIRECTORY"
-		fi
+	if [[ -n $BROADCAST_REGEX_PROPERTY ]]; then
+		local bcList=( $BROADCAST_REGEX_PROPERTY )
+		local bcFileList=( $BROADCAST_FILE_PROPERTY )
 
-		# initialize reminder state
-		if [[ ! -e "$reminder_file" ]]; then
-			 echo "$(date +%Y%m) 0" > "$reminder_file"
-			 return
-		fi
+		for (( i=0; i<${#BROADCAST_REGEX_PROPERTY[@]}; i++ )); do
+			bcItem="${bcList[$i]}"
+			bcFile="${bcFileList[$i]}"
+			logItem "Processing bcItem "$bcItem" - "$bcFile""
+			local r="$(sed 's/\./\\./g' <<< $bcItem)"
 
-		# retrieve reminder state
-		local now
-		now=$(date +%Y%m)
-		local rf
-		rf="$(<$reminder_file)"
-		if [[ -z "${rf}" ]]; then												# issue #316: reminder file exists but is empty
-			echo "$(date +%Y%m) 0" > "$reminder_file"
-			return
-		fi
-		rf=( $(<$reminder_file) )
-		local diffMonths
-		diffMonths=$(calculateMonthDiff $now ${rf[0]} )
-
-		# check if reminder should be send
-		if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
-			if (( ${rf[1]} < $RESTORE_REMINDER_REPEAT )); then
-				# update reminder state
-				local nr=$(( ${rf[1]} + 1 ))
-				echo "${rf[0]} $nr" > "$reminder_file"
-				local left=$(( $RESTORE_REMINDER_REPEAT - $nr ))
-				NEWS_AVAILABLE=1
-				RESTORETEST_REQUIRED=1
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORETEST_REQUIRED $left
-			else
-				logItem "Reset reminder"
-				# reset reminder state
-				echo "$(date +%Y%m) 0" > "$reminder_file"
+			if egrep "$r" <<< "$VERSION"; then
+				echo "### $bcItem $bcFile"
 			fi
-		fi
+		done
 	fi
 
 	logExit
@@ -9828,6 +9808,7 @@ downloadPropertiesFile
 
 handleRestoreReminder
 handleBroadcast
+exit
 
 reportNews
 
