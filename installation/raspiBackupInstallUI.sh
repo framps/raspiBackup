@@ -1724,11 +1724,10 @@ function isInternetAvailable() {
 
 	logEntry
 
-	wget -q --spider $MYHOMEDOMAIN
-   local rc=$?
-
+	wget -q --spider -t 1 -T 3 $MYHOMEDOMAIN
+    local rc=$?
 	logExit $rc
-   return $rc
+    return $rc
 }
 
 function logEntry() {
