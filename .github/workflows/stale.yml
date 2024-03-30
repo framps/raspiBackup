@@ -27,7 +27,7 @@ jobs:
         stale-pr-message: 'Stale pull request message'
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
-        exempt-issue-labels: 'Feature request,Enhancement,Development, Bug'
+        exempt-issue-labels: 'feature,enhancement,development,bug'
         exempt-milestones: true
         exempt-assignees: true
           
