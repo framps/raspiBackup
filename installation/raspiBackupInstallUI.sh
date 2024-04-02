@@ -343,6 +343,8 @@ MSG_DE[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_FI[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_FR[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 MSG_ZH[$MSG_VERSION]="${MSG_PRF}0001I: %1"
+MSG_IT[$MSG_VERSION]="${MSG_PRF}0001I: %1"
+MSG_ES[$MSG_VERSION]="${MSG_PRF}0001I: %1"
 
 MSG_DOWNLOADING=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Downloading %1..."
@@ -350,6 +352,8 @@ MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0002I: %1 wird aus dem Netz geladen..."
 MSG_FI[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Ladataan %1..."
 MSG_FR[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Téléchargement %1..."
 MSG_ZH[$MSG_DOWNLOADING]="${MSG_PRF}0002I: 下载中 %1..."
+MSG_IT[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Download in corso %1..."
+MSG_ES[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Descargando %1..."
 
 MSG_DOWNLOAD_FAILED=$((SCNT++))
 MSG_EN[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Download of %1 failed. HTTP code: %2."
@@ -357,6 +361,8 @@ MSG_DE[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: %1 kann nicht aus dem Netz gelade
 MSG_FI[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Kohteen %1 lataus epäonnistui. HTTP-koodi: %2."
 MSG_FR[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Le téléchargement de %1 a échoué. Code HTTP : %2."
 MSG_ZH[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: 下载 %1 失败. HTTP-代码: %2."
+MSG_IT[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Scarica di %1 fallita. HTTP code: %2."
+MSG_ES[$MSG_DOWNLOAD_FAILED]="${MSG_PRF}0003E: Descarga de %1 fallida. Código HTTP: %2."
 
 MSG_INSTALLATION_FAILED=$((SCNT++))
 MSG_EN[$MSG_INSTALLATION_FAILED]="${MSG_PRF}0004E: Installation of %1 failed. Check %2."
