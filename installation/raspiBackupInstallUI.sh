@@ -1599,6 +1599,20 @@ BETA_INSTALL=0
 CRONTAB_ENABLED="undefined"
 SYSTEMD_ENABLED="undefined"
 
+function findUser() {
+
+	local u
+
+	if [[ -n "$SUDO_USER" ]]; then
+		u="$SUDO_USER"
+	else
+		u="$USER"
+	fi
+
+	echo "$u"
+
+}
+
 function existsLocalPropertiesFile() {
 	[[ -e "$LOCAL_PROPERTY_FILE" ]]
 }
@@ -2859,6 +2873,8 @@ function cleanup() {
 		logExit
 		rc=127
 	fi
+
+	chown "$CALLING_USER:$CALLING_USER" "$LOG_FILE" &> $LOG_FILE
 
 	exit $rc
 }
@@ -5129,6 +5145,8 @@ function askYesNo() { # message message_parms
 		return 0
 	fi
 }
+
+CALLING_USER="$(findUser)"
 
 INVOCATIONPARMS=""			# save passed opts for logging
 invocationParms=()			# and restart
