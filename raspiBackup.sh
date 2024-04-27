@@ -8483,6 +8483,8 @@ function synchronizeCmdlineAndfstab() {
 			else
 				rootLabelCreated=1
 			fi
+		elif grep "root=/dev/" $CMDLINE; then
+			logItem "/dev detected in $CMDLINE"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
@@ -8533,6 +8535,8 @@ function synchronizeCmdlineAndfstab() {
 					rootLabelCreated=1
 				fi
 			fi
+		elif grep "^/dev/" $FSTAB; then
+			logItem "/dev detected in $FSTAB"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
@@ -8575,6 +8579,8 @@ function synchronizeCmdlineAndfstab() {
 				local cmd="dosfslabel $BOOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
 			fi
+		elif grep "^/dev/" $FSTAB; then
+			logItem "/dev detected in $FSTAB"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 		fi
