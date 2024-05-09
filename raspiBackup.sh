@@ -3148,7 +3148,7 @@ function downloadPropertiesFile() { # FORCE
 			local func="B"; (( $RESTORE )) && func="R"
 			local srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
-			local os="rsp"; [[ -n $IS_UBUNTU ]] && os="ubu"
+			local os="rsp"; (( $IS_UBUNTU )) && os="ubu"
 			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
 		else
 			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
@@ -4731,7 +4731,7 @@ function cleanupStartup() { # trap
 
 	if [[ $1 == "SIGINT" ]]; then
 		# ignore CTRL-C now
-		trap '' SIGINT SIGTERM EXIT
+		trap '' SIGINT SIGTERM SIGHUP
 		rc=$RC_CTRLC
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CTRLC_DETECTED
 	fi
