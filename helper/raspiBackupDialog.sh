@@ -67,11 +67,28 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###########################################################################################################################################
+# Font colours definition
 
-normal='\033[0;39m'                #Font colors for output
-red='\033[1;31m'
-yellow='\033[1;33m'
-green='\033[1;32m'
+readonly YELLOW='\033[1;33m'
+readonly RED='\033[1;31m'
+readonly GREEN='\033[1;32m'
+readonly BLUE='\033[1;34m'
+readonly VIOLET='\033[1;35m'
+readonly CYAN='\033[1;36m'
+readonly NORMAL='\033[0;39m'
+
+# Font colors for output
+
+FAIL="$RED"
+QUESTION="$YELLOW"
+CONFIRMATION="$GREEN"
+
+# Check if config-File exist 
+
+if [[ -f /usr/local/etc/raspiBackupDialog.conf ]]; then
+   source /usr/local/etc/raspiBackupDialog.conf
+fi
+
 
 hostname="$(hostname)"           #Determine hostname
 FILE="/usr/local/etc/raspiBackup.conf"    #Determining the DEFAULT_BACKUPPATH from raspiBackup.conf
@@ -80,15 +97,15 @@ function backup(){
 	echo ""
 	lsblk
 	echo ""
-	echo -e "$yellow $Quest_more_than_2_partitions \n \n $normal"
+	echo -e "$QUESTION $Quest_more_than_2_partitions \n \n $NORMAL"
 	read input_partitions_more_then_2
 
 	if [[ ${input_partitions_more_then_2,,} =~ [yj] ]]; then
-		echo -e "$yellow $Quest_backup_more_than_2 \n \n $normal"
+		echo -e "$QUESTION $Quest_backup_more_than_2 \n \n $NORMAL"
 		read input_backup_more_then_2
 
 		if [[ ${input_backup_more_then_2,,} =~ [yj] ]]; then
-			echo -e " $yellow $Quest_additional_partitions \n \n $normal"
+			echo -e " $QUESTION $Quest_additional_partitions \n \n $NORMAL"
 			read partitions
 			echo ""
 			backup_add_part_and_comment
@@ -105,11 +122,11 @@ function backup(){
 }
 
 function backup_add_part_and_comment(){
-	echo -e "$yellow $Quest_comment \n $normal"
+	echo -e "$QUESTION $Quest_comment \n $NORMAL"
 	read Quest_comment
 
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
-		echo -e "$yellow $Quest_comment_text \n $normal"
+		echo -e "$QUESTION $Quest_comment_text \n $NORMAL"
 		read Quest_comment_text
 		
 		echo -e "$Info_start \n"
@@ -121,12 +138,12 @@ function backup_add_part_and_comment(){
 }
 
 function backup_add_comment(){
-	echo -e "$yellow $Quest_comment \n $normal"
+	echo -e "$QUESTION $Quest_comment \n $NORMAL"
 	read Quest_comment
 	Quest_comment_text="${Quest_comment_text//[\"\']}"
 
 	if [[ ${Quest_comment,,} =~ [yj] ]]; then
-		echo -e "$yellow $Quest_comment_text \n $normal"
+		echo -e "$QUESTION $Quest_comment_text \n $NORMAL"
 		read Quest_comment_text
 		echo -e "$Info_start \n"
 		
@@ -139,29 +156,29 @@ function backup_add_comment(){
 
 function execution(){
 	lsblk                      #Output of lsblk to check the drive for restore
-	echo -e "$yellow $Quest_select_drive \n $normal"
+	echo -e "$QUESTION $Quest_select_drive \n $NORMAL"
 	read destination
 
 	if [[ "$destination" =~ ^(sd[a-f]|mmcblk[0-2]|nvme[0-9]n[0-9])$ ]]; then
 		echo ""
 	else
-		echo -e "$red $destination $Warn_only_drive $normal"
+		echo -e "$FAIL $destination $Warn_only_drive $NORMAL"
 		execution
 	fi
 
  	if [[ -b /dev/$destination ]]; then
-		echo -e "$green OK $normal \n"
+		echo -e "$CONFIRMATION OK $NORMAL \n"
 	else
-		echo -e "$red $destination $Warn_drive_not_present \n $normal"
+		echo -e "$FAIL $destination $Warn_drive_not_present \n $NORMAL"
 		execution
 	fi
 
 	if grep -q /$destination /proc/mounts; then
-		echo -e "$red $destination $Warn_drive_mounted \n $normal".
+		echo -e "$FAIL $destination $Warn_drive_mounted \n $NORMAL".
 		exit 0
 	fi
 
-	echo -e "$green $Info_backup_drive \n $backup_path \n >>> $destination \n $normal"
+	echo -e "$CONFIRMATION $Info_backup_drive \n $backup_path \n >>> $destination \n $NORMAL"
 	echo -e "$Info_start \n"
 	/usr/local/bin/raspiBackup.sh -d /dev/$destination /$backup_path      #Call raspiBackup.sh
 	exit 0
@@ -176,7 +193,7 @@ function execution_select(){
 		echo "${backup_folder[$i]}  -> $v"
 	done
 
-	echo -e "\n\n$yellow $Quest_number_of_backup \n $normal"
+	echo -e "\n\n$QUESTION $Quest_number_of_backup \n $NORMAL"
 	read v
 
 	number="$v"
@@ -189,15 +206,15 @@ function execution_select(){
 	test_digit "$number" "$min" "$max" "$backup_path"
 
 	if [[ $del != "y" ]]; then
-		echo -e "$green $Info_restore \n $backup_path $normal"
+		echo -e "$CONFIRMATION $Info_restore \n $backup_path $NORMAL"
 	else
-		echo -e "$red $Info_delete \n $backup_path\n\n"
-		echo -e " $Quest_sure $normal\n\n"
+		echo -e "$FAIL $Info_delete \n $backup_path\n\n"
+		echo -e " $Quest_sure $NORMAL\n\n"
 		read input_sure
 
 		if [[ ${input_sure,,} =~ [yj] ]]; then
-			echo -e "$yellow $backup_path \n $Info_Confirmation \n\n"
-			echo -e "$green $Info_update $normal"
+			echo -e "$QUESTION $backup_path \n $Info_Confirmation \n\n"
+			echo -e "$CONFIRMATION $Info_update $NORMAL"
 			rm -R $backup_path
 			echo ""
 			ls -la $backupdir/$hostname
@@ -210,7 +227,7 @@ function execution_select(){
 
 	if [[ -d "$backup_path" ]]; then
 		execution
-		echo -e "$red $Warn_drive_not_present \n $normal"
+		echo -e "$FAIL $Warn_drive_not_present \n $NORMAL"
 		execution_select
 	fi
 }
@@ -219,11 +236,11 @@ function test_digit(){
 	if [[ "$1" =~ ^[0-9]+$ ]]; then            # regex: a number has to have
 
 		if (( $1 < $2 || $1 > $3 )); then
-			echo -e "$red $1 $Warn_invalid_number $2 > $3 \n $normal"
+			echo -e "$FAIL $1 $Warn_invalid_number $2 > $3 \n $NORMAL"
 			execution_select
 		fi
 	else
-		echo -e "$red $1 $Warn_no_number \n $normal"
+		echo -e "$FAIL $1 $Warn_no_number \n $NORMAL"
 		execution_select
 	fi
 }
@@ -234,16 +251,16 @@ function mount(){
 	if [[ $unitname == *".mount" ]]; then
 
 		if isPathMounted $backupdir; then		
-		echo -e "$green $Info_already_mounted $normal \n"
+		echo -e "$CONFIRMATION $Info_already_mounted $NORMAL \n"
 
 		else
 			systemctl start $unitname
 
 			if isPathMounted $backupdir; then
-				echo -e "$green $Info_is_mounted $normal \n"
+				echo -e "$CONFIRMATION $Info_is_mounted $NORMAL \n"
 				mounted=ok
 			else
-				echo -e "$red $Info_not_mounted $normal \n"
+				echo -e "$FAIL $Info_not_mounted $NORMAL \n"
 				exit 0
 			fi
 		fi
@@ -252,15 +269,15 @@ function mount(){
 	if [[ $unitname == "fstab" ]]; then
 
 		if isPathMounted $backupdir; then
-		echo -e "$green $Info_already_mounted $normal \n"
+		echo -e "$CONFIRMATION $Info_already_mounted $NORMAL \n"
 		else
 			/usr/bin/mount -a
 
 		if isPathMounted $backupdir; then
-				echo -e "$green $Info_is_mounted $normal \n"
+				echo -e "$CONFIRMATION $Info_is_mounted $NORMAL \n"
 				mounted=ok
 			else
-				echo -e "$red $Info_not_mounted $normal \n"
+				echo -e "$FAIL $Info_not_mounted $NORMAL \n"
 				exit
 			fi
 		fi
@@ -276,7 +293,7 @@ function unmount(){
 function sel_dir(){
     ls -1 $backupdir
     echo ""
-    echo -e "$yellow $Quest_sel_dir \n $normal"
+    echo -e "$QUESTION $Quest_sel_dir \n $NORMAL"
     read dir
 	backup_path="$(find $backupdir/$dir/$dir* -maxdepth 0 | sort -r | head -1)"
 }
@@ -304,10 +321,10 @@ function isPathMounted() {
 
 
 function language(){
-	echo -e "\n \n$yellow Bitte waehle deine bevorzugte Sprache"
+	echo -e "\n \n$QUESTION Bitte waehle deine bevorzugte Sprache"
 	echo -e " Please chose your preferred language \n \n"
-	echo -e " Deutsch  = 1"
-	echo -e " English = 2 \n \n $normal"
+	echo -e " Deutsch = 1"
+	echo -e " English = 2 \n \n $NORMAL"
 	read lang
 
 	if (( $lang == 1 )); then
@@ -373,8 +390,8 @@ function language(){
 		Info_backup_path="\n Backup Path is $backupdir\n"
 
 	else
-		echo -e "$red False input. Please enter only 1 or 2"
-		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $normal"
+		echo -e "$FAIL False input. Please enter only 1 or 2"
+		echo -e " Falsche Eingabe. Bitte nur 1 oder 2 eingeben $NORMAL"
 		
 		language
 	fi
@@ -382,8 +399,8 @@ function language(){
 
 	if (( $UID != 0 )); then
 		echo ""
-		echo -e "$red Script has to be called as root or with sudo $normal"
-		echo -e "$red Das Script muss als root oder mit sudo aufgerufen werden $normal"
+		echo -e "$FAIL Script has to be called as root or with sudo $NORMAL"
+		echo -e "$FAIL Das Script muss als root oder mit sudo aufgerufen werden $NORMAL"
 		exit
 	fi
 
@@ -400,7 +417,7 @@ function language(){
 			unitname=$2
 			mount
 		else
-			echo -e "$red $Warn_input_mount_method $normal"
+			echo -e "$FAIL $Warn_input_mount_method $NORMAL"
 		exit
 		fi
 		
@@ -412,10 +429,10 @@ function language(){
 	fi
 		
     if ! isPathMounted $backupdir; then
-        echo -e "$red $Warn_not_mounted $normal"
+        echo -e "$FAIL $Warn_not_mounted $NORMAL"
         exit
     else
-        echo -e "$green $Info_backup_path"
+        echo -e "$CONFIRMATION $Info_backup_path"
     fi
 
 	if [[ $1 == "--last" ]] || [[ $3 == "--last" ]]; then
@@ -443,9 +460,9 @@ function language(){
 		exit 0
 	fi
 
-	echo -e "$yellow $Quest_backup_or_restore \n"
+	echo -e "$QUESTION $Quest_backup_or_restore \n"
 	echo -e " backup    1"
-	echo -e " restore   2 \n $normal"
+	echo -e " restore   2 \n $NORMAL"
 
 	read backup_or_restore
 
@@ -454,10 +471,10 @@ function language(){
 	
 	elif (($backup_or_restore == 2 )); then
 		sel_dir
-		echo -e "$yellow $Quest_last_backup \n $normal"
+		echo -e "$QUESTION $Quest_last_backup \n $NORMAL"
 		read answer
 	else
-		echo -e "$red $Warn_false_number \n $normal"
+		echo -e "$FAIL $Warn_false_number \n $NORMAL"
 	fi
 
 	if [[ ${answer,,} =~ [yj] ]]; then
@@ -466,6 +483,7 @@ function language(){
 		exit 0
 	else
 		execution_select
+		unmount
 
 	fi
 
