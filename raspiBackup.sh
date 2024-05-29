@@ -2396,7 +2396,18 @@ function isSupportedEnvironment() {
 	local OSRELEASE=/etc/os-release
 	local RPI_ISSUE=/etc/rpi-issue
 
-	logCommand "cat $OSRELEASE"
+	if [[ ! -e $OSRELEASE ]]; then
+		logItem "$OSRELEASE not found"
+		logExit 1
+		return 1
+	fi
+
+	logItem $(<$OSRELEASE)
+	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OSRELEASE
+	local rc=$?
+
+	IS_UBUNTU=$(( ! $rc ))
+	logItem "IS_UBUNTU: $IS_UBUNTU"
 
 #	Check it's Raspberry HW
 	if [[ ! -e $MODELPATH ]]; then
@@ -2414,19 +2425,6 @@ function isSupportedEnvironment() {
 		return 0
 	fi
 	logItem "$RPI_ISSUE not found"
-
-	if [[ ! -e $OSRELEASE ]]; then
-		logItem "$OSRELEASE not found"
-		logExit 1
-		return 1
-	fi
-
-	logItem $(<$OSRELEASE)
-	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OSRELEASE
-	local rc=$?
-
-	IS_UBUNTU=$(( ! $rc ))
-	logItem "IS_UBUNTU: $IS_UBUNTU"
 
 	logExit $rc
 	return $rc
@@ -4512,8 +4510,6 @@ function sendEMail() { # content subject
 function cleanupBackupDirectory() {
 
 	logEntry
-
-	logCommand "ls -la "$BACKUPTARGET_DIR""
 
 	if (( $rc != 0 )); then
 
@@ -6718,12 +6714,12 @@ function inspect4Backup() {
 		# test whether boot device is mounted
 		local bootMountpoint="/boot"
 		local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
-		logItem "$bootMountpoint mounted? $bootPartition"
+		logItem "bootMountpoint1: $bootMountpoint mounted? $bootPartition"
 
 		if [[ -z $bootPartition ]]; then
 			bootMountpoint="/boot/firmware"
 			local bootPartition=$(findmnt $bootMountpoint -o source -n) # /dev/mmcblk0p1, /dev/loop01p or /dev/sda1 or /dev/nvme0n1p1
-			logItem "$bootMountpoint mounted? $bootPartition"
+			logItem "bootMountpoint2: $bootMountpoint mounted? $bootPartition"
 		fi
 
 		# test whether some other /boot path is mounted
@@ -6733,9 +6729,13 @@ function inspect4Backup() {
 			logItem "Some path in /boot mounted? $bootPartition on $bootMountpoint"
 		fi
 
+		logItem "bootMountpoint: $bootMountpoint, bootPartition: $bootPartition"
+		
+		logItem "Starting root discovery"
+
 		# find root partition
 		local rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
-		logItem "/ mounted? $rootPartition"
+		logItem "rootPartition: / mounted? $rootPartition"
 		if [[ $rootPartition == "/dev/root" ]]; then
 			local rp=$(grep -E -o "root=[^ ]+" /proc/cmdline)
 			rootPartition=${rp#/root=/}
