@@ -42,7 +42,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.6.9.1"                								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.6.9.1-orange"                								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -6730,7 +6730,7 @@ function inspect4Backup() {
 		fi
 
 		logItem "bootMountpoint: $bootMountpoint, bootPartition: $bootPartition"
-		
+
 		logItem "Starting root discovery"
 
 		# find root partition
@@ -6745,8 +6745,15 @@ function inspect4Backup() {
 		# check for /boot on root partition
 		if [[ -z "$bootPartition" ]]; then
 			if ! find $bootMountpoint -name cmdline.txt; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
-				exitError $RC_MISC_ERROR
+				logItem "No cmdline.txt found in $bootMountpoint"
+				# no RaspbianOS
+				if [[ -n $rootPartition ]] && (( unsupportedEnvironment )) && (( IS_UBUNTU )); then	# for example ubuntu on orange
+					bootPartition="$rootPartition"
+					logItem "Assuming bootpartition is located on rootpartition $rootPartition"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
+					exitError $RC_MISC_ERROR
+				fi
 			else
 				bootPartition="$rootPartition"
 				logItem "Bootpartition is located on rootpartition $bootPartition"
