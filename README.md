@@ -138,4 +138,4 @@ There exist [sample extensions](./extensions) for raspiBackup which report for e
 
 ## Systemd
 
-Starting with installer release 0.4.8 a systemd timer is used to start raspiBackup on a regular base. cron was used in previous installer releases. The installer is backward compatible and is able to handle systems with cron setup. In addition the installer can be forced to use cron instead of systemd during installation with invocation option `-t crond`. Thank you very much to [Hofei](https://github.com/Hofei90) who helped to switch from cron to systemd timer.
+Starting with installer release 0.4.8 a systemd timer is used to start raspiBackup on a regular base. crond was used in previous installer releases. The installer is backward compatible and is able to handle systems with crond setup. In addition the installer can be forced to use crond instead of systemd during installation with invocation option `-t crond`. Thank you very much to [Hofei](https://github.com/Hofei90) who helped to switch from crond to systemd.
