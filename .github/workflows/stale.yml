@@ -29,5 +29,4 @@ jobs:
         stale-pr-label: 'no-pr-activity'
         exempt-issue-labels: 'feature,enhancement,development,bug'
         exempt-milestones: true
-        exempt-assignees: true
           
