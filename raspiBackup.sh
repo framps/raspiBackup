@@ -6747,7 +6747,7 @@ function inspect4Backup() {
 			if ! find $bootMountpoint -name cmdline.txt; then
 				logItem "No cmdline.txt found in $bootMountpoint"
 				# no RaspbianOS
-				if [[ -n $rootPartition ]] && (( unsupportedEnvironment )) && (( IS_UBUNTU )); then	# for example ubuntu on orange
+				if [[ -n $rootPartition ]] && (( UNSUPPORTED_ENVIRONMENT )) && (( IS_UBUNTU )); then	# for example ubuntu on orange
 					bootPartition="$rootPartition"
 					logItem "Assuming bootpartition is located on rootpartition $rootPartition"
 				else
