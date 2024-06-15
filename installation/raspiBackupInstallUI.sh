@@ -2874,7 +2874,7 @@ function cleanup() {
 		rc=127
 	fi
 
-	chown "$CALLING_USER:$CALLING_USER" "$LOG_FILE" &> $LOG_FILE
+	chown "$CALLING_USER:$CALLING_USER" "$LOG_FILE" &>> $LOG_FILE
 
 	exit $rc
 }
