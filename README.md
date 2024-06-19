@@ -7,6 +7,7 @@
 ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) 
 ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
 
+If you like my work and want me to be able to keep improving it, please sponsor me on [GitHub](https://github.com/sponsors/framps).
 
 #### For a high level summary visit [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
 
