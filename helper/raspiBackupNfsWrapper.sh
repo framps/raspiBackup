@@ -30,7 +30,7 @@ NFSSERVER="raspifix"
 NFSDIRECTORY="/disks/silver/backup"
 MOUNTPOINT="/backup"
 
-VERSION="0.0.7"
+VERSION="0.0.8"
 
 GIT_DATE="$Date$"
 GIT_COMMIT="$Sha1$"
@@ -65,7 +65,7 @@ if ping -c1 -w3 $NFSSERVER &>/dev/null; then
 				exit 42
 			fi
 		fi
-		raspiBackup.sh
+		raspiBackup.sh "$@"
 		rc=$?
 		if (( $rc > 0 )); then
 			echo "raspiBackup failed with rc $rc"
