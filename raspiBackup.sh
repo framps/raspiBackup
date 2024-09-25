@@ -7202,7 +7202,7 @@ function doitBackup() {
 	# now either execute a SR dryrun or start backup
 
 	if (( $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then # just apply backup strategy to test smart recycle
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH/$(hostname)"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH"
 		applyBackupStrategy
 		rc=0
 	else
