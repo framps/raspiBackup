@@ -7292,8 +7292,8 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 	if [[ -f "$RESTOREFILE" || $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
 		ROOT_RESTOREFILE="$RESTOREFILE"
 	else
-		logItem "${RESTOREFILE}/${HOSTNAME}-*-backup*"
-		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}-*-backup*)"
+		logItem "${RESTOREFILE}/${HOSTNAME}*-*-backup*"
+		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}*-*-backup*)"
 		logItem "ROOT_RESTOREFILE: $ROOT_RESTOREFILE"
 		if [[ -z "$ROOT_RESTOREFILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_ROOTBACKUPFILE_FOUND $BACKUPTYPE
