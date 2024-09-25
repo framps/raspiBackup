@@ -3870,6 +3870,13 @@ function readConfigParameters() {
 	logExit
 }
 
+function setupOsRelease() {
+
+	# TODO: Need to make this more foolproof?? Probably not.
+	test -e /etc/os-release && os_release='/etc/os-release' || os_release='/usr/lib/os-release'
+	. "${os_release}"
+}
+
 function setupEnvironment() {
 
 	logEntry
@@ -3890,10 +3897,14 @@ function setupEnvironment() {
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
 
+		# For including the OS release into the name of the backup directory
+		setupOsRelease
+		HOSTNAME_OSR="${HOSTNAME}@${ID}${VERSION_ID}"
+
 		if [[ -z "$BACKUP_DIRECTORY_NAME" ]]; then
-			BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-$DATE"
+			BACKUPFILE="${HOSTNAME_OSR}-${BACKUPTYPE}-backup-$DATE"
 		else
-			BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-${DATE}_${BACKUP_DIRECTORY_NAME}"
+			BACKUPFILE="${HOSTNAME_OSR}-${BACKUPTYPE}-backup-${DATE}_${BACKUP_DIRECTORY_NAME}"
 		fi
 
 		BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
@@ -5606,7 +5617,7 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
+		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME_OSR}*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
@@ -6130,7 +6141,7 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
+				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
@@ -7161,7 +7172,8 @@ function doitBackup() {
 	fi
 
 	logCommand "ls -1 ${BACKUPPATH}"
-	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
+	# Note: The new optional part (@.*?)* in the regex below saves possible older backups without the OS release in the name from being deleted as nonRaspiGeneratedDirs!
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME(@.*?)*\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
@@ -7280,8 +7292,8 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 	if [[ -f "$RESTOREFILE" || $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
 		ROOT_RESTOREFILE="$RESTOREFILE"
 	else
-		logItem "${RESTOREFILE}/${HOSTNAME}-*-backup*"
-		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}-*-backup*)"
+		logItem "${RESTOREFILE}/${HOSTNAME_OSR}-*-backup*"
+		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME_OSR}-*-backup*)"
 		logItem "ROOT_RESTOREFILE: $ROOT_RESTOREFILE"
 		if [[ -z "$ROOT_RESTOREFILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_ROOTBACKUPFILE_FOUND $BACKUPTYPE
@@ -7994,7 +8006,8 @@ function doitRestore() {
 
 	BASE_DIR=$(dirname "$RESTOREFILE")
 	logItem "Basedir: $BASE_DIR"
-	HOSTNAME=$(basename "$RESTOREFILE" | sed -r 's/(.*)-[A-Za-z]+-backup-[0-9]+-[0-9]+.*/\1/')
+	# Note: Handle old (without) and new (with OS release info) backup directory names
+	HOSTNAME=$(basename "$RESTOREFILE" | sed -r 's/(.*)(@[A-Za-z0-9]+)*-[A-Za-z]+-backup-[0-9]+-[0-9]+.*/\1/')
 	logItem "Hostname: $HOSTNAME"
 	BACKUPTYPE=$(basename "$RESTOREFILE" | sed -r 's/.*-([A-Za-z]+)-backup-[0-9]+-[0-9]+.*/\1/')
 	logItem "Backuptype: $BACKUPTYPE"
