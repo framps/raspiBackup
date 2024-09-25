@@ -8642,7 +8642,7 @@ function SR_listYearlyBackups() { # directory
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
 			local d=$(date +%Y -d "${i} year ago")
-			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
+			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
 	logExit
@@ -8658,7 +8658,7 @@ function SR_listMonthlyBackups() { # directory
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
+			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
 		done
 	fi
 	logExit
@@ -8681,7 +8681,7 @@ function SR_listWeeklyBackups() { # directory
 			local mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
 			local dl=""
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
-				dl="\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
+				dl="${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
 			done
 			ls -1 $1 | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
 		done
@@ -8697,7 +8697,7 @@ function SR_listDailyBackups() { # directory
 			# today is 20191117
 			# date +%Y%m%d -d "-1 day" -> 20191116
 			local d=$(date +%Y%m%d -d "-${i} day") # get day
-			ls -1 $1 | grep "\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
+			ls -1 $1 | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
 		done
 	fi
 	logExit
@@ -8739,7 +8739,7 @@ function SR_listUniqueBackups() { #directory
 
 function SR_listBackupsToDelete() { # directory
 	logEntry $1
-	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
