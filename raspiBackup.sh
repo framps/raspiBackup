@@ -7292,8 +7292,8 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 	if [[ -f "$RESTOREFILE" || $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
 		ROOT_RESTOREFILE="$RESTOREFILE"
 	else
-		logItem "${RESTOREFILE}/${HOSTNAME_OSR}-*-backup*"
-		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME_OSR}-*-backup*)"
+		logItem "${RESTOREFILE}/${HOSTNAME}-*-backup*"
+		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}-*-backup*)"
 		logItem "ROOT_RESTOREFILE: $ROOT_RESTOREFILE"
 		if [[ -z "$ROOT_RESTOREFILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_ROOTBACKUPFILE_FOUND $BACKUPTYPE
@@ -8008,6 +8008,7 @@ function doitRestore() {
 	logItem "Basedir: $BASE_DIR"
 	# Note: Handle old (without) and new (with OS release info) backup directory names
 	HOSTNAME=$(basename "$RESTOREFILE" | sed -r 's/(.*)(@[A-Za-z0-9]+)*-[A-Za-z]+-backup-[0-9]+-[0-9]+.*/\1/')
+	HOSTNAME=${HOSTNAME%@*}
 	logItem "Hostname: $HOSTNAME"
 	BACKUPTYPE=$(basename "$RESTOREFILE" | sed -r 's/.*-([A-Za-z]+)-backup-[0-9]+-[0-9]+.*/\1/')
 	logItem "Backuptype: $BACKUPTYPE"
