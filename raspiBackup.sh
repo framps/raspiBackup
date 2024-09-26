@@ -2195,7 +2195,6 @@ function logFinish() {
 		if (( !$INCLUDE_ONLY )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 		fi
-
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
@@ -2308,13 +2307,13 @@ function callExtensions() { # extensionplugpoint rc
 
 function usage() {
 
-	[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
-	LANG_EXT="${LANG^^*}"
-	LANG_SUFF="${LANG_EXT:0:2}"
+	local activeLang="EN" # fallback into english
+
+	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
 	NO_YES=( $(getMessage $MSG_NO_YES) )
 
-	local func="usage${LANG_SUFF}"
+	local func="usage${activeLang}"
 
 	if ! fn_exists $func; then
 		func="usageEN"
@@ -6730,7 +6729,7 @@ function inspect4Backup() {
 		fi
 
 		logItem "bootMountpoint: $bootMountpoint, bootPartition: $bootPartition"
-		
+
 		logItem "Starting root discovery"
 
 		# find root partition
@@ -8824,6 +8823,7 @@ function usageEN() {
 	echo "-k {backupsToKeep} (default: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
 	echo "-o \"{commands to execute before Backup}\" (default: $DEFAULT_STOPSERVICES)"
+	echo "-P use partitionoriented backup mode"
 	echo "-t {backupType} ($ALLOWED_TYPES) (default: $DEFAULT_BACKUPTYPE)"
 	echo "-T \"{List of partitions to save}\" (Partition numbers, e.g. \"1 2 3\"). Only valid with parameter -P (default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo ""
@@ -8875,6 +8875,7 @@ function usageDE() {
 	echo "-k {Anzahl Backups} (Standard: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="keine"
 	echo "-o \"{Befehle die vor dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STOPSERVICES)"
+	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
 	echo "-T \"Liste der Partitionen die zu Sichern sind}\" (Partitionsnummern, z.B. \"1 2 3\"). Nur gültig zusammen mit Parameter -P (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo ""
@@ -9030,23 +9031,21 @@ copyDefaultConfigVariables
 ##### Now do your job
 
 # handle options which don't require root access
-if (( $# == 1 )); then
-	if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
-		LOG_LEVEL=$LOG_NONE
-		case "$1" in
-			--version)
-				echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
-				exitNormal
-				;;
-		*)	usage
+skipRootCheck=0
+if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
+	skipRootCheck=1
+	case "$1" in
+		--version)
+			echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
 			exitNormal
 			;;
-		esac
-	fi
+	*)	usage
+		exitNormal
+		;;
+	esac
 fi
 
-if (( $UID != 0 && ! INCLUDE_ONLY )); then
-	LOG_LEVEL=$LOG_NONE
+if (( ! skipRootCheck && $UID != 0 && ! INCLUDE_ONLY )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
 	exitError $RC_MISC_ERROR
 fi
@@ -9217,8 +9216,9 @@ while (( "$#" )); do
 	  fi
 	  ;;
 
-	-h|--help)
-	  HELP=1; break
+	-h|-\?|--help)
+	  usage
+	  exit
 	  ;;
 
 	--ignoreAdditionalPartitions|--ignoreAdditionalPartitions[+-])
@@ -9444,6 +9444,11 @@ while (( "$#" )); do
 
 	-V)
 	  REVERT=1; shift 1
+	  ;;
+
+	--version)
+	  echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
+	  exitNormal
 	  ;;
 
 	-x|-x[-+])
