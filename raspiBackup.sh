@@ -2195,6 +2195,7 @@ function logFinish() {
 		if (( !$INCLUDE_ONLY )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 		fi
+
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
@@ -9030,27 +9031,28 @@ copyDefaultConfigVariables
 
 ##### Now do your job
 
-# handle options which don't require root access
-skipRootCheck=0
-if [[ $1 == "-h" || $1 == "--help" || $1 == "--version" || $1 == "-?" ]]; then
-	skipRootCheck=1
+ARG_BAK=("$@")				# save invocation options
+
+# handle options which don't require root access, use system language
+if containsElement "-h" "${ARG_BAK[@]}" || containsElement "--help" "${ARG_BAK[@]}" || containsElement "-?" "${ARG_BAK[@]}" || containsElement "--version" "${ARG_BAK[@]}"; then
 	case "$1" in
 		--version)
 			echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
 			exitNormal
 			;;
-	*)	usage
-		exitNormal
+		*)	usage
+			exitNormal
 		;;
 	esac
 fi
 
-if (( ! skipRootCheck && $UID != 0 && ! INCLUDE_ONLY )); then
+logEnable
+
+if (( $UID != 0 && ! INCLUDE_ONLY )); then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RUNASROOT "$0" "$INVOCATIONPARMS"
 	exitError $RC_MISC_ERROR
 fi
 
-logEnable
 lockingFramework
 
 trapWithArg cleanupStartup SIGINT SIGTERM EXIT
@@ -9075,8 +9077,6 @@ if [[ -n $DEFAULT_LANGUAGE ]]; then
 	fi
 	LANGUAGE=$DEFAULT_LANGUAGE			# redefine language now
 fi
-
-ARG_BAK=("$@")				# save invocation options
 
 while (( "$#" )); do		# check if option -f was used
   case "$1" in
