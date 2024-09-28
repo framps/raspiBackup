@@ -2308,7 +2308,7 @@ function callExtensions() { # extensionplugpoint rc
 
 function usage() {
 
-	local activeLang="EN" # fallback into english
+	local activeLang=$FALLBACK_LANGUAGE # fallback language
 
 	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
@@ -2317,7 +2317,7 @@ function usage() {
 	local func="usage${activeLang}"
 
 	if ! fn_exists $func; then
-		func="usageEN"
+		func="usage$FALLBACK_LANGUAGE"
 	fi
 
 	$func
@@ -9216,11 +9216,6 @@ while (( "$#" )); do
 	  fi
 	  ;;
 
-	-h|-\?|--help)
-	  usage
-	  exit
-	  ;;
-
 	--ignoreAdditionalPartitions|--ignoreAdditionalPartitions[+-])
 	  IGNORE_ADDITIONAL_PARTITIONS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
@@ -9444,11 +9439,6 @@ while (( "$#" )); do
 
 	-V)
 	  REVERT=1; shift 1
-	  ;;
-
-	--version)
-	  echo "Version: $VERSION CommitSHA: $GIT_COMMIT_ONLY CommitDate: $GIT_DATE_ONLY CommitTime: $GIT_TIME_ONLY"
-	  exitNormal
 	  ;;
 
 	-x|-x[-+])
