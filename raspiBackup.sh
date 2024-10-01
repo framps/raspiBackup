@@ -6130,6 +6130,8 @@ function applyBackupStrategy() {
 		local bt="${BACKUPTYPE^^}"
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
+		local dir_to_delete
+		local tobeDeletedBackups
 
 		local keepBackups=$KEEPBACKUPS
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
@@ -6140,7 +6142,19 @@ function applyBackupStrategy() {
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
-			if (( ! $FAKE )); then
+			if (( $FAKE )); then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
+				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+					assertionFailed $LINENO "push to $BACKUPPATH failed"
+				fi
+				tobeDeletedBackups=$(ls -d ${HOSTNAME}*-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | sort -t "-" -k 4 | head -n -$keepBackups 2>>$LOG_FILE)
+				echo "$tobeDeletedBackups" | while read dir_to_delete; do
+					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
+				done
+				if ! popd &>>$LOG_FILE; then
+					assertionFailed $LINENO "pop failed"
+				fi
+			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
