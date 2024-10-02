@@ -430,6 +430,7 @@ RC_CLEANUP_ERROR=140
 RC_EXTENSION_ERROR=141
 RC_UNPROTECTED_CONFIG=142
 RC_NOT_SUPPORTED=143
+RC_TEMPMOVE_FAILED=144
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -1944,6 +1945,9 @@ MSG_DE[$MSG_PARTITIONS_EXTEND_DISK_SIZE]="RBK0297E: Partitionierung größer als
 MSG_UNSUPPORTED_PARTITIONING=298
 MSG_EN[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 on boot and/or %2 on root not supported."
 MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 auf boot und/oder %2 auf root ist nicht unterstützt."
+MSG_MOVE_TEMP_DIR=299
+MSG_EN[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backup directory %1 created."
+MSG_DE[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backupverzeichnis %1 erstellt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2620,7 +2624,7 @@ function executeShellCommand() { # command
 	return $rc
 }
 
-# return 0 for ==, 1 for <, and 2 for >
+# return 0 for ==, -1 for <, and 1 for >
 # version format 0.1.2.3-ext, -ext will be discarded
 function compareVersions() { # v1 v2
 
@@ -2635,16 +2639,17 @@ function compareVersions() { # v1 v2
 	local rc=0
 	for (( i=0; i<=3; i++ )); do
 		if (( ${v1e[$i]} < ${v2e[$i]} )); then
-			rc=1
+			rc=-1
 			break
 		fi
 		if (( ${v1e[$i]} > ${v2e[$i]} )); then
-			rc=2
+			rc=1
 			break
 		fi
 	done
+	echo $rc
 	logExit $rc
-	return $rc
+	return 
 }
 
 function repeat() { # char num
@@ -3385,9 +3390,9 @@ function isNewVersionAvailable() {
 		latestVersion=$(echo -e "$newVersion\n$version" | sort -V | tail -1)
 		logItem "new: $newVersion runtime: $version latest: $latestVersion"
 
-		if [[ $version < $newVersion ]]; then
+		if (( $(compareVersions $version $newVersion) < 0 )); then # $version < $newVersion
 			rc=0	# new version available
-		elif [[ $version > $newVersion ]]; then
+		elif (( $(compareVersions $version $newVersion) > 0 )); then  # $version > $newVersion
 			rc=2	# current version is a newer version
 		else	    # versions are identical
 			if [[ -z $suffix ]]; then
@@ -3770,7 +3775,8 @@ function getFsType() { # file or path
 
 }
 
-# sfdisk sanity check
+# sfdisk sanity check to make sure last partition does not extend device size
+
 #						label: dos
 #						label-id: 0x3c3f4bdb
 #						device: /dev/mmcblk0
@@ -3786,16 +3792,29 @@ function checkSfdiskOK() { # device, e.g. /dev/mmcblk0
 	local rc
 	local deviceSize=$(blockdev --getsz $1)
 
+	logCommand "sfdisk -d $1"
+
 	logItem "DeviceSize: $deviceSize"
 
-	local sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)") )
+	local sourceValues=( $(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)") )
 
-	if [[ ${#sourceValues[@]} != 4 ]]; then
+	local s=${#sourceValues[@]}
+	logItem "Size: $s"
+
+	if (( $s < 4 )); then
 		assertionFailed $LINENO "Expected at least 2 partitions on $1"
 	fi
 
-	local usedSize=$(( ${sourceValues[2]} + ${sourceValues[3]} ))
+	local sm1=$((s-1))
+	local sm2=$((s-2))
+
+	logItem "${sourceValues[$sm2]} - ${sourceValues[$sm1]}"
+
+	local usedSize=$(( ${sourceValues[$sm2]} + ${sourceValues[$sm1]} ))
 	logItem "usedSize: $usedSize"
+
+	local freeSize=$(( $deviceSize - $usedSize ))
+	logItem "freeSize: $freeSize"
 
 	rc=$(( ( $deviceSize / 512 ) > $usedSize ))
 
@@ -3960,7 +3979,10 @@ function setupEnvironment() {
 		fi
 
 		BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
-		BACKUPTARGET_DIR="$BACKUPTARGET_ROOT/$BACKUPFILE"
+		BACKUPTARGET_FINAL_DIR="$BACKUPTARGET_ROOT/$BACKUPFILE"				# final directory for backup if backup was successful
+		BACKUPTARGET_TEMP_ROOT="$BACKUPTARGET_ROOT/tmp"						# temporary backup root directory
+		BACKUPTARGET_TEMP_DIR="$BACKUPTARGET_ROOT/tmp/$BACKUPFILE"			# temporary backup directory
+		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
@@ -3996,6 +4018,7 @@ function setupEnvironment() {
 	fi
 
 	logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
+	logItem "BACKUPTARGET_FINAL_DIR: $BACKUPTARGET_FINAL_DIR"
 	logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
 
 	logExit
@@ -4574,19 +4597,17 @@ function cleanupBackupDirectory() {
 
 	logEntry
 
-	if (( $rc != 0 )); then
-
-		if [[ -d "$BACKUPTARGET_DIR" ]]; then
-			if [[ -z "$BACKUPPATH" || -z "$BACKUPFILE" || -z "$BACKUPTARGET_DIR" || "$BACKUPFILE" == *"*"* || "$BACKUPPATH" == *"*"* || "$BACKUPTARGET_DIR" == *"*"* ]]; then
-				assertionFailed $LINENO "Invalid backup path detected. BP: $BACKUPPATH - BTD: $BACKUPTARGET_DIR - BF: $BACKUPFILE"
-			fi
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_DIR"
-			rm -rfd $BACKUPTARGET_DIR # delete incomplete backupdir
+	if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then
+		if [[ -n $(ls "$BACKUPTARGET_TEMP_ROOT") ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_TEMP_ROOT"
+			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> $LOG_FILE # delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_DIR" "$rmrc"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_TEMP_ROOT" "$rmrc"
 			fi
 		fi
+		logItem "Deleting $BACKUPTARGET_TEMP_ROOT"
+		rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE
 	fi
 
 	logExit
@@ -4845,20 +4866,30 @@ function cleanup() { # trap
 	if (( $RESTORE )); then
 		cleanupRestore $1
 	else
-		cleanupBackup $1
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
-			if (( \
-				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
-				|| ! $SMART_RECYCLE \
-				)); then
-				applyBackupStrategy
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOVE_TEMP_DIR "$BACKUPTARGET_FINAL_DIR"
+			mv "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
+			local rc=$?
+			if (( $rc )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
+				CLEANUP_RC=$RC_TEMPMOVE_FAILED
+			else
+				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"		
+				if (( \
+					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
+					|| ! $SMART_RECYCLE \
+					)); then
+					applyBackupStrategy
+				fi
 			fi
 		fi
 	fi
 
+	cleanupBackup $1
+
 	cleanupTempFiles
 
-	finalCommand "$rc"
+	finalCommand "$CLEANUP_RC"
 
 	logItem "Terminate now with rc $CLEANUP_RC"
 
@@ -8324,11 +8355,7 @@ function updateConfig() {
 
 	logItem "Current config version: $etcConfigFileVersion - Required config version: $VERSION_SCRIPT_CONFIG"
 
-	local cr
-	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
-	cr=$?
-
-	if (( $cr != 1 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
+	if (( $(compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG") >= 0 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
 		logExit "Config version ok"
 		if (( $UPDATE_CONFIG )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
@@ -8363,15 +8390,10 @@ function updateConfig() {
 
 	logItem "New config version of downloaded file: $newConfigVersion"
 
-	compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
-	cr=$?
-
-	if (( $cr == 1 )); then							# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
+	if (( $(compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG") < 0 )); then					# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
 		logItem "Config update version in script: $VERSION_SCRIPT_CONFIG - Current config version : $etcConfigFileVersion"
 
-		compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG"
-		cr=$?
-		if (( $cr == 1 )); then							# newConfigVersion < SCRIPT_CONFIG
+		if (( $(compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG") < 0 )); then					# newConfigVersion < SCRIPT_CONFIG
 			logItem "No config update possible: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
 			logExit
 			return
