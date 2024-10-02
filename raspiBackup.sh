@@ -3756,6 +3756,23 @@ function getFsType() { # file or path
 
 }
 
+function checkPartitioning() {
+
+	logEntry
+
+	local bootFS="$(findmnt --fstab --evaluate | egrep "^/boot" | awk '{print $3}')"
+	local rootFS="$(findmnt --fstab --evaluate | egrep "^/ " | awk '{print $3}')"
+
+	logItem "$bootFS - $rootFS"
+	[[ "$bootFS" == "vfat" && "$rootFS" == "ext4" ]]
+	local rc=$?
+
+	echo "$bootFS $rootFS"
+
+	logExit $rc
+	return $rc
+}
+
 # check if directory is located on a mounted device
 
 function isPathMounted() {
@@ -6899,7 +6916,6 @@ function doitBackup() {
 
 	checkImportantParameters
 
-	getRootPartition
 	inspect4Backup
 
 	commonChecks
