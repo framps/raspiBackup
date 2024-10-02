@@ -1938,6 +1938,9 @@ MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
 MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem is not supported."
 MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem wird nicht unterstützt."
+MSG_PARTITIONS_EXTEND_DISK_SIZE=297
+MSG_EN[$MSG_PARTITIONS_EXTEND_DISK_SIZE]="RBK0297E: Partitioning exceeds disk size."
+MSG_DE[$MSG_PARTITIONS_EXTEND_DISK_SIZE]="RBK0297E: Partitionierung größer als Diskgröße."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2202,6 +2205,7 @@ function logFinish() {
 		if (( !$INCLUDE_ONLY )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 		fi
+
 		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
@@ -3761,6 +3765,39 @@ function getFsType() { # file or path
 
 	logExit "$df"
 
+}
+
+# sfdisk sanity check
+#						label: dos
+#						label-id: 0x3c3f4bdb
+#						device: /dev/mmcblk0
+#						unit: sectors
+#						sector-size: 512
+#
+#						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
+#						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
+
+function checkSfdiskOK() { # device, e.g. /dev/mmcblk0
+	logEntry "$1"
+
+	local rc
+	local deviceSize=$(blockdev --getsz $1)
+
+	logItem "DeviceSize: $deviceSize"
+
+	local sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)") )
+
+	if [[ ${#sourceValues[@]} != 4 ]]; then
+		assertionFailed $LINENO "Expected at least 2 partitions on $1"
+	fi
+
+	local usedSize=$(( ${sourceValues[2]} + ${sourceValues[3]} ))
+	logItem "usedSize: $usedSize"
+
+	rc=$(( ( $deviceSize / 512 ) > $usedSize ))
+
+	logExit $rc
+	return $rc
 }
 
 function checkPartitioning() {
@@ -6924,6 +6961,11 @@ function doitBackup() {
 	checkImportantParameters
 
 	inspect4Backup
+
+	if ! checkSfdiskOK $BOOT_DEVICENAME; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
+		exit $RC_COLLECT_PARTITIONS_FAILED
+	fi
 
 	commonChecks
 
