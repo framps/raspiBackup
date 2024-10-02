@@ -1,0 +1,10 @@
+label: dos
+label-id: 0x560fbb8c
+device: /dev/loop0
+unit: sectors
+
+/dev/loop0p1 : start=        2048, size=     1048576, type=83
+/dev/loop0p2 : start=     1050624, size=    38247089, type=83
+/dev/loop0p3 : start=    39299072, size=   210770608, type=5
+/dev/loop0p5 : start=    39301120, size=   199229440, type=83
+/dev/loop0p6 : start=   238532608, size=    11537072, type=83

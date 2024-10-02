@@ -4064,13 +4064,7 @@ function deployMyself() {
 
 }
 
-## partition table of /dev/sdc
-#unit: sectors
-
-#/dev/sdc1 : start=     8192, size=   114688, Id= c
-#/dev/sdc2 : start=   122880, size= 30244864, Id=83
-#/dev/sdc3 : start=        0, size=        0, Id= 0
-#/dev/sdc4 : start=        0, size=        0, Id= 0
+# calculate last used sector
 
 function calcSumSizeFromSFDISK() { # sfdisk file name
 
@@ -4083,15 +4077,13 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 # /dev/sdb1 : start=          63, size=  1953520002, type=83
 
 	local partitionregex="/dev/.*[p]?([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-z]*([0-9a-z]+)"
-	local sumSize=0
-	local sectorSize
+	local sectorSize=512 # default
 
-	logCommand "cat $file"
+	[[ -v RESIZE_FSDISK ]] && logCommand "cat $file"
 
-	sectorSize=$(grep "^sector-size:" $file)
-	if (( $? )); then
-		sectorSize=512	# not set in buster and earlier, use default
-	else
+	local sectorSize=512 # default
+
+	if grep -q "^sector-size:" $file; then
 		sectorSize=$(cut -f 2 -d ' ' <<< "$sectorSize")
 		if [[ -z $sectorSize ]]; then
 			assertionFailed $LINENO "Unable to retrieve sectorsize"
@@ -4099,92 +4091,175 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 	fi
 
 	local line
-	line="$(tail -1 $file)"
-	if [[ $line =~ $partitionregex ]]; then
-		local p=${BASH_REMATCH[1]}
-		local start=${BASH_REMATCH[2]}
-		local size=${BASH_REMATCH[3]}
-		local id=${BASH_REMATCH[4]}
+	local lineNo=0
+	local sumSize=0
 
-		if (( $id != 83 )); then
-			assertionFailed $LINENO "Last partition is no Linux partition"
+	while IFS="" read line; do
+
+		(( lineNo++ ))
+
+		if [[ -z $line || $line =~ ^[^#]*# ]]; then
+			continue
 		fi
-
-		(( sumSize = ( start + size) * sectorSize ))
-		echo "$sumSize"
-	else
-		assertionFailed $LINENO "No matching last partition found"
-	fi
-
-	logExit "$sumSize"
-}
-
-function createResizedSFDisk() { # sfdisk_source_filename targetSize sfdisk_target_filename -> oldPartitionSize newPartitionSize
-
-	logEntry "$@"
-
-	local sourceFile="$1"
-	local targetSize="$2"
-	local targetFile="$3"
-
-	local newSize sectorSize
-	local oldPartitionSize newPartitionSize
-
-	local partitionregex="/dev/.*[p]?([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-z]*([0-9a-z]+)"
-
-	sectorSize=$(grep "^sector-size:" $sourceFile)
-	if (( $? )); then
-		sectorSize=512	# not set in buster and earlier, use default
-	else
-		sectorSize=$(cut -f 2 -d ' ' <<< "$sectorSize")
-		if [[ -z $sectorSize ]]; then
-			assertionFailed $LINENO "Unablt to retrieve sector size"
-		fi
-	fi
-
-	logCommand "cat $sourceFile"
-
-	local sourceSize=$(calcSumSizeFromSFDISK "$sourceFile")
-
-	cp "$sourceFile" "$targetFile"
-
-	if (( sourceSize != targetSize )); then
-
-		local line
-		line="$(tail -1 $targetFile)"
 
 		if [[ $line =~ $partitionregex ]]; then
 			local p=${BASH_REMATCH[1]}
 			local start=${BASH_REMATCH[2]}
 			local size=${BASH_REMATCH[3]}
 			local id=${BASH_REMATCH[4]}
+			local end
+			(( end = start + size ))
 
-			if (( $id != 83 )); then
-				assertionFailed $LINENO "Last partition is no Linux partition"
+			logItem "Processing $p - Start: $start - Size: $((size*512)) - End: $end - id: $id"
+
+			if [[ $id != 83 && $id != 5 && $id != c ]]; then
+				continue
 			fi
 
-			(( oldPartitionSize = ( size - start ) * sectorSize ))
+			(( sumSize = (start + size) * sectorSize ))
 
-			if (( sourceSize > targetSize )); then
-				(( newSize = ( size - ( sourceSize - targetSize ) / sectorSize ) ))
-			else
-				(( newSize = ( size + ( targetSize - sourceSize ) / sectorSize ) ))
-			fi
+			[[ -v RESIZE_FSDISK ]] && logItem "$p: Start: $start - Size: $((size*512)) : $(bytesToHuman $((size*512))) - SumSize: $sumSize : $(bytesToHuman $sumSize)"
 
-			(( newPartitionSize = ( newSize - start ) * sectorSize ))
+		fi
+	done < $file
 
-			sed -i "s/${size}/${newSize}/" $targetFile
+	if (( sumSize == 0 )) || [[ $id != 83 ]]; then
+		assertionFailed $LINENO "No matching last partition found"
+	fi
 
-		else
-			assertionFailed $LINENO "Last partition is no Linux partition"
+	echo "$sumSize"
+
+	logExit "$sumSize - $(bytesToHuman $sumSize)"
+}
+
+
+# Return oldParttiionSize and newPartitionsize of modified last partition together with partition number
+# if last partition is too small to shrink the newPartitionSize == -1
+
+function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdisk_target_filename -> oldPartitionSize newPartitionSize
+
+	logEntry "$@"
+
+	local sourceFile="$1"
+	local targetDeviceSize="$2"
+	local targetFile="$3"
+
+	local oldPartitionSize newPartitionSize
+
+	local partitionregex="/dev/.*[p]?([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-z]*([0-9a-z]+)"
+
+	local sectorSize=512
+	if grep -q "^sector-size:" $sourceFile; then
+		sectorSize=$(cut -f 2 -d ' ' <<< "$sectorSize")
+		if [[ -z $sectorSize ]]; then
+			assertionFailed $LINENO "Unable to retrieve sector size"
 		fi
 	fi
 
-	logItem "Old: $oldPartitionSize - New: $newPartitionSize"
+	logCommand "cat $sourceFile"
 
-	logCommand "cat $targetFile"
+	local sourceDeviceSize=$(calcSumSizeFromSFDISK "$sourceFile")
 
-	local ret="$oldPartitionSize $newPartitionSize"
+	cp "$sourceFile" "$targetFile"
+
+	local line newSize diffSize
+
+	logItem "sourceDeviceSize: $sourceDeviceSize ($(bytesToHuman $(($sourceDeviceSize)))) targetDeviceSize: $targetDeviceSize ($(bytesToHuman $(($targetDeviceSize))))"
+
+	while IFS="" read line; do
+
+		(( lineNo++ ))
+
+		if [[ -z $line || $line =~ ^[^#]*# ]]; then
+			continue
+		fi
+
+		if [[ $line =~ $partitionregex ]]; then
+			local p=${BASH_REMATCH[1]}
+			local start=${BASH_REMATCH[2]}
+			local size=${BASH_REMATCH[3]}
+			local id=${BASH_REMATCH[4]}
+			local end
+			(( end = start + size ))
+
+			logItem "Processing $p - Start: $start - Size: $((size*512)) - End: $end - id: $id"
+
+			if [[ $id == 5 ]]; then
+				logItem "Extended partition detected"
+				local p5=$p
+				local start5=$start
+				local size5=$size
+				local id5=$id
+				continue
+			fi
+
+			if [[ $id != 83 ]]; then
+				continue
+			fi
+
+			logItem "--- Processing partition $p ---"
+
+			(( oldPartitionSize = size * sectorSize ))
+
+			logItem "OldPartitionSize: $oldPartitionSize ($(bytesToHuman $oldPartitionSize)))"
+
+			if (( sourceDeviceSize > targetDeviceSize )); then
+				[[ -v RESIZE_FSDISK ]] && logItem "newSize = ( $size - ( $sourceDeviceSize - $targetDeviceSize ) / $sectorSize )"
+				(( newSize = ( size - ( sourceDeviceSize - targetDeviceSize ) / sectorSize ) ))
+			elif (( sourceDeviceSize < targetDeviceSize )); then
+				[[ -v RESIZE_FSDISK ]] && logItem "newSize = ( $size + ( $targetDeviceSize - $sourceDeviceSize ) / $sectorSize )"
+				(( newSize = ( size + ( targetDeviceSize - sourceDeviceSize ) / sectorSize ) ))
+			else
+				[[ -v RESIZE_FSDISK ]] && logItem "newSize = $size"
+				(( newSize = size ))
+			fi
+
+			(( diffSize = newSize - size ))
+
+			logItem "NewSize: $newSize ($(bytesToHuman $((newSize*512)))) DiffSize: $diffSize ($(bytesToHuman $((diffSize*512)))"
+
+			if (( newSize > 0 )); then
+				[[ -v RESIZE_FSDISK ]] && logItem "(( newPartitionSize = ( $newSize * $sectorSize )))"
+				(( newPartitionSize = ( newSize * sectorSize )))
+			else
+				[[ -v RESIZE_FSDISK ]] && logItem "((newPartitionSize =($newSize-1) * $sectorSize ))"		# too small, adjust for 512 division truncation gap
+				(( newPartitionSize = (newSize-1) * sectorSize ))		# too small, adjust for 512 division truncation gap
+			fi
+
+			logItem "NewPartitionSize: $newPartitionSize ($(bytesToHuman $newPartitionSize)))"
+
+			logItem "$p - Start: $start - Size: $((size*512)) - id: $id"
+			logItem "- newSize: $newSize ($(bytesToHuman $(($newSize*512)))) oldPartitionSize: $(bytesToHuman $oldPartitionSize) newPartitionSize ($(bytesToHuman $newPartitionSize))"
+		fi
+
+	done < $sourceFile
+
+	if [[ -z newSize ]]; then
+		assertionFailed $LINENO "No last Linux partition found which can be resized"
+	fi
+
+	if (( newPartitionSize <= 0 )); then			# last partition too small to shrink, return missing size
+		logItem "Partition too small: Missing $(bytesToHuman $newPartitionSize)"
+	fi
+
+	if (( newSize > 0 )); then
+		logItem "Update partition sectorsize to $newSize"
+		sed -E -i "s/(p$p :.+size=[ ]*)([0-9]+)/\1${newSize}/" $targetFile
+		if [[ -n $p5 ]]; then
+			local newP5Size
+			[[ -v RESIZE_FSDISK ]] && logItem "(( newP5Size = $size5 + $diffSize ))"
+			(( newP5Size = size5 + diffSize ))
+			logItem "Update extended partition sectorsize to $newP5Size"
+			sed -E -i "s/(p$p5 :.+size=[ ]*)([0-9]+)/\1${newP5Size}/" $targetFile
+		fi
+		logCommand "cat $targetFile"
+	fi
+
+	logItem "Old: $oldPartitionSize ($(bytesToHuman $oldPartitionSize)) - New: $newPartitionSize $(bytesToHuman $newPartitionSize))"
+
+	local targetSize=$(calcSumSizeFromSFDISK "$targetFile")
+
+	local ret="$oldPartitionSize $newPartitionSize $p"
 
 	echo "$ret"
 

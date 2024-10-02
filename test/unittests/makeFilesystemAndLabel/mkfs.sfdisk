@@ -1,0 +1,7 @@
+label: dos
+label-id: 0xaf0aecc7
+device: device.dd
+unit: sectors
+
+device.dd1 : start=        2048, size=      524288, type=83
+device.dd2 : start=      526336, size=     1570816, type=83

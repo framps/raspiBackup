@@ -1,0 +1,10 @@
+Label: dos
+label-id: 0x60b7d56f
+device: /dev/nvme0n1
+unit: sectors
+sector-size: 512 
+
+/dev/nvme0n1p1 : start=        8192, size=     1048576, type=c
+/dev/nvme0n1p2 : start=     1056768, size=    39297712, type=83
+/dev/nvme0n1p3 : start=    40354480, size=   209715200, type=5
+/dev/nvme0n1p5 : start=    40354480, size=   209715200, type=83
