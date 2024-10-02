@@ -43,7 +43,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 VERSION="0.6.10-dev"           								# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.7"								# required config version for script
+VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -141,7 +141,7 @@ LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 VARS_FILE="/tmp/$MYNAME.vars"
-TEMPORARY_MOUNTPOINT_ROOT="/tmp"
+TEMPORARY_MOUNTPOINT_ROOT="/tmp/$MYNAME"
 LOGFILE_EXT=".log"
 LOGFILE_NAME="${MYNAME}${LOGFILE_EXT}"
 LOGFILE_RESTORE_EXT=".logr"
@@ -431,6 +431,7 @@ RC_EXTENSION_ERROR=141
 RC_UNPROTECTED_CONFIG=142
 RC_NOT_SUPPORTED=143
 RC_TEMPMOVE_FAILED=144
+RC_RESIZE_ERROR=145
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -569,11 +570,11 @@ MSG_EN[$MSG_BACKUP_OK]="RBK0017I: Backup finished successfully."
 MSG_DE[$MSG_BACKUP_OK]="RBK0017I: Backup erfolgreich beendet."
 MSG_FI[$MSG_BACKUP_OK]="RBK0017I: Varmuuskopiointi suoritettu onnistuneesti."
 MSG_FR[$MSG_BACKUP_OK]="RBK0017I: Sauvegarde terminée avec succès."
-MSG_ADJUSTING_WARNING2=18
-MSG_EN[$MSG_ADJUSTING_WARNING2]="RBK0018W: Target %s with %s is larger than backup source with %s. root partition will be expanded accordingly to use the whole space."
-MSG_DE[$MSG_ADJUSTING_WARNING2]="RBK0018W: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die root Partition wird entsprechend vergrößert um den ganzen Platz zu benutzen."
-MSG_FI[$MSG_ADJUSTING_WARNING2]="RBK0018W: Kohde %s kooltaan %s, on suurempi kuin varmuuskopion lähde kooltaan %s. Juuriosio laajennetaan sen mukaisesti käyttämään koko tila."
-MSG_FR[$MSG_ADJUSTING_WARNING2]="RBK0018W: La cible %s avec %s, est plus grande que la source avec %s. la partition rootfs sera étendue pour utiliser tout l'espace."
+#MSG_ADJUSTING_WARNING2=18
+#MSG_EN[$MSG_ADJUSTING_WARNING2]="RBK0018W: Target %s with %s is larger than backup source with %s. root partition will be expanded accordingly to use the whole space."
+#MSG_DE[$MSG_ADJUSTING_WARNING2]="RBK0018W: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die root Partition wird entsprechend vergrößert um den ganzen Platz zu benutzen."
+#MSG_FI[$MSG_ADJUSTING_WARNING2]="RBK0018W: Kohde %s kooltaan %s, on suurempi kuin varmuuskopion lähde kooltaan %s. Juuriosio laajennetaan sen mukaisesti käyttämään koko tila."
+#MSG_FR[$MSG_ADJUSTING_WARNING2]="RBK0018W: La cible %s avec %s, est plus grande que la source avec %s. la partition rootfs sera étendue pour utiliser tout l'espace."
 MSG_MISSING_START_STOP=19
 MSG_EN[$MSG_MISSING_START_STOP]="RBK0019E: Missing option -a and -o."
 MSG_DE[$MSG_MISSING_START_STOP]="RBK0019E: Option -a und -o nicht angegeben."
@@ -739,11 +740,11 @@ MSG_EN[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Target %s with %s is larger than 2TB
 MSG_DE[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Ziel %s mit %s ist größer als 2TB und erfordert gpt statt mbr. Ansonsten werden nur 2TB genutzt."
 MSG_FI[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Kohde %s kooltaan %s, on suurempi kuin 2Tt ja vaatii mbr:n sijasta gpt:n. Muutoin vain 2Tt voidaan käyttää."
 MSG_FR[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: La cible %s avec %s, est supérieure à 2 To et nécessite GPT au lieu de MBR. Sinon, seuls 2 To seront utilisés."
-MSG_CREATING_PARTITIONS=52
-MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052I: Creating partitions on %s."
-MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052I: Partitionen werden auf %s erstellt."
-MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052I: Luodaan osioita kohteelle %s."
-MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052I: Les partitions seront créées sur %s."
+#MSG_CREATING_PARTITIONS=52
+#MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052I: Creating partitions on %s."
+#MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052I: Partitionen werden auf %s erstellt."
+#MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052I: Luodaan osioita kohteelle %s."
+#MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052I: Les partitions seront créées sur %s."
 MSG_RESTORING_FIRST_PARTITION=53
 MSG_EN[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Restoring first partition (boot partition) to %s."
 MSG_DE[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Erste Partition (Bootpartition) wird auf %s zurückgespielt."
@@ -965,10 +966,10 @@ MSG_DE[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Die Sprache %s wird nicht unterst
 MSG_FI[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Kieli %s ei ole tuettu."
 MSG_FR[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Langue %s non prise en charge."
 MSG_PARTITIONING_SDCARD=97
-MSG_EN[$MSG_PARTITIONING_SDCARD]="RBK0097I: Partitioning and formating %s."
-MSG_DE[$MSG_PARTITIONING_SDCARD]="RBK0097I: Partitioniere und formatiere %s."
-MSG_FI[$MSG_PARTITIONING_SDCARD]="RBK0097I: Osioidaan ja alustetaan %s."
-MSG_FR[$MSG_PARTITIONING_SDCARD]="RBK0097I: Partitionnement et formatage %s."
+MSG_EN[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioning and formating %s."
+MSG_DE[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioniere und formatiere %s."
+MSG_FI[$MSG_PARTITIONING_SDCARD]="RBK0097W: Osioidaan ja alustetaan %s."
+MSG_FR[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitionnement et formatage %s."
 MSG_FORMATTING=98
 MSG_EN[$MSG_FORMATTING]="RBK0098I: Formatting partition %s with %s (%s)."
 MSG_DE[$MSG_FORMATTING]="RBK0098I: Formatiere Partition %s mit %s (%s)."
@@ -1139,11 +1140,11 @@ MSG_EN[$MSG_MISSING_INSTALLED_FILE]="RBK0131E: Program %s not found. Use 'sudo a
 MSG_DE[$MSG_MISSING_INSTALLED_FILE]="RBK0131E: Programm %s nicht gefunden. Mit 'sudo apt-get update; sudo apt-get install %s' wird das fehlende Programm installiert."
 MSG_FI[$MSG_MISSING_INSTALLED_FILE]="RBK0131E: Sovellusta %s ei löytynyt. Suorita 'sudo apt-get update; sudo apt-get install %s' asentaaksesi puuttuvan sovelluksen."
 MSG_FR[$MSG_MISSING_INSTALLED_FILE]="RBK0131E: Programme %s introuvable. Utilisez 'sudo apt-get update ; sudo apt-get install %s' pour installer le programme manquant."
-MSG_SKIPPING_CREATING_PARTITIONS=132
-MSG_EN[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: No partitions are created. Reusing existing partitions."
-MSG_DE[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: Es werden keine Partitionen erstellt sondern die existierenden Partitionen benutzt."
-MSG_FI[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: Osioita ei luotu. Käytetään olemassaolevia osioita."
-MSG_FR[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: Aucune partition n'est créée. Réutiliser des partitions existantes."
+#MSG_SKIPPING_CREATING_PARTITIONS=132
+#MSG_EN[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: No partitions are created. Reusing existing partitions."
+#MSG_DE[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: Es werden keine Partitionen erstellt sondern die existierenden Partitionen benutzt."
+#MSG_FI[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: Osioita ei luotu. Käytetään olemassaolevia osioita."
+#MSG_FR[$MSG_SKIPPING_CREATING_PARTITIONS]="RBK0132W: Aucune partition n'est créée. Réutiliser des partitions existantes."
 MSG_HARDLINK_DIRECTORY_USED=133
 MSG_EN[$MSG_HARDLINK_DIRECTORY_USED]="RBK0133I: Using directory %s for hardlinks."
 MSG_DE[$MSG_HARDLINK_DIRECTORY_USED]="RBK0133I: Verzeichnis %s wird für Hardlinks benutzt."
@@ -1279,16 +1280,16 @@ MSG_EN[$MSG_BACKUPS_KEPT]="RBK0159I: %s backups kept for %s backup type. Please 
 MSG_DE[$MSG_BACKUPS_KEPT]="RBK0159I: %s Backups werden für den Backuptyp %s aufbewahrt. Bitte Geduld."
 MSG_FI[$MSG_BACKUPS_KEPT]="RBK0159I: %s varmuuskopiota pidetään %s-varmuuskopiotyypille. Ole hyvä ja odota."
 MSG_FR[$MSG_BACKUPS_KEPT]="RBK0159I: %s sauvegardes sont conservées pour le type de sauvegarde %s SVP patientez."
-MSG_TARGETSD_SIZE_TOO_SMALL=160
-MSG_EN[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Target %s with %s is smaller than backup source with %s."
-MSG_DE[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Ziel %s mit %s ist kleiner als die Backupquelle mit %s."
-MSG_FI[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Kohde %s koollaan %s on pienempi kuin varmuuskopion lähde kooltaan %s."
-MSG_FR[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: La cible %s avec %s est plus petite que la source de sauvegarde avec %s."
-MSG_TARGETSD_SIZE_BIGGER=161
-MSG_EN[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: Target %s with %s is larger than backup source with %s. You waste %s."
-MSG_DE[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: Ziel %s mit %s ist größer als die Backupquelle mit %s. %s sind ungenutzt."
-MSG_FI[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: Kohde %s koollaan %s on suurempi kuin varmuuskopion lähde kooltaan %s. %s jää hyödyntämättä."
-MSG_FR[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: La cible %s avec %s est plus grande que la source de sauvegarde avec %s. %s sont inutilisés."
+#MSG_TARGETSD_SIZE_TOO_SMALL=160
+#MSG_EN[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Target %s with %s is smaller than backup source with %s."
+#MSG_DE[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Ziel %s mit %s ist kleiner als die Backupquelle mit %s."
+#MSG_FI[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: Kohde %s koollaan %s on pienempi kuin varmuuskopion lähde kooltaan %s."
+#MSG_FR[$MSG_TARGETSD_SIZE_TOO_SMALL]="RBK0160E: La cible %s avec %s est plus petite que la source de sauvegarde avec %s."
+#MSG_TARGETSD_SIZE_BIGGER=161
+#MSG_EN[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: Target %s with %s is larger than backup source with %s. You waste %s."
+#MSG_DE[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: Ziel %s mit %s ist größer als die Backupquelle mit %s. %s sind ungenutzt."
+#MSG_FI[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: Kohde %s koollaan %s on suurempi kuin varmuuskopion lähde kooltaan %s. %s jää hyödyntämättä."
+#MSG_FR[$MSG_TARGETSD_SIZE_BIGGER]="RBK0161W: La cible %s avec %s est plus grande que la source de sauvegarde avec %s. %s sont inutilisés."
 MSG_RESTORE_ABORTED=162
 MSG_EN[$MSG_RESTORE_ABORTED]="RBK0162I: Restore aborted."
 MSG_DE[$MSG_RESTORE_ABORTED]="RBK0162I: Restore abgebrochen."
@@ -1934,7 +1935,7 @@ MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=294
 MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Current configuration version %s has to be be updated to %s."
 MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden."
 MSG_SYNC_CMDLINE_FSTAB=295
-MSG_EN[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: Synchonizing %s and %s."
+MSG_EN[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: Synchronizing %s and %s."
 MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
 MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem is not supported."
@@ -1951,6 +1952,42 @@ MSG_DE[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backupverzeichnis %1 erstellt."
 MSG_ADJUSTING_LAST=300
 MSG_EN[$MSG_ADJUSTING_LAST]="RBK0300I: Adjusting last partition from %s to %s."
 MSG_DE[$MSG_ADJUSTING_LAST]="RBK0300I: Letzte Partition wird von %s auf %s angepasst."
+MSG_TEMPMOVE_FAILED=301
+MSG_EN[$MSG_TEMPMOVE_FAILED]="RBK0301E: Move of temporary backup directory failed with RC %s."
+MSG_DE[$MSG_TEMPMOVE_FAILED]="RBK0301E: Move des temporären Backupverzeichnisses fehlerhaft beendet mit RC %s."
+MSG_RESIZED_PARTITION_TOO_SMALL=302
+MSG_EN[$MSG_RESIZED_PARTITION_TOO_SMALL]="RBK0302E: Partition %s on %s with %s is too small. Missing at least %s."
+MSG_DE[$MSG_RESIZED_PARTITION_TOO_SMALL]="RBK0302E: Zu resizende Partition %s auf %s mit %s is zu klein. Es fehlen mindestens %s"
+MSG_SKIP_PARTITION_RESTORE=303
+MSG_EN[$MSG_SKIP_PARTITION_RESTORE]="RBK0302W: Partition %s was not restored to %s."
+MSG_DE[$MSG_SKIP_PARTITION_RESTORE]="RBK0302W: Partition %s wurde nicht auf %s zurückgespielt."
+MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE=304
+MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS partitions not restored. System may not boot."
+MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS Partitionen nicht zurückgespielt. Das System könnte nicht booten."
+MSG_RESTORING_PARTITIONS=305
+MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partitions %s to %s."
+MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partitionen %s werden auf %s zurüchgespielt."
+MSG_ANSWER_ALL=306
+MSG_EN[$MSG_ANSWER_ALL]="all"
+MSG_DE[$MSG_ANSWER_ALL]="Alle"
+MSG_UPDATING_UUIDS=319
+MSG_EN[$MSG_UPDATING_UUIDS]="RBK0319I: Generating new UUIDs."
+MSG_DE[$MSG_UPDATING_UUIDS]="RBK0319I: Neue UUIDs werden generiert."
+MSG_REMOVING_BACKUP_NO_FILE=320
+MSG_EN[$MSG_REMOVING_BACKUP_NO_FILE]="RBK0320I: Removing incomplete backup. This may take some time. Please be patient."
+MSG_DE[$MSG_REMOVING_BACKUP_NO_FILE]="RBK0320I: Unvollständiges Backup wird gelöscht. Das kann etwas dauern. Bitte Geduld."
+MSG_SAVING_LOG=321
+MSG_EN[$MSG_SAVING_LOG]="RBK0321I: Saving logfile."
+MSG_DE[$MSG_SAVING_LOG]="RBK0321I: Logdatei wird gesichert."
+MSG_ADJUSTING_WARNING_P=322
+MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small."
+MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird."
+MSG_ADJUSTING_WARNING_P2=323
+MSG_EN[$MSG_ADJUSTING_WARNING_P2]="RBK0323W: Target %s with %s is larger than backup source with %s. Last partition will be expanded accordingly to use the whole space."
+MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323W: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die letzte Partition wird entsprechend vergrößert um den ganzen Platz zu benutzen."
+MSG_NOT_ALL_OS_PARTITIONS_SAVED=324
+MSG_EN[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Not all OS partitions saved. Backup will not boot."
+MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Partition gesichert und das Backup wird nicht starten."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2147,6 +2184,9 @@ function logFinish() {
 	rm -f "$FINISH_LOG_FILE"
 
 	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
+
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_LOG
+
 		# 1) error occured and logoutput is backup location which was deleted or fake mode
 		# 2) fake
 		# 3) backup location was already deleted by SR
@@ -2203,8 +2243,10 @@ function logFinish() {
 			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
-		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
-		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
+		if [[ $LOG_OUTPUT == $LOG_OUTPUT_HOME ]]; then
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
+		fi
 
 		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
@@ -2652,7 +2694,7 @@ function compareVersions() { # v1 v2
 	done
 	echo $rc
 	logExit $rc
-	return 
+	return
 }
 
 function repeat() { # char num
@@ -2724,6 +2766,7 @@ function logOptions() { # option state
 	logItem "NOTIFY_UPDATE=$NOTIFY_UPDATE"
 	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
 	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
+	logItem "PARTITIONS_TO_RESTORE=$PARTITIONS_TO_RESTORE"
 	logItem "PUSHOVER_TOKEN=$PUSHOVER_TOKEN"
 	logItem "PUSHOVER_USER=$PUSHOVER_USER"
 	logItem "PUSHOVER_NOTIFICATIONS=$PUSHOVER_NOTIFICATIONS"
@@ -2844,8 +2887,9 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_RESTORE_EXTENSIONS=""
 	# partition based backup  (0 = false, 1 = true)
 	DEFAULT_PARTITIONBASED_BACKUP=0
-	# backup first two partitions only
+	# backup and restore first two partitions only
 	DEFAULT_PARTITIONS_TO_BACKUP="1 2"
+	DEFAULT_PARTITIONS_TO_RESTORE="1 2"
 	# language (DE or EN)
 	DEFAULT_LANGUAGE=""
 	# hosts which will get the updated backup script with parm -y - non pwd access with keys has to be enabled
@@ -2860,7 +2904,7 @@ function initializeDefaultConfigVariables() {
 	# reboot system at end of backup
 	DEFAULT_REBOOT_SYSTEM=0
 	# Change these options only if you know what you are doing !!!
-	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete"
+	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete --force --sparse --delete-excluded" 						# -a <=> -rlptgoD, H = preserve hardlinks, x = one filesystem, A = preserver ACLs
 	DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
 	DEFAULT_TAR_BACKUP_OPTIONS="-cpi --one-file-system"
 	DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -2969,6 +3013,7 @@ function copyDefaultConfigVariables() {
 	NOTIFY_UPDATE="$DEFAULT_NOTIFY_UPDATE"
 	PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
+	PARTITIONS_TO_RESTORE="$DEFAULT_PARTITIONS_TO_RESTORE"
 	PUSHOVER_TOKEN="$DEFAULT_PUSHOVER_TOKEN"
 	PUSHOVER_USER="$DEFAULT_PUSHOVER_USER"
 	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS"
@@ -2979,9 +3024,9 @@ function copyDefaultConfigVariables() {
 	REBOOT_SYSTEM="$DEFAULT_REBOOT_SYSTEM"
 	RESIZE_ROOTFS="$DEFAULT_RESIZE_ROOTFS"
 	RESTORE_DEVICE="$DEFAULT_RESTORE_DEVICE"
+	RESTORE_EXTENSIONS="$DEFAULT_RESTORE_EXTENSIONS"
 	RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
 	RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
-	RESTORE_EXTENSIONS="$DEFAULT_RESTORE_EXTENSIONS"
 	RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
@@ -3013,16 +3058,17 @@ function copyDefaultConfigVariables() {
 
 }
 
-function bootedFromSD() {
-	logEntry
+function isSpecialBlockDevice() { # either device (mmcblk, sd) or device name (/dev/mmcblk, /dev/sd )
+
+	logEntry "$1"
+
 	local rc
-	logItem "Boot device: $BOOT_DEVICE"
-	if [[ $BOOT_DEVICE =~ mmcblk[0-9]+ ]]; then
-		rc=0			# yes /dev/mmcblk0p1
-	else
-		rc=1			# is /dev/sda1 or other
-	fi
+
+	[[ $1 =~ mmcblk|loop|nvme ]]
+	rc=$?
+
 	logExit "$rc"
+
 	return $rc
 }
 
@@ -3038,12 +3084,10 @@ function bootedFromSD() {
 function getPartitionPrefix() { # device
 
 	logEntry "$1"
-	if [[ $1 =~ ^(mmcblk|loop|nvme|sd[a-z]) ]]; then
-		local pref="$1"
-		[[ $1 =~ ^(mmcblk|loop|nvme) ]] && pref="${1}p"
-	else
-		logItem "device: $1"
-		assertionFailed $LINENO "Unable to retrieve partition prefix for device $1"
+	local pref="$1"
+
+	if isSpecialBlockDevice "$1"; then
+		pref="${1}p"
 	fi
 
 	logExit "$pref"
@@ -3904,11 +3948,16 @@ function readConfigParameters() {
 	local file
 	local files=($ETC_CONFIG_FILE $HOME_CONFIG_FILE $CURRENTDIR_CONFIG_FILE)
 
+	local warnedFiles=""
+
 	for file in ${files[@]}; do
 		if [[ -e $file ]]; then
 			local attrs="$(stat -c %a $file)"
 			if (( ( 0$attrs & 077 ) != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE $file
+				if ! grep -q $file <<< "$warnedFiles"; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE $file
+					warnedFiles="$warnedFiles $file"
+				fi
 			fi
 		fi
 	done
@@ -4748,15 +4797,21 @@ function cleanupBackupDirectory() {
 
 	if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then
 		if [[ -n $(ls "$BACKUPTARGET_TEMP_ROOT") ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP "$BACKUPTARGET_TEMP_ROOT"
+			if [[ $MSG_LEVEL == $MSG_LEVEL_DETAILED ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_REMOVING_BACKUP "$BACKUPTARGET_TEMP_ROOT"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
+			fi
 			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> $LOG_FILE # delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_TEMP_ROOT" "$rmrc"
+				if [[ $MSG_LEVEL == $MSG_LEVEL_DETAILED ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_TEMP_ROOT" "$rmrc"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
+				fi
 			fi
 		fi
-		logItem "Deleting $BACKUPTARGET_TEMP_ROOT"
-		rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE
 	fi
 
 	logExit
@@ -5023,6 +5078,7 @@ function cleanup() { # trap
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
 				CLEANUP_RC=$RC_TEMPMOVE_FAILED
 			else
+				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE
 				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
 					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
@@ -5695,18 +5751,22 @@ function backupDD() {
 function backupTar() {
 
 	local verbose zip cmd partition source target devroot sourceDir
+	local partitionBackup=0
 
 	logEntry
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 	[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="-z" || zip=""
 
+	[[ $1 =~ ^[0-9]+$ ]] && partitionBackup=1
+
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		source="."
 		devroot="."
 		sourceDir="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
-		target="\"${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}\""
+		target="${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}"
+
 	else
 		bootPartitionBackup
 		source="/"
@@ -5714,7 +5774,7 @@ function backupTar() {
 		target="\"$BACKUPTARGET_FILE\""
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
@@ -5781,7 +5841,8 @@ function waitForPartitionDefsChanged {
 
 function updateUUIDs() {
 	logEntry
-	if (( $UPDATE_UUIDS )); then
+	if (( $UPDATE_UUIDS && ! $SKIP_SFDISK )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUIDS
 		logItem "Old blkid"
 		logCommand "blkid"
 		updatePartUUID
@@ -5805,6 +5866,7 @@ function updatePartUUID() {
 function updateUUID() {
 	logEntry
 	if (( $UPDATE_UUIDS )); then
+		logItem "BOOT_PARTITION: $BOOT_PARTITION - ROOT_PARTITION: $ROOT_PARTITION"
 		local newUUID
 		if (( ! $SHARED_BOOT_DIRECTORY )); then
 			newUUID="$(od -A n -t x -N 4 /dev/urandom | tr -d " " | sed -r 's/(.{4})/\1-/')"
@@ -5838,10 +5900,8 @@ function backupRsync() { # partition number (for partition based backup)
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
-		target="\"${BACKUPTARGET_DIR}\""
-		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
-
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
+		target="${BACKUPTARGET_DIR}/$partition"
+		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition/"
 		excludeRoot="/$partition"
 
 	else
@@ -5849,23 +5909,30 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
 
-	logItem "LastBackupDir: $lastBackupDir"
+	lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 
-	LINK_DEST=""
-	[[ -n "$lastBackupDir" ]] && LINK_DEST="--link-dest=\"$lastBackupDir\""
+	if [[ -n "$lastBackupDir" ]]; then
+		if [[ -d $lastBackupDir/$partition ]]; then
+			lastBackupDir="$lastBackupDir/${partition}"
+		else
+			lastBackupDir=""
+		fi
+	fi
 
-	logItem "LinkDest: $LINK_DEST"
+	logItem "lastBackupDir: $lastBackupDir"
 
-	if [[ -n $LINK_DEST ]]; then
+	local LINK_DEST=""
+	if [[ -n $lastBackupDir ]]; then
+		LINK_DEST="--link-dest=\"$lastBackupDir\""
+		logItem "LinkDest: $LINK_DEST"
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_HARDLINK_DIRECTORY_USED "$lastBackupDir"
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
@@ -5878,27 +5945,27 @@ function backupRsync() { # partition number (for partition based backup)
 	fi
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
-			--exclude=\"$excludeRoot/$log_file\" \
-			--exclude=\"$excludeRoot/$msg_file\" \
-			--exclude='.gvfs' \
-			--exclude=$excludeRoot/proc/* \
-			--exclude=$excludeRoot/lost+found/* \
-			--exclude=$excludeRoot/sys/* \
-			--exclude=$excludeRoot/dev/* \
-			--exclude=$excludeRoot/swapfile \
-			--exclude=$excludeRoot/tmp/* \
-			--exclude=$excludeRoot/run/* \
-			--exclude=$excludeRoot/media/* \
-			$excludeMeta \
-			$EXCLUDE_LIST \
-			$LINK_DEST \
-			--numeric-ids \
-			$RSYNC_BACKUP_OPTIONS \
-			$RSYNC_BACKUP_ADDITIONAL_OPTIONS \
-			$verbose \
-			$source \
-			$target \
-			"
+--exclude=\"$excludeRoot/$log_file\" \
+--exclude=\"$excludeRoot/$msg_file\" \
+--exclude='.gvfs' \
+--exclude=$excludeRoot/proc/* \
+--exclude=$excludeRoot/lost+found/* \
+--exclude=$excludeRoot/sys/* \
+--exclude=$excludeRoot/dev/* \
+--exclude=$excludeRoot/swapfile \
+--exclude=$excludeRoot/tmp/* \
+--exclude=$excludeRoot/run/* \
+--exclude=$excludeRoot/media/* \
+$excludeMeta \
+$EXCLUDE_LIST \
+$LINK_DEST \
+--numeric-ids \
+$RSYNC_BACKUP_OPTIONS \
+$RSYNC_BACKUP_ADDITIONAL_OPTIONS \
+$verbose \
+$source \
+$target \
+"
 
 	if (( $PROGRESS && $INTERACTIVE )); then
 		cmd="rsync --info=progress2 $cmdParms"
@@ -5983,7 +6050,145 @@ function logSystemDiskState() {
 	logExit
 }
 
-function restore() {
+function formatRestoreDevice() {
+
+	logEntry
+
+	if (( $SKIP_SFDISK )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
+
+	elif [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONING_SDCARD "$RESTORE_DEVICE"
+
+		if ! askYesNo; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+			exitError $RC_RESTORE_FAILED
+		fi
+
+		if (( $NO_YES_QUESTION )); then
+			echo "Y${NL}"
+		fi
+
+		if (( $FORCE_SFDISK )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
+			sfdisk -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
+			rc=$?
+			if (( $rc )); then
+				if (( $rc == 1 )); then
+					local tmpSF="$(basename $SF_FILE)"
+					cp "$SF_FILE" "/tmp/$tmpSF"
+					sed -i 's/sector-size/d' "/tmp/$tmpSF"
+					sfdisk -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
+					rc=$?
+					rm "/tmp/$tmpSF"
+				fi
+			fi
+			if (( $rc )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+				exitError $RC_CREATE_PARTITIONS_FAILED
+			fi
+
+			waitForPartitionDefsChanged
+
+		else
+
+			if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )); then
+
+				local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
+				local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+				logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
+
+				if (( sourceSDSize != targetSDSize )); then
+
+					if (( sourceSDSize > targetSDSize )); then
+						if (( $RESIZE_ROOTFS )); then
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING_P "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+						else
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_DISABLED "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+							exitError $RC_PARAMETER_ERROR
+						fi
+					else
+						if (( $RESIZE_ROOTFS )); then
+							if (( $targetSDSize >= $TWO_TB )); then		# target should have gpt in order to use space > 2TB during expansion
+								writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_REQUIRES_GPT "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)"
+							fi
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING_P2 "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
+						fi
+					fi
+
+#						label: dos
+#						label-id: 0x3c3f4bdb
+#						device: /dev/mmcblk0
+#						unit: sectors
+#						sector-size: 512
+#
+#						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
+#						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
+
+					local sourceValues=( $(awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
+					if (( ${#sourceValues[@]} < 4 )); then
+						logCommand "cat $SF_FILE"
+						assertionFailed $LINENO "Expected at least 2 partitions in $SF_FILE"
+					fi
+
+					if (( ! PARTITIONBASED_BACKUP && ( ${sourceValues[2]} == 0 || ${sourceValues[3]} == 0 ) )); then
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_R_OPTION
+							exitError $RC_MISC_ERROR
+					fi
+
+					local partitionSizes
+					partitionSizes=( $(createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK") )
+
+					local oldPartitionSourceSize=${partitionSizes[0]}
+					local newPartitionTargetSize=${partitionSizes[1]}
+					local resizedPartitionNumber=${partitionSizes[2]}
+
+					if (( newPartitionTargetSize <= 0 )); then
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESIZED_PARTITION_TOO_SMALL $resizedPartitionNumber $RESTORE_DEVICE "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman -${newPartitionTargetSize})"
+						exitError $RC_RESIZE_ERROR
+					fi
+
+					if (( ${#sourceValues[@]} == 4 )); then
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newPartitionTargetSize)"
+					else
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_LAST "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newPartitionTargetSize)"
+					fi
+
+				fi
+			else
+				cp "$SF_FILE" "$MODIFIED_SFDISK" # just use unmodified sfdisk when option -R is used for a hybrid system
+			fi
+
+			sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+			rc=$?
+			if (( $rc )); then
+				logItem "sfdisk first attempt fails with rc $rc"
+				if (( $rc == 1 )); then								# sector-size is new in bullseye and breaks restore with older OS
+					sed -i '/sector-size/d' "$MODIFIED_SFDISK"		# remove sector-size
+					logCommand "cat $MODIFIED_SFDISK"
+					sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+					rc=$?
+				fi
+			fi
+			rm $MODIFIED_SFDISK &>/dev/null
+
+			if (( $rc )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
+				exitError $RC_CREATE_PARTITIONS_FAILED
+			fi
+
+			waitForPartitionDefsChanged
+
+		fi
+
+		logItem "Targetpartitionlayout$NL$(fdisk -l $RESTORE_DEVICE)"
+	fi
+
+	logExit
+}
+
+function restoreNormalBackupType() {
 
 	logEntry
 
@@ -6028,7 +6233,7 @@ function restore() {
 			fi
 			;;
 
-		*)	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT/${MYNAME}"
+		*)	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
 
 			if ( isMounted "$MNT_POINT" ); then
 				logItem "$MNT_POINT mounted - unmouting"
@@ -6055,96 +6260,7 @@ function restore() {
 				exitError $RC_MISC_ERROR
 			fi
 
-			if (( $FORCE_SFDISK )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
-				sfdisk -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
-				rc=$?
-				if (( $rc )); then
-					if (( $rc == 1 )); then
-						local tmpSF="$(basename $SF_FILE)"
-						cp "$SF_FILE" "/tmp/$tmpSF"
-						sed -i 's/sector-size/d' "/tmp/$tmpSF"
-						sfdisk -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
-						rc=$?
-						rm "/tmp/$tmpSF"
-					fi
-				fi
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
-					exitError $RC_CREATE_PARTITIONS_FAILED
-				fi
-
-				waitForPartitionDefsChanged
-
-			elif (( $SKIP_SFDISK )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
-
-			else
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
-
-				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )); then
-
-					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-					local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
-					logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
-
-					if (( sourceSDSize != targetSDSize )); then
-
-#						label: dos
-#						label-id: 0x3c3f4bdb
-#						device: /dev/mmcblk0
-#						unit: sectors
-#						sector-size: 512
-#
-#						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
-#						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
-
-						local sourceValues=( $(awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
-						if (( ${#sourceValues[@]} < 4 )); then
-							logCommand "cat $SF_FILE"
-							assertionFailed $LINENO "Expected at least 2 partitions in $SF_FILE"
-						fi
-
-						local partitionSizes
-						partitionSizes=( $(createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK") )
-
-						local oldPartitionSourceSize=${partitionSizes[0]}
-						local newPartitionTargetSize=${partitionSizes[1]}
-
-						if (( ${#sourceValues[@]} == 4 )); then
-							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newPartitionTargetSize)"
-						else
-							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_LAST "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newPartitionTargetSize)"
-						fi
-
-					fi
-				else
-					cp "$SF_FILE" "$MODIFIED_SFDISK" # just use unmodified sfdisk when option -R is used for a hybrid system
-				fi
-
-				sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
-				rc=$?
-				if (( $rc )); then
-					logItem "sfdisk first attempt fails with rc $rc"
-					if (( $rc == 1 )); then								# sector-size is new in bullseye and breaks restore with older OS
-						sed -i '/sector-size/d' "$MODIFIED_SFDISK"		# remove sector-size
-						logCommand "cat $MODIFIED_SFDISK"
-						sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
-						rc=$?
-					fi
-				fi
-				rm $MODIFIED_SFDISK &>/dev/null
-
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "sfdisk error"
-					exitError $RC_CREATE_PARTITIONS_FAILED
-				fi
-
-				waitForPartitionDefsChanged
-
-			fi
-
-			logItem "Targetpartitionlayout$NL$(fdisk -l $RESTORE_DEVICE)"
+			formatRestoreDevice
 
 			if [[ -e $TAR_FILE ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_FIRST_PARTITION "$BOOT_PARTITION"
@@ -6269,7 +6385,7 @@ function restore() {
 
 			logCommand "parted -s $RESTORE_DEVICE print"
 
-			if [[ $RESTORE_DEVICE =~ "/dev/mmcblk[0-9]+" || $RESTORE_DEVICE =~ "/dev/loop[0-9]+" || $RESTORE_DEVICE =~ "/dev/nvme[0-9]+n[0-9]+" ]]; then
+			if isSpecialBlockDevice "$RESTORE_DEVICE"; then
 				ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
 			else
 				ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
@@ -6456,32 +6572,30 @@ function backup() {
 
 	START_TIME=$(date +%s)
 
-	if [[ -z ${FAKE_BACKUP+x} ]]; then
-		if (( ! $FAKE )); then
-			if (( ! $PARTITIONBASED_BACKUP )); then
+	if (( ! $FAKE )); then
+		if (( ! $PARTITIONBASED_BACKUP )); then
 
-				case "$BACKUPTYPE" in
+			case "$BACKUPTYPE" in
 
-					$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD
-						;;
+				$BACKUPTYPE_DD|$BACKUPTYPE_DDZ) backupDD
+					;;
 
-					$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar
-						;;
+				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ) backupTar
+					;;
 
-					$BACKUPTYPE_RSYNC) backupRsync
-						;;
+				$BACKUPTYPE_RSYNC) backupRsync
+					;;
 
-					*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
-						;;
-				esac
+				*) assertionFailed $LINENO "Invalid backuptype $BACKUPTYPE"
+					;;
+			esac
 
-				if [[ $rc != 0 ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR $BACKUPTYPE $rc
-					exitError $RC_NATIVE_BACKUP_FAILED
-				fi
-			else
-				backupPartitions
+			if [[ $rc != 0 ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR $BACKUPTYPE $rc
+				exitError $RC_NATIVE_BACKUP_FAILED
 			fi
+		else
+			backupPartitions
 		fi
 	fi
 	END_TIME=$(date +%s)
@@ -6506,7 +6620,7 @@ function backup() {
 
 }
 
-function mountSDPartitions() { # sourcePath
+function mountPartitions() { # sourcePath
 
 	local partition partitionName
 	logEntry
@@ -6516,7 +6630,7 @@ function mountSDPartitions() { # sourcePath
 		for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			logItem "mkdir $1/$partitionName"
-			mkdir "$1/$partitionName" &>>"$LOG_FILE"
+			mkdir -p "$1/$partitionName" &>>"$LOG_FILE"
 			logItem "mount /dev/$partitionName to $1/$partitionName"
 			mountAndCheck "/dev/$partitionName" "$1/$partitionName"
 		done
@@ -6525,7 +6639,7 @@ function mountSDPartitions() { # sourcePath
 	logExit
 }
 
-function umountSDPartitions() { # sourcePath
+function umountPartitions() { # sourcePath
 
 	local partitionName partition
 	logEntry
@@ -6555,14 +6669,20 @@ function backupPartitions() {
 
 	logItem "PARTITIONS_TO_BACKUP: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
+	if (( "${#PARTITIONS_TO_BACKUP[@]}" > 0 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
+	fi
+
+	if ! containsElement "1" "${PARTITIONS_TO_BACKUP[@]}" || ! containsElement "2" "${PARTITIONS_TO_BACKUP[@]}"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_OS_PARTITIONS_SAVED
+	fi
 
 	if (( ! $FAKE )); then
 		partitionLayoutBackup
 	fi
 
 	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || $BACKUPTYPE == $BACKUPTYPE_TAR || $BACKUPTYPE == $BACKUPTYPE_TGZ ]]; then
-		mountSDPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
+		mountPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
 
 	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
@@ -6605,7 +6725,7 @@ function backupPartitions() {
 	done
 
 	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || $BACKUPTYPE == $BACKUPTYPE_TAR || $BACKUPTYPE == $BACKUPTYPE_TGZ ]]; then
-		umountSDPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
+		umountPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
 
 	logExit "$rc"
@@ -6639,6 +6759,16 @@ function doit() {
 	logExit
 
 }
+
+function partitionsSelected() {
+	logEntry
+	local rc
+	[[ ! "$PARTITIONS_TO_BACKUP" =~ ^[[:space:]]*$ ]] ||  [[ ! "$PARTITIONS_TO_RESTORE" =~ ^[[:space:]]*$ ]]
+	rc=$?
+	logExit $rc
+	return $rc
+}
+
 
 # blkid
 # /dev/mmcblk0p2: UUID="ea98d3bf-9345-4bd7-b365-5cc7c543079f" TYPE="ext4" PARTUUID="d888a167-02"
@@ -6908,6 +7038,8 @@ function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3 or /dev/nvme0
 
 	if [[ $1 =~ ^/dev/([^0-9]+)([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)p([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+n[0-9])+p([0-9]+)$ ]]; then
 		r="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
+	else
+		assertionFailed $LINENO "Unable to extract device info"
 	fi
 
 	echo "$r"
@@ -6977,8 +7109,15 @@ function inspect4Backup() {
 		# check for /boot on root partition
 		if [[ -z "$bootPartition" ]]; then
 			if ! find $bootMountpoint -name cmdline.txt; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
-				exitError $RC_MISC_ERROR
+				logItem "No cmdline.txt found in $bootMountpoint"
+				# no RaspbianOS
+				if [[ -n $rootPartition ]] && (( UNSUPPORTED_ENVIRONMENT )) && (( IS_UBUNTU )); then	# for example ubuntu on orange
+					bootPartition="$rootPartition"
+					logItem "Assuming bootpartition is located on rootpartition $rootPartition"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_FOUND
+					exitError $RC_MISC_ERROR
+				fi
 			else
 				bootPartition="$rootPartition"
 				logItem "Bootpartition is located on rootpartition $bootPartition"
@@ -7382,17 +7521,21 @@ function doitBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
 			exitError $RC_MISC_ERROR
 		fi
-		# check if a mount to any partition on boot device exists
-		logItem "BOOT_DEVICE: $BOOT_DEVICE"
-		local lsblkResult="$(lsblk -l -o name,mountpoint | grep "${BACKUPPATH}" | grep $BOOT_DEVICE)"
+		# check if backup partition is a local mount
+		logItem "BOOT_DEVICENAME: $BOOT_DEVICENAME"
+		local lsblkResult="$(lsblk -l -o name,mountpoint | grep "${BACKUPPATH}" | grep $BOOT_DEVICENAME)"
 		logItem "lsblkResult: $lsblkResult"
-		local di=($(deviceInfo /dev/$lsblkResult))
-		logItem "di: $di"
-		if [[ "$BOOT_DEVICE" == "${di[0]}" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
-			exitError $RC_MISC_ERROR
+		if [[ -n $lsblkResult ]]; then
+			local di=($(deviceInfo /dev/$lsblkResult))
+			logItem "di: $di"
+			if [[ "$BOOT_DEVICE" == "${di[0]}" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
+				exitError $RC_MISC_ERROR
+			fi
 		fi
 	fi
+
+# all tests succeeded
 
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
@@ -7445,6 +7588,14 @@ function doitBackup() {
 
 	logExit
 
+}
+
+function listDeviceInfo() { # device (/dev/sda)
+
+	logEntry "$1"
+	local result="$(IFS='' lsblk $1 -T -o NAME,SIZE,FSTYPE,LABEL)"
+	echo "$result"
+	logExit
 }
 
 function getPartitionTable() { # device
@@ -7564,7 +7715,7 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 
 }
 
-function restoreNonPartitionBasedBackup() {
+function initRestoreVariables () {
 
 	logEntry
 
@@ -7573,20 +7724,13 @@ function restoreNonPartitionBasedBackup() {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n[0-9] ]]; then
-		BOOT_PARTITION="${RESTORE_DEVICE}p1"
-	else
-		BOOT_PARTITION="${RESTORE_DEVICE}1"
-	fi
+	BOOT_PARTITION="$(makePartition "$RESTORE_DEVICE" 1)"
+
 	logItem "BOOT_PARTITION : $BOOT_PARTITION"
 
 	ROOT_PARTITION_DEFINED=1
 	if [[ -z $ROOT_PARTITION ]]; then
-		if [[ $RESTORE_DEVICE =~ /dev/mmcblk[0-9] || $RESTORE_DEVICE =~ "/dev/loop" || $RESTORE_DEVICE =~ /dev/nvme[0-9]n[0-9] ]]; then
-			ROOT_PARTITION="${RESTORE_DEVICE}p2"
-		else
-			ROOT_PARTITION="${RESTORE_DEVICE}2"
-		fi
+		ROOT_PARTITION="$(makePartition "$RESTORE_DEVICE" 2)"
 		ROOT_PARTITION_DEFINED=0
 	else
 		if [[ ! -e "$ROOT_PARTITION" ]]; then
@@ -7597,37 +7741,44 @@ function restoreNonPartitionBasedBackup() {
 
 	logItem "ROOT_PARTITION : $ROOT_PARTITION"
 
+	logExit
+}
+
+function restoreNonPartitionBasedBackup() {
+
+	logEntry
+
+	initRestoreVariables
+
 	if (( ! $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING $RESTORE_DEVICE
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 	fi
 
-	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
-	if [[ -n "$current_partition_table" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
-		echo "$current_partition_table"
-	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
-		if (( $SKIP_SFDISK )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITION "$RESTORE_DEVICE"
-			exitError $RC_MISSING_PARTITION
-		fi
-	fi
-
 	if (( ! $ROOT_PARTITION_DEFINED )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN $RESTORE_DEVICE
+		current_partition_table="$(listDeviceInfo $RESTORE_DEVICE)"
+		if [[ -n $current_partition_table ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+			logItem "$current_partition_table"
+			echo "$current_partition_table"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
+		fi
 	else
-		if [[ $ROOT_DEVICE =~ /dev/mmcblk0 || $ROOT_DEVICE =~ "/dev/loop" || $ROOT_DEVICE =~ /dev/nvme0n1 ]]; then
+		if isSpecialBlockDevice "$ROOT_DEVICE"; then
 			ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
 		else
 			ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
 		fi
 
 		if [[ $ROOT_DEVICE != $RESTORE_DEVICE ]]; then
-			current_partition_table="$(getPartitionTable $ROOT_DEVICE)"
+			current_partition_table="$(listDeviceInfo $ROOT_DEVICE)"
 			if [[ -n $current_partition_table ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE" "$current_partition_table"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE"
+				logItem "$current_partition_table"
+				echo "$current_partition_table"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$ROOT_DEVICE"
 				if (( $SKIP_SFDISK )); then
@@ -7647,7 +7798,7 @@ function restoreNonPartitionBasedBackup() {
 		exitError $RC_RESTORE_FAILED
 	fi
 
-	restore
+	restoreNormalBackupType
 
 	logExit "$rc"
 
@@ -7659,7 +7810,77 @@ function restorePartitionBasedBackup() {
 
 	local partition sourceSDSize targetSDSize
 
-	if [[ "$BACKUPTYPE" != $BACKUPTYPE_DD && "$BACKUPTYPE" != $BACKUPTYPE_DDZ ]]; then
+	if [[ "${RESTOREFILE: -1}" != "/" ]]; then
+		RESTOREFILE="$RESTOREFILE/"
+	fi
+
+	if mount | grep -q $RESTORE_DEVICE; then
+		logItem "Umounting partitions on $RESTORE_DEVICE"
+		logItem "$(mount | grep $RESTORE_DEVICE)"
+		local dev
+		while read dev; do echo $dev | cut -d ' ' -f 1; done < <(mount | grep $RESTORE_DEVICE)  | xargs umount
+		logItem "$(mount | grep $RESTORE_DEVICE)"
+	fi
+
+	if partitionsSelected; then
+		current_partition_table="$(listDeviceInfo $RESTORE_DEVICE)"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+		logItem "$current_partition_table"
+		echo "$current_partition_table"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
+
+		if ! askYesNo; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+			exitError $RC_RESTORE_FAILED
+		fi
+
+		if (( $NO_YES_QUESTION )); then
+			echo "Y${NL}"
+		fi
+	fi
+
+	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
+		local all="$(getMessage $MSG_ANSWER_ALL)"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "$all" "$RESTORE_DEVICE"
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
+	fi
+
+	if ! askYesNo; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+		exitError $RC_RESTORE_FAILED
+	fi
+
+	if (( $NO_YES_QUESTION )); then
+		echo "Y${NL}"
+	fi
+
+
+	waitForPartitionDefsChanged
+
+	initRestoreVariables
+	if partitionsSelected; then		# don't format if no partition should be restored
+		formatRestoreDevice
+	fi
+
+	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
+
+	if isMounted "$MNT_POINT"; then
+		logItem "$MNT_POINT mounted - unmouting"
+		umount -f "$MNT_POINT" &>>$LOG_FILE
+		if [ $? -ne 0 ]; then
+			assertionFailed $LINENO "Unable to unmount $MNT_POINT"
+		fi
+	fi
+
+	logItem "Creating mountpoint $MNT_POINT"
+	mkdir -p $MNT_POINT
+
+	# handle partitions
+
+	local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
+
+	if (( ${#partitionsToRestore[@]} > 0 )); then
 		if [[ ! -e "$SF_FILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$SF_FILE"
 			exitError $RC_MISSING_FILES
@@ -7683,95 +7904,33 @@ function restorePartitionBasedBackup() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_ALLOWED
 			exitError $RC_MISSING_FILES
 		fi
-	fi
+	
+		local partitionBackupFile
+		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
+		local partitionsRestored=()
 
-	if mount | grep -q $RESTORE_DEVICE; then
-		logItem "Umounting partitions on $RESTORE_DEVICE"
-		logItem "$(mount | grep $RESTORE_DEVICE)"
-		local dev
-		while read dev; do echo $dev | cut -d ' ' -f 1; done < <(mount | grep $RESTORE_DEVICE)  | xargs umount
-		logItem "$(mount | grep $RESTORE_DEVICE)"
-	fi
+		logItem "RESTOREFILE_BACKUP_BOOT_PARTITION_PREFIX: ${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"
+		for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
+			logItem "partitionBackupFile: $partitionBackupFile"
+			local partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
+			logItem "Found partition no: $partitionNo"
+			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]] ||  containsElement "$partitionNo" "${partitionsToRestore[@]}"; then
+				restorePartitionBasedPartition "$partitionBackupFile"
+				partitionsRestored+=($partitionNo)
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_PARTITION_RESTORE "$partitionNo" "$RESTORE_DEVICE"
+			fi
+		done
 
-	if (( ! $SKIP_SFDISK && ! $FORCE_SFDISK )); then
-		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
-		logItem "SourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
+		updateUUIDs
 
-		if (( targetSDSize < sourceSDSize )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_TOO_SMALL "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
-			exitError $RC_MISC_ERROR
-		elif (( targetSDSize > sourceSDSize )); then
-			local unusedSpace=$(( targetSDSize - sourceSDSize ))
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGETSD_SIZE_BIGGER "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)" "$(bytesToHuman $unusedSpace)"
-		fi
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING $RESTORE_DEVICE
-	fi
-
-	current_partition_table="$(getPartitionTable $RESTORE_DEVICE)"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE" "$current_partition_table"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
-
-	if ! askYesNo; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-		exitError $RC_RESTORE_FAILED
-	fi
-
-	if (( $NO_YES_QUESTION )); then
-		echo "Y${NL}"
-	fi
-
-	if (( ! $SKIP_SFDISK )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_PARTITIONING_SDCARD "$RESTORE_DEVICE"
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
-		logItem "mount: $(mount)"
-
-		local force=""
-		(( $FORCE_SFDISK )) && force="--force"
-
-		local tmp=$(mktemp)
-		logItem "sfdisk"
-		sfdisk $force -uSL $RESTORE_DEVICE < "$SF_FILE" > "$tmp" 2>&1
-		rc=$?
-		local error=$(<$tmp)
-		echo "$error" >> "$LOG_FILE"
-		logItem "Error: $error"
-		rm "$tmp" &>/dev/null
-		if [ $rc != 0 ]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_PARTITIONS $rc "$error"
-			exitError $RC_CREATE_PARTITIONS_FAILED
+		if ! containsElement "1" "${partitionsRestored[@]}" || ! containsElement "2" "${partitionsRestored[@]}"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE
+		else
+			synchronizeCmdlineAndfstab
 		fi
 
-		waitForPartitionDefsChanged
-
-	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_CREATING_PARTITIONS
 	fi
-
-	if [[ "${RESTOREFILE: -1}" != "/" ]]; then
-		RESTOREFILE="$RESTOREFILE/"
-	fi
-
-	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT/${MYNAME}"
-
-	if isMounted "$MNT_POINT"; then
-		logItem "$MNT_POINT mounted - unmouting"
-		umount -f "$MNT_POINT" &>>$LOG_FILE
-		if [ $? -ne 0 ]; then
-			assertionFailed $LINENO "Unable to unmount $MNT_POINT"
-		fi
-	fi
-
-	logItem "Creating mountpoint $MNT_POINT"
-	mkdir -p $MNT_POINT
-
-	logItem "Mount:$NL$(mount)"
-
-	for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
-		restorePartitionBasedPartition "$partitionBackupFile"
-	done
-
-	updateUUIDs
 
 	logCommand "fdisk -l $RESTORE_DEVICE"
 
@@ -7791,7 +7950,8 @@ function getBackupPartitionLabel() { # partition
 	logEntry "$1"
 
 	local partition=$1
-	local blkid label
+	local blkid
+	local label=""
 
 	blkid=$(grep $partition "$BLKID_FILE")
 	logItem "BLKID: $1 - $blkid"
@@ -7800,8 +7960,8 @@ function getBackupPartitionLabel() { # partition
 
 	if [[ $blkid =~ $regexFormatLineLabel ]]; then
 		label=${BASH_REMATCH[1]}
-	else
-		label=$(sed -E 's/\/dev\///' <<< $partition)	# strip /dev/
+#	else
+#		label=$(sed -E 's/\/dev\///' <<< $partition)	# strip /dev/
 	fi
 
 	echo "$label"
@@ -7926,6 +8086,98 @@ function lastUsedPartitionByte() { # device
 
 }
 
+function makeFilesystemAndLabel() { # partition filesystem label
+
+	logEntry "$1 $2"
+
+	local partition="$1"
+	local partitionFilesystem="$2"
+	local partitionLabel="$3"
+
+	if [[ ! "$partitionFilesystem" =~ $SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_FILESYSTEM_FORMAT "$partitionFilesystem" "$partition"
+		exitError $RC_MISC_ERROR
+	fi
+
+	logItem "partitionFilesystem: \"$partitionFilesystem\""
+
+	local fs="$partitionFilesystem"
+	local fatSize=""
+	local fatCmd=""
+
+	local swapDetected=0
+	if [[ "$partitionFilesystem" =~ ^fat.* ]]; then
+		fs="vfat"
+		fatSize=$(sed 's/fat//' <<< $partitionFilesystem)
+		fatCmd="-I -F $fatSize"
+		logItem "fs: $fs - fatSize: $fatSize - fatCmd: $fatCmd"
+		cmd="mkfs -t $fs $fatCmd"
+	elif [[ "$partitionFilesystem" =~ swap ]]; then
+		cmd="mkswap"
+		swapDetected=1
+		logItem "Swap partition"
+	else
+		logItem "Normal partition with $partitionFilesystem"
+		if [[ $partitionFilesystem == "btrfs" ]]; then
+			check4RequiredCommands btrfs
+			cmd="mkfs.btrfs -f"
+		elif [[ $partitionFilesystem == "f2fs" ]]; then
+			check4RequiredCommands f2fs
+			if [[ -n $partitionLabel ]]; then
+				cmd="mkfs.f2fs -f -l $partitionLabel "
+			else
+				cmd="mkfs.f2fs -f"
+			fi
+		else
+			cmd="mkfs -t $fs"
+		fi
+	fi
+
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$partition" "$partitionFilesystem" $fileSystemsize
+	logItem "$cmd $partition"
+
+	$cmd $partition &>>"$LOG_FILE"
+
+	rc=$?
+	if (( $rc )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MKFS_FAILED "$cmd $partition" "$rc"
+		exitError $RC_MISC_ERROR
+	fi
+
+	if (( ! $swapDetected )); then
+
+		# Keep SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX in sync
+
+		if [[ -n $partitionLabel ]]; then
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$partition" "$partitionLabel"
+
+			case $partitionFilesystem in
+				ext2|ext3|ext4) cmd="e2label"
+					;;
+				fat16|fat32) cmd="dosfslabel"
+					;;
+				btrfs) cmd="btrfs filesystem label"
+					;;
+				f2fs) cmd=": noop until f2fs 1.5 is available on Raspberries # <f2fs label command>"
+					 ;;
+			esac
+
+			logItem "$cmd $artition $partitionLabel"
+			$cmd $partition $partitionLabel &>>"$LOG_FILE"
+			rc=$?
+			if (( $rc )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd $partition $partitionLabel" "$rc"
+				exitError $RC_LABEL_ERROR
+			fi
+		else
+			logItem "Partition $partition not labeled"
+		fi
+	fi
+
+	logExit
+
+}
+
 function restorePartitionBasedPartition() { # restorefile
 
 	logEntry "$1"
@@ -7955,7 +8207,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 	local restoreDevice
 	restoreDevice=${RESTORE_DEVICE%dev%%}
-	[[ $restoreDevice =~ mmcblk0 || $restoreDevice =~ "loop" || $restoreDevice =~ nvme0n1 ]] && restoreDevice="${restoreDevice}p"
+	restoreDevice="$(makePartition "$restoreDevice")"
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
@@ -7968,77 +8220,9 @@ function restorePartitionBasedPartition() { # restorefile
 	elif [[ ! -z $partitionFilesystem ]]; then
 		logItem "partitionFilesystem: \"$partitionFilesystem\""
 
-		local fs="$partitionFilesystem"
-		local fatSize=""
-		local fatCmd=""
+		makeFilesystemAndLabel "$mappedRestorePartition" "$partitionFilesystem" "$partitionLabel"
 
-		local swapDetected=0
-		if [[ "$partitionFilesystem" =~ ^fat.* ]]; then
-			fs="vfat"
-			fatSize=$(sed 's/fat//' <<< $partitionFilesystem)
-			fatCmd="-I -F $fatSize"
-			logItem "fs: $fs - fatSize: $fatSize - fatCmd: $fatCmd"
-			cmd="mkfs -t $fs $fatCmd"
-		elif [[ "$partitionFilesystem" =~ swap ]]; then
-			cmd="mkswap"
-			swapDetected=1
-			logItem "Swap partition"
-		else
-			logItem "Normal partition with $partitionFilesystem"
-			if [[ $partitionFilesystem == "btrfs" ]]; then
-				check4RequiredCommands btrfs
-				cmd="mkfs.btrfs -f"
-                        elif [[ $partitionFilesystem == "f2fs" ]]; then
-                                check4RequiredCommands f2fs
-                                if [[ -n $partitionLabel ]]; then
-                                        cmd="mkfs.f2fs -f -l $partitionLabel "
-                                else
-                                        cmd="mkfs.f2fs -f"
-                                fi
-			else
-				cmd="mkfs -t $fs"
-			fi
-		fi
-
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$mappedRestorePartition" "$partitionFilesystem" $fileSystemsize
-		logItem "$cmd $mappedRestorePartition"
-
-		$cmd $mappedRestorePartition &>>"$LOG_FILE"
-
-		rc=$?
-		if (( $rc )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MKFS_FAILED "$cmd" "$rc"
-			exitError $RC_MISC_ERROR
-		fi
-
-		if (( ! $swapDetected )); then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$mappedRestorePartition" "$partitionLabel"
-
-			# Keep SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX in sync
-
-			if [[ -n $partitionLabel ]]; then
-				case $partitionFilesystem in
-					ext2|ext3|ext4) cmd="e2label"
-						;;
-					fat16|fat32) cmd="dosfslabel"
-						;;
-					btrfs) cmd="btrfs filesystem label"
-						;;
-                    f2fs) cmd=": noop until f2fs 1.5 is available on Raspberries # <f2fs label command>"
-                         ;;
-				esac
-
-				logItem "$cmd $mappedRestorePartition $partitionLabel"
-				$cmd $mappedRestorePartition $partitionLabel &>>"$LOG_FILE"
-				rc=$?
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-					exitError $RC_LABEL_ERROR
-				fi
-			else
-					logItem "Partition $mappedRestorePartition not labeled"
-			fi
-
+		if [[ ! "$partitionFilesystem" =~ swap ]]; then
 			logItem "mount $mappedRestorePartition $MNT_POINT"
 			mount $mappedRestorePartition $MNT_POINT
 
@@ -8094,8 +8278,8 @@ function restorePartitionBasedPartition() { # restorefile
 			esac
 
 			if [[ $rc != 0 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_PROGRAM_ERROR $BACKUPTYPE $rc
-				exitError $RC_NATIVE_BACKUP_FAILED
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PROGRAM_ERROR $BACKUPTYPE $rc
+				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
 
 			sleep 1s					# otherwise umount fails
@@ -8111,12 +8295,9 @@ function restorePartitionBasedPartition() { # restorefile
 				fi
 			fi
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE_PARTITION_DONE "$mappedRestorePartition"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_FILE_PARTITION_DONE "$mappedRestorePartition"
 
-		else
-			logItem "Skipping to label and restore partition $mappedRestorePartition"
-		fi # ! swapDetected
-
+		fi # is not swap partition
 	else
 		assertionFailed $LINENO "This error should not occur"
 	fi
@@ -8168,17 +8349,15 @@ function doitRestore() {
 		exitError $RC_MISSING_FILES
 	fi
 
-	if (( ! $SKIP_SFDISK )); then
-		if isMounted "$RESTORE_DEVICE"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$RESTORE_DEVICE"
-			exitError $RC_MISC_ERROR
-		fi
+	if isMounted "$RESTORE_DEVICE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$RESTORE_DEVICE"
+		exitError $RC_MISC_ERROR
 	fi
 
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logCommand "ls -1 $RESTOREFILE*"
 
-	if  ls -1 "$RESTOREFILE"* | egrep "^(sd[a-z]([0-9]+)|mmcblk[0-9]+p[0-9]+|nvme[0-9]+n[0-9]+p[0-9]+)(\.(tar|tgz))?$" &>>"$LOG_FILE" ; then
+	if  ls -1 "$RESTOREFILE"* | egrep "\.blkid$" &>>"$LOG_FILE" ; then
 		PARTITIONBASED_BACKUP=1
 	else
 		PARTITIONBASED_BACKUP=0
@@ -8306,35 +8485,6 @@ function doitRestore() {
 	#	fi
 	#fi
 
-	# adjust partition for tar and rsync backup in normal mode
-
-	if (( ! $PARTITIONBASED_BACKUP )) && [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]] && (( ! $ROOT_PARTITION_DEFINED )); then
-
-		local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-		local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
-		logItem "soureSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
-
-		if (( ! $FORCE_SFDISK && ! $SKIP_SFDISK )); then
-			if (( sourceSDSize != targetSDSize )); then
-				if (( sourceSDSize > targetSDSize )); then
-					if (( $RESIZE_ROOTFS )); then
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
-					else
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_DISABLED "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
-						exitError $RC_PARAMETER_ERROR
-					fi
-				else
-					if (( $RESIZE_ROOTFS )); then
-						if (( $targetSDSize >= $TWO_TB )); then		# target should have gpt in order to use space > 2TB during expansion
-							writeToConsole $MSG_LEVEL_MINIMAL $MSG_TARGET_REQUIRES_GPT "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)"
-						fi
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_WARNING2 "$RESTORE_DEVICE" "$(bytesToHuman $targetSDSize)" "$(bytesToHuman $sourceSDSize)"
-					fi
-				fi
-			fi
-		fi
-	fi
-
 	rc=0
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
@@ -8344,7 +8494,6 @@ function doitRestore() {
 		fi
 	else
 		restorePartitionBasedBackup
-		synchronizeCmdlineAndfstab
 	fi
 
 	logCommand "blkid"
@@ -8650,11 +8799,7 @@ function synchronizeCmdlineAndfstab() {
 
 	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL newLABEL
 
-	if [[ $RESTORE_DEVICE =~ /dev/mmcblk0 || $RESTORE_DEVICE =~ /dev/nvme0n1 || $RESTORE_DEVICE =~ "/dev/loop" ]]; then
-		BOOT_PARTITION="${RESTORE_DEVICE}p1"
-	else
-		BOOT_PARTITION="${RESTORE_DEVICE}1"
-	fi
+	BOOT_PARTITION="$(makePartition "$RESTORE_DEVICE" 1)"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		ROOT_PARTITION="$(sed 's/1$/2/' <<< "$BOOT_PARTITION")"
@@ -9544,6 +9689,7 @@ while (( "$#" )); do
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
+  	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[\"]/}
   	  ;;
 
 	-n|-n[-+])
@@ -9649,6 +9795,7 @@ while (( "$#" )); do
 	  o="$(checkOptionParameter "$1" "$2")"
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
+	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
 	  ;;
 
 	--telegramToken)
@@ -9811,7 +9958,7 @@ if (( $UPDATE_MYSELF )); then
 	exitNormal
 fi
 
-if (( $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
+if (( $RESTORE && $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH $RESTORE_DEVICE $YES_NO_RESTORE_DEVICE
 		exitError $RC_MISC_ERROR
