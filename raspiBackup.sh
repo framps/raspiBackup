@@ -1948,6 +1948,9 @@ MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 auf boot und/oder
 MSG_MOVE_TEMP_DIR=299
 MSG_EN[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backup directory %1 created."
 MSG_DE[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backupverzeichnis %1 erstellt."
+MSG_ADJUSTING_LAST=300
+MSG_EN[$MSG_ADJUSTING_LAST]="RBK0300I: Adjusting last partition from %s to %s."
+MSG_DE[$MSG_ADJUSTING_LAST]="RBK0300I: Letzte Partition wird von %s auf %s angepasst."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4075,22 +4078,80 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 
 	local file="$1"
 
-	logCommand "cat $file"
-
 # /dev/mmcblk0p1 : start=     8192, size=    83968, Id= c
 # or
 # /dev/sdb1 : start=          63, size=  1953520002, type=83
 
 	local partitionregex="/dev/.*[p]?([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-z]*([0-9a-z]+)"
-	local lineNo=0
 	local sumSize=0
+	local sectorSize
+
+	logCommand "cat $file"
+
+	sectorSize=$(grep "^sector-size:" $file)
+	if (( $? )); then
+		sectorSize=512	# not set in buster and earlier, use default
+	else
+		sectorSize=$(cut -f 2 -d ' ' <<< "$sectorSize")
+		if [[ -z $sectorSize ]]; then
+			assertionFailed $LINENO "Unable to retrieve sectorsize"
+		fi
+	fi
 
 	local line
-	while IFS="" read line; do
-		(( lineNo++ ))
-		if [[ -z $line ]]; then
-			continue
+	line="$(tail -1 $file)"
+	if [[ $line =~ $partitionregex ]]; then
+		local p=${BASH_REMATCH[1]}
+		local start=${BASH_REMATCH[2]}
+		local size=${BASH_REMATCH[3]}
+		local id=${BASH_REMATCH[4]}
+
+		if (( $id != 83 )); then
+			assertionFailed $LINENO "Last partition is no Linux partition"
 		fi
+
+		(( sumSize = ( start + size) * sectorSize ))
+		echo "$sumSize"
+	else
+		assertionFailed $LINENO "No matching last partition found"
+	fi
+
+	logExit "$sumSize"
+}
+
+function createResizedSFDisk() { # sfdisk_source_filename targetSize sfdisk_target_filename -> oldPartitionSize newPartitionSize
+
+	logEntry "$@"
+
+	local sourceFile="$1"
+	local targetSize="$2"
+	local targetFile="$3"
+
+	local newSize sectorSize
+	local oldPartitionSize newPartitionSize
+
+	local partitionregex="/dev/.*[p]?([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-z]*([0-9a-z]+)"
+
+	sectorSize=$(grep "^sector-size:" $sourceFile)
+	if (( $? )); then
+		sectorSize=512	# not set in buster and earlier, use default
+	else
+		sectorSize=$(cut -f 2 -d ' ' <<< "$sectorSize")
+		if [[ -z $sectorSize ]]; then
+			assertionFailed $LINENO "Unablt to retrieve sector size"
+		fi
+	fi
+
+	logCommand "cat $sourceFile"
+
+	local sourceSize=$(calcSumSizeFromSFDISK "$sourceFile")
+
+	cp "$sourceFile" "$targetFile"
+
+	if (( sourceSize != targetSize )); then
+
+		local line
+		line="$(tail -1 $targetFile)"
 
 		if [[ $line =~ $partitionregex ]]; then
 			local p=${BASH_REMATCH[1]}
@@ -4098,24 +4159,37 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 			local size=${BASH_REMATCH[3]}
 			local id=${BASH_REMATCH[4]}
 
-			if [[ $id == 85 || $id == 5 ]]; then
-				continue
+			if (( $id != 83 )); then
+				assertionFailed $LINENO "Last partition is no Linux partition"
 			fi
 
-			if [[ $sumSize == 0 ]]; then
-				sumSize=$((start+size))
+			(( oldPartitionSize = ( size - start ) * sectorSize ))
+
+			if (( sourceSize > targetSize )); then
+				(( newSize = ( size - ( sourceSize - targetSize ) / sectorSize ) ))
 			else
-				(( sumSize+=size ))
+				(( newSize = ( size + ( targetSize - sourceSize ) / sectorSize ) ))
 			fi
+
+			(( newPartitionSize = ( newSize - start ) * sectorSize ))
+
+			sed -i "s/${size}/${newSize}/" $targetFile
+
+		else
+			assertionFailed $LINENO "Last partition is no Linux partition"
 		fi
+	fi
 
-	done < $file
+	logItem "Old: $oldPartitionSize - New: $newPartitionSize"
 
-	(( sumSize *= 512 ))
+	logCommand "cat $targetFile"
 
-	echo "$sumSize"
+	local ret="$oldPartitionSize $newPartitionSize"
 
-	logExit "$sumSize"
+	echo "$ret"
+
+	logExit "$ret"
+
 }
 
 # colorAnnotation
@@ -4874,7 +4948,7 @@ function cleanup() { # trap
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
 				CLEANUP_RC=$RC_TEMPMOVE_FAILED
 			else
-				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"		
+				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
 					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
 					|| ! $SMART_RECYCLE \
@@ -5933,11 +6007,8 @@ function restore() {
 			else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_PARTITIONS "$RESTORE_DEVICE"
 
-				cp "$SF_FILE" $MODIFIED_SFDISK
-				logItem "Current sfdisk file"
-				logCommand "cat $MODIFIED_SFDISK"
+				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )); then
 
-				if (( ! $ROOT_PARTITION_DEFINED )) && (( $RESIZE_ROOTFS )) && (( ! $PARTITIONBASED_BACKUP )); then
 					local sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
 					local targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
 					logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
@@ -5953,35 +6024,27 @@ function restore() {
 #						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
-						local sourceValues=( $(awk '/(1|2) :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
-						if [[ ${#sourceValues[@]} != 4 ]]; then
+						local sourceValues=( $(awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
+						if (( ${#sourceValues[@]} < 4 )); then
 							logCommand "cat $SF_FILE"
 							assertionFailed $LINENO "Expected at least 2 partitions in $SF_FILE"
 						fi
 
-						# Backup partition has only one partition -> external root partition -> -R has to be specified
-						if (( ${sourceValues[2]} == 0 )) || (( ${sourceValues[3]} == 0 )); then
-							writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_R_OPTION
-							exitError $RC_MISC_ERROR
-						fi
+						local partitionSizes
+						partitionSizes=( $(createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK") )
 
-						local adjustedTargetPartitionBlockSize=$(( $targetSDSize / 512 - ${sourceValues[1]} - ${sourceValues[0]} - ( ${sourceValues[2]} - ${sourceValues[1]} ) ))
-						logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
-						logItem "sourceBlockSize: ${sourceValues[3]} - adjusted targetBlockSize: $adjustedTargetPartitionBlockSize"
+						local oldPartitionSourceSize=${partitionSizes[0]}
+						local newPartitionTargetSize=${partitionSizes[1]}
 
-						local newTargetPartitionSize=$(( adjustedTargetPartitionBlockSize * 512 ))
-						local oldPartitionSourceSize=$(( ${sourceValues[3]} * 512 ))
-
-						sed -i "/2 :/ s/${sourceValues[3]}/$adjustedTargetPartitionBlockSize/" $MODIFIED_SFDISK
-
-						logItem "Updated sfdisk file"
-						logCommand "cat $MODIFIED_SFDISK"
-
-						if [[ "$(bytesToHuman $oldPartitionSourceSize)" != "$(bytesToHuman $newTargetPartitionSize)" ]]; then
-							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newTargetPartitionSize)"
+						if (( ${#sourceValues[@]} == 4 )); then
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_SECOND "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newPartitionTargetSize)"
+						else
+							writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_LAST "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newPartitionTargetSize)"
 						fi
 
 					fi
+				else
+					cp "$SF_FILE" "$MODIFIED_SFDISK" # just use unmodified sfdisk when option -R is used for a hybrid system
 				fi
 
 				sfdisk -f $RESTORE_DEVICE < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
