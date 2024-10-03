@@ -3872,7 +3872,13 @@ function readConfigParameters() {
 
 function getOSRelease() {
 
-	test -e /etc/os-release && os_release_file='/etc/os-release' || test -e /usr/lib/os-release && os_release_file='/usr/lib/os-release' || os_release_file='/dev/null'
+	local os_release_file='/dev/null' # fallback
+	for file in /etc/os-release /usr/lib/os-release; do
+		if [[ -e $file ]]; then
+			os_release_file="$file"
+			break
+		fi
+	done
 
         # the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
         unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
@@ -3882,7 +3888,7 @@ function getOSRelease() {
 
         os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
         os_release="${os_release//\"/}"          # remove any double quotes
-        echo "${os_release:-unknown}"            # handle empty result
+        echo "${os_release:-unknownOS}"          # handle empty result
 }
 
 function setupEnvironment() {
