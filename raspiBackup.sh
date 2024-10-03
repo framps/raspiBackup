@@ -3070,6 +3070,26 @@ function isSpecialBlockDevice() { # either device (mmcblk, sd) or device name (/
 	return $rc
 }
 
+function createPartitionName() { # either device (mmcblk0, sda) or device name (/dev/mmcblk0, /dev/sda ) and partition number (may be empty)
+
+	logEntry "$1 $2"
+
+	local result="$1"
+
+	if isSpecialBlockDevice "$1"; then
+		result="${result}p"
+	fi
+
+	if [[ -n "$2" ]]; then
+		result="${result}$2"
+	fi
+
+	logExit "$result"
+
+	echo "$result"
+
+}
+
 # Input:
 # 	mmcblk0
 # 	sda
@@ -5337,7 +5357,7 @@ function cleanupBackup() { # trap
 	logItem "rc: $rc"
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		umountSDPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
+		umountPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
 
 	if (( $PRE_BACKUP_EXTENSION_CALLED )); then
@@ -7722,13 +7742,13 @@ function initRestoreVariables () {
 		exitError $RC_PARAMETER_ERROR
 	fi
 
-	BOOT_PARTITION="$(makePartition "$RESTORE_DEVICE" 1)"
+	BOOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 1)"
 
 	logItem "BOOT_PARTITION : $BOOT_PARTITION"
 
 	ROOT_PARTITION_DEFINED=1
 	if [[ -z $ROOT_PARTITION ]]; then
-		ROOT_PARTITION="$(makePartition "$RESTORE_DEVICE" 2)"
+		ROOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 2)"
 		ROOT_PARTITION_DEFINED=0
 	else
 		if [[ ! -e "$ROOT_PARTITION" ]]; then
@@ -7898,10 +7918,6 @@ function restorePartitionBasedBackup() {
 			exitError $RC_MISSING_FILES
 		fi
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
-		if [[ -n $ROOT_PARTITION ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_ALLOWED
-			exitError $RC_MISSING_FILES
-		fi
 	
 		local partitionBackupFile
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
@@ -8205,7 +8221,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 	local restoreDevice
 	restoreDevice=${RESTORE_DEVICE%dev%%}
-	restoreDevice="$(makePartition "$restoreDevice")"
+	restoreDevice="$(createPartitionName "$restoreDevice")"
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
@@ -8797,7 +8813,7 @@ function synchronizeCmdlineAndfstab() {
 
 	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL newLABEL
 
-	BOOT_PARTITION="$(makePartition "$RESTORE_DEVICE" 1)"
+	BOOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 1)"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		ROOT_PARTITION="$(sed 's/1$/2/' <<< "$BOOT_PARTITION")"
