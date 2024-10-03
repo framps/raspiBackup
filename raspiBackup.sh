@@ -6157,8 +6157,7 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				local dir_to_check
-				local tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
 				echo "$tobeCheckedBackups" | while read dir_to_check; do
 					[[ -n $dir_to_check ]] && echo "!!! Matching backup found: $BACKUPTARGET_ROOT/${dir_to_check}"
 				done
