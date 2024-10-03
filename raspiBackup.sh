@@ -6138,7 +6138,10 @@ function applyBackupStrategy() {
 		local bt="${BACKUPTYPE^^}"
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
-
+		local dir_to_delete
+		local dir_to_check
+		local tobeDeletedBackups
+		local tobeCheckedBackups
 		local keepBackups=$KEEPBACKUPS
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 
@@ -6148,7 +6151,25 @@ function applyBackupStrategy() {
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
-			if (( ! $FAKE )); then
+			if (( $FAKE )); then
+				fakeKeepBackups=$(( keepBackups - 1 ))   # because in FAKE mode no real current backup has been created
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
+				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+					assertionFailed $LINENO "push to $BACKUPPATH failed"
+				fi
+				local dir_to_check
+				local tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+				echo "$tobeCheckedBackups" | while read dir_to_check; do
+					[[ -n $dir_to_check ]] && echo "!!! Matching backup found: $BACKUPTARGET_ROOT/${dir_to_check}"
+				done
+				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$fakeKeepBackups 2>>$LOG_FILE)
+				echo "$tobeDeletedBackups" | while read dir_to_delete; do
+					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
+				done
+				if ! popd &>>$LOG_FILE; then
+					assertionFailed $LINENO "pop failed"
+				fi
+		       else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
