@@ -3870,11 +3870,19 @@ function readConfigParameters() {
 	logExit
 }
 
-function setupOsRelease() {
+function getOSRelease() {
 
-	# TODO: Need to make this more foolproof?? Probably not.
-	test -e /etc/os-release && os_release='/etc/os-release' || os_release='/usr/lib/os-release'
-	. "${os_release}"
+	test -e /etc/os-release && os_release_file='/etc/os-release' || test -e /usr/lib/os-release && os_release_file='/usr/lib/os-release' || os_release_file='/dev/null'
+
+        # the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
+        unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
+
+        local osr_$(grep -E "^ID="         "$os_release_file")
+        local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
+
+        os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
+        os_release="${os_release//\"/}"          # remove any double quotes
+        echo "${os_release:-unknown}"            # handle empty result
 }
 
 function setupEnvironment() {
@@ -3898,8 +3906,12 @@ function setupEnvironment() {
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
 
 		# For including the OS release into the name of the backup directory
-		setupOsRelease
-		HOSTNAME_OSR="${HOSTNAME}@${ID}${VERSION_ID}"
+		os_release=$(getOSRelease)
+		# Note: Sanitize the os_release to be usable as (part of) directory name.
+		# But don't allow or use "-" or "_" as replacement character!
+		# Both characters are already used as dividers/markers later on!
+		# The "~" seems to be okay. Even safer would be "", a.k.a. nothing.
+		HOSTNAME_OSR="${HOSTNAME}@${os_release//[ \/\\\:\.\-_]/\~}"
 
 		if [[ -z "$BACKUP_DIRECTORY_NAME" ]]; then
 			BACKUPFILE="${HOSTNAME_OSR}-${BACKUPTYPE}-backup-$DATE"
@@ -5593,8 +5605,6 @@ function updateUUID() {
 
 function backupRsync() { # partition number (for partition based backup)
 
-	# Note: Determining lastbackupDir now depends even more on the naming convention of the backups. See the "sort -t '-' -k 4" commands below!
-
 	local verbose partition target source excludeRoot cmd cmdParms excludeMeta
 
 	logEntry
@@ -5611,7 +5621,7 @@ function backupRsync() { # partition number (for partition based backup)
 		target="\"${BACKUPTARGET_DIR}\""
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
 
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort -t "-" -k 4 | tail -n 1)
+		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot="/$partition"
 
 	else
@@ -5619,7 +5629,7 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort -t "-" -k 4 | tail -n 1)
+		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME_OSR}*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
@@ -6078,8 +6088,6 @@ function restore() {
 
 function applyBackupStrategy() {
 
-	# Note: Determining the backups to be deleted now depends even more on the naming convention of the backups. See the "sort -t '-' -k 4" commands below!
-
 	logEntry "$BACKUP_TARGETDIR"
 
 	if (( $SMART_RECYCLE )); then
@@ -6096,11 +6104,11 @@ function applyBackupStrategy() {
 
 		logCommand "ls -d $BACKUPPATH/*"
 
-		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT | sort -t '-' -k 4)"
+		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
 		local numKeptBackups="$(countLines "$keptBackups")"
 		logItem "Keptbackups $numKeptBackups: $keptBackups"
 
-		local tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT" | sort -t '-' -k 4)"
+		local tobeDeletedBackups="$(SR_listBackupsToDelete "$BACKUPTARGET_ROOT")"
 		local numTobeDeletedBackups="$(countLines "$tobeDeletedBackups")"
 		logItem "TobeDeletedBackups $numTobeDeletedBackups: $tobeDeletedBackups"
 
@@ -6130,8 +6138,6 @@ function applyBackupStrategy() {
 		local bt="${BACKUPTYPE^^}"
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
-		local dir_to_delete
-		local tobeDeletedBackups
 
 		local keepBackups=$KEEPBACKUPS
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
@@ -6142,24 +6148,12 @@ function applyBackupStrategy() {
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
-			if (( $FAKE )); then
+			if (( ! $FAKE )); then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				tobeDeletedBackups=$(ls -d ${HOSTNAME}*-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | sort -t "-" -k 4 | head -n -$keepBackups 2>>$LOG_FILE)
-				echo "$tobeDeletedBackups" | while read dir_to_delete; do
-					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
-				done
-				if ! popd &>>$LOG_FILE; then
-					assertionFailed $LINENO "pop failed"
-				fi
-			else
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
-					assertionFailed $LINENO "push to $BACKUPPATH failed"
-				fi
-				ls -d ${HOSTNAME}*-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | sort -t "-" -k 4 | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
+				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
@@ -8661,7 +8655,7 @@ function SR_listYearlyBackups() { # directory
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
 			local d=$(date +%Y -d "${i} year ago")
-			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur -t "-" -k 4 | tail -n 1 # find earliest yearly backup
+			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
 	logExit
@@ -8677,7 +8671,7 @@ function SR_listMonthlyBackups() { # directory
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur -t "-" -k 4 | tail -n 1 # find earliest monthly backup
+			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
 		done
 	fi
 	logExit
@@ -8700,9 +8694,9 @@ function SR_listWeeklyBackups() { # directory
 			local mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
 			local dl=""
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
-				dl="\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
+				dl="${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
 			done
-			ls -1 $1 | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur  -t "-" -k 4 | tail -n 1 # use earliest backup of this week
+			ls -1 $1 | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
 		done
 	fi
 	logExit
@@ -8716,7 +8710,7 @@ function SR_listDailyBackups() { # directory
 			# today is 20191117
 			# date +%Y%m%d -d "-1 day" -> 20191116
 			local d=$(date +%Y%m%d -d "-${i} day") # get day
-			ls -1 $1 | grep "\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur -t "-" -k 4 | head -n 1 # find most current backup of this day
+			ls -1 $1 | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
 		done
 	fi
 	logExit
@@ -8758,7 +8752,7 @@ function SR_listUniqueBackups() { #directory
 
 function SR_listBackupsToDelete() { # directory
 	logEntry $1
-	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
