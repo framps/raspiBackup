@@ -1976,9 +1976,9 @@ MSG_DE[$MSG_UPDATING_UUIDS]="RBK0319I: Neue UUIDs werden generiert."
 MSG_REMOVING_BACKUP_NO_FILE=320
 MSG_EN[$MSG_REMOVING_BACKUP_NO_FILE]="RBK0320I: Removing incomplete backup. This may take some time. Please be patient."
 MSG_DE[$MSG_REMOVING_BACKUP_NO_FILE]="RBK0320I: Unvollständiges Backup wird gelöscht. Das kann etwas dauern. Bitte Geduld."
-MSG_SAVING_LOG=321
-MSG_EN[$MSG_SAVING_LOG]="RBK0321I: Saving logfile."
-MSG_DE[$MSG_SAVING_LOG]="RBK0321I: Logdatei wird gesichert."
+#MSG_SAVING_LOG=321
+#MSG_EN[$MSG_SAVING_LOG]="RBK0321I: Saving logfile."
+#MSG_DE[$MSG_SAVING_LOG]="RBK0321I: Logdatei wird gesichert."
 MSG_ADJUSTING_WARNING_P=322
 MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small."
 MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird."
@@ -2184,8 +2184,6 @@ function logFinish() {
 	rm -f "$FINISH_LOG_FILE"
 
 	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
-
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_LOG
 
 		# 1) error occured and logoutput is backup location which was deleted or fake mode
 		# 2) fake
