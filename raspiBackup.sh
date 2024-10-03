@@ -6244,22 +6244,45 @@ function reportOldBackups() {
 	logEntry "$BACKUP_TARGETDIR"
 
 	local dir_to_list
-	local tobeListedBackups
+	local tobeListedNewBackups
+	local numListedNewBackups
+	local numListedOldBackups
 
-	logItem "Deleting oldest directory in $BACKUPPATH"
-	logCommand "ls -d $BACKUPPATH/*"
+	if (( $SMART_RECYCLE )); then
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
+		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
+		local numKeptBackups="$(countLines "$keptBackups")"
+		logItem "Keptbackups $numKeptBackups: $keptBackups"
+
+	else
+
+		local bt="${BACKUPTYPE^^}"
+		local v="KEEPBACKUPS_${bt}"
+		local keepOverwrite="${!v}"
+		local keepBackups=$KEEPBACKUPS
+		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
+	fi
 
 	if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 		assertionFailed $LINENO "push to $BACKUPPATH failed"
 	fi
-	tobeListedBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
-	echo "$tobeListedBackups" | while read dir_to_list; do
+
+	tobeListedNewBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+	numListedNewBackups="$(countLines "$tobeListedNewBackups")"
+
+	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+
+	echo "$tobeListedOldBackups" | while read dir_to_list; do
 		[[ -n $dir_to_list ]] && echo "!!! Old-type backup found: $BACKUPTARGET_ROOT/${dir_to_list}"
 	done
-	if [[ -n "$tobeListedBackups" ]] ; then
+	if [[ -n "$tobeListedOldBackups" ]] ; then
 		echo "!!! Above listed old-type backups might be deleted manually when there are enough new-type ones."
+		echo -e "!!! That means: if numListedNewBackups ($numListedNewBackups)  >=  \c"
+		if (( $SMART_RECYCLE )); then
+			echo "numKeptBackups ($numKeptBackups)"
+		else
+			echo "keepBackups ($keepBackups)"
+		fi
 	fi
 	if ! popd &>>$LOG_FILE; then
 		assertionFailed $LINENO "pop failed"
