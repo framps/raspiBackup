@@ -4812,6 +4812,7 @@ function cleanup() { # trap
 				|| ! $SMART_RECYCLE \
 				)); then
 				applyBackupStrategy
+				reportOldBackups
 			fi
 		fi
 	fi
@@ -6230,6 +6231,33 @@ function applyBackupStrategy() {
 		fi
 	fi
 	logExit
+}
+
+function reportOldBackups() {
+
+	logEntry "$BACKUP_TARGETDIR"
+
+	local dir_to_list
+	local tobeListedBackups
+
+	logItem "Deleting oldest directory in $BACKUPPATH"
+	logCommand "ls -d $BACKUPPATH/*"
+
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
+
+	if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+		assertionFailed $LINENO "push to $BACKUPPATH failed"
+	fi
+	tobeListedBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+	echo "$tobeListedBackups" | while read dir_to_list; do
+		[[ -n $dir_to_list ]] && echo "!!! Old-type backup found: $BACKUPTARGET_ROOT/${dir_to_list}"
+	done
+	if [[ -n "$tobeListedBackups" ]] ; then
+		echo "!!! Above listed old-type backups might be deleted manually when there are enough new-type ones."
+	fi
+	if ! popd &>>$LOG_FILE; then
+		assertionFailed $LINENO "pop failed"
+	fi
 }
 
 function backup() {
