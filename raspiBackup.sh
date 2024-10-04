@@ -6083,6 +6083,10 @@ function formatRestoreDevice() {
 			exitError $RC_RESTORE_FAILED
 		fi
 
+		if (( $NO_YES_QUESTION )); then
+			echo "Y${NL}"
+		fi
+
 	elif [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONING_SDCARD "$RESTORE_DEVICE"
