@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -1959,8 +1960,8 @@ MSG_RESIZED_PARTITION_TOO_SMALL=302
 MSG_EN[$MSG_RESIZED_PARTITION_TOO_SMALL]="RBK0302E: Partition %s on %s with %s is too small. Missing at least %s."
 MSG_DE[$MSG_RESIZED_PARTITION_TOO_SMALL]="RBK0302E: Zu resizende Partition %s auf %s mit %s is zu klein. Es fehlen mindestens %s"
 MSG_SKIP_PARTITION_RESTORE=303
-MSG_EN[$MSG_SKIP_PARTITION_RESTORE]="RBK0303W: Partition %s was not restored to %s."
-MSG_DE[$MSG_SKIP_PARTITION_RESTORE]="RBK0303W: Partition %s wurde nicht auf %s zurückgespielt."
+MSG_EN[$MSG_SKIP_PARTITION_RESTORE]="RBK0303W: Partition %s was not restored."
+MSG_DE[$MSG_SKIP_PARTITION_RESTORE]="RBK0303W: Partition %s wurde nicht."
 MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE=304
 MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Not all OS partitions were restored. System may not boot."
 MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Nicht alle OS Partitionen wurden zurückgespielt. Das System könnte nicht booten."
@@ -4328,6 +4329,7 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 			logItem "Update extended partition sectorsize to $newP5Size"
 			sed -E -i "s/(p$p5 :.+size=[ ]*)([0-9]+)/\1${newP5Size}/" $targetFile
 		fi
+		logItem "Updated sfdisk file"
 		logCommand "cat $targetFile"
 	fi
 
@@ -6397,7 +6399,7 @@ function restoreNormalBackupType() {
 
 			umount $ROOT_PARTITION &>> "$LOG_FILE"
 
-			updateUUIDs
+			updateUUIDs # if partitioned
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_ROOT_CHECK_STARTED
 			fsck -fpv $ROOT_PARTITION &>>$LOG_FILE
@@ -7940,16 +7942,18 @@ function restorePartitionBasedBackup() {
 				restorePartitionBasedPartition "$partitionBackupFile"
 				partitionsRestored+=($partitionNo)
 			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_PARTITION_RESTORE "$partitionNo" "$RESTORE_DEVICE"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_PARTITION_RESTORE "${RESTORE_DEVICE}${partitionNo}"
 			fi
 		done
 
-		updateUUIDs
+		updateUUIDs # if partitioned
 
 		if ! containsElement "1" "${partitionsRestored[@]}" || ! containsElement "2" "${partitionsRestored[@]}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE
 		else
-			synchronizeCmdlineAndfstab
+			if (( ! SKIP_SFDISK )); then
+				synchronizeCmdlineAndfstab
+			fi
 		fi
 
 	fi
@@ -8245,7 +8249,7 @@ function restorePartitionBasedPartition() { # restorefile
 		if (( ! $SKIP_FORMAT )); then
 			makeFilesystemAndLabel "$mappedRestorePartition" "$partitionFilesystem" "$partitionLabel"
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING "$partitionNumber"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING "$mappedRestorePartition"
 		fi
 
 		if [[ ! "$partitionFilesystem" =~ swap ]]; then
@@ -8516,7 +8520,9 @@ function doitRestore() {
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
 		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
-			synchronizeCmdlineAndfstab
+			if (( ! SKIP_SFDISK )); then 
+				synchronizeCmdlineAndfstab
+			fi
 		fi
 	else
 		restorePartitionBasedBackup
