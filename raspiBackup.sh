@@ -980,11 +980,11 @@ MSG_EN[$MSG_RESTORING_FILE_PARTITION_DONE]="RBK0099I: Restore of partition %s fi
 MSG_DE[$MSG_RESTORING_FILE_PARTITION_DONE]="RBK0099I: Zurückspielen des Backups auf Partition %s beendet."
 MSG_FI[$MSG_RESTORING_FILE_PARTITION_DONE]="RBK0099I: Osio %s palautettu."
 MSG_FR[$MSG_RESTORING_FILE_PARTITION_DONE]="RBK0099I: Restauration de la partition %s terminée."
-MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN=100
-MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Device %s will be overwritten with the backup."
-MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Gerät %s wird mit dem Backup beschrieben."
-MSG_FI[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Palautus ylikirjoittaa laitteen %s."
-MSG_FR[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Le périphérique %s sera écrasé par la sauvegarde"
+#MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN=100
+#MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Device %s will be overwritten with the backup."
+#MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Gerät %s wird mit dem Backup beschrieben."
+#MSG_FI[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Palautus ylikirjoittaa laitteen %s."
+#MSG_FR[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Le périphérique %s sera écrasé par la sauvegarde"
 MSG_VERSION_HISTORY_PAGE=101
 MSG_EN[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/en/versionhistory/"
 MSG_DE[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/de/versionshistorie/"
@@ -1962,11 +1962,11 @@ MSG_SKIP_PARTITION_RESTORE=303
 MSG_EN[$MSG_SKIP_PARTITION_RESTORE]="RBK0302W: Partition %s was not restored to %s."
 MSG_DE[$MSG_SKIP_PARTITION_RESTORE]="RBK0302W: Partition %s wurde nicht auf %s zurückgespielt."
 MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE=304
-MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS partitions not restored. System may not boot."
-MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS Partitionen nicht zurückgespielt. Das System könnte nicht booten."
+MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS partition(s) not restored. System may not boot."
+MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS Partition(en) nicht zurückgespielt. Das System könnte nicht booten."
 MSG_RESTORING_PARTITIONS=305
-MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partitions %s to %s."
-MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partitionen %s werden auf %s zurüchgespielt."
+MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partition(s) %s to %s."
+MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partition(en) %s werden auf %s zurüchgespielt."
 MSG_ANSWER_ALL=306
 MSG_EN[$MSG_ANSWER_ALL]="all"
 MSG_DE[$MSG_ANSWER_ALL]="Alle"
@@ -1988,6 +1988,9 @@ MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323W: Ziel %s mit %s ist größer als die
 MSG_NOT_ALL_OS_PARTITIONS_SAVED=324
 MSG_EN[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Not all OS partitions saved. Backup will not boot."
 MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Partition gesichert und das Backup wird nicht starten."
+MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED=325
+MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated."
+MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6075,6 +6078,11 @@ function formatRestoreDevice() {
 	if (( $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
+		if ! askYesNo; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+			exitError $RC_RESTORE_FAILED
+		fi
+
 	elif [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONING_SDCARD "$RESTORE_DEVICE"
@@ -7840,26 +7848,23 @@ function restorePartitionBasedBackup() {
 		logItem "$(mount | grep $RESTORE_DEVICE)"
 	fi
 
-	if partitionsSelected; then
-		current_partition_table="$(listDeviceInfo $RESTORE_DEVICE)"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
-		logItem "$current_partition_table"
-		echo "$current_partition_table"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
+	current_partition_table="$(listDeviceInfo $RESTORE_DEVICE)"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+	logItem "$current_partition_table"
+	echo "$current_partition_table"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED "$RESTORE_DEVICE"
 
-		if ! askYesNo; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-			exitError $RC_RESTORE_FAILED
-		fi
+	if ! askYesNo; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+		exitError $RC_RESTORE_FAILED
+	fi
 
-		if (( $NO_YES_QUESTION )); then
-			echo "Y${NL}"
-		fi
+	if (( $NO_YES_QUESTION )); then
+		echo "Y${NL}"
 	fi
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-		local all="$(getMessage $MSG_ANSWER_ALL)"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "$all" "$RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_BACKUP_ALL\"" "$RESTORE_DEVICE"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
 	fi
@@ -7918,7 +7923,7 @@ function restorePartitionBasedBackup() {
 			exitError $RC_MISSING_FILES
 		fi
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
-	
+
 		local partitionBackupFile
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
 		local partitionsRestored=()
@@ -8275,7 +8280,7 @@ function restorePartitionBasedPartition() { # restorefile
 				$BACKUPTYPE_RSYNC)
 					local archiveFlags="aH"						# -a <=> -rlptgoD, H = preserve hardlinks
 					[[ -n $fatSize  ]] && archiveFlags="rltD"	# no Hopg flags for fat fs
-					cmdParms="--numeric-ids -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
+					cmdParms="--numeric-ids ${RSYNC_BACKUP_OPTIONS} -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
 					if (( $PROGRESS && $INTERACTIVE )); then
 						cmd="rsync --info=progress2 $cmdParms"
 					else
