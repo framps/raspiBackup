@@ -4817,12 +4817,12 @@ function cleanup() { # trap
 				|| ! $SMART_RECYCLE \
 				)); then
 				applyBackupStrategy
-				reportOldBackups
 			fi
 		fi
 	fi
 
 	cleanupTempFiles
+	reportOldBackups
 
 	finalCommand "$rc"
 
