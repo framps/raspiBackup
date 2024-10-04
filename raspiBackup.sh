@@ -3227,7 +3227,7 @@ function downloadPropertiesFile() { # FORCE
 
 	NEW_PROPERTIES_FILE=0
 
-	if shouldRenewDownloadPropertiesFile "$1"  && (( ! $REGRESSION_TEST )); then # don't execute any update checks in regression test
+	if shouldRenewDownloadPropertiesFile "$1"  && (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't execute any update checks
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_FOR_NEW_VERSION
 
@@ -5853,10 +5853,10 @@ function backupTar() {
 function waitForPartitionDefsChanged {
 	logEntry
 	sync
-#	sleep 3
+	sleep 3
 	logItem "--- partprobe ---"
 	partprobe -s &>>$LOG_FILE
-#	sleep 3
+	sleep 3
 	logItem "--- udevadm ---"
 	udevadm settle &>>$LOG_FILE
 	logExit
