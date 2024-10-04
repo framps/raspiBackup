@@ -8243,7 +8243,9 @@ function restorePartitionBasedPartition() { # restorefile
 	elif [[ ! -z $partitionFilesystem ]]; then
 		logItem "partitionFilesystem: \"$partitionFilesystem\""
 
-		makeFilesystemAndLabel "$mappedRestorePartition" "$partitionFilesystem" "$partitionLabel"
+		if (( ! $SKIP_SFDISK )); then
+			makeFilesystemAndLabel "$mappedRestorePartition" "$partitionFilesystem" "$partitionLabel"
+		fi
 
 		if [[ ! "$partitionFilesystem" =~ swap ]]; then
 			logItem "mount $mappedRestorePartition $MNT_POINT"
