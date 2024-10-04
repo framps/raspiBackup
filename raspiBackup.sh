@@ -1959,11 +1959,11 @@ MSG_RESIZED_PARTITION_TOO_SMALL=302
 MSG_EN[$MSG_RESIZED_PARTITION_TOO_SMALL]="RBK0302E: Partition %s on %s with %s is too small. Missing at least %s."
 MSG_DE[$MSG_RESIZED_PARTITION_TOO_SMALL]="RBK0302E: Zu resizende Partition %s auf %s mit %s is zu klein. Es fehlen mindestens %s"
 MSG_SKIP_PARTITION_RESTORE=303
-MSG_EN[$MSG_SKIP_PARTITION_RESTORE]="RBK0302W: Partition %s was not restored to %s."
-MSG_DE[$MSG_SKIP_PARTITION_RESTORE]="RBK0302W: Partition %s wurde nicht auf %s zurückgespielt."
+MSG_EN[$MSG_SKIP_PARTITION_RESTORE]="RBK0303W: Partition %s was not restored to %s."
+MSG_DE[$MSG_SKIP_PARTITION_RESTORE]="RBK0303W: Partition %s wurde nicht auf %s zurückgespielt."
 MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE=304
-MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS partition(s) not restored. System may not boot."
-MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0303W: OS Partition(en) nicht zurückgespielt. Das System könnte nicht booten."
+MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Not all OS partitions were restored. System may not boot."
+MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Nicht alle OS Partitionen wurden zurückgespielt. Das System könnte nicht booten."
 MSG_RESTORING_PARTITIONS=305
 MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partition(s) %s to %s."
 MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partition(en) %s werden auf %s zurüchgespielt."
@@ -1991,6 +1991,12 @@ MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Part
 MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED=325
 MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated."
 MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert."
+MSG_SKIP_FORMATING=326
+MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s is not formatted."
+MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s wird nicht formatiert."
+MSG_REMOVING_INCOMPLETE_BACKUPS=327
+MSG_EN[$MSG_REMOVING_INCOMPLETE_BACKUPS]="RBK0327I: Removing incomplete backups from previous backup runs. This may take some time. Please be patient."
+MSG_DE[$MSG_REMOVING_INCOMPLETE_BACKUPS]="RBK0327I: Unvollständiges Backups von vorhergehendem Backupläufen werden gelöscht. Das kann etwas dauern. Bitte Geduld."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4818,11 +4824,7 @@ function cleanupBackupDirectory() {
 
 	if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then
 		if [[ -n $(ls "$BACKUPTARGET_TEMP_ROOT") ]]; then
-			if [[ $MSG_LEVEL == $MSG_LEVEL_DETAILED ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_REMOVING_BACKUP "$BACKUPTARGET_TEMP_ROOT"
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
-			fi
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_INCOMPLETE_BACKUPS "$BACKUPTARGET_TEMP_ROOT"
 			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> $LOG_FILE # delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
@@ -5851,10 +5853,10 @@ function backupTar() {
 function waitForPartitionDefsChanged {
 	logEntry
 	sync
-	sleep 3
+#	sleep 3
 	logItem "--- partprobe ---"
 	partprobe -s &>>$LOG_FILE
-	sleep 3
+#	sleep 3
 	logItem "--- udevadm ---"
 	udevadm settle &>>$LOG_FILE
 	logExit
@@ -6084,7 +6086,7 @@ function formatRestoreDevice() {
 		fi
 
 		if (( $NO_YES_QUESTION )); then
-			echo "Y${NL}"
+			echo "Y"
 		fi
 
 	elif [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
@@ -6097,7 +6099,7 @@ function formatRestoreDevice() {
 		fi
 
 		if (( $NO_YES_QUESTION )); then
-			echo "Y${NL}"
+			echo "Y"
 		fi
 
 		if (( $FORCE_SFDISK )); then
@@ -7864,7 +7866,7 @@ function restorePartitionBasedBackup() {
 	fi
 
 	if (( $NO_YES_QUESTION )); then
-		echo "Y${NL}"
+		echo "Y"
 	fi
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
@@ -7879,11 +7881,8 @@ function restorePartitionBasedBackup() {
 	fi
 
 	if (( $NO_YES_QUESTION )); then
-		echo "Y${NL}"
+		echo "Y"
 	fi
-
-
-	waitForPartitionDefsChanged
 
 	initRestoreVariables
 	if partitionsSelected; then		# don't format if no partition should be restored
@@ -8156,7 +8155,7 @@ function makeFilesystemAndLabel() { # partition filesystem label
 		fi
 	fi
 
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING "$partition" "$partitionFilesystem" $fileSystemsize
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORMATTING "$partition" "$partitionFilesystem" $fileSystemsize
 	logItem "$cmd $partition"
 
 	$cmd $partition &>>"$LOG_FILE"
@@ -8243,8 +8242,10 @@ function restorePartitionBasedPartition() { # restorefile
 	elif [[ ! -z $partitionFilesystem ]]; then
 		logItem "partitionFilesystem: \"$partitionFilesystem\""
 
-		if (( ! $SKIP_SFDISK )); then
+		if (( ! $SKIP_FORMAT )); then
 			makeFilesystemAndLabel "$mappedRestorePartition" "$partitionFilesystem" "$partitionLabel"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING "$partitionNumber"
 		fi
 
 		if [[ ! "$partitionFilesystem" =~ swap ]]; then
@@ -9441,6 +9442,7 @@ REVERT=0
 ROOT_PARTITION_DEFINED=0
 SHARED_BOOT_DIRECTORY=0
 SKIP_SFDISK=0
+SKIP_FORMAT=0
 UPDATE_MYSELF=0
 UPDATE_POSSIBLE=0
 VERSION_DEPRECATED=0
@@ -9539,6 +9541,11 @@ while (( "$#" )); do
   case "$1" in
 	-0|-0[-+])
 	  SKIP_SFDISK=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
+	-00|-00[-+])
+	  SKIP_FORMAT=$(getEnableDisableOption "$1"); shift 1
+	  SKIP_SFDISK=$SKIP_FORMAT
 	  ;;
 
 	-1|-1[-+])
