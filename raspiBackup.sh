@@ -1838,6 +1838,21 @@ MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED=401
 MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup strategy would delete %s."
 MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup Strategie würde %s Backup löschen."
 MSG_FI[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Varmuuskopiointistrategia poistaisi kohteen %s."
+MSG_OLD_TYPE_BACKUPS_FOUND=402
+MSG_EN[$MSG_OLD_TYPE_BACKUPS_FOUND]="RBK0402W: Old-type backups foundi (without OS info in its Name):"
+MSG_DE[$MSG_OLD_TYPE_BACKUPS_FOUND]="RBK0402W: Backups vom alten Typ gefunden (ohne OS-Info im Namen):"
+MSG_OLD_TYPE_BACKUPS_HANDLING_INFO=403
+MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO]="RBK0403W: They might be deleted manually. Best when there are enough new-type ones."
+MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO]="RBK0403W: Diese könnten manuell gelöcht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
+MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL=404
+MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL]="RBK0404W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL]="RBK0404W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART=405
+MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART]="RBK0405W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART]="RBK0405W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_GENERIC_WARNING=406
+MSG_EN[$MSG_GENERIC_WARNING]="RBK0406W: %s"
+MSG_DE[$MSG_GENERIC_WARNING]="RBK0406W: %s"
 
 #
 # Non NLS messages
@@ -6280,16 +6295,18 @@ function reportOldBackups() {
 	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
 
 	if [[ -n $tobeListedOldBackups ]] ; then
-		echo "!!! **********************************************************************"
-		echo "!!! Old-type backups found:"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? "
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_FOUND
 		echo "$tobeListedOldBackups" | while read dir_to_list; do
-			[[ -n $dir_to_list ]] && echo "!!!  - $BACKUPTARGET_ROOT/${dir_to_list}"
+			[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
 		done
-		echo "!!! These old-type backups might be deleted manually when there are enough new-type ones."
-		echo -e "!!! \"Enough\" means: if numListedNewBackups ($numListedNewBackups) \c"
-		(( $SMART_RECYCLE )) && echo -e " or  numKeptBackups ($numKeptBackups) \c"
-		echo " has reached  keepBackups (${keepBackups:-$DEFAULT_KEEPBACKUPS})"
-		echo "!!! **********************************************************************"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_HANDLING_INFO
+		if (( $SMART_RECYCLE )) ; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART $numListedNewBackups $numKeptBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+		fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 	fi
 
 	if ! popd &>>$LOG_FILE; then
