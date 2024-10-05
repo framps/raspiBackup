@@ -1998,6 +1998,9 @@ MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s wird nicht formatiert."
 MSG_REMOVING_INCOMPLETE_BACKUPS=327
 MSG_EN[$MSG_REMOVING_INCOMPLETE_BACKUPS]="RBK0327I: Removing incomplete backups from previous backup runs. This may take some time. Please be patient."
 MSG_DE[$MSG_REMOVING_INCOMPLETE_BACKUPS]="RBK0327I: Unvollständiges Backups von vorhergehendem Backupläufen werden gelöscht. Das kann etwas dauern. Bitte Geduld."
+MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=328
+MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0328W: Missing partitions saved in previous backup runs."
+MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0328W: Es fehlen Partitionen die im vorhergehenden Backup gesichert wurden".
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5910,6 +5913,23 @@ function updateUUID() {
 	logExit
 }
 
+function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
+
+	logEntry $1
+
+	[[ $PARTITIONS_TO_BACKUP == $PARTITIONS_TO_BACKUP_ALL ]] && logExit
+
+	local partitionDirsCount=$(ls -d */ | wc -l )
+	local partitionsDefined=($PARTITIONS_TO_BACKUP)
+	local partionsToBackup=${#partitionsDefined[@]}
+
+	if (( partitionDirsCount != partionsToBackup )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
+	fi
+	
+	logExit
+}
+
 function backupRsync() { # partition number (for partition based backup)
 
 	local verbose partition target source excludeRoot cmd cmdParms excludeMeta
@@ -5943,6 +5963,7 @@ function backupRsync() { # partition number (for partition based backup)
 	if [[ -n "$lastBackupDir" ]]; then
 		if [[ -d $lastBackupDir/$partition ]]; then
 			lastBackupDir="$lastBackupDir/${partition}"
+			checkIfAllPreviousPartitionsAreIncludedInBackup "$lastBackupDir"
 		else
 			lastBackupDir=""
 		fi
