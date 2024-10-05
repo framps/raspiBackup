@@ -6276,12 +6276,11 @@ function reportOldBackups() {
 	done
 	if [[ -n "$tobeListedOldBackups" ]] ; then
 		echo "!!! Above listed old-type backups might be deleted manually when there are enough new-type ones."
-		echo -e "!!! That means: if numListedNewBackups ($numListedNewBackups)  >=  \c"
+		echo -e "!!! \"Enough\" means: if numListedNewBackups ($numListedNewBackups) \c"
 		if (( $SMART_RECYCLE )); then
-			echo "numKeptBackups ($numKeptBackups)"
-		else
-			echo "keepBackups ($keepBackups)"
+			echo -e " or  numKeptBackups ($numKeptBackups) \c"
 		fi
+		echo " has reached  keepBackups (${keepBackups:-$DEFAULT_KEEPBACKUPS})"
 	fi
 	if ! popd &>>$LOG_FILE; then
 		assertionFailed $LINENO "pop failed"
