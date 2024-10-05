@@ -6271,17 +6271,19 @@ function reportOldBackups() {
 
 	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
 
-	echo "$tobeListedOldBackups" | while read dir_to_list; do
-		[[ -n $dir_to_list ]] && echo "!!! Old-type backup found: $BACKUPTARGET_ROOT/${dir_to_list}"
-	done
-	if [[ -n "$tobeListedOldBackups" ]] ; then
-		echo "!!! Above listed old-type backups might be deleted manually when there are enough new-type ones."
+	if [[ -n $tobeListedOldBackups ]] ; then
+		echo "!!! **********************************************************************"
+		echo "!!! Old-type backups found:"
+		echo "$tobeListedOldBackups" | while read dir_to_list; do
+			[[ -n $dir_to_list ]] && echo "!!!  - $BACKUPTARGET_ROOT/${dir_to_list}"
+		done
+		echo "!!! These old-type backups might be deleted manually when there are enough new-type ones."
 		echo -e "!!! \"Enough\" means: if numListedNewBackups ($numListedNewBackups) \c"
-		if (( $SMART_RECYCLE )); then
-			echo -e " or  numKeptBackups ($numKeptBackups) \c"
-		fi
+		(( $SMART_RECYCLE )) && echo -e " or  numKeptBackups ($numKeptBackups) \c"
 		echo " has reached  keepBackups (${keepBackups:-$DEFAULT_KEEPBACKUPS})"
+		echo "!!! **********************************************************************"
 	fi
+
 	if ! popd &>>$LOG_FILE; then
 		assertionFailed $LINENO "pop failed"
 	fi
