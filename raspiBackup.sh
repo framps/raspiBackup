@@ -1831,6 +1831,14 @@ MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Lin
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
+MSG_EXISTING_BACKUP=400
+MSG_EN[$MSG_EXISTING_BACKUP]="RBK0400I: Existing backup: %s"
+MSG_DE[$MSG_EXISTING_BACKUP]="RBK0400I: Existierendes Backup: %s"
+MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED=401
+MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup strategy would delete %s."
+MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup Strategie würde %s Backup löschen."
+MSG_FI[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Varmuuskopiointistrategia poistaisi kohteen %s."
+
 #
 # Non NLS messages
 #
@@ -6165,11 +6173,11 @@ function applyBackupStrategy() {
 				fi
 				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
 				echo "$tobeCheckedBackups" | while read dir_to_check; do
-					[[ -n $dir_to_check ]] && echo "!!! Matching backup found: $BACKUPTARGET_ROOT/${dir_to_check}"
+					[[ -n $dir_to_check ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXISTING_BACKUP  $BACKUPTARGET_ROOT/${dir_to_check}
 				done
 				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$fakeKeepBackups 2>>$LOG_FILE)
 				echo "$tobeDeletedBackups" | while read dir_to_delete; do
-					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
+					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
 				done
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
