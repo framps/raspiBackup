@@ -967,10 +967,10 @@ MSG_DE[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Die Sprache %s wird nicht unterst
 MSG_FI[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Kieli %s ei ole tuettu."
 MSG_FR[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Langue %s non prise en charge."
 MSG_PARTITIONING_SDCARD=97
-MSG_EN[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioning and formating %s."
-MSG_DE[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioniere und formatiere %s."
-MSG_FI[$MSG_PARTITIONING_SDCARD]="RBK0097W: Osioidaan ja alustetaan %s."
-MSG_FR[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitionnement et formatage %s."
+MSG_EN[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioning %s."
+MSG_DE[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioniere %s."
+#MSG_FI[$MSG_PARTITIONING_SDCARD]="RBK0097W: Osioidaan ja alustetaan %s."
+#MSG_FR[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitionnement et formatage %s."
 MSG_FORMATTING=98
 MSG_EN[$MSG_FORMATTING]="RBK0098I: Formatting partition %s with %s (%s)."
 MSG_DE[$MSG_FORMATTING]="RBK0098I: Formatiere Partition %s mit %s (%s)."
@@ -5257,7 +5257,7 @@ function cleanupRestore() { # trap
 		fi
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir $MNT_POINT &>>"$LOG_FILE"
+		rmdir -r $MNT_POINT &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
@@ -6075,7 +6075,7 @@ function logSystemDiskState() {
 	logExit
 }
 
-function formatRestoreDevice() {
+function partitionRestoreDevice() {
 
 	logEntry
 
@@ -6294,7 +6294,7 @@ function restoreNormalBackupType() {
 				exitError $RC_MISC_ERROR
 			fi
 
-			formatRestoreDevice
+			partitionRestoreDevice
 
 			if [[ -e $TAR_FILE ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_FIRST_PARTITION "$BOOT_PARTITION"
@@ -7888,7 +7888,7 @@ function restorePartitionBasedBackup() {
 
 	initRestoreVariables
 	if partitionsSelected; then		# don't format if no partition should be restored
-		formatRestoreDevice
+		partitionRestoreDevice
 	fi
 
 	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
