@@ -6859,7 +6859,7 @@ function inspect4Backup() {
 		fi
 
 		logItem "bootMountpoint: $bootMountpoint, bootPartition: $bootPartition"
-		
+
 		logItem "Starting root discovery"
 
 		# find root partition
@@ -7257,8 +7257,8 @@ function doitBackup() {
 	fi
 
 	if (( $SYSTEMSTATUS )) && ! which lsof &>/dev/null; then
-		 writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
-		 exitError $RC_MISSING_COMMANDS
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
+		exitError $RC_MISSING_COMMANDS
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
@@ -7283,10 +7283,10 @@ function doitBackup() {
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
 	if [[ ! -d "$BACKUPPATH" ]]; then
-		 if ! mkdir -p "${BACKUPPATH}"; then
+		if ! mkdir -p "${BACKUPPATH}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
 			exitError $RC_CREATE_ERROR
-		 fi
+		fi
 	fi
 
 	logCommand "ls -1 ${BACKUPPATH}"
@@ -8267,8 +8267,8 @@ function updateRestoreReminder() {
 
 		# initialize reminder state
 		if [[ ! -e "$reminder_file" ]]; then
-			 echo "$(date +%Y%m) 0" > "$reminder_file"
-			 return
+			echo "$(date +%Y%m) 0" > "$reminder_file"
+			return
 		fi
 
 		# retrieve reminder state
@@ -8276,7 +8276,7 @@ function updateRestoreReminder() {
 		now=$(date +%Y%m)
 		local rf
 		rf="$(<$reminder_file)"
-		if [[ -z "${rf}" ]]; then												# issue #316: reminder file exists but is empty
+		if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
 			echo "$(date +%Y%m) 0" > "$reminder_file"
 			return
 		fi
@@ -8952,7 +8952,7 @@ function usageEN() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="no"
 	echo "-a \"{commands to execute after Backup}\" (default: $DEFAULT_STARTSERVICES)"
 	echo "-B Save bootpartition in tar file (Default: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
- 	echo "-F Backup is simulated"
+	echo "-F Backup is simulated"
 	echo "-k {backupsToKeep} (default: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
 	echo "-o \"{commands to execute before Backup}\" (default: $DEFAULT_STOPSERVICES)"
@@ -9003,7 +9003,7 @@ function usageDE() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="keine"
 	echo "-a \"{Befehle die nach dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STARTSERVICES)"
 	echo "-B Sicherung der Bootpartition als tar file (Standard: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
-  	echo "-F Backup wird nur simuliert"
+	echo "-F Backup wird nur simuliert"
 	echo "-k {Anzahl Backups} (Standard: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="keine"
 	echo "-o \"{Befehle die vor dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STOPSERVICES)"
@@ -9052,7 +9052,7 @@ function usageFI() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="ei"
 	echo "-a \"{varmuuskopion jläkeen suoritettavat komennot}\" (oletus: $DEFAULT_STARTSERVICES)"
 	echo "-B Tee käynnistysosiosta kopio tar tiedostoon (oletus: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
- 	echo "-F Varmuuskopioinnin simulointi"
+	echo "-F Varmuuskopioinnin simulointi"
 	echo "-k {säilytettävien varmuuskopioiden lkm} (oletus: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="ei"
 	echo "-o \"{ennen varmuuskopiointia suoritettavat komennot}\" (oletus: $DEFAULT_STOPSERVICES)"
