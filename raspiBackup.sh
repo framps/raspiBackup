@@ -8773,7 +8773,7 @@ function SR_listMonthlyBackups() { # directory
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
+			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest monthly backup
 		done
 	fi
 	logExit
