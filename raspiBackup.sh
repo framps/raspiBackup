@@ -1839,11 +1839,11 @@ MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup strategy wou
 MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup Strategie würde %s Backup löschen."
 MSG_FI[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Varmuuskopiointistrategia poistaisi kohteen %s."
 MSG_OLD_TYPE_BACKUPS_FOUND=402
-MSG_EN[$MSG_OLD_TYPE_BACKUPS_FOUND]="RBK0402W: Old-type backups foundi (without OS info in its Name):"
+MSG_EN[$MSG_OLD_TYPE_BACKUPS_FOUND]="RBK0402W: Old-type backups found (without OS info in its Name):"
 MSG_DE[$MSG_OLD_TYPE_BACKUPS_FOUND]="RBK0402W: Backups vom alten Typ gefunden (ohne OS-Info im Namen):"
 MSG_OLD_TYPE_BACKUPS_HANDLING_INFO=403
 MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO]="RBK0403W: They might be deleted manually. Best when there are enough new-type ones."
-MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO]="RBK0403W: Diese könnten manuell gelöcht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
+MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO]="RBK0403W: Diese können manuell gelöscht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
 MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL=404
 MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL]="RBK0404W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
 MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL]="RBK0404W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
@@ -1853,6 +1853,9 @@ MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART]="RBK0405W: \"Genügend\" meint
 MSG_GENERIC_WARNING=406
 MSG_EN[$MSG_GENERIC_WARNING]="RBK0406W: %s"
 MSG_DE[$MSG_GENERIC_WARNING]="RBK0406W: %s"
+MSG_BACKUP_NAMING_CHANGE=407
+MSG_EN[$MSG_BACKUP_NAMING_CHANGE]="RBK0407W: With raspiBackup version %s the naming of the backup directories changed!"
+MSG_DE[$MSG_BACKUP_NAMING_CHANGE]="RBK0407W: Ab raspiBackup Version %s hat sich die Bezeichnung der Backup-Verzeichnisse geändert!"
 
 #
 # Non NLS messages
@@ -6295,7 +6298,8 @@ function reportOldBackups() {
 	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
 
 	if [[ -n $tobeListedOldBackups ]] ; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? "
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.6.10.0"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_FOUND
 		echo "$tobeListedOldBackups" | while read dir_to_list; do
 			[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
