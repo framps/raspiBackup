@@ -1995,12 +1995,9 @@ MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird akt
 MSG_SKIP_FORMATING=326
 MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s is not formatted."
 MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s wird nicht formatiert."
-MSG_REMOVING_INCOMPLETE_BACKUPS=327
-MSG_EN[$MSG_REMOVING_INCOMPLETE_BACKUPS]="RBK0327I: Removing incomplete backups from previous backup runs. This may take some time. Please be patient."
-MSG_DE[$MSG_REMOVING_INCOMPLETE_BACKUPS]="RBK0327I: Unvollständiges Backups von vorhergehendem Backupläufen werden gelöscht. Das kann etwas dauern. Bitte Geduld."
-MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=328
-MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0328W: Missing partitions saved in previous backup runs."
-MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0328W: Es fehlen Partitionen die im vorhergehenden Backup gesichert wurden".
+MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=327
+MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327W: Missing partitions which were saved in previous backup run."
+MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327W: Es fehlen Partitionen die im vorhergehenden Backup gesichert wurden".
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4829,7 +4826,7 @@ function cleanupBackupDirectory() {
 
 	if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then
 		if [[ -n $(ls "$BACKUPTARGET_TEMP_ROOT") ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_INCOMPLETE_BACKUPS "$BACKUPTARGET_TEMP_ROOT"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE "$BACKUPTARGET_TEMP_ROOT"
 			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> $LOG_FILE # delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
@@ -5099,14 +5096,15 @@ function cleanup() { # trap
 		cleanupRestore $1
 	else
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOVE_TEMP_DIR "$BACKUPTARGET_FINAL_DIR"
-			mv "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
-			local rc=$?
+			local rc
+			mv "${BACKUPTARGET_DIR}" "${BACKUPTARGET_FINAL_DIR}"
+			rc=$?
 			if (( $rc )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
 				CLEANUP_RC=$RC_TEMPMOVE_FAILED
 			else
-				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOVE_TEMP_DIR "$BACKUPTARGET_FINAL_DIR"
+				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE	# delete temp dir now
 				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
 					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
@@ -5926,7 +5924,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 	if (( partitionDirsCount != partionsToBackup )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
 	fi
-	
+
 	logExit
 }
 
@@ -8541,7 +8539,7 @@ function doitRestore() {
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
 		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
-			if (( ! SKIP_SFDISK )); then 
+			if (( ! SKIP_SFDISK )); then
 				synchronizeCmdlineAndfstab
 			fi
 		fi
