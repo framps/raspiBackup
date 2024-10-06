@@ -1831,31 +1831,34 @@ MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Lin
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
-MSG_EXISTING_BACKUP=400
-MSG_EN[$MSG_EXISTING_BACKUP]="RBK0400I: Existing backup: %s"
-MSG_DE[$MSG_EXISTING_BACKUP]="RBK0400I: Existierendes Backup: %s"
-MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED=401
-MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup strategy would delete %s."
-MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Backup Strategie würde %s Backup löschen."
-MSG_FI[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0401W: Varmuuskopiointistrategia poistaisi kohteen %s."
-MSG_OLD_TYPE_BACKUPS_FOUND=402
-MSG_EN[$MSG_OLD_TYPE_BACKUPS_FOUND]="RBK0402W: Old-type backups found (without OS info in its Name):"
-MSG_DE[$MSG_OLD_TYPE_BACKUPS_FOUND]="RBK0402W: Backups vom alten Typ gefunden (ohne OS-Info im Namen):"
-MSG_OLD_TYPE_BACKUPS_HANDLING_INFO=403
-MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO]="RBK0403W: They might be deleted manually. Best when there are enough new-type ones."
-MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO]="RBK0403W: Diese können manuell gelöscht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
-MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL=404
-MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL]="RBK0404W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
-MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL]="RBK0404W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
-MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART=405
-MSG_EN[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART]="RBK0405W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
-MSG_DE[$MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART]="RBK0405W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
-MSG_GENERIC_WARNING=406
-MSG_EN[$MSG_GENERIC_WARNING]="RBK0406W: %s"
-MSG_DE[$MSG_GENERIC_WARNING]="RBK0406W: %s"
-MSG_BACKUP_NAMING_CHANGE=407
-MSG_EN[$MSG_BACKUP_NAMING_CHANGE]="RBK0407W: With raspiBackup version %s the naming of the backup directories changed!"
-MSG_DE[$MSG_BACKUP_NAMING_CHANGE]="RBK0407W: Ab raspiBackup Version %s hat sich die Bezeichnung der Backup-Verzeichnisse geändert!"
+MSG_GENERIC_WARNING=400
+MSG_EN[$MSG_GENERIC_WARNING]="RBK0400W: %s"
+MSG_DE[$MSG_GENERIC_WARNING]="RBK0400W: %s"
+
+MSG_EXISTING_BACKUP=401
+MSG_EN[$MSG_EXISTING_BACKUP]="RBK0401I: Existing backup: %s"
+MSG_DE[$MSG_EXISTING_BACKUP]="RBK0401I: Existierendes Backup: %s"
+MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED=402
+MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Backup strategy would delete %s."
+MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Backup Strategie würde %s Backup löschen."
+MSG_FI[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Varmuuskopiointistrategia poistaisi kohteen %s."
+
+MSG_BACKUP_NAMING_CHANGE=403
+MSG_EN[$MSG_BACKUP_NAMING_CHANGE]="RBK0403W: With raspiBackup version %s the naming of the backup directories changed!"
+MSG_DE[$MSG_BACKUP_NAMING_CHANGE]="RBK0403W: Ab raspiBackup Version %s hat sich die Bezeichnung der Backup-Verzeichnisse geändert!"
+MSG_OLD_NAME_BACKUPS_FOUND=404
+MSG_EN[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0404W: Old-name backups found (without OS info in its name):"
+MSG_DE[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0404W: Backups mit alter Bezeichnung gefunden (ohne OS-Info im Namen):"
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO=405
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0405W: They might be deleted manually. Best when there are enough new-type ones."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0405W: Diese können manuell gelöscht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL=406
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0406W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0406W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART=407
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+
 
 #
 # Non NLS messages
@@ -6300,15 +6303,15 @@ function reportOldBackups() {
 	if [[ -n $tobeListedOldBackups ]] ; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.6.10.0"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_FOUND
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
 		echo "$tobeListedOldBackups" | while read dir_to_list; do
 			[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
 		done
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_HANDLING_INFO
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
 		if (( $SMART_RECYCLE )) ; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_SMART $numListedNewBackups $numKeptBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART $numListedNewBackups $numKeptBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_TYPE_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
 		fi
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 	fi
