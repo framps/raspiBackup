@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -433,6 +432,7 @@ RC_UNPROTECTED_CONFIG=142
 RC_NOT_SUPPORTED=143
 RC_TEMPMOVE_FAILED=144
 RC_RESIZE_ERROR=145
+RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
 
 tty -s
 INTERACTIVE=$((!$?))
@@ -1996,8 +1996,8 @@ MSG_SKIP_FORMATING=326
 MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s is not formatted."
 MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s wird nicht formatiert."
 MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=327
-MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327W: Missing partitions which were saved in previous backup run."
-MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327W: Es fehlen Partitionen die im vorhergehenden Backup gesichert wurden".
+MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Not all partitions which were saved in the previous backup are included in option -T."
+MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden mit der Option -T gesichert."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5915,17 +5915,21 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	logEntry $1
 
-	[[ $PARTITIONS_TO_BACKUP == $PARTITIONS_TO_BACKUP_ALL ]] && logExit
+	local rc
+	if [[ "$PARTITIONS_TO_BACKUP" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
+		rc=0
+	else
+		local partitionDirsCount=$(ls -l $1 | grep "^d" | wc -l )
+		logItem "Partitions found: $partitionDirsCount"
+		local partitionsDefined=( $PARTITIONS_TO_BACKUP )
+		local partitionsToBackup=${#partitionsDefined[@]}
+		logItem "Partitions to backup: $partitionsToBackup"
 
-	local partitionDirsCount=$(ls -d */ | wc -l )
-	local partitionsDefined=($PARTITIONS_TO_BACKUP)
-	local partionsToBackup=${#partitionsDefined[@]}
-
-	if (( partitionDirsCount != partionsToBackup )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
+		local rc=$(( partitionDirsCount > partitionsToBackup ))
 	fi
 
-	logExit
+	logExit $rc
+	return $rc
 }
 
 function backupRsync() { # partition number (for partition based backup)
@@ -5958,16 +5962,15 @@ function backupRsync() { # partition number (for partition based backup)
 
 	lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 
+	logItem "lastBackupDir: $lastBackupDir"
+
 	if [[ -n "$lastBackupDir" ]]; then
 		if [[ -d $lastBackupDir/$partition ]]; then
 			lastBackupDir="$lastBackupDir/${partition}"
-			checkIfAllPreviousPartitionsAreIncludedInBackup "$lastBackupDir"
 		else
 			lastBackupDir=""
 		fi
 	fi
-
-	logItem "lastBackupDir: $lastBackupDir"
 
 	local LINK_DEST=""
 	if [[ -n $lastBackupDir ]]; then
@@ -6964,6 +6967,15 @@ function checksForPartitionBasedBackup() {
 	local partition
 
 	logEntry
+
+	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
+		local lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
+		logItem "lastBackupDir: $lastBackupDir"
+		if ! checkIfAllPreviousPartitionsAreIncludedInBackup "$lastBackupDir"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
+			exitError $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
+		fi
+	fi
 
 	collectPartitions
 
