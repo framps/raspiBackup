@@ -3905,7 +3905,7 @@ function checkPartitioning() {
 	local rootFS="$(findmnt --fstab --evaluate | egrep "^/ " | awk '{print $3}')"
 
 	logItem "$bootFS - $rootFS"
-	[[ "$bootFS" == "vfat" && "$rootFS" == "ext4" ]]
+	[[ "$bootFS" == "vfat" && ( "$rootFS" == "ext4" || "$rootFS" == "f2fs" ) ]]
 	local rc=$?
 
 	echo "$bootFS $rootFS"
