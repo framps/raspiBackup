@@ -1944,9 +1944,9 @@ MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem wird nich
 MSG_PARTITIONS_EXTEND_DISK_SIZE=297
 MSG_EN[$MSG_PARTITIONS_EXTEND_DISK_SIZE]="RBK0297E: Partitioning exceeds disk size."
 MSG_DE[$MSG_PARTITIONS_EXTEND_DISK_SIZE]="RBK0297E: Partitionierung größer als Diskgröße."
-MSG_UNSUPPORTED_PARTITIONING=298
-MSG_EN[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 on boot and/or %2 on root not supported."
-MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 auf boot und/oder %2 auf root ist nicht unterstützt."
+#MSG_UNSUPPORTED_PARTITIONING=298
+#MSG_EN[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 on boot and/or %2 on root not supported."
+#MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 auf boot und/oder %2 auf root ist nicht unterstützt."
 MSG_MOVE_TEMP_DIR=299
 MSG_EN[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backup directory %1 created."
 MSG_DE[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backupverzeichnis %1 erstellt."
@@ -1968,9 +1968,9 @@ MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Nicht alle OS Partiti
 MSG_RESTORING_PARTITIONS=305
 MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partition(s) %s to %s."
 MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partition(en) %s werden auf %s zurüchgespielt."
-MSG_ANSWER_ALL=306
-MSG_EN[$MSG_ANSWER_ALL]="all"
-MSG_DE[$MSG_ANSWER_ALL]="Alle"
+#MSG_ANSWER_ALL=306
+#MSG_EN[$MSG_ANSWER_ALL]="all"
+#MSG_DE[$MSG_ANSWER_ALL]="Alle"
 MSG_UPDATING_UUIDS=319
 MSG_EN[$MSG_UPDATING_UUIDS]="RBK0319I: Generating new UUIDs."
 MSG_DE[$MSG_UPDATING_UUIDS]="RBK0319I: Neue UUIDs werden generiert."
@@ -3897,23 +3897,6 @@ function checkSfdiskOK() { # device, e.g. /dev/mmcblk0
 	return $rc
 }
 
-function checkPartitioning() {
-
-	logEntry
-
-	local bootFS="$(findmnt --fstab --evaluate | egrep "^/boot" | awk '{print $3}')"
-	local rootFS="$(findmnt --fstab --evaluate | egrep "^/ " | awk '{print $3}')"
-
-	logItem "$bootFS - $rootFS"
-	[[ "$bootFS" == "vfat" && ( "$rootFS" == "ext4" || "$rootFS" == "f2fs" ) ]]
-	local rc=$?
-
-	echo "$bootFS $rootFS"
-
-	logExit $rc
-	return $rc
-}
-
 # check if directory is located on a mounted device
 
 function isPathMounted() {
@@ -5096,22 +5079,34 @@ function cleanup() { # trap
 		cleanupRestore $1
 	else
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
-			local rc
-			mv "${BACKUPTARGET_DIR}" "${BACKUPTARGET_FINAL_DIR}"
-			rc=$?
-			if (( $rc )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
-				CLEANUP_RC=$RC_TEMPMOVE_FAILED
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOVE_TEMP_DIR "$BACKUPTARGET_FINAL_DIR"
-				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE	# delete temp dir now
-				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
-				if (( \
-					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
-					|| ! $SMART_RECYCLE \
-					)); then
-					applyBackupStrategy
+			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
+			if [[ -d "${BACKUPTARGET_DIR}" ]]; then   # does not exists if raspiBackup7412Test runs
+				local rc
+				mv "${BACKUPTARGET_DIR}" "${BACKUPTARGET_FINAL_DIR}"
+				rc=$?
+				if (( $rc )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
+					CLEANUP_RC=$RC_TEMPMOVE_FAILED
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOVE_TEMP_DIR "$BACKUPTARGET_FINAL_DIR"
 				fi
+			else
+				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
+			fi
+
+			logItem "BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT"
+			if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then # does not exists if raspiBackup7412Test runs
+				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE	# delete temp dir now
+			else
+				logItem "??? BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT not found"
+			fi
+
+			BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
+			if (( \
+				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
+				|| ! $SMART_RECYCLE \
+				)); then
+					applyBackupStrategy
 			fi
 		fi
 	fi
@@ -7345,13 +7340,6 @@ function doitBackup() {
 
 	commonChecks
 
-	local fs
-	fs=( $(checkPartitioning) )
-	if (( $? )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_PARTITIONING "${fs[0]}" "${fs[1]}"
-		exitError $RC_MISC_ERROR
-	fi
-
 	if hasSpaces "$BACKUPPATH"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_CONTAINS_SPACES "$BACKUPPATH"
 		exitError $RC_MISC_ERROR
@@ -7959,6 +7947,11 @@ function restorePartitionBasedBackup() {
 			exitError $RC_MISSING_FILES
 		fi
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
+
+		if [[ -n $ROOT_PARTITION ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_ALLOWED
+			exitError $RC_MISSING_FILES
+		fi
 
 		local partitionBackupFile
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
