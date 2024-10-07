@@ -5805,6 +5805,11 @@ function backupTar() {
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
 
+	if [[ ( -e $PERSISTENT_JOURNAL || -e $PERSISTENT_JOURNAL_LOG2RAM ) ]]; then
+		logItem "Excluding $PERSISTENT_JOURNAL and $PERSISTENT_JOURNAL_LOG2RAM"
+		EXCLUDE_LIST+=" --exclude ${PERSISTENT_JOURNAL} --exclude ${PERSISTENT_JOURNAL_LOG2RAM}"
+	fi
+
 	cmd="tar \
 		$TAR_BACKUP_OPTIONS \
 		$TAR_BACKUP_ADDITIONAL_OPTIONS \
