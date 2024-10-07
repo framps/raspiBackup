@@ -5664,7 +5664,7 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME_OSR}*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
+		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME_OSR}-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
