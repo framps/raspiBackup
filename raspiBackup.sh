@@ -9867,6 +9867,7 @@ while (( "$#" )); do
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
 	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
+	  PARTITIONBASED_BACKUP=1
 	  ;;
 
 	--telegramToken)
