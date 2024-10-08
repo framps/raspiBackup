@@ -66,6 +66,35 @@ YEARLY=$PER_BUCKET
 MASS=1
 TYPE=1
 
+HOSTNAME=$(hostname)
+# For including the OS release into the name of the backup directory
+os_release=$(getOSRelease)
+# Note: Sanitize the os_release to be usable as (part of) directory name.
+# But don't allow or use "-" or "_" as replacement character!
+# Both characters are already used as dividers/markers later on!
+# The "~" seems to be okay. Even safer would be "", a.k.a. nothing.
+HOSTNAME_OSR="${HOSTNAME}@${os_release//[ \/\\\:\.\-_]/\~}"
+
+function getOSRelease() {
+
+	local os_release_file
+	local os_release
+
+	for os_release_file in /etc/os-release /usr/lib/os-release /dev/null ; do
+		[[ -e "$os_release_file" ]] && break
+	done
+
+	# the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
+	unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
+
+	local osr_$(grep -E "^ID="         "$os_release_file")
+	local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
+
+	os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
+	os_release="${os_release//\"/}"          # remove any double quotes
+	echo "${os_release:-unknownOS}"          # handle empty result
+}
+
 function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmmss] type dont_delete_flag
 
 	if (( $# <= 2 )); then
@@ -84,15 +113,15 @@ function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmms
 	local h
 	for d in $1; do
 		(( ${#d} <= 8 )) && t="$tc" || t=""
-		local h="$(hostname)/$(hostname)-${type}-backup-"$d$t
+		local h="${HOSTNAME}/${HOSTNAME_OSR}-${type}-backup-"$d$t
 		mkdir -p $DIR/$h
-		h="$(hostname)/$(hostname)-${type}-backup-"${d}-100000_before_before
+		h="${HOSTNAME}/${HOSTNAME_OSR}-${type}-backup-"${d}-100000_before_before
 		mkdir -p $DIR/$h
-		h="$(hostname)/$(hostname)-${type}-backup-"${d}-200000_after_after
+		h="${HOSTNAME}/${HOSTNAME_OSR}-${type}-backup-"${d}-200000_after_after
 		mkdir -p $DIR/$h
 	done
 
-	(( $DEBUG )) && ls -1 "$DIR/$(hostname)"
+	(( $DEBUG )) && ls -1 "$DIR/${HOSTNAME}"
 
 }
 
@@ -132,7 +161,7 @@ function createMassBackups() { # startdate count #per_day type dont_delete_flag
 			printf -v F_HR "%02d" $F_HR
 			printf -v F_MI "%02d" $F_MI
 			printf -v F_SI "%02d" $F_SI
-			local h="$(hostname)/$(hostname)-${type}-backup-"$(date -d "$today -$i days" +%Y%m%d-)
+			local h="${HOSTNAME}/${HOSTNAME_OSR}-${type}-backup-"$(date -d "$today -$i days" +%Y%m%d-)
 			local n="$h$F_HR$F_MI$F_SI"
 			if (( c-- % $TICKS == 0 )); then
 				(( $DEBUG )) && echo "Next $TICKS ... $n ..."
@@ -145,7 +174,7 @@ function createMassBackups() { # startdate count #per_day type dont_delete_flag
 		done
 	done
 
-	(( $DEBUG )) && ls -1 "$DIR/$(hostname)"
+	(( $DEBUG )) && ls -1 "$DIR/${HOSTNAME}"
 
 }
 
@@ -153,11 +182,11 @@ function testMassBackups() { # count type
 
 	echo "Testing ..."
 
-	local f=$(ls $DIR/$(hostname-${2})/ | wc -l)
+	local f=$(ls $DIR/${HOSTNAME_OSR}-${2}/ | wc -l)
 
 	if (( f != $1 )); then
 		echo "???: Expected $1 but found $f backups"
-		ls -r1 "$DIR/$(hostname)-${2}"
+		ls -r1 "$DIR/${HOSTNAME_OSR}-${2}"
 		exit 1
 	fi
 }
@@ -179,28 +208,28 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 
 	echo "Testing for type $type and static $((2*$static)) ..."
 
-	local f=$(ls $DIR/$(hostname)/ | grep $type | grep -v "_" | wc -l)
+	local f=$(ls $DIR/${HOSTNAME}/ | grep $type | grep -v "_" | wc -l)
 	local n=$(wc -w <<< "$dtes")
 
 	if (( f != $n )); then
 		echo "??? Test in line $l: Expected #$n $dtes but found $f backups of type $type"
-		(( $DEBUG )) && ls -1 "$DIR/$(hostname)"
+		(( $DEBUG )) && ls -1 "$DIR/${HOSTNAME}"
 		exit 1
 	fi
 
-	local f=$(ls $DIR/$(hostname)/ | grep $type | grep "_" | wc -l)
+	local f=$(ls $DIR/${HOSTNAME}/ | grep $type | grep "_" | wc -l)
 
 	if (( f != $(($static*2)) )); then
 		echo "??? Test in line $l: Expected #$(($static*2)) statics but found $f statics of type $type"
-		(( $DEBUG )) && ls -1 "$DIR/$(hostname)"
+		(( $DEBUG )) && ls -1 "$DIR/${HOSTNAME}"
 		exit 1
 	fi
 
 	local d
 	for d in $dtes; do
-		if [[ -z $(find $DIR/$(hostname) -type d -name "*${type}-backup-${d}*") ]] ; then
+		if [[ -z $(find $DIR/${HOSTNAME} -type d -name "*${type}-backup-${d}*") ]] ; then
 			echo "??? Test in line $l: Expected date $d of type $type in $dtes not found"
-			ls -1 "$DIR/$(hostname)"
+			ls -1 "$DIR/${HOSTNAME}"
 			exit 1
 		fi
 	done
