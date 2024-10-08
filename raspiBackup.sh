@@ -1998,6 +1998,9 @@ MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s wird nicht formatiert."
 MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=327
 MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Not all partitions which were saved in the previous backup are included in option -T."
 MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden mit der Option -T gesichert."
+MSG_NO_BOOTDEVICE_MOUNTED=328
+MSG_EN[$MSG_NO_BOOTDEVICE_MOUNTED]="RBK0328E: Boot device %s not mounted"
+MSG_DE[$MSG_NO_BOOTDEVICE_MOUNTED]="RBK0328E: Bootgerät %s ist nicht gemounted."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7205,6 +7208,13 @@ function inspect4Backup() {
 
 	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
+		exitError $RC_INVALID_BOOTDEVICE
+	fi
+
+	local bootPref="$(getPartitionPrefix $BOOT_DEVICE)"
+
+	if ! findmnt "/dev/${bootPref}1" &>/dev/null; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}1"
 		exitError $RC_INVALID_BOOTDEVICE
 	fi
 
