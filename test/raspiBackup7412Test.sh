@@ -32,15 +32,6 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 VERSION="0.2"
 
-set +u;GIT_DATE="$Date$"; set -u
-GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-set +u;GIT_COMMIT="$Sha1$";set -u
-GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
-
-GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
-
 if (( $UID != 0 )); then
 	echo "Call me as root"
 	exit 1
@@ -65,28 +56,11 @@ MONTHLY=$PER_BUCKET
 YEARLY=$PER_BUCKET
 MASS=1
 TYPE=1
+ADD_HOST=0		# flag to create old named backups
 
 HOSTNAME=$(hostname)
 
-function getOSRelease() {
-
-	local os_release_file
-	local os_release
-
-	for os_release_file in /etc/os-release /usr/lib/os-release /dev/null ; do
-		[[ -e "$os_release_file" ]] && break
-	done
-
-	# the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
-	unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
-
-	local osr_$(grep -E "^ID="         "$os_release_file")
-	local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
-
-	os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
-	os_release="${os_release//\"/}"          # remove any double quotes
-	echo "${os_release:-unknownOS}"          # handle empty result
-}
+source ../raspiBackup.sh
 
 function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmmss] type dont_delete_flag
 
@@ -108,6 +82,10 @@ function createSpecificBackups() { # stringlist_of_dates of form yyyymmdd{-hhmms
 		(( ${#d} <= 8 )) && t="$tc" || t=""
 		local h="${HOSTNAME}/${HOSTNAME_OSR}-${type}-backup-"$d$t
 		mkdir -p $DIR/$h
+		if (( $ADD_HOST )); then									# flag to create old directorynames also
+			local h="${HOSTNAME}/${HOSTNAME}-${type}-backup-"$d$t
+			mkdir -p $DIR/$h
+		fi
 		h="${HOSTNAME}/${HOSTNAME_OSR}-${type}-backup-"${d}-100000_before_before
 		mkdir -p $DIR/$h
 		h="${HOSTNAME}/${HOSTNAME_OSR}-${type}-backup-"${d}-200000_after_after
@@ -171,20 +149,21 @@ function createMassBackups() { # startdate count #per_day type dont_delete_flag
 
 }
 
-function testMassBackups() { # count type
+function testOldDirNames() { # lineNo type number_of_backups
+	local l="$1"
+	local type="$2"
+	local n="$3"
 
-	#TODO: a) is this function used anywhere?
-	#      b) if yes: is HOSTNAME_OSR correct then? Just after "$DIR/"?
+	echo "Testing for type $type old names $3"
 
-	echo "Testing ..."
+	local f=$(ls $DIR/${HOSTNAME}/${HOSTNAME}-* | grep $type | grep -v "_" | wc -l)
 
-	local f=$(ls $DIR/${HOSTNAME_OSR}-${2}/ | wc -l)
-
-	if (( f != $1 )); then
-		echo "???: Expected $1 but found $f backups"
-		ls -r1 "$DIR/${HOSTNAME_OSR}-${2}"
+	if (( f != n )); then
+		echo "??? Test in line $l: Expected #$n old backups but found $f backups"
+		(( $DEBUG )) && ls -1 "$DIR/${HOSTNAME}"
 		exit 1
 	fi
+
 }
 
 function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstaticBackups
@@ -204,10 +183,7 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 
 	echo "Testing for type $type and static $((2*$static)) ..."
 
-	#TODO: do we need to filter HOSTNAME_OSR?
-	#      or/and do we need to check for old-named backups too?
-
-	local f=$(ls $DIR/${HOSTNAME}/ | grep $type | grep -v "_" | wc -l)
+	local f=$(ls $DIR/${HOSTNAME}/${HOSTNAME_OSR}* | grep $type | grep -v "_" | wc -l)
 	local n=$(wc -w <<< "$dtes")
 
 	if (( f != $n )); then
@@ -216,7 +192,7 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 		exit 1
 	fi
 
-	local f=$(ls $DIR/${HOSTNAME}/ | grep $type | grep "_" | wc -l)
+	local f=$(ls $DIR/${HOSTNAME}/${HOSTNAME_OSR}* | grep $type | grep "_" | wc -l)
 
 	if (( f != $(($static*2)) )); then
 		echo "??? Test in line $l: Expected #$(($static*2)) statics but found $f statics of type $type"
@@ -226,7 +202,7 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 
 	local d
 	for d in $dtes; do
-		if [[ -z $(find $DIR/${HOSTNAME} -type d -name "*${type}-backup-${d}*") ]] ; then
+		if [[ -z $(find $DIR/${HOSTNAME}/${HOSTNAME_OSR}* -type d -name "*${type}-backup-${d}*") ]] ; then
 			echo "??? Test in line $l: Expected date $d of type $type in $dtes not found"
 			ls -1 "$DIR/${HOSTNAME}"
 			exit 1
@@ -258,12 +234,16 @@ raspiOpts="--smartRecycle --smartRecycleDryrun- -t rsync -F -x -c -Z -m 1 -l 1 -
 
 if (( $DAILY )); then
 
+
+	ADD_HOST=1
 	l=$LINENO
 	echo "$l === DAILY (1) + (5)"
 	d="20191116 20191117 20191118 20191119"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "3 0 0 0"  $raspiOpts >> $LOG_FILE
 	testSpecificBackups $l "20191117 20191118 20191119" $(wc -w <<< "$d")
+	testOldDirNames $l rsync 4
+	ADD_HOST=0
 
 	l=$LINENO
 	echo "$l === DAILY (2)"
@@ -286,12 +266,15 @@ fi
 
 if (( $WEEKLY )); then
 
+	ADD_HOST=1
 	l=$LINENO
 	echo "$l === WEEKLY (1)"
 	d="20191118 20191112 20190601"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 2 0 0" $raspiOpts >> $LOG_FILE
 	testSpecificBackups $l "20191118 20191112" $(wc -w <<< "$d")
+	testOldDirNames $l rsync 3
+	ADD_HOST=0
 
 	l=$LINENO
 	echo "$l === WEEKLY (1)"
@@ -377,12 +360,15 @@ fi
 
 if (( $MONTHLY )); then
 
+	ADD_HOST=1
 	l=$LINENO
 	echo "$l === MONTHLY (1)"
 	d="20191108 20191003 20190903 20190810"
 	createSpecificBackups "$d"
 	faketime "2019-11-19" ../raspiBackup.sh --smartRecycleOptions "0 0 1 0" $raspiOpts  >> $LOG_FILE
 	testSpecificBackups $l "20191108" $(wc -w <<< "$d")
+	testOldDirNames $l rsync 4
+	ADD_HOST=0
 
 	l=$LINENO
 	echo "$l === MONTHLY (2)"
@@ -419,12 +405,15 @@ fi
 
 if (( $YEARLY )); then
 
+	ADD_HOST=1
 	l=$LINENO
 	echo "$l === YEARLY (1)"
 	d="20190111 20181203 20171108 20161003"
 	createSpecificBackups "$d"
 	faketime "2019-01-19" ../raspiBackup.sh --smartRecycleOptions "0 0 1 0" $raspiOpts  >> $LOG_FILE
 	testSpecificBackups $l "20190111" $(wc -w <<< "$d")
+	testOldDirNames $l rsync 4
+	ADD_HOST=0
 
 	l=$LINENO
 	echo "$l === YEARLY (2)"
