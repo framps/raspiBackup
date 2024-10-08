@@ -180,6 +180,9 @@ function createMassBackups() { # startdate count #per_day type dont_delete_flag
 
 function testMassBackups() { # count type
 
+	#TODO: a) is this function used anywhere?
+	#      b) if yes: is HOSTNAME_OSR correct then? Just after "$DIR/"?
+
 	echo "Testing ..."
 
 	local f=$(ls $DIR/${HOSTNAME_OSR}-${2}/ | wc -l)
@@ -207,6 +210,9 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 	fi
 
 	echo "Testing for type $type and static $((2*$static)) ..."
+
+	#TODO: do we need to filter HOSTNAME_OSR?
+	#      or/and do we need to check for old-named backups too?
 
 	local f=$(ls $DIR/${HOSTNAME}/ | grep $type | grep -v "_" | wc -l)
 	local n=$(wc -w <<< "$dtes")
