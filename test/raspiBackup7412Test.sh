@@ -67,13 +67,6 @@ MASS=1
 TYPE=1
 
 HOSTNAME=$(hostname)
-# For including the OS release into the name of the backup directory
-os_release=$(getOSRelease)
-# Note: Sanitize the os_release to be usable as (part of) directory name.
-# But don't allow or use "-" or "_" as replacement character!
-# Both characters are already used as dividers/markers later on!
-# The "~" seems to be okay. Even safer would be "", a.k.a. nothing.
-HOSTNAME_OSR="${HOSTNAME}@${os_release//[ \/\\\:\.\-_]/\~}"
 
 function getOSRelease() {
 
@@ -240,6 +233,15 @@ function testSpecificBackups() { # lineNo stringlist_of_dates type numberOfstati
 		fi
 	done
 }
+
+# For including the OS release into the name of the backup directory
+os_release=$(getOSRelease)
+# Note: Sanitize the os_release to be usable as (part of) directory name.
+# But don't allow or use "-" or "_" as replacement character!
+# Both characters are already used as dividers/markers later on!
+# The "~" seems to be okay. Even safer would be "", a.k.a. nothing.
+HOSTNAME_OSR="${HOSTNAME}@${os_release//[ \/\\\:\.\-_]/\~}"
+
 
 # tests to execute for all timeframes
 # 1) check limit on option is used for timeframe
