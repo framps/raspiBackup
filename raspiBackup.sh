@@ -2912,7 +2912,7 @@ function initializeDefaultConfigVariables() {
 	# reboot system at end of backup
 	DEFAULT_REBOOT_SYSTEM=0
 	# Change these options only if you know what you are doing !!!
-	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete --force --sparse --delete-excluded" 						# -a <=> -rlptgoD, H = preserve hardlinks, x = one filesystem, A = preserver ACLs
+	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete --force --sparse" 						# -a <=> -rlptgoD, H = preserve hardlinks, x = one filesystem, A = preserver ACLs
 	DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
 	DEFAULT_TAR_BACKUP_OPTIONS="-cpi --one-file-system"
 	DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -7168,7 +7168,7 @@ function inspect4Backup() {
 
 		# check for /boot on root partition
 		if [[ -z "$bootPartition" ]]; then
-			if ! find $bootMountpoint -name cmdline.txt; then
+			if ! find $bootMountpoint -name cmdline.txt &>/dev/null; then
 				logItem "No cmdline.txt found in $bootMountpoint"
 				# no RaspbianOS
 				if [[ -n $rootPartition ]] && (( UNSUPPORTED_ENVIRONMENT )) && (( IS_UBUNTU )); then	# for example ubuntu on orange
@@ -7948,11 +7948,6 @@ function restorePartitionBasedBackup() {
 		fi
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
 
-		if [[ -n $ROOT_PARTITION ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_ALLOWED
-			exitError $RC_MISSING_FILES
-		fi
-
 		local partitionBackupFile
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
 		local partitionsRestored=()
@@ -8413,6 +8408,10 @@ function doitRestore() {
 
 	if  ls -1 "$RESTOREFILE"* | egrep "\.blkid$" &>>"$LOG_FILE" ; then
 		PARTITIONBASED_BACKUP=1
+		if [[ -n $ROOT_PARTITION ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_ALLOWED
+			exitError $RC_MISSING_FILES
+		fi
 	else
 		PARTITIONBASED_BACKUP=0
 	fi
