@@ -741,11 +741,11 @@ MSG_EN[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Target %s with %s is larger than 2TB
 MSG_DE[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Ziel %s mit %s ist größer als 2TB und erfordert gpt statt mbr. Ansonsten werden nur 2TB genutzt."
 MSG_FI[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Kohde %s kooltaan %s, on suurempi kuin 2Tt ja vaatii mbr:n sijasta gpt:n. Muutoin vain 2Tt voidaan käyttää."
 MSG_FR[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: La cible %s avec %s, est supérieure à 2 To et nécessite GPT au lieu de MBR. Sinon, seuls 2 To seront utilisés."
-#MSG_CREATING_PARTITIONS=52
-#MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052I: Creating partitions on %s."
-#MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052I: Partitionen werden auf %s erstellt."
-#MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052I: Luodaan osioita kohteelle %s."
-#MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052I: Les partitions seront créées sur %s."
+MSG_CREATING_PARTITIONS=52
+MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052W: Creating partitions on %s."
+MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052W: Partitionen werden auf %s erstellt."
+MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052W: Luodaan osioita kohteelle %s."
+MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052W: Les partitions seront créées sur %s."
 MSG_RESTORING_FIRST_PARTITION=53
 MSG_EN[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Restoring first partition (boot partition) to %s."
 MSG_DE[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Erste Partition (Bootpartition) wird auf %s zurückgespielt."
@@ -966,11 +966,11 @@ MSG_EN[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Language %s not supported."
 MSG_DE[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Die Sprache %s wird nicht unterstützt."
 MSG_FI[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Kieli %s ei ole tuettu."
 MSG_FR[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Langue %s non prise en charge."
-MSG_PARTITIONING_SDCARD=97
-MSG_EN[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioning %s."
-MSG_DE[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitioniere %s."
-#MSG_FI[$MSG_PARTITIONING_SDCARD]="RBK0097W: Osioidaan ja alustetaan %s."
-#MSG_FR[$MSG_PARTITIONING_SDCARD]="RBK0097W: Partitionnement et formatage %s."
+#MSG_PARTITIONING_RESTORE_DEVICE=97
+#MSG_EN[$MSG_PARTITIONING_RESTORE_DEVICE]="RBK0097W: Partitioning %s."
+#MSG_DE[$MSG_PARTITIONING_RESTORE_DEVICE]="RBK0097W: Partitioniere %s."
+#MSG_FI[$MSG_PARTITIONING_RESTORE_DEVICE]="RBK0097W: Osioidaan ja alustetaan %s."
+#MSG_FR[$MSG_PARTITIONING_RESTORE_DEVICE]="RBK0097W: Partitionnement et formatage %s."
 MSG_FORMATTING=98
 MSG_EN[$MSG_FORMATTING]="RBK0098I: Formatting partition %s with %s (%s)."
 MSG_DE[$MSG_FORMATTING]="RBK0098I: Formatiere Partition %s mit %s (%s)."
@@ -1984,8 +1984,8 @@ MSG_ADJUSTING_WARNING_P=322
 MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small."
 MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird."
 MSG_ADJUSTING_WARNING_P2=323
-MSG_EN[$MSG_ADJUSTING_WARNING_P2]="RBK0323W: Target %s with %s is larger than backup source with %s. Last partition will be expanded accordingly to use the whole space."
-MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323W: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die letzte Partition wird entsprechend vergrößert um den ganzen Platz zu benutzen."
+MSG_EN[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Target %s with %s is larger than backup source with %s. Last partition will be expanded accordingly to use the whole space."
+MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die letzte Partition wird entsprechend vergrößert um den ganzen Platz zu benutzen."
 MSG_NOT_ALL_OS_PARTITIONS_SAVED=324
 MSG_EN[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Not all OS partitions saved. Backup will not boot."
 MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Partition gesichert und das Backup wird nicht starten."
@@ -6100,7 +6100,7 @@ function logSystemDiskState() {
 	logExit
 }
 
-function partitionRestoreDevice() {
+function partitionRestoreDeviceIfRequested() {
 
 	logEntry
 
@@ -6118,7 +6118,7 @@ function partitionRestoreDevice() {
 
 	elif [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONING_SDCARD "$RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_PARTITIONS $RESTORE_DEVICE
 
 		if ! askYesNo; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
@@ -6247,6 +6247,31 @@ function partitionRestoreDevice() {
 	logExit
 }
 
+# return all partitionnumbers available in backup
+
+function collectAvailableBackupPartitions() {
+
+	logEntry
+
+	local partitionBackupFile availablePartitions
+
+	for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
+		logItem "partitionBackupFile: $partitionBackupFile"
+		local partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
+		logItem "Found partition no: $partitionNo"
+
+		if [[ -z $availablePartitions ]]; then
+			availablePartitions="$partitionNo"
+		else
+			availablePartitions="$availablePartitions $partitionNo"
+		fi
+	done
+
+	echo "$availablePartitions"
+
+	logExit ${availablePartitions[@]}
+}
+
 function restoreNormalBackupType() {
 
 	logEntry
@@ -6319,7 +6344,7 @@ function restoreNormalBackupType() {
 				exitError $RC_MISC_ERROR
 			fi
 
-			partitionRestoreDevice
+			partitionRestoreDeviceIfRequested
 
 			if [[ -e $TAR_FILE ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_FIRST_PARTITION "$BOOT_PARTITION"
@@ -6818,16 +6843,6 @@ function doit() {
 	logExit
 
 }
-
-function partitionsSelected() {
-	logEntry
-	local rc
-	[[ ! "$PARTITIONS_TO_BACKUP" =~ ^[[:space:]]*$ ]] ||  [[ ! "$PARTITIONS_TO_RESTORE" =~ ^[[:space:]]*$ ]]
-	rc=$?
-	logExit $rc
-	return $rc
-}
-
 
 # blkid
 # /dev/mmcblk0p2: UUID="ea98d3bf-9345-4bd7-b365-5cc7c543079f" TYPE="ext4" PARTUUID="d888a167-02"
@@ -7894,19 +7909,10 @@ function restorePartitionBasedBackup() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
 	logItem "$current_partition_table"
 	echo "$current_partition_table"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED "$RESTORE_DEVICE"
-
-	if ! askYesNo; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-		exitError $RC_RESTORE_FAILED
-	fi
-
-	if (( $NO_YES_QUESTION )); then
-		echo "Y"
-	fi
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_BACKUP_ALL\"" "$RESTORE_DEVICE"
+		local partitions=$(collectAvailableBackupPartitions)
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"${partitions[@]}\"" "$RESTORE_DEVICE"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
 	fi
@@ -7921,9 +7927,6 @@ function restorePartitionBasedBackup() {
 	fi
 
 	initRestoreVariables
-	if partitionsSelected; then		# don't format if no partition should be restored
-		partitionRestoreDevice
-	fi
 
 	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
 
@@ -7963,6 +7966,8 @@ function restorePartitionBasedBackup() {
 		fi
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
 
+		partitionRestoreDeviceIfRequested
+		
 		local partitionBackupFile
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
 		local partitionsRestored=()
