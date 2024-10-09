@@ -444,7 +444,7 @@ LOG_OUTPUT="$LOG_OUTPUT_BACKUPLOC"
 
 # borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
 
-function containsElement () {
+function containsElement () { # element ${array[@]}
   local e
   for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
   return 1
@@ -1208,7 +1208,7 @@ MSG_FI[$MSG_SKIP_SFDISK]="RBK0144W: Kohdetta %s ei osioida. Käytetään olemass
 MSG_FR[$MSG_SKIP_SFDISK]="RBK0144W: La cible %s ne sera pas partitionné. Les partitions existantes sont utilisées."
 MSG_SKIP_CREATING_PARTITIONS=145
 MSG_EN[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partition creation skipped. Using existing partitions."
-MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partitionen werden nicht erstellt. Existierende Paritionen werden benutzt."
+MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partitionen werden nicht erstellt. Existierende Partitionen werden benutzt."
 MSG_FI[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Osion luonti ohitettu. Käytetään olemassaolevia osioita."
 MSG_FR[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Création de partition ignorée. Les partitions existantes sont utilisées."
 MSG_NO_PARTITION_TABLE_DEFINED=146
@@ -1993,14 +1993,18 @@ MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED=325
 MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated."
 MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert."
 MSG_SKIP_FORMATING=326
-MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s is not formatted."
-MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partition %s wird nicht formatiert."
+MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: No partitions will be formatted."
+MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Keine Partitionen werden formatiert."
 MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=327
-MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Not all partitions which were saved in the previous backup are included in option -T."
-MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden mit der Option -T gesichert."
+MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Not all partitions which were saved in the previous backup are included in option -T. Missing \"%s\"."
+MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden mit der Option -T gesichert. Es fehlen \"%s\"."
 MSG_NO_BOOTDEVICE_MOUNTED=328
 MSG_EN[$MSG_NO_BOOTDEVICE_MOUNTED]="RBK0328E: Boot device %s not mounted"
 MSG_DE[$MSG_NO_BOOTDEVICE_MOUNTED]="RBK0328E: Bootgerät %s ist nicht gemounted."
+MSG_PARTITIONS_FORMATED=329
+MSG_EN[$MSG_PARTITIONS_FORMATED]="RBK0329W: All partitions will be formatted."
+MSG_DE[$MSG_PARTITIONS_FORMATED]="RBK0329W: Alle Partitionen werden formatiert."
+
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5914,24 +5918,45 @@ function updateUUID() {
 	logExit
 }
 
+function collectPartitionsInBackup() { # lastBackupDir
+
+	logEntry $1
+
+	local result
+	result=$(ls -l 1 . | grep "^d" | egrep -o "[0-9]+$")
+
+	echo "$result"
+	logExit "$result"
+}
+
 function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	logEntry $1
 
 	local rc
-	if [[ "$PARTITIONS_TO_BACKUP" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-		rc=0
-	else
-		local partitionDirsCount=$(ls -l $1 | grep "^d" | wc -l )
-		logItem "Partitions found: $partitionDirsCount"
-		local partitionsDefined=( $PARTITIONS_TO_BACKUP )
-		local partitionsToBackup=${#partitionsDefined[@]}
-		logItem "Partitions to backup: $partitionsToBackup"
 
-		local rc=$(( partitionDirsCount > partitionsToBackup ))
-	fi
+	local partitionsInBackup=( $(collectAvailableBackupPartitions) )
+	local partitionsToBackup
+	partitionsToBackup=( ${PARTITIONS_TO_BACKUP[@]} )
+	
+	local missingPartition=()
 
-	logExit $rc
+	logItem "partitionsInBackup: ${partitionsInBackup[@]}"
+	logItem "partitionsToBackup: ${partitionsToBackup[@]}"
+
+	for (( i=0; i<${#partitionsInBackup[@]}; i++ )); do
+		if ! containsElement "${partitionsInBackup[i]}" "${partitionsToBackup[@]}"; then
+			logItem "Missing ${partitionsInBackup[i]}"
+			missingPartition+=(${partitionsInBackup[i]})
+		fi
+	done
+
+	echo ${missingPartition[@]}
+
+	[[ -z ${missingPartition[@]} ]]
+	rc=$?
+	
+	logExit "$rc - ${missingPartition[@]}"
 	return $rc
 }
 
@@ -6100,7 +6125,7 @@ function logSystemDiskState() {
 	logExit
 }
 
-function partitionRestoreDeviceIfRequested() {
+function partitionRestoredeviceIfRequested() {
 
 	logEntry
 
@@ -6114,6 +6139,30 @@ function partitionRestoreDeviceIfRequested() {
 
 		if (( $NO_YES_QUESTION )); then
 			echo "Y"
+		fi
+
+		if (( SKIP_FORMAT )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
+
+			if ! askYesNo; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+				exitError $RC_RESTORE_FAILED
+			fi
+
+			if (( $NO_YES_QUESTION )); then
+				echo "Y"
+			fi
+		else			
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED
+
+			if ! askYesNo; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+				exitError $RC_RESTORE_FAILED
+			fi
+
+			if (( $NO_YES_QUESTION )); then
+				echo "Y"
+			fi
 		fi
 
 	elif [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
@@ -6344,7 +6393,7 @@ function restoreNormalBackupType() {
 				exitError $RC_MISC_ERROR
 			fi
 
-			partitionRestoreDeviceIfRequested
+			partitionRestoredeviceIfRequested
 
 			if [[ -e $TAR_FILE ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_FIRST_PARTITION "$BOOT_PARTITION"
@@ -6973,7 +7022,7 @@ function collectPartitions() {
 
 	if [[ ${#PARTITIONS_TO_BACKUP[@]} == 0 ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOPARTITIONS_TOBACKUP_FOUND
-		exitError $RC_
+		exitError $RC_MISC_ERROR
 	fi
 
 	logExit
@@ -6989,13 +7038,15 @@ function checksForPartitionBasedBackup() {
 	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
 		local lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		logItem "lastBackupDir: $lastBackupDir"
-		if ! checkIfAllPreviousPartitionsAreIncludedInBackup "$lastBackupDir"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
+		local missing
+		missing="$(checkIfAllPreviousPartitionsAreIncludedInBackup "$lastBackupDir")"
+		local rc=$?
+		logItem "Missing: $missing"
+		if (( $rc )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED  "$missing"
 			exitError $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
 		fi
 	fi
-
-	collectPartitions
 
 	logItem "PARTITIONS_TO_BACKUP: ${PARTITIONS_TO_BACKUP[@]}"
 
@@ -7576,6 +7627,7 @@ function doitBackup() {
 			exitError $RC_PARAMETER_ERROR
 		fi
 		if (( ! $FAKE )); then
+			collectPartitions
 			checksForPartitionBasedBackup
 		fi
 	fi
@@ -7966,7 +8018,7 @@ function restorePartitionBasedBackup() {
 		fi
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
 
-		partitionRestoreDeviceIfRequested
+		partitionRestoredeviceIfRequested
 		
 		local partitionBackupFile
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
