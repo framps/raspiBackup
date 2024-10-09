@@ -140,6 +140,7 @@ PROPERTY_FILE="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
+REPORT_COUNTER_FILE="report.counter"
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp"
 LOGFILE_EXT=".log"
@@ -1858,6 +1859,12 @@ MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0406W: \"Genügend\" mein
 MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART=407
 MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
 MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_OLD_NAME_BACKUPS_COUNTER_INFO=408
+MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Note: This message will be shown again %s times."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
+MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE=409
+MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE]="RBK0409W: Note: This message will no longer be shown from now on."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE]="RBK0409W: Hinweis: Diese Meldung wird zukünftig nicht mehr angezeigt werden."
 
 
 #
@@ -2933,6 +2940,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_DYNAMIC_MOUNT=""
 	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nvme0n1 or /dev/sda) and turn off boot device autodiscovery
 	DEFAULT_BOOT_DEVICE=""
+	# How often inform about possible old-named backups
+	DEFAULT_REPORT_COUNTER="5"
 	############# End default config section #############
 }
 
@@ -6301,19 +6310,58 @@ function reportOldBackups() {
 	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
 
 	if [[ -n $tobeListedOldBackups ]] ; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.6.10.0"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
-		echo "$tobeListedOldBackups" | while read dir_to_list; do
-			[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
-		done
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
-		if (( $SMART_RECYCLE )) ; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART $numListedNewBackups $numKeptBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+
+		local report_counter_file="$VAR_LIB_DIRECTORY/$REPORT_COUNTER_FILE"
+
+		# create directory to save counter
+		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
+			mkdir -p "$VAR_LIB_DIRECTORY"
 		fi
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+		# initialize counter
+		if [[ ! -e "$report_counter_file" ]]; then
+			echo "$DEFAULT_REPORT_COUNTER" > "$report_counter_file"
+		fi
+
+		# retrieve counter
+		local rf
+		rf="$(<$report_counter_file)"
+		if [[ -z "${rf}" ]]; then				# counter file exists but is empty
+			echo "$DEFAULT_REPORT_COUNTER" > "$report_counter_file"
+			return
+		fi
+		rf=( $(<$report_counter_file) )
+
+		# only print report if counter says so
+		if (( $rf > 0 )); then
+
+			# update counter, but only if not in FAKE mode
+			local rfn=$(( ${rf} - 1 ))
+			if (( ! $FAKE )); then
+				echo "${rfn}" > "$report_counter_file"
+			fi
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.6.10.0"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
+			echo "$tobeListedOldBackups" | while read dir_to_list; do
+				[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
+			done
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
+			if (( $SMART_RECYCLE )) ; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART $numListedNewBackups $numKeptBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+			fi
+			if (( $rfn > 0 )) ; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE
+			fi
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+		fi
 	fi
 
 	if ! popd &>>$LOG_FILE; then
