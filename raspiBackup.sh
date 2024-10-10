@@ -1862,9 +1862,6 @@ MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Genügend\" meint
 MSG_OLD_NAME_BACKUPS_COUNTER_INFO=408
 MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Note: This message will be shown again %s times."
 MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
-MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE=409
-MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE]="RBK0409W: Note: This message will no longer be shown from now on."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE]="RBK0409W: Hinweis: Diese Meldung wird zukünftig nicht mehr angezeigt werden."
 
 
 #
@@ -6325,12 +6322,12 @@ function reportOldBackups() {
 
 		# retrieve counter
 		local rf
-		rf="$(<$report_counter_file)"
+		rf=$(<$report_counter_file)
 		if [[ -z "${rf}" ]]; then				# counter file exists but is empty
 			echo "$DEFAULT_REPORT_COUNTER" > "$report_counter_file"
 			return
 		fi
-		rf=( $(<$report_counter_file) )
+		rf=$(<$report_counter_file)
 
 		# only print report if counter says so
 		if (( $rf > 0 )); then
@@ -6353,11 +6350,7 @@ function reportOldBackups() {
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
 			fi
-			if (( $rfn > 0 )) ; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO_BYE
-			fi
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
