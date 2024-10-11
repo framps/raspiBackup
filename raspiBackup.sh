@@ -2778,7 +2778,6 @@ function logOptions() { # option state
 	logItem "MAIL_PROGRAM=$EMAIL_PROGRAM"
 	logItem "MSG_LEVEL=$MSG_LEVEL"
 	logItem "NOTIFY_START=$NOTIFY_START"
-	logItem "NOTIFY_UPDATE=$NOTIFY_UPDATE"
 	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
 	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
 	logItem "PARTITIONS_TO_RESTORE=$PARTITIONS_TO_RESTORE"
@@ -2894,8 +2893,6 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_DD_WARNING=0
 	# exclude list
 	DEFAULT_EXCLUDE_LIST=""
-	# notify in email if there is an updated script version available  (0 = false, 1 = true)
-	DEFAULT_NOTIFY_UPDATE=1
 	# backup extensions to call
 	DEFAULT_EXTENSIONS=""
 	# restore extensions to call
@@ -3025,7 +3022,6 @@ function copyDefaultConfigVariables() {
 	MAIL_ON_ERROR_ONLY="$DEFAULT_MAIL_ON_ERROR_ONLY"
 	MSG_LEVEL="$DEFAULT_MSG_LEVEL"
 	NOTIFY_START="$DEFAULT_NOTIFY_START"
-	NOTIFY_UPDATE="$DEFAULT_NOTIFY_UPDATE"
 	PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
 	PARTITIONS_TO_RESTORE="$DEFAULT_PARTITIONS_TO_RESTORE"
@@ -4695,7 +4691,7 @@ function sendEMail() { # content subject
 		local contentType=""
 
 		local smiley=""
-		if (( $NOTIFY_UPDATE && $NEWS_AVAILABLE )); then
+		if (( $NEWS_AVAILABLE )); then
 			if (( $WARNING_MESSAGE_WRITTEN )); then
 				smiley="$SMILEY_WARNING ${smiley}"
 			fi
@@ -4731,7 +4727,7 @@ function sendEMail() { # content subject
 			fi
 		fi
 
-		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $NOTIFY_UPDATE && $NEWS_AVAILABLE ) ) ) )); then
+		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $NEWS_AVAILABLE ) ) ) )); then
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_SENDING_EMAIL
 
@@ -7387,18 +7383,15 @@ function reportNews() {
 
 	logEntry
 
-	if (( $NOTIFY_UPDATE )); then
+	isUpdatePossible
 
-		isUpdatePossible
-
-		if (( ! $IS_BETA )); then
-			local betaVersion=$(isBetaAvailable)
-			if [[ -n $betaVersion && $VERSION != $betaVersion ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
-				NEWS_AVAILABLE=1
-				BETA_AVAILABLE=1
-			fi
+	if (( ! $IS_BETA )); then
+		local betaVersion=$(isBetaAvailable)
+		if [[ -n $betaVersion && $VERSION != $betaVersion ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
+			NEWS_AVAILABLE=1
+			BETA_AVAILABLE=1
 		fi
 	fi
 
@@ -9337,7 +9330,6 @@ function usageEN() {
 	echo "-L {log targetdirectory} ($POSSIBLE_LOG_OUTPUTs) (default: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
 	echo "-m {message level} ($POSSIBLE_MSG_LEVELs) (default: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
 	echo "-M {backup description of snapshot}"
-	echo "-n notification if there is a newer scriptversion available for download (default: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
 	echo "-s {email program to use} ($SUPPORTED_MAIL_PROGRAMS) (default: $DEFAULT_MAIL_PROGRAM)"
 	echo "--timestamps Prefix messages with timestamps (default: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
 	echo "-u \"{excludeList}\" List of directories to exclude from tar and rsync backup"
@@ -9389,7 +9381,6 @@ function usageDE() {
 	echo "-L {log Zielverzeichnis} ($POSSIBLE_LOG_OUTPUTs) (default: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
 	echo "-m {Meldungsgenauigkeit} ($POSSIBLE_MSG_LEVELs) (Standard: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
 	echo "-M {Backup Beschreibung des Snapshots}"
-	echo "-n Benachrichtigung wenn eine aktuellere Scriptversion zum download verfügbar ist. (Standard: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
 	echo "-s {Benutztes eMail Program} ($SUPPORTED_MAIL_PROGRAMS) (Standard: $DEFAULT_MAIL_PROGRAM)"
 	echo "--timestamps Meldungen werden mit einen Zeitstempel ausgegeben (Standard: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
 	echo "-u \"{excludeList}\" Liste von Verzeichnissen, die vom tar und rsync Backup auszunehmen sind"
@@ -9439,7 +9430,6 @@ function usageFI() {
 	echo "-l {lokitaso} ($POSSIBLE_LOG_LEVELs_) (oletus: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-m {viestitaso} ($POSSIBLE_MSG_LEVELs) (oletus: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
 	echo "-M {varmuuskopion selite}"
-	echo "-n Ilmoita, jos skriptistä on uusi versio ladattavissa (oletus: ${NO_YES[$DEFAULT_NOTIFY_UPDATE]})"
 	echo "-s {käytettävä sähköpostiohjelma} ($SUPPORTED_MAIL_PROGRAMS) (oletus: $DEFAULT_MAIL_PROGRAM)"
 	echo "--timestamps Lisää aikaleima viestien alkuun (oletus: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
 	echo "-u \"{excludeList}\" Lista hakemistoista, jotka ohitetaan tar- ja rsync-varmuuskopioissa"
@@ -9824,10 +9814,6 @@ while (( "$#" )); do
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[\"]/}
   	  ;;
-
-	-n|-n[-+])
-	  NOTIFY_UPDATE=$(getEnableDisableOption "$1"); shift 1
-	  ;;
 
 	-N)
 	  o=$(checkOptionParameter "$1" "$2")
