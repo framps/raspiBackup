@@ -2004,7 +2004,9 @@ MSG_DE[$MSG_NO_BOOTDEVICE_MOUNTED]="RBK0328E: Bootgerät %s ist nicht gemounted.
 MSG_PARTITIONS_FORMATED=329
 MSG_EN[$MSG_PARTITIONS_FORMATED]="RBK0329W: All partitions will be formatted."
 MSG_DE[$MSG_PARTITIONS_FORMATED]="RBK0329W: Alle Partitionen werden formatiert."
-
+MSG_MISSING_PARTITIONS_NOT_SAVED=330
+MSG_EN[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Not all partitions which were saved in the previous backup are included. Missing \"%s\"."
+MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden gesichert. Es fehlen \"%s\"."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5931,7 +5933,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	local rc
 
-	local partitionsInBackup=( $(collectAvailableBackupPartitions) )
+	local partitionsInBackup=( $(collectAvailableBackupPartitions "$1") )
 	local partitionsToBackup
 	partitionsToBackup=( ${PARTITIONS_TO_BACKUP[@]} )
 	
@@ -6294,16 +6296,28 @@ function partitionRestoredeviceIfRequested() {
 
 # return all partitionnumbers available in backup
 
-function collectAvailableBackupPartitions() {
+function collectAvailableBackupPartitions() { # lastBackupDir
 
-	logEntry
+	logEntry "$1"
 
+	local lastBackupDir="$1"
+	
 	local partitionBackupFile availablePartitions
 
-	for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
+	for partitionBackupFile in "${lastBackupDir}"; do
 		logItem "partitionBackupFile: $partitionBackupFile"
-		local partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
-		logItem "Found partition no: $partitionNo"
+		if [[ $BACKUPTYPE == $BACKUPTYPE_TAR || $BACKUPTYPE == $BACKUPTYPE_TGZ ]]; then
+			local directories="$(ls -l ${partitionBackupFile} | grep -E "\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz)
+		elif [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
+			local directories="$(ls -l ${partitionBackupFile} | grep '^d')"
+			local partitionNo="$(grep -Eo "[0-9]+$" <<< $directories)"
+		else
+			assertionFailed $LINENO "Unsupported partitions backup type"
+		fi
+
+		local partitionNo="$(grep -Eo "[0-9]+$" <<< $directories)"
+
+		logItem "Found partition no: $partitionNo in $lastBackupDir"
 
 		if [[ -z $availablePartitions ]]; then
 			availablePartitions="$partitionNo"
@@ -7031,16 +7045,22 @@ function checksForPartitionBasedBackup() {
 
 	logEntry
 
-	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
+	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || $BACKUPTYPE == $BACKUPTYPE_TAR || $BACKUPTYPE == $BACKUPTYPE_TGZ ]]; then
 		local lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		logItem "lastBackupDir: $lastBackupDir"
-		local missing
-		missing="$(checkIfAllPreviousPartitionsAreIncludedInBackup "$lastBackupDir")"
-		local rc=$?
-		logItem "Missing: $missing"
-		if (( $rc )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED  "$missing"
-			exitError $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
+		if [[ -n $lastBackupDir ]]; then
+			local missing
+			missing="$(checkIfAllPreviousPartitionsAreIncludedInBackup "$lastBackupDir")"
+			local rc=$?
+			logItem "Missing: $missing"
+			if (( $rc )); then
+				if (( $IGNORE_MISSING_PARTITIONS )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITIONS_NOT_SAVED  "$missing"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED  "$missing"
+					exitError $MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED
+				fi
+			fi
 		fi
 	fi
 
@@ -7956,7 +7976,7 @@ function restorePartitionBasedBackup() {
 	echo "$current_partition_table"
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-		local partitions=$(collectAvailableBackupPartitions)
+		local partitions=$(collectAvailableBackupPartitions $RESTOREFILE)
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"${partitions[@]}\"" "$RESTORE_DEVICE"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
@@ -9520,6 +9540,7 @@ FAKE=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
 HELP=0
+IGNORE_MISSING_PARTITIONS=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
 IS_UBUNTU=0
@@ -9744,6 +9765,10 @@ while (( "$#" )); do
 
 	--ignoreAdditionalPartitions|--ignoreAdditionalPartitions[+-])
 	  IGNORE_ADDITIONAL_PARTITIONS=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
+	--ignoreMissingPartitions)
+	  IGNORE_MISSING_PARTITIONS=1; shift 1
 	  ;;
 
 	--include|--include[+-])
