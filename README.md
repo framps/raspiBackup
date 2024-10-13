@@ -8,7 +8,7 @@
 ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
 
 ***
-If you like my work and want me to be able to keep improving it, please sponsor me on [GitHub](https://github.com/sponsors/framps) or visit [this page](https://www.linux-tips-and-tricks.de/en/donations) which lists alternate ways to donate.
+If you use raspiBackup to backup your Raspberries - please sponsor me on [GitHub](https://github.com/sponsors/framps) or visit [this page](https://www.linux-tips-and-tricks.de/en/donations) which lists alternate ways to donate.
 ***
 
 #### A high level summary is available on [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
