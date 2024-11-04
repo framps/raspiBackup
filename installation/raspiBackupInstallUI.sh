@@ -138,8 +138,6 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #
 # (C) 2017-2019 framp at linux-tips-and-tricks dot de
 #
-# Create a backup once a week on Sunday morning at 5 am (default)
-#
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
@@ -161,7 +159,6 @@ Description=Timer for raspiBackup.service to start backup
 
 [Timer]
 OnCalendar=Sun *-*-* 05:00:42
-# Create a backup once a week on Sunday morning at 5 am (default)
 Unit=raspiBackup.service
 
 [Install]
