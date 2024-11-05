@@ -2910,7 +2910,7 @@ function config_menu() {
 		logItem "parsed day: $CONFIG_CRON_DAY"
 	elif isSystemdConfigInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
-		#	OnCalendar= *-*-* 05:00:00
+		#	OnCalendar=*-*-* 05:00:00
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
 		logItem "parsed $l"
 		local day="$(cut -f 1 -d ' ' <<< $l)" # Sun or *-*-*
