@@ -1966,8 +1966,8 @@ MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE=304
 MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Not all OS partitions were restored. System may not boot."
 MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Nicht alle OS Partitionen wurden zurückgespielt. Das System könnte nicht booten."
 MSG_RESTORING_PARTITIONS=305
-MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partition(s) %s to %s."
-MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partition(en) %s werden auf %s zurüchgespielt."
+MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partitions %s to %s."
+MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partitionen %s werden auf %s zurüchgespielt."
 #MSG_ANSWER_ALL=306
 #MSG_EN[$MSG_ANSWER_ALL]="all"
 #MSG_DE[$MSG_ANSWER_ALL]="Alle"
@@ -2002,11 +2002,14 @@ MSG_NO_BOOTDEVICE_MOUNTED=328
 MSG_EN[$MSG_NO_BOOTDEVICE_MOUNTED]="RBK0328E: Boot device %s not mounted"
 MSG_DE[$MSG_NO_BOOTDEVICE_MOUNTED]="RBK0328E: Bootgerät %s ist nicht gemounted."
 MSG_PARTITIONS_FORMATED=329
-MSG_EN[$MSG_PARTITIONS_FORMATED]="RBK0329W: All partitions will be formatted."
-MSG_DE[$MSG_PARTITIONS_FORMATED]="RBK0329W: Alle Partitionen werden formatiert."
+MSG_EN[$MSG_PARTITIONS_FORMATED]="RBK0329W: Partitions %1 will be formatted."
+MSG_DE[$MSG_PARTITIONS_FORMATED]="RBK0329W: Partitionen %1 werden formatiert."
 MSG_MISSING_PARTITIONS_NOT_SAVED=330
 MSG_EN[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Not all partitions which were saved in the previous backup are included. Missing \"%s\"."
 MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden gesichert. Es fehlen \"%s\"."
+MSG_NO_SKIP_FORMAT_POSSIBLE=331
+MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: No partition formating is only possible with options -t rsync and -P."
+MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Keine Partitionsformatierung ist nur mit den Optionen -t rsync und -P möglich."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5921,7 +5924,7 @@ function collectPartitionsInBackup() { # lastBackupDir
 	logEntry $1
 
 	local result
-	result=$(ls -l 1 . | grep "^d" | egrep -o "[0-9]+$")
+	result=$(ls -l $1 | grep "^d" | egrep -o "[0-9]+$")
 
 	echo "$result"
 	logExit "$result"
@@ -6139,7 +6142,7 @@ function partitionRestoredeviceIfRequested() {
 			echo "Y"
 		fi
 
-		if (( SKIP_FORMAT )); then
+		if (( $SKIP_FORMAT )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
 
 			if ! askYesNo; then
@@ -6150,8 +6153,17 @@ function partitionRestoredeviceIfRequested() {
 			if (( $NO_YES_QUESTION )); then
 				echo "Y"
 			fi
-		else			
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED
+		else
+
+			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
+				local partitions=( $(collectPartitionsInBackup $RESTOREFILE) )
+				local partitionsString="${partitions[@]}"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$partitionsString\""
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$PARTITIONS_TO_RESTORE\""
+			fi
 
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
@@ -8353,8 +8365,6 @@ function restorePartitionBasedPartition() { # restorefile
 
 		if (( ! $SKIP_FORMAT )); then
 			makeFilesystemAndLabel "$mappedRestorePartition" "$partitionFilesystem" "$partitionLabel"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING "$mappedRestorePartition"
 		fi
 
 		if [[ ! "$partitionFilesystem" =~ swap ]]; then
@@ -8503,6 +8513,13 @@ function doitRestore() {
 	fi
 
 	logItem "PartitionbasedBackup detected? $PARTITIONBASED_BACKUP"
+
+	if (( $SKIP_FORMAT )); then
+		if (( ! $PARTITIONBASED_BACKUP )) || [[ BACKUPTYPE != $BACKUPTYPE_RSYNC ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
+			exitError $RC_PARAMETER_ERROR
+		fi
+	fi
 
 	if [[ -z $RESTORE_DEVICE ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_RESTOREDEVICE_DEFINED
@@ -9372,7 +9389,8 @@ function usageEN() {
 	echo "-T \"{List of partitions to save}\" (Partition numbers, e.g. \"1 2 3\"). Only valid with parameter -P (default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo ""
 	echo "-Restore options-"
-	echo "-0 SD card will not be formatted"
+	echo "-0 Restore device will not be partitioned"
+	echo "-00 Restored partitions will not be formatted (only for backup type rsync)"
 	echo "-1 Formatting errors on SD card will be ignored"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="no"
 	echo "-C Formating of the restorepartitions will check for badblocks (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
@@ -9423,7 +9441,8 @@ function usageDE() {
 	echo "-T \"Liste der Partitionen die zu Sichern sind}\" (Partitionsnummern, z.B. \"1 2 3\"). Nur gültig zusammen mit Parameter -P (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo ""
 	echo "-Restore Optionen-"
-	echo "-0 Keine Formatierung der SD Karte"
+	echo "-0 Keine Partitionierung des Restoregerätes"
+	echo "-00 Keine Formatierung der restorten Partitionen (nur bei Backuptyp rsync)"
 	echo "-1 Fehler bei der Formatierung der SD Karte werden ignoriert"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="keiner"
 	echo "-C Beim Formatieren der Restorepartitionen wird auf Badblocks geprüft (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
