@@ -2786,6 +2786,8 @@ function logOptions() { # option state
 	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
 	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
 	logItem "PARTITIONS_TO_RESTORE=$PARTITIONS_TO_RESTORE"
+	logItem "PUSHOVER_ADDITIONAL_OPTIONS=$PUSHOVER_ADDITIONAL_OPTIONS"
+	logItem "PUSHOVER_DEVICE=$PUSHOVER_DEVICE"
 	logItem "PUSHOVER_TOKEN=$PUSHOVER_TOKEN"
 	logItem "PUSHOVER_USER=$PUSHOVER_USER"
 	logItem "PUSHOVER_NOTIFICATIONS=$PUSHOVER_NOTIFICATIONS"
@@ -2962,6 +2964,11 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_TELEGRAM_CHATID=""
 	# Telegram notifications to send. S(uccess), F(ailure), M(messages as file), m(essages as text)
 	DEFAULT_TELEGRAM_NOTIFICATIONS="F"
+	# Pushover additional options
+	# Note: All additional API keys have to be prefixed with --form-string. Example: "--form-string ttl=3600 --form-string priority=0"
+	DEFAULT_PUSHOVER_ADDITIONAL_OPTIONS=""
+	# Pushover device
+	DEFAULT_PUSHOVER_DEVICE=""
 	# Pushover token
 	DEFAULT_PUSHOVER_TOKEN=""
 	# Pushover user
@@ -3030,6 +3037,8 @@ function copyDefaultConfigVariables() {
 	PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
 	PARTITIONS_TO_RESTORE="$DEFAULT_PARTITIONS_TO_RESTORE"
+	PUSHOVER_ADDITIONAL_OPTIONS="$DEFAULT_PUSHOVER_ADDITIONAL_OPTIONS"
+	PUSHOVER_DEVICE="$DEFAULT_PUSHOVER_DEVICE"
 	PUSHOVER_TOKEN="$DEFAULT_PUSHOVER_TOKEN"
 	PUSHOVER_USER="$DEFAULT_PUSHOVER_USER"
 	PUSHOVER_NOTIFICATIONS="$DEFAULT_PUSHOVER_NOTIFICATIONS"
@@ -4551,13 +4560,17 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		fi
 
 		local cmd=(--form-string message="$1")
+
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
-				--form-string "user=$PUSHOVER_USER"\
-				--form-string "priority=$prio"\
-				--form-string "html=1"\
-				--form-string "message=$msg"\
-				--form-string "title=$1"\
-				--form-string "sound=$sound")
+              --form-string "user=$PUSHOVER_USER"\
+              --form-string "priority=$prio"\
+              --form-string "html=1"\
+              --form-string "message=$msg"\
+              --form-string "title=$1"\
+              --form-string "sound=$sound")
+
+		[[ -n $PUSHOVER_DEVICE ]] && cmd+=(--form-string "device=$PUSHOVER_DEVICE" )
+		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( $PUSHOVER_ADDITIONAL_OPTIONS )
 
 		logItem "Pushover curl call: ${cmd[@]}"
 		local httpCode
