@@ -973,10 +973,10 @@ MSG_FR[$MSG_LANGUAGE_NOT_SUPPORTED]="RBK0096I: Langue %s non prise en charge."
 #MSG_FI[$MSG_PARTITIONING_RESTORE_DEVICE]="RBK0097W: Osioidaan ja alustetaan %s."
 #MSG_FR[$MSG_PARTITIONING_RESTORE_DEVICE]="RBK0097W: Partitionnement et formatage %s."
 MSG_FORMATTING=98
-MSG_EN[$MSG_FORMATTING]="RBK0098I: Formatting partition %s with %s (%s)."
-MSG_DE[$MSG_FORMATTING]="RBK0098I: Formatiere Partition %s mit %s (%s)."
-MSG_FI[$MSG_FORMATTING]="RBK0098I: Alustetaan osio %s tiedostojärjestelmälle %s (%s)"
-MSG_FR[$MSG_FORMATTING]="RBK0098I: Formatage de la partition %s avec %s (%s)"
+MSG_EN[$MSG_FORMATTING]="RBK0098I: Formatting partition %s with %s."
+MSG_DE[$MSG_FORMATTING]="RBK0098I: Formatiere Partition %s mit %s."
+MSG_FI[$MSG_FORMATTING]="RBK0098I: Alustetaan osio %s tiedostojärjestelmälle %s."
+MSG_FR[$MSG_FORMATTING]="RBK0098I: Formatage de la partition %s avec %s."
 MSG_RESTORING_FILE_PARTITION_DONE=99
 MSG_EN[$MSG_RESTORING_FILE_PARTITION_DONE]="RBK0099I: Restore of partition %s finished."
 MSG_DE[$MSG_RESTORING_FILE_PARTITION_DONE]="RBK0099I: Zurückspielen des Backups auf Partition %s beendet."
@@ -8457,7 +8457,7 @@ function makeFilesystemAndLabel() { # partition filesystem label
 		fi
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORMATTING "$partition" "$partitionFilesystem" $fileSystemsize
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORMATTING "$partition" "$partitionFilesystem"
 	logItem "$cmd $partition"
 
 	$cmd $partition &>>"$LOG_FILE"
@@ -8516,10 +8516,6 @@ function restorePartitionBasedPartition() { # restorefile
 	local partitionNumber
 	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< $restorePartition)
 	logItem "Partitionnumber: $partitionNumber"
-
-	local fileSystemsize
-	fileSystemsize=$(getBackupPartitionFilesystemSize $partitionNumber)
-	logItem "Filesystemsize: $fileSystemsize"
 
 	restorePartition="${restorePartition%.*}"
 	logItem "RestorePartition: $restorePartition"
