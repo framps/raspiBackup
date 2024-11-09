@@ -2029,15 +2029,9 @@ MSG_DE[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0336W: Backups mit alter Bezeichnung gef
 MSG_OLD_NAME_BACKUPS_HANDLING_INFO=337
 MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0337W: They might be deleted manually. Best when there are enough new-type ones."
 MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0337W: Diese können manuell gelöscht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
-MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL=338
-MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0338W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0338W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
-MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART=339
-MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0339W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0339W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
-MSG_OLD_NAME_BACKUPS_COUNTER_INFO=340
-MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0340W: Note: This message will be shown again %s times."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0340W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
+MSG_OLD_NAME_BACKUPS_COUNTER_INFO=338
+MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Note: This message will be shown again %s times."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5556,7 +5550,7 @@ function createLinks() { # backuptargetroot extension newfile
 	logEntry "$1 $2 $3"
 	local file rc
 
-	local possibleLinkTargetDirectory=$(ls -d $1/*-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
+	local possibleLinkTargetDirectory=$(ls -d $1/${HOSTNAME_OSR}-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
 
 	if [[ -z $possibleLinkTargetDirectory || $possibleLinkTargetDirectory == $BACKUPTARGET_DIR ]]; then
 		logItem "No possible link target directory found"
@@ -5564,7 +5558,7 @@ function createLinks() { # backuptargetroot extension newfile
 	fi
 
 	logItem "PossibleLinkTargetDirectory: $possibleLinkTargetDirectory"
-	local possibleLinkTarget=$(find $possibleLinkTargetDirectory/* -maxdepth 1 -name $HOSTNAME-backup.$2)
+	local possibleLinkTarget=$(find $possibleLinkTargetDirectory -maxdepth 1 -name $HOSTNAME-backup.$2)
 	logItem "Possible link target: $possibleLinkTarget"
 
 	if [[ -z $possibleLinkTarget ]]; then
@@ -6054,6 +6048,7 @@ function backupRsync() { # partition number (for partition based backup)
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		target="${BACKUPTARGET_DIR}/$partition"
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition/"
+
 		excludeRoot="/$partition"
 
 	else
@@ -6061,12 +6056,11 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
-		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME_OSR}-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
 
-	lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "*-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
+	lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME_OSR}-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 
 	logItem "lastBackupDir: $lastBackupDir"
 
@@ -6861,11 +6855,6 @@ function reportOldBackups() {
 				[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
 			done
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
-			if (( $SMART_RECYCLE )) ; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART $numListedNewBackups $numKeptBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
-			fi
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
