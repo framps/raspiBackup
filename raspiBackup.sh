@@ -7766,7 +7766,8 @@ function doitBackup() {
 function listDeviceInfo() { # device (/dev/sda)
 
 	logEntry "$1"
-	local result="$(IFS='' lsblk $1 -T -o NAME,SIZE,FSTYPE,LABEL)"
+
+	local result="$(IFS='' lsblk $1 -T -o NAME,SIZE,FSTYPE,FSVER,LABEL,UUID,PARTUUID)"
 	echo "$result"
 	logExit
 }
@@ -8080,6 +8081,7 @@ function restorePartitionBasedBackup() {
 
 		if ! containsElement "1" "${partitionsRestored[@]}" || ! containsElement "2" "${partitionsRestored[@]}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE
+			synchronizeCmdlineAndfstab
 		else
 			if (( ! SKIP_SFDISK || SKIP_FORMAT )); then
 				synchronizeCmdlineAndfstab
@@ -8527,13 +8529,6 @@ function doitRestore() {
 
 	logItem "PartitionbasedBackup detected? $PARTITIONBASED_BACKUP"
 
-	if (( $SKIP_FORMAT )); then
-		if (( ! $PARTITIONBASED_BACKUP )) || [[ BACKUPTYPE != $BACKUPTYPE_RSYNC ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
-			exitError $RC_PARAMETER_ERROR
-		fi
-	fi
-
 	if [[ -z $RESTORE_DEVICE ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_RESTOREDEVICE_DEFINED
 		exitError $RC_PARAMETER_ERROR
@@ -8597,6 +8592,13 @@ function doitRestore() {
 	logItem "Backuptype: $BACKUPTYPE"
 	DATE=$(basename "$RESTOREFILE" | sed -r 's/.*-[A-Za-z]+-backup-([0-9]+-[0-9]+).*/\1/')
 	logItem "Date: $DATE"
+
+	if (( $SKIP_FORMAT && $PARTITIONBASED_BACKUP )); then
+		if [[ $BACKUPTYPE != $BACKUPTYPE_RSYNC ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
+			exitError $RC_PARAMETER_ERROR
+		fi
+	fi
 
 	if (( $PROGRESS && $INTERACTIVE )); then
 		if ! which pv &>/dev/null; then
