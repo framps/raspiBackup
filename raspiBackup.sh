@@ -140,6 +140,7 @@ PROPERTY_FILE="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
+REPORT_COUNTER_FILE="report.counter"
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp/$MYNAME"
 LOGFILE_EXT=".log"
@@ -1841,6 +1842,38 @@ MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Lin
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
+MSG_GENERIC_WARNING=400
+MSG_EN[$MSG_GENERIC_WARNING]="RBK0400W: %s"
+MSG_DE[$MSG_GENERIC_WARNING]="RBK0400W: %s"
+
+MSG_EXISTING_BACKUP=401
+MSG_EN[$MSG_EXISTING_BACKUP]="RBK0401I: Existing backup: %s"
+MSG_DE[$MSG_EXISTING_BACKUP]="RBK0401I: Existierendes Backup: %s"
+MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED=402
+MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Backup strategy would delete %s."
+MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Backup Strategie würde %s Backup löschen."
+MSG_FI[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Varmuuskopiointistrategia poistaisi kohteen %s."
+
+MSG_BACKUP_NAMING_CHANGE=403
+MSG_EN[$MSG_BACKUP_NAMING_CHANGE]="RBK0403W: With raspiBackup version %s the naming of the backup directories changed!"
+MSG_DE[$MSG_BACKUP_NAMING_CHANGE]="RBK0403W: Ab raspiBackup Version %s hat sich die Bezeichnung der Backup-Verzeichnisse geändert!"
+MSG_OLD_NAME_BACKUPS_FOUND=404
+MSG_EN[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0404W: Old-name backups found (without OS info in its name):"
+MSG_DE[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0404W: Backups mit alter Bezeichnung gefunden (ohne OS-Info im Namen):"
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO=405
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0405W: They might be deleted manually. Best when there are enough new-type ones."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0405W: Diese können manuell gelöscht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL=406
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0406W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0406W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART=407
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_OLD_NAME_BACKUPS_COUNTER_INFO=408
+MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Note: This message will be shown again %s times."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
+
+
 #
 # Non NLS messages
 #
@@ -2993,6 +3026,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_DYNAMIC_MOUNT=""
 	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nvme0n1 or /dev/sda) and turn off boot device autodiscovery
 	DEFAULT_BOOT_DEVICE=""
+	# How often inform about possible old-named backups
+	DEFAULT_REPORT_COUNTER="5"
 	############# End default config section #############
 }
 
@@ -4032,6 +4067,26 @@ function readConfigParameters() {
 	logExit
 }
 
+function getOSRelease() {
+
+	local os_release_file
+	local os_release
+
+	for os_release_file in /etc/os-release /usr/lib/os-release /dev/null ; do
+		[[ -e "$os_release_file" ]] && break
+	done
+
+	# the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
+	unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
+
+	local osr_$(grep -E "^ID="         "$os_release_file")
+	local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
+
+	os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
+	os_release="${os_release//\"/}"          # remove any double quotes
+	echo "${os_release:-unknownOS}"          # handle empty result
+}
+
 function setupEnvironment() {
 
 	logEntry
@@ -4052,10 +4107,18 @@ function setupEnvironment() {
 
 		BACKUPFILES_PARTITION_DATE="$HOSTNAME-backup"
 
+		# For including the OS release into the name of the backup directory
+		os_release=$(getOSRelease)
+		# Note: Sanitize the os_release to be usable as (part of) directory name.
+		# But don't allow or use "-" or "_" as replacement character!
+		# Both characters are already used as dividers/markers later on!
+		# The "~" seems to be okay. Even safer would be "", a.k.a. nothing.
+		HOSTNAME_OSR="${HOSTNAME}@${os_release//[ \/\\\:\.\-_]/\~}"
+
 		if [[ -z "$BACKUP_DIRECTORY_NAME" ]]; then
-			BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-$DATE"
+			BACKUPFILE="${HOSTNAME_OSR}-${BACKUPTYPE}-backup-$DATE"
 		else
-			BACKUPFILE="${HOSTNAME}-${BACKUPTYPE}-backup-${DATE}_${BACKUP_DIRECTORY_NAME}"
+			BACKUPFILE="${HOSTNAME_OSR}-${BACKUPTYPE}-backup-${DATE}_${BACKUP_DIRECTORY_NAME}"
 		fi
 
 		BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
@@ -5135,6 +5198,7 @@ function cleanup() { # trap
 	cleanupBackup $1
 
 	cleanupTempFiles
+	reportOldBackups
 
 	finalCommand "$CLEANUP_RC"
 
@@ -5998,6 +6062,7 @@ function backupRsync() { # partition number (for partition based backup)
 		source="/"
 
 		bootPartitionBackup
+		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME_OSR}-$BACKUPTYPE-*" ! -name $BACKUPFILE 2>>/dev/null | sort | tail -n 1)
 		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
@@ -6631,7 +6696,10 @@ function applyBackupStrategy() {
 		local bt="${BACKUPTYPE^^}"
 		local v="KEEPBACKUPS_${bt}"
 		local keepOverwrite="${!v}"
-
+		local dir_to_delete
+		local dir_to_check
+		local tobeDeletedBackups
+		local tobeCheckedBackups
 		local keepBackups=$KEEPBACKUPS
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 
@@ -6641,12 +6709,29 @@ function applyBackupStrategy() {
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
 
-			if (( ! $FAKE )); then
+			if (( $FAKE )); then
+				fakeKeepBackups=$(( keepBackups - 1 ))   # because in FAKE mode no real current backup has been created
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
 				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
+				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+				echo "$tobeCheckedBackups" | while read dir_to_check; do
+					[[ -n $dir_to_check ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXISTING_BACKUP  $BACKUPTARGET_ROOT/${dir_to_check}
+				done
+				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$fakeKeepBackups 2>>$LOG_FILE)
+				echo "$tobeDeletedBackups" | while read dir_to_delete; do
+					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
+				done
+				if ! popd &>>$LOG_FILE; then
+					assertionFailed $LINENO "pop failed"
+				fi
+		       else
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
+				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+					assertionFailed $LINENO "push to $BACKUPPATH failed"
+				fi
+				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
 				if ! popd &>>$LOG_FILE; then
 					assertionFailed $LINENO "pop failed"
 				fi
@@ -6703,6 +6788,95 @@ function applyBackupStrategy() {
 		fi
 	fi
 	logExit
+}
+
+function reportOldBackups() {
+
+	logEntry "$BACKUP_TARGETDIR"
+
+	local dir_to_list
+	local tobeListedNewBackups
+	local numListedNewBackups
+	local numListedOldBackups
+
+	if (( $SMART_RECYCLE )); then
+
+		local keptBackups="$(SR_listUniqueBackups $BACKUPTARGET_ROOT)"
+		local numKeptBackups="$(countLines "$keptBackups")"
+		logItem "Keptbackups $numKeptBackups: $keptBackups"
+
+	else
+
+		local bt="${BACKUPTYPE^^}"
+		local v="KEEPBACKUPS_${bt}"
+		local keepOverwrite="${!v}"
+		local keepBackups=$KEEPBACKUPS
+		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
+	fi
+
+	if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+		assertionFailed $LINENO "push to $BACKUPPATH failed"
+	fi
+
+	tobeListedNewBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+	numListedNewBackups="$(countLines "$tobeListedNewBackups")"
+
+	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+
+	if [[ -n $tobeListedOldBackups ]] ; then
+
+		local report_counter_file="$VAR_LIB_DIRECTORY/$REPORT_COUNTER_FILE"
+
+		# create directory to save counter
+		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
+			mkdir -p "$VAR_LIB_DIRECTORY"
+		fi
+
+		# initialize counter
+		if [[ ! -e "$report_counter_file" ]]; then
+			echo "$DEFAULT_REPORT_COUNTER" > "$report_counter_file"
+		fi
+
+		# retrieve counter
+		local rf
+		rf=$(<$report_counter_file)
+		if [[ -z "${rf}" ]]; then				# counter file exists but is empty
+			echo "$DEFAULT_REPORT_COUNTER" > "$report_counter_file"
+			return
+		fi
+		rf=$(<$report_counter_file)
+
+		# only print report if counter says so
+		if (( $rf > 0 )); then
+
+			# update counter, but only if not in FAKE mode
+			local rfn=$(( ${rf} - 1 ))
+			if (( ! $FAKE )); then
+				echo "${rfn}" > "$report_counter_file"
+			fi
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.6.10.0"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
+			echo "$tobeListedOldBackups" | while read dir_to_list; do
+				[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
+			done
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
+			if (( $SMART_RECYCLE )) ; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART $numListedNewBackups $numKeptBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL $numListedNewBackups ${keepBackups:-$DEFAULT_KEEPBACKUPS}
+			fi
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+		fi
+	fi
+
+	if ! popd &>>$LOG_FILE; then
+		assertionFailed $LINENO "pop failed"
+	fi
 }
 
 function backup() {
@@ -7683,8 +7857,8 @@ function doitBackup() {
 	fi
 
 	if (( $SYSTEMSTATUS )) && ! which lsof &>/dev/null; then
-		 writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
-		 exitError $RC_MISSING_COMMANDS
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
+		exitError $RC_MISSING_COMMANDS
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
@@ -7713,14 +7887,15 @@ function doitBackup() {
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
 	if [[ ! -d "$BACKUPPATH" ]]; then
-		 if ! mkdir -p "${BACKUPPATH}"; then
+		if ! mkdir -p "${BACKUPPATH}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
 			exitError $RC_CREATE_ERROR
-		 fi
+		fi
 	fi
 
 	logCommand "ls -1 ${BACKUPPATH}"
-	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
+	# Note: The new optional part (@.*?)* in the regex below saves possible older backups without the OS release in the name from being deleted as nonRaspiGeneratedDirs!
+	local nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | egrep -Ev "$HOSTNAME(@.*?)*\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
@@ -7749,7 +7924,7 @@ function doitBackup() {
 	# now either execute a SR dryrun or start backup
 
 	if (( $SMART_RECYCLE_DRYRUN && $SMART_RECYCLE )); then # just apply backup strategy to test smart recycle
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH/$(hostname)"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_APPLYING_BACKUP_STRATEGY_ONLY "$BACKUPPATH"
 		applyBackupStrategy
 		rc=0
 	else
@@ -7848,8 +8023,8 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 	if [[ -f "$RESTOREFILE" || $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
 		ROOT_RESTOREFILE="$RESTOREFILE"
 	else
-		logItem "${RESTOREFILE}/${HOSTNAME}-*-backup*"
-		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}-*-backup*)"
+		logItem "${RESTOREFILE}/${HOSTNAME}*-*-backup*"
+		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}*-*-backup*)"
 		logItem "ROOT_RESTOREFILE: $ROOT_RESTOREFILE"
 		if [[ -z "$ROOT_RESTOREFILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_ROOTBACKUPFILE_FOUND $BACKUPTYPE
@@ -8586,7 +8761,9 @@ function doitRestore() {
 
 	BASE_DIR=$(dirname "$RESTOREFILE")
 	logItem "Basedir: $BASE_DIR"
-	HOSTNAME=$(basename "$RESTOREFILE" | sed -r 's/(.*)-[A-Za-z]+-backup-[0-9]+-[0-9]+.*/\1/')
+	# Note: Handle old (without) and new (with OS release info) backup directory names
+	HOSTNAME=$(basename "$RESTOREFILE" | sed -r 's/(.*)(@[A-Za-z0-9]+)*-[A-Za-z]+-backup-[0-9]+-[0-9]+.*/\1/')
+	HOSTNAME=${HOSTNAME%@*}
 	logItem "Hostname: $HOSTNAME"
 	BACKUPTYPE=$(basename "$RESTOREFILE" | sed -r 's/.*-([A-Za-z]+)-backup-[0-9]+-[0-9]+.*/\1/')
 	logItem "Backuptype: $BACKUPTYPE"
@@ -8706,8 +8883,8 @@ function updateRestoreReminder() {
 
 		# initialize reminder state
 		if [[ ! -e "$reminder_file" ]]; then
-			 echo "$(date +%Y%m) 0" > "$reminder_file"
-			 return
+			echo "$(date +%Y%m) 0" > "$reminder_file"
+			return
 		fi
 
 		# retrieve reminder state
@@ -8715,7 +8892,7 @@ function updateRestoreReminder() {
 		now=$(date +%Y%m)
 		local rf
 		rf="$(<$reminder_file)"
-		if [[ -z "${rf}" ]]; then												# issue #316: reminder file exists but is empty
+		if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
 			echo "$(date +%Y%m) 0" > "$reminder_file"
 			return
 		fi
@@ -9187,7 +9364,7 @@ function SR_listYearlyBackups() { # directory
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
 			local d=$(date +%Y -d "${i} year ago")
-			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
+			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
 	logExit
@@ -9203,7 +9380,7 @@ function SR_listMonthlyBackups() { # directory
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			ls -1 $1 | egrep "\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earlies monthly backup
+			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest monthly backup
 		done
 	fi
 	logExit
@@ -9226,7 +9403,7 @@ function SR_listWeeklyBackups() { # directory
 			local mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
 			local dl=""
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
-				dl="\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
+				dl="${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
 			done
 			ls -1 $1 | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
 		done
@@ -9242,7 +9419,7 @@ function SR_listDailyBackups() { # directory
 			# today is 20191117
 			# date +%Y%m%d -d "-1 day" -> 20191116
 			local d=$(date +%Y%m%d -d "-${i} day") # get day
-			ls -1 $1 | grep "\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
+			ls -1 $1 | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
 		done
 	fi
 	logExit
@@ -9284,7 +9461,7 @@ function SR_listUniqueBackups() { #directory
 
 function SR_listBackupsToDelete() { # directory
 	logEntry $1
-	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
@@ -9395,7 +9572,7 @@ function usageEN() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="no"
 	echo "-a \"{commands to execute after Backup}\" (default: $DEFAULT_STARTSERVICES)"
 	echo "-B Save bootpartition in tar file (Default: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
- 	echo "-F Backup is simulated"
+	echo "-F Backup is simulated"
 	echo "-k {backupsToKeep} (default: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
 	echo "-o \"{commands to execute before Backup}\" (default: $DEFAULT_STOPSERVICES)"
@@ -9447,7 +9624,7 @@ function usageDE() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="keine"
 	echo "-a \"{Befehle die nach dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STARTSERVICES)"
 	echo "-B Sicherung der Bootpartition als tar file (Standard: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
-  	echo "-F Backup wird nur simuliert"
+	echo "-F Backup wird nur simuliert"
 	echo "-k {Anzahl Backups} (Standard: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="keine"
 	echo "-o \"{Befehle die vor dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STOPSERVICES)"
@@ -9497,7 +9674,7 @@ function usageFI() {
 	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="ei"
 	echo "-a \"{varmuuskopion jläkeen suoritettavat komennot}\" (oletus: $DEFAULT_STARTSERVICES)"
 	echo "-B Tee käynnistysosiosta kopio tar tiedostoon (oletus: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
- 	echo "-F Varmuuskopioinnin simulointi"
+	echo "-F Varmuuskopioinnin simulointi"
 	echo "-k {säilytettävien varmuuskopioiden lkm} (oletus: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="ei"
 	echo "-o \"{ennen varmuuskopiointia suoritettavat komennot}\" (oletus: $DEFAULT_STOPSERVICES)"
