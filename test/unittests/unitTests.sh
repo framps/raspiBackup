@@ -1,25 +1,24 @@
 #!/bin/bash
 
+if [ `id -u` != 0 ]
+then
+    echo -e "$0 needs to be run as root.\n"
+    exit 1
+fi
+
 LOGFILE="$PWD/ut.log"
 rm $LOGFILE &>/dev/null
 error=0
 
-if [ `id -u` != 0 ]
-then
-    echo -e "$PGM needs to be run as root.\n"
-    exit 1
-fi
-
 #
 for utDir in $(find * -type d); do
 	#if [[ "$utDir" == "makeFilesystemAndLabel" ]]; then
-	#if [[ "$utDir" == "makePartition" ]]; then
-	if [[ "$utDir" == "resizeLastPartition" ]]; then
+	[[ "$utDir" == "makePartition" ]] && continue 
+	#if [[ "$utDir" == "resizeLastPartition" ]]; then
     echo "Executing ${utDir}.sh"
 	cd $utDir
 	./${utDir}.sh >> $LOGFILE 
 	e=$?	
-	mv /tmp/${utDir}.log . # move debug into UT dir
 	if (( e )); then
 		echo "??? Unittest $utDir failed"
 	else
@@ -29,7 +28,7 @@ for utDir in $(find * -type d); do
 		((error+=1))
 	fi 
 	cd ..
-	fi
+	#fi
 done
 
 if (( error > 0 )); then
