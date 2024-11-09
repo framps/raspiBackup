@@ -1842,38 +1842,6 @@ MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Lin
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
-MSG_GENERIC_WARNING=400
-MSG_EN[$MSG_GENERIC_WARNING]="RBK0400W: %s"
-MSG_DE[$MSG_GENERIC_WARNING]="RBK0400W: %s"
-
-MSG_EXISTING_BACKUP=401
-MSG_EN[$MSG_EXISTING_BACKUP]="RBK0401I: Existing backup: %s"
-MSG_DE[$MSG_EXISTING_BACKUP]="RBK0401I: Existierendes Backup: %s"
-MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED=402
-MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Backup strategy would delete %s."
-MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Backup Strategie würde %s Backup löschen."
-MSG_FI[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0402W: Varmuuskopiointistrategia poistaisi kohteen %s."
-
-MSG_BACKUP_NAMING_CHANGE=403
-MSG_EN[$MSG_BACKUP_NAMING_CHANGE]="RBK0403W: With raspiBackup version %s the naming of the backup directories changed!"
-MSG_DE[$MSG_BACKUP_NAMING_CHANGE]="RBK0403W: Ab raspiBackup Version %s hat sich die Bezeichnung der Backup-Verzeichnisse geändert!"
-MSG_OLD_NAME_BACKUPS_FOUND=404
-MSG_EN[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0404W: Old-name backups found (without OS info in its name):"
-MSG_DE[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0404W: Backups mit alter Bezeichnung gefunden (ohne OS-Info im Namen):"
-MSG_OLD_NAME_BACKUPS_HANDLING_INFO=405
-MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0405W: They might be deleted manually. Best when there are enough new-type ones."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0405W: Diese können manuell gelöscht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
-MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL=406
-MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0406W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0406W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
-MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART=407
-MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0407W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
-MSG_OLD_NAME_BACKUPS_COUNTER_INFO=408
-MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Note: This message will be shown again %s times."
-MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0408W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
-
-
 #
 # Non NLS messages
 #
@@ -2022,9 +1990,9 @@ MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Ziel %s mit %s ist größer als die
 MSG_NOT_ALL_OS_PARTITIONS_SAVED=324
 MSG_EN[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Not all OS partitions saved. Backup will not boot."
 MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Partition gesichert und das Backup wird nicht starten."
-MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED=325
-MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated."
-MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert."
+#MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED=325
+#MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated."
+#MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert."
 MSG_SKIP_FORMATING=326
 MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: No partitions will be formatted."
 MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Keine Partitionen werden formatiert."
@@ -2043,6 +2011,33 @@ MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die 
 MSG_NO_SKIP_FORMAT_POSSIBLE=331
 MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: No partition formating is only possible with options -t rsync and -P."
 MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Keine Partitionsformatierung ist nur mit den Optionen -t rsync und -P möglich."
+MSG_GENERIC_WARNING=332
+MSG_EN[$MSG_GENERIC_WARNING]="RBK0332W: %s"
+MSG_DE[$MSG_GENERIC_WARNING]="RBK0332W: %s"
+MSG_EXISTING_BACKUP=333
+MSG_EN[$MSG_EXISTING_BACKUP]="RBK0333I: Existing backup: %s"
+MSG_DE[$MSG_EXISTING_BACKUP]="RBK0333I: Existierendes Backup: %s"
+MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED=334
+MSG_EN[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0334W: Backup strategy would delete %s."
+MSG_DE[$MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED]="RBK0334W: Backup Strategie würde %s Backup löschen."
+MSG_BACKUP_NAMING_CHANGE=335
+MSG_EN[$MSG_BACKUP_NAMING_CHANGE]="RBK0335W: With raspiBackup version %s the naming of the backup directories changed!"
+MSG_DE[$MSG_BACKUP_NAMING_CHANGE]="RBK0335W: Ab raspiBackup Version %s hat sich die Bezeichnung der Backup-Verzeichnisse geändert!"
+MSG_OLD_NAME_BACKUPS_FOUND=336
+MSG_EN[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0336W: Old-name backups found (without OS info in its name):"
+MSG_DE[$MSG_OLD_NAME_BACKUPS_FOUND]="RBK0336W: Backups mit alter Bezeichnung gefunden (ohne OS-Info im Namen):"
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO=337
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0337W: They might be deleted manually. Best when there are enough new-type ones."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0337W: Diese können manuell gelöscht werden. Sinnvollerweise, wenn genügend neue Backups existieren."
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL=338
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0338W: \"Enough\" means: if numListedNewBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_NORMAL]="RBK0338W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART=339
+MSG_EN[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0339W: \"Enough\" means: if numListedNewBackups (%s)  or  numKeptBackups (%s)  has reached  keepBackups (%s)."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO_SMART]="RBK0339W: \"Genügend\" meint: Wenn numListedNewBackups (%s)  oder  numKeptBackups (%s)  den Wert von  keepBackups (%s) erreicht hat."
+MSG_OLD_NAME_BACKUPS_COUNTER_INFO=340
+MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0340W: Note: This message will be shown again %s times."
+MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0340W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2816,6 +2811,7 @@ function logOptions() { # option state
 	logItem "MAIL_PROGRAM=$EMAIL_PROGRAM"
 	logItem "MSG_LEVEL=$MSG_LEVEL"
 	logItem "NOTIFY_START=$NOTIFY_START"
+	logItem "OLD_REMINDER_REPEAT=$OLD_REMINDER_REPEAT"
 	logItem "PARTITIONBASED_BACKUP=$PARTITIONBASED_BACKUP"
 	logItem "PARTITIONS_TO_BACKUP=$PARTITIONS_TO_BACKUP"
 	logItem "PARTITIONS_TO_RESTORE=$PARTITIONS_TO_RESTORE"
@@ -2832,6 +2828,8 @@ function logOptions() { # option state
 	logItem "RESIZE_ROOTFS=$RESIZE_ROOTFS"
 	logItem "RESTORE_DEVICE=$RESTORE_DEVICE"
 	logItem "RESTORE_EXTENSIONS=$RESTORE_EXTENSIONS"
+	logItem "RESTORE_REMINDER_INTERVAL=$RESTORE_REMINDER_INTERVAL"
+	logItem "RESTORE_REMINDER_REPEAT=$RESTORE_REMINDER_REPEAT"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
@@ -3027,7 +3025,7 @@ function initializeDefaultConfigVariables() {
 	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nvme0n1 or /dev/sda) and turn off boot device autodiscovery
 	DEFAULT_BOOT_DEVICE=""
 	# How often inform about possible old-named backups
-	DEFAULT_REPORT_COUNTER="5"
+	DEFAULT_OLD_REMINDER_REPEAT="5"
 	############# End default config section #############
 }
 
@@ -3069,6 +3067,7 @@ function copyDefaultConfigVariables() {
 	MAIL_ON_ERROR_ONLY="$DEFAULT_MAIL_ON_ERROR_ONLY"
 	MSG_LEVEL="$DEFAULT_MSG_LEVEL"
 	NOTIFY_START="$DEFAULT_NOTIFY_START"
+	OLD_REMINDER_REPEAT="$DEFAULT_OLD_REMINDER_REPEAT"
 	PARTITIONBASED_BACKUP="$DEFAULT_PARTITIONBASED_BACKUP"
 	PARTITIONS_TO_BACKUP="$DEFAULT_PARTITIONS_TO_BACKUP"
 	PARTITIONS_TO_RESTORE="$DEFAULT_PARTITIONS_TO_RESTORE"
@@ -6834,14 +6833,14 @@ function reportOldBackups() {
 
 		# initialize counter
 		if [[ ! -e "$report_counter_file" ]]; then
-			echo "$DEFAULT_REPORT_COUNTER" > "$report_counter_file"
+			echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
 		fi
 
 		# retrieve counter
 		local rf
 		rf=$(<$report_counter_file)
 		if [[ -z "${rf}" ]]; then				# counter file exists but is empty
-			echo "$DEFAULT_REPORT_COUNTER" > "$report_counter_file"
+			echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
 			return
 		fi
 		rf=$(<$report_counter_file)
