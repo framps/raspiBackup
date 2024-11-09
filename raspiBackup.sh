@@ -4377,7 +4377,10 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 
 	if (( newSize > 0 )); then
 		logItem "Update partition sectorsize to $newSize"
-		sed -E -i "s/(p$p :.+size=[ ]*)([0-9]+)/\1${newSize}/" $targetFile
+		sed -E -i "s/($p :.+size=[ ]*)([0-9]+)/\1${newSize}/" $targetFile
+		if (( $? )); then
+			assertionFailed $LINENO "SFDISK sed unsuccessfull"
+		fi
 		if [[ -n $p5 ]]; then
 			local newP5Size
 			[[ -v RESIZE_FSDISK ]] && logItem "(( newP5Size = $size5 + $diffSize ))"
