@@ -5952,7 +5952,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 	local partitionsInBackup=( $(collectAvailableBackupPartitions "$1") )
 	local partitionsToBackup
 	partitionsToBackup=( ${PARTITIONS_TO_BACKUP[@]} )
-	
+
 	local missingPartition=()
 
 	logItem "partitionsInBackup: ${partitionsInBackup[@]}"
@@ -5969,7 +5969,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	[[ -z ${missingPartition[@]} ]]
 	rc=$?
-	
+
 	logExit "$rc - ${missingPartition[@]}"
 	return $rc
 }
@@ -6326,7 +6326,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 	logEntry "$1"
 
 	local lastBackupDir="$1"
-	
+
 	local partitionBackupFile availablePartitions
 
 	for partitionBackupFile in "${lastBackupDir}"; do
@@ -8058,7 +8058,7 @@ function restorePartitionBasedBackup() {
 		logItem "PARTED_FILE: $PARTED_FILE$NL$(<"$PARTED_FILE")"
 
 		partitionRestoredeviceIfRequested
-		
+
 		local partitionBackupFile
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
 		local partitionsRestored=()
@@ -8081,7 +8081,7 @@ function restorePartitionBasedBackup() {
 		if ! containsElement "1" "${partitionsRestored[@]}" || ! containsElement "2" "${partitionsRestored[@]}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE
 		else
-			if (( ! SKIP_SFDISK )); then
+			if (( ! SKIP_SFDISK || SKIP_FORMAT )); then
 				synchronizeCmdlineAndfstab
 			fi
 		fi
