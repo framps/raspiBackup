@@ -5188,13 +5188,14 @@ function cleanup() { # trap
 				)); then
 					applyBackupStrategy
 			fi
+			
+			reportOldBackups
 		fi
 	fi
 
 	cleanupBackup $1
 
 	cleanupTempFiles
-	reportOldBackups
 
 	finalCommand "$CLEANUP_RC"
 
