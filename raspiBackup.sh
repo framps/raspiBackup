@@ -6890,9 +6890,9 @@ function backup() {
 	fi
 
 	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC || (( $PARTITIONBASED_BACKUP )) ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FINAL_DIR"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FINAL_DIR"
 	else
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
 	fi
 
 	logItem "Storing backup in backuppath $BACKUPPATH"
@@ -8693,7 +8693,7 @@ function doitRestore() {
 		PARTITIONBASED_BACKUP=0
 	fi
 
-	if (( ! $PARTITIONBASED_BACKUP )) && [[ -n $PARTITIONS_TO_RESTORE ]]; then
+	if (( ! $PARTITIONBASED_BACKUP && $OPTION_T_USED )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_T_NOT_ALLOWED
 			exitError $RC_PARAMETER_ERROR
 	fi	
@@ -9579,7 +9579,7 @@ function usageEN() {
 	echo "-Restore options-"
 	echo "-0 Restore device will not be partitioned"
 	echo "-00 Restored partitions will not be formatted (only for backup type rsync)"
-	echo "-1 Formatting errors on SD card will be ignored"
+	echo "-1 Formatting errors on restore device will be ignored"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="no"
 	echo "-C Formating of the restorepartitions will check for badblocks (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {restoreDevice} (default: $DEFAULT_RESTORE_DEVICE) (Example: /dev/sda)"
@@ -9632,7 +9632,7 @@ function usageDE() {
 	echo "-Restore Optionen-"
 	echo "-0 Keine Partitionierung des Restoregerätes"
 	echo "-00 Keine Formatierung der restorten Partitionen (nur bei Backuptyp rsync)"
-	echo "-1 Fehler bei der Formatierung der SD Karte werden ignoriert"
+	echo "-1 Fehler bei der Formatierung des Restoregerätes werden ignoriert"
 	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="keiner"
 	echo "-C Beim Formatieren der Restorepartitionen wird auf Badblocks geprüft (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {restoreGerät} (Standard: $DEFAULT_RESTORE_DEVICE) (Beispiel: /dev/sda)"
@@ -9755,6 +9755,7 @@ IGNORE_MISSING_PARTITIONS=0
 INCLUDE_ONLY=$?
 IS_UBUNTU=0
 NO_YES_QUESTION=0
+OPTION_T_USED=0
 PROGRESS=0
 REGRESSION_TEST=0
 RESTORE=0
@@ -10151,6 +10152,7 @@ while (( "$#" )); do
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
 	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
 	  PARTITIONBASED_BACKUP=1
+	  OPTION_T_USED=1
 	  ;;
 
 	--telegramToken)
