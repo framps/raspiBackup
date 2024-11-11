@@ -2032,6 +2032,9 @@ MSG_DE[$MSG_OLD_NAME_BACKUPS_HANDLING_INFO]="RBK0337W: Diese werden nicht im Bac
 MSG_OLD_NAME_BACKUPS_COUNTER_INFO=338
 MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Note: This message will be shown again %s times."
 MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
+MSG_OPTION_T_NOT_ALLOWED=339
+MSG_EN[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T not allowed for normal mode backup."
+MSG_DE[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T ist für einen normales Backup nicht erlaubt."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -8690,6 +8693,11 @@ function doitRestore() {
 		PARTITIONBASED_BACKUP=0
 	fi
 
+	if (( ! $PARTITIONBASED_BACKUP )) && [[ -n $PARTITIONS_TO_RESTORE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_T_NOT_ALLOWED
+			exitError $RC_PARAMETER_ERROR
+	fi	
+
 	logItem "PartitionbasedBackup detected? $PARTITIONBASED_BACKUP"
 
 	if [[ -z $RESTORE_DEVICE ]]; then
@@ -9564,9 +9572,9 @@ function usageEN() {
 	echo "-k {backupsToKeep} (default: $DEFAULT_KEEPBACKUPS)"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
 	echo "-o \"{commands to execute before Backup}\" (default: $DEFAULT_STOPSERVICES)"
-	echo "-P use partitionoriented backup mode"
+	echo "-P use partitionoriented backup mode to backup the first two partitions (default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo "-t {backupType} ($ALLOWED_TYPES) (default: $DEFAULT_BACKUPTYPE)"
-	echo "-T \"{List of partitions to save}\" (Partition numbers, e.g. \"1 2 3\"). Only valid with parameter -P (default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
+	echo "-T \"{List of partitions to backup in partition oriented mode}\" (Partition numbers, e.g. \"1 2 3\" or \"*\" for all) (default: ${DEFAULT_PARTITIONS_TO_BACKUP})."
 	echo ""
 	echo "-Restore options-"
 	echo "-0 Restore device will not be partitioned"
@@ -9576,6 +9584,7 @@ function usageEN() {
 	echo "-C Formating of the restorepartitions will check for badblocks (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {restoreDevice} (default: $DEFAULT_RESTORE_DEVICE) (Example: /dev/sda)"
 	echo "-R {rootPartition} (default: restoreDevice) (Example: /dev/sdb1)"
+	echo "-T \"{List of partitions to restore from a partition oriented backup}\" (Partition numbers, e.g. \"1 2 3\" or \"*\" for all) (default: ${DEFAULT_PARTITIONS_TO_RESTORE})"
 	echo "--resizeRootFS (Default: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
@@ -9618,7 +9627,7 @@ function usageDE() {
 	echo "-o \"{Befehle die vor dem Backup ausgeführt werden}\" (Standard: $DEFAULT_STOPSERVICES)"
 	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
-	echo "-T \"Liste der Partitionen die zu Sichern sind}\" (Partitionsnummern, z.B. \"1 2 3\"). Nur gültig zusammen mit Parameter -P (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
+	echo "-T \"Liste der Partitionen die im partitionsorientierten Mode zu sichern sind}\" (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})."
 	echo ""
 	echo "-Restore Optionen-"
 	echo "-0 Keine Partitionierung des Restoregerätes"
@@ -9628,6 +9637,7 @@ function usageDE() {
 	echo "-C Beim Formatieren der Restorepartitionen wird auf Badblocks geprüft (Standard: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {restoreGerät} (Standard: $DEFAULT_RESTORE_DEVICE) (Beispiel: /dev/sda)"
 	echo "-R {rootPartition} (Standard: restoreDevice) (Beispiel: /dev/sdb1)"
+	echo "-T \"Liste der Partitionen die vom partitionsorientierten Backup zu restoren sind}\" (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})."
 	echo "--resizeRootFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
