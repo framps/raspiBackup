@@ -1,0 +1,7 @@
+label: dos
+label-id: 0xd5c63721
+device: /dev/mmcblk0
+unit: sectors
+
+/dev/mmcblk0p1 : start=        8192, size=     1048576, type=c
+/dev/mmcblk0p2 : start=     1056768, size=    60014592, type=83
