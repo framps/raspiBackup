@@ -138,8 +138,6 @@ read -r -d '' CRON_CONTENTS <<-'EOF'
 #
 # (C) 2017-2019 framp at linux-tips-and-tricks dot de
 #
-# Create a backup once a week on Sunday morning at 5 am (default)
-#
 #0 5 * * 0	root	/usr/local/bin/raspiBackup.sh
 EOF
 
@@ -161,7 +159,6 @@ Description=Timer for raspiBackup.service to start backup
 
 [Timer]
 OnCalendar=Sun *-*-* 05:00:42
-# Create a backup once a week on Sunday morning at 5 am (default)
 Unit=raspiBackup.service
 
 [Install]
@@ -2913,7 +2910,7 @@ function config_menu() {
 		logItem "parsed day: $CONFIG_CRON_DAY"
 	elif isSystemdConfigInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
-		#	OnCalendar= *-*-* 05:00:00
+		#	OnCalendar=*-*-* 05:00:00
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
 		logItem "parsed $l"
 		local day="$(cut -f 1 -d ' ' <<< $l)" # Sun or *-*-*
