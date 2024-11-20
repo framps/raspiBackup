@@ -3720,7 +3720,7 @@ function updateScript() {
 
 		if (( $updateNow )); then
 			local tmpFile="/tmp/${MYSELF}~"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$file" "$MYHOMEURL"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$MYSELF" "$MYHOMEURL"
 
 			local dlHttpCode dlRC
 			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${tmpFile}")"
