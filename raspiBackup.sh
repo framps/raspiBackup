@@ -2442,13 +2442,18 @@ function writeToConsole() {  # msglevel messagenumber message
 
 	msg="$(getMessageText "$@")"
 
+	local msgNumber=$(cut -f 2 -d ' ' <<< "$msg")
+	local msgSev=${msgNumber:7:1}
+
+	if [[ $msgSev == "W" ]]; then
+		WARNING_MESSAGE_WRITTEN=1
+		NEWS_AVAILABLE=1
+	fi
+
 	if (( $level <= $MSG_LEVEL )); then
 
 # --- RBK0105I: Deleting new backup directory /backup/obelix/obelix-rsync-backup-20180912-215541.
 # ??? RBK0005E: Backup failed. Check previous error messages for details.
-
-		local msgNumber=$(cut -f 2 -d ' ' <<< "$msg")
-		local msgSev=${msgNumber:7:1}
 
 		if (( $TIMESTAMPS )); then
 			timestamp="$(date +'%m-%d-%Y %T') "
