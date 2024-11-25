@@ -123,8 +123,9 @@ if [[ -n $URLTARGET ]]; then
 fi
 
 DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.sh"
-BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
+BETA_CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
 INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
 PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
@@ -9004,9 +9005,14 @@ function updateConfig() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 
-	local lang=${LANGUAGE,,}
-	eval "DL_URL=$CONFIG_URL"
+	if grep -iqE "alpha|beta" <<< "$VERSION"; then
+		eval "DL_URL=$BETA_CONFIG_URL"
+	else
+		eval "DL_URL=$CONFIG_URL"
+	fi
 
+	local lang=${LANGUAGE,,}
+	
 	# download new config file
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 
