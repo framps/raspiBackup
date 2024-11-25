@@ -8992,7 +8992,7 @@ function updateConfig() {
 		return
 	fi
 
-	logItem "Current config version: $etcConfigFileVersion - Required config version: $VERSION_SCRIPT_CONFIG"
+	logItem "Current config version: $etcConfigFileVersion - Required config version: $VERSION_SCRIPT_CONFIG"		# VERSION_SCRIPT_CONFIG is from updated script
 
 	if (( $(compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG") >= 0 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
 		logExit "Config version ok"
@@ -9002,8 +9002,6 @@ function updateConfig() {
 		logExit
 		return
 	fi
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 
 	if grep -iqE "alpha|beta" <<< "$VERSION"; then
 		eval "DL_URL=$BETA_CONFIG_URL"
@@ -9034,15 +9032,16 @@ function updateConfig() {
 
 	logItem "New config version of downloaded file: $newConfigVersion"
 
-	if (( $(compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG") < 0 )); then					# ETC_CONFIG_FILE_VERSION < SCRIPT_CONFIG
-		logItem "Config update version in script: $VERSION_SCRIPT_CONFIG - Current config version : $etcConfigFileVersion"
-
-		if (( $(compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG") < 0 )); then					# newConfigVersion < SCRIPT_CONFIG
-			logItem "No config update possible: $VERSION_SCRIPT_CONFIG - Available: $newConfigVersion"
+	# Should not occure but make sure config is not downgraded for some reasons
+	if (( $(compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG") < 0 )); then					# newConfigVersion < SCRIPT_CONFIG
+		if (( $UPDATE_CONFIG )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
 			logExit
 			return
 		fi
 	fi
+
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 
 	rm -f $MERGED_CONFIG &>/dev/null
 
