@@ -8249,7 +8249,11 @@ function restorePartitionBasedBackup() {
 				restorePartitionBasedPartition "$partitionBackupFile"
 				partitionsRestored+=($partitionNo)
 			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_PARTITION_RESTORE "${RESTORE_DEVICE}${partitionNo}"
+				local skippedPartition="${RESTORE_DEVICE}${partitionNo}"
+				if isSpecialBlockDevice "${RESTORE_DEVICE}"; then
+					skippedPartition="${RESTORE_DEVICE}p${partitionNo}"
+				fi
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_PARTITION_RESTORE "$skippedPartition"
 			fi
 		done
 
