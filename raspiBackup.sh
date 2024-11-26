@@ -6354,7 +6354,8 @@ function partitionRestoredeviceIfRequested() {
 					else
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADJUSTING_LAST "$(bytesToHuman $oldPartitionSourceSize)" "$(bytesToHuman $newPartitionTargetSize)"
 					fi
-
+				else
+					cp "$SF_FILE" "$MODIFIED_SFDISK" # no repartitioning required
 				fi
 			else
 				cp "$SF_FILE" "$MODIFIED_SFDISK" # just use unmodified sfdisk when option -R is used for a hybrid system
