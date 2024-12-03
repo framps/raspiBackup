@@ -7941,8 +7941,7 @@ function doitBackup() {
 function listDeviceInfo() { # device (/dev/sda)
 
 	logEntry "$1"
-
-	local result="$(IFS='' lsblk $1 -T -o NAME,SIZE,FSTYPE,FSVER,LABEL,UUID,PARTUUID)"
+	local result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,FSVER,LABEL,UUID,PARTUUID)"
 	echo "$result"
 	logExit
 }
