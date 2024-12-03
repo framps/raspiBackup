@@ -2010,8 +2010,8 @@ MSG_MISSING_PARTITIONS_NOT_SAVED=330
 MSG_EN[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Not all partitions which were saved in the previous backup are included. Missing \"%s\"."
 MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden gesichert. Es fehlen \"%s\"."
 MSG_NO_SKIP_FORMAT_POSSIBLE=331
-MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: No partition formating is only possible with options -t rsync and -P."
-MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Keine Partitionsformatierung ist nur mit den Optionen -t rsync und -P möglich."
+MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: No partition formating in restore is only possible with rsync backuptype and a partition oriented backup."
+MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Keine Partitionsformatierung beim Restore ist nur mit dem rsync Backuptyp und einem partitionsorientierten Backup möglich."
 MSG_GENERIC_WARNING=332
 MSG_EN[$MSG_GENERIC_WARNING]="RBK0332W: %s"
 MSG_DE[$MSG_GENERIC_WARNING]="RBK0332W: %s"
@@ -8775,10 +8775,15 @@ function doitRestore() {
 	DATE=$(basename "$RESTOREFILE" | sed -r 's/.*-[A-Za-z]+-backup-([0-9]+-[0-9]+).*/\1/')
 	logItem "Date: $DATE"
 
-	if (( $SKIP_FORMAT && $PARTITIONBASED_BACKUP )); then
-		if [[ $BACKUPTYPE != $BACKUPTYPE_RSYNC ]]; then
+	if (( $SKIP_FORMAT )); then
+		if (( $PARTITIONBASED_BACKUP )); then
+			if [[ $BACKUPTYPE != $BACKUPTYPE_RSYNC ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
+				exitError $RC_PARAMETER_ERROR
+			fi
+		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
-			exitError $RC_PARAMETER_ERROR
+			exitError $RC_PARAMETER_ERROR		
 		fi
 	fi
 
