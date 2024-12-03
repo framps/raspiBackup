@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -2036,6 +2037,9 @@ MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Hinweis: Diese Meldung wir
 MSG_OPTION_T_NOT_ALLOWED=339
 MSG_EN[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T not allowed for normal mode backup."
 MSG_DE[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T ist für einen normales Backup nicht erlaubt."
+MSG_RESTORE_TIME=340
+MSG_EN[$MSG_RESTORE_TIME]="RBK0340I: Restore time: %s:%s:%s."
+MSG_DE[$MSG_RESTORE_TIME]="RBK0340I: Restorezeit: %s:%s:%s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6438,6 +6442,8 @@ function restoreNormalBackupType() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE "$RESTOREFILE"
 	logCommand "ls -la $RESTOREFILE"
 
+	START_TIME=$(date +%s)
+
 	rc=$RC_NATIVE_RESTORE_FAILED
 
 	logSystemDiskState
@@ -6634,6 +6640,8 @@ function restoreNormalBackupType() {
 			fi
 
 	esac
+
+	END_TIME="$(date +%s)"
 
 	logItem "Syncing filesystems"
 	sync
@@ -8204,6 +8212,8 @@ function restorePartitionBasedBackup() {
 		fi
 	fi
 
+	START_TIME="$(date +%s)"
+
 	logItem "Creating mountpoint $MNT_POINT"
 	mkdir -p $MNT_POINT
 
@@ -8259,14 +8269,15 @@ function restorePartitionBasedBackup() {
 
 		if ! containsElement "1" "${partitionsRestored[@]}" || ! containsElement "2" "${partitionsRestored[@]}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE
+		fi
+
+		if (( ! SKIP_SFDISK || SKIP_FORMAT )); then
 			synchronizeCmdlineAndfstab
-		else
-			if (( ! SKIP_SFDISK || SKIP_FORMAT )); then
-				synchronizeCmdlineAndfstab
-			fi
 		fi
 
 	fi
+
+	END_TIME="$(date +%s)"
 
 	logCommand "fdisk -l $RESTORE_DEVICE"
 
@@ -8854,6 +8865,9 @@ function doitRestore() {
 	else
 		restorePartitionBasedBackup
 	fi
+
+	RESTORE_TIME=($(duration $START_TIME $END_TIME))
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_TIME "${RESTORE_TIME[1]}" "${RESTORE_TIME[2]}" "${RESTORE_TIME[3]}"
 
 	logCommand "blkid"
 
