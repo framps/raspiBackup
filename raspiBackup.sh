@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 #
 #######################################################################################################################
 #
@@ -5044,47 +5043,7 @@ function masqueradeSensitiveInfoInLog() {
 }
 
 function masqueradeNonlocalIPs() {
-
-	local masq=1
-	local f=$(mktemp)
-
-	cp $1 $f
-
-	while (( $masq )); do
-
-		masq=0
-
-		cat $f | while read line; do
-				if [[ $line =~ ([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3}) ]]; then
-					local n1=${BASH_REMATCH[1]}
-					local n2=${BASH_REMATCH[2]}
-					local n3=${BASH_REMATCH[3]}
-					local n4=${BASH_REMATCH[4]}
-					local matchedIP="$n1.$n2.$n3.$n4"
-
-#					strip leading 0s which will create errors in following == comparison
-#					because numbers will be interpreted as octal values by bash and 8s and 9s are invalid octal numbers
-					n1="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n1")"
-					n2="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n2")"
-					n3="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n3")"
-					n4="$(sed -E 's/^0+([0-9])+/\1/' <<< "$n4")"
-
-					local ip="$n1.$n2.$n3.$n4"
-					local masquip="%%%.%%%.$n3.$n4"
-
-					(( $n1 == 192 && $n2 == 168 )) \
-						|| (( $n1 == 10 )) \
-						|| (( $n1 == 127 )) \
-						|| (( $n1 == 0 )) \
-						|| (( $n1 == 255 )) \
-						|| ( (( $n1 == 172 )) && [[ $line =~ 172\.(1[6-9]|2[1-9]|3[0-1]) ]] ) && continue
-
-					sed -i "s/$matchedIP/$masquip/g" "$1"
-					masq=1
-				fi
-		done
-	done
-	rm $f
+	perl -i -pe 's/\b((?!10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/%%%.%%%.$3.$4/g' $1
 }
 
 function callNotificationExtension() { # rc
