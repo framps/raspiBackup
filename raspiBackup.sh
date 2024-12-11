@@ -129,6 +129,7 @@ BETA_CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup_\$lang\.con
 INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
 INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
 PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
+VERSION_PAGE="https://github.com/framps/raspiBackup/releases"
 
 # dd warning website
 DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
@@ -989,10 +990,10 @@ MSG_FR[$MSG_RESTORING_FILE_PARTITION_DONE]="RBK0099I: Restauration de la partiti
 #MSG_FI[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Palautus ylikirjoittaa laitteen %s."
 #MSG_FR[$MSG_WARN_RESTORE_PARTITION_DEVICE_OVERWRITTEN]="RBK0100W: Le périphérique %s sera écrasé par la sauvegarde"
 MSG_VERSION_HISTORY_PAGE=101
-MSG_EN[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/en/versionhistory/"
-MSG_DE[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/de/versionshistorie/"
-MSG_FI[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/en/versionhistory/" #  Defaults to en
-MSG_FR[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/en/versionhistory/" #  Defaults to en
+MSG_EN[$MSG_VERSION_HISTORY_PAGE]="$VERSION_PAGE"
+#MSG_DE[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/de/versionshistorie/"
+#MSG_FI[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/en/versionhistory/" #  Defaults to en
+#MSG_FR[$MSG_VERSION_HISTORY_PAGE]="$MYHOMEURL/en/versionhistory/" #  Defaults to en
 MSG_UPDATING_UUID=102
 MSG_EN[$MSG_UPDATING_UUID]="RBK0102I: Updating %s from %s to %s in %s."
 MSG_DE[$MSG_UPDATING_UUID]="RBK0102I: %s wird von %s auf %s in %s geändert."
