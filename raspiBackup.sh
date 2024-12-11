@@ -396,7 +396,7 @@ declare -A REQUIRED_COMMANDS_F2FS=( \
 RC_ASSERTION=101
 RC_MISC_ERROR=102
 RC_CTRLC=103
-RC_EXTENSION_ERROR=104
+#RC_EXTENSION_ERROR=104
 RC_STOP_SERVICES_ERROR=105
 RC_START_SERVICES_ERROR=106
 RC_PARAMETER_ERROR=107
@@ -441,6 +441,7 @@ RC_RESIZE_ERROR=145
 #RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
 
 tty -s
+# shellcheck disable=SC2181
 INTERACTIVE=$((!$?))
 
 # defaults
@@ -1844,7 +1845,9 @@ MSG_FR[$MSG_DD_WARNING]="RBK0265W: Il n'est pas recommandé d'utiliser la métho
 MSG_NO_FILEATTRIBUTE_RIGHTS=266
 MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create fileattributes on %s (Filesystem: %s)."
 MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
+# shellcheck disable=SC2034
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
+# shellcheck disable=SC2034
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
 #
@@ -2039,9 +2042,11 @@ MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Note: This message will be
 MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
 MSG_OPTION_T_NOT_ALLOWED=339
 MSG_EN[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T not allowed for normal mode backup."
+# shellcheck disable=SC2034
 MSG_DE[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T ist für einen normales Backup nicht erlaubt."
 MSG_RESTORE_TIME=340
 MSG_EN[$MSG_RESTORE_TIME]="RBK0340I: Restore time: %s:%s:%s."
+# shellcheck disable=SC2034
 MSG_DE[$MSG_RESTORE_TIME]="RBK0340I: Restorezeit: %s:%s:%s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
@@ -2055,6 +2060,7 @@ function trapWithArg() { # function trap1 trap2 ... trapn
 	logEntry "$*"
 	local func="$1" ; shift
 	for sig ; do
+# shellcheck disable=SC2064	
 		trap "$func $sig" "$sig"
 	done
 	logExit
@@ -2071,6 +2077,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	msgVar="MSG_${LANGUAGE}"
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]]; then
+#shellcheck disable=SC1087	
 		msgVar="$msgVar[$1]"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
@@ -2089,18 +2096,22 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
 	i=1
 	while [[ "$msg" =~ %s ]]; do
-		msg="$(sed "s|%s|%$i|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
+#shellcheck disable=SC2001	
+		msg="$(sed "s|%s|%$i|" <<<"$msg" 2>/dev/null)" # have to use explicit command name		
 		(( i++ ))
 	done
 
 	for ((i = 1; $i <= $#; i++)); do # substitute all message parameters
 		p=${!i}
+#shellcheck disable=SC2001	
 		p="$(sed 's/\&/\\\&/g' <<< "$p")" # escape &
-		let s=$i
+		(( s=$i ))
 		s="%$s"
+#shellcheck disable=SC2001	
 		msg="$(sed "s|$s|$p|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 	done
 
+#shellcheck disable=SC2001
 	msg="$(sed "s/%[0-9]+//g" <<<"$msg" 2>/dev/null)" # delete trailing %n definitions
 
 	local msgPref=${msg:0:3}
@@ -2132,13 +2143,13 @@ function logItem() { # message
 }
 
 function logEntry() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $@"
+	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $*"
 	(( LOG_INDENT+=LOG_INDENT_INC ))
 }
 
 function logExit() { # message
 	(( LOG_INDENT-=LOG_INDENT_INC ))
-	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $@"
+	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $*"
 }
 
 function logSystem() {
@@ -2160,22 +2171,18 @@ function logCommand() { # command
 	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
 
+# shellcheck disable=SC2120
 function logSystemServices() {
 	logEntry
 	if (( $SYSTEMSTATUS )); then
-		if ! which lsof &>/dev/null; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
-			else
-				logCommand "service --status-all 2>&1"
-				logCommand "lsof / | awk 'NR==1 || $4~/[0-9][uw]/' 2>&1"
-			fi
+		logCommand 'service --status-all'
 	fi
 	logExit
 }
 
 function logIntoOutput() { # logtype prefix lineno message
 
-	[[ $LOG_DEBUG != $LOG_LEVEL ]] && return
+	[[ "$LOG_DEBUG" != "$LOG_LEVEL" ]] && return
 
 	local type="${LOG_TYPEs[$1]}"
 	shift
@@ -2184,12 +2191,14 @@ function logIntoOutput() { # logtype prefix lineno message
 	local lineno="$1"
 	shift
 	[[ -z $lineno ]] && lineno=${BASH_LINENO[1]}
+#shellcheck disable=SC2155	
 	local dte=$(date +%Y%m%d-%H%M%S)
 	local indent=$(printf '%*s' "$LOG_INDENT")
 	local m
 
 	local line
 	while IFS= read -r line; do
+#shellchek disable=SC2155,SC2183
 		printf -v m "%s %04d: %s %s %s" "$type" "$lineno" "$indent" "$prefix" "$line"
 		case $LOG_OUTPUT in
 			$LOG_OUTPUT_VARLOG | $LOG_OUTPUT_BACKUPLOC | $LOG_OUTPUT_HOME)
@@ -2238,7 +2247,7 @@ function logFinish() {
 
 	rm -f "$FINISH_LOG_FILE"
 
-	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
+	if [[ "$LOG_LEVEL" != "$LOG_NONE" ]]; then
 
 		# 1) error occured and logoutput is backup location which was deleted or fake mode
 		# 2) fake
@@ -2578,8 +2587,8 @@ function createBackupVersion() { # file
 
 	DIR=$(dirname "${file}")
 
-	if [[ -f "$file.bak" ]]; then														# .bak exists already
-		local versions="$(ls $file\.*\.* -1 2>/dev/null)"
+	if [[ -f "$file.bak" ]]; then												# .bak exists already
+		local versions="$(ls $file\.*\.bak -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
@@ -5126,6 +5135,8 @@ function cleanup() { # trap
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
+
+	logSystemServices # @@@@@
 
 	CLEANUP_RC=$rc
 
@@ -9107,6 +9118,8 @@ function updateConfig() {
 	fi
 
 	logItem "Merged: $merged - deleted: $deleted"
+
+	rm -f $NEW_CONFIG &>/dev/null
 
 	if askYesNo "$MSG_UPDATE_CONFIG" "$BACKUP_CONFIG"; then
 		# save old config
