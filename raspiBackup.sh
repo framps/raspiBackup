@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC2004
+# SC2004: $ not required in arithmentic expressions
 #
 #######################################################################################################################
 #
@@ -48,10 +50,10 @@ VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
-[ $(kill -l | grep -c SIG) -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
+[ "$(kill -l | grep -c SIG)" -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
 [ -z "${BASH_VERSINFO[0]}" ] && printf "\n\033[1;35m Make sure you're using \"bash\"! \033[m\n\n" >&2 && exit 255
-[ ${BASH_VERSINFO[0]} -lt 3 ] && printf "\n\033[1;35m Minimum requirement is bash 3.2. You have $BASH_VERSION \033[m\n\n"  >&2 && exit 255
-[ ${BASH_VERSINFO[0]} -le 3 ] && [ ${BASH_VERSINFO[1]} -le 1 ] && printf "\n\033[1;35m Minimum requirement is bash 3.2. You have $BASH_VERSION \033[m\n\n"  >&2 && exit 255
+[ "${BASH_VERSINFO[0]}" -lt 3 ] && printf "\n\033[1;35m Minimum requirement is bash 3.2. You have %s \033[m\n\n" "$BASH_VERSION"  >&2 && exit 255
+[ "${BASH_VERSINFO[0]}" -le 3 ] && [ "${BASH_VERSINFO[1]}" -le 1 ] && printf "\n\033[1;35m Minimum requirement is bash 3.2. You have %s \033[m\n\n" "$BASH_VERSION" >&2 && exit 255
 
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -60,9 +62,9 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 DEFAULT_PATHES="/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin"
 
 if [[ -e /bin/grep ]]; then
-	pathElements=(${PATH//:/ })
+	pathElements=("${PATH//:/ }")
 	for p in $DEFAULT_PATHES; do
-		if [[ ! " ${pathElements[@]} " =~ " ${p} " ]]; then
+		if [[ ! " ${pathElements[*]} " =~ ${p} ]]; then
 			[[ -z $PATH ]] && PATH=$p || PATH="$p:$PATH"
 		fi
 	done
@@ -73,12 +75,14 @@ IS_BETA=$(( ! $(grep -iqE "alpha|beta" <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
+# shellcheck disable=SC2016
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE | sed 's/\$//')
+GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
+# shellcheck disable=SC2016
 GIT_COMMIT='$Sha1$'
-GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
+GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
@@ -103,7 +107,7 @@ DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
 CURRENT_DIR=$(pwd)
-SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
+SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
 
 # Smileys used in eMail subject to notify about news/events
 
@@ -126,8 +130,8 @@ DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.sh"
 CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
 BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 BETA_CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
-INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
+#INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
+#INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
 PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
 VERSION_PAGE="https://github.com/framps/raspiBackup/releases"
 
@@ -159,7 +163,7 @@ MODIFIED_SFDISK="/tmp/$$.sfdisk"
 # timeouts
 
 DOWNLOAD_TIMEOUT=30 # seconds
-DOWNLOAD_RETRIES=3
+#DOWNLOAD_RETRIES=3
 
 # debug option constants
 
@@ -172,7 +176,7 @@ POSSIBLE_LOG_LEVELs=""
 for K in "${!LOG_LEVELs[@]}"; do
 	POSSIBLE_LOG_LEVELs="$POSSIBLE_LOG_LEVELs|${LOG_LEVELs[$K]}"
 done
-POSSIBLE_LOG_LEVELs="$(cut -c 2- <<< $POSSIBLE_LOG_LEVELs)"
+POSSIBLE_LOG_LEVELs="$(cut -c 2- <<< "$POSSIBLE_LOG_LEVELs")"
 
 declare -A LOG_LEVEL_ARGs
 for K in "${!LOG_LEVELs[@]}"; do
@@ -189,7 +193,7 @@ POSSIBLE_MSG_LEVELs=""
 for K in "${!MSG_LEVELs[@]}"; do
 	POSSIBLE_MSG_LEVELs="$POSSIBLE_MSG_LEVELs|${MSG_LEVELs[$K]}"
 done
-POSSIBLE_MSG_LEVELs="$(cut -c 2- <<< $POSSIBLE_MSG_LEVELs)"
+POSSIBLE_MSG_LEVELs="$(cut -c 2- <<< "$POSSIBLE_MSG_LEVELs")"
 
 declare -A MSG_LEVEL_ARGs
 for K in "${!MSG_LEVELs[@]}"; do
@@ -331,7 +335,6 @@ SUPPORTED_EMAIL_COLORING=$(echo $SUPPORTED_EMAIL_COLORING_REGEX | sed 's:^..\(.*
 PARTITIONS_TO_BACKUP_ALL="*"
 MASQUERADE_STRING="@@@@"
 
-COLORING_OFF=""
 COLORING_CONSOLE="C"
 COLORING_MAIL="M"
 COLORING_VALID_OPTIONS="$COLORING_CONSOLE$COLORING_MAIL"
