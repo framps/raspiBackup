@@ -2166,7 +2166,8 @@ function logCommand() { # command
 	(( LOG_INDENT+=LOG_INDENT_INC ))
 	local callerLineNo=${BASH_LINENO[0]}
 	logIntoOutput $LOG_TYPE_DEBUG "***" $callerLineNo "$1"
-	local r="$($1 2>&1)"
+	local r
+	r="$($1 2>&1)"
 	logIntoOutput $LOG_TYPE_DEBUG "   " $callerLineNo "$r"
 	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
@@ -2193,7 +2194,9 @@ function logIntoOutput() { # logtype prefix lineno message
 	[[ -z $lineno ]] && lineno=${BASH_LINENO[1]}
 #shellcheck disable=SC2155	
 	local dte=$(date +%Y%m%d-%H%M%S)
-	local indent=$(printf '%*s' "$LOG_INDENT")
+	local indent
+#shellcheck disable=SC2183
+	indent=$(printf '%*s' "$LOG_INDENT")
 	local m
 
 	local line
@@ -2231,8 +2234,10 @@ function logEnable() {
 	exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 	logItem "$GIT_CODEVERSION"
-	local sep="$(getMessage $MSG_SENSITIVE_SEPARATOR)"
-	local warn="$(getMessage $MSG_SENSITIVE_WARNING)"
+	local sep=
+	sep="$(getMessage $MSG_SENSITIVE_SEPARATOR)"
+	local warn
+	warn="$(getMessage $MSG_SENSITIVE_WARNING)"
 	logItem "$sep"
 	logItem "$warn"
 	logItem "$sep"
@@ -2254,7 +2259,7 @@ function logFinish() {
 		# 3) backup location was already deleted by SR
 		if [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then			# no -L used
 			logItem "$rc $LOG_OUTPUT $FAKE"
-			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
+			if [[ (( $rc != 0 )) && (( "$LOG_OUTPUT" == "$LOG_OUTPUT_BACKUPLOC" )) ]] \
 				|| (( $FAKE )) \
 				|| [[ ! -e $BACKUPTARGET_DIR ]]; then
 				LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
@@ -2267,8 +2272,8 @@ function logFinish() {
 		case $LOG_OUTPUT in
 			$LOG_OUTPUT_VARLOG)
 				LOG_BASE="/var/log/$MYNAME"
-				if [ ! -d ${LOG_BASE} ]; then
-					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
+				if [ ! -d "${LOG_BASE}" ]; then
+					if ! mkdir -p "${LOG_BASE}" &>> "$FINISH_LOG_FILE"; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
 						exitError $RC_CREATE_ERROR
 					fi
@@ -2305,12 +2310,12 @@ function logFinish() {
 			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
-		if [[ $LOG_OUTPUT == $LOG_OUTPUT_HOME ]]; then
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
+		if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_HOME" ]]; then
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE" # make sure logfile is owned by caller
+			chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE" # make sure msgfile is owned by caller
 		fi
 
-		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
+		if [[ -e "$FINISH_LOG_FILE" ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
 			cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
@@ -2320,7 +2325,7 @@ function logFinish() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 		fi
 
-		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
+		if [[ "$TEMP_LOG_FILE" != "$DEST_LOGFILE" ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
 
@@ -2332,7 +2337,7 @@ function logFinish() {
 # Borrowed from http://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
 
 fn_exists() {
-  [ `type -t $1`"" == 'function' ]
+  [[ $(type -t "$1") == function ]]
 }
 
 # Borrowed from http://blog.yjl.im/2012/01/printing-out-call-stack-in-bash.html
@@ -2343,7 +2348,7 @@ function logStack () {
 	local FRAMES=${#BASH_LINENO[@]}
 	# FRAMES-2 skips main, the last one in arrays
 	for ((i=FRAMES-2; i>=0; i--)); do
-		echo '  File' \"${BASH_SOURCE[i+1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i+1]}
+		echo '  File' \""${BASH_SOURCE[i+1]}"\", line "${BASH_LINENO[i]}", in "${FUNCNAME[i+1]}"
 		# Grab the source code of the line
 		sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i+1]}"
 	done
@@ -2355,12 +2360,12 @@ function callExtensions() { # extensionplugpoint rc
 
 	local extension rc=0
 
-	if [[ $1 == $EMAIL_EXTENSION ]]; then
+	if [[ "$1" == "$EMAIL_EXTENSION" ]]; then
 		local extensionFileName="${MYNAME}_${EMAIL_EXTENSION}.sh"
 		shift 1
 		local args=( "$@" )
 
-		if which $extensionFileName &>/dev/null; then
+		if command -v "$extensionFileName" &>/dev/null; then
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 			$extensionFileName "${args[@]}"
 			rc=$?
@@ -2380,21 +2385,21 @@ function callExtensions() { # extensionplugpoint rc
 
 		for extension in $extensions; do
 
-			if [[ $1 == $NOTIFICATION_BACKUP_EXTENSION ]]; then
+			if [[ "$1" == "$NOTIFICATION_BACKUP_EXTENSION" ]]; then
 				local extensionFileName="${MYNAME}_${extension}.sh" # notification has no pre, post and ready
 			else
 				local extensionFileName="${MYNAME}_${extension}_$1.sh"
 			fi
 
-			if which $extensionFileName &>/dev/null; then
+			if command -v "$extensionFileName" &>/dev/null; then
 				logItem "Calling $extensionFileName $2"
 
 				local extension_call=0
 
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
 
-				if [[ ${extension} == $NOTIFICATION_BACKUP_EXTENSION  ]]; then
-					extensionCall=1
+				if [[ ${extension} == "$NOTIFICATION_BACKUP_EXTENSION" ]]; then
+					extension_call=1
 				fi
 
 				if (( extension_call )); then
@@ -2459,8 +2464,10 @@ function writeToConsole() {  # msglevel messagenumber message
 
 	msg="$(getMessageText "$@")"
 
-	local msgNumber=$(cut -f 2 -d ' ' <<< "$msg")
-	local msgSev=${msgNumber:7:1}
+	local msgNumber
+	msgNumber=$(cut -f 2 -d ' ' <<< "$msg")
+	local msgSev=
+	msgSev${msgNumber:7:1}
 
 	if [[ $msgSev == "W" ]]; then
 		WARNING_MESSAGE_WRITTEN=1
@@ -2478,7 +2485,7 @@ function writeToConsole() {  # msglevel messagenumber message
 
 		if (( $INTERACTIVE )); then
 			local consoleMsg="$timestamp$msg"
-			if [[ "$COLORING" =~ $COLORING_CONSOLE ]]; then
+			if [[ "$COLORING" =~ "$COLORING_CONSOLE" ]]; then
 				consoleMsg="$(colorAnnotation $COLOR_TYPE_VT100 "$consoleMsg")"
 			fi
 			if [[ $msgSev == "E" ]]; then
@@ -2525,30 +2532,30 @@ function isSupportedEnvironment() {
 	local OSRELEASE=/etc/os-release
 	local RPI_ISSUE=/etc/rpi-issue
 
-	if [[ ! -e $OSRELEASE ]]; then
+	if [[ ! -e "$OSRELEASE" ]]; then
 		logItem "$OSRELEASE not found"
 		logExit 1
 		return 1
 	fi
 
-	logItem $(<$OSRELEASE)
-	grep -q -E -i "^(NAME|ID)=.*ubuntu" $OSRELEASE
+	logItem $(<"$OSRELEASE")
+	grep -q -E -i "^(NAME|ID)=.*ubuntu" "$OSRELEASE"
 	local rc=$?
 
 	IS_UBUNTU=$(( ! $rc ))
 	logItem "IS_UBUNTU: $IS_UBUNTU"
 
 #	Check it's Raspberry HW
-	if [[ ! -e $MODELPATH ]]; then
+	if [[ ! -e "$MODELPATH" ]]; then
 		logItem "$MODELPATH not found"
 		logExit 1
 		return 1
 	fi
 	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
-	! grep -q -i "raspberry" $MODELPATH && return 1
+	! grep -q -i "raspberry" "$MODELPATH" && return 1
 
 #	OS was built for a Raspberry (RaspbainOS only)
-	if [[ -e $RPI_ISSUE ]]; then
+	if [[ -e "$RPI_ISSUE" ]]; then
 		logItem "$RPI_ISSUE: $(< $RPI_ISSUE)"
 		logExit 0
 		return 0
@@ -5056,7 +5063,8 @@ function masqueradeSensitiveInfoInLog() {
 }
 
 function masqueradeNonlocalIPs() {
-	perl -i -pe 's/\b((?!10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/%%%.%%%.$3.$4/g' $1
+	# perl -i -pe 's/\b((?!10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/%%%.%%%.$3.$4/g' $1
+	perl -i -pe 's/\b((?!0\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/%%%.%%%.$3.$4/g' $1
 }
 
 function callNotificationExtension() { # rc
