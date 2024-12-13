@@ -2441,6 +2441,7 @@ function usage() {
 
 	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
+# shellcheck disable=SC2207
 	NO_YES=( $(getMessage $MSG_NO_YES) )
 
 	local func="usage${activeLang}"
@@ -2466,8 +2467,8 @@ function writeToConsole() {  # msglevel messagenumber message
 
 	local msgNumber
 	msgNumber=$(cut -f 2 -d ' ' <<< "$msg")
-	local msgSev=
-	msgSev${msgNumber:7:1}
+	local msgSev
+	msgSev="${msgNumber:7:1}"
 
 	if [[ $msgSev == "W" ]]; then
 		WARNING_MESSAGE_WRITTEN=1
@@ -2485,8 +2486,8 @@ function writeToConsole() {  # msglevel messagenumber message
 
 		if (( $INTERACTIVE )); then
 			local consoleMsg="$timestamp$msg"
-			if [[ "$COLORING" =~ "$COLORING_CONSOLE" ]]; then
-				consoleMsg="$(colorAnnotation $COLOR_TYPE_VT100 "$consoleMsg")"
+			if [[ "$COLORING" =~ $COLORING_CONSOLE ]]; then
+				consoleMsg="$(colorAnnotation "$COLOR_TYPE_VT100" "$consoleMsg")"
 			fi
 			if [[ $msgSev == "E" ]]; then
 				echo $noNL -e "$consoleMsg" >&2
@@ -2537,8 +2538,8 @@ function isSupportedEnvironment() {
 		logExit 1
 		return 1
 	fi
-
-	logItem $(<"$OSRELEASE")
+# shellcheck disable=SC2046
+	logItem $(<"${OSRELEASE}")
 	grep -q -E -i "^(NAME|ID)=.*ubuntu" "$OSRELEASE"
 	local rc=$?
 
@@ -2551,7 +2552,7 @@ function isSupportedEnvironment() {
 		logExit 1
 		return 1
 	fi
-	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
+	logItem "Modelpath: $(sed 's/\x0/\n/g' "$MODELPATH" )"
 	! grep -q -i "raspberry" "$MODELPATH" && return 1
 
 #	OS was built for a Raspberry (RaspbainOS only)
@@ -2592,29 +2593,34 @@ function createBackupVersion() { # file
 		return 1
 	fi
 
-	DIR=$(dirname "${file}")
-
-	if [[ -f "$file.bak" ]]; then												# .bak exists already
+	if [[ -f "$file.bak" ]]; then 												# .bak exists already
+# shellcheck disable=SC2155,SC2086
 		local versions="$(ls $file\.*\.bak -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
 		else
-			local last="$basename $(tail -n 1 <<< "$versions")" 			# extract highest version number
-			local lastFile="$(basename "$last")"
-			local lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
+			local last
+			last="$(tail -n 1 <<< "$versions")" 							# extract highest version number
+			local lastFile
+			lastFile="$(basename "$last")"
+			local lastVersionNumber
+			lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< "$lastFile" )"
 			(( versionNumber = lastVersionNumber+1 ))							# use next version number
 		fi
 
 		local backupFile="$file.${versionNumber}.bak"
-		mv "$file.bak" "$backupFile"
-		(( $? )) && return 1
+		if ! mv "$file.bak" "$backupFile"; then
+			return 1
+		fi
 	fi
 
+	local rc
 	cp -a "$file" "$file.bak"
+	rc=$?
 
 	echo "$file.bak"
-	return $?	# return status of cp command
+	return $rc	# return status of cp command
 }
 
 # Borrowed from http://unix.stackexchange.com/questions/44040/a-standard-tool-to-convert-a-byte-count-into-human-kib-mib-etc-like-du-ls1
@@ -2630,7 +2636,7 @@ function bytesToHuman() {
 	while ((b > 1024)); do
 		d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
 		b=$((b / 1024))
-		let s++
+		(( s++ ))
 	done
 	if (( sign < 0 )); then
 		(( b=-b ))
@@ -2653,10 +2659,11 @@ function exitNormal() {
 
 function saveVars() {
 	if (( $UID == 0 )); then
-		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
-		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
-		echo "MSG_FILE=\"$MSG_FILE\"" >> $VARS_FILE
-		echo "LOG_FILE=\"$LOG_FILE\"" >> $VARS_FILE
+		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > "$VARS_FILE"
+#shellcheck disable=SC2129		
+		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> "$VARS_FILE"
+		echo "MSG_FILE=\"$MSG_FILE\"" >> "$VARS_FILE"
+		echo "LOG_FILE=\"$LOG_FILE\"" >> "$VARS_FILE"
 	fi
 }
 
@@ -2680,7 +2687,7 @@ function ignoreErrorRC() { # rc errors_to_ignore
 	if (( $rc != 0 )); then
 		for i in ${@:2}; do
 			if (( $i == $rc )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" "$rc"
 				rc=0
 				break
 			fi
@@ -2695,6 +2702,7 @@ function executeDD() { # cmd silent
 	local rc cmd
 	cmd="LC_ALL=C $1"
 	logItem "$cmd"
+# shellcheck disable=SC2086	
 	( eval "$cmd" 2>&1 1>&5 | grep -viE "records [in|out]| copied," | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
@@ -9892,6 +9900,7 @@ while (( "$#" )); do
 
 	-a)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STARTSERVICES="$o"; shift 2
 	  ;;
@@ -9903,6 +9912,7 @@ while (( "$#" )); do
 
 	-b)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_BLOCKSIZE="$o"; shift 2
 	  ;;
@@ -9913,6 +9923,7 @@ while (( "$#" )); do
 
 	--bootDevice)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BOOT_DEVICE="$o"; shift 2
 	  ;;
@@ -9933,36 +9944,42 @@ while (( "$#" )); do
 
 	-d)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
 	  ;;
 
 	-D)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_PARMS="$o"; shift 2
 	  ;;
 
 	--dynamicMount)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DYNAMIC_MOUNT="$o"; shift 2
 	  ;;
 
 	-e)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL="$o"; shift 2
 	  ;;
 
 	-E)
 	  o=$(checkOptionParameter "$1" "$2");
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PARMS="$o"; shift 2
 	  ;;
 
 	--eMailColoring)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_COLORING="${o^^}"; shift 2
 	  ;;
@@ -9980,6 +9997,7 @@ while (( "$#" )); do
 
 	-G)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
@@ -10003,42 +10021,49 @@ while (( "$#" )); do
 
 	-k)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
 	--keep_dd)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DD="$o"; shift 2
 	  ;;
 
 	--keep_ddz)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DDZ="$o"; shift 2
 	  ;;
 
 	--keep_tar)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TAR="$o"; shift 2
 	  ;;
 
 	--keep_tgz)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TGZ="$o"; shift 2
 	  ;;
 
 	--keep_rsync)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_RSYNC="$o"; shift 2
 	  ;;
 
 	-l)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
 	  checkImportantParameters
@@ -10046,6 +10071,7 @@ while (( "$#" )); do
 
 	-L)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
 	  checkImportantParameters
@@ -10053,6 +10079,7 @@ while (( "$#" )); do
 
 	-m)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
 	  checkImportantParameters
@@ -10060,6 +10087,7 @@ while (( "$#" )); do
 
 	-M)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
@@ -10068,6 +10096,7 @@ while (( "$#" )); do
 
 	-N)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXTENSIONS="$o"; shift 2
 	  ;;
@@ -10078,12 +10107,14 @@ while (( "$#" )); do
 
 	-o)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
 	-p)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPPATH="$o"; shift 2
 	  if [[ ! -d "$BACKUPPATH" ]]; then
@@ -10099,6 +10130,7 @@ while (( "$#" )); do
 
 	-r)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTOREFILE="$o"; shift 2
 	  if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
@@ -10110,6 +10142,7 @@ while (( "$#" )); do
 
 	-R)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  ROOT_PARTITION="$o"; shift 2
 	  ROOT_PARTITION_DEFINED=1
@@ -10125,6 +10158,7 @@ while (( "$#" )); do
 
 	-s)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PROGRAM="$o"; shift 2
 	  ;;
@@ -10143,6 +10177,7 @@ while (( "$#" )); do
 
 	--smartRecycleOptions)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  SMART_RECYCLE_OPTIONS="$o"; shift 2
 	  ;;
@@ -10153,6 +10188,7 @@ while (( "$#" )); do
 
 	-t)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
@@ -10163,33 +10199,38 @@ while (( "$#" )); do
 
 	-T)
 	  o="$(checkOptionParameter "$1" "$2")"
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
-	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
+	  PARTITIONS_TO_RESTORE="$PARTITIONS_TO_BACKUP"
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
 	  ;;
 
 	--telegramToken)
 	  o="$(checkOptionParameter "$1" "$2")"
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_TOKEN="$o"; shift 2
 	  ;;
 
 	--telegramChatID)
 	  o="$(checkOptionParameter "$1" "$2")"
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_CHATID="$o"; shift 2
 	  ;;
 
 	--telegramNotifications)
 	  o="$(checkOptionParameter "$1" "$2")"
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_NOTIFICATIONS="$o"; shift 2
 	  ;;
 
 	-u)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
@@ -10243,7 +10284,7 @@ while (( "$#" )); do
 	  break
 	  ;;
 
-	-*|--*|+*|++*) # unknown option
+	-*) # unknown option
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_OPTION "$1"
 		mentionHelp
 		exitError $RC_PARAMETER_ERROR
@@ -10271,8 +10312,7 @@ if (( $RESTORE )); then
 fi
 
 if (( ! $RESTORE )); then
-	exlock_now
-	if (( $? )); then
+	if exlock_now; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
 		exitError $RC_MISC_ERROR
 	fi
@@ -10294,7 +10334,7 @@ if [[ -n "$1" ]]; then
 	fi
 fi
 
-unusedParms="$@"
+unusedParms="$*"
 
 if [[ -n "$unusedParms" ]]; then
 	usage
@@ -10323,8 +10363,7 @@ fi
 
 if (( $UPDATE_MYSELF )); then
 	downloadPropertiesFile FORCE
-	updateScript
-	if (( $? )); then
+	if updateScript; then
 		updateConfig
 	fi
 	exitNormal
@@ -10332,7 +10371,7 @@ fi
 
 if (( $RESTORE && $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH $RESTORE_DEVICE $YES_NO_RESTORE_DEVICE
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH "$RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
 		exitError $RC_MISC_ERROR
 	fi
 fi
@@ -10370,7 +10409,7 @@ trapWithArg cleanup SIGINT SIGTERM EXIT
 lockMe
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)"
-logger -t $MYSELF "Started $VERSION ($GIT_COMMIT_ONLY)"
+logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
 (( $IS_DEV )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_DEV_MESSAGE
@@ -10402,20 +10441,20 @@ fi
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"
-	logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $ETC_CONFIG_FILE)"
+	logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$ETC_CONFIG_FILE")"
 fi
 if (( $HOME_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE" # "$HOME_CONFIG_FILE_VERSION"
-	logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $HOME_CONFIG_FILE)"
+	logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$HOME_CONFIG_FILE")"
 fi
 if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE" # "$CURRENTDIR_CONFIG_FILE_VERSION"
-	logItem "Read ${CURRENTDIR_CONFIG_FILE} : ${CURRENTDIR_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CURRENTDIR_CONFIG_FILE)"
+	logItem "Read ${CURRENTDIR_CONFIG_FILE} : ${CURRENTDIR_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CURRENTDIR_CONFIG_FILE")"
 fi
 
 if (( $CUSTOM_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CUSTOM_CONFIG_FILE" # "$CUSTOM_CONFIG_FILE_VERSION"
-	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CUSTOM_CONFIG_FILE)"
+	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 fi
 
 logOptions "Invocation options"
