@@ -5070,9 +5070,25 @@ function masqueradeSensitiveInfoInLog() {
 
 }
 
+# Follwoing regex was optimzed by __blackjack__ (https://forum-raspberrypi.de/user/50575-blackjack/) from a ChatGPT generated regex :-)
+
 function masqueradeNonlocalIPs() {
 	# perl -i -pe 's/\b((?!10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/%%%.%%%.$3.$4/g' $1
-	perl -i -pe 's/\b((?!0\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/%%%.%%%.$3.$4/g' $1
+	# perl -i -pe 's/\b((?!0\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/%%%.%%%.$3.$4/g' $1
+	perl -pe 's{
+(\b
+(?!                                 # exclude following local ips
+	(10\.\d{1,3} 					# 10er net
+	|172\.(1[6-9]|2[0-9]|3[01])		# 172er net
+	|192\.168)						# 192er net
+	|0\.\d{1,3}						# skip any net with leading 0 to ignore raspiBackup release info
+	(\.\d{1,3}){2})					# followed by two trailing nibbles
+									# now catch external ips	
+\d{1,3}\.\d{1,3}					# accept 2 leading nibbles
+((\.\d{1,3}){2})					# followed by 2 trailing nibbles
+\b)
+		}
+{"%%%.%%%$5"}gex' $1
 }
 
 function callNotificationExtension() { # rc
