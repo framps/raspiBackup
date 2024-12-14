@@ -2252,14 +2252,13 @@ function logFinish() {
 
 	rm -f "$FINISH_LOG_FILE"
 
-	if [[ "$LOG_LEVEL" != "$LOG_NONE" ]]; then
-
+	if [[ $LOG_LEVEL != $LOG_NONE ]]; then
 		# 1) error occured and logoutput is backup location which was deleted or fake mode
 		# 2) fake
 		# 3) backup location was already deleted by SR
 		if [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then			# no -L used
 			logItem "$rc $LOG_OUTPUT $FAKE"
-			if [[ (( $rc != 0 )) && (( "$LOG_OUTPUT" == "$LOG_OUTPUT_BACKUPLOC" )) ]] \
+			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
 				|| (( $FAKE )) \
 				|| [[ ! -e $BACKUPTARGET_DIR ]]; then
 				LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
@@ -2272,8 +2271,8 @@ function logFinish() {
 		case $LOG_OUTPUT in
 			$LOG_OUTPUT_VARLOG)
 				LOG_BASE="/var/log/$MYNAME"
-				if [ ! -d "${LOG_BASE}" ]; then
-					if ! mkdir -p "${LOG_BASE}" &>> "$FINISH_LOG_FILE"; then
+				if [ ! -d ${LOG_BASE} ]; then
+					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
 						exitError $RC_CREATE_ERROR
 					fi
@@ -2310,12 +2309,10 @@ function logFinish() {
 			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
-		if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_HOME" ]]; then
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE" # make sure logfile is owned by caller
-			chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE" # make sure msgfile is owned by caller
-		fi
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
 
-		if [[ -e "$FINISH_LOG_FILE" ]]; then					# append optional final messages
+		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
 			cat "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
 			rm -f "$FINISH_LOG_FILE" &>> "$DEST_LOGFILE"
@@ -2325,7 +2322,7 @@ function logFinish() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 		fi
 
-		if [[ "$TEMP_LOG_FILE" != "$DEST_LOGFILE" ]]; then		# logfile was copied somewhere, delete temp logfile
+		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
 
@@ -5065,7 +5062,8 @@ function masqueradeSensitiveInfoInLog() {
 # Following regex was optimized by __blackjack__ (https://forum-raspberrypi.de/user/50585-blackjack) from a ChatGPT generated regex ;-)
 
 function masqueradeNonlocalIPs() {
-	LC_ALL=C perl -pe 's{
+	
+	LC_ALL=C perl -i -pe 's{
 (\b
 (?!                                 # exclude following local ips
 	(10\.\d{1,3} 					# 10er net
