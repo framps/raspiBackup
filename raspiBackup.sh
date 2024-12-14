@@ -9489,7 +9489,8 @@ function SR_getAllBackups() { # directory
 function SR_listUniqueBackups() { #directory
 	logEntry $1
 	local r="$(SR_getAllBackups "$1" | grep -Ev "_" | sort -u )"
-	local rc="$(countLines "$r")"
+	local rc
+	rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
 	logExit "$rc"
@@ -9498,7 +9499,8 @@ function SR_listUniqueBackups() { #directory
 function SR_listBackupsToDelete() { # directory
 	logEntry $1
 	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
-	local rc="$(countLines "$r")"
+	local rc
+	rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
 	logExit "$rc"
@@ -9512,21 +9514,21 @@ function check4RequiredCommands() { # btrfs | f2fs
 
 	if [[ -z $1 ]]; then
 		for cmd in "${!REQUIRED_COMMANDS[@]}"; do
-			if ! hash $cmd 2>/dev/null; then
+			if ! hash "$cmd" 2>/dev/null; then
 				missing_commands="$cmd $missing_commands "
 				missing_packages="${REQUIRED_COMMANDS[$cmd]} $missing_packages "
 			fi
 		done
 	elif [[ "$1" == "btrfs" ]]; then
 		for cmd in "${!REQUIRED_COMMANDS_BTRFS[@]}"; do
-			if ! hash $cmd 2>/dev/null; then
+			if ! hash "$cmd" 2>/dev/null; then
 				missing_commands="$cmd $missing_commands "
 				missing_packages="${REQUIRED_COMMANDS_BTRFS[$cmd]} $missing_packages "
 			fi
 		done
 	elif [[ "$1" == "f2fs" ]]; then
 		for cmd in "${!REQUIRED_COMMANDS_F2FS[@]}"; do
-			if ! hash $cmd 2>/dev/null; then
+			if ! hash "$cmd" 2>/dev/null; then
 				missing_commands="$cmd $missing_commands "
 				missing_packages="${REQUIRED_COMMANDS_F2FS[$cmd]} $missing_packages "
 			fi
@@ -9560,8 +9562,8 @@ function lockingFramework() {
 	LOCKFD=99
 
 # PRIVATE
-	_lock()             { flock -$1 $LOCKFD; }
-	_no_more_locking()  { _lock u; _lock xn && rm -f $LOCKFILE ; }
+	_lock()             { flock -"$1" "$LOCKFD"; }
+	_no_more_locking()  { _lock u; _lock xn && rm -f "$LOCKFILE" ; }
 #	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\""; trap _no_more_locking EXIT; }
 	_prepare_locking()  { eval "exec $LOCKFD>\"$LOCKFILE\"" ; }
 
@@ -9590,7 +9592,7 @@ function usageEN() {
 	echo "-E \"{additional email call parameters}\" (default: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {config filename}"
 	echo "-g Display progress bar"
-	echo "-G {message language} (${SUPPORTED_LANGUAGES[@]}) (default: $LANGUAGE)"
+	echo "-G {message language} (${SUPPORTED_LANGUAGES[*]}) (default: $LANGUAGE)"
 	echo "-h display this help text"
 	echo "-l {log level} ($POSSIBLE_LOG_LEVELs) (default: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-L {log targetdirectory} ($POSSIBLE_LOG_OUTPUTs) (default: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
@@ -9643,7 +9645,7 @@ function usageDE() {
 	echo "-E \"{Zusätzliche eMail Aufrufparameter}\" (Standard: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {Konfig Dateiname}"
 	echo "-g Anzeige des Fortschritts"
-	echo "-G {Meldungssprache} (${SUPPORTED_LANGUAGES[@]}) (Standard: $LANGUAGE)"
+	echo "-G {Meldungssprache} (${SUPPORTED_LANGUAGES[*]}) (Standard: $LANGUAGE)"
 	echo "-h Anzeige dieses Hilfstextes"
 	echo "-l {log Genauigkeit} ($POSSIBLE_LOG_LEVELs) (Standard: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-L {log Zielverzeichnis} ($POSSIBLE_LOG_OUTPUTs) (default: ${LOG_OUTPUTs[$DEFAULT_LOG_OUTPUT]})"
@@ -9695,9 +9697,9 @@ function usageFI() {
 	echo "-E \"{sähköpostitoiminnon lisäparametrit}\" (oletus: $DEFAULT_EMAIL_PARMS)"
 	echo "-f {asetustiedoston tiedostonimi}"
 	echo "-g Näytä edistymispalkki"
-	echo "-G {viestien kieli} (${SUPPORTED_LANGUAGES[@]}) (oletus: $LANGUAGE)"
+	echo "-G {viestien kieli} (${SUPPORTED_LANGUAGES[*]}) (oletus: $LANGUAGE)"
 	echo "-h Näytä tämä ohje"
-	echo "-l {lokitaso} ($POSSIBLE_LOG_LEVELs_) (oletus: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
+	echo "-l {lokitaso} ($POSSIBLE_LOG_LEVELs) (oletus: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
 	echo "-m {viestitaso} ($POSSIBLE_MSG_LEVELs) (oletus: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
 	echo "-M {varmuuskopion selite}"
 	echo "-s {käytettävä sähköpostiohjelma} ($SUPPORTED_MAIL_PROGRAMS) (oletus: $DEFAULT_MAIL_PROGRAM)"
@@ -9730,7 +9732,7 @@ function usageFI() {
 }
 
 function mentionHelp() {
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP "$MYSELF"
 }
 
 # there is an issue when a parameter starts with "-" which may a new option
@@ -9754,7 +9756,7 @@ function checkOptionParameter() { # option parameter
 		return 0
 	elif [[ "$2" =~ ^(\-|\+|\-\-|\+\+) || -z "$2" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_REQUIRES_PARAMETER "$1"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP $MYSELF
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MENTION_HELP "$MYSELF"
 		echo ""
 		logExit ""
 		return 1
@@ -9789,7 +9791,6 @@ EXCLUDE_DD=0
 FAKE=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
-HELP=0
 IGNORE_MISSING_PARTITIONS=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
@@ -9875,6 +9876,7 @@ while (( "$#" )); do		# check if option -f was used
   case "$1" in
 	-f)
 		o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181		
 		(( $? )) && exitError $RC_PARAMETER_ERROR
 		CUSTOM_CONFIG_FILE="$o"; shift 2
 		if [[ ! -f "$CUSTOM_CONFIG_FILE" ]]; then
@@ -9883,11 +9885,12 @@ while (( "$#" )); do		# check if option -f was used
 		fi
 		CUSTOM_CONFIG_FILE="$(readlink -f "$CUSTOM_CONFIG_FILE")"
 		set -e
+# shellcheck disable=SC1090
 		. "$CUSTOM_CONFIG_FILE"
 		set +e
 		CUSTOM_CONFIG_FILE_INCLUDED=1
 		CUSTOM_CONFIG_FILE_VERSION="$(extractVersionFromFile "$CUSTOM_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
-		logItem "Read config ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CUSTOM_CONFIG_FILE)"
+		logItem "Read config ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 
 		copyDefaultConfigVariables		# update variables with custom file contents
 		logOptions "Custome option file"
@@ -9955,6 +9958,7 @@ while (( "$#" )); do
 
 	--coloring)
 	  o=$(checkOptionParameter "$1" "$2")
+# shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  COLORING="$o"; shift 2
 	  ;;
@@ -10019,7 +10023,7 @@ while (( "$#" )); do
 	  LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
 	  if ! containsElement "${LANGUAGE^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
-		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_LANGUAGE_NOT_SUPPORTED $LANGUAGE
+		  writeToConsole $MSG_LEVEL_MINIMAL "$MSG_LANGUAGE_NOT_SUPPORTED" "$LANGUAGE"
 		  exitError $RC_PARAMETER_ERROR
 	  fi
 	  ;;
@@ -10218,7 +10222,9 @@ while (( "$#" )); do
 	  o="$(checkOptionParameter "$1" "$2")"
 # shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
+# shellcheck disable=SC2178	  
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
+# shellcheck disable=SC2128
 	  PARTITIONS_TO_RESTORE="$PARTITIONS_TO_BACKUP"
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
