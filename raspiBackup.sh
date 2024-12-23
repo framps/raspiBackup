@@ -2906,7 +2906,7 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_KEEPBACKUPS_TGZ=0
 	DEFAULT_KEEPBACKUPS_RSYNC=0
 	# type of backup: dd, tar or rsync
-	DEFAULT_BACKUPTYPE="dd"
+	DEFAULT_BACKUPTYPE="rsync"
 	# zip tar or dd backup (0 = false, 1 = true)
 	DEFAULT_ZIP_BACKUP=0
 	# dd backup will save space used by partitions only
