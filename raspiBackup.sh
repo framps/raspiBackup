@@ -2258,7 +2258,7 @@ function logFinish() {
 		# 3) backup location was already deleted by SR
 		if [[ "$LOG_OUTPUT" =~ $LOG_OUTPUT_IS_NO_USERDEFINEDFILE_REGEX ]]; then			# no -L used
 			logItem "$rc $LOG_OUTPUT $FAKE"
-			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == $LOG_OUTPUT_BACKUPLOC )) ]] \
+			if [[ (( $rc != 0 )) && (( $LOG_OUTPUT == "$LOG_OUTPUT_BACKUPLOC" )) ]] \
 				|| (( $FAKE )) \
 				|| [[ ! -e $BACKUPTARGET_DIR ]]; then
 				LOG_OUTPUT=$LOG_OUTPUT_HOME 			# save log in home directory
@@ -2322,7 +2322,7 @@ function logFinish() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVED_LOG "$LOG_FILE"
 		fi
 
-		if [[ $TEMP_LOG_FILE != $DEST_LOGFILE ]]; then		# logfile was copied somewhere, delete temp logfile
+		if [[ $TEMP_LOG_FILE != "$DEST_LOGFILE" ]]; then		# logfile was copied somewhere, delete temp logfile
 			rm -f "$TEMP_LOG_FILE" &>> "$LOG_FILE"
 		fi
 
@@ -2592,6 +2592,7 @@ function createBackupVersion() { # file
 	DIR=$(dirname "${file}")
 
 	if [[ -f "$file.bak" ]]; then												# .bak exists already
+		# shellcheck disable=SC2155	,2086
 		local versions="$(ls $file\.*\.bak -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
@@ -2648,7 +2649,7 @@ function exitNormal() {
 	exit 0
 }
 
-function saveVars() {
+function saveVars() {	
 	if (( $UID == 0 )); then
 		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
 		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
@@ -3406,7 +3407,7 @@ function shouldRenewDownloadPropertiesFile() { # FORCE
 
 	logItem "$currentTime : $lastCheckTime"
 
-	if [[ $currentTime == $lastCheckTime && "$1" != "FORCE" ]]; then
+	if [[ $currentTime == "$lastCheckTime" && "$1" != "FORCE" ]]; then
 		logItem "Skip download"
 		rc=1		#  download already done today
 	else
@@ -4114,7 +4115,7 @@ function setupEnvironment() {
 	if (( ! $RESTORE )); then
 		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
-			if [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_TAR ]]; then
+			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
 				BACKUPTYPE=${Z_TYPE_MAPPING[${BACKUPTYPE}]}	# tar-> tgz and dd -> ddz
 			else
 				ZIP_BACKUP_TYPE_INVALID=1
@@ -4786,7 +4787,7 @@ function sendEMail() { # content subject
 
 	logEntry
 
-	if [[ -n "$EMAIL" && rc != $RC_CTRLC ]]; then
+	if [[ -n "$EMAIL" && rc != "$RC_CTRLC" ]]; then
 		local attach content subject
 
 		local attach=""
@@ -4873,7 +4874,7 @@ function sendEMail() { # content subject
 					;;
 				$EMAIL_SSMTP_PROGRAM|$EMAIL_MSMTP_PROGRAM)
 					local msmtp_default=""
-					if [[ $EMAIL_PROGRAM == $EMAIL_MSMTP_PROGRAM ]]; then
+					if [[ $EMAIL_PROGRAM == "$EMAIL_MSMTP_PROGRAM" ]]; then
 						msmtp_default="-a default"
 					fi
 					if (( $APPEND_LOG )); then
@@ -4920,7 +4921,7 @@ function cleanupBackupDirectory() {
 			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> $LOG_FILE # delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
-				if [[ $MSG_LEVEL == $MSG_LEVEL_DETAILED ]]; then
+				if [[ $MSG_LEVEL == "$MSG_LEVEL_DETAILED" ]]; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_TEMP_ROOT" "$rmrc"
 				else
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
@@ -6001,7 +6002,7 @@ function updateUUID() {
 
 function collectPartitionsInBackup() { # lastBackupDir
 
-	logEntry $1
+	logEntry "$1"
 
 	local result
 	result=$(ls -l $1 | grep "^d" | egrep -o "[0-9]+$")
@@ -6012,7 +6013,7 @@ function collectPartitionsInBackup() { # lastBackupDir
 
 function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
-	logEntry $1
+	logEntry "$1"
 
 	local rc
 
@@ -9436,7 +9437,7 @@ function SR_listWeeklyBackups() { # directory
 }
 
 function SR_listDailyBackups() { # directory
-	logEntry $SR_DAILY $1
+	logEntry "$SR_DAILY" "$1"
 	if (( $SR_DAILY > 0 )); then
 		local i
 		for ((i=0;i<=$(( $SR_DAILY-1));i++)); do
@@ -9450,22 +9451,26 @@ function SR_listDailyBackups() { # directory
 }
 
 function SR_getAllBackups() { # directory
-	logEntry $1
+	logEntry "$1"
+	# shellcheck disable=SC2155
 	local yb="$(SR_listYearlyBackups $1)"
 	logItem "$yb"
 	local ybc="$(countLines "$yb")"
 	[[ -n "$yb" ]] && echo "$yb"
 
+	# shellcheck disable=SC2155
 	local mb="$(SR_listMonthlyBackups $1)"
 	logItem "$mb"
 	local mbc="$(countLines "$mb")"
 	[[ -n "$mb" ]] && echo "$mb"
 
+	# shellcheck disable=SC2155
 	local wb="$(SR_listWeeklyBackups $1)"
 	logItem "$wb"
 	local wbc="$(countLines "$wb")"
 	[[ -n "$wb" ]] && echo "$wb"
 
+	# shellcheck disable=SC2155
 	local db="$(SR_listDailyBackups $1)"
 	logItem "$db"
 	local dbc="$(countLines "$db")"
@@ -9475,7 +9480,8 @@ function SR_getAllBackups() { # directory
 }
 
 function SR_listUniqueBackups() { #directory
-	logEntry $1
+	logEntry "$1"
+	# shellcheck disable=SC2155
 	local r="$(SR_getAllBackups "$1" | grep -Ev "_" | sort -u )"
 	local rc="$(countLines "$r")"
 	logItem "$r"
@@ -9484,7 +9490,8 @@ function SR_listUniqueBackups() { #directory
 }
 
 function SR_listBackupsToDelete() { # directory
-	logEntry $1
+	logEntry "$1"
+	# shellcheck disable=SC2155
 	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc="$(countLines "$r")"
 	logItem "$r"
@@ -9778,7 +9785,6 @@ EXCLUDE_DD=0
 FAKE=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
-HELP=0
 IGNORE_MISSING_PARTITIONS=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
