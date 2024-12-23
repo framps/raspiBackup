@@ -10330,7 +10330,8 @@ if (( $RESTORE )); then
 fi
 
 if (( ! $RESTORE )); then
-	if exlock_now; then
+	exlock_now
+	if (( $? )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
 		exitError $RC_MISC_ERROR
 	fi
