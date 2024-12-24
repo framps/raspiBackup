@@ -2139,17 +2139,17 @@ function getMessage() { # messageNumber parm1 parm2
 }
 
 function logItem() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "---" "" "$@"
+	logIntoOutput "$LOG_TYPE_DEBUG" "---" "" "$@"
 }
 
 function logEntry() { # message
-	logIntoOutput $LOG_TYPE_DEBUG "-->" "" "${FUNCNAME[1]} $*"
+	logIntoOutput "$LOG_TYPE_DEBUG" "-->" "" "${FUNCNAME[1]} $*"
 	(( LOG_INDENT+=LOG_INDENT_INC ))
 }
 
 function logExit() { # message
 	(( LOG_INDENT-=LOG_INDENT_INC ))
-	logIntoOutput $LOG_TYPE_DEBUG "<--" "" "${FUNCNAME[1]} $*"
+	logIntoOutput "$LOG_TYPE_DEBUG" "<--" "" "${FUNCNAME[1]} $*"
 }
 
 function logSystem() {
@@ -2165,10 +2165,10 @@ function logSystem() {
 function logCommand() { # command
 	(( LOG_INDENT+=LOG_INDENT_INC ))
 	local callerLineNo=${BASH_LINENO[0]}
-	logIntoOutput $LOG_TYPE_DEBUG "***" $callerLineNo "$1"
+	logIntoOutput $LOG_TYPE_DEBUG "***" "$callerLineNo" "$1"
 	local r
 	r="$($1 2>&1)"
-	logIntoOutput $LOG_TYPE_DEBUG "   " $callerLineNo "$r"
+	logIntoOutput $LOG_TYPE_DEBUG "   " "$callerLineNo" "$r"
 	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
 
@@ -2204,7 +2204,7 @@ function logIntoOutput() { # logtype prefix lineno message
 #shellchek disable=SC2155,SC2183
 		printf -v m "%s %04d: %s %s %s" "$type" "$lineno" "$indent" "$prefix" "$line"
 		case $LOG_OUTPUT in
-			$LOG_OUTPUT_VARLOG | $LOG_OUTPUT_BACKUPLOC | $LOG_OUTPUT_HOME)
+			"$LOG_OUTPUT_VARLOG" | "$LOG_OUTPUT_BACKUPLOC" | "$LOG_OUTPUT_HOME" )
 				echo "$dte $m" >> "$LOG_FILE"
 				;;
 			*)
@@ -2269,9 +2269,10 @@ function logFinish() {
 		logItem "LOG_OUTPUT: $LOG_OUTPUT"
 
 		case $LOG_OUTPUT in
-			$LOG_OUTPUT_VARLOG)
+			"$LOG_OUTPUT_VARLOG" )
 				LOG_BASE="/var/log/$MYNAME"
-				if [ ! -d ${LOG_BASE} ]; then
+				if [[ ! -d "${LOG_BASE}" ]]; then
+					#shellcheck disable=SC2086
 					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
 						exitError $RC_CREATE_ERROR
@@ -2280,11 +2281,11 @@ function logFinish() {
 				DEST_LOGFILE="$LOG_BASE/$HOSTNAME$LOGFILE_EXT"
 				cat "$LOG_FILE" &>> "$DEST_LOGFILE"		# don't move, just append
 				;;
-			$LOG_OUTPUT_HOME)
+			"$LOG_OUTPUT_HOME")
 				DEST_LOGFILE="$CALLING_HOME/${MYNAME}$LOGFILE_EXT"
 				DEST_MSGFILE="$CALLING_HOME/${MYNAME}$MSGFILE_EXT"
 				;;
-			$LOG_OUTPUT_BACKUPLOC)
+			"$LOG_OUTPUT_BACKUPLOC")
 				DEST_LOGFILE="$BACKUPTARGET_DIR/${MYNAME}$LOGFILE_EXT"
 				DEST_MSGFILE="$BACKUPTARGET_DIR/${MYNAME}$MSGFILE_EXT"
 				;;
@@ -2309,8 +2310,8 @@ function logFinish() {
 			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
-		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>$FINISH_LOG_FILE # make sure logfile is owned by caller
-		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>$FINISH_LOG_FILE # make sure msgfile is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE" # make sure logfile is owned by caller
+		chown "$CALLING_USER:$CALLING_USER" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE" # make sure msgfile is owned by caller
 
 		if [[ -e $FINISH_LOG_FILE ]]; then					# append optional final messages
 			logCommand "cat $FINISH_LOG_FILE"
@@ -2438,11 +2439,12 @@ function usage() {
 
 	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
+	#shellcheck disable=SC2207
 	NO_YES=( $(getMessage $MSG_NO_YES) )
 
 	local func="usage${activeLang}"
 
-	if ! fn_exists $func; then
+	if ! fn_exists "$func"; then
 		func="usage$FALLBACK_LANGUAGE"
 	fi
 
@@ -2486,14 +2488,14 @@ function writeToConsole() {  # msglevel messagenumber message
 				consoleMsg="$(colorAnnotation $COLOR_TYPE_VT100 "$consoleMsg")"
 			fi
 			if [[ $msgSev == "E" ]]; then
-				echo $noNL -e "$consoleMsg" >&2
+				echo "$noNL" -e "$consoleMsg" >&2
 			else
-				echo $noNL -e "$consoleMsg" >&1
+				echo "$noNL" -e "$consoleMsg" >&1
 			fi
 		fi
 
-		if (( $LOG_LEVEL != $LOG_NONE )); then
-			echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
+		if (( "$LOG_LEVEL" != "$LOG_NONE" )); then
+			echo "$noNL" -e "$timestamp$msg" >> "$MSG_FILE"
 		fi
 	fi
 
@@ -2535,7 +2537,7 @@ function isSupportedEnvironment() {
 		return 1
 	fi
 
-	logItem $(<"$OSRELEASE")
+	logItem "$(<"$OSRELEASE")"
 	grep -q -E -i "^(NAME|ID)=.*ubuntu" "$OSRELEASE"
 	local rc=$?
 
@@ -2548,7 +2550,7 @@ function isSupportedEnvironment() {
 		logExit 1
 		return 1
 	fi
-	logItem "Modelpath: $(cat "$MODELPATH" | sed 's/\x0/\n/g')"
+	logItem "Modelpath: $(sed 's/\x0/\n/g' <<< "$MODELPATH")"
 	! grep -q -i "raspberry" "$MODELPATH" && return 1
 
 #	OS was built for a Raspberry (RaspbainOS only)
@@ -2562,21 +2564,6 @@ function isSupportedEnvironment() {
 	logExit $rc
 	return $rc
 
-: <<SKIP
-	[[ ! -e $OSRELEASE ]] && return 1
-	logCommand "cat $OSRELEASE"
-
-	local ARCH=$(dpkg --print-architecture)
-	logItem "Architecture: $ARCH"
-
-	if [[ "$ARCH" == "armhf" ]]; then
-		grep -q -E -i "^(NAME|ID)=.*(raspbian|debian)" $OSRELEASE
-		return
-	elif [[ "$ARCH" == "arm64" ]]; then
-		grep -q -E -i "^(NAME|ID)=.*debian" $OSRELEASE
-		return
-	fi
-SKIP
 }
 
 # Create a backupfile FILE.bak from FILE. If this file already exists rename this file to FILE.n.bak when n is next backup number
@@ -2588,8 +2575,6 @@ function createBackupVersion() { # file
 	if [[ ! -f "$file" ]]; then
 		return 1
 	fi
-
-	DIR=$(dirname "${file}")
 
 	if [[ -f "$file.bak" ]]; then												# .bak exists already
 		# shellcheck disable=SC2155	,2086
