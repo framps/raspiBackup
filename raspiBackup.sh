@@ -2482,7 +2482,7 @@ function writeToConsole() {  # msglevel messagenumber message
 
 		if (( $INTERACTIVE )); then
 			local consoleMsg="$timestamp$msg"
-			if [[ "$COLORING" =~ "$COLORING_CONSOLE" ]]; then
+			if [[ "$COLORING" =~ $COLORING_CONSOLE ]]; then
 				consoleMsg="$(colorAnnotation $COLOR_TYPE_VT100 "$consoleMsg")"
 			fi
 			if [[ $msgSev == "E" ]]; then
