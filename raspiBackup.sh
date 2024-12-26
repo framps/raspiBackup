@@ -8724,7 +8724,7 @@ function doitRestore() {
 		fi
 
 		if [[ -z $(fdisk -l $RESTORE_DEVICE 2>/dev/null) ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_RESTOREDEVICE_FOUND $RESTORE_DEVICE
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_RESTOREDEVICE_FOUND "$RESTORE_DEVICE"
 			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
@@ -8740,8 +8740,9 @@ function doitRestore() {
 			exitError $RC_DEVICES_NOTFOUND
 		fi
 
-		local rd=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
-		local rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
+		local rc rr
+		rd=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
+		rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
 
 		logItem "Restore devices: -d: $rd - -R: $rr"
 
@@ -8771,7 +8772,7 @@ function doitRestore() {
 
 	if (( $SKIP_FORMAT )); then
 		if (( $PARTITIONBASED_BACKUP )); then
-			if [[ $BACKUPTYPE != $BACKUPTYPE_RSYNC ]]; then
+			if [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
 				exitError $RC_PARAMETER_ERROR
 			fi
@@ -8793,8 +8794,10 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "rsync" "rsync"
 			exitError $RC_MISSING_COMMANDS
 		fi
-		local rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
+		local rsyncVersion
+		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
+		#shellcheck disable=SC2072
 		if (( $PROGRESS && $INTERACTIVE )) && [[ "$rsyncVersion" < "3.1" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
 			exitError $RC_PARAMETER_ERROR
@@ -8903,9 +8906,11 @@ function updateRestoreReminder() {
 			echo "$(date +%Y%m) 0" > "$reminder_file"
 			return
 		fi
-		rf=( $(<$reminder_file) )
+		#shellcheck disable=SC2207
+		rf=( $(<"$reminder_file") )
 		local diffMonths
-		diffMonths=$(calculateMonthDiff $now ${rf[0]} )
+		#shellcheck disable=SC2086
+		diffMonths=$(calculateMonthDiff $now "${rf[0]}" )
 
 		# check if reminder should be send
 		if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
@@ -8936,7 +8941,7 @@ function mountAndCheck() { # device mountpoint
 		umount "$2" &>>"$LOG_FILE"
 		if (( $rc )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_CHECK_ERROR "$1" "$2" "$rc"
-			logExit $rc
+			logExit "$rc"
 			exitError $RC_MISC_ERROR
 		fi
 	fi
@@ -8963,7 +8968,7 @@ function remount() { # device mountpoint
 	fi
 
 	logItem "Creating mountpoint $2"
-	mkdir -p $2
+	mkdir -p "$2"
 	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
 	logExit $rc
 
@@ -8980,10 +8985,14 @@ function updateConfig() {
 	if [[ -n $customFile ]]; then
 		if [[ -f $customFile ]]; then
 			logItem "Using config file $customFile"
+			#shellcheck disable=SC2001
 			NEW_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
+			#shellcheck disable=SC2001
 			MERGED_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
+			#shellcheck disable=SC2001
 			BACKUP_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
 			etcConfigFileVersion="$CUSTOM_CONFIG_FILE_VERSION"
+			#shellcheck disable=SC2001
 			ORIG_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$ORIG_CONFIG")"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
@@ -9014,8 +9023,6 @@ function updateConfig() {
 		eval "DL_URL=$CONFIG_URL"
 	fi
 
-	local lang=${LANGUAGE,,}
-	
 	# download new config file
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
 
@@ -9033,7 +9040,8 @@ function updateConfig() {
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
 
-	local newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
+	local newConfigVersion
+	newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
 
 	logItem "New config version of downloaded file: $newConfigVersion"
 
@@ -9056,7 +9064,7 @@ function updateConfig() {
 	local deleted=0
 
 	# make sure config file is readable by owner only
-	if ! chmod 600 $ORIG_CONFIG &>>"LOG_FILE"; then
+	if ! chmod 600 "$ORIG_CONFIG" &>>"LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$ORIG_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9082,10 +9090,12 @@ function updateConfig() {
 			r=$?
 			logItem "grep old file rc:$s - contents: $OC_line"
 			if (( ! $r )); then											# new option found
-				local OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
+				local OW
+				OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
 				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
 			else
-				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
+				#shellcheck disable=SC2059
+				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> "$MERGED_CONFIG"
 				echo "$line" >> "$MERGED_CONFIG"						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
 				(( merged ++ ))
@@ -9113,9 +9123,11 @@ function updateConfig() {
 			r=$?
 			logItem "grep old file for deleted $KW rc:$r - contents: $OC_line"
 			if (( $r )) && [[ $KW != "UUID" ]]; then				# option not found, it was deleted
+				#shellcheck disable=SC2129
 				echo "" >> "$MERGED_CONFIG"
-				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
-				echo "# $line" >> $MERGED_CONFIG						# insert deleted config line as comment
+				#shellcheck disable=SC2059
+				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> "$MERGED_CONFIG"
+				echo "# $line" >> "$MERGED_CONFIG"						# insert deleted config line as comment
 				(( deleted ++ ))
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DELETED_CONFIG_OPTION "$KW" "$VAL"
 			fi
@@ -9124,7 +9136,7 @@ function updateConfig() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGE_SUCCESSFULL
 
-	if ! chmod 600 $MERGED_CONFIG &>>"LOG_FILE"; then
+	if ! chmod 600 "$MERGED_CONFIG" &>>"LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$MERGED_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9204,7 +9216,7 @@ function synchronizeCmdlineAndfstab() {
 		logItem "Org $CMDLINE"
 		logCommand "cat $CMDLINE"
 
-		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
+		if [[ $(cat "$CMDLINE") =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
 			local newPartUUID
 			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
@@ -9213,9 +9225,10 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
+				#shellcheck disable=SC2046
+				sed -i "s/$oldPartUUID/$newPartUUID/" $(realpath "$CMDLINE") &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
+		elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
 			local oldUUID
 			oldUUID=${BASH_REMATCH[1]}
 			local newUUID
@@ -9225,6 +9238,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
+				#shellcheck disable=SC2046
 				sed -i "s/$oldUUID/$newUUID/" $(realpath "$CMDLINE") &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
@@ -9251,6 +9265,7 @@ function synchronizeCmdlineAndfstab() {
 
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Org $FSTAB"
+		#shellcheck disable=SC2086
 		logItem "$(cat $FSTAB)"
 
 		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
@@ -9270,7 +9285,8 @@ function synchronizeCmdlineAndfstab() {
 			fi
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldUUID=${BASH_REMATCH[1]}
-			local newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
+			local newUUID
+			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
