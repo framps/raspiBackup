@@ -8751,7 +8751,8 @@ function doitRestore() {
 		fi
 	fi
 
-	local usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
+	local usbMount
+	usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
 	if grep -q "install ok installed" <<< "$usbMount" &>>"LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
@@ -9047,7 +9048,7 @@ function updateConfig() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
 
-	rm -f $MERGED_CONFIG &>/dev/null
+	rm -f "$MERGED_CONFIG" &>/dev/null
 
 	# process NEW CONFIG FILE
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGING_VERSION  "v$etcConfigFileVersion" "v$VERSION_SCRIPT_CONFIG" "$MERGED_CONFIG"
@@ -9065,31 +9066,32 @@ function updateConfig() {
 	logItem "Merging $NEW_CONFIG and $ORIG_CONFIG"
 	while read -r line; do
 		if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then			# skip comment or empty lines
-			local KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
-			local VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
+			local KW VAL CONFIG_VERSION
+			KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
+			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
 
 			logItem "KW: $KW - VAL: $VAL"
 			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# add new version number
-				echo "$line" >> $MERGED_CONFIG
-				local CONFIG_VERSION="$VAL"
+				echo "$line" >> "$MERGED_CONFIG"
+				CONFIG_VERSION="$VAL"
 				continue
 			fi
 
 			local OC_line r
-			OC_line="$(grep "^$KW=" $ORIG_CONFIG)"					# retrieve old option line
+			OC_line="$(grep "^$KW=" "$ORIG_CONFIG")"					# retrieve old option line
 			r=$?
 			logItem "grep old file rc:$s - contents: $OC_line"
 			if (( ! $r )); then											# new option found
 				local OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
-				echo "$KW=$OW" >> $MERGED_CONFIG						# use old option value
+				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
 			else
 				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
-				echo "$line" >> $MERGED_CONFIG						# add new option
+				echo "$line" >> "$MERGED_CONFIG"						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
 				(( merged ++ ))
 			fi
 		else
-			echo "$line" >> $MERGED_CONFIG							# copy comment  or empty line
+			echo "$line" >> "$MERGED_CONFIG"							# copy comment  or empty line
 		fi
 	done < "$NEW_CONFIG"
 
@@ -9098,8 +9100,9 @@ function updateConfig() {
 	logItem "Checking for deleted options"
 	while read -r line; do
 		if [[ -n "$line" && ! "$line" =~ ^.*# ]]; then			# skip comment or empty lines
-			local KW="$(cut -d= -f1 <<< "$line")"							# retrieve keyword
-			local VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
+			local KW VAL
+			KW="$(cut -d= -f1 <<< "$line")"							# retrieve keyword
+			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
 
 			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# skip version number
 				continue
@@ -9110,7 +9113,7 @@ function updateConfig() {
 			r=$?
 			logItem "grep old file for deleted $KW rc:$r - contents: $OC_line"
 			if (( $r )) && [[ $KW != "UUID" ]]; then				# option not found, it was deleted
-				echo "" >> $MERGED_CONFIG
+				echo "" >> "$MERGED_CONFIG"
 				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
 				echo "# $line" >> $MERGED_CONFIG						# insert deleted config line as comment
 				(( deleted ++ ))
@@ -9128,12 +9131,13 @@ function updateConfig() {
 
 	logItem "Merged: $merged - deleted: $deleted"
 
-	rm -f $NEW_CONFIG &>/dev/null
+	rm -f "$NEW_CONFIG" &>/dev/null
 
 	if askYesNo "$MSG_UPDATE_CONFIG" "$BACKUP_CONFIG"; then
+		local new_file
 		# save old config
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_CURRENT_CONFIGURATION  "$ORIG_CONFIG" "$BACKUP_CONFIG"
-		local new_file=$(createBackupVersion "$ORIG_CONFIG")
+		new_file=$(createBackupVersion "$ORIG_CONFIG")
 		local r=$?
 		if (( $rc )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_BACKUP_FAILED "$ORIG_CONFIG"
@@ -9159,11 +9163,12 @@ function synchronizeCmdlineAndfstab() {
 
 	logEntry
 
-	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL newLABEL
+	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL
 
 	BOOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 1)"
 
 	if (( $PARTITIONBASED_BACKUP )); then
+		#shellcheck disable=SC2001
 		ROOT_PARTITION="$(sed 's/1$/2/' <<< "$BOOT_PARTITION")"
 	fi
 
@@ -9185,8 +9190,8 @@ function synchronizeCmdlineAndfstab() {
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
-	partprobe $BOOT_PARTITION		# reload partition table
-	partprobe $ROOT_PARTITION		# reload partition table
+	partprobe "$BOOT_PARTITION"		# reload partition table
+	partprobe "$ROOT_PARTITION"		# reload partition table
 
 	logCommand "blkid -o udev $ROOT_PARTITION"
 
@@ -9201,7 +9206,8 @@ function synchronizeCmdlineAndfstab() {
 
 		if [[ $(cat $CMDLINE) =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			local newPartUUID
+			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -9210,16 +9216,18 @@ function synchronizeCmdlineAndfstab() {
 				sed -i "s/$oldPartUUID/$newPartUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat $CMDLINE) =~ root=UUID=([a-z0-9\-]+) ]]; then
-			local oldUUID=${BASH_REMATCH[1]}
-			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			local oldUUID
+			oldUUID=${BASH_REMATCH[1]}
+			local newUUID
+			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
-				sed -i "s/$oldUUID/$newUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
+				sed -i "s/$oldUUID/$newUUID/" $(realpath "$CMDLINE") &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $CMDLINE) =~ root=LABEL=([a-z0-9\-]+) ]]; then
+		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
@@ -9247,13 +9255,16 @@ function synchronizeCmdlineAndfstab() {
 
 		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
+			local newPartUUID
+			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-				local oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
-				local newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
+				local oldpartuuidID
+				oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
+				local newpartuuidID
+				newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldpartuuidID/$newpartuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
@@ -9264,8 +9275,10 @@ function synchronizeCmdlineAndfstab() {
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				local olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
-				local newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
+				local olduuidID
+				olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
+				local newuuidID
+				newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
 				sed -i "s/$olduuidID/$newuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
@@ -9300,7 +9313,7 @@ function synchronizeCmdlineAndfstab() {
 		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
 			local newPartUUID
-			newPartUUID=$(blkid -o udev "$BOOT_PARTITION" | egrep ID_FS_PARTUUID= | cut -d= -f2)
+			newPartUUID=$(blkid -o udev "$BOOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
@@ -9394,8 +9407,8 @@ function SR_listMonthlyBackups() { # directory
 			# ls ${BACKUPPATH} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
-			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			# shellcheck disable=SC2155,SC2010
+			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
+			# shellcheck disable=SC2155,SC2010,SC1087
 			ls -1 "$1" | grep -E "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest monthly backup
 		done
 	fi
@@ -9406,7 +9419,7 @@ function SR_listWeeklyBackups() { # directory
 	logEntry "$SR_WEEKLY" "$1"
 	local d
 	if (( $SR_WEEKLY > 0 )); then
-		local i
+		local i mon
 		for ((i=0;i<=$(( $SR_WEEKLY-1));i++)); do
 			# assume today is 20191119 (tue) or wed-sun
 			# last monday is date +%Y%m%d -d "last monday -1...n-1 weeks" -> 20191111
@@ -9416,7 +9429,6 @@ function SR_listWeeklyBackups() { # directory
 			if (( $(date +"%u") == 1 )); then
 				last=""
 			fi
-			local mon
 			mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
 			local dl=""
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
