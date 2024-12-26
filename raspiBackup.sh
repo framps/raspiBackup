@@ -5941,7 +5941,7 @@ function waitForPartitionDefsChanged {
 
 function updateUUIDs() {
 	logEntry
-	if (( $UPDATE_UUIDS && ! $SKIP_SFDISK )); then
+	if (( $UPDATE_UUIDS )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUIDS
 		logItem "Old blkid"
 		logCommand "blkid"
