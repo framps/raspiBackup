@@ -2488,9 +2488,11 @@ function writeToConsole() {  # msglevel messagenumber message
 				consoleMsg="$(colorAnnotation $COLOR_TYPE_VT100 "$consoleMsg")"
 			fi
 			if [[ $msgSev == "E" ]]; then
-				echo "$noNL" -e "$consoleMsg" >&2
+				#shellcheck disable=SC2086
+				echo $noNL -e "$consoleMsg" >&2
 			else
-				echo "$noNL" -e "$consoleMsg" >&1
+				#shellcheck disable=SC2086
+				echo $noNL -e "$consoleMsg" >&1
 			fi
 		fi
 
@@ -2692,7 +2694,7 @@ function executeRsync() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE $LOG_FILE) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE "LOG_FILE" 5>&1 )
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -2707,7 +2709,7 @@ function executeTar() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="LC_ALL=C $1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE $LOG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE "LOG_FILE"; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -3431,7 +3433,7 @@ function downloadFile() { # url, targetFileName
 		local file="$2"
 		local f=$(mktemp)
 		local httpCode rc
-		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>"LOG_FILE")
 		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 
@@ -4903,7 +4905,7 @@ function cleanupBackupDirectory() {
 	if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then
 		if [[ -n $(ls "$BACKUPTARGET_TEMP_ROOT") ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE "$BACKUPTARGET_TEMP_ROOT"
-			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> $LOG_FILE # delete temp backupdir with all incomplete contents
+			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> "LOG_FILE"# delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
 				if [[ $MSG_LEVEL == "$MSG_LEVEL_DETAILED" ]]; then
@@ -4984,13 +4986,13 @@ function masqueradeSensitiveInfoInLog() {
 	if [[ -n "$EMAIL_PARMS" ]]; then
 		logItem "Masquerading eMail parameters"
 		m="$(masquerade "$EMAIL_PARMS")"
-		sed -i -E "s/$EMAIL_PARMS/${m}/" $LOG_FILE # may contain passwords
+		sed -i -E "s/$EMAIL_PARMS/${m}/" "LOG_FILE" # may contain passwords
 	fi
 
 	# some mount options
 
 	logItem "Masquerading some mount options"
-	sed -i -E "s/username=[^,]+\,/username=${MASQUERADE_STRING},/" $LOG_FILE # used in cifs mount options
+	sed -i -E "s/username=[^,]+\,/username=${MASQUERADE_STRING},/" "LOG_FILE" # used in cifs mount options
 	sed -i -E "s/password=[^,]+\,/password=${MASQUERADE_STRING},/" $LOG_FILE
 	sed -i -E "s/domain=[^,]+\,/domain=${MASQUERADE_STRING},/" $LOG_FILE
 
@@ -5168,7 +5170,7 @@ function cleanup() { # trap
 
 			logItem "BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT"
 			if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then # does not exists if raspiBackup7412Test runs
-				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> $LOG_FILE	# delete temp dir now
+				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> "LOG_FILE" # delete temp dir now
 			else
 				logItem "??? BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT not found"
 			fi
@@ -5903,7 +5905,7 @@ function backupTar() {
 		$source"
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if ! pushd $sourceDir &>>$LOG_FILE; then
+		if ! pushd $sourceDir &>>"LOG_FILE"; then
 				assertionFailed $LINENO "push to $sourceDir failed"
 		fi
 	fi
@@ -5916,7 +5918,7 @@ function backupTar() {
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if ! popd &>>$LOG_FILE; then
+		if ! popd &>>"LOG_FILE"; then
 			assertionFailed $LINENO "pop failed"
 		fi
 	fi
@@ -6706,27 +6708,27 @@ function applyBackupStrategy() {
 			if (( $FAKE )); then
 				fakeKeepBackups=$(( keepBackups - 1 ))   # because in FAKE mode no real current backup has been created
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+				if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
 				echo "$tobeCheckedBackups" | while read dir_to_check; do
 					[[ -n $dir_to_check ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXISTING_BACKUP  $BACKUPTARGET_ROOT/${dir_to_check}
 				done
-				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$fakeKeepBackups 2>>$LOG_FILE)
+				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_" | head -n -$fakeKeepBackups 2>>"LOG_FILE")
 				echo "$tobeDeletedBackups" | while read dir_to_delete; do
 					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
 				done
-				if ! popd &>>$LOG_FILE; then
+				if ! popd &>>"LOG_FILE"; then
 					assertionFailed $LINENO "pop failed"
 				fi
 		       else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+				if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
-				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
-				if ! popd &>>$LOG_FILE; then
+				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
+				if ! popd &>>"LOG_FILE"; then
 					assertionFailed $LINENO "pop failed"
 				fi
 
@@ -6808,16 +6810,16 @@ function reportOldBackups() {
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 	fi
 
-	if ! pushd "$BACKUPPATH" &>>$LOG_FILE; then
+	if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
 		assertionFailed $LINENO "push to $BACKUPPATH failed"
 	fi
 
-	tobeListedNewBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+	tobeListedNewBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
 	numListedNewBackups="$(countLines "$tobeListedNewBackups")"
 
-	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>$LOG_FILE| grep -vE "_")
+	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
 
-	if [[ -n $tobeListedOldBackups ]] ; then
+	if [[ -n $tobeListedOldBackups ]]; then
 
 		local report_counter_file="$VAR_LIB_DIRECTORY/$REPORT_COUNTER_FILE"
 
@@ -6863,7 +6865,7 @@ function reportOldBackups() {
 		fi
 	fi
 
-	if ! popd &>>$LOG_FILE; then
+	if ! popd &>>"LOG_FILE"; then
 		assertionFailed $LINENO "pop failed"
 	fi
 }
@@ -7213,7 +7215,7 @@ function collectPartitions() {
 			fi
 		fi
 
-	done < <(sfdisk -d $BOOT_DEVICENAME 2>>$LOG_FILE)
+	done < <(sfdisk -d $BOOT_DEVICENAME 2>>"LOG_FILE")
 
 	logItem "PARTITIONS_TO_BACKUP - 2: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
 	logItem "mountPoints: $(echo "${mountPoints[@]}")"
@@ -7947,7 +7949,7 @@ function getPartitionTable() { # device
 	# <empty> -> no partition table
 
 	if [[ -n "$(partprobe -d -s $1 | cut -f 4 -d ' ')" ]]; then
-		local table="$(IFS='' parted $1 unit MB p 2>>$LOG_FILE | sed -r '/^($|[MSDP])/d')"
+		local table="$(IFS='' parted $1 unit MB p 2>>"LOG_FILE" | sed -r '/^($|[MSDP])/d')"
 		if [[ $(wc -l <<< "$table") < 2 ]]; then
 			result=""
 		else
@@ -8404,7 +8406,7 @@ function lastUsedPartitionByte() { # device
 			fi
 		fi
 
-	done < <(sfdisk -d $1 2>>$LOG_FILE)
+	done < <(sfdisk -d $1 2>>"LOG_FILE")
 
 	(( lastUsedPartitionByte*=512 ))
 
@@ -8750,7 +8752,7 @@ function doitRestore() {
 	fi
 
 	local usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
-	if grep -q "install ok installed" <<< "$usbMount" &>>$LOG_FILE; then
+	if grep -q "install ok installed" <<< "$usbMount" &>>"LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
@@ -9025,7 +9027,7 @@ function updateConfig() {
 	fi
 
 	# make sure new config file is readable by owner only
-	if ! chmod 600 "$NEW_CONFIG" &>>$LOG_FILE; then
+	if ! chmod 600 "$NEW_CONFIG" &>>"LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9053,7 +9055,7 @@ function updateConfig() {
 	local deleted=0
 
 	# make sure config file is readable by owner only
-	if ! chmod 600 $ORIG_CONFIG &>>$LOG_FILE; then
+	if ! chmod 600 $ORIG_CONFIG &>>"LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$ORIG_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9119,7 +9121,7 @@ function updateConfig() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGE_SUCCESSFULL
 
-	if ! chmod 600 $MERGED_CONFIG &>>$LOG_FILE; then
+	if ! chmod 600 $MERGED_CONFIG &>>"LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$MERGED_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9138,7 +9140,7 @@ function updateConfig() {
 			exitError $RC_FILE_OPERATION_ERROR
 		fi
 
-		if ! chmod 600 "$new_file" &>>$LOG_FILE; then
+		if ! chmod 600 "$new_file" &>>"LOG_FILE"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$new_file"
 			exitError $RC_FILE_OPERATION_ERROR
 		fi
@@ -9203,7 +9205,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
-			elif [[ $oldPartUUID != $newPartUUID ]]; then
+			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
 				sed -i "s/$oldPartUUID/$newPartUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
 			fi
@@ -9213,7 +9215,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
-			elif [[ $oldUUID != $newUUID ]]; then
+			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
 				sed -i "s/$oldUUID/$newUUID/" $(realpath $CMDLINE) &>> "$LOG_FILE"
 			fi
@@ -9221,7 +9223,7 @@ function synchronizeCmdlineAndfstab() {
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-			e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 			local rc=$?
 			if (( $rc )); then
 				local cmd="e2label $ROOT_PARTITION $oldLABEL"
@@ -9229,7 +9231,7 @@ function synchronizeCmdlineAndfstab() {
 			else
 				rootLabelCreated=1
 			fi
-		elif grep "root=/dev/" $CMDLINE; then
+		elif grep "root=/dev/" "$CMDLINE"; then
 			logItem "/dev detected in $CMDLINE"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
@@ -9243,36 +9245,36 @@ function synchronizeCmdlineAndfstab() {
 		logItem "Org $FSTAB"
 		logItem "$(cat $FSTAB)"
 
-		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_PARTUUID= | cut -d= -f2)
+			local newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab" "/"
-			elif [[ $oldPartUUID != $newPartUUID ]]; then
+			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				local oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
 				local newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
-				sed -i "s/$oldpartuuidID/$newpartuuidID/g" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldpartuuidID/$newpartuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldUUID=${BASH_REMATCH[1]}
-			local newUUID=$(blkid -o udev $ROOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			local newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
-			elif [[ $oldUUID != $newUUID ]]; then
+			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				local olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
 				local newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
-				sed -i "s/$olduuidID/$newuuidID/g" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$olduuidID/$newuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
+		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			if (( ! $rootLabelCreated )) ; then
 				local oldLABEL=${BASH_REMATCH[1]}
 				logItem "Writing label $oldLABEL on $ROOT_PARTITION"
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-				e2label "$ROOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+				e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 				local rc=$?
 				if (( $rc )); then
 					local cmd="e2label $ROOT_PARTITION $oldLABEL"
@@ -9281,7 +9283,7 @@ function synchronizeCmdlineAndfstab() {
 					rootLabelCreated=1
 				fi
 			fi
-		elif grep "^/dev/" $FSTAB; then
+		elif grep "^/dev/" "$FSTAB"; then
 			logItem "/dev detected in $FSTAB"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
@@ -9293,39 +9295,41 @@ function synchronizeCmdlineAndfstab() {
 
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Org $FSTAB"
-		logItem "$(cat $FSTAB)"
+		logItem "$(cat "$FSTAB")"
 
-		if [[ $(cat $FSTAB) =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
+		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID=$(blkid -o udev $BOOT_PARTITION | egrep ID_FS_PARTUUID= | cut -d= -f2)
+			local newPartUUID
+			newPartUUID=$(blkid -o udev "$BOOT_PARTITION" | egrep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-			elif [[ $oldPartUUID != $newPartUUID ]]; then
+			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
-				sed -i "s/$oldPartUUID/$newPartUUID/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldPartUUID/$newPartUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $FSTAB) =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
+		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldUUID=${BASH_REMATCH[1]}
-			local newUUID=$(blkid -o udev $BOOT_PARTITION | grep ID_FS_UUID= | cut -d= -f2)
+			local newUUID
+			newUUID=$(blkid -o udev "$BOOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
-			elif [[ $oldUUID != $newUUID ]]; then
+			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
-				sed -i "s/$oldUUID/$newUUID/" $FSTAB &>> "$LOG_FILE"
+				sed -i "s/$oldUUID/$newUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
-		elif [[ $(cat $FSTAB) =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
+		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
-			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> $LOG_FILE
+			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 			local rc=$?
 			if (( $rc )); then
 				local cmd="dosfslabel $BOOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
 			fi
-		elif grep "^/dev/" $FSTAB; then
+		elif grep "^/dev/" "$FSTAB"; then
 			logItem "/dev detected in $FSTAB"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
@@ -9344,8 +9348,8 @@ function synchronizeCmdlineAndfstab() {
 		logCommand "cat $FSTAB"
 	fi
 
-	umount $BOOT_MP &>>"$LOG_FILE"
-	umount $ROOT_MP &>>"$LOG_FILE"
+	umount "$BOOT_MP" &>>"$LOG_FILE"
+	umount "$ROOT_MP" &>>"$LOG_FILE"
 
 	logExit
 }
@@ -9367,37 +9371,39 @@ function countLines() { # string
 # on https://opensource.com/article/18/8/automate-backups-raspberry-pi
 
 function SR_listYearlyBackups() { # directory
-	logEntry $SR_YEARLY $1
+	logEntry "$SR_YEARLY" "$1"
 	if (( $SR_YEARLY > 0 )); then
-		local i
+		local i d
 		for ((i=0;i<=$(( $SR_YEARLY-1 ));i++)); do
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
-			local d=$(date +%Y -d "${i} year ago")
-			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
+			d=$(date +%Y -d "${i} year ago")
+			# shellcheck disable=SC2155,SC2010,SC1087
+			ls -1 "$1" | grep -E "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
 	fi
 	logExit
 }
 
 function SR_listMonthlyBackups() { # directory
-	logEntry $SR_MONTHLY $1
+	logEntry "$SR_MONTHLY" "$1"
 	if (( $SR_MONTHLY > 0 )); then
-		local i
+		local i d
 		for ((i=0;i<=$(( $SR_MONTHLY-1 ));i++)); do
 			# ... error in date ... see http://bashworkz.com/linux-date-problem-1-month-ago-date-bug/
 			# ls ${BACKUPPATH} | egrep "\-backup\-$(date +%Y%m -d "${i} month ago")[0-9]{2}" | sort -u | head -n 1
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			local d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
-			ls -1 $1 | egrep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest monthly backup
+			# shellcheck disable=SC2155,SC2010
+			ls -1 "$1" | grep -E "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest monthly backup
 		done
 	fi
 	logExit
 }
 
 function SR_listWeeklyBackups() { # directory
-	logEntry $SR_WEEKLY $1
+	logEntry "$SR_WEEKLY" "$1"
 	local d
 	if (( $SR_WEEKLY > 0 )); then
 		local i
@@ -9410,12 +9416,14 @@ function SR_listWeeklyBackups() { # directory
 			if (( $(date +"%u") == 1 )); then
 				last=""
 			fi
-			local mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
+			local mon
+			mon=$(date +%Y%m%d -d "$last monday -${i} weeks") # calculate monday of week
 			local dl=""
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
 				dl="${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
 			done
-			ls -1 $1 | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
+			# shellcheck disable=SC2155,SC2010,SC2086
+			ls -1 "$1" | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
 		done
 	fi
 	logExit
@@ -9428,8 +9436,10 @@ function SR_listDailyBackups() { # directory
 		for ((i=0;i<=$(( $SR_DAILY-1));i++)); do
 			# today is 20191117
 			# date +%Y%m%d -d "-1 day" -> 20191116
-			local d=$(date +%Y%m%d -d "-${i} day") # get day
-			ls -1 $1 | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
+			local d
+			d=$(date +%Y%m%d -d "-${i} day") # get day
+			# shellcheck disable=SC2155,SC2010
+			ls -1 "$1" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
 		done
 	fi
 	logExit
@@ -9438,27 +9448,28 @@ function SR_listDailyBackups() { # directory
 function SR_getAllBackups() { # directory
 	logEntry "$1"
 	# shellcheck disable=SC2155
-	local yb="$(SR_listYearlyBackups $1)"
+	local yb="$(SR_listYearlyBackups "$1")"
 	logItem "$yb"
-	local ybc="$(countLines "$yb")"
+	#local ybc="$(countLines "$yb")"
 	[[ -n "$yb" ]] && echo "$yb"
 
 	# shellcheck disable=SC2155
-	local mb="$(SR_listMonthlyBackups $1)"
+	local mb="$(SR_listMonthlyBackups "$1")"
 	logItem "$mb"
-	local mbc="$(countLines "$mb")"
+	#local mbc="$(countLines "$mb")"
 	[[ -n "$mb" ]] && echo "$mb"
 
 	# shellcheck disable=SC2155
-	local wb="$(SR_listWeeklyBackups $1)"
+	local wb="$(SR_listWeeklyBackups "$1")"
 	logItem "$wb"
-	local wbc="$(countLines "$wb")"
+	#local wbc="$(countLines "$wb")"
 	[[ -n "$wb" ]] && echo "$wb"
 
 	# shellcheck disable=SC2155
-	local db="$(SR_listDailyBackups $1)"
+	local db
+	db="$(SR_listDailyBackups "$1")"
 	logItem "$db"
-	local dbc="$(countLines "$db")"
+	#local dbc="$(countLines "$db")"
 	[[ -n "$db" ]] && echo "$db"
 
 	logExit
@@ -9466,9 +9477,11 @@ function SR_getAllBackups() { # directory
 
 function SR_listUniqueBackups() { #directory
 	logEntry "$1"
+	local r
 	# shellcheck disable=SC2155
-	local r="$(SR_getAllBackups "$1" | grep -Ev "_" | sort -u )"
-	local rc="$(countLines "$r")"
+	r="$(SR_getAllBackups "$1" | grep -Ev "_" | sort -u )"
+	local rc
+	rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
 	logExit "$rc"
@@ -9476,9 +9489,11 @@ function SR_listUniqueBackups() { #directory
 
 function SR_listBackupsToDelete() { # directory
 	logEntry "$1"
-	# shellcheck disable=SC2155
-	local r="$(ls -1 $1 | grep -v -e "$(echo -n $(SR_listUniqueBackups "$1") -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
-	local rc="$(countLines "$r")"
+	local r
+	# shellcheck disable=SC2155,SC2010
+	r="$(ls -1 "$1" | grep -v -e "$(echo -n "$(SR_listUniqueBackups "$1")" -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	local rc
+	rc="$(countLines "$r")"
 	logItem "$r"
 	echo "$r"
 	logExit "$rc"
@@ -10316,6 +10331,7 @@ fi
 
 if (( ! $RESTORE )); then
 	exlock_now
+	#shellcheck disable=SC2181
 	if (( $? )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
 		exitError $RC_MISC_ERROR
