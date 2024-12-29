@@ -46,17 +46,17 @@ __Note:__ Most of the scripts are provided by framps as is and are not included 
 
 	#!/bin/bash
 
-	# Configure the colors to be displayed for the output texts in raspiBackupDialog
+	#Configure the colors to be displayed for the output texts in raspiBackupDialog
 
-	# Possible colors ( RED YELLOW GREEN BLUE CYAN VIOLET )
+	#Possible colors ( RED YELLOW GREEN BLUE CYAN VIOLET )
 
-	# Questions (dialog)
+	#Questions (dialog)
 	QUESTION=“$YELLOW”
 
-	# Error
+	#Error
 	FAIL=“$RED”
 
-	# Confirmations Info
+	#Confirmations Info
 	CONFIRMATION=“$GREEN”
 
 	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
