@@ -2552,6 +2552,7 @@ function isSupportedEnvironment() {
 		logExit 1
 		return 1
 	fi
+	#shellcheck disable=SC2001
 	logItem "Modelpath: $(sed 's/\x0/\n/g' <<< "$MODELPATH")"
 	! grep -q -i "raspberry" "$MODELPATH" && return 1
 
@@ -2579,21 +2580,23 @@ function createBackupVersion() { # file
 	fi
 
 	if [[ -f "$file.bak" ]]; then												# .bak exists already
-		# shellcheck disable=SC2155	,2086
+		# shellcheck disable=SC2155,SC2086
 		local versions="$(ls $file\.*\.bak -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
 		else
-			local last="$basename $(tail -n 1 <<< "$versions")" 			# extract highest version number
-			local lastFile="$(basename "$last")"
-			local lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
+			local last, lastFile, lastVersionNumber
+			last="$basename $(tail -n 1 <<< "$versions")" 			# extract highest version number
+			lastFile="$(basename "$last")"
+			lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
 			(( versionNumber = lastVersionNumber+1 ))							# use next version number
 		fi
 
 		local backupFile="$file.${versionNumber}.bak"
-		mv "$file.bak" "$backupFile"
-		(( $? )) && return 1
+		if mv "$file.bak" "$backupFile"; then
+			return 1
+		fi
 	fi
 
 	cp -a "$file" "$file.bak"
@@ -2638,10 +2641,10 @@ function exitNormal() {
 
 function saveVars() {	
 	if (( $UID == 0 )); then
-		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > $VARS_FILE
-		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> $VARS_FILE
-		echo "MSG_FILE=\"$MSG_FILE\"" >> $VARS_FILE
-		echo "LOG_FILE=\"$LOG_FILE\"" >> $VARS_FILE
+		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > "$VARS_FILE"
+		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> "$VARS_FILE"
+		echo "MSG_FILE=\"$MSG_FILE\"" >> "$VARS_FILE"
+		echo "LOG_FILE=\"$LOG_FILE\"" >> "$VARS_FILE"
 	fi
 }
 
@@ -2655,7 +2658,7 @@ function exitError() { # {rc}
 	fi
 
 	logExit "$rc"
-	exit $rc
+	exit "$rc"
 }
 
 # ignore tool error if configured
@@ -2663,16 +2666,16 @@ function ignoreErrorRC() { # rc errors_to_ignore
 	logEntry
 	local rc="$1"
 	if (( $rc != 0 )); then
-		for i in ${@:2}; do
+		for i in "${@:2}"; do
 			if (( $i == $rc )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" $rc
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" "$rc"
 				rc=0
 				break
 			fi
 		done
 	fi
-	logExit $rc
-	return $rc
+	logExit "$rc"
+	return "$rc"
 }
 
 function executeDD() { # cmd silent
@@ -2683,8 +2686,8 @@ function executeDD() { # cmd silent
 	( eval "$cmd" 2>&1 1>&5 | grep -viE "records [in|out]| copied," | tee -a $MSG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
-	logExit $rc
-	return $rc
+	logExit "$rc"
+	return "$rc"
 }
 
 # ((sh test.sh 2>&1 1>&3 | tee errors.log) 3>&1 | tee output.log) > /dev/null 2>&1
@@ -2733,12 +2736,13 @@ function executeShellCommand() { # command
 function compareVersions() { # v1 v2
 
 	logEntry "$1 $2"
-	local v1="$(sed 's/-.*$//' <<< $1)"
-	local v2="$(sed 's/-.*$//' <<< $2)"
+	local v1 v2
+	v1="$(sed 's/-.*$//' <<< "$1")"
+	v2="$(sed 's/-.*$//' <<< "$2")"
 
 	local v1e v2e IFS rc
-	IFS="." v1e=( $v1 0 0 0 0)
-	IFS="." v2e=( $v2 0 0 0 0)
+	IFS="." v1e=( "v1 0 0 0 0)
+	IFS="." v2e=( "v2 0 0 0 0)
 
 	local rc=0
 	for (( i=0; i<=3; i++ )); do
@@ -2758,7 +2762,7 @@ function compareVersions() { # v1 v2
 
 function repeat() { # char num
 	local s
-	s=$( yes $1 | head -$2 | tr -d "\n" )
+	s=$( yes "$1" | head -"$2" | tr -d "\n" )
 	echo $s
 }
 
@@ -2790,7 +2794,7 @@ function logOptions() { # option state
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
-	logItem "COLOR_CODES="${COLOR_CODES[@]}""
+	logItem "COLOR_CODES="${COLOR_CODES[*]}""
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
  	logItem "DD_BACKUP_SAVE_USED_PARTITIONS_ONLY=$DD_BACKUP_SAVE_USED_PARTITIONS_ONLY"
@@ -3215,7 +3219,7 @@ function hasSpaces() { # file- or directory name
 # borrowed from https://gist.github.com/cdown/1163649#file-gistfile1-sh
 function urlencode() {
 
-    local ld_lc_collate=$LC_COLLATE
+    local old_lc_collate=$LC_COLLATE
     LC_COLLATE=C
 
     local length="${#1}"
@@ -7820,14 +7824,14 @@ function doitBackup() {
 	if (( $PROGRESS && $INTERACTIVE )); then
 		if ! which pv &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "pv" "pv"
-			exitError $RC_MISSING_COMMANDS
+			exitError ""RC_MISSING_COMMANDS
 		fi
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP
-			exitError $RC_PARAMETER_ERROR
+			exitError "$RC_PARAMETER_ERROR"
 		fi
 		if (( ! $FAKE )); then
 			collectPartitions
@@ -7849,13 +7853,13 @@ function doitBackup() {
 
 	if (( $SYSTEMSTATUS )) && ! which lsof &>/dev/null; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_INSTALLED_FILE "lsof" "lsof"
-		exitError $RC_MISSING_COMMANDS
+		exitError "$RC_MISSING_COMMANDS"
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
 	if (( ! $SKIPLOCALCHECK )); then
-		if ! isPathMounted $BACKUPPATH; then
+		if ! isPathMounted "$BACKUPPATH"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
 			exitError $RC_MISC_ERROR
 		fi
@@ -7863,7 +7867,7 @@ function doitBackup() {
 		logItem "BOOT_DEVICENAME: $BOOT_DEVICENAME"
 		local lsblkResult="$(lsblk -l -o name,mountpoint | grep "${BACKUPPATH}" | grep $BOOT_DEVICENAME)"
 		logItem "lsblkResult: $lsblkResult"
-		if [[ -n $lsblkResult ]]; then
+		if [[ -n "$lsblkResult" ]]; then
 			local di=($(deviceInfo /dev/$lsblkResult))
 			logItem "di: $di"
 			if [[ "$BOOT_DEVICE" == "${di[0]}" ]]; then
@@ -7896,13 +7900,13 @@ function doitBackup() {
 
 	# just inform about options enabled
 
-	if  [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+	if  [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
 		if (( $LINK_BOOTPARTITIONFILES )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_LINK_BOOTPARTITIONFILES
 		fi
 	fi
 
-	if  [[ $BACKUPTYPE == $BACKUPTYPE_DD || $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+	if  [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 		if (( $DD_BACKUP_SAVE_USED_PARTITIONS_ONLY )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_USED_PARTITIONS_ONLY
 		fi
@@ -7979,7 +7983,7 @@ function checkAndSetBootPartitionFiles() { # directory extension
 	logItem "MBR_FILE: $MBR_FILE"
 
 	local errorCnt=0
-	if [[ "$BACKUPTYPE" != $BACKUPTYPE_DD && "$BACKUPTYPE" != $BACKUPTYPE_DDZ ]]; then
+	if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
 		if [[ ! -e "$SF_FILE" ]]; then
 			logItem "$SF_FILE not found"
 			(( errorCnt++ ))
@@ -8010,7 +8014,7 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 #	1) if directory search corresponding file in directory
 #	2) if file passed just use this file
 
-	if [[ -f "$RESTOREFILE" || $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
+	if [[ -f "$RESTOREFILE" || $BACKUPTYPE == "$BACKUPTYPE_RSYNC" ]]; then
 		ROOT_RESTOREFILE="$RESTOREFILE"
 	else
 		logItem "${RESTOREFILE}/${HOSTNAME}*-*-backup*"
@@ -8058,9 +8062,9 @@ function initRestoreVariables () {
 
 	logEntry
 
-	if [[ -z $(fdisk -l $RESTORE_DEVICE 2>/dev/null) ]]; then
+	if [[ -z $(fdisk -l "$RESTORE_DEVICE" 2>/dev/null) ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_RESTOREDEVICE_FOUND $RESTORE_DEVICE
-		exitError $RC_PARAMETER_ERROR
+		exitError "$RC_PARAMETER_ERROR"
 	fi
 
 	BOOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 1)"
@@ -8068,7 +8072,7 @@ function initRestoreVariables () {
 	logItem "BOOT_PARTITION : $BOOT_PARTITION"
 
 	ROOT_PARTITION_DEFINED=1
-	if [[ -z $ROOT_PARTITION ]]; then
+	if [[ -z "$ROOT_PARTITION" ]]; then
 		ROOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 2)"
 		ROOT_PARTITION_DEFINED=0
 	else
@@ -8098,7 +8102,7 @@ function restoreNonPartitionBasedBackup() {
 	if (( ! $ROOT_PARTITION_DEFINED )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN $RESTORE_DEVICE
 		current_partition_table="$(listDeviceInfo $RESTORE_DEVICE)"
-		if [[ -n $current_partition_table ]]; then
+		if [[ -n "$current_partition_table" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
 			logItem "$current_partition_table"
 			echo "$current_partition_table"
@@ -8107,14 +8111,14 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	else
 		if isSpecialBlockDevice "$ROOT_DEVICE"; then
-			ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< $ROOT_PARTITION)
+			ROOT_DEVICE=$(sed -E 's/p[0-9]+$//' <<< "$ROOT_PARTITION")
 		else
-			ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< $ROOT_PARTITION)
+			ROOT_DEVICE=$(sed -E 's/[0-9]+$//' <<< "$ROOT_PARTITION")
 		fi
 
-		if [[ $ROOT_DEVICE != $RESTORE_DEVICE ]]; then
+		if [[ $ROOT_DEVICE != "$RESTORE_DEVICE" ]]; then
 			current_partition_table="$(listDeviceInfo $ROOT_DEVICE)"
-			if [[ -n $current_partition_table ]]; then
+			if [[ -n "$current_partition_table" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE"
 				logItem "$current_partition_table"
 				echo "$current_partition_table"
@@ -8128,8 +8132,8 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 	if (( ! $SKIP_SFDISK )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_BOOT_PARTITION_OVERWRITTEN $BOOT_PARTITION
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_ROOT_PARTITION_OVERWRITTEN $ROOT_PARTITION
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_BOOT_PARTITION_OVERWRITTEN "$BOOT_PARTITION"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_ROOT_PARTITION_OVERWRITTEN "$ROOT_PARTITION"
 	fi
 
 	if ! askYesNo; then
@@ -8157,7 +8161,7 @@ function restorePartitionBasedBackup() {
 		logItem "Umounting partitions on $RESTORE_DEVICE"
 		logItem "$(mount | grep $RESTORE_DEVICE)"
 		local dev
-		while read dev; do echo $dev | cut -d ' ' -f 1; done < <(mount | grep $RESTORE_DEVICE)  | xargs umount
+		while read -r dev; do echo "$dev" | cut -d ' ' -f 1; done < <(mount | grep "$RESTORE_DEVICE")  | xargs umount
 		logItem "$(mount | grep $RESTORE_DEVICE)"
 	fi
 
@@ -8176,7 +8180,7 @@ function restorePartitionBasedBackup() {
 
 	if ! askYesNo; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-		exitError $RC_RESTORE_FAILED
+		exitError "$RC_RESTORE_FAILED"
 	fi
 
 	if (( $NO_YES_QUESTION )); then
@@ -8198,7 +8202,7 @@ function restorePartitionBasedBackup() {
 	START_TIME="$(date +%s)"
 
 	logItem "Creating mountpoint $MNT_POINT"
-	mkdir -p $MNT_POINT
+	mkdir -p "$MNT_POINT"
 
 	# handle partitions
 
@@ -8234,7 +8238,8 @@ function restorePartitionBasedBackup() {
 		logItem "RESTOREFILE_BACKUP_BOOT_PARTITION_PREFIX: ${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"
 		for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
 			logItem "partitionBackupFile: $partitionBackupFile"
-			local partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
+			local partitionNo
+			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
 			logItem "Found partition no: $partitionNo"
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]] ||  containsElement "$partitionNo" "${partitionsToRestore[@]}"; then
 				restorePartitionBasedPartition "$partitionBackupFile"
@@ -8283,7 +8288,7 @@ function getBackupPartitionLabel() { # partition
 	local blkid
 	local label=""
 
-	blkid=$(grep $partition "$BLKID_FILE")
+	blkid=$(grep "$partition" "$BLKID_FILE")
 	logItem "BLKID: $1 - $blkid"
 
 	regexFormatLineLabel="^.*LABEL=\"([^\"]+)\".*$"
@@ -8324,7 +8329,7 @@ function extractDataFromBackupPartedFile() { # partition fieldnumber
 	parted=$(grep "^$partitionNo" "$PARTED_FILE")
 	logItem "PARTED: $1 - $parted"
 
-	element=$(cut -d ":" -f $2 <<< $parted)
+	element=$(cut -d ":" -f "$2" <<< "$parted")
 
 	echo "$element"
 
@@ -8336,7 +8341,7 @@ function getBackupPartitionFilesystemSize() { # partition
 	logEntry "$1"
 
 	local size
-	size=$(extractDataFromBackupPartedFile $1 "4")
+	size=$(extractDataFromBackupPartedFile "$1" "4")
 	echo "$size"
 
 	logExit "$size"
@@ -8348,7 +8353,7 @@ function getBackupPartitionFilesystem() { # partition
 	logEntry "$1"
 
 	local fileSystem
-	fileSystem=$(extractDataFromBackupPartedFile $1 "5")
+	fileSystem=$(extractDataFromBackupPartedFile "$1" "5")
 	echo "$fileSystem"
 
 	logExit "$fileSystem"
@@ -8365,10 +8370,10 @@ function getPartitionBootFilesystem() { # partition_no
 
 	local parted format
 	logItem "PARTED: $1 - $(parted -m $BOOT_DEVICENAME print 2>/dev/null)"
-	parted=$(grep "^${partitionNo}:" <(parted -m $BOOT_DEVICENAME print 2>/dev/null))
+	parted=$(grep "^${partitionNo}:" <(parted -m "$BOOT_DEVICENAME" print 2>/dev/null))
 	logItem "PARTED: $1 - $parted"
 
-	format=$(cut -d ":" -f 5 <<< $parted)
+	format=$(cut -d ":" -f 5 <<< "$parted")
 
 	echo "$format"
 
@@ -8384,7 +8389,7 @@ function lastUsedPartitionByte() { # device
 	local lastUsedPartitionByte=0
 
 	local line
-	while read line; do
+	while read -r line; do
 		if [[ -z $line ]]; then
 			continue
 		fi
@@ -8406,7 +8411,7 @@ function lastUsedPartitionByte() { # device
 			fi
 		fi
 
-	done < <(sfdisk -d $1 2>>"LOG_FILE")
+	done < <(sfdisk -d "$1" 2>>"LOG_FILE")
 
 	(( lastUsedPartitionByte*=512 ))
 
@@ -8466,7 +8471,7 @@ function makeFilesystemAndLabel() { # partition filesystem label
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORMATTING "$partition" "$partitionFilesystem"
 	logItem "$cmd $partition"
 
-	$cmd $partition &>>"$LOG_FILE"
+	$cmd "$partition" &>>"$LOG_FILE"
 
 	rc=$?
 	if (( $rc )); then
@@ -8493,11 +8498,11 @@ function makeFilesystemAndLabel() { # partition filesystem label
 			esac
 
 			logItem "$cmd $artition $partitionLabel"
-			$cmd $partition $partitionLabel &>>"$LOG_FILE"
+			$cmd "$partition" "$partitionLabel" &>>"$LOG_FILE"
 			rc=$?
 			if (( $rc )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd $partition $partitionLabel" "$rc"
-				exitError $RC_LABEL_ERROR
+				exitError "$RC_LABEL_ERROR"
 			fi
 		else
 			logItem "Partition $partition not labeled"
@@ -8513,21 +8518,21 @@ function restorePartitionBasedPartition() { # restorefile
 	logEntry "$1"
 
 	rc=0
-	local verbose zip partitionLabel cmd
-
-	local restoreFile="$1"
-	local restorePartition="$(basename "$restoreFile")"
+	local verbose zip partitionLabel cmd restoreFile restorePartition
+	
+	restoreFile="$1"
+	restorePartition="$(basename "$restoreFile")"
 
 	logItem "restorePartition: $restorePartition"
 	local partitionNumber
-	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< $restorePartition)
+	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< "$restorePartition")
 	logItem "Partitionnumber: $partitionNumber"
 
 	restorePartition="${restorePartition%.*}"
 	logItem "RestorePartition: $restorePartition"
 
-	partitionLabel=$(getBackupPartitionLabel $restorePartition)
-	partitionFilesystem=$(getBackupPartitionFilesystem $restorePartition)
+	partitionLabel=$(getBackupPartitionLabel "$restorePartition")
+	partitionFilesystem=$(getBackupPartitionFilesystem "$restorePartition")
 
 	logItem "Label: $partitionLabel - Filesystem: $partitionFilesystem"
 
@@ -8537,13 +8542,14 @@ function restorePartitionBasedPartition() { # restorefile
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
-	mappedRestorePartition=$(sed "s%${BACKUP_BOOT_PARTITION_PREFIX}%${restoreDevice}%" <<< $restorePartition)
+	#shellcheck disable=SC2001
+	mappedRestorePartition=$(sed "s%${BACKUP_BOOT_PARTITION_PREFIX}%${restoreDevice}%" <<< "$restorePartition")
 
 	if [[ ! "$partitionFilesystem" =~ $SUPPORTED_PARTITIONBACKUP_PARTITIONTYPE_REGEX ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_FILESYSTEM_FORMAT "$partitionFilesystem" "$mappedRestorePartition"
-		exitError $RC_MISC_ERROR
+		exitError "$RC_MISC_ERROR"
 
-	elif [[ ! -z $partitionFilesystem ]]; then
+	elif [[ -n "$partitionFilesystem" ]]; then
 		logItem "partitionFilesystem: \"$partitionFilesystem\""
 
 		if (( ! $SKIP_FORMAT )); then
@@ -8552,7 +8558,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 		if [[ ! "$partitionFilesystem" =~ swap ]]; then
 			logItem "mount $mappedRestorePartition $MNT_POINT"
-			mount $mappedRestorePartition $MNT_POINT
+			mount "$mappedRestorePartition" "$MNT_POINT"
 
 			logItem "Restoring file $restoreFile"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONFILE "$mappedRestorePartition"
@@ -8565,7 +8571,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 			case $BACKUPTYPE in
 
-				$BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)
+				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
 					local archiveFlags=""
 
 					if [[ -n $fatSize  ]]; then
@@ -8586,7 +8592,7 @@ function restorePartitionBasedPartition() { # restorefile
 					popd &>>"$LOG_FILE"
 					;;
 
-				$BACKUPTYPE_RSYNC)
+				"$BACKUPTYPE_RSYNC")
 					local archiveFlags="aH"						# -a <=> -rlptgoD, H = preserve hardlinks
 					[[ -n $fatSize  ]] && archiveFlags="rltD"	# no Hopg flags for fat fs
 					cmdParms="--numeric-ids ${RSYNC_BACKUP_OPTIONS} -${archiveFlags}X$verbose \"$restoreFile/\" $MNT_POINT"
@@ -8606,19 +8612,18 @@ function restorePartitionBasedPartition() { # restorefile
 			esac
 
 			if [[ $rc != 0 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PROGRAM_ERROR $BACKUPTYPE $rc
-				exitError $RC_NATIVE_RESTORE_FAILED
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PROGRAM_ERROR $BACKUPTYPE "$rc"
+				exitError "$RC_NATIVE_RESTORE_FAILED"
 			fi
 
 			sleep 1s					# otherwise umount fails
 
 			logItem "umount $mappedRestorePartition"
-			umount $mappedRestorePartition
+			umount "$mappedRestorePartition"
 
-			if isMounted $MNT_POINT; then
+			if isMounted "$MNT_POINT"; then
 				logItem "umount $MNT_POINT"
-				umount -f $MNT_POINT &>>$LOG_FILE
-				if [ $? -ne 0 ]; then
+				if ! umount -f $MNT_POINT &>>$LOG_FILE; then
 					assertionFailed $LINENO "Unable to umount $MNT_POINT"
 				fi
 			fi
@@ -8662,7 +8667,7 @@ function doitRestore() {
 		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
 
-	logItem "ls $RESTOREFILE$NL$(ls $RESTOREFILE)"
+	logItem "ls $RESTOREFILE$NL$(ls "$RESTOREFILE")"
 
 	local regex=""
 	for type in $POSSIBLE_TYPES; do
@@ -8685,7 +8690,8 @@ function doitRestore() {
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logCommand "ls -1 $RESTOREFILE*"
 
-	if  ls -1 "$RESTOREFILE"* | egrep "\.blkid$" &>>"$LOG_FILE" ; then
+	#shellcheck disable=SC2010
+	if  ls -1 "$RESTOREFILE"* | grep -E "\.blkid$" &>>"$LOG_FILE" ; then
 		PARTITIONBASED_BACKUP=1
 		if [[ -n $ROOT_PARTITION ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_ALLOWED
@@ -8723,7 +8729,7 @@ function doitRestore() {
 			fi
 		fi
 
-		if [[ -z $(fdisk -l $RESTORE_DEVICE 2>/dev/null) ]]; then
+		if [[ -z $(fdisk -l "$RESTORE_DEVICE" 2>/dev/null) ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_RESTOREDEVICE_FOUND "$RESTORE_DEVICE"
 			exitError $RC_PARAMETER_ERROR
 		fi
@@ -8844,7 +8850,7 @@ function doitRestore() {
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
-		if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
+		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
 			if (( ! SKIP_SFDISK )); then
 				synchronizeCmdlineAndfstab
 			fi
@@ -8853,7 +8859,8 @@ function doitRestore() {
 		restorePartitionBasedBackup
 	fi
 
-	RESTORE_TIME=($(duration $START_TIME $END_TIME))
+	#shellcheck disable=SC2207
+	RESTORE_TIME=($(duration "$START_TIME" "$END_TIME"))
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_TIME "${RESTORE_TIME[1]}" "${RESTORE_TIME[2]}" "${RESTORE_TIME[3]}"
 
 	logCommand "blkid"
@@ -8901,7 +8908,8 @@ function updateRestoreReminder() {
 		local now
 		now=$(date +%Y%m)
 		local rf
-		rf="$(<$reminder_file)"
+		#shellcheck disable=SC2086
+		rf="$($reminder_file)"
 		if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
 			echo "$(date +%Y%m) 0" > "$reminder_file"
 			return
