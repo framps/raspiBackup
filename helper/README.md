@@ -1,32 +1,5 @@
 ## Collection of some sample scripts useful for raspiBackup users
 
-Information 
-At the suggestion of a user, I have defined the color output of the texts myself with a config file, as they are not all clearly visible on every background.
-
-The config file must be saved under /usr/local/etc/raspiBackupDialog.conf
-
-Contents:
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-#!/bin/bash
-
-# Configure the colors to be displayed for the output texts in raspiBackupDialog
-
-# Possible colors ( RED YELLOW GREEN BLUE CYAN VIOLET )
-
-# Questions (dialog)
-QUESTION=“$YELLOW”
-
-# Error
-FAIL=“$RED”
-
-# Confirmations Info
-CONFIRMATION=“$GREEN”
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
 
 __Note:__ Most of the scripts are provided by framps as is and are not included in any raspiBackup release and thus are not maintained. Enhancements and other helper scripts are welcome in a PR. raspiBackupDialog was provided by [franjo-G](https://github.com/franjo-G) and will be maintained by him. 
 
@@ -62,6 +35,31 @@ __Note:__ Most of the scripts are provided by framps as is and are not included 
     !! This dialogue can only be called up (as protection against accidental wrong entries) by using the --delete option.
 
     I have also made a few optical changes and removed the completely superfluous dash lines.
+
+	At the suggestion of a user, I have defined the color output of the texts myself with a config file, as they are not all clearly visible on every background.
+
+	The config file must be saved under /usr/local/etc/raspiBackupDialog.conf
+
+	Contents:
+
+	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+	#!/bin/bash
+
+	# Configure the colors to be displayed for the output texts in raspiBackupDialog
+
+	# Possible colors ( RED YELLOW GREEN BLUE CYAN VIOLET )
+
+	# Questions (dialog)
+	QUESTION=“$YELLOW”
+
+	# Error
+	FAIL=“$RED”
+
+	# Confirmations Info
+	CONFIRMATION=“$GREEN”
+
+	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 7. raspiBackupMsg2JSON.sh - Parses the raspiBackup message file and generates a JSON doc which represents the messages
 
