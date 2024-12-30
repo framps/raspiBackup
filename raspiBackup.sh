@@ -3343,7 +3343,9 @@ function parsePropertiesFile() { # propertyFileName
 
 	logEntry
 
-	local properties="$(grep "^VERSION=" "$1" 2>/dev/null)"
+	local properties
+	
+	properties="$(grep "^VERSION=" "$1" 2>/dev/null)"
 	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY=${BASH_REMATCH[1]}
 
 	properties="$(grep "^INCOMPATIBLE=" "$1" 2>/dev/null)"
@@ -3367,13 +3369,13 @@ function isVersionDeprecated() { # versionNumber
 
 	local rc=1	# no/failure
 
-	local deprecatedVersions=( $DEPRECATED_PROPERTY )
+	local deprecatedVersions=( "$DEPRECATED_PROPERTY" )
 	if containsElement "$1" "${deprecatedVersions[@]}"; then
 		rc=0
 		logItem "Version $1 is deprecated"
 	fi
 
-	local skip=( $SKIP_DEPRECATED )
+	local skip=( "$SKIP_DEPRECATED" )
 	if containsElement "$1" "${skip[@]}"; then
 		rc=1
 		logItem "Version $1 is deprecated but message is disabled"
@@ -3387,9 +3389,7 @@ function shouldRenewDownloadPropertiesFile() { # FORCE
 
 	logEntry
 
-	local rc
-
-	local lastCheckTime
+	local rc currentTime lastCheckTime
 
 	if [[ -e $LATEST_TEMP_PROPERTY_FILE ]]; then
 		lastCheckTime=$(stat -c %y $LATEST_TEMP_PROPERTY_FILE | cut -d ' ' -f 1 | sed 's/-//g')
@@ -3397,7 +3397,7 @@ function shouldRenewDownloadPropertiesFile() { # FORCE
 		lastCheckTime="00000000"
 	fi
 
-	local currentTime=$(date +%Y%m%d)
+	currentTime=$(date +%Y%m%d)
 
 	logItem "$currentTime : $lastCheckTime"
 
@@ -3432,14 +3432,19 @@ function verifyIsOnOff() { # arg
 
 function downloadFile() { # url, targetFileName
 
-		logEntry "URL: "$(sed -E "s/\?.*$//" <<<"$1")", file: $2"
+		local url
 
-		local httpCode rc
+		url="$(sed -E 's/\?.*$//' <<< $1)"
+
+		logEntry "URL: $url, file: $2"
+
+		local httpCode rc f
 
 		local url="$1"
 		local file="$2"
-		local f=$(mktemp)
+		f=$(mktemp)
 		local httpCode rc
+		#shellcheck disable=SC1083
 		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>"LOG_FILE")
 		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
@@ -3475,13 +3480,16 @@ function downloadFile() { # url, targetFileName
 
 function askYesNo() { # message message_parms
 
-	local yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
+	local yes_no yes
+
+	yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
 	local addtlMsg=0
 
 	if (( $# > 1 )); then
 		local m="$1"
 		shift
 		addtlMsg=1
+		#shellcheck disable=SC2178,SC2124
 		local args="$@"
 	fi
 
@@ -3489,7 +3497,8 @@ function askYesNo() { # message message_parms
 
 	if (( $addtlMsg )); then
 		noNL=1
-		writeToConsole $MSG_LEVEL_MINIMAL $m "$args" "$yes_no"
+		#shellcheck disable=SC2128
+		writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
 	fi
@@ -3503,7 +3512,7 @@ function askYesNo() { # message message_parms
 	answer=${answer:0:1}	# first char only
 	answer=${answer:-"n"}	# set default no
 
-	local yes=$(getMessage $MSG_ANSWER_CHARS_YES)
+	yes=$(getMessage $MSG_ANSWER_CHARS_YES)
 	if [[ ! $yes =~ $answer ]]; then
 		return 1
 	else
@@ -3682,7 +3691,7 @@ function updateScript() {
 
 	logEntry
 
-	local rc versions latestVersion newVersion oldVersion newName
+	local rc versions latestVersion newVersion oldVersion newName betaVersion properties
 	local updateNow=0
 
 	if (( $NEW_PROPERTIES_FILE )) ; then
@@ -3698,14 +3707,14 @@ function updateScript() {
 		logItem "$rc - $latestVersion - $newVersion - $oldVersion"
 
 		if (( ! $FORCE_UPDATE )) ; then
-			local incompatibleVersions=( $INCOMPATIBLE_PROPERTY )
+			local incompatibleVersions=( "$INCOMPATIBLE_PROPERTY" )
 			if containsElement "$newVersion" "${incompatibleVersions[@]}"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPATIBLE_UPDATE "$newVersion" "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 				exitNormal
 			fi
 		fi
 
-		local betaVersion=$(isBetaAvailable)
+		betaVersion=$(isBetaAvailable)
 
 		if [[ -n $betaVersion ]]; then
 			if (( ! $FORCE_UPDATE )) && [[ "${betaVersion}-beta" > $oldVersion ]]; then 			# beta version available
@@ -3758,10 +3767,10 @@ function updateScript() {
 			chmod --reference=$newName $SCRIPT_DIR/$MYSELF
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
 			# refresh version information from updated script
-			local properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+			properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
 			logItem "Updating VERSION from updated script to $VERSION"
-			local properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
+			properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
 			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
 			logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
 		else
@@ -3941,6 +3950,7 @@ function checkSfdiskOK() { # device, e.g. /dev/mmcblk0
 
 	logItem "DeviceSize: $deviceSize"
 
+	#shellcheck disable=SC2207
 	local sourceValues=( $(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)") )
 
 	local s=${#sourceValues[@]}
@@ -4022,6 +4032,8 @@ function readConfigParameters() {
 
 	logEntry
 
+	local attrs
+
 	ETC_CONFIG_FILE="/usr/local/etc/${MYNAME}.conf"
 	HOME_CONFIG_FILE="$CALLING_HOME/.${MYNAME}.conf"
 	CURRENTDIR_CONFIG_FILE="$CURRENT_DIR/.${MYNAME}.conf"
@@ -4033,7 +4045,7 @@ function readConfigParameters() {
 
 	for file in "${files[@]}"; do
 		if [[ -e $file ]]; then
-			local attrs="$(stat -c %a $file)"
+			attrs="$(stat -c %a $file)"
 			if (( ( 0$attrs & 077 ) != 0 )); then
 				if ! grep -q $file <<< "$warnedFiles"; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNPROTECTED_PROPERTIESFILE $file
@@ -4100,9 +4112,12 @@ function getOSRelease() {
 	# the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
 	unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
 
+	#shellcheck disable=SC2154,SC2046
 	local osr_$(grep -E "^ID="         "$os_release_file")
+	#shellcheck disable=SC2154,SC2046
 	local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
 
+	#shellcheck disable=SC2154
 	os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
 	os_release="${os_release//\"/}"          # remove any double quotes
 	echo "${os_release:-unknownOS}"          # handle empty result
@@ -4443,7 +4458,7 @@ COLOR_OFF=("</span><br/>" "\e[0m")
 function colorOn() { # colortype color
 	local on="${COLOR_ON[$1]}"
 	local color="${COLOR_CODES[$2]}"
-	color=($color)
+	color=( "$color" )
 	printf -v r "$on" "${color[$1]}"
 	echo -e -n "$r"
 }
@@ -4489,9 +4504,11 @@ function sendTelegramDocument() { # filename
 
 		logEntry "$1"
 
+		local rsp curlRC error_code error_description
+
 		logItem "Telegram curl call: curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE"
-		local rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
-		local curlRC=$?
+		rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
+		curlRC=$?
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_FAILED $curlRC "N/A" "N/A"
@@ -4501,8 +4518,8 @@ function sendTelegramDocument() { # filename
 			if [[ $ok == "true" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_LOG_OK
 			else
-				local error_code="$(jq .error_code  <<< "$rsp")"
-				local error_description="$(jq .description <<< "$rsp")"
+				error_code="$(jq .error_code  <<< "$rsp")"
+				error_description="$(jq .description <<< "$rsp")"
 				logItem "Error sending msg: $rsp"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TELEGRAM_SEND_FAILED "$curlRC" "$error_code" "$error_description"
 			fi
@@ -4517,7 +4534,7 @@ function sendTelegramMessage() { # message html(yes/no)
 
 		logEntry "$1"
 
-		local rsp
+		local rsp error_code error_description
 
 		if [[ -z $2 ]]; then
 			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
@@ -4626,7 +4643,8 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 
 		logEntry "$1"
 
-		local sound prio
+		local sound prio o msg msgEnd cmd httpCode curlRC ok
+		
 		if [[ -n $2 && "$2" == "1" ]]; then
 			sound="$PUSHOVER_SOUND_FAILURE"
 			prio="$PUSHOVER_PRIORITY_FAILURE"
@@ -4635,10 +4653,10 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			prio="$PUSHOVER_PRIORITY_SUCCESS"
 		fi
 
-		local o=$(mktemp)
+		o=$(mktemp)
 
-		local msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
-		local msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
+		msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
+		msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
 
 		[[ -n "$msgEnd" ]] && msg="$msgEnd"
 
@@ -4646,7 +4664,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			msg="$(tail -c 1024 $MSG_FILE)"
 		fi
 
-		local cmd=(--form-string message="$1")
+		cmd=(--form-string message="$1")
 
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
               --form-string "user=$PUSHOVER_USER"\
@@ -4657,18 +4675,18 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
               --form-string "sound=$sound")
 
 		[[ -n $PUSHOVER_DEVICE ]] && cmd+=(--form-string "device=$PUSHOVER_DEVICE" )
-		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( $PUSHOVER_ADDITIONAL_OPTIONS )
+		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( "$PUSHOVER_ADDITIONAL_OPTIONS" )
 
 		logItem "Pushover curl call: ${cmd[*]}"
-		local httpCode
+		#shellcheck disable=SC1083
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" "$PUSHOVER_URL")"
-		local curlRC=$?
+		curlRC=$?
 		logItem "Pushover response:${NL}$(<$o)"
 
 		if (( $curlRC )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_FAILED "$curlRC" "$httpCode" "$rsp"
 		else
-			local ok=$(jq .status "$o")
+			ok=$(jq .status "$o")
 			if [[ $ok == "1" ]]; then
 				logItem "Message sent"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PUSHOVER_SEND_OK
@@ -4720,7 +4738,7 @@ function sendSlackMessage() { # message 0/1->success/failure
 
 		logEntry "$1"
 
-		local msg_json statusMsg
+		local msg_json statusMsg error_description msg msgEnd curlRC httpCode
 
 		local o
 		o=$(mktemp)
@@ -4731,9 +4749,7 @@ function sendSlackMessage() { # message 0/1->success/failure
 			statusMsg="${SLACK_EMOJI_OK}$1"
 		fi
 
-		local msg
 		msg="$(grep -o "RBK0009.\+" $MSG_FILE)" # assume NOTIFY_START is set
-		local msgEnd
 		msgEnd="$(grep -o "RBK0010.\+" $MSG_FILE)" # no, script finished
 
 		[[ -n "$msgEnd" ]] && msg="$msgEnd"
@@ -4761,9 +4777,11 @@ EOF
 		cmd+=(--data "$msg_json")
 
 		logItem "Slack curl call: ${cmd[*]}"
-		local httpCode
+
+		#shellcheck disable=SC1083
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" "$SLACK_WEBHOOK_URL")"
-		local curlRC=$?
+		curlRC=$?
+		
 		logItem "Slack response:${NL}$(<$o)"
 
 		if (( $curlRC )); then
@@ -4776,7 +4794,7 @@ EOF
 				fi
 			else
 				logItem "Error sending msg: $rsp"
-				local error_description="$(<$o)"
+				error_description="$(<$o)"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_FAILED "$curlRC" "$httpCode" "$error_description"
 			fi
 		fi
