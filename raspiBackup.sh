@@ -6393,7 +6393,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	local partitionBackupFile availablePartitions
 
-	for partitionBackupFile in "${lastBackupDir}"; do
+	for partitionBackupFile in ${lastBackupDir}/*; do
 		logItem "partitionBackupFile: $partitionBackupFile"
 		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
 			local directories
