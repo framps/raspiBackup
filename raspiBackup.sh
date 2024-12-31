@@ -4849,7 +4849,7 @@ function sendEMail() { # content subject
 				else
 					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
 				fi
-				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: "$subject"${NL}coloring: ${coloringOption[*}"
+				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: $subject${NL}coloring: ${coloringOption[*}"
 			fi
 		fi
 
@@ -4888,7 +4888,7 @@ function sendEMail() { # content subject
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				"$EMAIL_SENDEMAIL_PROGRAM")
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u "$subject" $attach -t $EMAIL"
+					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject $attach -t $EMAIL"
 					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" $attach -t "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
@@ -4969,6 +4969,7 @@ function masquerade() { # text
 	local t="$1"
 	local l="${#t}"
 	local lm="\($l\)"
+	local m
 
 	if (( $l < 8 )); then
 		echo "$MASQUERADE_STRING$l"
@@ -4979,7 +4980,7 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 16 )); then
-		local m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -5383,18 +5384,20 @@ function revertScriptVersion() {
 
 	logEntry
 
+	local currentVersion version sortedVersions
+
+	#shellcheck disable=SC2207
 	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
 
 	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
 		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
 	fi
 
-	local currentVersion="$(extractVersionFromFile "$SCRIPT_DIR/$MYSELF" "$VERSION_VARNAME")"
+	currentVersion="$(extractVersionFromFile "$SCRIPT_DIR/$MYSELF" "$VERSION_VARNAME")"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_SCRIPT_VERSION "$currentVersion"
 
 	declare -A versionsOfFiles
 
-	local version
 	for versionFile in "${existingVersionFiles[@]}"; do
 		version="$(extractVersionFromFile "$versionFile" "$VERSION_VARNAME" )"
 		if [[ "$version" != "$currentVersion" ]]; then
@@ -5407,7 +5410,7 @@ function revertScriptVersion() {
 	done
 
 	#shellcheck disable=SC2207
-	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
+	sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
 
 	local min=0
 	local max=$(( ${#sortedVersions[@]} - 1))
@@ -5581,9 +5584,10 @@ function checkImportantParameters() {
 function createLinks() { # backuptargetroot extension newfile
 
 	logEntry "$1 $2 $3"
-	local file rc
+	
+	local file rc possibleLinkTargetDirectory possibleLinkTarget
 
-	local possibleLinkTargetDirectory=$(ls -d $1/${HOSTNAME_OSR}-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
+	possibleLinkTargetDirectory=$(ls -d $1/${HOSTNAME_OSR}-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
 
 	if [[ -z "$possibleLinkTargetDirectory" || "$possibleLinkTargetDirectory" == "$BACKUPTARGET_DIR" ]]; then
 		logItem "No possible link target directory found"
@@ -5591,7 +5595,7 @@ function createLinks() { # backuptargetroot extension newfile
 	fi
 
 	logItem "PossibleLinkTargetDirectory: $possibleLinkTargetDirectory"
-	local possibleLinkTarget=$(find "$possibleLinkTargetDirectory" -maxdepth 1 -name "$HOSTNAME-backup.$2")
+	possibleLinkTarget=$(find "$possibleLinkTargetDirectory" -maxdepth 1 -name "$HOSTNAME-backup.$2")
 	logItem "Possible link target: $possibleLinkTarget"
 
 	if [[ -z $possibleLinkTarget ]]; then
@@ -5623,7 +5627,7 @@ function bootPartitionBackup() {
 
 		logEntry
 
-		local p rc
+		local p rc cmd
 
 		logItem "Starting boot partition backup..."
 
@@ -5635,10 +5639,10 @@ function bootPartitionBackup() {
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
 					local bootMountpoint
 					[[ -d /boot/firmware ]] && bootMountpoint="/boot/firmware" || bootMountpoint="/boot"
-					local cmd="cd $bootMountpoint; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
+					cmd="cd $bootMountpoint; tar $TAR_BACKUP_OPTIONS -f \"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" ."
 					executeTar "$cmd"
 				else
-					local cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
+					cmd="dd if=/dev/${BOOT_PARTITION_PREFIX}1 of=\"$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext\" bs=$DD_BLOCKSIZE"
 					executeDD "$cmd"
 				fi
 				rc=$?
@@ -5785,7 +5789,7 @@ function partitionLayoutBackup() {
 		logItem "$(<"$FDISK_FILE")"
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_MBR_BACKUP "$MBR_FILE"
-		cmd="dd if=$BOOT_DEVICENAME of="$MBR_FILE" bs=512 count=1"
+		cmd="dd if=$BOOT_DEVICENAME of=$MBR_FILE bs=512 count=1"
 		executeDD "$cmd"
 		rc=$?
 		if [ $rc != 0 ]; then
@@ -5813,7 +5817,7 @@ function backupDD() {
 		partition="${BOOT_DEVICENAME}p$1"
 		partitionName="${BOOT_PARTITION_PREFIX}$1"
 
-		if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
 		else
 			cmd="dd if=$partition bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"${BACKUPTARGET_DIR}/$partitionName${FILE_EXTENSION[$BACKUPTYPE]}\""
@@ -5822,26 +5826,24 @@ function backupDD() {
 	else
 
 		if (( ! $DD_BACKUP_SAVE_USED_PARTITIONS_ONLY )); then
-			if [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+			if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS | gzip ${verbose} > \"$BACKUPTARGET_FILE\""
 			else
 				cmd="dd if=$BOOT_DEVICENAME bs=$DD_BLOCKSIZE $progressFlag $DD_PARMS of=\"$BACKUPTARGET_FILE\""
 			fi
 		else
+			local lastByte spaceUsedHuman sdcardSize sdcardSizeHuman count blocksize
 			logCommand "fdisk -l $BOOT_DEVICENAME"
-			local lastByte=$(lastUsedPartitionByte $BOOT_DEVICENAME)
+			lastByte=$(lastUsedPartitionByte $BOOT_DEVICENAME)
 			if (( lastByte == 0 )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TRUNCATING_ERROR "$sdcardSizeHuman" "$spaceUsedHuman"
 				exitError $RC_MISC_ERROR
 			fi
-			local spaceUsedHuman=$(bytesToHuman $lastByte)
-			local sdcardSize
+			spaceUsedHuman=$(bytesToHuman $lastByte)
 			sdcardSize=$(blockdev --getsize64 $BOOT_DEVICENAME)
-			local sdcardSizeHuman
 			sdcardSizeHuman=$(bytesToHuman $sdcardSize)
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY "$sdcardSizeHuman" "$spaceUsedHuman"
 
-			local count blocksize
 			(( blocksize=1024*1024 ))		# 1MB hard coded
 			(( count = lastByte / blocksize ))
 			logItem "Count: $count"
@@ -5890,7 +5892,7 @@ function backupTar() {
 	logEntry
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
-	[[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] && zip="-z" || zip=""
+	[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
@@ -5991,8 +5993,9 @@ function updateUUIDs() {
 
 function updatePartUUID() {
 	logEntry
+	local newUUID
 	if (( $UPDATE_UUIDS )); then
-		local newUUID=$(od -A n -t x -N 4 /dev/urandom | tr -d " ")
+		newUUID=$(od -A n -t x -N 4 /dev/urandom | tr -d " ")
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_UUID "PARTUUID" "$newUUID" "$RESTORE_DEVICE"
 		echo -ne "x\ni\n0x$newUUID\nr\nw\nq\n" | fdisk "$RESTORE_DEVICE" &>> "$LOG_FILE"
 		waitForPartitionDefsChanged
@@ -6027,6 +6030,8 @@ function collectPartitionsInBackup() { # lastBackupDir
 	logEntry "$1"
 
 	local result
+	
+	#shellcheck disable=SC2010
 	result=$(ls -l $1 | grep "^d" | egrep -o "[0-9]+$")
 
 	echo "$result"
@@ -6039,10 +6044,11 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	local rc
 
+	#shellcheck disable=SC2207
 	local partitionsInBackup=( $(collectAvailableBackupPartitions "$1") )
 	local partitionsToBackup
 	#shellcheck disable=SC2207
-	partitionsToBackup=( ${PARTITIONS_TO_BACKUP[@]} )
+	partitionsToBackup=( "${PARTITIONS_TO_BACKUP[@]}" )
 
 	local missingPartition=()
 
@@ -6262,6 +6268,7 @@ function partitionRestoredeviceIfRequested() {
 		else
 
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
+				#shellcheck disable=SC2207
 				local partitions=( $(collectPartitionsInBackup "$RESTOREFILE") )
 				#shellcheck disable=SC2124
 				local partitionsString="${partitions[@]}"
@@ -6296,12 +6303,14 @@ function partitionRestoredeviceIfRequested() {
 		fi
 
 		if (( $FORCE_SFDISK )); then
+			local tmpSF
+
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
 			sfdisk -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
 			rc=$?
 			if (( $rc )); then
 				if (( $rc == 1 )); then
-					local tmpSF="$(basename $SF_FILE)"
+					tmpSF="$(basename $SF_FILE)"
 					cp "$SF_FILE" "/tmp/$tmpSF"
 					sed -i 's/sector-size/d' "/tmp/$tmpSF"
 					sfdisk -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
@@ -6365,6 +6374,7 @@ function partitionRestoredeviceIfRequested() {
 					fi
 
 					local partitionSizes
+					#shellcheck disable=SC2207
 					partitionSizes=( $(createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK") )
 
 					local oldPartitionSourceSize=${partitionSizes[0]}
@@ -6430,6 +6440,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 		logItem "partitionBackupFile: $partitionBackupFile"
 		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
 			local directories
+			#shellcheck disable=SC2010
 			directories="$(ls -l ${partitionBackupFile} | grep -E "\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz)
 		elif [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
 			local directories
@@ -6693,7 +6704,7 @@ function applyBackupStrategy() {
 
 		local dir_to_delete dir_to_keep
 
-		logItem "SR Parms: "${SMART_RECYCLE_PARMS[*]}""
+		logItem "SR Parms: ${SMART_RECYCLE_PARMS[*]}"
 		SR_DAILY="${SMART_RECYCLE_PARMS[0]}"
 		SR_WEEKLY="${SMART_RECYCLE_PARMS[1]}"
 		SR_MONTHLY="${SMART_RECYCLE_PARMS[2]}"
@@ -6776,6 +6787,7 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
+				#shellcheck disable=SC2010
 				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
 				if ! popd &>>"LOG_FILE"; then
 					assertionFailed $LINENO "pop failed"
@@ -6795,7 +6807,9 @@ function applyBackupStrategy() {
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
 
-				for imgFile in $(ls -d *.img *.mbr *.sfdisk *.log *.msg 2>/dev/null); do
+				for imgFile in *.img *.mbr *.sfdisk *.log *.msg; do
+				
+					[[ ! -e $imgFile ]] && continue
 
 					if [[ $imgFile =~ $regexDD ]]; then
 						logItem "Skipping DD file $imgFile"
@@ -6842,7 +6856,6 @@ function reportOldBackups() {
 	logEntry "$BACKUP_TARGETDIR"
 
 	local dir_to_list
-	local tobeListedNewBackups
 
 	if (( $SMART_RECYCLE )); then
 
@@ -7352,10 +7365,11 @@ function checksForPartitionBasedBackup() {
 
 	if (( ! $REGRESSION_TEST )); then # skip test in regressiontest because in qemu /dev/mmcblk0 is a symlink to /dev/sda
 		local pn=( "$(extractBootAndRootPartitionNames)" )
-		local i
+		local i p d ip1
 		for ((i=0; i<${#pn[@]}; i+=2)); do
-			local p=${pn[i]}
-			local d=${pn[$((i+1))]}
+			p=${pn[i]}
+			(( ip1 = i+1 ))
+			d=${pn[$ip1)]}
 			if [[ "$d" =~ /dev/sd && ! "$BOOT_DEVICENAME" =~ /dev/sd  ]]; then # allow -P for USB boot (all partitions are external but write error of SD card is used
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_PARTITION_NOT_SAVED "$p" "$d"
 				error=1
