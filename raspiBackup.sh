@@ -2063,7 +2063,8 @@ function trapWithArg() { # function trap1 trap2 ... trapn
 	logEntry "$*"
 	local func="$1" ; shift
 	for sig ; do
-# shellcheck disable=SC2064	
+
+# shellcheck disable=SC2064
 		trap "$func $sig" "$sig"
 	done
 	logExit
@@ -2080,7 +2081,8 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	msgVar="MSG_${LANGUAGE}"
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]]; then
-#shellcheck disable=SC1087	
+# Use braces when expanding arrays, e.g. ${array[idx]} (or ${var}[.. to quiet).
+#shellcheck disable=SC1087
 		msgVar="$msgVar[$1]"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
@@ -2099,21 +2101,25 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	# Change messages with old message format using %s, %s ... to new format using %1, %2 ...
 	i=1
 	while [[ "$msg" =~ %s ]]; do
-#shellcheck disable=SC2001	
-		msg="$(sed "s|%s|%$i|" <<<"$msg" 2>/dev/null)" # have to use explicit command name		
+# See if you can use ${variable//search/replace} instead
+#shellcheck disable=SC2001
+		msg="$(sed "s|%s|%$i|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 		(( i++ ))
 	done
 
 	for ((i = 1; $i <= $#; i++)); do # substitute all message parameters
 		p=${!i}
-#shellcheck disable=SC2001	
+# See if you can use ${variable//search/replace} instead
+#shellcheck disable=SC2001
 		p="$(sed 's/\&/\\\&/g' <<< "$p")" # escape &
 		(( s=$i ))
 		s="%$s"
-#shellcheck disable=SC2001	
+# See if you can use ${variable//search/replace} instead
+#shellcheck disable=SC2001
 		msg="$(sed "s|$s|$p|" <<<"$msg" 2>/dev/null)" # have to use explicit command name
 	done
 
+# See if you can use ${variable//search/replace} instead
 #shellcheck disable=SC2001
 	msg="$(sed "s/%[0-9]+//g" <<<"$msg" 2>/dev/null)" # delete trailing %n definitions
 
@@ -2195,7 +2201,7 @@ function logIntoOutput() { # logtype prefix lineno message
 	local lineno="$1"
 	shift
 	[[ -z $lineno ]] && lineno=${BASH_LINENO[1]}
-#shellcheck disable=SC2155	
+#shellcheck disable=SC2155
 	local dte=$(date +%Y%m%d-%H%M%S)
 	local indent
 #shellcheck disable=SC2183
@@ -2443,7 +2449,7 @@ function usage() {
 
 	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
-	mapfile -t NO_YES < <( getMessage $MSG_NO_YES ) 
+	mapfile -t NO_YES < <( getMessage $MSG_NO_YES )
 
 	local func="usage${activeLang}"
 
@@ -2557,6 +2563,7 @@ function isSupportedEnvironment() {
 		logExit 1
 		return 1
 	fi
+	# See if you can use ${variable//search/replace} instead
 	#shellcheck disable=SC2001
 	logItem "Modelpath: $(sed 's/\x0/\n/g' <<< "$MODELPATH")"
 	! grep -q -i "raspberry" "$MODELPATH" && return 1
@@ -2608,7 +2615,7 @@ function createBackupVersion() { # file
 
 	cp -a "$file" "$file.bak"
 	rc=$?
-	
+
 	echo "$file.bak"
 	return $rc	# return status of cp command
 }
@@ -2647,7 +2654,7 @@ function exitNormal() {
 	exit 0
 }
 
-function saveVars() {	
+function saveVars() {
 	if (( $UID == 0 )); then
 		echo "BACKUP_TARGETDIR=\"$BACKUPTARGET_DIR\"" > "$VARS_FILE"
 		echo "BACKUP_TARGETFILE=\"$BACKUPTARGET_FILE\"" >> "$VARS_FILE"
@@ -3279,7 +3286,7 @@ function isUpdatePossible() {
 	logEntry
 
 	local versions version_rc latestVersion newVersion oldVersion
-	
+
 	mapfile -t versions < <( isNewVersionAvailable )
 	version_rc=$?
 	if [[ $version_rc == 0 ]]; then
@@ -3351,7 +3358,7 @@ function parsePropertiesFile() { # propertyFileName
 	logEntry
 
 	local properties
-	
+
 	properties="$(grep "^VERSION=" "$1" 2>/dev/null)"
 	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY=${BASH_REMATCH[1]}
 
@@ -3962,7 +3969,7 @@ function checkSfdiskOK() { # device, e.g. /dev/mmcblk0
 
 	local sourceValues
 	mapfile -t sourceValues < <(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)")
-	
+
 	local s=${#sourceValues[@]}
 	logItem "Size: $s"
 
@@ -4070,7 +4077,7 @@ function readConfigParameters() {
 	ETC_CONFIG_FILE_INCLUDED=0
 	if [ -f "$ETC_CONFIG_FILE" ]; then
 		set -e
-		# Can't follow non-constant source. Use a directive to specify location		
+		# Can't follow non-constant source. Use a directive to specify location
 		#shellcheck disable=SC1090
 		. "$ETC_CONFIG_FILE"
 		set +e
@@ -4084,7 +4091,7 @@ function readConfigParameters() {
 	HOME_CONFIG_FILE_INCLUDED=0
 	if [ -f "$HOME_CONFIG_FILE" ]; then
 		set -e
-		# Can't follow non-constant source. Use a directive to specify location		
+		# Can't follow non-constant source. Use a directive to specify location
 		#shellcheck disable=SC1090
 		. "$HOME_CONFIG_FILE"
 		set +e
@@ -4100,7 +4107,7 @@ function readConfigParameters() {
 	if [[ "$HOME_CONFIG_FILE" != "$CURRENTDIR_CONFIG_FILE" ]]; then
 		if [ -f "$CURRENTDIR_CONFIG_FILE" ]; then
 			set -e
-			# Can't follow non-constant source. Use a directive to specify location		
+			# Can't follow non-constant source. Use a directive to specify location
 			#shellcheck disable=SC1090
 			. "$CURRENTDIR_CONFIG_FILE"
 			set +e
@@ -4657,7 +4664,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		logEntry "$1"
 
 		local sound prio o msg msgEnd cmd httpCode curlRC ok
-		
+
 		if [[ -n $2 && "$2" == "1" ]]; then
 			sound="$PUSHOVER_SOUND_FAILURE"
 			prio="$PUSHOVER_PRIORITY_FAILURE"
@@ -4792,10 +4799,11 @@ EOF
 
 		logItem "Slack curl call: ${cmd[*]}"
 
+		# This {/} is literal. Check if ; is missing or quote the expression.
 		#shellcheck disable=SC1083
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" "$SLACK_WEBHOOK_URL")"
 		curlRC=$?
-		
+
 		logItem "Slack response:${NL}$(<$o)"
 
 		if (( $curlRC )); then
@@ -5099,7 +5107,7 @@ function masqueradeSensitiveInfoInLog() {
 # Following regex was optimized by __blackjack__ (https://forum-raspberrypi.de/user/50585-blackjack) from a ChatGPT generated regex ;-)
 
 function masqueradeNonlocalIPs() {
-	
+
 	LC_ALL=C perl -i -pe 's{
 (\b
 (?!                                 # exclude following local ips
@@ -5109,7 +5117,7 @@ function masqueradeNonlocalIPs() {
 	|169\.254						# link local net
 	|0\.\d{1,3}						# skip any net with leading 0 to ignore raspiBackup release info
 	(\.\d{1,3}){2})					# followed by two trailing nibbles
-									# now catch external ips	
+									# now catch external ips
 \d{1,3}\.\d{1,3}					# accept 2 leading nibbles
 ((\.\d{1,3}){2})					# followed by 2 trailing nibbles
 \b)
@@ -5231,7 +5239,7 @@ function cleanup() { # trap
 				)); then
 					applyBackupStrategy
 			fi
-			
+
 			reportOldBackups
 		fi
 	fi
@@ -5596,7 +5604,7 @@ function checkImportantParameters() {
 function createLinks() { # backuptargetroot extension newfile
 
 	logEntry "$1 $2 $3"
-	
+
 	local file rc possibleLinkTargetDirectory possibleLinkTarget
 
 	possibleLinkTargetDirectory=$(ls -d $1/${HOSTNAME_OSR}-$BACKUPTYPE-backup-* 2>/dev/null | tail -2 | head -1)
@@ -6043,8 +6051,9 @@ function collectPartitionsInBackup() { # lastBackupDir
 
 	local result
 	
+	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010
-	result=$(ls -l $1 | grep "^d" | egrep -o "[0-9]+$")
+	result=$(ls -l "$1" | grep "^d" | grep -Eo "[0-9]+$")
 
 	echo "$result"
 	logExit "$result"
@@ -6373,7 +6382,7 @@ function partitionRestoredeviceIfRequested() {
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
 					local sourceValues
-					mapfile -t sourceValues < <( awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE" ) 
+					mapfile -t sourceValues < <( awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE" )
 
 					if (( ${#sourceValues[@]} < 4 )); then
 						logCommand "cat $SF_FILE"
@@ -6451,10 +6460,12 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 		logItem "partitionBackupFile: $partitionBackupFile"
 		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
 			local directories
+			# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 			#shellcheck disable=SC2010
 			directories="$(ls -l ${partitionBackupFile} | grep -E "\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz)
 		elif [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
 			local directories
+			# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 			#shellcheck disable=SC2010
 			directories="$(ls -l ${partitionBackupFile} | grep '^d')"
 			local partitionNo
@@ -6780,11 +6791,13 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
+				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 				#shellcheck disable=SC2010
 				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
 				echo "$tobeCheckedBackups" | while read dir_to_check; do
 					[[ -n $dir_to_check ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXISTING_BACKUP  $BACKUPTARGET_ROOT/${dir_to_check}
 				done
+				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 				#shellcheck disable=SC2010
 				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_" | head -n -$fakeKeepBackups 2>>"LOG_FILE")
 				echo "$tobeDeletedBackups" | while read dir_to_delete; do
@@ -6798,6 +6811,7 @@ function applyBackupStrategy() {
 				if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
+				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 				#shellcheck disable=SC2010
 				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
 				if ! popd &>>"LOG_FILE"; then
@@ -6819,7 +6833,7 @@ function applyBackupStrategy() {
 				fi
 
 				for imgFile in *.img *.mbr *.sfdisk *.log *.msg; do
-				
+
 					[[ ! -e $imgFile ]] && continue
 
 					if [[ $imgFile =~ $regexDD ]]; then
@@ -6841,6 +6855,7 @@ function applyBackupStrategy() {
 						assert $LINENO "Unable to extract date from backup files"
 					fi
 					local file
+					# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 					#shellcheck disable=SC2010
 					file=$(ls -d *-*-backup-$date* 2>/dev/null| grep -Ev "\.(log|msg|img|mbr|sfdisk)$");
 
@@ -7529,7 +7544,7 @@ function inspect4Backup() {
 
 		# find root partition
 		local rootPartition rp
-		
+
 		rootPartition=$(findmnt / -o source -n) # /dev/root or /dev/sda1 or /dev/mmcblk1p2 or /dev/nvme0n1p2
 		logItem "rootPartition: / mounted? $rootPartition"
 		if [[ $rootPartition == "/dev/root" ]]; then
@@ -7561,7 +7576,7 @@ function inspect4Backup() {
 
 		logItem "boot: ${boot[*]}"
 		logItem "root: ${root[*]}"
-		
+
 		if (( "${#boot[@]}" == 0 || "${#root[@]}" == 0 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
 			exitError $RC_NO_BOOT_FOUND
@@ -8551,6 +8566,7 @@ function makeFilesystemAndLabel() { # partition filesystem label
 	local swapDetected=0
 	if [[ "$partitionFilesystem" =~ ^fat.* ]]; then
 		fs="vfat"
+		# See if you can use ${variable//search/replace} instead
 		#shellcheck disable=SC2001
 		fatSize=$(sed 's/fat//' <<< "$partitionFilesystem")
 		fatCmd="-I -F $fatSize"
@@ -8628,7 +8644,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 	rc=0
 	local verbose zip partitionLabel cmd restoreFile restorePartition
-	
+
 	restoreFile="$1"
 	restorePartition="$(basename "$restoreFile")"
 
@@ -8651,6 +8667,7 @@ function restorePartitionBasedPartition() { # restorefile
 	logItem "RestoreDevice: $restoreDevice"
 
 	local mappedRestorePartition
+	# See if you can use ${variable//search/replace} instead
 	#shellcheck disable=SC2001
 	mappedRestorePartition=$(sed "s%${BACKUP_BOOT_PARTITION_PREFIX}%${restoreDevice}%" <<< "$restorePartition")
 
@@ -8799,6 +8816,7 @@ function doitRestore() {
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
 	logCommand "ls -1 $RESTOREFILE*"
 
+	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010
 	if  ls -1 "$RESTOREFILE"* | grep -E "\.blkid$" &>>"$LOG_FILE" ; then
 		PARTITIONBASED_BACKUP=1
@@ -8813,7 +8831,7 @@ function doitRestore() {
 	if (( ! $PARTITIONBASED_BACKUP && $OPTION_T_USED )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_T_NOT_ALLOWED
 			exitError $RC_PARAMETER_ERROR
-	fi	
+	fi
 
 	logItem "PartitionbasedBackup detected? $PARTITIONBASED_BACKUP"
 
@@ -8893,7 +8911,7 @@ function doitRestore() {
 			fi
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
-			exitError $RC_PARAMETER_ERROR		
+			exitError $RC_PARAMETER_ERROR
 		fi
 	fi
 
@@ -9023,8 +9041,8 @@ function updateRestoreReminder() {
 			echo "$(date +%Y%m) 0" > "$reminder_file"
 			return
 		fi
-		
-		mapfile -t rf < <( "$reminder_file") 
+
+		mapfile -t rf < <( "$reminder_file")
 
 		local diffMonths
 		# Double quote to prevent globbing and word splitting.
@@ -9104,13 +9122,17 @@ function updateConfig() {
 	if [[ -n $customFile ]]; then
 		if [[ -f $customFile ]]; then
 			logItem "Using config file $customFile"
+			# See if you can use ${variable//search/replace} instead
 			#shellcheck disable=SC2001
 			NEW_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
+			# See if you can use ${variable//search/replace} instead
 			#shellcheck disable=SC2001
 			MERGED_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
+			# See if you can use ${variable//search/replace} instead
 			#shellcheck disable=SC2001
 			BACKUP_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
 			etcConfigFileVersion="$CUSTOM_CONFIG_FILE_VERSION"
+			# See if you can use ${variable//search/replace} instead
 			#shellcheck disable=SC2001
 			ORIG_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$ORIG_CONFIG")"
 		else
@@ -9299,6 +9321,7 @@ function synchronizeCmdlineAndfstab() {
 	BOOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 1)"
 
 	if (( $PARTITIONBASED_BACKUP )); then
+		# See if you can use ${variable//search/replace} instead
 		#shellcheck disable=SC2001
 		ROOT_PARTITION="$(sed 's/1$/2/' <<< "$BOOT_PARTITION")"
 	fi
@@ -9344,8 +9367,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
-				#shellcheck disable=SC2046
-				sed -i "s/$oldPartUUID/$newPartUUID/" $(realpath "$CMDLINE") &>> "$LOG_FILE"
+				sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
 			local oldUUID
@@ -9357,8 +9379,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
-				#shellcheck disable=SC2046
-				sed -i "s/$oldUUID/$newUUID/" $(realpath "$CMDLINE") &>> "$LOG_FILE"
+				sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
@@ -9527,6 +9548,7 @@ function SR_listYearlyBackups() { # directory
 			# today is 20191117
 			# date +%Y -d "0 year ago" -> 2019
 			d=$(date +%Y -d "${i} year ago")
+			# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 			# shellcheck disable=SC2155,SC2010,SC1087
 			ls -1 "$1" | grep -E "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest yearly backup
 		done
@@ -9544,6 +9566,7 @@ function SR_listMonthlyBackups() { # directory
 			# today is 20191117
 			# date -d "$(date +%Y%m15) -0 month" +%Y%m -> 201911
 			d=$(date -d "$(date +%Y%m15) -${i} month" +%Y%m) # get month
+			# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 			# shellcheck disable=SC2155,SC2010,SC1087
 			ls -1 "$1" | grep -E "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d[0-9]{2}" | grep -Ev "_" | sort -ur | tail -n 1 # find earliest monthly backup
 		done
@@ -9587,6 +9610,7 @@ function SR_listDailyBackups() { # directory
 			# date +%Y%m%d -d "-1 day" -> 20191116
 			local d
 			d=$(date +%Y%m%d -d "-${i} day") # get day
+			# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 			# shellcheck disable=SC2155,SC2010
 			ls -1 "$1" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$d" | grep -Ev "_" | sort -ur | head -n 1 # find most current backup of this day
 		done
@@ -9639,6 +9663,7 @@ function SR_listUniqueBackups() { #directory
 function SR_listBackupsToDelete() { # directory
 	logEntry "$1"
 	local r
+	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	# shellcheck disable=SC2155,SC2010
 	r="$(ls -1 "$1" | grep -v -e "$(echo -n "$(SR_listUniqueBackups "$1")" -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
 	local rc
@@ -10020,8 +10045,8 @@ while (( "$#" )); do		# check if option -f was used
   case "$1" in
 	-f)
 		o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?		
-# shellcheck disable=SC2181	  
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
+# shellcheck disable=SC2181
 		(( $? )) && exitError $RC_PARAMETER_ERROR
 		CUSTOM_CONFIG_FILE="$o"; shift 2
 		if [[ ! -f "$CUSTOM_CONFIG_FILE" ]]; then
@@ -10030,7 +10055,7 @@ while (( "$#" )); do		# check if option -f was used
 		fi
 		CUSTOM_CONFIG_FILE="$(readlink -f "$CUSTOM_CONFIG_FILE")"
 		set -e
-# Can't follow non-constant source. Use a directive to specify location		
+# Can't follow non-constant source. Use a directive to specify location
 # shellcheck disable=SC1090
 		. "$CUSTOM_CONFIG_FILE"
 		set +e
@@ -10066,8 +10091,8 @@ while (( "$#" )); do
 
 	-a)
 	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
-# shellcheck disable=SC2181	  
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
+# shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STARTSERVICES="$o"; shift 2
 	  ;;
@@ -10079,8 +10104,8 @@ while (( "$#" )); do
 
 	-b)
 	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
-# shellcheck disable=SC2181	  
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
+# shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_BLOCKSIZE="$o"; shift 2
 	  ;;
@@ -10091,7 +10116,7 @@ while (( "$#" )); do
 
 	--bootDevice)
 	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BOOT_DEVICE="$o"; shift 2
@@ -10107,8 +10132,8 @@ while (( "$#" )); do
 
 	--coloring)
 	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
-# shellcheck disable=SC2181	  
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
+# shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  COLORING="$o"; shift 2
 	  ;;
@@ -10402,7 +10427,7 @@ while (( "$#" )); do
 # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2128  
+# shellcheck disable=SC2128
 	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
