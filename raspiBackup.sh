@@ -2275,6 +2275,7 @@ function logFinish() {
 			"$LOG_OUTPUT_VARLOG" )
 				LOG_BASE="/var/log/$MYNAME"
 				if [[ ! -d "${LOG_BASE}" ]]; then
+					# Double quote to prevent globbing and word splitting.
 					#shellcheck disable=SC2086
 					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
@@ -2490,9 +2491,11 @@ function writeToConsole() {  # msglevel messagenumber message
 				consoleMsg="$(colorAnnotation $COLOR_TYPE_VT100 "$consoleMsg")"
 			fi
 			if [[ $msgSev == "E" ]]; then
+				# Double quote to prevent globbing and word splitting.
 				#shellcheck disable=SC2086
 				echo $noNL -e "$consoleMsg" >&2
 			else
+				# Double quote to prevent globbing and word splitting.
 				#shellcheck disable=SC2086
 				echo $noNL -e "$consoleMsg" >&1
 			fi
@@ -2583,6 +2586,7 @@ function createBackupVersion() { # file
 	fi
 
 	if [[ -f "$file.bak" ]]; then												# .bak exists already
+		# Double quote to prevent globbing and word splitting.
 		# shellcheck disable=SC2155,SC2086
 		local versions="$(ls $file\.*\.bak -1 2>/dev/null)"
 
@@ -3699,6 +3703,7 @@ function updateScript() {
 
 	if (( $NEW_PROPERTIES_FILE )) ; then
 
+		# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 		#shellcheck disable=SC2207
 		versions=( $(isNewVersionAvailable) )
 		rc=$?
@@ -6046,6 +6051,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 	local rc partitionsInBackup partitionsToBackup
 
 	mapfile -t partitionsInBackup < <( collectAvailableBackupPartitions "$1" )
+	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	#shellcheck disable=SC2207
 	partitionsToBackup=( "${PARTITIONS_TO_BACKUP[@]}" )
 
@@ -6877,6 +6883,7 @@ function reportOldBackups() {
 		assertionFailed $LINENO "push to $BACKUPPATH failed"
 	fi
 
+	# Double quote to prevent globbing and word splitting.
 	#shellcheck disable=SC2010,SC2086
 	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
 
@@ -7978,8 +7985,9 @@ function doitBackup() {
 	logCommand "ls -1 ${BACKUPPATH}"
 	# Note: The new optional part (@.*?)* in the regex below saves possible older backups without the OS release in the name from being deleted as nonRaspiGeneratedDirs!
 	local nonRaspiGeneratedDirs
+	# Double quote to prevent globbing and word splitting.
 	#shellcheck disable=SC2010,SC2086
-	nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | grep -Ev "$HOSTNAME(@.*?)*\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | egrep -E "\-backup\-" | wc -l)
+	nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | grep -Ev "$HOSTNAME(@.*?)*\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | grep -E "\-backup\-" | wc -l)
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
 
 	if (( $nonRaspiGeneratedDirs > 0 )); then
@@ -8108,6 +8116,7 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 		ROOT_RESTOREFILE="$RESTOREFILE"
 	else
 		logItem "${RESTOREFILE}/${HOSTNAME}*-*-backup*"
+		# Double quote to prevent globbing and word splitting.
 		#shellcheck disable=SC2086
 		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}*-*-backup*)"
 		logItem "ROOT_RESTOREFILE: $ROOT_RESTOREFILE"
@@ -9002,6 +9011,7 @@ function updateRestoreReminder() {
 		local now
 		now=$(date +%Y%m)
 		local rf
+		# Double quote to prevent globbing and word splitting.
 		#shellcheck disable=SC2086
 		rf="$(<$reminder_file)"
 		if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
@@ -9012,6 +9022,7 @@ function updateRestoreReminder() {
 		mapfile -t rf < <( "$reminder_file") 
 
 		local diffMonths
+		# Double quote to prevent globbing and word splitting.
 		#shellcheck disable=SC2086
 		diffMonths=$(calculateMonthDiff $now "${rf[0]}" )
 
@@ -9368,6 +9379,7 @@ function synchronizeCmdlineAndfstab() {
 
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Org $FSTAB"
+		# Double quote to prevent globbing and word splitting.
 		#shellcheck disable=SC2086
 		logItem "$(cat $FSTAB)"
 
@@ -9553,6 +9565,7 @@ function SR_listWeeklyBackups() { # directory
 			for ((d=0;d<=6;d++)); do	# now build list of week days of week (mon-sun)
 				dl="${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-$(date +%Y%m%d -d "$mon + $d day") $dl"
 			done
+			# Double quote to prevent globbing and word splitting.
 			# shellcheck disable=SC2155,SC2010,SC2086
 			ls -1 "$1" | grep -e "$(echo -n $dl | sed "s/ /\\\|/g")" | grep -Ev "_" | sort -ur | tail -n 1 # use earliest backup of this week
 		done
@@ -9686,6 +9699,7 @@ function lockingFramework() {
 	LOCKFD=99
 
 # PRIVATE
+# Double quote to prevent globbing and word splitting.
 # shellcheck disable=SC2086
 	_lock()             { flock -$1 $LOCKFD; }
 	_no_more_locking()  { _lock u; _lock xn && rm -f "$LOCKFILE" ; }
