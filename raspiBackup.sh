@@ -1848,9 +1848,9 @@ MSG_FR[$MSG_DD_WARNING]="RBK0265W: Il n'est pas recommandé d'utiliser la métho
 MSG_NO_FILEATTRIBUTE_RIGHTS=266
 MSG_EN[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Access rights missing to create fileattributes on %s (Filesystem: %s)."
 MSG_DE[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Es fehlt die Berechtigung um Linux Dateiattribute auf %s zu erstellen (Dateisystem: %s)."
-# shellcheck disable=SC2034
+#shellcheck disable=SC2034
 MSG_FI[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Käyttöoikeudet tiedostoattribuuttien luomiseen puuttuvat kohteesta %s (Tiedostojärjestelmä: %s)."
-# shellcheck disable=SC2034
+#shellcheck disable=SC2034
 MSG_FR[$MSG_NO_FILEATTRIBUTE_RIGHTS]="RBK0266E: Droits d'accès manquants pour créer des attributs de fichier sur %s (système de fichiers : %s)."
 
 #
@@ -3451,6 +3451,7 @@ function downloadFile() { # url, targetFileName
 		local file="$2"
 		f=$(mktemp)
 		local httpCode rc
+		# This {/} is literal. Check if ; is missing or quote the expression.
 		#shellcheck disable=SC1083
 		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>"LOG_FILE")
 		rc=$?
@@ -3496,6 +3497,7 @@ function askYesNo() { # message message_parms
 		local m="$1"
 		shift
 		addtlMsg=1
+		# Variable was used as an array but is now assigned a string.
 		#shellcheck disable=SC2178,SC2124
 		local args="$@"
 	fi
@@ -4068,6 +4070,7 @@ function readConfigParameters() {
 	ETC_CONFIG_FILE_INCLUDED=0
 	if [ -f "$ETC_CONFIG_FILE" ]; then
 		set -e
+		# Can't follow non-constant source. Use a directive to specify location		
 		#shellcheck disable=SC1090
 		. "$ETC_CONFIG_FILE"
 		set +e
@@ -4081,6 +4084,7 @@ function readConfigParameters() {
 	HOME_CONFIG_FILE_INCLUDED=0
 	if [ -f "$HOME_CONFIG_FILE" ]; then
 		set -e
+		# Can't follow non-constant source. Use a directive to specify location		
 		#shellcheck disable=SC1090
 		. "$HOME_CONFIG_FILE"
 		set +e
@@ -4096,6 +4100,7 @@ function readConfigParameters() {
 	if [[ "$HOME_CONFIG_FILE" != "$CURRENTDIR_CONFIG_FILE" ]]; then
 		if [ -f "$CURRENTDIR_CONFIG_FILE" ]; then
 			set -e
+			# Can't follow non-constant source. Use a directive to specify location		
 			#shellcheck disable=SC1090
 			. "$CURRENTDIR_CONFIG_FILE"
 			set +e
@@ -4686,6 +4691,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( "$PUSHOVER_ADDITIONAL_OPTIONS" )
 
 		logItem "Pushover curl call: ${cmd[*]}"
+		# This {/} is literal. Check if ; is missing or quote the expression.
 		#shellcheck disable=SC1083
 		httpCode="$(curl -s -w %{http_code} -o $o "${cmd[@]}" "$PUSHOVER_URL")"
 		curlRC=$?
@@ -7552,7 +7558,6 @@ function inspect4Backup() {
 
 		mapfile -t boot < <( deviceInfo "$bootPartition" )
 		mapfile -t root < <( deviceInfo "$rootPartition" )
-		root=( $(deviceInfo "$rootPartition") )
 
 		logItem "boot: ${boot[*]}"
 		logItem "root: ${root[*]}"
@@ -10025,6 +10030,7 @@ while (( "$#" )); do		# check if option -f was used
 		fi
 		CUSTOM_CONFIG_FILE="$(readlink -f "$CUSTOM_CONFIG_FILE")"
 		set -e
+# Can't follow non-constant source. Use a directive to specify location		
 # shellcheck disable=SC1090
 		. "$CUSTOM_CONFIG_FILE"
 		set +e
@@ -10392,7 +10398,7 @@ while (( "$#" )); do
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
+# Variable was used as an array but is now assigned a string.
 # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
