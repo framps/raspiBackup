@@ -75,11 +75,13 @@ IS_BETA=$(( ! $(grep -iqE "alpha|beta" <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
 IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
 
+# Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
+# Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
 GIT_COMMIT='$Sha1$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
@@ -441,6 +443,7 @@ RC_RESIZE_ERROR=145
 #RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
 
 tty -s
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 INTERACTIVE=$((!$?))
 
@@ -10003,6 +10006,7 @@ while (( "$#" )); do		# check if option -f was used
   case "$1" in
 	-f)
 		o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?		
 # shellcheck disable=SC2181	  
 		(( $? )) && exitError $RC_PARAMETER_ERROR
 		CUSTOM_CONFIG_FILE="$o"; shift 2
@@ -10047,6 +10051,7 @@ while (( "$#" )); do
 
 	-a)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
 # shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STARTSERVICES="$o"; shift 2
@@ -10059,6 +10064,7 @@ while (( "$#" )); do
 
 	-b)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
 # shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_BLOCKSIZE="$o"; shift 2
@@ -10070,6 +10076,7 @@ while (( "$#" )); do
 
 	--bootDevice)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BOOT_DEVICE="$o"; shift 2
@@ -10085,6 +10092,7 @@ while (( "$#" )); do
 
 	--coloring)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?	  
 # shellcheck disable=SC2181	  
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  COLORING="$o"; shift 2
@@ -10092,6 +10100,7 @@ while (( "$#" )); do
 
 	-d)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
@@ -10099,6 +10108,7 @@ while (( "$#" )); do
 
 	-D)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DD_PARMS="$o"; shift 2
@@ -10106,6 +10116,7 @@ while (( "$#" )); do
 
 	--dynamicMount)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  DYNAMIC_MOUNT="$o"; shift 2
@@ -10113,6 +10124,7 @@ while (( "$#" )); do
 
 	-e)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL="$o"; shift 2
@@ -10120,6 +10132,7 @@ while (( "$#" )); do
 
 	-E)
 	  o=$(checkOptionParameter "$1" "$2");
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PARMS="$o"; shift 2
@@ -10127,6 +10140,7 @@ while (( "$#" )); do
 
 	--eMailColoring)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_COLORING="${o^^}"; shift 2
@@ -10145,6 +10159,7 @@ while (( "$#" )); do
 
 	-G)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LANGUAGE="$o"; shift 2
@@ -10169,6 +10184,7 @@ while (( "$#" )); do
 
 	-k)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS="$o"; shift 2
@@ -10176,6 +10192,7 @@ while (( "$#" )); do
 
 	--keep_dd)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DD="$o"; shift 2
@@ -10183,6 +10200,7 @@ while (( "$#" )); do
 
 	--keep_ddz)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_DDZ="$o"; shift 2
@@ -10190,6 +10208,7 @@ while (( "$#" )); do
 
 	--keep_tar)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TAR="$o"; shift 2
@@ -10197,6 +10216,7 @@ while (( "$#" )); do
 
 	--keep_tgz)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_TGZ="$o"; shift 2
@@ -10204,6 +10224,7 @@ while (( "$#" )); do
 
 	--keep_rsync)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  KEEPBACKUPS_RSYNC="$o"; shift 2
@@ -10211,6 +10232,7 @@ while (( "$#" )); do
 
 	-l)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_LEVEL="$o"; shift 2
@@ -10219,6 +10241,7 @@ while (( "$#" )); do
 
 	-L)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  LOG_OUTPUT="$o"; shift 2
@@ -10227,6 +10250,7 @@ while (( "$#" )); do
 
 	-m)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  MSG_LEVEL="$o"; shift 2
@@ -10235,9 +10259,9 @@ while (( "$#" )); do
 
 	-M)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
-# shellcheck disable=SC2181
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[\"]/}
@@ -10245,6 +10269,7 @@ while (( "$#" )); do
 
 	-N)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXTENSIONS="$o"; shift 2
@@ -10256,6 +10281,7 @@ while (( "$#" )); do
 
 	-o)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  STOPSERVICES="$o"; shift 2
@@ -10263,6 +10289,7 @@ while (( "$#" )); do
 
 	-p)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPPATH="$o"; shift 2
@@ -10279,6 +10306,7 @@ while (( "$#" )); do
 
 	-r)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  RESTOREFILE="$o"; shift 2
@@ -10291,6 +10319,7 @@ while (( "$#" )); do
 
 	-R)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  ROOT_PARTITION="$o"; shift 2
@@ -10307,6 +10336,7 @@ while (( "$#" )); do
 
 	-s)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EMAIL_PROGRAM="$o"; shift 2
@@ -10326,6 +10356,7 @@ while (( "$#" )); do
 
 	--smartRecycleOptions)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  SMART_RECYCLE_OPTIONS="$o"; shift 2
@@ -10337,6 +10368,7 @@ while (( "$#" )); do
 
 	-t)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  BACKUPTYPE="$o"; shift 2
@@ -10348,10 +10380,13 @@ while (( "$#" )); do
 
 	-T)
 	  o="$(checkOptionParameter "$1" "$2")"
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2128  
 	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
 	  PARTITIONBASED_BACKUP=1
@@ -10360,6 +10395,7 @@ while (( "$#" )); do
 
 	--telegramToken)
 	  o="$(checkOptionParameter "$1" "$2")"
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_TOKEN="$o"; shift 2
@@ -10367,6 +10403,7 @@ while (( "$#" )); do
 
 	--telegramChatID)
 	  o="$(checkOptionParameter "$1" "$2")"
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_CHATID="$o"; shift 2
@@ -10374,6 +10411,7 @@ while (( "$#" )); do
 
 	--telegramNotifications)
 	  o="$(checkOptionParameter "$1" "$2")"
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  TELEGRAM_NOTIFICATIONS="$o"; shift 2
@@ -10381,6 +10419,7 @@ while (( "$#" )); do
 
 	-u)
 	  o=$(checkOptionParameter "$1" "$2")
+# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 # shellcheck disable=SC2181
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  EXCLUDE_LIST="$o"; shift 2
@@ -10464,6 +10503,7 @@ fi
 
 if (( ! $RESTORE )); then
 	exlock_now
+	# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 	#shellcheck disable=SC2181
 	if (( $? )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTANCE_ACTIVE
