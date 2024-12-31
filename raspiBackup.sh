@@ -2442,8 +2442,7 @@ function usage() {
 
 	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
-	#shellcheck disable=SC2207
-	NO_YES=( $(getMessage $MSG_NO_YES) )
+	mapfile -t NO_YES < <( getMessage $MSG_NO_YES ) 
 
 	local func="usage${activeLang}"
 
@@ -3275,8 +3274,9 @@ function isUpdatePossible() {
 
 	logEntry
 
-	#shellcheck disable=SC2207
-	versions=( $(isNewVersionAvailable) )
+	local versions version_rc latestVersion newVersion oldVersion
+	
+	mapfile -t versions < <( isNewVersionAvailable )
 	version_rc=$?
 	if [[ $version_rc == 0 ]]; then
 		NEWS_AVAILABLE=1
@@ -3953,9 +3953,9 @@ function checkSfdiskOK() { # device, e.g. /dev/mmcblk0
 
 	logItem "DeviceSize: $deviceSize"
 
-	#shellcheck disable=SC2207
-	local sourceValues=( $(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)") )
-
+	local sourceValues
+	mapfile -t sourceValues < <(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)")
+	
 	local s=${#sourceValues[@]}
 	logItem "Size: $s"
 
@@ -5387,10 +5387,9 @@ function revertScriptVersion() {
 
 	logEntry
 
-	local currentVersion version sortedVersions
+	local currentVersion version sortedVersions existingVersionFiles
 
-	#shellcheck disable=SC2207
-	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
+	mapfile -t existingVersionFiles < <( ls $SCRIPT_DIR/$MYNAME.*sh )
 
 	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
 		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
@@ -5412,8 +5411,7 @@ function revertScriptVersion() {
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
 
-	#shellcheck disable=SC2207
-	sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
+	mapfile -t sortedVersions < <( echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort )
 
 	local min=0
 	local max=$(( ${#sortedVersions[@]} - 1))
@@ -6045,11 +6043,9 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	logEntry "$1"
 
-	local rc
+	local rc partitionsInBackup partitionsToBackup
 
-	#shellcheck disable=SC2207
-	local partitionsInBackup=( $(collectAvailableBackupPartitions "$1") )
-	local partitionsToBackup
+	mapfile -t partitionsInBackup < <( collectAvailableBackupPartitions "$1" )
 	#shellcheck disable=SC2207
 	partitionsToBackup=( "${PARTITIONS_TO_BACKUP[@]}" )
 
@@ -6271,8 +6267,8 @@ function partitionRestoredeviceIfRequested() {
 		else
 
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-				#shellcheck disable=SC2207
-				local partitions=( $(collectPartitionsInBackup "$RESTOREFILE") )
+				local partitions
+				mapfile -t partitionsInBackup < <( collectPartitionsInBackup "$RESTOREFILE" )
 				#shellcheck disable=SC2124
 				local partitionsString="${partitions[@]}"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
@@ -6364,8 +6360,9 @@ function partitionRestoredeviceIfRequested() {
 #						/dev/mmcblk0p1 : start=        8192, size=      524288, type=c
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
-					#shellcheck disable=SC2207
-					local sourceValues=( $(awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE") )
+					local sourceValues
+					mapfile -t sourceValues < <( awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE" ) 
+
 					if (( ${#sourceValues[@]} < 4 )); then
 						logCommand "cat $SF_FILE"
 						assertionFailed $LINENO "Expected at least 2 partitions in $SF_FILE"
@@ -6377,8 +6374,7 @@ function partitionRestoredeviceIfRequested() {
 					fi
 
 					local partitionSizes
-					#shellcheck disable=SC2207
-					partitionSizes=( $(createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK") )
+					mapfile -t partitionSizes < <( createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK" )
 
 					local oldPartitionSourceSize=${partitionSizes[0]}
 					local newPartitionTargetSize=${partitionSizes[1]}
@@ -6998,8 +6994,8 @@ function backup() {
 	fi
 	END_TIME=$(date +%s)
 
-	#shellcheck disable=SC2207
-	BACKUP_TIME=($(duration "$START_TIME" "$END_TIME"))
+	mapfile -t BACKUP_TIME < <( duration "$START_TIME" "$END_TIME" )
+
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
 
 	logItem "Syncing"
@@ -7547,9 +7543,8 @@ function inspect4Backup() {
 			fi
 		fi
 
-		#shellcheck disable=SC2207
-		boot=( $(deviceInfo "$bootPartition") )
-		#shellcheck disable=SC2207
+		mapfile -t boot < <( deviceInfo "$bootPartition" )
+		mapfile -t root < <( deviceInfo "$rootPartition" )
 		root=( $(deviceInfo "$rootPartition") )
 
 		logItem "boot: ${boot[*]}"
@@ -7959,8 +7954,8 @@ function doitBackup() {
 		lsblkResult="$(lsblk -l -o name,mountpoint | grep "${BACKUPPATH}" | grep "$BOOT_DEVICENAME")"
 		logItem "lsblkResult: $lsblkResult"
 		if [[ -n "$lsblkResult" ]]; then
-			#shellcheck disable=SC2207
-			local di=($(deviceInfo "/dev/$lsblkResult"))
+			local di
+			mapfile -t di < <( deviceInfo "/dev/$lsblkResult" )
 			logItem "di: ${di[*]}"
 			if [[ "$BOOT_DEVICE" == "${di[0]}" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
@@ -8267,8 +8262,8 @@ function restorePartitionBasedBackup() {
 	echo "$current_partition_table"
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-		#shellcheck disable=SC2207
-		local partitions=( $(collectAvailableBackupPartitions "$RESTOREFILE") )
+		local partitions
+		mapfile -t partitions < <( collectAvailableBackupPartitions "$RESTOREFILE" )
 		#shellcheck disable=SC2124
 		local partitionsString="${partitions[@]}"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
@@ -8959,8 +8954,7 @@ function doitRestore() {
 		restorePartitionBasedBackup
 	fi
 
-	#shellcheck disable=SC2207
-	RESTORE_TIME=($(duration "$START_TIME" "$END_TIME"))
+	mapfile -t RESTORE_TIME < <( duration "$START_TIME" "$END_TIME" )
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_TIME "${RESTORE_TIME[1]}" "${RESTORE_TIME[2]}" "${RESTORE_TIME[3]}"
 
 	logCommand "blkid"
@@ -9014,8 +9008,9 @@ function updateRestoreReminder() {
 			echo "$(date +%Y%m) 0" > "$reminder_file"
 			return
 		fi
-		#shellcheck disable=SC2207
-		rf=( $(<"$reminder_file") )
+		
+		mapfile -t rf < <( "$reminder_file") 
+
 		local diffMonths
 		#shellcheck disable=SC2086
 		diffMonths=$(calculateMonthDiff $now "${rf[0]}" )
