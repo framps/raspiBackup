@@ -6,7 +6,6 @@
 ![](https://img.shields.io/github/release/framps/raspiBackup.svg?style=flat) 
 ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) 
 ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fframps%2FraspiBackup&count_bg=%23C88614&title_bg=%23555555&icon=&icon_color=%23CC9B2E&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
 ***
 If you use raspiBackup to backup your Raspberries - I appreciate to be sponsored on [GitHub](https://github.com/sponsors/framps) or visit [this page](https://www.linux-tips-and-tricks.de/en/donations) which lists alternate ways to donate.
