@@ -3969,8 +3969,9 @@ function checkSfdiskOK() { # device, e.g. /dev/mmcblk0
 
 	logItem "DeviceSize: $deviceSize"
 
-	local sourceValues
-	mapfile -t sourceValues < <(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)")
+	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	#shellcheck disable=SC2207
+	local sourceValues=( $(awk '/[0-9]+ :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' <<< "$(sfdisk -d $1)") )
 
 	local s=${#sourceValues[@]}
 	logItem "Size: $s"
@@ -9058,12 +9059,12 @@ function updateRestoreReminder() {
 			return
 		fi
 
-		mapfile -t rf < <( "$reminder_file")
-
+		# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+		#shellcheck disable=SC2207
+		rf=( $(<$reminder_file) )
+		
 		local diffMonths
-		# Double quote to prevent globbing and word splitting.
-		#shellcheck disable=SC2086
-		diffMonths=$(calculateMonthDiff $now "${rf[0]}" )
+		diffMonths=$(calculateMonthDiff "$now" "${rf[0]}" )
 
 		# check if reminder should be send
 		if (( $diffMonths <= -$RESTORE_REMINDER_INTERVAL )); then
