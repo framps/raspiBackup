@@ -4691,6 +4691,8 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
 			msg="$(tail -c 1024 $MSG_FILE)"
 		fi
 
+		# The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.
+		#shellcheck disable=SC2191
 		cmd=(--form-string message="$1")
 
 		cmd+=(--form-string "token=$PUSHOVER_TOKEN" \
@@ -6686,7 +6688,7 @@ function restoreNormalBackupType() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_FAILED "$rc_fsck"
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
-			mountAndCheck "$EOOT_PARTITION" "$MNT_POINT"
+			mountAndCheck "$ROOT_PARTITION" "$MNT_POINT"
 
 			logItem "Updating hw clock"
 			date -u +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
@@ -10405,9 +10407,11 @@ while (( "$#" )); do
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
 		exitError $RC_PARAMETER_ERROR
 	  fi
-# Variable was used as an array but is now assigned a string.
-# shellcheck disable=SC2178
+	  # Variable was used as an array but is now assigned a string.
+	  # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
+	  # Expanding an array without an index only gives the first element.	  
+	  # shellcheck disable=SC2128 
 	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
