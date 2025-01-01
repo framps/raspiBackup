@@ -2064,6 +2064,7 @@ function trapWithArg() { # function trap1 trap2 ... trapn
 	local func="$1" ; shift
 	for sig ; do
 
+# Use single quotes, otherwise this expands now rather than when signalled.
 # shellcheck disable=SC2064
 		trap "$func $sig" "$sig"
 	done
@@ -2181,7 +2182,6 @@ function logCommand() { # command
 	(( LOG_INDENT-=LOG_INDENT_INC ))
 }
 
-# shellcheck disable=SC2120
 function logSystemServices() {
 	logEntry
 	if (( $SYSTEMSTATUS )); then
@@ -2194,23 +2194,22 @@ function logIntoOutput() { # logtype prefix lineno message
 
 	[[ "$LOG_DEBUG" != "$LOG_LEVEL" ]] && return
 
-	local type="${LOG_TYPEs[$1]}"
+	local dte type prefix lineno indent line
+
+	type="${LOG_TYPEs[$1]}"
 	shift
-	local prefix="$1"
+	prefix="$1"
 	shift
-	local lineno="$1"
+	lineno="$1"
 	shift
 	[[ -z $lineno ]] && lineno=${BASH_LINENO[1]}
-#shellcheck disable=SC2155
-	local dte=$(date +%Y%m%d-%H%M%S)
-	local indent
-#shellcheck disable=SC2183
+	dte=$(date +%Y%m%d-%H%M%S)
+	# This format string has 2 variables, but is passed 1 argument.
+	#shellcheck disable=SC2183
 	indent=$(printf '%*s' "$LOG_INDENT")
 	local m
 
-	local line
 	while IFS= read -r line; do
-#shellchek disable=SC2155,SC2183
 		printf -v m "%s %04d: %s %s %s" "$type" "$lineno" "$indent" "$prefix" "$line"
 		case $LOG_OUTPUT in
 			"$LOG_OUTPUT_VARLOG" | "$LOG_OUTPUT_BACKUPLOC" | "$LOG_OUTPUT_HOME" )
@@ -2281,9 +2280,7 @@ function logFinish() {
 			"$LOG_OUTPUT_VARLOG" )
 				LOG_BASE="/var/log/$MYNAME"
 				if [[ ! -d "${LOG_BASE}" ]]; then
-					# Double quote to prevent globbing and word splitting.
-					#shellcheck disable=SC2086
-					if ! mkdir -p ${LOG_BASE} &>> "$FINISH_LOG_FILE"; then
+					if ! mkdir -p "${LOG_BASE}" &>> "$FINISH_LOG_FILE"; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${LOG_BASE}"
 						exitError $RC_CREATE_ERROR
 					fi
@@ -2593,9 +2590,11 @@ function createBackupVersion() { # file
 	fi
 
 	if [[ -f "$file.bak" ]]; then												# .bak exists already
+		local versions
+		
 		# Double quote to prevent globbing and word splitting.
-		# shellcheck disable=SC2155,SC2086
-		local versions="$(ls $file\.*\.bak -1 2>/dev/null)"
+		# shellcheck disable=SC2086
+		versions="$(ls $file\.*\.bak -1 2>/dev/null)"
 
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
@@ -2756,10 +2755,12 @@ function compareVersions() { # v1 v2
 	v2="$(sed 's/-.*$//' <<< "$2")"
 
 	local v1e v2e IFS rc
+	#Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
 	#shellcheck disable=SC2206
-	IFS="." v1e=( $v1 0 0 0 0)
+	IFS="." v1e=( $v1 0 0 0 0 )
+	#Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
 	#shellcheck disable=SC2206
-	IFS="." v2e=( $v2 0 0 0 0)
+	IFS="." v2e=( $v2 0 0 0 0 )
 
 	local rc=0
 	for (( i=0; i<=3; i++ )); do
@@ -3513,6 +3514,7 @@ function askYesNo() { # message message_parms
 
 	if (( $addtlMsg )); then
 		noNL=1
+		#Expanding an array without an index only gives the element in the index 0.
 		#shellcheck disable=SC2128
 		writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
 	else
@@ -3715,7 +3717,7 @@ function updateScript() {
 		# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 		#shellcheck disable=SC2207
 		versions=( $(isNewVersionAvailable) )
-		rc=$?
+		rc=$?										# need rc so no map usage possible
 
 		latestVersion=${versions[0]}
 		newVersion=${versions[1]}
@@ -4132,11 +4134,16 @@ function getOSRelease() {
 	# the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
 	unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
 
+	#Quote this to prevent word splitting.
+	#var is referenced but not assigned.
 	#shellcheck disable=SC2154,SC2046
 	local osr_$(grep -E "^ID="         "$os_release_file")
+	#Quote this to prevent word splitting.
+	#var is referenced but not assigned.
 	#shellcheck disable=SC2154,SC2046
 	local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
 
+	#var is referenced but not assigned.
 	#shellcheck disable=SC2154
 	os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
 	os_release="${os_release//\"/}"          # remove any double quotes
@@ -5202,8 +5209,8 @@ function cleanup() { # trap
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
 
-	logSystemServices # @@@@@
-
+	logSystemServices
+	
 	CLEANUP_RC=$rc
 
 	if (( $RESTORE )); then
@@ -6290,8 +6297,7 @@ function partitionRestoredeviceIfRequested() {
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 				local partitions
 				mapfile -t partitionsInBackup < <( collectPartitionsInBackup "$RESTOREFILE" )
-				#shellcheck disable=SC2124
-				local partitionsString="${partitions[@]}"
+				local partitionsString="${partitionsInBackup[*]}"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$partitionsString\""
 			else
@@ -6905,6 +6911,7 @@ function reportOldBackups() {
 	fi
 
 	# Double quote to prevent globbing and word splitting.
+	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010,SC2086
 	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
 
@@ -7266,6 +7273,7 @@ function collectPartitions() {
 		backupAllPartitions=1
 		PARTITIONS_TO_BACKUP=()
 	else
+		# Expanding an array without an index only gives the element in the index 0.
 		#shellcheck disable=SC2128
 		PARTITIONS_TO_BACKUP=( "$PARTITIONS_TO_BACKUP" )
 		backupAllPartitions=0
@@ -7584,6 +7592,7 @@ function inspect4Backup() {
 
 		BOOT_DEVICE="${boot[0]}"
 
+		#Arrays implicitly concatenate in [[ ]]. Use a loop (or explicit * instead of @)
 		#shellcheck disable=SC2199
 		if [[ "${boot[@]}" == "${root[@]}" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SHARED_BOOT_DEVICE "/dev/$BOOT_DEVICE"
@@ -7908,6 +7917,7 @@ function doitBackup() {
 		local rsyncVersion
 		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
+		# Decimals are not supported. Either use integers only, or use bc or awk to compare.
 		#shellcheck disable=SC2072
 		if (( $PROGRESS && $INTERACTIVE )) && [[ "$rsyncVersion" < "3.1" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
@@ -8006,6 +8016,7 @@ function doitBackup() {
 	# Note: The new optional part (@.*?)* in the regex below saves possible older backups without the OS release in the name from being deleted as nonRaspiGeneratedDirs!
 	local nonRaspiGeneratedDirs
 	# Double quote to prevent globbing and word splitting.
+	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010,SC2086
 	nonRaspiGeneratedDirs=$(ls -1 ${BACKUPPATH} | grep -Ev "$HOSTNAME(@.*?)*\-($POSSIBLE_BACKUP_TYPES_REGEX)\-backup\-([0-9]){8}.([0-9]){6}" | grep -E "\-backup\-" | wc -l)
 	logItem "nonRaspiGeneratedDirs: $nonRaspiGeneratedDirs"
@@ -8293,6 +8304,7 @@ function restorePartitionBasedBackup() {
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 		local partitions
 		mapfile -t partitions < <( collectAvailableBackupPartitions "$RESTOREFILE" )
+		# Assigning an array to a string! Assign as array, or use * instead of @ to concatenate.
 		#shellcheck disable=SC2124
 		local partitionsString="${partitions[@]}"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
@@ -8353,6 +8365,7 @@ function restorePartitionBasedBackup() {
 		partitionRestoredeviceIfRequested
 
 		local partitionBackupFile
+		# Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
 		#shellcheck disable=SC2206
 		local partitionsToRestore=(${PARTITIONS_TO_RESTORE[@]})
 		local partitionsRestored=()
@@ -8930,6 +8943,7 @@ function doitRestore() {
 		local rsyncVersion
 		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
 		logItem "rsync version: $rsyncVersion"
+		# Decimals are not supported. Either use integers only, or use bc or awk to compare.
 		#shellcheck disable=SC2072
 		if (( $PROGRESS && $INTERACTIVE )) && [[ "$rsyncVersion" < "3.1" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
@@ -9235,8 +9249,7 @@ function updateConfig() {
 				OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
 				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
 			else
-				#shellcheck disable=SC2059
-				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> "$MERGED_CONFIG"
+				printf "%s\n" "$NEW_OPTION_TRAILER" "$CONFIG_VERSION" >> "$MERGED_CONFIG"
 				echo "$line" >> "$MERGED_CONFIG"						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
 				(( merged ++ ))
@@ -9264,11 +9277,11 @@ function updateConfig() {
 			r=$?
 			logItem "grep old file for deleted $KW rc:$r - contents: $OC_line"
 			if (( $r )) && [[ $KW != "UUID" ]]; then				# option not found, it was deleted
-				#shellcheck disable=SC2129
-				echo "" >> "$MERGED_CONFIG"
-				#shellcheck disable=SC2059
-				printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION" >> "$MERGED_CONFIG"
-				echo "# $line" >> "$MERGED_CONFIG"						# insert deleted config line as comment
+				{
+					echo ""
+					printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION"
+					echo "# $line" 										# insert deleted config line as comment
+				}  >> "$MERGED_CONFIG"
 				(( deleted ++ ))
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DELETED_CONFIG_OPTION "$KW" "$VAL"
 			fi
@@ -9620,26 +9633,27 @@ function SR_listDailyBackups() { # directory
 
 function SR_getAllBackups() { # directory
 	logEntry "$1"
-	# shellcheck disable=SC2155
-	local yb="$(SR_listYearlyBackups "$1")"
+	
+	local yb mb wb db
+	
+	yb="$(SR_listYearlyBackups "$1")"
 	logItem "$yb"
 	#local ybc="$(countLines "$yb")"
 	[[ -n "$yb" ]] && echo "$yb"
 
 	# shellcheck disable=SC2155
-	local mb="$(SR_listMonthlyBackups "$1")"
+	mb="$(SR_listMonthlyBackups "$1")"
 	logItem "$mb"
 	#local mbc="$(countLines "$mb")"
 	[[ -n "$mb" ]] && echo "$mb"
 
 	# shellcheck disable=SC2155
-	local wb="$(SR_listWeeklyBackups "$1")"
+	wb="$(SR_listWeeklyBackups "$1")"
 	logItem "$wb"
 	#local wbc="$(countLines "$wb")"
 	[[ -n "$wb" ]] && echo "$wb"
 
 	# shellcheck disable=SC2155
-	local db
 	db="$(SR_listDailyBackups "$1")"
 	logItem "$db"
 	#local dbc="$(countLines "$db")"
@@ -9651,7 +9665,6 @@ function SR_getAllBackups() { # directory
 function SR_listUniqueBackups() { #directory
 	logEntry "$1"
 	local r
-	# shellcheck disable=SC2155
 	r="$(SR_getAllBackups "$1" | grep -Ev "_" | sort -u )"
 	local rc
 	rc="$(countLines "$r")"
@@ -10044,10 +10057,9 @@ fi
 while (( "$#" )); do		# check if option -f was used
   case "$1" in
 	-f)
-		o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-		(( $? )) && exitError $RC_PARAMETER_ERROR
+		if ! o=$(checkOptionParameter "$1" "$2"); then
+			exitError $RC_PARAMETER_ERROR
+		fi
 		CUSTOM_CONFIG_FILE="$o"; shift 2
 		if [[ ! -f "$CUSTOM_CONFIG_FILE" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$CUSTOM_CONFIG_FILE"
@@ -10090,10 +10102,9 @@ while (( "$#" )); do
 	  ;;
 
 	-a)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  STARTSERVICES="$o"; shift 2
 	  ;;
 
@@ -10103,10 +10114,9 @@ while (( "$#" )); do
 	  ;;
 
 	-b)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  DD_BLOCKSIZE="$o"; shift 2
 	  ;;
 
@@ -10115,10 +10125,9 @@ while (( "$#" )); do
 	  ;;
 
 	--bootDevice)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  BOOT_DEVICE="$o"; shift 2
 	  ;;
 
@@ -10131,58 +10140,51 @@ while (( "$#" )); do
 	  ;;
 
 	--coloring)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  COLORING="$o"; shift 2
 	  ;;
 
 	-d)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
 	  ;;
 
 	-D)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  DD_PARMS="$o"; shift 2
 	  ;;
 
 	--dynamicMount)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  DYNAMIC_MOUNT="$o"; shift 2
 	  ;;
 
 	-e)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  EMAIL="$o"; shift 2
 	  ;;
 
 	-E)
-	  o=$(checkOptionParameter "$1" "$2");
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  EMAIL_PARMS="$o"; shift 2
 	  ;;
 
 	--eMailColoring)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  EMAIL_COLORING="${o^^}"; shift 2
 	  ;;
 
@@ -10198,10 +10200,9 @@ while (( "$#" )); do
 	  ;;
 
 	-G)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  LANGUAGE="$o"; shift 2
   	  LANGUAGE=${LANGUAGE^^*}
 	  if ! containsElement "${LANGUAGE^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
@@ -10223,95 +10224,84 @@ while (( "$#" )); do
 	  ;;
 
 	-k)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  KEEPBACKUPS="$o"; shift 2
 	  ;;
 
 	--keep_dd)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  KEEPBACKUPS_DD="$o"; shift 2
 	  ;;
 
 	--keep_ddz)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  KEEPBACKUPS_DDZ="$o"; shift 2
 	  ;;
 
 	--keep_tar)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  KEEPBACKUPS_TAR="$o"; shift 2
 	  ;;
 
 	--keep_tgz)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  KEEPBACKUPS_TGZ="$o"; shift 2
 	  ;;
 
 	--keep_rsync)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  KEEPBACKUPS_RSYNC="$o"; shift 2
 	  ;;
 
 	-l)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  LOG_LEVEL="$o"; shift 2
 	  checkImportantParameters
 	  ;;
 
 	-L)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  LOG_OUTPUT="$o"; shift 2
 	  checkImportantParameters
 	  ;;
 
 	-m)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then 
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  MSG_LEVEL="$o"; shift 2
 	  checkImportantParameters
 	  ;;
 
 	-M)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[\"]/}
   	  ;;
 
 	-N)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  EXTENSIONS="$o"; shift 2
 	  ;;
 
@@ -10320,18 +10310,16 @@ while (( "$#" )); do
 	  ;;
 
 	-o)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  STOPSERVICES="$o"; shift 2
 	  ;;
 
 	-p)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  BACKUPPATH="$o"; shift 2
 	  if [[ ! -d "$BACKUPPATH" ]]; then
 		  writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$BACKUPPATH"
@@ -10345,10 +10333,9 @@ while (( "$#" )); do
 	  ;;
 
 	-r)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  RESTOREFILE="$o"; shift 2
 	  if [[ ! -d "$RESTOREFILE" && ! -f "$RESTOREFILE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_ARG_NOT_FOUND "$RESTOREFILE"
@@ -10358,10 +10345,9 @@ while (( "$#" )); do
 	  ;;
 
 	-R)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  ROOT_PARTITION="$o"; shift 2
 	  ROOT_PARTITION_DEFINED=1
   	  ;;
@@ -10375,10 +10361,9 @@ while (( "$#" )); do
 	  ;;
 
 	-s)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  EMAIL_PROGRAM="$o"; shift 2
 	  ;;
 
@@ -10395,10 +10380,9 @@ while (( "$#" )); do
 	  ;;
 
 	--smartRecycleOptions)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  SMART_RECYCLE_OPTIONS="$o"; shift 2
 	  ;;
 
@@ -10407,10 +10391,9 @@ while (( "$#" )); do
 	  ;;
 
 	-t)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
 
@@ -10419,49 +10402,42 @@ while (( "$#" )); do
 	  ;;
 
 	-T)
-	  o="$(checkOptionParameter "$1" "$2")"
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 # Variable was used as an array but is now assigned a string.
 # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2128
 	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
 	  ;;
 
 	--telegramToken)
-	  o="$(checkOptionParameter "$1" "$2")"
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  TELEGRAM_TOKEN="$o"; shift 2
 	  ;;
 
 	--telegramChatID)
-	  o="$(checkOptionParameter "$1" "$2")"
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  TELEGRAM_CHATID="$o"; shift 2
 	  ;;
 
 	--telegramNotifications)
-	  o="$(checkOptionParameter "$1" "$2")"
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
 	  TELEGRAM_NOTIFICATIONS="$o"; shift 2
 	  ;;
 
 	-u)
-	  o=$(checkOptionParameter "$1" "$2")
-# Check exit code directly with e.g. if mycmd;, not indirectly with $?
-# shellcheck disable=SC2181
-	  (( $? )) && exitError $RC_PARAMETER_ERROR
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR	  
+	  fi
 	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
 
