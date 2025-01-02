@@ -2446,7 +2446,7 @@ function usage() {
 
 	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
-	mapfile -t NO_YES < <( getMessage $MSG_NO_YES )
+	mapfile -d " "-t NO_YES < <( getMessage $MSG_NO_YES )
 
 	local func="usage${activeLang}"
 
@@ -3288,7 +3288,9 @@ function isUpdatePossible() {
 
 	local versions version_rc latestVersion newVersion oldVersion
 
-	mapfile -t versions < <( isNewVersionAvailable )
+	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	#shellcheck disable=SC2207
+	versions=( $(isNewVersionAvailable) )
 	version_rc=$?
 	if [[ $version_rc == 0 ]]; then
 		NEWS_AVAILABLE=1
@@ -4484,16 +4486,22 @@ COLOR_ON=("<span style=\"color:\%s\">" "\e[1;%sm")
 COLOR_OFF=("</span><br/>" "\e[0m")
 
 function colorOn() { # colortype color
+	logEntry "$1 - $2"
 	local on="${COLOR_ON[$1]}"
 	local color="${COLOR_CODES[$2]}"
-	color=( "$color" )
+	#  Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+	#shellcheck disable=SC2206
+	color=( $color )
 	printf -v r "$on" "${color[$1]}"
 	echo -e -n "$r"
+	logExit 
 }
 
 function colorOff() { # colortype color
+	logEntry "$1 - $2"
 	local off="${COLOR_OFF[$1]}"
 	echo -e -n "$off"
+	logExit
 }
 
 # add color annotations for console and/or email
@@ -5440,7 +5448,7 @@ function revertScriptVersion() {
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
 
-	mapfile -t sortedVersions < <( echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort )
+	mapfile -d " " -t sortedVersions < <( echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort )
 
 	local min=0
 	local max=$(( ${#sortedVersions[@]} - 1))
@@ -6075,7 +6083,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	local rc partitionsInBackup partitionsToBackup
 
-	mapfile -t partitionsInBackup < <( collectAvailableBackupPartitions "$1" )
+	mapfile -d " " -t partitionsInBackup < <( collectAvailableBackupPartitions "$1" )
 	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	#shellcheck disable=SC2207
 	partitionsToBackup=( "${PARTITIONS_TO_BACKUP[@]}" )
@@ -6299,7 +6307,7 @@ function partitionRestoredeviceIfRequested() {
 
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 				local partitions
-				mapfile -t partitionsInBackup < <( collectPartitionsInBackup "$RESTOREFILE" )
+				mapfile -d " " -t partitionsInBackup < <( collectPartitionsInBackup "$RESTOREFILE" )
 				local partitionsString="${partitionsInBackup[*]}"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$partitionsString\""
@@ -6391,7 +6399,7 @@ function partitionRestoredeviceIfRequested() {
 #						/dev/mmcblk0p2 : start=      532480, size=    15196160, type=83
 
 					local sourceValues
-					mapfile -t sourceValues < <( awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE" )
+					mapfile -d " " -t sourceValues < <( awk '/[0-9] :/ { v=$4 $6; gsub(","," ",v); printf "%s",v }' "$SF_FILE" )
 
 					if (( ${#sourceValues[@]} < 4 )); then
 						logCommand "cat $SF_FILE"
@@ -6404,7 +6412,7 @@ function partitionRestoredeviceIfRequested() {
 					fi
 
 					local partitionSizes
-					mapfile -t partitionSizes < <( createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK" )
+					mapfile -d " " -t partitionSizes < <( createResizedSFDisk "$SF_FILE" "$targetSDSize" "$MODIFIED_SFDISK" )
 
 					local oldPartitionSourceSize=${partitionSizes[0]}
 					local newPartitionTargetSize=${partitionSizes[1]}
@@ -6463,38 +6471,35 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	local lastBackupDir="$1"
 
-	local partitionBackupFile availablePartitions
+	local directories partitionNo availablePartitions=""
 
-	for partitionBackupFile in ${lastBackupDir}/*; do
-		logItem "partitionBackupFile: $partitionBackupFile"
-		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
-			local directories
-			# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-			#shellcheck disable=SC2010
-			directories="$(ls -l ${partitionBackupFile} | grep -E "\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz)
-		elif [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
-			local directories
-			# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-			#shellcheck disable=SC2010
-			directories="$(ls -l ${partitionBackupFile} | grep '^d')"
-			local partitionNo
-			partitionNo="$(grep -Eo "[0-9]+$" <<< $directories)"
-		else
-			assertionFailed $LINENO "Unsupported partitions backup type"
-		fi
-
-		local partitionNo
+	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
+		# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
+		#shellcheck disable=SC2010
+		directories="$(ls -l ${lastBackupDir} | grep -E "\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ)" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz)
+	elif [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
+		# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
+		#shellcheck disable=SC2010
+		directories="$(ls -l ${lastBackupDir} | grep '^d')"
 		partitionNo="$(grep -Eo "[0-9]+$" <<< $directories)"
+	else
+		assertionFailed $LINENO "Unsupported partitions backup type"
+	fi
 
-		logItem "Found partition no: $partitionNo in $lastBackupDir"
+	logItem "Directories: $directories"
 
+	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories)"
+
+	logItem "Found partition no: $partitionNo in $lastBackupDir"
+
+	if [[ -n $partitionNo ]]; then
 		if [[ -z "$availablePartitions" ]]; then
 			availablePartitions="$partitionNo"
 		else
 			availablePartitions="$availablePartitions $partitionNo"
 		fi
-	done
-
+	fi
+	
 	echo "$availablePartitions"
 
 	logExit "${availablePartitions[@]}"
@@ -7032,7 +7037,7 @@ function backup() {
 	fi
 	END_TIME=$(date +%s)
 
-	mapfile -t BACKUP_TIME < <( duration "$START_TIME" "$END_TIME" )
+	mapfile -d " " -t BACKUP_TIME < <( duration "$START_TIME" "$END_TIME" )
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TIME "${BACKUP_TIME[1]}" "${BACKUP_TIME[2]}" "${BACKUP_TIME[3]}"
 
@@ -7582,11 +7587,11 @@ function inspect4Backup() {
 			fi
 		fi
 
-		mapfile -t boot < <( deviceInfo "$bootPartition" )
-		mapfile -t root < <( deviceInfo "$rootPartition" )
+		mapfile -d " " -t boot < <( deviceInfo "$bootPartition" )
+		mapfile -d " " -t root < <( deviceInfo "$rootPartition" )
 
-		logItem "boot: ${boot[*]}"
-		logItem "root: ${root[*]}"
+		logItem "boot: ${boot[0]} - ${boot[1]}"
+		logItem "root: ${root[0]} - ${root[1]}"
 
 		if (( "${#boot[@]}" == 0 || "${#root[@]}" == 0 )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOT_DEVICE_DISOVERED
@@ -7995,7 +8000,7 @@ function doitBackup() {
 		logItem "lsblkResult: $lsblkResult"
 		if [[ -n "$lsblkResult" ]]; then
 			local di
-			mapfile -t di < <( deviceInfo "/dev/$lsblkResult" )
+			mapfile -d " " -t di < <( deviceInfo "/dev/$lsblkResult" )
 			logItem "di: ${di[*]}"
 			if [[ "$BOOT_DEVICE" == "${di[0]}" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_DEVICEMOUNTED "$BACKUPPATH"
@@ -8306,7 +8311,7 @@ function restorePartitionBasedBackup() {
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 		local partitions
-		mapfile -t partitions < <( collectAvailableBackupPartitions "$RESTOREFILE" )
+		mapfile -d " " -t partitions < <( collectAvailableBackupPartitions "$RESTOREFILE" )
 		# Assigning an array to a string! Assign as array, or use * instead of @ to concatenate.
 		#shellcheck disable=SC2124
 		local partitionsString="${partitions[@]}"
@@ -9003,7 +9008,7 @@ function doitRestore() {
 		restorePartitionBasedBackup
 	fi
 
-	mapfile -t RESTORE_TIME < <( duration "$START_TIME" "$END_TIME" )
+	mapfile -d " " -t RESTORE_TIME < <( duration "$START_TIME" "$END_TIME" )
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_TIME "${RESTORE_TIME[1]}" "${RESTORE_TIME[2]}" "${RESTORE_TIME[3]}"
 
 	logCommand "blkid"
