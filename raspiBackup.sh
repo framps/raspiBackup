@@ -37,7 +37,7 @@
 set -o pipefail
 
 if [ -z "$BASH" ] ;then
-	echo "??? ERROR: Unable to execute script. bash interpreter missing."
+	echo "??? ERROR: Unable to ucute script. bash interpreter missing."
 	echo "??? DEBUG: $(lsof -a -p $$ -d txt | tail -n 1)"
 	exit 127
 fi
@@ -2680,7 +2680,9 @@ function ignoreErrorRC() { # rc errors_to_ignore
 	logEntry
 	local rc="$1"
 	if (( $rc != 0 )); then
-		for i in "${@:2}"; do
+		#Double quote array expansions to avoid re-splitting elements.
+		#shellcheck disable=SC2068
+		for i in ${@:2}; do
 			if (( $i == $rc )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_TOOL_ERROR_SKIP "$BACKUPTYPE" "$rc"
 				rc=0
@@ -2711,7 +2713,7 @@ function executeRsync() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="$1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE "LOG_FILE" 5>&1 )
+	( eval "$cmd" 2>&1 1>&5 | tee -a $MSG_FILE $LOG_FILE) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -2726,7 +2728,7 @@ function executeTar() { # cmd flagsToIgnore
 	local rc cmd
 	cmd="LC_ALL=C $1"
 	logItem "$cmd"
-	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE "LOG_FILE"; exit ${PIPESTATUS[0]} ) 5>&1
+	( eval "$cmd" 2>&1 1>&5 | grep -iv " Removing" | tee -a $MSG_FILE $LOG_FILE; exit ${PIPESTATUS[0]} ) 5>&1
 	ignoreErrorRC $? "$2"
 	rc=$?
 	logExit $rc
@@ -6090,11 +6092,11 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	local missingPartition=()
 
-	logItem "partitionsInBackup: ${partitionsInBackup[@]}"
-	logItem "partitionsToBackup: ${partitionsToBackup[@]}"
+	logItem "partitionsInBackup: ${partitionsInBackup[*]}"
+	logItem "partitionsToBackup: ${partitionsToBackup[*]}"
 
 	for (( i=0; i<${#partitionsInBackup[@]}; i++ )); do
-		logItem "-${partitionsInBackup[i]}- --- -${partitionsToBackup[@]}-"
+		logItem "-${partitionsInBackup[i]}- --- -${partitionsToBackup[*]}-"
 		if ! containsElement "${partitionsInBackup[i]}" "${partitionsToBackup[@]}"; then
 			logItem "Missing ${partitionsInBackup[i]}"
 			missingPartition+=( "${partitionsInBackup[i]}" )
