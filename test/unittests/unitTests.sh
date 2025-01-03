@@ -12,7 +12,7 @@ error=0
 
 #
 for utDir in $(find * -type d); do
-	#if [[ "$utDir" == "makeFilesystemAndLabel" ]]; then
+	#[[ "$utDir" == "makeFilesystemAndLabel" ]] && continue
 	[[ "$utDir" == "makePartition" ]] && continue 
 	#if [[ "$utDir" == "resizeLastPartition" ]]; then
     echo "Executing ${utDir}.sh"

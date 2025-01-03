@@ -6090,10 +6090,11 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	local missingPartition=()
 
-	logItem "partitionsInBackup: ${partitionsInBackup[*]}"
-	logItem "partitionsToBackup: ${partitionsToBackup[*]}"
+	logItem "partitionsInBackup: ${partitionsInBackup[@]}"
+	logItem "partitionsToBackup: ${partitionsToBackup[@]}"
 
 	for (( i=0; i<${#partitionsInBackup[@]}; i++ )); do
+		logItem "-${partitionsInBackup[i]}- --- -${partitionsToBackup[@]}-"
 		if ! containsElement "${partitionsInBackup[i]}" "${partitionsToBackup[@]}"; then
 			logItem "Missing ${partitionsInBackup[i]}"
 			missingPartition+=( "${partitionsInBackup[i]}" )
@@ -6488,21 +6489,15 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	logItem "Directories: $directories"
 
-	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories)"
+	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
 	logItem "Found partition no: $partitionNo in $lastBackupDir"
 
-	if [[ -n $partitionNo ]]; then
-		if [[ -z "$availablePartitions" ]]; then
-			availablePartitions="$partitionNo"
-		else
-			availablePartitions="$availablePartitions $partitionNo"
-		fi
-	fi
+	availablePartitions=$(tr '\n' ' ' <<< "$partitionNo")	# substitute nl from ls with space
 	
-	echo "$availablePartitions"
+	echo "${availablePartitions::-1}" # delete last space
 
-	logExit "${availablePartitions[@]}"
+	logExit "${availablePartitions}"
 }
 
 function restoreNormalBackupType() {
