@@ -455,8 +455,9 @@ LOG_OUTPUT="$LOG_OUTPUT_BACKUPLOC"
 # borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
 
 function containsElement () { # element ${array[@]}
-  local e
-  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
   return 1
 }
 
@@ -6493,13 +6494,13 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
-	logItem "Found partition no: $partitionNo in $lastBackupDir"
-
 	availablePartitions=$(tr '\n' ' ' <<< "$partitionNo")	# substitute nl from ls with space
+
+	logItem "Found partition no: $partitionNo in $lastBackupDir"
 	
 	echo "${availablePartitions::-1}" # delete last space
 
-	logExit "${availablePartitions}"
+	logExit "${availablePartitions::-1}"
 }
 
 function restoreNormalBackupType() {
