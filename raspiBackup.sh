@@ -6092,11 +6092,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	local missingPartition=()
 
-	logItem "partitionsInBackup: #${#partitionsInBackup[@]} -${partitionsInBackup[*]}-"
-	logItem "partitionsToBackup: #${#partitionsToBackup[@]} -${partitionsToBackup[*]}-"
-
 	for (( i=0; i<${#partitionsInBackup[@]}; i++ )); do
-		logItem "-${partitionsInBackup[i]}- --- -${partitionsToBackup[*]}-"
 		if ! containsElement "${partitionsInBackup[i]}" "${partitionsToBackup[@]}"; then
 			logItem "Missing ${partitionsInBackup[i]}"
 			missingPartition+=( "${partitionsInBackup[i]}" )
@@ -7389,7 +7385,9 @@ function checksForPartitionBasedBackup() {
 
 	logItem "mountPoints: ${mountPoints[*]}"
 	logItem "mountPoints - keys: ${!mountPoints[*]}"
-	for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
+	# Double quote array expansions to avoid re-splitting elements.
+	#shellcheck disable=SC2068
+	for partition in ${PARTITIONS_TO_BACKUP[@]}; do
 		logItem "Checking partition $partition"
 		if ! [[ $partition =~ ^[0-9]+ ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_NUMBER_INVALID "$partition"
