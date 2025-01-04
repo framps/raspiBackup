@@ -4489,7 +4489,6 @@ COLOR_ON=("<span style=\"color:\%s\">" "\e[1;%sm")
 COLOR_OFF=("</span><br/>" "\e[0m")
 
 function colorOn() { # colortype color
-	logEntry "$1 - $2"
 	local on="${COLOR_ON[$1]}"
 	local color="${COLOR_CODES[$2]}"
 	#  Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
@@ -4497,14 +4496,11 @@ function colorOn() { # colortype color
 	color=( $color )
 	printf -v r "$on" "${color[$1]}"
 	echo -e -n "$r"
-	logExit 
 }
 
 function colorOff() { # colortype color
-	logEntry "$1 - $2"
 	local off="${COLOR_OFF[$1]}"
 	echo -e -n "$off"
-	logExit
 }
 
 # add color annotations for console and/or email
@@ -6086,15 +6082,18 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 	local rc partitionsInBackup partitionsToBackup
 
-	mapfile -d " " -t partitionsInBackup < <( collectAvailableBackupPartitions "$1" )
-	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	#  Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	#shellcheck disable=SC2207
-	partitionsToBackup=( "${PARTITIONS_TO_BACKUP[@]}" )
+	partitionsInBackup=( $(collectAvailableBackupPartitions "$1") )
+
+	# Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+	#shellcheck disable=SC2206
+	partitionsToBackup=( ${PARTITIONS_TO_BACKUP[@]} )
 
 	local missingPartition=()
 
-	logItem "partitionsInBackup: ${partitionsInBackup[*]}"
-	logItem "partitionsToBackup: ${partitionsToBackup[*]}"
+	logItem "partitionsInBackup: #${#partitionsInBackup[@]} -${partitionsInBackup[*]}-"
+	logItem "partitionsToBackup: #${#partitionsToBackup[@]} -${partitionsToBackup[*]}-"
 
 	for (( i=0; i<${#partitionsInBackup[@]}; i++ )); do
 		logItem "-${partitionsInBackup[i]}- --- -${partitionsToBackup[*]}-"
@@ -6495,12 +6494,13 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
 	availablePartitions=$(tr '\n' ' ' <<< "$partitionNo")	# substitute nl from ls with space
+	availablePartitions="${availablePartitions::-1}" # delete last space
 
-	logItem "Found partition no: $partitionNo in $lastBackupDir"
-	
-	echo "${availablePartitions::-1}" # delete last space
+	logItem "Found available partitions: $availablePartitions in $lastBackupDir"
 
-	logExit "${availablePartitions::-1}"
+	echo "${availablePartitions}"
+
+	logExit "-${availablePartitions}-"
 }
 
 function restoreNormalBackupType() {
@@ -7410,7 +7410,7 @@ function checksForPartitionBasedBackup() {
 		for ((i=0; i<${#pn[@]}; i+=2)); do
 			p=${pn[i]}
 			(( ip1 = i+1 ))
-			d=${pn[$ip1)]}
+			d=${pn[$ip1]}
 			if [[ "$d" =~ /dev/sd && ! "$BOOT_DEVICENAME" =~ /dev/sd  ]]; then # allow -P for USB boot (all partitions are external but write error of SD card is used
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_PARTITION_NOT_SAVED "$p" "$d"
 				error=1
