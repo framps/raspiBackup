@@ -454,10 +454,12 @@ LOG_OUTPUT="$LOG_OUTPUT_BACKUPLOC"
 
 # borrowed from http://stackoverflow.com/questions/3685970/check-if-an-array-contains-a-value
 
-function containsElement () { # element ${array[@]}
+function containsElement() { # element ${array[@]}
   local e match="$1"
   shift
-  for e; do [[ "$e" == "$match" ]] && return 0; done
+  for e; do
+	[[ "$e" == "$match" ]] && return 0;
+  done
   return 1
 }
 
@@ -2592,7 +2594,7 @@ function createBackupVersion() { # file
 
 	if [[ -f "$file.bak" ]]; then												# .bak exists already
 		local versions
-		
+
 		# Double quote to prevent globbing and word splitting.
 		# shellcheck disable=SC2086
 		versions="$(ls $file\.*\.bak -1 2>/dev/null)"
@@ -5220,7 +5222,7 @@ function cleanup() { # trap
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLEANING_UP
 
 	logSystemServices
-	
+
 	CLEANUP_RC=$rc
 
 	if (( $RESTORE )); then
@@ -6067,7 +6069,7 @@ function collectPartitionsInBackup() { # lastBackupDir
 	logEntry "$1"
 
 	local result
-	
+
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010
 	result=$(ls -l "$1" | grep "^d" | grep -Eo "[0-9]+$")
@@ -7055,11 +7057,13 @@ function backup() {
 function mountPartitions() { # sourcePath
 
 	local partition partitionName
-	logEntry
+	logEntry "${PARTITIONS_TO_BACKUP[@]}"
 
 	if (( ! $FAKE )); then
 		logItem "BEFORE: mount $(mount)"
-		for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
+		# Double quote array expansions to avoid re-splitting elements.
+		#shellcheck disable=SC2068
+		for partition in ${PARTITIONS_TO_BACKUP[@]}; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			logItem "mkdir $1/$partitionName"
 			mkdir -p "$1/$partitionName" &>>"$LOG_FILE"
@@ -7275,9 +7279,9 @@ function collectPartitions() {
 		backupAllPartitions=1
 		PARTITIONS_TO_BACKUP=()
 	else
-		# Expanding an array without an index only gives the element in the index 0.
-		#shellcheck disable=SC2128
-		PARTITIONS_TO_BACKUP=( "$PARTITIONS_TO_BACKUP" )
+		# Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+		#shellcheck disable=SC2206
+		PARTITIONS_TO_BACKUP=( ${PARTITIONS_TO_BACKUP[@]} )
 		backupAllPartitions=0
 	fi
 
@@ -9063,7 +9067,7 @@ function updateRestoreReminder() {
 		# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 		#shellcheck disable=SC2207
 		rf=( $(<$reminder_file) )
-		
+
 		local diffMonths
 		diffMonths=$(calculateMonthDiff "$now" "${rf[0]}" )
 
@@ -9637,9 +9641,9 @@ function SR_listDailyBackups() { # directory
 
 function SR_getAllBackups() { # directory
 	logEntry "$1"
-	
+
 	local yb mb wb db
-	
+
 	yb="$(SR_listYearlyBackups "$1")"
 	logItem "$yb"
 	#local ybc="$(countLines "$yb")"
@@ -10286,7 +10290,7 @@ while (( "$#" )); do
 	  ;;
 
 	-m)
-	  if ! o=$(checkOptionParameter "$1" "$2"); then 
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  MSG_LEVEL="$o"; shift 2
@@ -10412,8 +10416,8 @@ while (( "$#" )); do
 	  # Variable was used as an array but is now assigned a string.
 	  # shellcheck disable=SC2178
 	  PARTITIONS_TO_BACKUP="$o"; shift 2
-	  # Expanding an array without an index only gives the first element.	  
-	  # shellcheck disable=SC2128 
+	  # Expanding an array without an index only gives the first element.
+	  # shellcheck disable=SC2128
 	  PARTITIONS_TO_RESTORE=$PARTITIONS_TO_BACKUP
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
@@ -10442,7 +10446,7 @@ while (( "$#" )); do
 
 	-u)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR	  
+		exitError $RC_PARAMETER_ERROR
 	  fi
 	  EXCLUDE_LIST="$o"; shift 2
 	  ;;
