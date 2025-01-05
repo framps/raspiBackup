@@ -4898,7 +4898,7 @@ function sendEMail() { # content subject
 				else
 					assertionFailed $LINENO "Unexpected email coloring $EMAIL_COLORING"
 				fi
-				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: $subject${NL}coloring: ${coloringOption[*}"
+				logItem "Coloring option: $COLORING${NL}eMailColoring: $EMAIL_COLORING${NL}subject: $subject${NL}coloring: ${coloringOption[*]}"
 			fi
 		fi
 
@@ -6807,7 +6807,7 @@ function applyBackupStrategy() {
 			if (( $FAKE )); then
 				fakeKeepBackups=$(( keepBackups - 1 ))   # because in FAKE mode no real current backup has been created
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
+				if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
 				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
@@ -7622,12 +7622,14 @@ function inspect4Backup() {
 		exitError $RC_INVALID_BOOTDEVICE
 	fi
 
-	local bootPref
-	bootPref="$(getPartitionPrefix $BOOT_DEVICE)"
+	if (( ! $FAKE )); then	# make sure boot partition is mounted. Otherwise an empty bootpartition will be created in the backup :-(
+		local bootPref
+		bootPref="$(getPartitionPrefix $BOOT_DEVICE)"
 
-	if ! findmnt "/dev/${bootPref}1" &>/dev/null; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}1"
-		exitError $RC_INVALID_BOOTDEVICE
+		if ! findmnt "/dev/${bootPref}1" &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}1"
+			exitError $RC_INVALID_BOOTDEVICE
+		fi
 	fi
 
 	logItem "BOOT_DEVICE: $BOOT_DEVICE"
