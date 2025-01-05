@@ -6482,13 +6482,14 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 		# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 		#shellcheck disable=SC2010
 		directories="$(ls -l ${lastBackupDir} | grep '^d')"
-		partitionNo="$(grep -Eo "[0-9]+$" <<< $directories)"
 	else
 		assertionFailed $LINENO "Unsupported partitions backup type"
 	fi
 
 	logItem "Directories: $directories"
 
+	directories="$(grep -Po "((sd[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
+	
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
 	availablePartitions=$(tr '\n' ' ' <<< "$partitionNo")	# substitute nl from ls with space
@@ -6497,7 +6498,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 	logItem "Found available partitions: $availablePartitions in $lastBackupDir"
 
 	echo "${availablePartitions}"
-
+	
 	logExit "-${availablePartitions}-"
 }
 
