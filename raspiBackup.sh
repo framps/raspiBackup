@@ -2585,10 +2585,13 @@ function isSupportedEnvironment() {
 # return filename created and error if a backup file cannot be created
 function createBackupVersion() { # file
 
+	logEntry
+
 	local file="$1"
 	local rc
 
 	if [[ ! -f "$file" ]]; then
+		logExit 1
 		return 1
 	fi
 
@@ -2602,7 +2605,7 @@ function createBackupVersion() { # file
 		if [[ -z $versions ]]; then												# no backup version detected
 			versionNumber=1															# start with version 1
 		else
-			local last, lastFile, lastVersionNumber
+			local last lastFile lastVersionNumber
 			last="$(tail -n 1 <<< "$versions")" 								# extract highest version number
 			lastFile="$(basename "$last")"
 			lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
@@ -2610,7 +2613,10 @@ function createBackupVersion() { # file
 		fi
 
 		local backupFile="$file.${versionNumber}.bak"
-		if mv "$file.bak" "$backupFile"; then
+		logItem "Create version $backupFile"
+		
+		if ! mv "$file.bak" "$backupFile"; then
+			logExit 1
 			return 1
 		fi
 	fi
@@ -2619,6 +2625,8 @@ function createBackupVersion() { # file
 	rc=$?
 
 	echo "$file.bak"
+	
+	logExit "rc: $rc - $file.bak"
 	return $rc	# return status of cp command
 }
 
