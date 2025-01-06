@@ -955,10 +955,10 @@ MSG_DE[$MSG_MENTION_HELP]="RBK0091I: '%s -h' liefert eine detailierte Beschreibu
 MSG_FI[$MSG_MENTION_HELP]="RBK0091I: Suorita '%s -h' saadaksesi lisätietoa skriptin parametreista."
 MSG_FR[$MSG_MENTION_HELP]="RBK0091I: '%s -h' fournit une description détaillée de toutes les options du script"
 MSG_PROCESSING_PARTITION=92
-MSG_EN[$MSG_PROCESSING_PARTITION]="RBK0092I: Saving partition %s (%s) ..."
-MSG_DE[$MSG_PROCESSING_PARTITION]="RBK0092I: Partition %s (%s) wird gesichert ..."
-MSG_FI[$MSG_PROCESSING_PARTITION]="RBK0092I: Tallennetaan osiota %s (%s) ...."
-MSG_FR[$MSG_PROCESSING_PARTITION]="RBK0092I: Sauvegarde de la partition %s (%s) ...."
+MSG_EN[$MSG_PROCESSING_PARTITION]="RBK0092I: Saving partition %s (%s/%s) ..."
+MSG_DE[$MSG_PROCESSING_PARTITION]="RBK0092I: Partition %s (%s/%s) wird gesichert ..."
+MSG_FI[$MSG_PROCESSING_PARTITION]="RBK0092I: Tallennetaan osiota %s (%s/%s) ...."
+MSG_FR[$MSG_PROCESSING_PARTITION]="RBK0092I: Sauvegarde de la partition %s (%s/%s) ...."
 MSG_PARTITION_NOT_FOUND=93
 MSG_EN[$MSG_PARTITION_NOT_FOUND]="RBK0093E: Partition %s specified with option -T not found."
 MSG_DE[$MSG_PARTITION_NOT_FOUND]="RBK0093E: Angegebene Partition %s der Option -T existiert nicht."
@@ -7134,17 +7134,26 @@ function backupPartitions() {
 
 		logItem "Processing partition $partition"
 
-		local fileSystem
-		fileSystem=$(getBackupPartitionFilesystem "$partition")
-		local fileSystemSize
-		fileSystemSize=$(getBackupPartitionFilesystemSize "$partition")
+		local pref
+		pref="$(getPartitionPrefix $BOOT_DEVICENAME)"
 
-		logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize"
+		local fileSystem
+		fileSystem="$(getBackupPartitionFilesystem "$partition")"
+		local fileSystemSize
+		fileSystemSize="$(getBackupPartitionFilesystemSize "${pref}$partition")"
+		local fileSystemSizeHuman
+		fileSystemSizeHuman="$(bytesToHuman $fileSystemSize)"
+		local fileSystemUsed		
+		fileSystemUsed="$(getBackupPartitionFilesystemUsed "${pref}$partition")"
+		local fileSystemUsedHuman
+		fileSystemUsedHuman="$(bytesToHuman $fileSystemUsed)"
+
+		logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize - fileSystemUsed: $fileSystemUsedHuman"
 
 		if [[ -z $fileSystem ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSize"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSize" 
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PROCESSING_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSize"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PROCESSING_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSizeHuman" "$fileSystemUsedHuman"
 
 			case "$BACKUPTYPE" in
 
@@ -8491,12 +8500,26 @@ function extractDataFromBackupPartedFile() { # partition fieldnumber
 	logExit "$element"
 }
 
+function getBackupPartitionFilesystemUsed() { # partition
+
+	logEntry "$1"
+
+	mount $1 /mnt
+	local used
+	used=$(df "$1" | tail -1 | awk '{ print $3; }')
+	umount /mnt
+	echo "$used"
+
+	logExit "$used"
+
+}
+
 function getBackupPartitionFilesystemSize() { # partition
 
 	logEntry "$1"
 
 	local size
-	size=$(extractDataFromBackupPartedFile "$1" "4")
+	size=$(df "$1" | tail -1 | awk '{ print $3 + $4; }')
 	echo "$size"
 
 	logExit "$size"
