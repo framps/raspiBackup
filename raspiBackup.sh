@@ -6961,7 +6961,7 @@ function reportOldBackups() {
 			fi
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.6.10.0"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7.0"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
 			echo "$tobeListedOldBackups" | while read -r dir_to_list; do
 				[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
@@ -7134,26 +7134,31 @@ function backupPartitions() {
 
 		logItem "Processing partition $partition"
 
-		local pref
-		pref="$(getPartitionPrefix $BOOT_DEVICENAME)"
-
 		local fileSystem
 		fileSystem="$(getBackupPartitionFilesystem "$partition")"
-		local fileSystemSize
-		fileSystemSize="$(getBackupPartitionFilesystemSize "${pref}$partition")"
-		local fileSystemSizeHuman
-		fileSystemSizeHuman="$(bytesToHuman $fileSystemSize)"
-		local fileSystemUsed		
-		fileSystemUsed="$(getBackupPartitionFilesystemUsed "${pref}$partition")"
-		local fileSystemUsedHuman
-		fileSystemUsedHuman="$(bytesToHuman $fileSystemUsed)"
-
-		logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize - fileSystemUsed: $fileSystemUsedHuman"
 
 		if [[ -z $fileSystem ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSize" 
+			local unusedSize
+			unusedSize="$(extractDataFromBackupPartedFile "$1" "4")"
+			unusedSize="$(bytesToHuman "$unusedSize")"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$unusedSize" 
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PROCESSING_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemSizeHuman" "$fileSystemUsedHuman"
+			local pref
+			pref="$(getPartitionPrefix $BOOT_DEVICENAME)"
+
+			local fileSystemSize
+			fileSystemSize="$(getBackupPartitionFilesystemSize "${pref}$partition")"
+			local fileSystemUsed		
+			fileSystemUsed="$(getBackupPartitionFilesystemUsed "${pref}$partition")"
+
+			logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize - fileSystemUsed: $fileSystemUsedHuman"
+
+			local fileSystemSize
+			fileSystemSize="$(bytesToHuman $fileSystemSize)"
+			local fileSystemUsed
+			fileSystemUsed="$(bytesToHuman $fileSystemUsed)"
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PROCESSING_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$fileSystemUsed" "$fileSystemSize"
 
 			case "$BACKUPTYPE" in
 
