@@ -7139,7 +7139,7 @@ function backupPartitions() {
 
 		if [[ -z $fileSystem ]]; then
 			local unusedSize
-			unusedSize="$(extractDataFromBackupPartedFile "$1" "4")"
+			unusedSize="$(extractDataFromBackupPartedFile "${BOOT_PARTITION_PREFIX}$partition" "4")"
 			unusedSize="$(bytesToHuman "$unusedSize")"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$unusedSize" 
 		else
@@ -7151,7 +7151,7 @@ function backupPartitions() {
 			local fileSystemUsed		
 			fileSystemUsed="$(getBackupPartitionFilesystemUsed "${pref}$partition")"
 
-			logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize - fileSystemUsed: $fileSystemUsedHuman"
+			logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize - fileSystemUsed: $fileSystemUsed"
 
 			local fileSystemSize
 			fileSystemSize="$(bytesToHuman $fileSystemSize)"
@@ -9219,6 +9219,10 @@ function updateConfig() {
 		return
 	fi
 
+	# lang appears unused. Verify use (or export if used externally). ... lang used in following eval for late binding of config files to use the correct language !!!
+	# shellcheck disable=SC2034
+	local lang=${LANGUAGE,,}
+	
 	if grep -iqE "alpha|beta" <<< "$VERSION"; then
 		eval "DL_URL=$BETA_CONFIG_URL"
 	else
@@ -10621,7 +10625,8 @@ fi
 
 if (( $UPDATE_MYSELF )); then
 	downloadPropertiesFile FORCE
-	if updateScript; then
+	updateScript
+	if (( $? )); then
 		updateConfig
 	fi
 	exitNormal
