@@ -4838,9 +4838,7 @@ EOF
 		else
 			if [[ "ok" == $(<$o) ]]; then
 				logItem "Message sent"
-				if [[ -n $2 ]]; then	# write message only for html, not for messages
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
-				fi
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SLACK_SEND_OK
 			else
 				logItem "Error sending msg: $rsp"
 				error_description="$(<$o)"
