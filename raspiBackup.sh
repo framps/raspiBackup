@@ -2508,7 +2508,7 @@ function writeToConsole() {  # msglevel messagenumber message
 		fi
 
 		if (( "$LOG_LEVEL" != "$LOG_NONE" )); then
-			echo "$noNL" -e "$timestamp$msg" >> "$MSG_FILE"
+			echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
 		fi
 	fi
 
