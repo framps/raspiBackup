@@ -3476,7 +3476,7 @@ function downloadFile() { # url, targetFileName
 		local httpCode rc
 		# This {/} is literal. Check if ; is missing or quote the expression.
 		#shellcheck disable=SC1083
-		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>"LOG_FILE")
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>"$LOG_FILE")
 		rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 
@@ -4986,7 +4986,7 @@ function cleanupBackupDirectory() {
 	if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then
 		if [[ -n $(ls "$BACKUPTARGET_TEMP_ROOT") ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE "$BACKUPTARGET_TEMP_ROOT"
-			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> "LOG_FILE"# delete temp backupdir with all incomplete contents
+			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> "$LOG_FILE"# delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
 				if [[ $MSG_LEVEL == "$MSG_LEVEL_DETAILED" ]]; then
@@ -5068,7 +5068,7 @@ function masqueradeSensitiveInfoInLog() {
 	if [[ -n "$EMAIL_PARMS" ]]; then
 		logItem "Masquerading eMail parameters"
 		m="$(masquerade "$EMAIL_PARMS")"
-		sed -i -E "s/$EMAIL_PARMS/${m}/" "LOG_FILE" # may contain passwords
+		sed -i -E "s/$EMAIL_PARMS/${m}/" "$LOG_FILE" # may contain passwords
 	fi
 
 	# some mount options
@@ -5987,7 +5987,7 @@ function backupTar() {
 		$source"
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if ! pushd $sourceDir &>>"LOG_FILE"; then
+		if ! pushd $sourceDir &>>"$LOG_FILE"; then
 				assertionFailed $LINENO "push to $sourceDir failed"
 		fi
 	fi
@@ -6000,7 +6000,7 @@ function backupTar() {
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		if ! popd &>>"LOG_FILE"; then
+		if ! popd &>>"$LOG_FILE"; then
 			assertionFailed $LINENO "pop failed"
 		fi
 	fi
@@ -6810,28 +6810,28 @@ function applyBackupStrategy() {
 				fi
 				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 				#shellcheck disable=SC2010
-				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
+				tobeCheckedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE" | grep -vE "_")
 				echo "$tobeCheckedBackups" | while read dir_to_check; do
 					[[ -n $dir_to_check ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXISTING_BACKUP  $BACKUPTARGET_ROOT/${dir_to_check}
 				done
 				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 				#shellcheck disable=SC2010
-				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_" | head -n -$fakeKeepBackups 2>>"LOG_FILE")
+				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE" | grep -vE "_" | head -n -$fakeKeepBackups 2>>"LOG_FILE")
 				echo "$tobeDeletedBackups" | while read dir_to_delete; do
 					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
 				done
-				if ! popd &>>"LOG_FILE"; then
+				if ! popd &>>"$LOG_FILE"; then
 					assertionFailed $LINENO "pop failed"
 				fi
 		       else
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_CLEANUP_BACKUP_VERSION "$BACKUPPATH"
-				if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
+				if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
 					assertionFailed $LINENO "push to $BACKUPPATH failed"
 				fi
 				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 				#shellcheck disable=SC2010
-				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
-				if ! popd &>>"LOG_FILE"; then
+				ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE" | grep -vE "_" | head -n -$keepBackups | xargs -I {} rm -rf "{}" &>>"$LOG_FILE";
+				if ! popd &>>"$LOG_FILE"; then
 					assertionFailed $LINENO "pop failed"
 				fi
 
@@ -6917,14 +6917,14 @@ function reportOldBackups() {
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 	fi
 
-	if ! pushd "$BACKUPPATH" &>>"LOG_FILE"; then
+	if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
 		assertionFailed $LINENO "push to $BACKUPPATH failed"
 	fi
 
 	# Double quote to prevent globbing and word splitting.
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010,SC2086
-	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"LOG_FILE" | grep -vE "_")
+	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE" | grep -vE "_")
 
 	if [[ -n $tobeListedOldBackups ]]; then
 
@@ -6972,7 +6972,7 @@ function reportOldBackups() {
 		fi
 	fi
 
-	if ! popd &>>"LOG_FILE"; then
+	if ! popd &>>"$LOG_FILE"; then
 		assertionFailed $LINENO "pop failed"
 	fi
 }
@@ -7348,7 +7348,7 @@ function collectPartitions() {
 			fi
 		fi
 
-	done < <(sfdisk -d "$BOOT_DEVICENAME" 2>>"LOG_FILE")
+	done < <(sfdisk -d "$BOOT_DEVICENAME" 2>>"$LOG_FILE")
 
 	logItem "PARTITIONS_TO_BACKUP - 2: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
 	logItem "mountPoints: $(echo "${mountPoints[@]}")"
@@ -8113,7 +8113,7 @@ function getPartitionTable() { # device
 	# <empty> -> no partition table
 
 	if [[ -n "$(partprobe -d -s "$1" | cut -f 4 -d ' ')" ]]; then
-		table="$(IFS='' parted "$1" unit MB p 2>>"LOG_FILE" | sed -r '/^($|[MSDP])/d')"
+		table="$(IFS='' parted "$1" unit MB p 2>>"$LOG_FILE" | sed -r '/^($|[MSDP])/d')"
 		if (( $(wc -l <<< "$table") < 2 )); then
 			result=""
 		else
@@ -8592,7 +8592,7 @@ function lastUsedPartitionByte() { # device
 			fi
 		fi
 
-	done < <(sfdisk -d "$1" 2>>"LOG_FILE")
+	done < <(sfdisk -d "$1" 2>>"$LOG_FILE")
 
 	(( lastUsedPartitionByte*=512 ))
 
@@ -8945,7 +8945,7 @@ function doitRestore() {
 
 	local usbMount
 	usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
-	if grep -q "install ok installed" <<< "$usbMount" &>>"LOG_FILE"; then
+	if grep -q "install ok installed" <<< "$usbMount" &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
@@ -9239,7 +9239,7 @@ function updateConfig() {
 	fi
 
 	# make sure new config file is readable by owner only
-	if ! chmod 600 "$NEW_CONFIG" &>>"LOG_FILE"; then
+	if ! chmod 600 "$NEW_CONFIG" &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9268,7 +9268,7 @@ function updateConfig() {
 	local deleted=0
 
 	# make sure config file is readable by owner only
-	if ! chmod 600 "$ORIG_CONFIG" &>>"LOG_FILE"; then
+	if ! chmod 600 "$ORIG_CONFIG" &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$ORIG_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9339,7 +9339,7 @@ function updateConfig() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGE_SUCCESSFULL
 
-	if ! chmod 600 "$MERGED_CONFIG" &>>"LOG_FILE"; then
+	if ! chmod 600 "$MERGED_CONFIG" &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$MERGED_CONFIG"
 		exitError $RC_FILE_OPERATION_ERROR
 	fi
@@ -9359,7 +9359,7 @@ function updateConfig() {
 			exitError $RC_FILE_OPERATION_ERROR
 		fi
 
-		if ! chmod 600 "$new_file" &>>"LOG_FILE"; then
+		if ! chmod 600 "$new_file" &>>"$LOG_FILE"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$new_file"
 			exitError $RC_FILE_OPERATION_ERROR
 		fi
