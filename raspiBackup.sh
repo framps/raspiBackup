@@ -4200,7 +4200,7 @@ function setupEnvironment() {
 			BACKUPFILE="${HOSTNAME_OSR}-${BACKUPTYPE}-backup-${DATE}_${BACKUP_DIRECTORY_NAME}"
 		fi
 
-		BACKUPTARGET_ROOT="$BACKUPPATH"
+		BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
 		BACKUPTARGET_FINAL_DIR="$BACKUPTARGET_ROOT/$BACKUPFILE"				# final directory for backup if backup was successful
 		BACKUPTARGET_TEMP_ROOT="$BACKUPTARGET_ROOT/tmp"						# temporary backup root directory
 		BACKUPTARGET_TEMP_DIR="$BACKUPTARGET_ROOT/tmp/$BACKUPFILE"			# temporary backup directory
