@@ -2023,8 +2023,8 @@ MSG_MISSING_PARTITIONS_NOT_SAVED=330
 MSG_EN[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Not all partitions which were saved in the previous backup are included. Missing \"%s\"."
 MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden gesichert. Es fehlen \"%s\"."
 MSG_NO_SKIP_FORMAT_POSSIBLE=331
-MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: No partition formating in restore is only possible with rsync backuptype and a partition oriented backup."
-MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Keine Partitionsformatierung beim Restore ist nur mit dem rsync Backuptyp und einem partitionsorientierten Backup möglich."
+MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 is only available with rsync backuptype and a partition oriented backup."
+MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 ist nur mit dem rsync Backuptyp und einem partitionsorientierten Backup möglich."
 MSG_GENERIC_WARNING=332
 MSG_EN[$MSG_GENERIC_WARNING]="RBK0332W: %s"
 MSG_DE[$MSG_GENERIC_WARNING]="RBK0332W: %s"
@@ -2054,6 +2054,9 @@ MSG_RESTORE_TIME=340
 MSG_EN[$MSG_RESTORE_TIME]="RBK0340I: Restore time: %s:%s:%s."
 # shellcheck disable=SC2034
 MSG_DE[$MSG_RESTORE_TIME]="RBK0340I: Restorezeit: %s:%s:%s."
+MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE=341
+MSG_DE[$MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE]="RBK0341E: Option -B ist für einen partitionsorientierten Backup nicht erlaubt."
+MSG_EN[$MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE]="RBK0341E: Option -B not allowed for partition orientierted backup."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7991,6 +7994,10 @@ function doitBackup() {
 	if (( $PARTITIONBASED_BACKUP )); then
 		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_BACKUP_NOT_POSSIBLE_FOR_PARTITIONBASED_BACKUP
+			exitError "$RC_PARAMETER_ERROR"
+		fi
+		if (( $TAR_BOOT_PARTITION_ENABLED )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE
 			exitError "$RC_PARAMETER_ERROR"
 		fi
 		if (( ! $FAKE )); then
