@@ -2048,15 +2048,20 @@ MSG_EN[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Note: This message will be
 MSG_DE[$MSG_OLD_NAME_BACKUPS_COUNTER_INFO]="RBK0338W: Hinweis: Diese Meldung wird weitere %s Mal angezeigt werden."
 MSG_OPTION_T_NOT_ALLOWED=339
 MSG_EN[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T not allowed for normal mode backup."
-# shellcheck disable=SC2034
 MSG_DE[$MSG_OPTION_T_NOT_ALLOWED]="RBK0339E: Option -T ist für einen normales Backup nicht erlaubt."
 MSG_RESTORE_TIME=340
 MSG_EN[$MSG_RESTORE_TIME]="RBK0340I: Restore time: %s:%s:%s."
-# shellcheck disable=SC2034
 MSG_DE[$MSG_RESTORE_TIME]="RBK0340I: Restorezeit: %s:%s:%s."
 MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE=341
 MSG_DE[$MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE]="RBK0341E: Option -B ist für einen partitionsorientierten Backup nicht erlaubt."
 MSG_EN[$MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE]="RBK0341E: Option -B not allowed for partition orientierted backup."
+MSG_PARTITION_CHECK_STARTED=342
+MSG_EN[$MSG_PARTITION_CHECK_STARTED]="RBK0342I: Filesystem check started on %s."
+MSG_DE[$MSG_PARTITION_CHECK_STARTED]="RBK0342I: Dateisystemcheck auf %s gestartet."
+MSG_PARTITION_CHECK_FAILED=343
+MSG_EN[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Filesystem check failed on %s with RC %s."
+# shellcheck disable=SC2034
+MSG_DE[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Dateisystemcheck auf %s fehlerhaft beendet mit RC %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6319,27 +6324,6 @@ function partitionRestoredeviceIfRequested() {
 			if (( $NO_YES_QUESTION )); then
 				echo "Y"
 			fi
-		else
-
-			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-				local partitions
-				mapfile -d " " -t partitionsInBackup < <( collectPartitionsInBackup "$RESTOREFILE" )
-				local partitionsString="${partitionsInBackup[*]}"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$partitionsString\""
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$PARTITIONS_TO_RESTORE\""
-			fi
-
-			if ! askYesNo; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-				exitError $RC_RESTORE_FAILED
-			fi
-
-			if (( $NO_YES_QUESTION )); then
-				echo "Y"
-			fi
 		fi
 
 	elif [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
@@ -6698,14 +6682,15 @@ function restoreNormalBackupType() {
 
 			updateUUIDs # if partitioned
 
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_IMG_ROOT_CHECK_STARTED
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_STARTED "$ROOT_PARTITION"
 			fsck -fpv "$ROOT_PARTITION" &>>"$LOG_FILE"
 			rc_fsck=$?
 			logItem "fsck rc: $rc_fsck"
 			if (( $rc_fsck > 1 )); then # 1: => Filesystem errors corrected
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CHECK_FAILED "$rc_fsck"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_FAILED "$ROOT_PARTITION" "$rc_fsck"
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
+
 			mountAndCheck "$ROOT_PARTITION" "$MNT_POINT"
 
 			logItem "Updating hw clock"
@@ -8348,10 +8333,8 @@ function restorePartitionBasedBackup() {
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 		local partitions
-		mapfile -d " " -t partitions < <( collectAvailableBackupPartitions "$RESTOREFILE" )
-		# Assigning an array to a string! Assign as array, or use * instead of @ to concatenate.
-		#shellcheck disable=SC2124
-		local partitionsString="${partitions[@]}"
+		partitions=( "$(collectAvailableBackupPartitions "$RESTOREFILE" )" )
+		local partitionsString="${partitions[*]}"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
@@ -8827,6 +8810,15 @@ function restorePartitionBasedPartition() { # restorefile
 			fi
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_FILE_PARTITION_DONE "$mappedRestorePartition"
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_STARTED "$mappedRestorePartition"
+			fsck -fpv "$mappedRestorePartition" &>>"$LOG_FILE"
+			rc_fsck=$?
+			logItem "fsck rc: $rc_fsck"
+			if (( $rc_fsck > 1 )); then # 1: => Filesystem errors corrected
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_FAILED "$mappedRestorePartition" "$rc_fsck"
+				exitError $RC_NATIVE_RESTORE_FAILED
+			fi
 
 		fi # is not swap partition
 	else
