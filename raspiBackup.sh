@@ -17,7 +17,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2024 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -2449,7 +2449,9 @@ function usage() {
 
 	[[ -n ${SUPPORTED_LANGUAGES[$LANGUAGE]} ]] && activeLang="$LANGUAGE"
 
-	mapfile -d " "-t NO_YES < <( getMessage $MSG_NO_YES )
+	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	#shellcheck disable=SC2207
+	NO_YES=( $(getMessage $MSG_NO_YES) )
 
 	local func="usage${activeLang}"
 
@@ -2843,6 +2845,7 @@ function logOptions() { # option state
 	logItem "FINAL_COMMAND=$FINAL_COMMAND"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
+	logItem "IGNORE_MISSING_PARTITIONS=$IGNORE_MISSING_PARTITIONS"
 	logItem "KEEPBACKUPS=$KEEPBACKUPS"
 	logItem "KEEPBACKUPS_DD=$KEEPBACKUPS_DD"
 	logItem "KEEPBACKUPS_DDZ=$KEEPBACKUPS_DDZ"
@@ -3031,6 +3034,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_SEND_STATS=1
 	# ignore partitions > 2 in normal mode
 	DEFAULT_IGNORE_ADDITIONAL_PARTITIONS=0
+	# Allow to save not all previously saved partitions
+	DEFAULT_IGNORE_MISSING_PARTITIONS=0
 	# notify in email and telegram when backup starts
 	DEFAULT_NOTIFY_START=0
 	# Telegram token
@@ -3098,6 +3103,7 @@ function copyDefaultConfigVariables() {
 	EXTENSIONS="$DEFAULT_EXTENSIONS"
 	FINAL_COMMAND="$DEFAULT_FINAL_COMMAND"
 	IGNORE_ADDITIONAL_PARTITIONS="$DEFAULT_IGNORE_ADDITIONAL_PARTITIONS"
+	IGNORE_MISSING_PARTITIONS="$DEFAULT_IGNORE_MISSING_PARTITIONS"
 	KEEPBACKUPS="$DEFAULT_KEEPBACKUPS"
 	KEEPBACKUPS_DD="$DEFAULT_KEEPBACKUPS_DD"
 	KEEPBACKUPS_DDZ="$DEFAULT_KEEPBACKUPS_DDZ"
@@ -9839,12 +9845,14 @@ function usageEN() {
 	echo "-z compress DD and TAR backup file with gzip (default: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Backup options-"
-	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="no"
+	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
 	echo "-a {commands to execute after Backup} (default: $DEFAULT_STARTSERVICES)"
 	echo "-B Save bootpartition in tar file (Default: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
 	echo "-F Backup is simulated"
+	echo "--ignoreAdditionalPartitions (default: $DEFAULT_IGNORE_ADDITIONAL_PARTITIONS) - Partitionnumbers > 2 will not be saved"
+	echo "--ignoreMissingPartitions (default: $DEFAULT_IGNORE_MISSING_PARTITIONS) - Allow to backup not all previously saved paritions."
 	echo "-k {backupsToKeep} (default: $DEFAULT_KEEPBACKUPS)"
-	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
+	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="no"
 	echo "-o {commands to execute before Backup} (default: $DEFAULT_STOPSERVICES)"
 	echo "-P use partitionoriented backup mode to backup the first two partitions (default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo "-t {backupType} ($ALLOWED_TYPES) (default: $DEFAULT_BACKUPTYPE)"
@@ -9892,12 +9900,14 @@ function usageDE() {
 	echo "-z DD und TAR Backup verkleinern mit gzip (Standard: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Backup Optionen-"
-	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="keine"
+	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="keine"
 	echo "-a {Befehle die nach dem Backup ausgeführt werden} (Standard: $DEFAULT_STARTSERVICES)"
 	echo "-B Sicherung der Bootpartition als tar file (Standard: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
 	echo "-F Backup wird nur simuliert"
+	echo "--ignoreAdditionalPartitions (Standard: $DEFAULT_IGNORE_ADDITIONAL_PARTITIONS) - Partitionsnummern > 2 werden nicht gesichert"
+	echo "--ignoreMissingPartitions (default: $DEFAULT_IGNORE_MISSING_PARTITIONS) - Es können weniger als die vorher gesicherten Partitionen gesichert werden."
 	echo "-k {Anzahl Backups} (Standard: $DEFAULT_KEEPBACKUPS)"
-	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="keine"
+	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="keine"
 	echo "-o {Befehle die vor dem Backup ausgeführt werden} (Standard: $DEFAULT_STOPSERVICES)"
 	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
@@ -9943,12 +9953,12 @@ function usageFI() {
 	echo "-z Pakkaa varmuuskopiotiedosto käyttäen gzip:iä (oletus: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Varmuuskopioinnin valinnat-"
-	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="ei"
+	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="ei"
 	echo "-a {varmuuskopion jläkeen suoritettavat komennot} (oletus: $DEFAULT_STARTSERVICES)"
 	echo "-B Tee käynnistysosiosta kopio tar tiedostoon (oletus: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
 	echo "-F Varmuuskopioinnin simulointi"
 	echo "-k {säilytettävien varmuuskopioiden lkm} (oletus: $DEFAULT_KEEPBACKUPS)"
-	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="ei"
+	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="ei"
 	echo "-o {ennen varmuuskopiointia suoritettavat komennot} (oletus: $DEFAULT_STOPSERVICES)"
 	echo "-t {varmuuskopion tyyppi} ($ALLOWED_TYPES) (oletus: $DEFAULT_BACKUPTYPE)"
 	echo "-T {Lista kopioitavista osioista} (Osionumerot, esim. \"1 2 3\"). Valinta käytettävissä vain parametrin -P kanssa (oletus: ${DEFAULT_PARTITIONS_TO_BACKUP})"
@@ -10023,7 +10033,6 @@ EXCLUDE_DD=0
 FAKE=0
 FORCE_SFDISK=0
 FORCE_UPDATE=0
-IGNORE_MISSING_PARTITIONS=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
 IS_UBUNTU=0
