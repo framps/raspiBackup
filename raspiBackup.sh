@@ -5266,7 +5266,7 @@ function cleanup() { # trap
 
 			logItem "BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT"
 			if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then # does not exists if raspiBackup7412Test runs
-				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> "LOG_FILE" # delete temp dir now
+				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> "$LOG_FILE" # delete temp dir now
 			else
 				logItem "??? BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT not found"
 			fi
@@ -6810,7 +6810,7 @@ function applyBackupStrategy() {
 				done
 				# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 				#shellcheck disable=SC2010
-				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE" | grep -vE "_" | head -n -$fakeKeepBackups 2>>"LOG_FILE")
+				tobeDeletedBackups=$(ls -d ${HOSTNAME_OSR}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE" | grep -vE "_" | head -n -$fakeKeepBackups 2>>"$LOG_FILE")
 				echo "$tobeDeletedBackups" | while read dir_to_delete; do
 					[[ -n $dir_to_delete ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_NORMAL_RECYCLE_FILE_WOULD_BE_DELETED "$BACKUPTARGET_ROOT/${dir_to_delete}"
 				done
