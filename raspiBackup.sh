@@ -1999,8 +1999,8 @@ MSG_ADJUSTING_WARNING_P=322
 MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small."
 MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird."
 MSG_ADJUSTING_WARNING_P2=323
-MSG_EN[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Target %s with %s is larger than backup source with %s. Last partition will be expanded accordingly to use the whole space."
-MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die letzte Partition wird entsprechend vergrößert um den ganzen Platz zu benutzen."
+MSG_EN[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Target %s with %s is larger than backup source with %s. Last partition will be expanded accordingly to use the whole available space."
+MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die letzte Partition wird entsprechend vergrößert um den ganzen verfügbaren Speicherplatz zu benutzen."
 MSG_NOT_ALL_OS_PARTITIONS_SAVED=324
 MSG_EN[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Not all OS partitions saved. Backup will not boot."
 MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Partition gesichert und das Backup wird nicht starten."
@@ -2055,9 +2055,9 @@ MSG_DE[$MSG_RESTORE_TIME]="RBK0340I: Restorezeit: %s:%s:%s."
 MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE=341
 MSG_DE[$MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE]="RBK0341E: Option -B ist für einen partitionsorientierten Backup nicht erlaubt."
 MSG_EN[$MSG_TAR_BOOT_BACKUP_NOT_POSSIBLE]="RBK0341E: Option -B not allowed for partition orientierted backup."
-MSG_PARTITION_CHECK_STARTED=342
-MSG_EN[$MSG_PARTITION_CHECK_STARTED]="RBK0342I: Filesystem check started on %s."
-MSG_DE[$MSG_PARTITION_CHECK_STARTED]="RBK0342I: Dateisystemcheck auf %s gestartet."
+MSG_PARTITION_CHECK_EXECUTED=342
+MSG_EN[$MSG_PARTITION_CHECK_EXECUTED]="RBK0342I: Filesystem check executed on %s."
+MSG_DE[$MSG_PARTITION_CHECK_EXECUTED]="RBK0342I: Dateisystemcheck auf %s wird durchgeführt."
 MSG_PARTITION_CHECK_FAILED=343
 MSG_EN[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Filesystem check failed on %s with RC %s."
 # shellcheck disable=SC2034
@@ -6560,21 +6560,6 @@ function restoreNormalBackupType() {
 			logItem "Creating mountpoint $MNT_POINT"
 			mkdir -p "$MNT_POINT"
 
-			logItem "Umounting boot partition $BOOT_PARTITION"
-			umount "$BOOT_PARTITION" &>>"$LOG_FILE"
-			rc=$?
-			if (( ! $rc )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "BOOT_PARTITION" "$rc"
-				exitError "$RC_MISC_ERROR"
-			fi
-			logItem "Umounting root partition $ROOT_PARTITION"
-			umount $ROOT_PARTITION &>>"$LOG_FILE"
-			rc=$?
-			if (( ! $rc )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "ROOT_PARTITION" "$rc"
-				exitError $RC_MISC_ERROR
-			fi
-
 			partitionRestoredeviceIfRequested
 
 			if [[ -e $TAR_FILE ]]; then
@@ -6618,6 +6603,8 @@ function restoreNormalBackupType() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_BOOT_RESTORE_FAILED ".$ext" "$rc"
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
+
+			executeFilesystemCheck "$BOOT_PARTITION"
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
 			local check=""
@@ -6680,16 +6667,9 @@ function restoreNormalBackupType() {
 
 			umount $ROOT_PARTITION &>> "$LOG_FILE"
 
-			updateUUIDs # if partitioned
+			executeFilesystemCheck "$ROOT_PARTITION"
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_STARTED "$ROOT_PARTITION"
-			fsck -fpv "$ROOT_PARTITION" &>>"$LOG_FILE"
-			rc_fsck=$?
-			logItem "fsck rc: $rc_fsck"
-			if (( $rc_fsck > 1 )); then # 1: => Filesystem errors corrected
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_FAILED "$ROOT_PARTITION" "$rc_fsck"
-				exitError $RC_NATIVE_RESTORE_FAILED
-			fi
+			updateUUIDs # if partitioned
 
 			mountAndCheck "$ROOT_PARTITION" "$MNT_POINT"
 
@@ -8811,14 +8791,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_FILE_PARTITION_DONE "$mappedRestorePartition"
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_STARTED "$mappedRestorePartition"
-			fsck -fpv "$mappedRestorePartition" &>>"$LOG_FILE"
-			rc_fsck=$?
-			logItem "fsck rc: $rc_fsck"
-			if (( $rc_fsck > 1 )); then # 1: => Filesystem errors corrected
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_FAILED "$mappedRestorePartition" "$rc_fsck"
-				exitError $RC_NATIVE_RESTORE_FAILED
-			fi
+			executeFilesystemCheck "$mappedRestorePartition"
 
 		fi # is not swap partition
 	else
@@ -8827,6 +8800,19 @@ function restorePartitionBasedPartition() { # restorefile
 
 	logExit
 
+}
+
+function executeFilesystemCheck { # partition
+	logEntry "$1"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_EXECUTED "$1"
+	fsck -fpv "$1" &>>"$LOG_FILE"
+	rc_fsck=$?
+	logItem "fsck rc: $rc_fsck"
+	if (( $rc_fsck > 1 )); then # 1: => Filesystem errors corrected
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_FAILED "$1" "$rc_fsck"
+		exitError $RC_NATIVE_RESTORE_FAILED
+	fi
+	logExit
 }
 
 function doitRestore() {
