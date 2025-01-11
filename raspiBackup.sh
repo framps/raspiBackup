@@ -5421,7 +5421,7 @@ function cleanupRestore() { # trap
 	if [[ -n $MNT_POINT ]]; then
 		if isMounted $MNT_POINT; then
 			logItem "Umount $MNT_POINT"
-			umount $MNT_POINT &>>"$LOG_FILE"
+			umountPartition "$MNT_POINT"
 		fi
 
 		logItem "Deleting dir $MNT_POINT"
@@ -5430,10 +5430,10 @@ function cleanupRestore() { # trap
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
 		if isMounted $BOOT_PARTITION; then
-			umount $BOOT_PARTITION &>>"$LOG_FILE"
+			umountPartition "$BOOT_PARTITION"
 		fi
 		if isMounted $ROOT_PARTITION; then
-			umount $ROOT_PARTITION &>>"$LOG_FILE"
+			umountPartition $ROOT_PARTITION
 		fi
 	fi
 
@@ -6324,6 +6324,24 @@ function partitionRestoredeviceIfRequested() {
 			if (( $NO_YES_QUESTION )); then
 				echo "Y"
 			fi
+		else
+
+			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
+				local partitions=( $(collectPartitionsInBackup $RESTOREFILE) )
+				local partitionsString="${partitions[@]}"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$partitionsString\""
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$PARTITIONS_TO_RESTORE\""
+			fi
+
+			if ! askYesNo; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+				exitError $RC_RESTORE_FAILED
+			fi
+
+			if (( $NO_YES_QUESTION )); then
+				echo "Y"
+			fi
 		fi
 
 	elif [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
@@ -6552,7 +6570,7 @@ function restoreNormalBackupType() {
 
 			if ( isMounted "$MNT_POINT" ); then
 				logItem "$MNT_POINT mounted - unmouting"
-				umount "$MNT_POINT" &>> "$LOG_FILE"
+				umountPartition "$MNT_POINT"
 			else
 				logItem "$MNT_POINT not mounted"
 			fi
@@ -6665,7 +6683,7 @@ function restoreNormalBackupType() {
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
 
-			umount $ROOT_PARTITION &>> "$LOG_FILE"
+			umountPartition $ROOT_PARTITION
 
 			executeFilesystemCheck "$ROOT_PARTITION"
 
@@ -6700,7 +6718,7 @@ function restoreNormalBackupType() {
 
 	if isMounted "$MNT_POINT"; then
 		logItem "Umount $MNT_POINT"
-		umount "$MNT_POINT" &>> "$LOG_FILE"
+		umountPartition "$MNT_POINT"
 	fi
 
 	logSystemDiskState
@@ -7066,7 +7084,7 @@ function umountPartitions() { # sourcePath
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			if isMounted "$1/$partitionName"; then
 				logItem "umount $1/$partitionName"
-				umount "$1/$partitionName" &>>"$LOG_FILE"
+				umountPartition "$1/$partitionName" 
 			fi
 			if [[ -d "$1/$partitionName" ]]; then
 				logItem "rmdir $1/$partitionName"
@@ -7074,6 +7092,18 @@ function umountPartitions() { # sourcePath
 			fi
 		done
 		logItem "AFTER: mount $(mount)"
+	fi
+	logExit
+}
+
+function umountPartition() { # partition
+
+	logEntry "$1"
+	umount "$" &>>"$LOG_FILE"
+	rc=$?
+	if (( ! $rc )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "$s" "$rc"
+		exitError "$RC_MISC_ERROR"
 	fi
 	logExit
 }
