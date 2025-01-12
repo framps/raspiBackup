@@ -6564,11 +6564,6 @@ function restoreNormalBackupType() {
 
 			executeDD "$cmd"
 			rc=$?
-
-			if (( ! $rc )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PROGRAM_ERROR $BACKUPTYPE $rc
-				exitError "$RC_NATIVE_RESTORE_FAILED"
-			fi
 			;;
 
 		*)	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
@@ -7106,8 +7101,8 @@ function umountPartition() { # partition
 	logEntry "$1"
 	umount "$1" &>>"$LOG_FILE"
 	rc=$?
-	if (( ! $rc )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "$s" "$rc"
+	if (( $rc )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "$1" "$rc"
 		exitError "$RC_MISC_ERROR"
 	fi
 	logExit
