@@ -2060,8 +2060,11 @@ MSG_EN[$MSG_PARTITION_CHECK_EXECUTED]="RBK0342I: Filesystem check executed on %s
 MSG_DE[$MSG_PARTITION_CHECK_EXECUTED]="RBK0342I: Dateisystemcheck auf %s wird durchgeführt."
 MSG_PARTITION_CHECK_FAILED=343
 MSG_EN[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Filesystem check failed on %s with RC %s."
-# shellcheck disable=SC2034
 MSG_DE[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Dateisystemcheck auf %s fehlerhaft beendet mit RC %s."
+MSG_NO_BOOTPARTITION_MOUNTED=344
+MSG_EN[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: No mounted boot parition detected."
+# shellcheck disable=SC2034
+MSG_DE[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: Keine gemountete Bootpartition gefunden."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7544,6 +7547,13 @@ function inspect4Backup() {
 		exitError $RC_NOT_SUPPORTED
 	fi
 
+	if ! isMounted "/boot"; then
+		if ! isMounted "/boot/firmware"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTPARTITION_MOUNTED			# otherwise an empty bootpartition will be saved
+			exitError $RC_NO_BOOT_FOUND
+		fi
+	fi
+	
 	if [[ -n "$BOOT_DEVICE" ]]; then
 		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
 		BOOT_DEVICE="$updatedBootdeviceName"
