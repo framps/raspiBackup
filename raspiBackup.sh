@@ -9332,8 +9332,8 @@ function updateConfig() {
 				OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
 				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
 			else
-				printf "%s\n" "$NEW_OPTION_TRAILER" "$CONFIG_VERSION" >> "$MERGED_CONFIG"
-				echo "$line" >> "$MERGED_CONFIG"						# add new option
+				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
+				echo "$line" >> $MERGED_CONFIG						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
 				(( merged ++ ))
 			fi
