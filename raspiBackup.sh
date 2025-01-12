@@ -7104,7 +7104,7 @@ function umountPartitions() { # sourcePath
 function umountPartition() { # partition
 
 	logEntry "$1"
-	umount "$" &>>"$LOG_FILE"
+	umount "$1" &>>"$LOG_FILE"
 	rc=$?
 	if (( ! $rc )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "$s" "$rc"
