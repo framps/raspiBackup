@@ -2462,7 +2462,7 @@ function usage() {
 
 	#  Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	#shellcheck disable=SC2207
-	NO_YES=( $(getMessage $MSG_NO_YES) ) 
+	NO_YES=( $(getMessage $MSG_NO_YES) )
 
 	local func="usage${activeLang}"
 
@@ -2627,7 +2627,7 @@ function createBackupVersion() { # file
 
 		local backupFile="$file.${versionNumber}.bak"
 		logItem "Create version $backupFile"
-		
+
 		if ! mv "$file.bak" "$backupFile"; then
 			logExit 1
 			return 1
@@ -2638,7 +2638,7 @@ function createBackupVersion() { # file
 	rc=$?
 
 	echo "$file.bak"
-	
+
 	logExit "rc: $rc - $file.bak"
 	return $rc	# return status of cp command
 }
@@ -6511,7 +6511,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 	logItem "Directories: $directories"
 
 	directories="$(grep -Po "((sd[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
-	
+
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
 	availablePartitions=$(tr '\n' ' ' <<< "$partitionNo")	# substitute nl from ls with space
@@ -6520,7 +6520,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 	logItem "Found available partitions: $availablePartitions in $lastBackupDir"
 
 	echo "${availablePartitions}"
-	
+
 	logExit "-${availablePartitions}-"
 }
 
@@ -7084,7 +7084,7 @@ function umountPartitions() { # sourcePath
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			if isMounted "$1/$partitionName"; then
 				logItem "umount $1/$partitionName"
-				umountPartition "$1/$partitionName" 
+				umountPartition "$1/$partitionName"
 			fi
 			if [[ -d "$1/$partitionName" ]]; then
 				logItem "rmdir $1/$partitionName"
@@ -7143,14 +7143,14 @@ function backupPartitions() {
 			local unusedSize
 			unusedSize="$(extractDataFromBackupPartedFile "${BOOT_PARTITION_PREFIX}$partition" "4")"
 			unusedSize="$(bytesToHuman "$unusedSize")"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$unusedSize" 
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIPPING_UNFORMATTED_PARTITION "${BOOT_PARTITION_PREFIX}$partition" "$unusedSize"
 		else
 			local pref
 			pref="$(getPartitionPrefix $BOOT_DEVICENAME)"
 
 			local fileSystemSize
 			fileSystemSize="$(getBackupPartitionFilesystemSize "${pref}$partition")"
-			local fileSystemUsed		
+			local fileSystemUsed
 			fileSystemUsed="$(getBackupPartitionFilesystemUsed "${pref}$partition")"
 
 			logItem "fileSystem: $fileSystem - fileSystemSize: $fileSystemSize - fileSystemUsed: $fileSystemUsed"
@@ -7375,7 +7375,7 @@ function checksForPartitionBasedBackup() {
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]]; then
 		local lastBackupDir
 		lastBackupDir=$(find "$BACKUPTARGET_ROOT" -maxdepth 1 -type d -name "${HOSTNAME}@*-$BACKUPTYPE-*" ! -name "$BACKUPFILE" 2>>/dev/null | sort | tail -n 1)
-		
+
 		logItem "lastBackupDir: $lastBackupDir"
 		if [[ -n "$lastBackupDir" ]]; then
 			local missing
@@ -7550,7 +7550,7 @@ function inspect4Backup() {
 			exitError $RC_NO_BOOT_FOUND
 		fi
 	fi
-	
+
 	if [[ -n "$BOOT_DEVICE" ]]; then
 		local updatedBootdeviceName=${BOOT_DEVICE#"/dev/"}
 		BOOT_DEVICE="$updatedBootdeviceName"
@@ -8310,8 +8310,12 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 	if (( ! $SKIP_SFDISK )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_BOOT_PARTITION_OVERWRITTEN "$BOOT_PARTITION"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_ROOT_PARTITION_OVERWRITTEN "$ROOT_PARTITION"
+		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ||  "$BACKUPTYPE == $BACKUPTYPE_DDZ" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING "$BOOT_PARTITION"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_BOOT_PARTITION_OVERWRITTEN "$BOOT_PARTITION"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_ROOT_PARTITION_OVERWRITTEN "$ROOT_PARTITION"
+		fi
 	fi
 
 	if ! askYesNo; then
@@ -9249,7 +9253,7 @@ function updateConfig() {
 	# lang appears unused. Verify use (or export if used externally). ... lang used in following eval for late binding of config files to use the correct language !!!
 	# shellcheck disable=SC2034
 	local lang=${LANGUAGE,,}
-	
+
 	if grep -iqE "alpha|beta" <<< "$VERSION"; then
 		eval "DL_URL=$BETA_CONFIG_URL"
 	else
