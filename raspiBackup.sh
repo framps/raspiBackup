@@ -253,6 +253,8 @@ export BACKUP_TARGETDIR
 export BACKUP_TARGETFILE
 export MSG_FILE
 export LOG_FILE
+export STOPSERVICES
+export STARTSERVICES
 
 # Telegram options
 
@@ -1931,6 +1933,9 @@ MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert."
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
 MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem is not supported."
 MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem wird nicht unterstützt."
+MSG_EXTRA_MOUNT_OPTS=297
+MSG_EN[$MSG_EXTRA_MOUNT_OPTS]="RBK0341I: Mount options for %s: %s."
+MSG_DE[$MSG_EXTRA_MOUNT_OPTS]="RBK0341I: Mount Optionen für %s: %s."
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2904,6 +2909,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_DYNAMIC_MOUNT=""
 	# Define bootdevice (e.g. /dev/mmcblk0, /dev/nvme0n1 or /dev/sda) and turn off boot device autodiscovery
 	DEFAULT_BOOT_DEVICE=""
+	# Use native filesystem snapshots
+        DEFAULT_USE_FS_SNAPSHOTS="0" 
 	############# End default config section #############
 }
 
@@ -2987,6 +2994,7 @@ function copyDefaultConfigVariables() {
 	YES_NO_RESTORE_DEVICE="$DEFAULT_YES_NO_RESTORE_DEVICE"
 	ZIP_BACKUP="$DEFAULT_ZIP_BACKUP"
 	DYNAMIC_MOUNT="$DEFAULT_DYNAMIC_MOUNT"
+	USE_FS_SNAPSHOTS="$DEFAULT_USE_FS_SNAPSHOTS"
 
 	checkImportantParameters
 
@@ -8173,6 +8181,24 @@ function updateRestoreReminder() {
 	logExit
 
 }
+ function extraMountOptions() { # devid
+          logEntry "$1"
+          FSTYPE=$(findmnt -n -o FSTYPE "$1" || echo "none" )
+          if [ ! $FSTYPE == "btrfs" ] ; then
+                  echo ""
+                  logExit "$1 is $FSTYPE, not btrfs - skipping setting mount options"
+                  return
+          fi
+          logItem "FS type of $1: $FSTYPE"
+          local mntpoint
+          mntpoint=$(cat /proc/mounts|grep $1 | awk '{ print $2; }')
+          if [ -z "$(btrfs subvol list $mntpoint|grep ${SNAPDEST#/})" ] ; then
+                  echo ""
+                  logExit
+          fi
+          echo "-o ro,subvol=$SNAPDEST"
+          logExit
+}
 
 function mountAndCheck() { # device mountpoint
 	logEntry "$1 - $2"
@@ -8185,7 +8211,14 @@ function mountAndCheck() { # device mountpoint
 			exitError $RC_MISC_ERROR
 		fi
 	fi
-	mount "$1" "$2" &>>"$LOG_FILE"
+	if [ -n "$USE_FS_SNAPSHOTS" -a "$USE_FS_SNAPSHOTS" == "1" -a -n "$SNAPDEST" ]; then
+		mountOpts=$(extraMountOptions "$1")
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTRA_MOUNT_OPTS "$1" "$mountOpts"
+	else
+		mountOpts=""
+	fi
+	mount $mountOpts "$1" "$2" &>>"$LOG_FILE" || mount -o ro "$1" "$2" &>>"$LOG_FILE" # try with mountopts, fallback to regular mount on fail
+
 	local rc=$?
 	if (( $rc )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOUNT_CHECK_ERROR "$1" "$2" "$rc"
@@ -8827,6 +8860,7 @@ function usageEN() {
 	echo "-P use partitionoriented backup mode"
 	echo "-t {backupType} ($ALLOWED_TYPES) (default: $DEFAULT_BACKUPTYPE)"
 	echo "-T \"{List of partitions to save}\" (Partition numbers, e.g. \"1 2 3\"). Only valid with parameter -P (default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
+	echo "--snapshots Use filesystem snapshots"
 	echo ""
 	echo "-Restore options-"
 	echo "-0 SD card will not be formatted"
@@ -8879,6 +8913,7 @@ function usageDE() {
 	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
 	echo "-T \"Liste der Partitionen die zu Sichern sind}\" (Partitionsnummern, z.B. \"1 2 3\"). Nur gültig zusammen mit Parameter -P (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
+	echo "--snapshots Snapshots des Filesystems benutzen
 	echo ""
 	echo "-Restore Optionen-"
 	echo "-0 Keine Formatierung der SD Karte"
@@ -9371,6 +9406,10 @@ while (( "$#" )); do
 	  o=$(checkOptionParameter "$1" "$2")
 	  (( $? )) && exitError $RC_PARAMETER_ERROR
 	  SMART_RECYCLE_OPTIONS="$o"; shift 2
+	  ;;
+
+	--snapshots|--snapshot)
+	  USE_FS_SNAPSHOTS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	--systemstatus|--systemstatus[+-])
