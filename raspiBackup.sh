@@ -6795,14 +6795,16 @@ function inspect4Restore() {
 
 	logEntry
 
+	local checkHostname="$(sed -E 's/\@[^\-]+//' <<< "$HOSTNAME")"			# remove OSname added in 0.7.0 to be forward compatible
+
 	if [[ $BACKUPTYPE != $BACKUPTYPE_DD && $BACKUPTYPE != $BACKUPTYPE_DDZ ]]; then
-		SF_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.sfdisk)
+		SF_FILE=$(ls -1 $RESTOREFILE/${checkHostname}-backup.sfdisk)
 		if [[ -z $SF_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.sfdisk"
 			exitError $RC_MISSING_FILES
 		fi
 
-		MBR_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.mbr)
+		MBR_FILE=$(ls -1 $RESTOREFILE/${checkHostname}-backup.mbr)
 		if [[ -z $MBR_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.mbr"
 			exitError $RC_MISSING_FILES
@@ -6810,19 +6812,19 @@ function inspect4Restore() {
 	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
-		BLKID_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.blkid)
+		BLKID_FILE=$(ls -1 $RESTOREFILE/${checkHostname}-backup.blkid)
 		if [[ -z $BLKID_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.blkid"
 			exitError $RC_MISSING_FILES
 		fi
 
-		PARTED_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.parted)
+		PARTED_FILE=$(ls -1 $RESTOREFILE/${checkHostname}-backup.parted)
 		if [[ -z $PARTED_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.parted"
 			exitError $RC_MISSING_FILES
 		fi
 
-		FDISK_FILE=$(ls -1 $RESTOREFILE/${HOSTNAME}-backup.fdisk)
+		FDISK_FILE=$(ls -1 $RESTOREFILE/${checkHostname}-backup.fdisk)
 		if [[ -z $FDISK_FILE ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$RESTOREFILE/${HOSTNAME}-backup.fdisk"
 			exitError $RC_MISSING_FILES
@@ -7296,8 +7298,10 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 #	2) backup dir and date (added when boot backup all the time was added in 0.6.1.1)
 #	3) backup dir and no date (initial location when ony one single backup was created, pre 0.6.1.1)
 
+	local checkHostname="$(sed -E 's/\@[^\-]+//' <<< "$HOSTNAME")"			# remove OSname added in 0.7.0 to be forward compatible
+
 	local bootpartitionDirectory=( "$RESTOREFILE" "$BASE_DIR"  "$BASE_DIR" )
-	local bootpartitionExtension=( "$HOSTNAME-backup" "$HOSTNAME-backup-$DATE" "$HOSTNAME-backup" )
+	local bootpartitionExtension=( "$checkHostname-backup" "$checkHostname-backup-$DATE" "$checkHostname-backup" )
 
 	local i=0
 
