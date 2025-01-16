@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 # shellcheck disable=SC2004
 # SC2004: $ not required in arithmentic expressions
 #
@@ -317,6 +318,7 @@ NOTIFICATION_BACKUP_EXTENSION="notify"
 EMAIL_EXTENSION="mail"
 PRE_RESTORE_EXTENSION="$PRE_BACKUP_EXTENSION"
 POST_RESTORE_EXTENSION="$POST_BACKUP_EXTENSION"
+MOUNT_EXTENSION="mount"
 
 PRE_BACKUP_EXTENSION_CALLED=0
 PRE_RESTORE_EXTENSION_CALLED=0
@@ -5428,7 +5430,7 @@ function cleanupRestore() { # trap
 		fi
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir -r $MNT_POINT &>>"$LOG_FILE"
+		rmdir -R $MNT_POINT &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
@@ -6622,6 +6624,7 @@ function restoreNormalBackupType() {
 				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
 
+			umountPartition "$BOOT_PARTITION"
 			executeFilesystemCheck "$BOOT_PARTITION"
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
@@ -6684,7 +6687,6 @@ function restoreNormalBackupType() {
 			fi
 
 			umountPartition $ROOT_PARTITION
-
 			executeFilesystemCheck "$ROOT_PARTITION"
 
 			updateUUIDs # if partitioned
@@ -8844,6 +8846,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_FILE_PARTITION_DONE "$mappedRestorePartition"
 
+			umountPartition "$mappedRestorePartition"
 			executeFilesystemCheck "$mappedRestorePartition"
 
 		fi # is not swap partition
@@ -8863,6 +8866,7 @@ function executeFilesystemCheck { # partition
 	logItem "fsck rc: $rc_fsck"
 	if (( $rc_fsck > 1 )); then # 1: => Filesystem errors corrected
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_CHECK_FAILED "$1" "$rc_fsck"
+		rc=$RC_NATIVE_RESTORE_FAILED
 		exitError $RC_NATIVE_RESTORE_FAILED
 	fi
 	logExit
@@ -9176,8 +9180,10 @@ function updateRestoreReminder() {
 }
 
 function mountAndCheck() { # device mountpoint
+	
 	logEntry "$1 - $2"
-	if ( isMounted "$2" ); then
+	
+	if isMounted "$2"; then
 		logItem "$2 mounted - unmouting"
 		umount "$2" &>>"$LOG_FILE"
 		if (( $rc )); then
@@ -9186,15 +9192,28 @@ function mountAndCheck() { # device mountpoint
 			exitError $RC_MISC_ERROR
 		fi
 	fi
-	mount "$1" "$2" &>>"$LOG_FILE"
-	local rc=$?
-	if (( $rc )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOUNT_CHECK_ERROR "$1" "$2" "$rc"
+
+	local mountExtensionFileName="${MYNAME}_${MOUNT_EXTENSION}.sh"
+	if command -v "$extensionFileName" &>/dev/null; then
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_EXTENSION_CALLED "$extensionFileName"
+		$extensionFileName "$1" "$2" &>>"$LOG_FILE"
+		rc=$?
+		logItem "Extension RC: $rc"
+		if (( $rc != 0 )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTENSION_FAILED "$extensionFileName" "$rc"
+			exitError $RC_MISC_ERROR
+		fi
+	else 
+		mount "$1" "$2" &>>"$LOG_FILE"
+		local rc=$?
+		if (( $rc )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOUNT_CHECK_ERROR "$1" "$2" "$rc"
+			logExit $rc
+			exitError $RC_MISC_ERROR
+		fi
+		logCommand "findmnt $2"
 		logExit $rc
-		exitError $RC_MISC_ERROR
-	fi
-	logCommand "findmnt $2"
-	logExit $rc
+	}
 }
 
 function remount() { # device mountpoint
