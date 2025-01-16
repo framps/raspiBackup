@@ -5421,23 +5421,16 @@ function cleanupRestore() { # trap
 		callExtensions $POST_RESTORE_EXTENSION $rc
 	fi
 
-	if [[ -n $MNT_POINT ]]; then
-		if isMounted $MNT_POINT; then
-			logItem "Umount $MNT_POINT"
-			umountPartition "$MNT_POINT"
-		fi
+	if [[ -n "$MNT_POINT" ]]; then
+		umountPartition "$MNT_POINT"
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir -r $MNT_POINT &>>"$LOG_FILE"
+		rmdir $MNT_POINT &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
-		if isMounted $BOOT_PARTITION; then
-			umountPartition "$BOOT_PARTITION"
-		fi
-		if isMounted $ROOT_PARTITION; then
-			umountPartition $ROOT_PARTITION
-		fi
+		umountPartition "$BOOT_PARTITION"
+		umountPartition "$ROOT_PARTITION"
 	fi
 
 	logExit "$rc"
@@ -6568,12 +6561,7 @@ function restoreNormalBackupType() {
 
 		*)	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
 
-			if ( isMounted "$MNT_POINT" ); then
-				logItem "$MNT_POINT mounted - unmouting"
-				umountPartition "$MNT_POINT"
-			else
-				logItem "$MNT_POINT not mounted"
-			fi
+			umountPartition "$MNT_POINT"
 
 			logItem "Creating mountpoint $MNT_POINT"
 			mkdir -p "$MNT_POINT"
@@ -6716,10 +6704,7 @@ function restoreNormalBackupType() {
 	logItem "Syncing filesystems"
 	sync
 
-	if isMounted "$MNT_POINT"; then
-		logItem "Umount $MNT_POINT"
-		umountPartition "$MNT_POINT"
-	fi
+	umountPartition "$MNT_POINT"
 
 	logSystemDiskState
 
@@ -7082,10 +7067,7 @@ function umountPartitions() { # sourcePath
 		logItem "BEFORE: mount $(mount)"
 		for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
-			if isMounted "$1/$partitionName"; then
-				logItem "umount $1/$partitionName"
-				umountPartition "$1/$partitionName"
-			fi
+			umountPartition "$1/$partitionName"
 			if [[ -d "$1/$partitionName" ]]; then
 				logItem "rmdir $1/$partitionName"
 				rmdir "$1/$partitionName" &>>"$LOG_FILE"
@@ -7102,8 +7084,7 @@ function umountPartition() { # partition
 
 	local retry=3
 	
-	if mountpoint -q "$1"; then
-	
+	if isMounted "$1"; then	
 		umount "$1" &>>"$LOG_FILE"
 		rc=$?
 		if (( $rc )); then
@@ -8832,8 +8813,7 @@ function restorePartitionBasedPartition() { # restorefile
 
 			sleep 1s					# otherwise umount fails
 
-			logItem "umount $mappedRestorePartition"
-			umount "$mappedRestorePartition"
+			umountPartition "$mappedRestorePartition"
 
 			if isMounted "$MNT_POINT"; then
 				logItem "umount $MNT_POINT"
@@ -9176,16 +9156,11 @@ function updateRestoreReminder() {
 }
 
 function mountAndCheck() { # device mountpoint
+	
 	logEntry "$1 - $2"
-	if ( isMounted "$2" ); then
-		logItem "$2 mounted - unmouting"
-		umount "$2" &>>"$LOG_FILE"
-		if (( $rc )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_CHECK_ERROR "$1" "$2" "$rc"
-			logExit "$rc"
-			exitError $RC_MISC_ERROR
-		fi
-	fi
+	
+	umountPartition "$2"
+	
 	mount "$1" "$2" &>>"$LOG_FILE"
 	local rc=$?
 	if (( $rc )); then
@@ -9201,7 +9176,7 @@ function remount() { # device mountpoint
 
 	logEntry "$1 - $2"
 
-	if ( isMounted "$1" ); then
+	if isMounted "$1"; then
 		logItem "$1 mounted - unmouting"
 		umount "$1" &>>"$LOG_FILE"
 	else
