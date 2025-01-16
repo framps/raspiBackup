@@ -7097,14 +7097,26 @@ function umountPartitions() { # sourcePath
 }
 
 function umountPartition() { # partition
-
+	
 	logEntry "$1"
-	umount "$1" &>>"$LOG_FILE"
-	rc=$?
-	if (( $rc )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "$1" "$rc"
-		exitError "$RC_MISC_ERROR"
+
+	local retry=3
+	
+	if mountpoint -q "$1"; then
+	
+		umount "$1" &>>"$LOG_FILE"
+		rc=$?
+		if (( $rc )); then
+			if (( --retry > 0 )); then
+				logItem "RC $rc - Retrying umount $retry"
+				sleep 3
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_ERROR "$1" "$rc"
+				exitError "$RC_MISC_ERROR"
+			fi
+		fi
 	fi
+	
 	logExit
 }
 
