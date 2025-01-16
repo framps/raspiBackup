@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 # shellcheck disable=SC2004
 # SC2004: $ not required in arithmentic expressions
 #
@@ -9161,16 +9160,31 @@ function updateRestoreReminder() {
 
 function mountAndCheck() { # device mountpoint
 	
-	logEntry "$1 - $2"
+	logEntry "Device: $1 - Mountpoint: $2"
 	
 	umountPartition "$2"
-	
-	mount "$1" "$2" &>>"$LOG_FILE"
-	local rc=$?
-	if (( $rc )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOUNT_CHECK_ERROR "$1" "$2" "$rc"
-		logExit $rc
+
+	local extensionFileName="${MYNAME}_${MOUNT_EXTENSION}.sh"
+
+	if command -v "$extensionFileName" &>/dev/null; then
+		logItem "Calling mount extension $extensionFileName"
+		$extensionFileName "$1" "$2" &>>"$LOG_FILE"
+		rc=$?
+		logItem "Extension RC: $rc"
+		if (( $rc )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTENSION_FAILED "$extensionFileName" "$rc"
+			exitError "$RC_MOUNT_FAILED"
+		fi
+	else
+		mount "$1" "$2" &>>"$LOG_FILE"
+		local rc=$?
+		if (( $rc )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOUNT_CHECK_ERROR "$1" "$2" "$rc"
+			exitError "$RC_MOUNT_FAILED"
+		fi
 	fi
+
+	logExit
 }
 
 function remount() { # device mountpoint
