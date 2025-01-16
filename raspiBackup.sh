@@ -8303,7 +8303,7 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 	if (( ! $SKIP_SFDISK )); then
-		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ||  "$BACKUPTYPE == $BACKUPTYPE_DDZ" ]]; then
+		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ||  "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING "$BOOT_PARTITION"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_BOOT_PARTITION_OVERWRITTEN "$BOOT_PARTITION"
