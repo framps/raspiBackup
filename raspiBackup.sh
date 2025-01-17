@@ -8105,7 +8105,7 @@ function listDeviceInfo() { # device (/dev/sda)
 
 	logEntry "$1"
 	local result
-	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL,UUID,PARTUUID)"
+	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL)"
 	echo "$result"
 	logExit
 }
