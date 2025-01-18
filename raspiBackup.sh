@@ -5978,7 +5978,7 @@ function backupTar() {
 
 	if [[ ( -e $PERSISTENT_JOURNAL || -e $PERSISTENT_JOURNAL_LOG2RAM ) ]]; then
 		logItem "Excluding $PERSISTENT_JOURNAL and $PERSISTENT_JOURNAL_LOG2RAM"
-		EXCLUDE_LIST+=" --exclude ${PERSISTENT_JOURNAL} --exclude ${PERSISTENT_JOURNAL_LOG2RAM}"
+		EXCLUDE_LIST+=" --exclude ${PERSISTENT_JOURNAL}/* --exclude ${PERSISTENT_JOURNAL_LOG2RAM}/*"
 	fi
 
 	cmd="tar \
