@@ -955,10 +955,10 @@ MSG_DE[$MSG_MENTION_HELP]="RBK0091I: '%s -h' liefert eine detailierte Beschreibu
 MSG_FI[$MSG_MENTION_HELP]="RBK0091I: Suorita '%s -h' saadaksesi lisätietoa skriptin parametreista"
 MSG_FR[$MSG_MENTION_HELP]="RBK0091I: '%s -h' fournit une description détaillée de toutes les options du script"
 MSG_PROCESSING_PARTITION=92
-MSG_EN[$MSG_PROCESSING_PARTITION]="RBK0092I: Saving partition %s (%s/%s) ."
-MSG_DE[$MSG_PROCESSING_PARTITION]="RBK0092I: Partition %s (%s/%s) wird gesichert ."
-MSG_FI[$MSG_PROCESSING_PARTITION]="RBK0092I: Tallennetaan osiota %s (%s/%s) .."
-MSG_FR[$MSG_PROCESSING_PARTITION]="RBK0092I: Sauvegarde de la partition %s (%s/%s) .."
+MSG_EN[$MSG_PROCESSING_PARTITION]="RBK0092I: Saving partition %s (%s/%s)"
+MSG_DE[$MSG_PROCESSING_PARTITION]="RBK0092I: Partition %s (%s/%s) wird gesichert"
+MSG_FI[$MSG_PROCESSING_PARTITION]="RBK0092I: Tallennetaan osiota %s (%s/%s)"
+MSG_FR[$MSG_PROCESSING_PARTITION]="RBK0092I: Sauvegarde de la partition %s (%s/%s)"
 MSG_PARTITION_NOT_FOUND=93
 MSG_EN[$MSG_PARTITION_NOT_FOUND]="RBK0093E: Partition %s specified with option -T not found"
 MSG_DE[$MSG_PARTITION_NOT_FOUND]="RBK0093E: Angegebene Partition %s der Option -T existiert nicht"
@@ -1962,9 +1962,9 @@ MSG_DE[$MSG_PARTITIONS_EXTEND_DISK_SIZE]="RBK0297E: Partitionierung größer als
 #MSG_UNSUPPORTED_PARTITIONING=298
 #MSG_EN[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 on boot and/or %2 on root not supported"
 #MSG_DE[$MSG_UNSUPPORTED_PARTITIONING]="RBK0298E: Filesystem %1 auf boot und/oder %2 auf root ist nicht unterstützt"
-MSG_MOVE_TEMP_DIR=299
-MSG_EN[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backup directory %1 created"
-MSG_DE[$MSG_MOVE_TEMP_DIR]="RBK0299I: Backupverzeichnis %1 erstellt"
+MSG_BACKUPDIR_CREATED=299
+MSG_EN[$MSG_BACKUPDIR_CREATED]="RBK0299I: Backup directory %s created"
+MSG_DE[$MSG_BACKUPDIR_CREATED]="RBK0299I: Backupverzeichnis %s erstellt"
 MSG_ADJUSTING_LAST=300
 MSG_EN[$MSG_ADJUSTING_LAST]="RBK0300I: Adjusting last partition from %s to %s"
 MSG_DE[$MSG_ADJUSTING_LAST]="RBK0300I: Letzte Partition wird von %s auf %s angepasst"
@@ -2063,8 +2063,12 @@ MSG_EN[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Filesystem check failed on %s wit
 MSG_DE[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Dateisystemcheck auf %s fehlerhaft beendet mit RC %s"
 MSG_NO_BOOTPARTITION_MOUNTED=344
 MSG_EN[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: No mounted boot parition detected"
-# shellcheck disable=SC2034
 MSG_DE[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: Keine gemountete Bootpartition gefunden"
+MSG_BACKUPDIR_MOVED=345
+MSG_EN[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporary backup directory %s moved to %s"
+# MSG_DE appears unused. Verify use (or export if used externally).
+#shellcheck disable=SC2034
+MSG_DE[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporäres Backupverzeichnis %s wird in %s verschoben"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5261,7 +5265,11 @@ function cleanup() { # trap
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
 					CLEANUP_RC=$RC_TEMPMOVE_FAILED
 				else
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_MOVE_TEMP_DIR "$BACKUPTARGET_FINAL_DIR"
+					if [[ $MSG_LEVEL == "$MSG_LEVEL_MINIMAL" ]]; then
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
+					else
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_MOVED "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
+					fi
 				fi
 			else
 				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
@@ -6128,7 +6136,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 function backupRsync() { # partition number (for partition based backup)
 
-	local verbose partition target source excludeRoot cmd cmdParms excludeMeta
+	local verbose partition target source cmd cmdParms excludeMeta
 
 	logEntry
 
@@ -6143,15 +6151,11 @@ function backupRsync() { # partition number (for partition based backup)
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		target="${BACKUPTARGET_DIR}/$partition"
 		source="$TEMPORARY_MOUNTPOINT_ROOT/$partition/"
-
-		excludeRoot="/$partition"
-
 	else
 		target="\"${BACKUPTARGET_DIR}\""
 		source="/"
 
 		bootPartitionBackup
-		excludeRoot=""
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
 
@@ -6184,21 +6188,21 @@ function backupRsync() { # partition number (for partition based backup)
 	fs="$(getFsType "$BACKUPPATH")"
 	if [[ ( -e "$PERSISTENT_JOURNAL" || -e "$PERSISTENT_JOURNAL_LOG2RAM" ) && "$fs" =~ ^nfs* ]]; then
 		logItem "Excluding $PERSISTENT_JOURNAL and $PERSISTENT_JOURNAL_LOG2RAM for nfs"
-		EXCLUDE_LIST+=" --exclude ${excludeRoot}${PERSISTENT_JOURNAL} --exclude ${excludeRoot}${PERSISTENT_JOURNAL_LOG2RAM}"
+		EXCLUDE_LIST+=" --exclude ${PERSISTENT_JOURNAL} --exclude ${PERSISTENT_JOURNAL_LOG2RAM}"
 	fi
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
---exclude=\"$excludeRoot/$log_file\" \
---exclude=\"$excludeRoot/$msg_file\" \
+--exclude=\"$log_file\" \
+--exclude=\"$msg_file\" \
 --exclude='.gvfs' \
---exclude=$excludeRoot/proc/* \
---exclude=$excludeRoot/lost+found/* \
---exclude=$excludeRoot/sys/* \
---exclude=$excludeRoot/dev/* \
---exclude=$excludeRoot/swapfile \
---exclude=$excludeRoot/tmp/* \
---exclude=$excludeRoot/run/* \
---exclude=$excludeRoot/media/* \
+--exclude=/proc/* \
+--exclude=/lost+found/* \
+--exclude=/sys/* \
+--exclude=/dev/* \
+--exclude=/swapfile \
+--exclude=/tmp/* \
+--exclude=/run/* \
+--exclude=/media/* \
 $excludeMeta \
 $EXCLUDE_LIST \
 $LINK_DEST \
