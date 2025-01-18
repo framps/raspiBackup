@@ -7082,7 +7082,7 @@ function umountPartition() { # partition
 	
 	logEntry "$1"
 
-	local retry=3
+	local retry=3 rc
 	
 	if isMounted "$1"; then	
 		umount "$1" &>>"$LOG_FILE"
