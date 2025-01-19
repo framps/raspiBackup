@@ -1729,25 +1729,25 @@ MSG_DE[$MSG_MERGING_VERSION]="RBK0241I: Aktuelle Konfiguration %s wird mit der n
 MSG_FI[$MSG_MERGING_VERSION]="RBK0241I: Yhdistetään nykyiset asetukset %s uusiin asetuksiin %s kohteeksi %s"
 MSG_FR[$MSG_MERGING_VERSION]="RBK0241I: La configuration actuelle %s sera fusionnée avec la nouvelle configuration %s dans %s"
 MSG_MERGE_SUCCESSFULL=242
-MSG_EN[$MSG_MERGE_SUCCESSFULL]="RBK0243I: Configuration merge finished successfully but not activated"
-MSG_DE[$MSG_MERGE_SUCCESSFULL]="RBK0243I: Konfigurationszusammenfügung wurde erfolgreich beendet aber nicht aktiviert"
-MSG_FI[$MSG_MERGE_SUCCESSFULL]="RBK0243I: Asetukset yhdistetty onnistuneesti, mutta niitä ei ole aktivoitu"
-MSG_FR[$MSG_MERGE_SUCCESSFULL]="RBK0243I: La fusion de la configuration s'est terminée avec succès mais n'a pas été activée"
+MSG_EN[$MSG_MERGE_SUCCESSFULL]="RBK0242I: Configuration merge finished successfully but not activated."
+MSG_DE[$MSG_MERGE_SUCCESSFULL]="RBK0242I: Konfigurationszusammenfügung wurde erfolgreich beendet aber nicht aktiviert."
+MSG_FI[$MSG_MERGE_SUCCESSFULL]="RBK0242I: Asetukset yhdistetty onnistuneesti, mutta niitä ei ole aktivoitu."
+MSG_FR[$MSG_MERGE_SUCCESSFULL]="RBK0242I: La fusion de la configuration s'est terminée avec succès mais n'a pas été activée."
 MSG_COPIED_FILE=243
-MSG_EN[$MSG_COPIED_FILE]="RBK0244I: Merged configuration %s copied to %s and activated"
-MSG_DE[$MSG_COPIED_FILE]="RBK0244I: Zusammengefügte Konfiguration %s nach %s kopiert und aktiviert"
-MSG_FI[$MSG_COPIED_FILE]="RBK0244I: Yhdistetyt asetukset %s kopioitiin kohteeseen %s ja ne aktivoitiin"
-MSG_FR[$MSG_COPIED_FILE]="RBK0244I: Configuration fusionnée %s copiée dans %s et activée"
+MSG_EN[$MSG_COPIED_FILE]="RBK0243I: Merged configuration %s copied to %s and activated."
+MSG_DE[$MSG_COPIED_FILE]="RBK0243I: Zusammengefügte Konfiguration %s nach %s kopiert und aktiviert."
+MSG_FI[$MSG_COPIED_FILE]="RBK0243I: Yhdistetyt asetukset %s kopioitiin kohteeseen %s ja ne aktivoitiin."
+MSG_FR[$MSG_COPIED_FILE]="RBK0243I: Configuration fusionnée %s copiée dans %s et activée."
 MSG_UPDATE_CONFIG=244
-MSG_EN[$MSG_UPDATE_CONFIG]="RBK0245W: Backup current configuration in %s and activate updated configuration? %s "
-MSG_DE[$MSG_UPDATE_CONFIG]="RBK0245W: Soll die aktuelle Konfiguration in %s gesichert werden und die aktualisierte Konfiguration aktiviert werden? %s "
-MSG_FI[$MSG_UPDATE_CONFIG]="RBK0245W: Varmuuskopioidaanko nykyiset asetukset kohteeseen %s ja aktivoidaan päivitetyt asetukset? %s "
-MSG_FR[$MSG_UPDATE_CONFIG]="RBK0245W: Sauvegarder la configuration actuelle dans %s et activer la configuration mise à jour ? %s "
+MSG_EN[$MSG_UPDATE_CONFIG]="RBK0244W: Backup current configuration in %s and activate updated configuration? %s "
+MSG_DE[$MSG_UPDATE_CONFIG]="RBK0244W: Soll die aktuelle Konfiguration in %s gesichert werden und die aktualisierte Konfiguration aktiviert werden? %s "
+MSG_FI[$MSG_UPDATE_CONFIG]="RBK0244W: Varmuuskopioidaanko nykyiset asetukset kohteeseen %s ja aktivoidaan päivitetyt asetukset? %s "
+MSG_FR[$MSG_UPDATE_CONFIG]="RBK0244W: Sauvegarder la configuration actuelle dans %s et activer la configuration mise à jour ? %s "
 MSG_NO_CONFIGUPDATE_REQUIRED=245
-MSG_EN[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: Local configuration version v%s does not require an update"
-MSG_DE[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: Die lokale Konfigurationsversion v%s benötigt keine Aktualisierung"
-MSG_FI[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: Paikallinen asetustiedoston versio v%s ei vaadi päivitystä"
-MSG_FR[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0246I: La version de configuration locale v%s ne nécessite pas de mise à jour"
+MSG_EN[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0245I: Local configuration version v%s does not require an update."
+MSG_DE[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0245I: Die lokale Konfigurationsversion v%s benötigt keine Aktualisierung."
+MSG_FI[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0245I: Paikallinen asetustiedoston versio v%s ei vaadi päivitystä."
+MSG_FR[$MSG_NO_CONFIGUPDATE_REQUIRED]="RBK0245I: La version de configuration locale v%s ne nécessite pas de mise à jour."
 #MSG_CONFIG_VERSIONS=246
 #MSG_EN[$MSG_CONFIG_VERSIONS]="RBK0246I: Current configuration version: v%s. Required configuration version: v%s"
 #MSG_DE[$MSG_CONFIG_VERSIONS]="RBK0246I: Lokale Konfigurationsversion: v%s. Erforderliche Konfigurationsversion: v%s"
@@ -8208,8 +8208,10 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 #	2) backup dir and date (added when boot backup all the time was added in 0.6.1.1)
 #	3) backup dir and no date (initial location when ony one single backup was created, pre 0.6.1.1)
 
+	local checkHostname="$(sed -E 's/\@[^\-]+//' <<< "$HOSTNAME")"			# remove OSname added in 0.7.0 to be forward compatible
+
 	local bootpartitionDirectory=( "$RESTOREFILE" "$BASE_DIR"  "$BASE_DIR" )
-	local bootpartitionExtension=( "$HOSTNAME-backup" "$HOSTNAME-backup-$DATE" "$HOSTNAME-backup" )
+	local bootpartitionExtension=( "$checkHostname-backup" "$checkHostname-backup-$DATE" "$checkHostname-backup" )
 
 	local i=0
 
