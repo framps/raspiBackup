@@ -8208,10 +8208,8 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 #	2) backup dir and date (added when boot backup all the time was added in 0.6.1.1)
 #	3) backup dir and no date (initial location when ony one single backup was created, pre 0.6.1.1)
 
-	local checkHostname="$(sed -E 's/\@[^\-]+//' <<< "$HOSTNAME")"			# remove OSname added in 0.7.0 to be forward compatible
-
 	local bootpartitionDirectory=( "$RESTOREFILE" "$BASE_DIR"  "$BASE_DIR" )
-	local bootpartitionExtension=( "$checkHostname-backup" "$checkHostname-backup-$DATE" "$checkHostname-backup" )
+	local bootpartitionExtension=( "$HOSTNAME-backup" "$HOSTNAME-backup-$DATE" "$HOSTNAME-backup" )
 
 	local i=0
 
