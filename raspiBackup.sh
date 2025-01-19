@@ -8913,7 +8913,7 @@ function usageDE() {
 	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
 	echo "-T \"Liste der Partitionen die zu Sichern sind}\" (Partitionsnummern, z.B. \"1 2 3\"). Nur gültig zusammen mit Parameter -P (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo "--snapshots Snapshots des Filesystems benutzen
+	echo "--snapshots Snapshots des Filesystems benutzen"
 	echo ""
 	echo "-Restore Optionen-"
 	echo "-0 Keine Formatierung der SD Karte"
