@@ -7084,12 +7084,12 @@ function umountPartitions() { # sourcePath
 }
 
 function umountPartition() { # partition
-	
+
 	logEntry "$1"
 
 	local retry=3 rc
-	
-	if isMounted "$1"; then	
+
+	if isMounted "$1"; then
 		umount "$1" &>>"$LOG_FILE"
 		rc=$?
 		if (( $rc )); then
@@ -7102,7 +7102,7 @@ function umountPartition() { # partition
 			fi
 		fi
 	fi
-	
+
 	logExit
 }
 
@@ -9165,9 +9165,9 @@ function updateRestoreReminder() {
 }
 
 function mountAndCheck() { # device mountpoint
-	
+
 	logEntry "Device: $1 - Mountpoint: $2"
-	
+
 	umountPartition "$2"
 
 	local extensionFileName="${MYNAME}_${MOUNT_EXTENSION}.sh"
@@ -9175,7 +9175,7 @@ function mountAndCheck() { # device mountpoint
 	if command -v "$extensionFileName" &>/dev/null; then
 		logItem "Calling mount extension $extensionFileName"
 		$extensionFileName "$1" "$2" &>>"$LOG_FILE"
-		rc=$?
+		local rc=$?
 		logItem "Extension RC: $rc"
 		if (( $rc )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTENSION_FAILED "$extensionFileName" "$rc"
@@ -9189,7 +9189,6 @@ function mountAndCheck() { # device mountpoint
 			exitError "$RC_MOUNT_FAILED"
 		fi
 	fi
-
 	logExit
 }
 
