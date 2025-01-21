@@ -2008,8 +2008,8 @@ MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Part
 #MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated"
 #MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert"
 MSG_SKIP_FORMATING=326
-MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: No partitions will be formatted"
-MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Keine Partitionen werden formatiert"
+MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: Partitions will not be formatted"
+MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partitionen werden nicht formatiert"
 MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=327
 MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Not all partitions which were saved in the previous backup are included in option -T. Missing \"%s\""
 MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden mit der Option -T gesichert. Es fehlen \"%s\""
@@ -2066,9 +2066,12 @@ MSG_EN[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: No mounted boot parition detect
 MSG_DE[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: Keine gemountete Bootpartition gefunden"
 MSG_BACKUPDIR_MOVED=345
 MSG_EN[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporary backup directory %s moved to %s"
+MSG_DE[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporäres Backupverzeichnis %s wird in %s verschoben"
+MSG_SYNCING_PARTITIONFILE=346
+MSG_EN[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Syncing partition %s"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporäres Backupverzeichnis %s wird in %s verschoben"
+MSG_DE[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Synchronisiere Partition %s"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -8109,7 +8112,7 @@ function listDeviceInfo() { # device (/dev/sda)
 
 	logEntry "$1"
 	local result
-	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL)"
+	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL,PARTUUID)"
 	echo "$result"
 	logExit
 }
@@ -8760,7 +8763,11 @@ function restorePartitionBasedPartition() { # restorefile
 			mount "$mappedRestorePartition" "$MNT_POINT"
 
 			logItem "Restoring file $restoreFile"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONFILE "$mappedRestorePartition"
+			if (( $SKIP_FORMAT )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNCING_PARTITIONFILE "$mappedRestorePartition"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONFILE "$mappedRestorePartition"
+			fi
 
 			(( $VERBOSE )) && verbose="v" || verbose=""
 
