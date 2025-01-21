@@ -5,7 +5,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013, 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@ RESTORE_TEST=1
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
 MESSAGE_TEST=1
+UNIT_TEST=1
+SHELLCHECK_TEST=1
 
 #ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
 ENVIRONMENTS_TO_TEST="sd usb"
@@ -129,17 +131,36 @@ fi
 
 rm *.log >/dev/null
 
+startTime=$(date +%Y-%M-%d/%H:%m:%S)
+echo "Start: $startTime"
+if (( $EMAIL_NOTIFICATION )); then
+	echo "Start: $startTime" | mailx -s "--- Backup regression started" "$NOTIFY_EMAIL"
+fi
+
+
 if (( $MESSAGE_TEST )); then
 	if ! ./checkMessages.sh; then
 		exit
 	fi
 fi
 
-startTime=$(date +%Y-%M-%d/%H:%m:%S)
-echo "Start: $startTime"
-if (( $EMAIL_NOTIFICATION )); then
-	echo "Start: $startTime" | mailx -s "--- Backup regression started" "$NOTIFY_EMAIL"
-fi
+if (( $SMARTRECYCLE_TEST )); then
+  	if ! smartRecycleTest; then
+		exit
+	fi
+fi	
+
+if (( $UNIT_TEST )); then
+	if ! ./unitTests.sh; then
+		exit
+	fi
+fi	
+
+if (( SHELLCHECK_TEST )); then
+	if ! ./shellcheck.sh; then
+		exit
+	fi
+fi	
 
 for environment in $ENVIRONMENTS_TO_TEST; do
 	for mode in $MODES_TO_TEST; do
@@ -152,8 +173,6 @@ for environment in $ENVIRONMENTS_TO_TEST; do
 		done
 	done
 done
-
-(( $SMARTRECYCLE_TEST )) && smartRecycleTest
 
 (( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
 echo ":-) Raspibackup regression test finished successfully"

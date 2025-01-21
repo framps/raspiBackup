@@ -33,6 +33,8 @@ done
 
 if (( error > 0 )); then
 	echo "$error UTs failed"
+	exit 1
 else
 	echo "All UTs finished successfully"
+	exit 0
 fi
