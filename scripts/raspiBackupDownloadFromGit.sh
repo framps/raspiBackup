@@ -2,7 +2,7 @@
 
 #######################################################################################################################
 #
-#  Download any latest file available on any raspiBackup github repository branch into current directory
+#  Download any latest file available on any raspiBackup github repository branch or a git commit level into current directory
 #
 #  Example to download latest raspiBackup.sh from master branch:
 #  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master
@@ -13,11 +13,14 @@
 #  Example to download latest raspiBackupInstallUI.sh from beta branch:
 #  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master beta/raspiBackupInstallUI.sh
 #
+#  Example to download raspiBackup.sh commited in 609632b1e17e924b9b3c94a6e4d34fe60f4412ed:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- 609632b1e17e924b9b3c94a6e4d34fe60f4412ed
+#
 #  Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2022-2023 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2022-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
