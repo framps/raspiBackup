@@ -1,5 +1,6 @@
 #!/bin/bash
-
+#shellcheck disable=SC2004
+# (style): $/${} is unnecessary on arithmetic variables.
 #######################################################################################################################
 #
 #  Download any latest file available on any raspiBackup github repository branch or a git commit level into current directory
@@ -46,8 +47,8 @@ FILE_RASPIBACKUP_INSTALLER="raspiBackupInstallUI.sh"
 updateGitInfo=1
 
 if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" || "$1" == "-?" || "$1" == "?" ]]; then
-	echo "Purpose: Download any file from any raspiBackup github repository branch."
-	echo "Syntax:  $MYSELF branchName [fileName]"
+	echo "Purpose: Download any file from any raspiBackup github repository branch or commit."
+	echo "Syntax:  $MYSELF branchName|commit [fileName]"
 	echo "Example: $MYSELF master helper/raspiBackupWrapper.sh"
 	echo "Default for fileName is $FILE_RASPIBACKUP"
 	echo "If the file resides in a subdirectory prefix fileName with the directories."
@@ -56,7 +57,7 @@ fi
 
 if [[ -n "$2" ]]; then
 	DOWNLOAD_FILE="$2"
-	if [[ $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP_INSTALLER && $(basename $DOWNLOAD_FILE) != $FILE_RASPIBACKUP ]]; then
+	if [[ $(basename "$DOWNLOAD_FILE") != "$FILE_RASPIBACKUP_INSTALLER" && $(basename "$DOWNLOAD_FILE") != "$FILE_RASPIBACKUP" ]]; then
 		updateGitInfo=0
 	fi
 else
@@ -88,10 +89,10 @@ targetFilename="$(basename "$DOWNLOAD_FILE")"
 
 rm -f "$targetFilename"
 
-trap "rm -f $targetFilename" SIGINT SIGTERM EXIT
+trap 'rm -f $targetFilename' SIGINT SIGTERM EXIT
 
 echo "--- Downloading $DOWNLOAD_FILE from git branch $branch into current directory ..."
-wget -q $downloadURL -O "$targetFilename"
+wget -q "$downloadURL" -O "$targetFilename"
 rc=$?
 
 if (( $rc != 0 )); then
@@ -104,14 +105,16 @@ echo "--- Download finished successfully"
 if (( $updateGitInfo )); then
 
 	jsonFile=$(mktemp)
+	#shellcheck disable=SC2064
+	# (warning): Use single quotes, otherwise this expands now rather than when signalled.
 	trap "rm -f $DOWNLOAD_FILE; rm -f $jsonFile" SIGINT SIGTERM EXIT
 
 	echo "--- Retrieving commit meta data of $DOWNLOAD_FILE from $branch ..."
 	TOKEN=""															# Personal token to get better rate limits
 	if [[ -n $TOKEN ]]; then
-		HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -H "Authorization: token $TOKEN" -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
+		HTTP_CODE="$(curl -sq -w "%{http_code}" -o "$jsonFile" -H "Authorization: token $TOKEN" -s "https://api.github.com/repos/framps/raspiBackup/commits/$branch")"
 	else
-		HTTP_CODE="$(curl -sq -w "%{http_code}" -o $jsonFile -s https://api.github.com/repos/framps/raspiBackup/commits/$branch)"
+		HTTP_CODE="$(curl -sq -w "%{http_code}" -o "$jsonFile" -s "https://api.github.com/repos/framps/raspiBackup/commits/$branch")"
 	fi
 
 	rc=$?
@@ -123,7 +126,7 @@ if (( $updateGitInfo )); then
 
 	if (( $HTTP_CODE != 200 )); then
 		echo "??? Error retrieving commit information from github. HTTP response: $HTTP_CODE"
-		jq . $jsonFile
+		jq . "$jsonFile"
 		exit 1
 	fi
 
@@ -143,11 +146,11 @@ if (( $updateGitInfo )); then
 	fi
 
 	shaShort=${sha:0:7}
-	sed -i "s/$SHA/${SHA}: ${shaShort}/" $targetFilename
+	sed -i "s/$SHA/${SHA}: ${shaShort}/" "$targetFilename"
 	dateShort="${date:0:10} ${date:11}"
-	sed -i "s/$DATE/${DATE}: ${dateShort}/" $targetFilename
+	sed -i "s/$DATE/${DATE}: ${dateShort}/" "$targetFilename"
 
-	rm -f $jsonFile
+	rm -f "$jsonFile"
 fi
 
 trap - SIGINT SIGTERM EXIT
@@ -157,7 +160,7 @@ if [[ "$targetFilename" == *\.sh ]]; then
 fi
 
 if (( updateGitInfo )); then
-	echo "--- $(./$targetFilename --version)"
+	echo "--- $(./"$targetFilename" --version)"
 fi
 
 SDO=""
