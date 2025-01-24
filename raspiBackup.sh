@@ -2069,9 +2069,12 @@ MSG_EN[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporary backup directory %s moved to %
 MSG_DE[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporäres Backupverzeichnis %s wird in %s verschoben"
 MSG_SYNCING_PARTITIONFILE=346
 MSG_EN[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Syncing partition %s"
+MSG_DE[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Synchronisiere Partition %s"
+MSG_PARTITIONS_BACKUP_STARTED=347
+MSG_EN[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partition oriented backup of type %s started for partitions %s"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Synchronisiere Partition %s"
+MSG_DE[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partitionsorientierte Backup vom Typ %s started für die Partitionen %s"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7108,6 +7111,12 @@ function umountPartition() { # partition
 	logExit
 }
 
+function array2String() {
+    local IFS="$1"
+    shift
+    echo "$*"
+}        
+
 function backupPartitions() {
 
 	logEntry
@@ -7116,9 +7125,9 @@ function backupPartitions() {
 
 	logItem "PARTITIONS_TO_BACKUP: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
 
-	if (( "${#PARTITIONS_TO_BACKUP[@]}" > 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
-	fi
+	local parts
+	parts="$(array2String " " "${PARTITIONS_TO_BACKUP[@]}")"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_BACKUP_STARTED "$BACKUPTYPE" "$parts"
 
 	if ! containsElement "1" "${PARTITIONS_TO_BACKUP[@]}" || ! containsElement "2" "${PARTITIONS_TO_BACKUP[@]}"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_OS_PARTITIONS_SAVED
