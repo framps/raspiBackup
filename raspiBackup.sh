@@ -441,6 +441,7 @@ RC_NOT_SUPPORTED=143
 RC_TEMPMOVE_FAILED=144
 RC_RESIZE_ERROR=145
 #RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
+RC_UUID_UPDATE_IMPOSSIBLE=147
 
 tty -s
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
@@ -2072,9 +2073,15 @@ MSG_EN[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Syncing partition %s"
 MSG_DE[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Synchronisiere Partition %s"
 MSG_PARTITIONS_BACKUP_STARTED=347
 MSG_EN[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partition oriented backup of type %s started for partitions %s"
+MSG_DE[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partitionsorientierte Backup vom Typ %s started für die Partitionen %s"
+MSG_UMOUNT_MOUNTED_PARTITIONS=348
+MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitions of %s"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Paritionen von %s umounted werden"
+MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
+MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partitionsorientierte Backup vom Typ %s started für die Partitionen %s"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK034)E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -8121,7 +8128,7 @@ function listDeviceInfo() { # device (/dev/sda)
 
 	logEntry "$1"
 	local result
-	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL,PARTUUID)"
+	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL)"
 	echo "$result"
 	logExit
 }
@@ -8872,6 +8879,8 @@ function doitRestore() {
 
 	logEntry
 
+	local listDeviceInfo
+
 	logCommand "blkid"
 
 	commonChecks
@@ -8888,7 +8897,19 @@ function doitRestore() {
 
 	if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
-		exitError $RC_RESTORE_IMPOSSIBLE
+		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+		echo "$current_partition_table"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS "$RESTORE_DEVICE"
+		if ! askYesNo; then
+			exitError $RC_RESTORE_FAILED
+		else
+			umount ${RESTORE_DEVICE}* &>>"$LOG_FILE"
+			if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED "$RESTORE_DEVICE"
+				exitError $RC_RESTORE_IMPOSSIBLE
+			fi
+		fi
 	fi
 
 	if [[ ! -b "$RESTORE_DEVICE" ]]; then
@@ -9503,6 +9524,7 @@ function synchronizeCmdlineAndfstab() {
 	else
 		logCommand "ls -la $BOOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
+		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
@@ -9563,6 +9585,7 @@ function synchronizeCmdlineAndfstab() {
 	else
 		logCommand "ls -la $ROOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab"
+		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
