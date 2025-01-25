@@ -3747,7 +3747,6 @@ function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
 	logEntry "$@"
 	local v
 	v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
-	[[ -z "$v" ]] && v="0.0.0.0"
 	echo "$v"
 	logExit "$v"
 }
@@ -5463,30 +5462,41 @@ function revertScriptVersion() {
 	logEntry
 
 	local currentVersion version sortedVersions existingVersionFiles
-
-	mapfile -t existingVersionFiles < <( ls $SCRIPT_DIR/$MYNAME.*sh )
+	
+	#shellcheck disable=SC2207
+	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
 
 	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
 		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
 	fi
 
 	currentVersion="$(extractVersionFromFile "$SCRIPT_DIR/$MYSELF" "$VERSION_VARNAME")"
+	if [[ -z "$currentVersion" ]]; then
+		assertionFailed $LINENO "Current version not found"
+	fi
+	
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_SCRIPT_VERSION "$currentVersion"
 
 	declare -A versionsOfFiles
 
+	local version
 	for versionFile in "${existingVersionFiles[@]}"; do
 		version="$(extractVersionFromFile "$versionFile" "$VERSION_VARNAME" )"
-		if [[ "$version" != "$currentVersion" ]]; then
-			versionsOfFiles+=([$version]=$versionFile)
+		if [[ -n "$version" ]]; then
+			if [[ $version != "$currentVersion" ]]; then
+				versionsOfFiles+=([$version]=$versionFile)
+			fi
 		fi
 	done
 
 	for version in "${!versionsOfFiles[@]}"; do
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
-
-	mapfile -d " " -t sortedVersions < <( echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort )
+	
+	#shellcheck disable=SC2207
+	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
 
 	local min=0
 	local max=$(( ${#sortedVersions[@]} - 1))
@@ -8879,7 +8889,7 @@ function doitRestore() {
 
 	logEntry
 
-	local listDeviceInfo
+	local current_partition_table
 
 	logCommand "blkid"
 
