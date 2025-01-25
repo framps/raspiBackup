@@ -442,6 +442,7 @@ RC_NOT_SUPPORTED=143
 RC_TEMPMOVE_FAILED=144
 RC_RESIZE_ERROR=145
 #RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
+RC_UUID_UPDATE_IMPOSSIBLE=147
 
 tty -s
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
@@ -2070,9 +2071,18 @@ MSG_EN[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporary backup directory %s moved to %
 MSG_DE[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporäres Backupverzeichnis %s wird in %s verschoben"
 MSG_SYNCING_PARTITIONFILE=346
 MSG_EN[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Syncing partition %s"
+MSG_DE[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Synchronisiere Partition %s"
+MSG_PARTITIONS_BACKUP_STARTED=347
+MSG_EN[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partition oriented backup of type %s started for partitions %s"
+MSG_DE[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partitionsorientierte Backup vom Typ %s started für die Partitionen %s"
+MSG_UMOUNT_MOUNTED_PARTITIONS=348
+MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitions of %s"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Paritionen von %s umounted werden"
+MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
+MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Synchronisiere Partition %s"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK034)E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3738,7 +3748,6 @@ function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
 	logEntry "$@"
 	local v
 	v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
-	[[ -z "$v" ]] && v="0.0.0.0"
 	echo "$v"
 	logExit "$v"
 }
@@ -5454,30 +5463,41 @@ function revertScriptVersion() {
 	logEntry
 
 	local currentVersion version sortedVersions existingVersionFiles
-
-	mapfile -t existingVersionFiles < <( ls $SCRIPT_DIR/$MYNAME.*sh )
+	
+	#shellcheck disable=SC2207
+	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
 
 	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
 		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
 	fi
 
 	currentVersion="$(extractVersionFromFile "$SCRIPT_DIR/$MYSELF" "$VERSION_VARNAME")"
+	if [[ -z "$currentVersion" ]]; then
+		assertionFailed $LINENO "Current version not found"
+	fi
+	
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_SCRIPT_VERSION "$currentVersion"
 
 	declare -A versionsOfFiles
 
+	local version
 	for versionFile in "${existingVersionFiles[@]}"; do
 		version="$(extractVersionFromFile "$versionFile" "$VERSION_VARNAME" )"
-		if [[ "$version" != "$currentVersion" ]]; then
-			versionsOfFiles+=([$version]=$versionFile)
+		if [[ -n "$version" ]]; then
+			if [[ $version != "$currentVersion" ]]; then
+				versionsOfFiles+=([$version]=$versionFile)
+			fi
 		fi
 	done
 
 	for version in "${!versionsOfFiles[@]}"; do
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
-
-	mapfile -d " " -t sortedVersions < <( echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort )
+	
+	#shellcheck disable=SC2207
+	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
 
 	local min=0
 	local max=$(( ${#sortedVersions[@]} - 1))
@@ -7109,6 +7129,12 @@ function umountPartition() { # partition
 	logExit
 }
 
+function array2String() {
+    local IFS="$1"
+    shift
+    echo "$*"
+}        
+
 function backupPartitions() {
 
 	logEntry
@@ -7117,9 +7143,9 @@ function backupPartitions() {
 
 	logItem "PARTITIONS_TO_BACKUP: $(echo "${PARTITIONS_TO_BACKUP[@]}")"
 
-	if (( "${#PARTITIONS_TO_BACKUP[@]}" > 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
-	fi
+	local parts
+	parts="$(array2String " " "${PARTITIONS_TO_BACKUP[@]}")"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_BACKUP_STARTED "$BACKUPTYPE" "$parts"
 
 	if ! containsElement "1" "${PARTITIONS_TO_BACKUP[@]}" || ! containsElement "2" "${PARTITIONS_TO_BACKUP[@]}"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOT_ALL_OS_PARTITIONS_SAVED
@@ -8113,7 +8139,7 @@ function listDeviceInfo() { # device (/dev/sda)
 
 	logEntry "$1"
 	local result
-	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL,PARTUUID)"
+	result="$(IFS='' lsblk $1 --tree -o NAME,SIZE,FSTYPE,LABEL)"
 	echo "$result"
 	logExit
 }
@@ -8866,6 +8892,8 @@ function doitRestore() {
 
 	logEntry
 
+	local current_partition_table
+
 	logCommand "blkid"
 
 	commonChecks
@@ -8882,7 +8910,19 @@ function doitRestore() {
 
 	if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
-		exitError $RC_RESTORE_IMPOSSIBLE
+		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+		echo "$current_partition_table"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS "$RESTORE_DEVICE"
+		if ! askYesNo; then
+			exitError $RC_RESTORE_FAILED
+		else
+			umount ${RESTORE_DEVICE}* &>>"$LOG_FILE"
+			if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED "$RESTORE_DEVICE"
+				exitError $RC_RESTORE_IMPOSSIBLE
+			fi
+		fi
 	fi
 
 	if [[ ! -b "$RESTORE_DEVICE" ]]; then
@@ -9508,6 +9548,7 @@ function synchronizeCmdlineAndfstab() {
 	else
 		logCommand "ls -la $BOOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
+		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
 
 	if [[ -f "$FSTAB" ]]; then
@@ -9568,6 +9609,7 @@ function synchronizeCmdlineAndfstab() {
 	else
 		logCommand "ls -la $ROOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab"
+		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
 
 	if [[ -f "$FSTAB" ]]; then

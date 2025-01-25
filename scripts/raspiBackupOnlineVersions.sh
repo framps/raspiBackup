@@ -8,7 +8,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2021-2023 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2021-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -25,12 +25,14 @@
 #
 #######################################################################################################################
 
+#shellcheck disable=SC2034,SC2154
+# (warning): Date is referenced but not assigned (did you mean 'DATE'?).
+# (warning): GIT_DATE appears unused. Verify use (or export if used externally).
 GIT_DATE="$Date$"
-GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
+#shellcheck disable=SC2034,SC2154
+# (warning): Sha1 is referenced but not assigned (did you mean 'DATE'?).
+# (warning): GIT_COMMIT appears unused. Verify use (or export if used externally).
 GIT_COMMIT="$Sha1$"
-GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
 MYHOMEURL="https://$MYHOMEDOMAIN"
@@ -53,7 +55,7 @@ DATE="$(base64 -d <<< "$DATE")"
 
 function analyze() { # fileName url
 	tmp=$(mktemp)
-	wget $2 -q --tries=$DOWNLOAD_RETRIES --timeout=$DOWNLOAD_TIMEOUT -O $tmp
+	wget "$2" -q --tries="$DOWNLOAD_RETRIES" --timeout="$DOWNLOAD_TIMEOUT" -O "$tmp"
 
 	# GIT_COMMIT="$Sha1$"
 	sha="$(grep "^GIT_COMMIT=" "$tmp" | cut -f 2 -d ' '| sed  -e "s/[\$\"\']//g")"
@@ -61,9 +63,11 @@ function analyze() { # fileName url
 		sha="$(grep "GIT_COMMIT=" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 	if [[ -z "$sha" ]]; then
-		sha="$(grep "$SHA" $tmp | cut -f 3-4 -d ' ' )"
+		sha="$(grep "$SHA" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 
+	#shellcheck disable=SC2001
+	#(style): See if you can use ${variable//search/replace} instead.
 	sha="$(sed  -e "s/[\$\"]//g" <<< "$sha")"
 
 	# VERSION="0.6.5-beta"	# -beta, -hotfix or -dev suffixes possible
@@ -78,7 +82,7 @@ function analyze() { # fileName url
 		date="$(grep "GIT_DATE=" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 	if [[ -z "$date" ]]; then
-		date="$(grep "$DATE" $tmp | cut -f 3-4 -d ' ' )"
+		date="$(grep "$DATE" "$tmp" | cut -f 3-4 -d ' ' )"
 	fi
 
 	[[ -z "$version" ]] && version="N/A"
@@ -87,7 +91,7 @@ function analyze() { # fileName url
 		
 
 	printf "%-30s: Version: %-10s Date: %-20s Sha: %-10s\n" "$1" "$version" "$date" "$sha"
-	rm $tmp
+	rm "$tmp"
 }
 
 analyze "raspiBackup" $DOWNLOAD_URL
