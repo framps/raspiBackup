@@ -54,6 +54,26 @@ if (( ! $( compareVersions "1" "0.0.0.0" ) < 0 )); then
 	error=1
 fi
 
+if (( ! $( compareVersions "0.7" "0.6.9.1" ) > 0 )); then
+	echo "Error 10"
+	error=1
+fi
+
+if (( ! $( compareVersions "0.7" "0.7.0" ) == 0 )); then
+	echo "Error 11"
+	error=1
+fi
+
+if (( ! $( compareVersions "0.7.0.1" "0.7.0" ) > 0 )); then
+	echo "Error 12"
+	error=1
+fi
+
+if (( ! $( compareVersions "0.7.0.1" "0.7" ) > 0 )); then
+	echo "Error 13"
+	error=1
+fi
+
 echo
 if (( error )); then
 	echo "Test failed"
