@@ -6928,7 +6928,7 @@ function reportOldBackups() {
 	# Double quote to prevent globbing and word splitting.
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010,SC2086
-	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE" | grep -vE "_")
+	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE")
 
 	if [[ -n $tobeListedOldBackups ]]; then
 
