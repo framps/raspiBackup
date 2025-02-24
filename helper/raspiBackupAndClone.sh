@@ -3,9 +3,10 @@
 #######################################################################################################################
 #
 #  Sample script which calls raspiBackup.sh to create a backup and restores the backup to a device (e.g. SD card or USB disk) afterwards
+#  That way a cold backup, also called clone, is available all the time just in case the system breaks for some reasons
 #
 #  NOTE: Backup can be synced to speed up the restore when rsync partition oriented mode and new option -00 introduced in raspiBackup release 0.7 is used
-#        See comments below marked with ===>  
+#        Just restore once a -P backup and then define the USE_RSYNC variable
 #
 #  Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
@@ -33,7 +34,12 @@
 set -euf -o pipefail
 
 MYSELF=${0##*/}
-VERSION="v0.2"
+VERSION="v0.2.1"
+
+#
+# Enable this option if rsync and option -00 should be used to speed up the restore
+#
+USE_RSYNC=1
 
 set +u
 #shellcheck disable=SC2154
@@ -113,11 +119,11 @@ fi
 
 echo "--- Creating backup and restore backup afterwards to $CLONE_DEVICE ..."
 
-# create backup
-# ===>
-# ===> Use option -t rsync, -P, -T to speed up the restore with new raspiBackup release 0.7 option -00
-# ===>
-raspiBackup.sh
+if (( USE_RSYNC )); then
+    raspiBackup.sh -t rsync -P
+else
+    raspiBackup.sh
+fi  
 #shellcheck disable= SC2181
 #(style): Check exit code directly with e.g. 'if ! mycmd;', not indirectly with $?.
 if (( ! $? )); then
@@ -134,11 +140,11 @@ if (( ! $? )); then
         sudo mount "$DEFAULT_BACKUPPATH"
         mounted=1
    fi
-   # restore backup to clone device or sync clone device with backup
-   # ===>
-   # ===> Use Option -T and -00 to speed up the restore
-   # ===>
+if (( USE_RSYNC )); then
+   raspiBackup.sh -Y -d "$CLONE_DEVICE" -f "$f" -00 "$BACKUP_TARGETDIR"
+else
    raspiBackup.sh -Y -d "$CLONE_DEVICE" -f "$f" "$BACKUP_TARGETDIR"
+fi   
    rm "$f"
    if (( mounted )); then
         sudo umount "$DEFAULT_BACKUPPATH"
