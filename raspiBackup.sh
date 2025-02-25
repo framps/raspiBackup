@@ -4240,6 +4240,7 @@ function setupEnvironment() {
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
+		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
 		if [[ ! -d "${BACKUPTARGET_DIR}" ]]; then
 			if (( $FAKE || ( $SMART_RECYCLE && $SMART_RECYCLE_DRYRUN ) )); then
@@ -4275,6 +4276,7 @@ function setupEnvironment() {
 	logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 	logItem "BACKUPTARGET_FINAL_DIR: $BACKUPTARGET_FINAL_DIR"
 	logItem "BACKUPTARGET_FILE: $BACKUPTARGET_FILE"
+	logItem "BACKUPTARGET_FINAL_FILE: $BACKUPTARGET_FINAL_FILE"
 
 	logExit
 
@@ -5282,6 +5284,7 @@ function cleanup() { # trap
 					else
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_MOVED "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
 					fi
+					BACKUPTARGET_FILE="$BACKUPTARGET_FINAL_FILE"
 				fi
 			else
 				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
@@ -5462,7 +5465,7 @@ function revertScriptVersion() {
 	logEntry
 
 	local currentVersion version sortedVersions existingVersionFiles
-	
+
 	#shellcheck disable=SC2207
 	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
@@ -5475,7 +5478,7 @@ function revertScriptVersion() {
 	if [[ -z "$currentVersion" ]]; then
 		assertionFailed $LINENO "Current version not found"
 	fi
-	
+
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_SCRIPT_VERSION "$currentVersion"
 
 	declare -A versionsOfFiles
@@ -5493,7 +5496,7 @@ function revertScriptVersion() {
 	for version in "${!versionsOfFiles[@]}"; do
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
-	
+
 	#shellcheck disable=SC2207
 	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
@@ -7106,12 +7109,12 @@ function umountPartitions() { # sourcePath
 }
 
 function umountPartition() { # partition
-	
+
 	logEntry "$1"
 
 	local retry=3 rc
-	
-	if isMounted "$1"; then	
+
+	if isMounted "$1"; then
 		umount "$1" &>>"$LOG_FILE"
 		rc=$?
 		if (( $rc )); then
@@ -7124,7 +7127,7 @@ function umountPartition() { # partition
 			fi
 		fi
 	fi
-	
+
 	logExit
 }
 
@@ -7132,7 +7135,7 @@ function array2String() {
     local IFS="$1"
     shift
     echo "$*"
-}        
+}
 
 function backupPartitions() {
 
@@ -9207,11 +9210,11 @@ function updateRestoreReminder() {
 }
 
 function mountAndCheck() { # device mountpoint
-	
+
 	logEntry "$1 - $2"
-	
+
 	umountPartition "$2"
-	
+
 	mount "$1" "$2" &>>"$LOG_FILE"
 	local rc=$?
 	if (( $rc )); then
