@@ -6705,7 +6705,7 @@ function restoreNormalBackupType() {
 
 			executeFilesystemCheck "$ROOT_PARTITION"
 
-			updateUUIDs # if partitioned
+			updateUUIDs
 
 			mountAndCheck "$ROOT_PARTITION" "$MNT_POINT"
 
@@ -8466,14 +8466,11 @@ function restorePartitionBasedBackup() {
 			fi
 		done
 
-		updateUUIDs # if partitioned
+		updateUUIDs
+		synchronizeCmdlineAndfstab
 
 		if ! containsElement "1" "${partitionsRestored[@]}" || ! containsElement "2" "${partitionsRestored[@]}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE
-		fi
-
-		if (( ! SKIP_SFDISK || SKIP_FORMAT )); then
-			synchronizeCmdlineAndfstab
 		fi
 
 	fi
@@ -9116,9 +9113,7 @@ function doitRestore() {
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
 		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
-			if (( ! SKIP_SFDISK )); then
-				synchronizeCmdlineAndfstab
-			fi
+			synchronizeCmdlineAndfstab
 		fi
 	else
 		restorePartitionBasedBackup
