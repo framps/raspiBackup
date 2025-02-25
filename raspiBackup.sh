@@ -5462,7 +5462,7 @@ function revertScriptVersion() {
 	logEntry
 
 	local currentVersion version sortedVersions existingVersionFiles
-	
+
 	#shellcheck disable=SC2207
 	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
@@ -5475,7 +5475,7 @@ function revertScriptVersion() {
 	if [[ -z "$currentVersion" ]]; then
 		assertionFailed $LINENO "Current version not found"
 	fi
-	
+
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_SCRIPT_VERSION "$currentVersion"
 
 	declare -A versionsOfFiles
@@ -5493,7 +5493,7 @@ function revertScriptVersion() {
 	for version in "${!versionsOfFiles[@]}"; do
 		logItem "$version: ${versionsOfFiles[$version]}"
 	done
-	
+
 	#shellcheck disable=SC2207
 	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
@@ -6702,7 +6702,7 @@ function restoreNormalBackupType() {
 
 			executeFilesystemCheck "$ROOT_PARTITION"
 
-			updateUUIDs # if partitioned
+			updateUUIDs
 
 			mountAndCheck "$ROOT_PARTITION" "$MNT_POINT"
 
@@ -7106,12 +7106,12 @@ function umountPartitions() { # sourcePath
 }
 
 function umountPartition() { # partition
-	
+
 	logEntry "$1"
 
 	local retry=3 rc
-	
-	if isMounted "$1"; then	
+
+	if isMounted "$1"; then
 		umount "$1" &>>"$LOG_FILE"
 		rc=$?
 		if (( $rc )); then
@@ -7124,7 +7124,7 @@ function umountPartition() { # partition
 			fi
 		fi
 	fi
-	
+
 	logExit
 }
 
@@ -7132,7 +7132,7 @@ function array2String() {
     local IFS="$1"
     shift
     echo "$*"
-}        
+}
 
 function backupPartitions() {
 
@@ -8463,14 +8463,11 @@ function restorePartitionBasedBackup() {
 			fi
 		done
 
-		updateUUIDs # if partitioned
+		updateUUIDs
+		synchronizeCmdlineAndfstab
 
 		if ! containsElement "1" "${partitionsRestored[@]}" || ! containsElement "2" "${partitionsRestored[@]}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE
-		fi
-
-		if (( ! SKIP_SFDISK || SKIP_FORMAT )); then
-			synchronizeCmdlineAndfstab
 		fi
 
 	fi
@@ -9113,9 +9110,7 @@ function doitRestore() {
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
 		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
-			if (( ! SKIP_SFDISK )); then
-				synchronizeCmdlineAndfstab
-			fi
+			synchronizeCmdlineAndfstab
 		fi
 	else
 		restorePartitionBasedBackup
@@ -9207,11 +9202,11 @@ function updateRestoreReminder() {
 }
 
 function mountAndCheck() { # device mountpoint
-	
+
 	logEntry "$1 - $2"
-	
+
 	umountPartition "$2"
-	
+
 	mount "$1" "$2" &>>"$LOG_FILE"
 	local rc=$?
 	if (( $rc )); then
