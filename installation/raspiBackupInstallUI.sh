@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2023 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
