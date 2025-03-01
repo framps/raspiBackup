@@ -4757,7 +4757,7 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
               --form-string "sound=$sound")
 
 		[[ -n $PUSHOVER_DEVICE ]] && cmd+=(--form-string "device=$PUSHOVER_DEVICE" )
-		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( "$PUSHOVER_ADDITIONAL_OPTIONS" )
+		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( $PUSHOVER_ADDITIONAL_OPTIONS )
 
 		logItem "Pushover curl call: ${cmd[*]}"
 		# This {/} is literal. Check if ; is missing or quote the expression.
