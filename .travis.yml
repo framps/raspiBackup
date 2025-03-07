@@ -1,4 +1,2 @@
-language: bash
-script: make test
-sudo: required
-
+script:
+  - shellcheck -S warning --shell=bash raspiBackup.sh
