@@ -27,51 +27,104 @@ set -eou pipefail
 
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+readonly VERSION="v0.1"
+readonly GITREPO="https://github.com/framps/raspberryTools"
+
+#shellcheck disable=SC2155
+# (warning): Declare and assign separately to avoid masking return values.			
+readonly MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+readonly MYNAME=${MYSELF%.*}
+
+function show_help() {
+    cat << EOH
+$MYSELF $VERSION ($GITREPO)
+
+Rename raspiBackup backup directory names without OS release name created by all raspiBackup releases before 0.7.0 to get the OS release into the directory name. 
+That way the old directories are included in the backup recycle process of raspiBackup release 0.7.0 and bejond and don't have to be deleted manually.
+
+NOTE: If the retrieval of the OS release fails the directory is not renamed
+
+Usage: $MYSELF -r | -? | -h | -v
+-d: Dryrun. Display how the directories will be renamed with option -r
+-r: Rename the directories
+-h: Display this help
+-v: Display version
+EOH
+}
+
 function getOSRelease() { # directory
 
 	local os_release_file
 	local os_release
 	local dir="$1"
+	local rc
 
-	for os_release_file in $dir/etc/os-release $dir/usr/lib/os-release /dev/null ; do
-		[[ -e "$os_release_file" ]] && break
-	done
+	os_release_file="$(find $dir -maxdepth 3 -name os-release | head -n 1)"
+	
+	if (( $? )); then
+		os_release="unknownOS"
+	else	
 
-	# the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
-	unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
+		# the prefix "osr_" prevents a lonely "local" with its output below when grep is unsuccessful
+		unset osr_ID osr_VERSION_ID              # unset possible values used from global scope then
 
-	#Quote this to prevent word splitting.
-	#var is referenced but not assigned.
-	#shellcheck disable=SC2154,SC2046
-	local osr_$(grep -E "^ID="         "$os_release_file")
-	#Quote this to prevent word splitting.
-	#var is referenced but not assigned.
-	#shellcheck disable=SC2154,SC2046
-	local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
+		#Quote this to prevent word splitting.
+		#var is referenced but not assigned.
+		#shellcheck disable=SC2154,SC2046
+		local osr_$(grep -E "^ID="         "$os_release_file")
+		#Quote this to prevent word splitting.
+		#var is referenced but not assigned.
+		#shellcheck disable=SC2154,SC2046
+		local osr_$(grep -E "^VERSION_ID=" "$os_release_file")
 
-	set +u
-	#var is referenced but not assigned.
-	#shellcheck disable=SC2154
-	os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
-	set -u
-	os_release="${os_release//\"/}"          # remove any double quotes
+		set +u
+		#var is referenced but not assigned.
+		#shellcheck disable=SC2154
+		os_release="${osr_ID}${osr_VERSION_ID}"  # e.g. debian12 or even debian"12"
+		set -u
+		os_release="${os_release//\"/}"          # remove any double quotes
+	fi
 	echo "${os_release:-unknownOS}"          # handle empty result
 }
 
-# /backupDir/idefix
-# /backupDir/idefix/idefix-rsync-backup-20250119-105022
+MODE_RENAME=0
+
+while getopts ":dhrv?" opt; do
+
+    case "$opt" in
+		d) ;;
+  		r) MODE_RENAME=1
+			;;
+        h|\?)
+            show_help
+            exit 0
+            ;;
+        v) echo "$MYSELF $VERSION"
+            exit 0
+            ;;
+        *) echo "Unknown option $opt"
+            show_help
+            exit 1
+            ;;
+    esac
+
+done
+
+shift $((OPTIND-1))
+
+# /backup/idefix/idefix-rsync-backup-20250119-105022_some_comment
 
 if [[ ! -d $1 ]]; then 
-	echo "Invalid dir $1"
+	echo "??? Invalid dir $1"
 	exit 42
 fi	
 
 hostName=$(basename $1)
 
-for dir in $1*; do
+for dir in $1/*; do
 
-	if [[ $dir =~ @.*-[dd|ddz|tar|tgz|sync] ]]; then
-		echo "New $dir skipped"
+	if grep -E "@.+[dd|ddz|tar|tgz|rsync].+backup" <<< "$dir"; then
+		echo "--- New $dir skipped"
 		continue
 	fi
 	
@@ -89,7 +142,10 @@ for dir in $1*; do
 		newDirName="${newDirName}_$(cut -d "_" -f 2- <<< "$(basename $dir)")"
 	fi
 
-#	echo "$dir => $(dirname $dir)/$newDirName"
-	echo "$(basename $dir) => $newDirName"
+	if (( ! $MODE_RENAME )); then
+		echo "--- $(basename $dir) => $newDirName"
+	else
+		echo "mv $dir $(dirname $dir)/$newDirName"
+	fi
 	
 done
