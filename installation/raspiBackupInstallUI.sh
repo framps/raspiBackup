@@ -43,7 +43,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.2"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8.3"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -759,6 +759,10 @@ MSG_ZH[$MSG_RUNASROOT]="$MYSELF 必须以root身份开启. 请尝试 'sudo %1%2'
 MSG_SYSTEMD_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_NOT_INSTALLED]="No systemd configuration found."
 MSG_DE[$MSG_SYSTEMD_NOT_INSTALLED]="Keine systemd Konfiguration gefunden."
+
+MSG_SYSTEMD_CONFIG_ERROR=$((SCNT++))
+MSG_EN[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd configuration failed with RC %1."
+MSG_DE[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd Konfiguration fehlerhaft mit RC %1."
 
 DESCRIPTION_INSTALLATION=$((SCNT++))
 MSG_EN[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME allows to plug in custom extensions which are called before and after the backup process. \
@@ -2206,8 +2210,7 @@ function getActiveServices() {
 
 	logItem "$EXCLUDE_SERVICES_REGEX"
 	local as=""
-	IFS=" "
-	while read s r; do
+	while 	IFS=" " read s r; do
 		if [[ $s == *".service" ]]; then
 			as+=" $(sed 's/.service//' <<< "$s")"
 		fi
@@ -2263,8 +2266,8 @@ function isPathMounted() { # dir
 
 function getStartStopCommands() { # listOfServicesToStop pcommandvarname scommandvarname
 	logEntry "$1"
-	IFS=" "
-	local startServices=( $1 )
+	local startServices
+	IFS=" " startServices=( $1 )
 	logItem "Number of entries: ${#startServices[@]}"
 
 	local sc="" pc="" and=""
@@ -2294,7 +2297,7 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 function parseConfig() {
 	logEntry
 
-	IFS="" matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS)=" "$CONFIG_ABS_FILE")
+	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS)=" "$CONFIG_ABS_FILE")
 	while IFS="=" read key value; do
 		key=${key//\"/}
 		key=${key/DEFAULT/CONFIG}
@@ -2441,7 +2444,7 @@ function systemd_update_execute() {
 	local systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
 
 	logItem "Day: $systemd_day"
-	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day "*-*-*", hour":"minute":42" }' <<< "$l")
+	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":42" }' <<< "$l")
 	logItem "systemd update: $v"
 	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
 
@@ -2740,8 +2743,8 @@ function calc_wt_size() {
 
 function testIfServicesExist() { # list of services
 	logEntry "$1"
-	IFS=" "
-	local services=( $1 )
+	local services
+	IFS=" " services=( $1 )
 	local fails=""
 	for s in ${services[@]}; do
 		if ! systemd-analyze verify $s.service &>/dev/null; then
@@ -2914,19 +2917,25 @@ function config_menu() {
 		#	OnCalendar=*-*-* 05:00:00
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
 		logItem "parsed $l"
-		local day="$(cut -f 1 -d ' ' <<< $l)" # Sun or *-*-*
-		logItem "day: $day"
-		local t="$(cut -f 3 -d " " <<< $l)" # 05:00:00 or empty
-		logItem "parsed time $t"
-		if [[ -z "$t" ]]; then
-			t="$(cut -f 2 -d " " <<< $l)" # 05:00:00
-			day=""
+		
+		IFS=" " local token=( $l )
+	
+		logItem "---> ${token[*]} - ${#token[@]}"
+		
+		if (( ${#token[@]} == 3 )); then		
+			local day="${token[0]}"
+			local time="${token[2]}"
+		else
+			local day=""
+			local time="${token[1]}"		
 		fi
-		logItem "parsed time $t"
+		
+		logItem "day: $day"
+		logItem "time: $time"
 
 		CONFIG_SYSTEMD_DAY="$(daynum_from_config_string "$day")"
-		CONFIG_SYSTEMD_HOUR="$(cut -f 1 -d ':' <<< $t)" # 05
-		CONFIG_SYSTEMD_MINUTE="$(cut -f 2 -d ':' <<< $t)" # 00
+		CONFIG_SYSTEMD_HOUR="$(cut -f 1 -d ':' <<< $time)" # 05
+		CONFIG_SYSTEMD_MINUTE="$(cut -f 2 -d ':' <<< $time)" # 00
 		logItem "parsed hour: $CONFIG_SYSTEMD_HOUR"
 		logItem "parsed minute: $CONFIG_SYSTEMD_MINUTE"
 		logItem "parsed day: $CONFIG_SYSTEMD_DAY"
@@ -3516,8 +3525,8 @@ function config_services_do() {
 
 	wtv=$(whiptail -v | cut -d " " -f 3)
 
-	IFS=" "
-	local as=( $(getActiveServices) )												# sorted alphabetically
+	local as
+	IFS=" " as=( $(getActiveServices) )												# sorted alphabetically
 	local state
 
 	logItem "Active services: ${as[*]}"
@@ -3597,8 +3606,8 @@ function config_service_sequence_do() {
 
 	while :; do
 
-		IFS=" "
-		local src=( $current )
+		local src
+		IFS=" " src=( $current )
 		local tgt=()
 		local aborted=0
 
@@ -4486,6 +4495,19 @@ function systemd_update_do() {
 
 	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME systemd configuration ..." "Configure systemd timer")
 	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME systemd configuration" systemd_update_execute systemd_timer_execute
+	
+	systemd-analyze verify ${SYSTEMD_DIR}/${RASPIBACKUP_NAME}.*
+
+	local rc=$?
+	if (( $rc )); then
+		local m="$(getMessageText $MSG_SYSTEMD_CONFIG_ERROR $rc)"
+		local t=$(center $WINDOW_COLS "$m")
+		local tt="$(getMessageText $TITLE_ERROR)"
+		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
+		logExit
+		exit 1
+	fi
+
 	logExit
 
 }
