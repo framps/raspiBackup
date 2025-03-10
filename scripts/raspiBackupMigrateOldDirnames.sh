@@ -1,5 +1,10 @@
 #!/bin/bash
-
+#
+#   Rename old raspiBackup backup directory names into new format which includes the OS release
+#	dd and tar backupos are not supported
+#
+#	NOTE: Before actually renaming the directories (use option -r) make sure you checked the renamed directory names first 
+# 	
 #######################################################################################################################
 #
 #    Copyright (c) 2025 framp at linux-tips-and-tricks dot de
@@ -35,12 +40,12 @@ function show_help() {
     cat << EOH
 $MYSELF $VERSION ($GITREPO)
 
-Rename raspiBackup backup directory names without OS release name created by all raspiBackup releases before 0.7.0 to get the OS release into the directory name. 
-That way the old directories are included in the backup recycle process of raspiBackup release 0.7.0 and bejond and don't have to be deleted manually.
+Rename raspiBackup backup directory names created with rsync without OS release name to get the OS release into the directory name. 
+That way the old directories are included in the backup recycle process of raspiBackup release 0.7.0 and beyond and don't have to be deleted manually.
 
 NOTE: If the retrieval of the OS release fails the directory is not renamed
 
-Usage: $MYSELF -r | -? | -h | -v
+Usage: $MYSELF -r | -? | -h | -v backupDirectory
 	Dryrun. Display how the directories will be renamed with option -r
 -d: Detailed output
 -r: Rename the directories
@@ -125,8 +130,6 @@ if (( UID != 0 && MODE_RENAME )); then
 	exit 42
 fi
 
-# /backup/idefix/idefix-rsync-backup-20250119-105022_some_comment
-
 if [[ ! -d $1 ]]; then 
 	echo "??? Invalid dir $1"
 	exit 42
@@ -136,7 +139,7 @@ hostName=$(basename "$1")
 newDirs=0
 
 if (( MODE_RENAME )); then
-	read -r -p "--- Do you have you verified without option -r the renaming is OK ? (y/N) " answer
+	read -r -p "--- Do you have verified the renaming is OK ? (y/N) " answer
 	if ! yesNo "$answer"; then
 		exit 1
 	fi
@@ -163,7 +166,18 @@ for dir in "$1"/*; do
 	fi
 	dirName="$(dirname "$dir")"
 	newDirHostPart="${hostName}@${release//[ \/\\\:\.\-_]/\~}"
-	newTypeAndSnapshotPart=$(cut -d "-" -f 2- <<< $(basename $dir))	
+
+# /backup/idefix/idefix-rsync-backup-20250119-105022_some_comment
+	
+	if [[ "$dir" =~ rsync-backup-(.+)-(.+)(_+.)? ]]; then
+		date=${BASH_REMATCH[1]}
+		timeAndComment=${BASH_REMATCH[2]}
+	else
+		echo "??? Unexpected error"
+		exit 42
+	fi
+	
+	newTypeAndSnapshotPart="rsync-backup-${date}-${timeAndComment}"	
 	newDirName="${newDirHostPart}-${newTypeAndSnapshotPart}"
 	
 	if (( ! MODE_RENAME )); then
