@@ -110,10 +110,6 @@ Installation of raspiBackup is started with following command:
 
 raspiBackup is maintained just by me - framp. If you find raspiBackup useful please donate to support future development and acknowledge support. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
 
-## Feature requests
-
-Anybody is welcome to create feature requests in github. They are either immediately scheduled for the next release or moved into the [backlog](https://github.com/framps/raspiBackup/issues?q=is%3Aissue+is%3Aclosed+label%3ABacklog). The backlog will be reviewed every time a new release is planned and some issues are picked up and will be implemented in the next release. If you find some features useful just add a comment to the issue with :+1:. This helps to prioritize the issues in the backlog.
-
 ## Much more detailed documentation
 
  * [English](https://linux-tips-and-tricks.de/en/all-raspibackup-articles/)
@@ -135,10 +131,8 @@ Anybody is welcome to create feature requests in github. They are either immedia
 
 * Convenient helper script to backup and restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupDialog.sh)
 
+* Sample script which creates a backup and a clone as a cold standby boot medium[(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupAndClone.sh)
+
 ## Sample extensions
 
 There exist [sample extensions](./extensions) for raspiBackup which report for example memory usage, CPU temperature, disk usage and more. There exist also [user provided extensions](./extensions_userprovided). 
-
-## Systemd
-
-Starting with installer release 0.4.8 a systemd timer is used to start raspiBackup on a regular base. crond was used in previous installer releases. The installer is backward compatible and is able to handle systems with crond setup. In addition the installer can be forced to use crond instead of systemd during installation with invocation option `-t crond`. Thank you very much to [Hofei](https://github.com/Hofei90) who helped to switch from crond to systemd.
