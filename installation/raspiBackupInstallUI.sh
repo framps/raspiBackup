@@ -2265,7 +2265,9 @@ function isPathMounted() { # dir
 }
 
 function getStartStopCommands() { # listOfServicesToStop pcommandvarname scommandvarname
+
 	logEntry "$1"
+
 	local startServices
 	IFS=" " startServices=( $1 )
 	logItem "Number of entries: ${#startServices[@]}"
@@ -2742,7 +2744,9 @@ function calc_wt_size() {
 }
 
 function testIfServicesExist() { # list of services
+	
 	logEntry "$1"
+
 	local services
 	IFS=" " services=( $1 )
 	local fails=""
@@ -2753,6 +2757,7 @@ function testIfServicesExist() { # list of services
 		fi
 	done
 	echo "$fails"
+	
 	logExit "$fails"
 }
 
@@ -2796,25 +2801,29 @@ function do_finish() {
 
 	(( RASPIBACKUP_INSTALL_DEBUG )) && exit 0
 
-	if isRaspiBackupInstalled ; then
-		if ! isStartStopDefined; then
-			local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
-			local y="$(getMessageText $BUTTON_YES)"
-			local n="$(getMessageText $BUTTON_NO)"
-			local t=$(center $WINDOW_COLS "$m")
-			local tt="$(getMessageText $TITLE_WARNING)"
-			if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
-				return
+	if (( ! MODE_SILENT )); then
+
+		if isRaspiBackupInstalled ; then
+			if ! isStartStopDefined; then
+				local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
+				local y="$(getMessageText $BUTTON_YES)"
+				local n="$(getMessageText $BUTTON_NO)"
+				local t=$(center $WINDOW_COLS "$m")
+				local tt="$(getMessageText $TITLE_WARNING)"
+				if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
+					return
+				fi
 			fi
-		fi
 
-		if (( $INSTALLATION_SUCCESSFULL )); then
-			first_steps
-		fi
+			if (( $INSTALLATION_SUCCESSFULL )); then
+				first_steps
+			fi
 
-		help
+			help
+		fi
 
 		reset
+		stty sane
 	fi
 	logExit
 
@@ -2917,19 +2926,18 @@ function config_menu() {
 		#	OnCalendar=*-*-* 05:00:00
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
 		logItem "parsed $l"
-		
-		IFS=" " local token=( $l )
-	
-		logItem "---> ${token[*]} - ${#token[@]}"
-		
-		if (( ${#token[@]} == 3 )); then		
+
+		local token
+		IFS=" " token=( $l )
+
+		if (( ${#token[@]} == 3 )); then
 			local day="${token[0]}"
 			local time="${token[2]}"
 		else
 			local day=""
-			local time="${token[1]}"		
+			local time="${token[1]}"
 		fi
-		
+
 		logItem "day: $day"
 		logItem "time: $time"
 
@@ -2999,23 +3007,31 @@ function config_menu() {
 		RET=$?
 		if [ $RET -eq 1 ]; then
 			if (($CONFIG_UPDATED)); then
-				local m="$(getMessageText $MSG_QUESTION_UPDATE_CONFIG)"
-				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_CONFIRM)"
-				if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
+				if (( ! MODE_SILENT )); then
+					local m="$(getMessageText $MSG_QUESTION_UPDATE_CONFIG)"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_CONFIRM)"
+					if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
+						config_update_do
+					fi
+				else
 					config_update_do
 				fi
 			fi
 			if (($TIMER_UPDATED)); then
-				local m
-				if isCrontabConfigInstalled; then
-					m="$(getMessageText $MSG_QUESTION_UPDATE_CRON)"
+				if (( ! MODE_SILENT )); then
+					local m
+					if isCrontabConfigInstalled; then
+						m="$(getMessageText $MSG_QUESTION_UPDATE_CRON)"
+					else
+						m="$(getMessageText $MSG_QUESTION_UPDATE_SYSTEMD)"
+					fi
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_CONFIRM)"
+					if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
+						timer_update_do
+					fi
 				else
-					m="$(getMessageText $MSG_QUESTION_UPDATE_SYSTEMD)"
-				fi
-				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_CONFIRM)"
-				if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
 					timer_update_do
 				fi
 			fi
@@ -4495,8 +4511,8 @@ function systemd_update_do() {
 
 	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME systemd configuration ..." "Configure systemd timer")
 	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME systemd configuration" systemd_update_execute systemd_timer_execute
-	
-	systemd-analyze verify ${SYSTEMD_DIR}/${RASPIBACKUP_NAME}.*
+
+	systemd-analyze verify ${SYSTEMD_DIR}/${RASPIBACKUP_NAME}.* &>>"$LOG_FILE"
 
 	local rc=$?
 	if (( $rc )); then
@@ -5176,6 +5192,7 @@ done
 
 CLEANUP_LOG=0
 
+MODE_SILENT=0
 MODE_UNATTENDED=0
 MODE_UNINSTALL=0
 MODE_INSTALL=0
@@ -5193,7 +5210,7 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?uUei" opt; do
+while getopts "t:h?usUei" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -5211,6 +5228,8 @@ while getopts "t:h?uUei" opt; do
     u) MODE_UNINSTALL=1
 		 MODE_UNATTENDED=1
 		 ;;
+	s) MODE_SILENT=1
+		;;
 
 	 t) case $OPTARG in
 			crond) USE_SYSTEMD=0
