@@ -5019,7 +5019,7 @@ function cleanupBackupDirectory() {
 	logEntry
 
 	logItem "Checking $BACKUP_TEMP_ROOT_DIR for clean up"
-	
+
 	if [[ -d "$BACKUP_TEMP_ROOT_DIR" ]]; then
 		if [[ -n $(ls "$BACKUP_TEMP_ROOT_DIR") ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE "$BACKUP_TEMP_ROOT_DIR"
@@ -5033,8 +5033,6 @@ function cleanupBackupDirectory() {
 				fi
 			fi
 		fi
-		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
-		rmdir $BACKUP_TEMP_ROOT_DIR
 	fi
 
 	logExit
