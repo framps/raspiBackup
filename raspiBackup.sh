@@ -10705,7 +10705,7 @@ fi
 
 if (( $RESTORE && $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
-		writeToConsole $MSG_LEVEL_MINIMAL "$MSG_YES_NO_DEVICE_MISMATCH $RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL "$MSG_YES_NO_DEVICE_MISMATCH" "$RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
 		exitError $RC_MISC_ERROR
 	fi
 fi
