@@ -5033,6 +5033,8 @@ function cleanupBackupDirectory() {
 				fi
 			fi
 		fi
+		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
+		rmdir $BACKUP_TEMP_ROOT_DIR
 	fi
 
 	logExit
