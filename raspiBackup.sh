@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.0.1"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.0.1-hotfix-m_852"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -7679,7 +7679,7 @@ function inspect4Backup() {
 		local bootPref
 		bootPref="$(getPartitionPrefix $BOOT_DEVICE)"
 
-		if ! findmnt "/dev/${bootPref}1" &>/dev/null; then
+		if ! findmnt "/dev/${bootPref}${boot[1]}" &>/dev/null; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}1"
 			exitError $RC_INVALID_BOOTDEVICE
 		fi
