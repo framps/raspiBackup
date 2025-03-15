@@ -7676,11 +7676,16 @@ function inspect4Backup() {
 	fi
 
 	if (( ! $FAKE )); then	# make sure boot partition is mounted. Otherwise an empty bootpartition will be created in the backup :-(
+
+		logCommand "findmnt"
+		
 		local bootPref
 		bootPref="$(getPartitionPrefix $BOOT_DEVICE)"
 
+		logItem "bootPref: $bootPref - /dev/${bootPref}${boot[1]}"
+
 		if ! findmnt "/dev/${bootPref}${boot[1]}" &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}1"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}${boot[1]}"
 			exitError $RC_INVALID_BOOTDEVICE
 		fi
 	fi
