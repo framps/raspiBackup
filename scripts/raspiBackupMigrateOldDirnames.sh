@@ -48,7 +48,7 @@ That way the old directories are included in the backup recycle process of raspi
 
 NOTE: If the retrieval of the OS release fails the directory is not renamed
 
-Usage: $MYSELF -r | -? | -h | -v backupDirectory
+Usage: $MYSELF (-r | -? | -h | -v) backupDirectory
 	Dryrun. Display how the directories will be renamed with option -r
 -d: Detailed output
 -r: Rename the directories
@@ -104,6 +104,11 @@ function getOSRelease() { # directory
 
 MODE_RENAME=0
 MODE_DETAILS=0
+
+if (( "$#" <= 1 )); then
+	show_help
+	exit 1
+fi	
 
 while getopts "dhrv?" opt; do
 
