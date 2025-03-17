@@ -998,11 +998,11 @@ MSG_FR[$DESCRIPTION_MAIL_PROGRAM]="Sélectionnez le programme de messagerie qui 
 MSG_ZH[$DESCRIPTION_MAIL_PROGRAM]="选择发送邮件的程序."
 
 DESCRIPTION_EMAIL=$((SCNT++))
-MSG_EN[$DESCRIPTION_EMAIL]="Enter the eMail address to send notifications to. Enter no eMail address to disable notifications."
-MSG_DE[$DESCRIPTION_EMAIL]="Gibt die eMail Adresse ein die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus."
-MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta."
-MSG_FR[$DESCRIPTION_EMAIL]="Saisissez l'adresse e-mail pour recevoir les notifications. Aucune adresse e-mail désactive les notifications."
-MSG_ZH[$DESCRIPTION_EMAIL]="输入邮件地址，留空则禁用邮件通知."
+MSG_EN[$DESCRIPTION_EMAIL]="Enter the eMail address to send notifications to. Enter no eMail address to disable notifications.\n\nNOTE: eMails will be sent only if a local MTA has been configured correctly."
+MSG_DE[$DESCRIPTION_EMAIL]="Gibt die eMail Adresse ein die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus.\n\nHINWEIS: eMails werden nur gesendet wenn ein lokaler MTA erfolgreich konfiguriert wurde."
+#MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta."
+#MSG_FR[$DESCRIPTION_EMAIL]="Saisissez l'adresse e-mail pour recevoir les notifications. Aucune adresse e-mail désactive les notifications."
+#MSG_ZH[$DESCRIPTION_EMAIL]="输入邮件地址，留空则禁用邮件通知."
 
 TITLE_ERROR=$((SCNT++))
 MSG_EN[$TITLE_ERROR]="Error"
