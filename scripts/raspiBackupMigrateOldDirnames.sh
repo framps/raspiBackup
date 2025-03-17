@@ -1,9 +1,12 @@
 #!/bin/bash
 #
-#   Rename old raspiBackup backup directory names into new format which includes the OS release
-#	dd and tar backupos are not supported
+#   Rename old raspiBackup backup directory names pre release 0.7 into new format port release 0.7 which include the OS release
+#	dd and tar backups are not supported
 #
-#	NOTE: Before actually renaming the directories (use option -r) make sure you checked the renamed directory names first 
+#	NOTE: Before actually renaming the directories (use option -r) make sure you checked the renamed directory names first
+#
+#   Download the tool with 
+#		curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master scripts/raspiBackupMigrateOldDirnames.sh
 # 	
 #######################################################################################################################
 #
