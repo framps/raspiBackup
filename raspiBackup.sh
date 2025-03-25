@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.0.1"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.0.2"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -4235,8 +4235,8 @@ function setupEnvironment() {
 
 		BACKUPTARGET_ROOT="$BACKUPPATH/$HOSTNAME"
 		BACKUPTARGET_FINAL_DIR="$BACKUPTARGET_ROOT/$BACKUPFILE"				# final directory for backup if backup was successful
-		BACKUPTARGET_TEMP_ROOT="$BACKUPTARGET_ROOT/tmp"						# temporary backup root directory
-		BACKUPTARGET_TEMP_DIR="$BACKUPTARGET_ROOT/tmp/$BACKUPFILE"			# temporary backup directory
+		BACKUP_TEMP_ROOT_DIR="$BACKUPTARGET_ROOT/tmp"						# temporary backup root directory
+		BACKUPTARGET_TEMP_DIR="$BACKUP_TEMP_ROOT_DIR/$BACKUPFILE"			# temporary backup directory for current backup
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
 		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
@@ -4757,7 +4757,9 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
               --form-string "sound=$sound")
 
 		[[ -n $PUSHOVER_DEVICE ]] && cmd+=(--form-string "device=$PUSHOVER_DEVICE" )
-		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( "$PUSHOVER_ADDITIONAL_OPTIONS" )
+		#shellcheck disable=SC2206
+		# Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( $PUSHOVER_ADDITIONAL_OPTIONS )
 
 		logItem "Pushover curl call: ${cmd[*]}"
 		# This {/} is literal. Check if ; is missing or quote the expression.
@@ -5018,19 +5020,23 @@ function cleanupBackupDirectory() {
 
 	logEntry
 
-	if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then
-		if [[ -n $(ls "$BACKUPTARGET_TEMP_ROOT") ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE "$BACKUPTARGET_TEMP_ROOT"
-			rm -rfd $BACKUPTARGET_TEMP_ROOT &>> "$LOG_FILE"# delete temp backupdir with all incomplete contents
+	logItem "Checking $BACKUP_TEMP_ROOT_DIR for clean up"
+
+	if [[ -d "$BACKUP_TEMP_ROOT_DIR" ]]; then
+		if [[ -n $(ls "$BACKUP_TEMP_ROOT_DIR") ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE "$BACKUP_TEMP_ROOT_DIR"
+			rm -rfd $BACKUP_TEMP_ROOT_DIR &>> "$LOG_FILE"# delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
 				if [[ $MSG_LEVEL == "$MSG_LEVEL_DETAILED" ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUPTARGET_TEMP_ROOT" "$rmrc"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUP_TEMP_ROOT_DIR" "$rmrc"
 				else
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
 				fi
 			fi
 		fi
+		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
+		rmdir $BACKUP_TEMP_ROOT_DIR
 	fi
 
 	logExit
@@ -5290,19 +5296,14 @@ function cleanup() { # trap
 				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
 			fi
 
-			logItem "BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT"
-			if [[ -d "$BACKUPTARGET_TEMP_ROOT" ]]; then # does not exists if raspiBackup7412Test runs
-				rmdir "$BACKUPTARGET_TEMP_ROOT" &>> "$LOG_FILE" # delete temp dir now
-			else
-				logItem "??? BACKUPTARGET_TEMP_ROOT: $BACKUPTARGET_TEMP_ROOT not found"
-			fi
-
-			BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
-			if (( \
-				( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
-				|| ! $SMART_RECYCLE \
-				)); then
-					applyBackupStrategy
+			if (( ! $CLEANUP_RC )); then # smartrecycle only if mv succeeded
+				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
+				if (( \
+					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
+					|| ! $SMART_RECYCLE \
+					)); then
+						applyBackupStrategy
+				fi
 			fi
 
 			reportOldBackups
@@ -10601,7 +10602,7 @@ while (( "$#" )); do
 	-Y)
 	  NO_YES_QUESTION=1; shift 1
 	  ;;
-
+	  
 	-z|-z[-+])
 	  ZIP_BACKUP=$(getEnableDisableOption "$1"); shift 1
 	  ;;
@@ -10706,7 +10707,7 @@ fi
 
 if (( $RESTORE && $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
-		writeToConsole $MSG_LEVEL_MINIMAL "$MSG_YES_NO_DEVICE_MISMATCH $RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL "$MSG_YES_NO_DEVICE_MISMATCH" "$RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
 		exitError $RC_MISC_ERROR
 	fi
 fi
