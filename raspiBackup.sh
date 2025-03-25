@@ -7680,8 +7680,10 @@ function inspect4Backup() {
 		local bootPref
 		bootPref="$(getPartitionPrefix $BOOT_DEVICE)"
 
-		if ! findmnt "/dev/${bootPref}1" &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}1"
+		logItem "bootPref: $bootPref - /dev/${bootPref}${boot[1]}"
+
+		if ! mount | grep "^/dev/${bootPref}${boot[1]}" &>/dev/null; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}${boot[1]}"
 			exitError $RC_INVALID_BOOTDEVICE
 		fi
 	fi
@@ -10602,7 +10604,7 @@ while (( "$#" )); do
 	-Y)
 	  NO_YES_QUESTION=1; shift 1
 	  ;;
-	  
+
 	-z|-z[-+])
 	  ZIP_BACKUP=$(getEnableDisableOption "$1"); shift 1
 	  ;;
