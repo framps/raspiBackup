@@ -4757,6 +4757,8 @@ function sendPushoverMessage() { # message 0/1->success/failure sound
               --form-string "sound=$sound")
 
 		[[ -n $PUSHOVER_DEVICE ]] && cmd+=(--form-string "device=$PUSHOVER_DEVICE" )
+		#shellcheck disable=SC2206
+		# Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
 		[[ -n $PUSHOVER_ADDITIONAL_OPTIONS ]] && cmd+=( $PUSHOVER_ADDITIONAL_OPTIONS )
 
 		logItem "Pushover curl call: ${cmd[*]}"
