@@ -10601,13 +10601,6 @@ while (( "$#" )); do
 	  NO_YES_QUESTION=1; shift 1
 	  ;;
 	  
-	--yesNoRestoreDevice)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  YES_NO_RESTORE_DEVICE=$o; shift 2
-	  ;;
-
 	-z|-z[-+])
 	  ZIP_BACKUP=$(getEnableDisableOption "$1"); shift 1
 	  ;;
