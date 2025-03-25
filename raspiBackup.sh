@@ -361,8 +361,7 @@ NEW_CONFIG="$CONFIG_DIR/raspiBackup.conf.new"
 MERGED_CONFIG="$CONFIG_DIR/raspiBackup.conf.merged"
 BACKUP_CONFIG="$CONFIG_DIR/raspiBackup.conf.bak"
 
-PERSISTENT_JOURNAL="/var/log/journal"
-PERSISTENT_JOURNAL_LOG2RAM="/var/hdd.log/journal"
+PERSISTENT_JOURNAL="var/log/journal"
 
 NEW_OPTION_TRAILER="# >>>>> NEW OPTION added in config version %s <<<<< "
 DELETED_OPTION_TRAILER="# >>>>> OPTION DELETED in config version %s <<<<< "
@@ -5977,7 +5976,7 @@ function backupDD() {
 
 function backupTar() {
 
-	local verbose zip cmd partition source target devroot sourceDir
+	local verbose zip cmd partition source target devroot sourceDir journalExclude=""
 
 	logEntry
 
@@ -5998,15 +5997,15 @@ function backupTar() {
 		target="\"$BACKUPTARGET_FILE\""
 	fi
 
+	if [[ -e /$PERSISTENT_JOURNAL ]]; then
+		logItem "Excluding /$PERSISTENT_JOURNAL"
+		journalExclude="$devroot/${PERSISTENT_JOURNAL}"
+	fi
+
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
-
-	if [[ ( -e $PERSISTENT_JOURNAL || -e $PERSISTENT_JOURNAL_LOG2RAM ) ]]; then
-		logItem "Excluding $PERSISTENT_JOURNAL and $PERSISTENT_JOURNAL_LOG2RAM"
-		EXCLUDE_LIST+=" --exclude ${PERSISTENT_JOURNAL}/* --exclude ${PERSISTENT_JOURNAL_LOG2RAM}/*"
-	fi
 
 	cmd="tar \
 		$TAR_BACKUP_OPTIONS \
@@ -6028,6 +6027,7 @@ function backupTar() {
 		--exclude=$devroot/swapfile \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
+		--exclude $sournalExclude \
 		$EXCLUDE_LIST \
 		$source"
 
@@ -6163,7 +6163,7 @@ function checkIfAllPreviousPartitionsAreIncludedInBackup() { # lastBackupDir
 
 function backupRsync() { # partition number (for partition based backup)
 
-	local verbose partition target source cmd cmdParms excludeMeta
+	local verbose partition target source cmd cmdParms excludeMeta journalExclude
 
 	logEntry
 
@@ -6171,6 +6171,11 @@ function backupRsync() { # partition number (for partition based backup)
 
 	verbose="--info=NAME0"
 	(( $VERBOSE )) && verbose="-v"
+
+	if [[ -e "/$PERSISTENT_JOURNAL" ]]; then
+		logItem "Excluding /$PERSISTENT_JOURNAL"
+		journalExclude="/${PERSISTENT_JOURNAL}"
+	fi
 
 	logCommand "ls $BACKUPTARGET_ROOT"
 
@@ -6181,7 +6186,6 @@ function backupRsync() { # partition number (for partition based backup)
 	else
 		target="\"${BACKUPTARGET_DIR}\""
 		source="/"
-
 		bootPartitionBackup
 		excludeMeta="--exclude=/$BACKUPFILES_PARTITION_DATE.img --exclude=/$BACKUPFILES_PARTITION_DATE.tmg --exclude=/$BACKUPFILES_PARTITION_DATE.sfdisk --exclude=/$BACKUPFILES_PARTITION_DATE.blkid --exclude=/$BACKUPFILES_PARTITION_DATE.fdisk --exclude=/$BACKUPFILES_PARTITION_DATE.parted --exclude=/$BACKUPFILES_PARTITION_DATE.mbr --exclude=/$MYNAME.log --exclude=/$MYNAME.msg"
 	fi
@@ -6210,14 +6214,6 @@ function backupRsync() { # partition number (for partition based backup)
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
 
-	# bullseye enabled persistent journaling which has ACLs and are not supported via nfs
-	local fs
-	fs="$(getFsType "$BACKUPPATH")"
-	if [[ ( -e "$PERSISTENT_JOURNAL" || -e "$PERSISTENT_JOURNAL_LOG2RAM" ) && "$fs" =~ ^nfs* ]]; then
-		logItem "Excluding $PERSISTENT_JOURNAL and $PERSISTENT_JOURNAL_LOG2RAM for nfs"
-		EXCLUDE_LIST+=" --exclude ${PERSISTENT_JOURNAL} --exclude ${PERSISTENT_JOURNAL_LOG2RAM}"
-	fi
-
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
 --exclude=\"$log_file\" \
 --exclude=\"$msg_file\" \
@@ -6230,6 +6226,7 @@ function backupRsync() { # partition number (for partition based backup)
 --exclude=/tmp/* \
 --exclude=/run/* \
 --exclude=/media/* \
+--exclude=$journalExclude \
 $excludeMeta \
 $EXCLUDE_LIST \
 $LINK_DEST \
