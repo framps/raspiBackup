@@ -6226,6 +6226,7 @@ function backupRsync() { # partition number (for partition based backup)
 --exclude=/tmp/* \
 --exclude=/run/* \
 --exclude=/media/* \
+<<<<<<< HEAD
 $journalExclude \
 $excludeMeta \
 $EXCLUDE_LIST \
