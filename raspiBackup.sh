@@ -5036,7 +5036,7 @@ function cleanupBackupDirectory() {
 			fi
 		fi
 		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
-		rmdir $BACKUP_TEMP_ROOT_DIR
+		rmdir $BACKUP_TEMP_ROOT_DIR &>>$LOG_FILE
 	fi
 
 	logExit
@@ -6806,6 +6806,7 @@ function applyBackupStrategy() {
 
 		if (( $keepBackups != -1 )); then
 			logItem "Deleting oldest directory in $BACKUPPATH"
+
 			logCommand "ls -d $BACKUPPATH/*"
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
