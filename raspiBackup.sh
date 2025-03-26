@@ -5999,7 +5999,7 @@ function backupTar() {
 
 	if [[ -e /$PERSISTENT_JOURNAL ]]; then
 		logItem "Excluding /$PERSISTENT_JOURNAL"
-		journalExclude="$devroot/${PERSISTENT_JOURNAL}"
+		journalExclude="--exclude $devroot/${PERSISTENT_JOURNAL}/*"
 	fi
 
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
@@ -6027,7 +6027,7 @@ function backupTar() {
 		--exclude=$devroot/swapfile \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
-		--exclude $sournalExclude \
+		$journalExclude \
 		$EXCLUDE_LIST \
 		$source"
 
@@ -6174,7 +6174,7 @@ function backupRsync() { # partition number (for partition based backup)
 
 	if [[ -e "/$PERSISTENT_JOURNAL" ]]; then
 		logItem "Excluding /$PERSISTENT_JOURNAL"
-		journalExclude="/${PERSISTENT_JOURNAL}"
+		journalExclude="--exclude ${PERSISTENT_JOURNAL}/"
 	fi
 
 	logCommand "ls $BACKUPTARGET_ROOT"
@@ -6226,7 +6226,7 @@ function backupRsync() { # partition number (for partition based backup)
 --exclude=/tmp/* \
 --exclude=/run/* \
 --exclude=/media/* \
---exclude=$journalExclude \
+$journalExclude \
 $excludeMeta \
 $EXCLUDE_LIST \
 $LINK_DEST \
