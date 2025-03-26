@@ -6226,7 +6226,6 @@ function backupRsync() { # partition number (for partition based backup)
 --exclude=/tmp/* \
 --exclude=/run/* \
 --exclude=/media/* \
-<<<<<<< HEAD
 $journalExclude \
 $excludeMeta \
 $EXCLUDE_LIST \
@@ -6804,7 +6803,6 @@ function applyBackupStrategy() {
 
 		if (( $keepBackups != -1 )); then
 			logItem "Deleting oldest directory in $BACKUPPATH"
-
 			logCommand "ls -d $BACKUPPATH/*"
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPS_KEPT "$keepBackups" "$BACKUPTYPE"
