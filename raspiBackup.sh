@@ -7347,7 +7347,7 @@ function collectPartitions() {
 			size=${BASH_REMATCH[3]}
 			type=${BASH_REMATCH[5]}
 			logItem "partition: $partition - size: $size - type: $type"
-			if (( $type != 5 && $type != 85 && $size > 0 )); then # skip empty and extended partitions
+			if [[ "$type" != "5" && "$type" != "85" && "$size" -gt 0 ]]; then # skip empty and extended partitions
 				logItem "mount: $(mount)"
 				logItem "Partition: $partition"
 				mountLine=$(mount | grep "$partition" )
