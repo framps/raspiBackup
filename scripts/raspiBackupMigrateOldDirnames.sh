@@ -31,7 +31,7 @@ set -eou pipefail
 
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-readonly VERSION="v0.1"
+readonly VERSION="v0.1.1"
 readonly GITREPO="https://github.com/framps/raspberryTools"
 readonly UNKNOWN="unknownOS"
 
@@ -105,7 +105,7 @@ function getOSRelease() { # directory
 MODE_RENAME=0
 MODE_DETAILS=0
 
-if (( "$#" <= 1 )); then
+if (( "$#" < 1 )); then
 	show_help
 	exit 1
 fi	
@@ -113,10 +113,10 @@ fi
 while getopts "dhrv?" opt; do
 
     case "$opt" in
-		d) MODE_DETAILS=1
-			;;
-  		r) MODE_RENAME=1
-			;;
+	d) MODE_DETAILS=1
+	  ;;
+  	r) MODE_RENAME=1
+	  ;;
         h|\?)
             show_help
             exit 0
