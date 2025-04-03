@@ -1984,6 +1984,8 @@ function update_script_execute() {
 		return
 	fi
 
+	UPDATE_POSSIBLE=-1
+
 	logExit
 
 }
@@ -2039,6 +2041,8 @@ function update_installer_execute() {
 		unrecoverableError $MSG_CHMOD_FAILED "$INSTALLER_ABS_FILE"
 		return
 	fi
+
+	UPDATE_POSSIBLE=-1
 
 	logExit
 
@@ -4044,17 +4048,21 @@ function uninstall_menu() {
 }
 
 function isUpdatePossible() {
+		(( UPDATE_POSSIBLE != -1 )) && return
 		logEntry
 		logItem "script: c:$VERSION_CURRENT p:$VERSION_PROPERTY"
 		if isNewerVersion "$VERSION_CURRENT" "$VERSION_PROPERTY"; then
+			UPDATE_POSSIBLE=0
 			logExit 0
 			return 0
 		fi
 		logItem "installer: c:$VERSION_CURRENT_INSTALLER p:$VERSION_PROPERTY_INSTALLER"
 		if isNewerVersion "$VERSION_CURRENT_INSTALLER" "$VERSION_PROPERTY_INSTALLER"; then
+			UPDATE_POSSIBLE=0
 			logExit 0
 			return 0
 		fi
+		UPDATE_POSSIBLE=1
 		logExit 1
 		return 1
 }
@@ -5201,6 +5209,9 @@ MODE_EXTENSIONS=0
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
+
+UPDATE_POSSIBLE=-1 # -1 -> check whether update possible, 0 -> no, 1 -> yes
+
 if isCrontabConfigInstalled; then # use cron if already installed
 	USE_SYSTEMD=0
 fi
