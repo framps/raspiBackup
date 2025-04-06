@@ -36,6 +36,8 @@ if [ -z "$BASH_VERSION" ] ;then
 	exit 127
 fi
 
+declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 [[ "$(ps --no-headers -o comm 1)" != "systemd" ]]
 : "${SYSTEMD_DETECTED:=$?}" # just disable some code for debugging
 
@@ -2748,7 +2750,7 @@ function calc_wt_size() {
 }
 
 function testIfServicesExist() { # list of services
-	
+
 	logEntry "$1"
 
 	local services
@@ -2761,7 +2763,7 @@ function testIfServicesExist() { # list of services
 		fi
 	done
 	echo "$fails"
-	
+
 	logExit "$fails"
 }
 
@@ -3653,10 +3655,17 @@ function config_service_sequence_do() {
 				3>&1 1>&2 2>&3)
 			if [ $? -eq 0 ]; then
 				logItem "Answer: $ANSWER"
-				local a=${ANSWER//\"}
-				tgt+=( $a )
-				local del=( $a )
-				src=( ${src[@]/$del} )
+				local a="${ANSWER//\"}"
+				tgt+=( "$a" )
+				logItem "1=== > ${src[*]}"
+				local newSrc=()
+				local value
+				for value in "${src[@]}"; do
+					[[ "$value" != "$a" ]] && newSrc+=("$value")
+				done
+				src=("${newSrc[@]}")
+				unset newSrc
+				logItem "2=== > ${src[*]}"
 				(( ${#src[@]} <= 0 )) && break
 			else
 				aborted=1
