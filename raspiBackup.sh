@@ -8909,23 +8909,6 @@ function doitRestore() {
 		exitError $RC_MISSING_FILES
 	fi
 
-	if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
-		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
-		echo "$current_partition_table"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS "$RESTORE_DEVICE"
-		if ! askYesNo; then
-			exitError $RC_RESTORE_FAILED
-		else
-			umount ${RESTORE_DEVICE}* &>>"$LOG_FILE"
-			if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED "$RESTORE_DEVICE"
-				exitError $RC_RESTORE_IMPOSSIBLE
-			fi
-		fi
-	fi
-
 	if [[ ! -b "$RESTORE_DEVICE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$RESTORE_DEVICE"
 		exitError $RC_RESTORE_IMPOSSIBLE
@@ -9020,6 +9003,23 @@ function doitRestore() {
 		if [[ "$rd" == "$rr" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ROOT_PARTITION_NOT_DIFFERENT "$RESTORE_DEVICE"
 			exitError $RC_DEVICES_NOTFOUND
+		fi
+	fi
+
+	if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_PARTITION_MOUNTED "$RESTORE_DEVICE"
+		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+		echo "$current_partition_table"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS "$RESTORE_DEVICE"
+		if ! askYesNo; then
+			exitError $RC_RESTORE_FAILED
+		else
+			umount ${RESTORE_DEVICE}* &>>"$LOG_FILE"
+			if mount | grep "^${RESTORE_DEVICE%/}"; then # delete trailing / if it's present
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED "$RESTORE_DEVICE"
+				exitError $RC_RESTORE_IMPOSSIBLE
+			fi
 		fi
 	fi
 
