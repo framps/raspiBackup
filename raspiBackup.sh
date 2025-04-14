@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.0.2"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.0.2-m_866"        								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -5449,6 +5449,8 @@ function cleanupRestore() { # trap
 	fi
 
 	if [[ -n "$MNT_POINT" ]]; then
+		rmdir $MNT_POINT/boot &>>"$LOG_FILE"
+		rmdir $MNT_POINT/root&>>"$LOG_FILE"
 		umountPartition "$MNT_POINT"
 
 		logItem "Deleting dir $MNT_POINT"
@@ -5458,6 +5460,24 @@ function cleanupRestore() { # trap
 	if (( ! $PARTITIONBASED_BACKUP )); then
 		umountPartition "$BOOT_PARTITION"
 		umountPartition "$ROOT_PARTITION"
+
+		mountAndCheck $BOOT_PARTITION /mnt
+		if [[ -e /mnt/cmdline.txt ]]; then
+			logCommand "cat /mnt/cmdline.txt"
+		else
+			logItem "MISSING cmdline.txt"
+		fi
+		umountPartition $BOOT_PARTITION
+
+		mountAndCheck $ROOT_PARTITION /mnt
+		if [[ -e /mnt/etc/fstab ]]; then
+			logCommand "cat /mnt/etc/fstab"
+		else
+			logItem "MISSING fstab"
+		fi
+		
+		umountPartition $ROOT_PARTITION		
+
 	fi
 
 	logExit "$rc"
