@@ -2062,7 +2062,7 @@ MSG_PARTITION_CHECK_FAILED=343
 MSG_EN[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Filesystem check failed on %s with RC %s"
 MSG_DE[$MSG_PARTITION_CHECK_FAILED]="RBK0343E: Dateisystemcheck auf %s fehlerhaft beendet mit RC %s"
 MSG_NO_BOOTPARTITION_MOUNTED=344
-MSG_EN[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: No mounted boot parition detected"
+MSG_EN[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: No mounted boot partition detected"
 MSG_DE[$MSG_NO_BOOTPARTITION_MOUNTED]="RBK0344E: Keine gemountete Bootpartition gefunden"
 MSG_BACKUPDIR_MOVED=345
 MSG_EN[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporary backup directory %s moved to %s"
@@ -2075,7 +2075,7 @@ MSG_EN[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partition oriented backup of t
 MSG_DE[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partitionsorientierte Backup vom Typ %s started für die Partitionen %s"
 MSG_UMOUNT_MOUNTED_PARTITIONS=348
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitions of %s"
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Paritionen von %s umounted werden"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Partitionen von %s umounted werden"
 MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 # MSG_DE appears unused. Verify use (or export if used externally).
