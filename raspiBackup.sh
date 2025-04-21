@@ -4332,8 +4332,10 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 # /dev/mmcblk0p1 : start=     8192, size=    83968, Id= c
 # or
 # /dev/sdb1 : start=          63, size=  1953520002, type=83
+# or
+# /dev/nvme0n1p1 : start=        8192, size=     1048576, type=EBD0A0A2-B9E5-4433-87C0-68B6B72699C7, uuid=A1D7A9AA-D2CD-4A61-A709-096793B25EEC, name="bootfs"
 
-	local partitionregex="/dev/.*[p]?([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-z]*([0-9a-z]+)"
+	local partitionregex="/dev/.*([0-9]+) [^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-zA-Z\\-]*([0-9a-zA-Z\\-]+)"
 	local sectorSize=512 # default
 
 	[[ -v RESIZE_FSDISK ]] && logCommand "cat $file"
@@ -4369,7 +4371,9 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 
 			logItem "Processing $p - Start: $start - Size: $((size*512)) - End: $end - id: $id"
 
-			if [[ $id != 83 && $id != 5 && $id != c ]]; then
+      if [[ "$id" != "83" && "$id" != "5" && "$id" != "c" && \
+            "$id" != "0FC63DAF-8483-4772-8E79-3D69D8477DE4" && \
+            "$id" != "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7" ]]; then
 				continue
 			fi
 
@@ -4380,7 +4384,7 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 		fi
 	done < $file
 
-	if (( sumSize == 0 )) || [[ $id != 83 ]]; then
+	if (( sumSize == 0 )) || { [[ "$id" != "83" ]] && [[ "$id" != "0FC63DAF-8483-4772-8E79-3D69D8477DE4" ]]; }; then
 		assertionFailed $LINENO "No matching last partition found"
 	fi
 
@@ -4403,7 +4407,7 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 
 	local oldPartitionSize newPartitionSize
 
-	local partitionregex="/dev/.*[p]?([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-z]*([0-9a-z]+)"
+	local partitionregex="/dev/.*([0-9]+) [^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9]*([0-9]+)[^=]+=[^0-9a-zA-Z\\-]*([0-9a-zA-Z\\-]+)"
 
 	local sectorSize=512
 	if grep -q "^sector-size:" $sourceFile; then
@@ -4442,14 +4446,14 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 
 			logItem "Processing $p - Start: $start - Size: $((size*512)) - End: $end - id: $id"
 
-			if [[ $id == 5 ]]; then
+			if [[ "$id" == "5" ]]; then
 				logItem "Extended partition detected"
 				local p5=$p
 				local size5=$size
 				continue
 			fi
 
-			if [[ $id != 83 ]]; then
+			if [[ "$id" != "83" ]] && [[ "$id" != "0FC63DAF-8483-4772-8E79-3D69D8477DE4" ]]; then
 				continue
 			fi
 
@@ -4472,7 +4476,7 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 
 			(( diffSize = newSize - size ))
 
-			logItem "NewSize: $newSize ($(bytesToHuman $((newSize*512)))) DiffSize: $diffSize ($(bytesToHuman $((diffSize*512)))"
+			logItem "NewSize: $newSize ($(bytesToHuman $((newSize*512)))) DiffSize: $diffSize ($(bytesToHuman $((diffSize*512))))"
 
 			if (( newSize > 0 )); then
 				[[ -v RESIZE_FSDISK ]] && logItem "(( newPartitionSize = ( $newSize * $sectorSize )))"
@@ -4498,6 +4502,7 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 		logItem "Partition too small: Missing $(bytesToHuman $newPartitionSize)"
 	fi
 
+	local sfDiskFileUpdated
 	if (( newSize > 0 )); then
 		logItem "Update partition sectorsize to $newSize"
 		sed -E -i "s/($p :.+size=[ ]*)([0-9]+)/\1${newSize}/" $targetFile
@@ -4511,6 +4516,17 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 			logItem "Update extended partition sectorsize to $newP5Size"
 			sed -E -i "s/(p$p5 :.+size=[ ]*)([0-9]+)/\1${newP5Size}/" $targetFile
 		fi
+		sfDiskFileUpdated=true
+	fi
+
+	# Remove the "last-lba" header, it may or may not match the real target GPT partition, depending on its size, and is optional anyway
+	if sed -E -i '/^last-lba:/d' "$targetFile"; then
+      if ! grep -q '^last-lba:' "$targetFile"; then
+          sfDiskFileUpdated=true
+      fi
+  fi
+
+  if $sfDiskFileUpdated; then
 		logItem "Updated sfdisk file"
 		logCommand "cat $targetFile"
 	fi
@@ -6416,7 +6432,21 @@ function partitionRestoredeviceIfRequested() {
 
 				local sourceSDSize targetSDSize
 				sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-				targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+
+				local partitionLabel totalSize
+				partitionLabel=$(awk -F': ' '/^label:/ {print $2}' "$SF_FILE")
+				totalSize=$(blockdev --getsize64 "$RESTORE_DEVICE")
+
+				if [[ "$partitionLabel" == "gpt" ]]; then
+					# Subtract 33 sectors for GPT metadata at the end of the disk as these are unusable (for example, see https://wiki.archlinux.org/title/GPT_fdisk)
+					local sectorSize
+					sectorSize=$(awk -F': ' '/^sector-size:/ {print $2}' "$SF_FILE")
+					sectorSize=${sectorSize:-512}  # fallback if missing
+					targetSDSize=$((totalSize - (33 * sectorSize)))
+				else
+					targetSDSize=$totalSize
+				fi
+
 				logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
 				if (( sourceSDSize != targetSDSize )); then
@@ -8818,10 +8848,11 @@ function restorePartitionBasedPartition() { # restorefile
 						assertionFailed $LINENO "push to $MNT_POINT failed"
 					fi
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="z" || zip=""
-					cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
 
 					if (( $PROGRESS && $INTERACTIVE )); then
-						cmd="pv -f $restoreFile | $cmd -"
+						cmd="pv -f $restoreFile | tar ${archiveFlags} -x${verbose}${zip}f -"
+					else
+						cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
 					fi
 					executeTar "$cmd"
 					rc=$?
