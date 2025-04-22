@@ -4476,7 +4476,7 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 
 			(( diffSize = newSize - size ))
 
-			logItem "NewSize: $newSize ($(bytesToHuman $((newSize*512)))) DiffSize: $diffSize ($(bytesToHuman $((diffSize*512)))"
+			logItem "NewSize: $newSize ($(bytesToHuman $((newSize*512)))) DiffSize: $diffSize ($(bytesToHuman $((diffSize*512))))"
 
 			if (( newSize > 0 )); then
 				[[ -v RESIZE_FSDISK ]] && logItem "(( newPartitionSize = ( $newSize * $sectorSize )))"
@@ -4502,6 +4502,7 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 		logItem "Partition too small: Missing $(bytesToHuman $newPartitionSize)"
 	fi
 
+	local sfDiskFileUpdated
 	if (( newSize > 0 )); then
 		logItem "Update partition sectorsize to $newSize"
 		sed -E -i "s/($p :.+size=[ ]*)([0-9]+)/\1${newSize}/" $targetFile
@@ -4515,9 +4516,20 @@ function createResizedSFDisk() { # sfdisk_source_filename targetDeviceSize sfdis
 			logItem "Update extended partition sectorsize to $newP5Size"
 			sed -E -i "s/(p$p5 :.+size=[ ]*)([0-9]+)/\1${newP5Size}/" $targetFile
 		fi
+		sfDiskFileUpdated=true
+	fi
+
+	# Remove the "last-lba" header, it may or may not match the real target GPT partition, depending on its size, and is optional anyway
+	if sed -E -i '/^last-lba:/d' "$targetFile"; then
+      if ! grep -q '^last-lba:' "$targetFile"; then
+          sfDiskFileUpdated=true
+      fi
+  fi
+
+  if $sfDiskFileUpdated; then
 		logItem "Updated sfdisk file"
 		logCommand "cat $targetFile"
-	fi
+  fi
 
 	logItem "Old: $oldPartitionSize ($(bytesToHuman $oldPartitionSize)) - New: $newPartitionSize $(bytesToHuman $newPartitionSize))"
 
@@ -6420,7 +6432,21 @@ function partitionRestoredeviceIfRequested() {
 
 				local sourceSDSize targetSDSize
 				sourceSDSize=$(calcSumSizeFromSFDISK "$SF_FILE")
-				targetSDSize=$(blockdev --getsize64 $RESTORE_DEVICE)
+
+				local partitionLabel totalSize
+				partitionLabel=$(awk -F': ' '/^label:/ {print $2}' "$SF_FILE")
+				totalSize=$(blockdev --getsize64 "$RESTORE_DEVICE")
+
+				if [[ "$partitionLabel" == "gpt" ]]; then
+					# Subtract 33 sectors for GPT metadata at the end of the disk as these are unusable (for example, see https://wiki.archlinux.org/title/GPT_fdisk)
+					local sectorSize
+					sectorSize=$(awk -F': ' '/^sector-size:/ {print $2}' "$SF_FILE")
+					sectorSize=${sectorSize:-512}  # fallback if missing
+					targetSDSize=$((totalSize - (33 * sectorSize)))
+				else
+					targetSDSize=$totalSize
+				fi
+
 				logItem "sourceSDSize: $sourceSDSize - targetSDSize: $targetSDSize"
 
 				if (( sourceSDSize != targetSDSize )); then
