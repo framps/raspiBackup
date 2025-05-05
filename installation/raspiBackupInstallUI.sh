@@ -913,7 +913,7 @@ ${NL}${NL}欢迎翻译其他语言！."
 
 DESCRIPTION_KEEP=$((SCNT++))
 MSG_EN[$DESCRIPTION_KEEP]="${NL}Enter number of backups to keep. Number hast to be between 1 and 52."
-MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Beackups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
+MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Backups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
 MSG_FI[$DESCRIPTION_KEEP]="${NL}Syötä säilytettävien varmuuskopioiden lukumäärä. Numeron tulee olla 1:n ja 52:n väliltä."
 MSG_FR[$DESCRIPTION_KEEP]="${NL}Entrez le nombre de sauvegardes à conserver. Le nombre doit être compris entre 1 et 52."
 MSG_ZH[$DESCRIPTION_KEEP]="${NL}输入保存的备份数,在1和52之间."
