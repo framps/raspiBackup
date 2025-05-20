@@ -2443,6 +2443,8 @@ function systemd_update_execute() {
 
 	writeToConsole $MSG_UPDATING_SYSTEMD "$SYSTEMD_TIMER_ABS_FILE"
 
+	logItem "$(cat $SYSTEMD_TIMER_ABS_FILE)"
+
 	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
 
 #	OnCalendar=Sun *-*-* 05:00:42 # on sunday
@@ -2451,8 +2453,13 @@ function systemd_update_execute() {
 
 	local systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
 
-	logItem "Day: $systemd_day"
-	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":42" }' <<< "$l")
+	logItem "Day: -${systemd_day}-"
+	if [[ -z $systemd_day ]]; then
+		local v="OnCalendar=*-*-* ${CONFIG_SYSTEMD_HOUR}:${CONFIG_SYSTEMD_MINUTE}:42"
+	else
+		local v="OnCalendar=${systemd_day} *-*-* ${CONFIG_SYSTEMD_HOUR}:${CONFIG_SYSTEMD_MINUTE}:42"
+	fi
+
 	logItem "systemd update: $v"
 	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
 
@@ -4890,7 +4897,7 @@ function daynum_to_config_string() {
 		if (( $1 == 0 )); then
 			ret=""
 		else
-			ret="${DAYNUM_TO_MENU[$1]} " # addtl space to separate day
+			ret="${DAYNUM_TO_MENU[$1]}"
 		fi
 	else
 		if (( $1 == 0 )); then
