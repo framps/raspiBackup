@@ -5256,6 +5256,33 @@ function unLockMe() {
 	logExit
 }
 
+function sendNotification() {
+	if (( $rc != $RC_EMAILPROG_ERROR )); then
+		msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+		sendEMail "$msg" "$msgTitle"
+	fi
+	if [[ -n "$TELEGRAM_TOKEN" ]]; then
+		msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+		if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
+			sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
+			sendTelegrammLogMessages
+		fi
+	fi
+	if [[ -n "$PUSHOVER_TOKEN" ]]; then
+		msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+		if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+			sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
+		fi
+	fi
+	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+		msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+		if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+			sendSlack "$msg" 1		# add warning icon to message
+		fi
+	fi
+fi
+}
+
 function cleanup() { # trap
 
 	logEntry
@@ -5342,31 +5369,9 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-			if (( ! $RESTORE )); then
-				if (( $rc != $RC_EMAILPROG_ERROR )); then
-					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
-					sendEMail "$msg" "$msgTitle"
-				fi
-				if [[ -n "$TELEGRAM_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
-					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
-						sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
-						sendTelegrammLogMessages
-					fi
-				fi
-				if [[ -n "$PUSHOVER_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
-					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
-						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
-					fi
-				fi
-				if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
-					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
-						sendSlack "$msg" 1		# add warning icon to message
-					fi
-				fi
-			fi #  ! RESTORE
+			if (( ! $RESTORE || ( $RESTORE && ! $INTERACTIVE ) )); then
+				sendNotification
+			fi 
 		fi
 
 	else 	# success
@@ -5380,31 +5385,9 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		if (( ! $RESTORE )); then
-			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
-				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
-					sendTelegramm "${EMOJI_OK} $msg"
-					sendTelegrammLogMessages
-				fi
-			fi
-			if [[ -n "$PUSHOVER_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
-				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
-					sendPushover "${EMOJI_OK} $msg" 0
-				fi
-			fi
-			if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
-				if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
-					sendSlack "${EMOJI_OK} $msg" 0
-				fi
-			fi
-
-			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
-			sendEMail "" "$msg"
-
-		fi # ! $RESTORE
+		if (( ! $RESTORE || ( $RESTORE && ! $INTERACTIVE ) )); then
+			sendNotification
+		fi 
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
