@@ -2940,12 +2940,14 @@ function config_menu() {
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")"
 		logItem "extracted line $l"
 
-		local token
+		local token=()
+		set -o noglob # *-*-* looks up files in local directory otherwise :-(
 		token=( $l )
+		set +o noglob
 
-		logItem "Token1: ${token[1]}"
-		logItem "Token2: ${token[2]}"
-		logItem "Token3: ${token[3]}"
+		logItem "Token1: ${token[0]}"
+		logItem "Token2: ${token[1]}"
+		logItem "Token3: ${token[2]}"
 
 		if (( ${#token[@]} == 3 )); then
 			local day="${token[0]}"
