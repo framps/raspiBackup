@@ -9802,7 +9802,7 @@ function SR_listBackupsToDelete() { # directory
 	local r
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	# shellcheck disable=SC2155,SC2010
-	r="$(ls -1 "$1" | grep -v -e "$(echo -n "$(SR_listUniqueBackups "$1")" -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	r="$(ls -1 "$1" | grep -v "$(echo -n "$(SR_listUniqueBackups "$1")" )" | sed "s/ /\\\|/g" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" | grep -v "_" )" # make sure to delete only backup type files and no snapshots
 	local rc
 	rc="$(countLines "$r")"
 	logItem "$r"
