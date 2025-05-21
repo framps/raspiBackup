@@ -2940,7 +2940,7 @@ function config_menu() {
 		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")"
 		logItem "extracted line $l"
 
-		local token=()
+		local token
 		set -o noglob # *-*-* looks up files in local directory otherwise :-(
 		token=( $l )
 		set +o noglob
