@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.3"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8.3-m_886"							 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -2937,11 +2937,15 @@ function config_menu() {
 	elif isSystemdConfigInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
 		#	OnCalendar=*-*-* 05:00:00
-		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
-		logItem "parsed $l"
+		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")"
+		logItem "extracted line $l"
 
 		local token
-		IFS=" " token=( $l )
+		token=( $l )
+
+		logItem "Token1: ${token[1]}"
+		logItem "Token2: ${token[2]}"
+		logItem "Token3: ${token[3]}"
 
 		if (( ${#token[@]} == 3 )); then
 			local day="${token[0]}"
