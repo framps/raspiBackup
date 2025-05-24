@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.0.2"           								# -beta, -hotfix or -dev suffixes possible, -m_branch# is also a hotfix
+VERSION="0.7.0.3"           								# -beta, -hotfix or -dev suffixes possible, -m_branch# is also a hotfix
 VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -9802,7 +9802,7 @@ function SR_listBackupsToDelete() { # directory
 	local r
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	# shellcheck disable=SC2155,SC2010
-	r="$(ls -1 "$1" | grep -v -e "$(echo -n "$(SR_listUniqueBackups "$1")" -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	r="$(ls -1 "$1" | grep -v "$(echo -n "$(SR_listUniqueBackups "$1")" )" | sed "s/ /\\\|/g" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" | grep -v "_" )" # make sure to delete only backup type files and no snapshots
 	local rc
 	rc="$(countLines "$r")"
 	logItem "$r"
