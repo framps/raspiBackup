@@ -4892,15 +4892,17 @@ EOF
 		logExit
 }
 
-function sendEMail() { # subject
+function sendEMail() { # subject rc
 
-	logEntry
+	logEntry "$1" "$2"
+
+	local subject="$1"
+	local rc="$2"
 
 	if [[ -n "$EMAIL" && rc != "$RC_CTRLC" ]]; then
 		local attach content subject
 
 		local attach=""
-		local subject="$1"
 		local coloringOption=""
 		local contentType=""
 
@@ -5259,9 +5261,10 @@ function unLockMe() {
 
 function sendNotifications() { # rc
 
-	logEntry
+	logEntry "$rc"
 
 	local msg
+	local rc="$1"
 
 	if (( rc == 0 )); then
 		msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
@@ -5270,7 +5273,7 @@ function sendNotifications() { # rc
 	fi
 	
 	if (( $rc != $RC_EMAILPROG_ERROR )); then
-		sendEMail "$msg"
+		sendEMail "$msg" "$rc"
 	fi
 	
 	if [[ -n "$TELEGRAM_TOKEN" ]]; then
@@ -5279,10 +5282,9 @@ function sendNotifications() { # rc
 				sendTelegramm "${EMOJI_OK} $msg"
 				sendTelegrammLogMessages
 			fi
-		else [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
-				sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
-				sendTelegrammLogMessages
-			fi
+		elif [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
+			sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
+			sendTelegrammLogMessages
 		fi
 	fi
 	
@@ -5291,10 +5293,8 @@ function sendNotifications() { # rc
 			if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
 				sendPushover "${EMOJI_OK} $msg" 0
 			fi
-		else
-			if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+		elif [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 				sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
-			fi
 		fi
 	fi
 	
@@ -5303,9 +5303,9 @@ function sendNotifications() { # rc
 			if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
 				sendSlack "${EMOJI_OK} $msg" 0
 			fi
-		else [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
+		elif [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 				sendSlack "$msg" 1		# add warning icon to message
-			fi
+		fi
 	fi
 	logExit
 }
@@ -6571,8 +6571,6 @@ function restoreNormalBackupType() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE "$RESTOREFILE"
 	logCommand "ls -la $RESTOREFILE"
 
-	START_TIME=$(date +%s)
-
 	rc=$RC_NATIVE_RESTORE_FAILED
 
 	logSystemDiskState
@@ -6740,8 +6738,6 @@ function restoreNormalBackupType() {
 			fi
 
 	esac
-
-	END_TIME="$(date +%s)"
 
 	logItem "Syncing filesystems"
 	sync
@@ -7057,6 +7053,7 @@ function backup() {
 			backupPartitions
 		fi
 	fi
+
 	END_TIME=$(date +%s)
 
 	mapfile -d " " -t BACKUP_TIME < <( duration "$START_TIME" "$END_TIME" )
@@ -8424,8 +8421,6 @@ function restorePartitionBasedBackup() {
 		fi
 	fi
 
-	START_TIME="$(date +%s)"
-
 	logItem "Creating mountpoint $MNT_POINT"
 	mkdir -p "$MNT_POINT"
 
@@ -9124,14 +9119,20 @@ function doitRestore() {
 
 	rc=0
 
-	if ! (( $PARTITIONBASED_BACKUP )); then
-		restoreNonPartitionBasedBackup
-		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
-			synchronizeCmdlineAndfstab
+	START_TIME="$(date +%s)"
+
+	if (( ! $FAKE )); then
+		if ! (( $PARTITIONBASED_BACKUP )); then
+			restoreNonPartitionBasedBackup
+			if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
+				synchronizeCmdlineAndfstab
+			fi
+		else
+			restorePartitionBasedBackup
 		fi
-	else
-		restorePartitionBasedBackup
 	fi
+
+	END_TIME="$(date +%s)"
 
 	mapfile -d " " -t RESTORE_TIME < <( duration "$START_TIME" "$END_TIME" )
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_TIME "${RESTORE_TIME[1]}" "${RESTORE_TIME[2]}" "${RESTORE_TIME[3]}"
