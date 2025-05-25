@@ -4892,7 +4892,7 @@ EOF
 		logExit
 }
 
-function sendEMail() { # content subject
+function sendEMail() { # subject
 
 	logEntry
 
@@ -4900,7 +4900,7 @@ function sendEMail() { # content subject
 		local attach content subject
 
 		local attach=""
-		local subject="$2"
+		local subject="$1"
 		local coloringOption=""
 		local contentType=""
 
@@ -5261,16 +5261,16 @@ function sendNotifications() { # rc
 
 	logEntry
 
-	local msgTitle
+	local msg
 
 	if (( rc == 0 )); then
-		msgTitle=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+		msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 	else
-		msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+		msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 	fi
 	
 	if (( $rc != $RC_EMAILPROG_ERROR )); then
-		sendEMail "$msg" "$msgTitle"
+		sendEMail "$msg"
 	fi
 	
 	if [[ -n "$TELEGRAM_TOKEN" ]]; then
@@ -10770,7 +10770,7 @@ if (( $NOTIFY_START )); then
 	if (( ! $RESTORE )); then
 		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 		if [[ -n "$EMAIL"  ]]; then
-			sendEMail "" "$msg"
+			sendEMail "$msg"
 		fi
 		if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 			sendTelegramm "$msg"
