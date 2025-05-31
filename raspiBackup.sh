@@ -8517,13 +8517,15 @@ function restorePartitionBasedBackup() {
 
 }
 
+# MBR partition blkid examples:
 # /dev/mmcblk0p1: LABEL="RECOVERY" UUID="B383-E246" TYPE="vfat"
 # /dev/mmcblk0p3: LABEL="SETTINGS" UUID="9b35a9e6-d81f-4eff-9096-633297a5410b" TYPE="ext4"
 # /dev/mmcblk0p5: LABEL="boot0" UUID="035A-9F64" TYPE="vfat"
 # /dev/mmcblk0p6: LABEL="root" UUID="53df0f2a-3f9c-4b76-afc9-17c60989988d" TYPE="ext4"
 # /dev/mmcblk0p7: LABEL="boot" UUID="56A8-F127" TYPE="vfat"
 # /dev/mmcblk0p8: LABEL="root0" UUID="aa2fec4f-70ac-49b5-bc59-be0cf74b76d7" TYPE="ext4"
-
+# GPT partition blkid examples:
+# /dev/mmcblk0p1: LABEL_FATBOOT="bootfs" LABEL="bootfs" UUID="EC36-4DE1" BLOCK_SIZE="512" TYPE="vfat" PARTLABEL="Microsoft basic data" PARTUUID="df06e23f-4069-4fb4-a5f2-65bd5c9ac229"
 function getBackupPartitionLabel() { # partition
 
 	logEntry "$1"
@@ -8535,7 +8537,7 @@ function getBackupPartitionLabel() { # partition
 	blkid=$(grep "$partition" "$BLKID_FILE")
 	logItem "BLKID: $1 - $blkid"
 
-	regexFormatLineLabel="^.*LABEL=\"([^\"]+)\".*$"
+	regexFormatLineLabel="^.* LABEL=\"([^\"]+)\".*$"
 
 	if [[ $blkid =~ $regexFormatLineLabel ]]; then
 		label=${BASH_REMATCH[1]}
