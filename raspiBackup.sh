@@ -8587,7 +8587,7 @@ function getBackupPartitionFilesystemUsed() { # partition
 
 	mount $1 /mnt
 	local used
-	used=$(df "$1" | tail -1 | awk '{ print $3; }')
+	used=$(df "$1" -B 1 | tail -1 | awk '{ printf "%.0f\n", $3 }')
 	umount /mnt
 	echo "$used"
 
@@ -8600,7 +8600,7 @@ function getBackupPartitionFilesystemSize() { # partition
 	logEntry "$1"
 
 	local size
-	size=$(df "$1" | tail -1 | awk '{ print $3 + $4; }')
+	size=$(df "$1" -B 1 | tail -1 | awk '{ printf "%.0f\n", $3 + $4 }')
 	echo "$size"
 
 	logExit "$size"
