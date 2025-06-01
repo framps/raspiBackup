@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.0.3"           								# -beta, -hotfix or -dev suffixes possible, -m_branch# is also a hotfix
+VERSION="0.7.0.3-m_890"           								# -beta, -hotfix or -dev suffixes possible, -m_branch# is also a hotfix
 VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -5094,7 +5094,7 @@ function masqueradeSensitiveInfoInLog() {
 	# receiver email
 
 	if [[ -n "$EMAIL" ]]; then
-		logItem "Masquerading eMail"
+		echo "Masquerading eMail"
 		m="$(masquerade "$EMAIL")"
 		sed -i -E "s/$EMAIL/${m}/g" $LOG_FILE
 	fi
@@ -5102,7 +5102,7 @@ function masqueradeSensitiveInfoInLog() {
 	# sender email
 
 	if [[ -n "$SENDER_EMAIL" ]]; then
-		logItem "Masquerading sender eMail"
+		echo "Masquerading sender eMail"
 		m="$(masquerade "$SENDER_EMAIL")"
 		sed -i -E "s/$SENDER_EMAIL/${m}/g" $LOG_FILE
 	fi
@@ -5110,14 +5110,14 @@ function masqueradeSensitiveInfoInLog() {
 	# email parms usually also contain eMails and passwords
 
 	if [[ -n "$EMAIL_PARMS" ]]; then
-		logItem "Masquerading eMail parameters"
+		echo "Masquerading eMail parameters"
 		m="$(masquerade "$EMAIL_PARMS")"
 		sed -i -E "s/$EMAIL_PARMS/${m}/" "$LOG_FILE" # may contain passwords
 	fi
 
 	# some mount options
 
-	logItem "Masquerading some mount options"
+	echo "Masquerading some mount options"
 	sed -i -E "s/username=[^,]+\,/username=${MASQUERADE_STRING},/" $LOG_FILE # used in cifs mount options
 	sed -i -E "s/password=[^,]+\,/password=${MASQUERADE_STRING},/" $LOG_FILE
 	sed -i -E "s/domain=[^,]+\,/domain=${MASQUERADE_STRING},/" $LOG_FILE
@@ -5125,40 +5125,40 @@ function masqueradeSensitiveInfoInLog() {
 	# telegram token and chatid
 
 	if	m="$(masquerade $TELEGRAM_TOKEN)"; then
-		logItem "Masquerading telegram token"
+		echo "Masquerading telegram token"
 		sed -i -E "s/${TELEGRAM_TOKEN}/${m}/g" $LOG_FILE
 	fi
 
 	if m="$(masquerade $TELEGRAM_CHATID)"; then
-		logItem "Masquerading telegram chatid"
+		echo "Masquerading telegram chatid"
 		sed -i -E "s/${TELEGRAM_CHATID}/${m}/g" $LOG_FILE
 	fi
 
 	# pushover token and user
 
 	if	m="$(masquerade $PUSHOVER_USER)"; then
-		logItem "Masquerading pushover user"
+		echo "Masquerading pushover user"
 		sed -i -E "s/${PUSHOVER_USER}/${m}/g" $LOG_FILE
 	fi
 
 	if m="$(masquerade $PUSHOVER_TOKEN)"; then
-		logItem "Masquerading pushover token"
+		echo "Masquerading pushover token"
 		sed -i -E "s/${PUSHOVER_TOKEN}/${m}/g" $LOG_FILE
 	fi
 
 	# In home directories usually first names are used
 
-	logItem "Masquerading home directory name"
+	echo "Masquerading home directory name"
 	sed -i -E "s/\/home\/([^\\/])+\/(.)/\/home\/@USER@\/\2/g" $LOG_FILE
 
 	# hostname may expose domain names
 
-	logItem "Masquerading hostname"
+	echo "Masquerading hostname"
 	sed -i -E "s/$HOSTNAME/@HOSTNAME@/g" $LOG_FILE
 
 	# any non local IPs used somewhere (mounts et al)
 
-	logItem "Masquerading sensitive non local IPs"
+	echo "Masquerading sensitive non local IPs"
 	masqueradeNonlocalIPs $LOG_FILE
 
 	# now delete console color annotation ESC sequences
