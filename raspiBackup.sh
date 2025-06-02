@@ -2078,9 +2078,9 @@ MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitio
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Partitionen von %s umounted werden"
 MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK034)E: Umount von gemounteten Paritionen von %s nicht möglich"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK034)E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5079,9 +5079,28 @@ function masquerade() { # text
 	return 0
 }
 
+# Escape slashes for masquerading with sed which will fail if slashes are included in the string
+
+function escapeSlashes() { # string
+
+        local i r="" p
+        local s="$1"
+
+        for (( i=0; i<${#s}; i++ )); do
+			p="${s:$i:1}"
+			if [[ "$p" == "/" ]]; then
+					r+='\/'
+			else
+					r+="$p"
+			fi
+        done
+
+        echo "$r"
+}
+
 function masqueradeSensitiveInfoInLog() {
 
-	local xEnabled=0
+	local xEnabled=0 e
 	if [ -o xtrace ]; then	# disable xtrace
 		xEnabled=1
         set +x
@@ -5094,71 +5113,92 @@ function masqueradeSensitiveInfoInLog() {
 	# receiver email
 
 	if [[ -n "$EMAIL" ]]; then
-		echo "Masquerading eMail"
+		logItem "Masquerading eMail"
 		m="$(masquerade "$EMAIL")"
-		sed -i -E "s/$EMAIL/${m}/g" $LOG_FILE
+		e="$(escapeSlashes "$EMAIL")"
+		sed -i -E "s/$e/${m}/g" $LOG_FILE
 	fi
 
 	# sender email
 
 	if [[ -n "$SENDER_EMAIL" ]]; then
-		echo "Masquerading sender eMail"
+		logItem "Masquerading sender eMail"
 		m="$(masquerade "$SENDER_EMAIL")"
-		sed -i -E "s/$SENDER_EMAIL/${m}/g" $LOG_FILE
+		e="$(escapeSlashes "$SENDER_EMAIL")"
+		sed -i -E "s/$e/${m}/g" $LOG_FILE
 	fi
 
 	# email parms usually also contain eMails and passwords
 
 	if [[ -n "$EMAIL_PARMS" ]]; then
-		echo "Masquerading eMail parameters"
+		logItem "Masquerading eMail parameters"
 		m="$(masquerade "$EMAIL_PARMS")"
-		sed -i -E "s/$EMAIL_PARMS/${m}/" "$LOG_FILE" # may contain passwords
+		e="$(escapeSlashes "$EMAIL_PARMS")"
+		sed -i -E "s/$e/${m}/" "$LOG_FILE" # may contain passwords
 	fi
 
 	# some mount options
 
-	echo "Masquerading some mount options"
+	logItem "Masquerading some mount options"
 	sed -i -E "s/username=[^,]+\,/username=${MASQUERADE_STRING},/" $LOG_FILE # used in cifs mount options
 	sed -i -E "s/password=[^,]+\,/password=${MASQUERADE_STRING},/" $LOG_FILE
 	sed -i -E "s/domain=[^,]+\,/domain=${MASQUERADE_STRING},/" $LOG_FILE
 
-	# telegram token and chatid
+	# slack
 
-	if	m="$(masquerade $TELEGRAM_TOKEN)"; then
-		echo "Masquerading telegram token"
-		sed -i -E "s/${TELEGRAM_TOKEN}/${m}/g" $LOG_FILE
+	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+		logItem "Masquerading slack webhook"
+		m="$(masquerade $SLACK_WEBHOOK_URL)"
+		e="$(escapeSlashes "$SLACK_WEBHOOK_URL")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
-	if m="$(masquerade $TELEGRAM_CHATID)"; then
-		echo "Masquerading telegram chatid"
-		sed -i -E "s/${TELEGRAM_CHATID}/${m}/g" $LOG_FILE
+	# telegram token and chatid
+
+	if [[ -n "$TELEGRAM_TOKEN" ]]; then
+		logItem "Masquerading telegram token"
+		m="$(masquerade $TELEGRAM_TOKEN)"
+		e="$(escapeSlashes "$TELEGRAM_TOKEN")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
+	fi
+
+	if [[ -n "$TELEGRAM_CHATID" ]]; then
+		logItem "Masquerading telegram chatid"
+		m="$(masquerade $TELEGRAM_CHATID)"
+		e="$(escapeSlashes "$TELEGRAM_CHATID")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
 	# pushover token and user
 
-	if	m="$(masquerade $PUSHOVER_USER)"; then
-		echo "Masquerading pushover user"
-		sed -i -E "s/${PUSHOVER_USER}/${m}/g" $LOG_FILE
+	if	[[ -n "$PUSHOVER_USER" ]]; then
+		logItem "Masquerading pushover user"
+		m="$(masquerade $PUSHOVER_USER)"
+		e="$(escapeSlashes "$PUSHOVER_USER")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
-	if m="$(masquerade $PUSHOVER_TOKEN)"; then
-		echo "Masquerading pushover token"
+	if [[ -n "$PUSHOVER_TOKEN" ]]; then
+		logItem "Masquerading pushover token"
+		m="$(masquerade $PUSHOVER_TOKEN)"
+		e="$(escapeSlashes "$PUSHOVER_TOKEN")"
 		sed -i -E "s/${PUSHOVER_TOKEN}/${m}/g" $LOG_FILE
 	fi
 
 	# In home directories usually first names are used
 
-	echo "Masquerading home directory name"
+	logItem "Masquerading home directory name"
 	sed -i -E "s/\/home\/([^\\/])+\/(.)/\/home\/@USER@\/\2/g" $LOG_FILE
 
 	# hostname may expose domain names
 
-	echo "Masquerading hostname"
-	sed -i -E "s/$HOSTNAME/@HOSTNAME@/g" $LOG_FILE
+	logItem "Masquerading hostname"
+	e="$(escapeSlashes "$HOSTNAME")"
+	sed -i -E "s/$e/@HOSTNAME@/g" $LOG_FILE
 
 	# any non local IPs used somewhere (mounts et al)
 
-	echo "Masquerading sensitive non local IPs"
+	logItem "Masquerading sensitive non local IPs"
 	masqueradeNonlocalIPs $LOG_FILE
 
 	# now delete console color annotation ESC sequences
