@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.0.3-m_890"           								# -beta, -hotfix or -dev suffixes possible, -m_branch# is also a hotfix
+VERSION="0.7.0.3"           								# -beta, -hotfix or -dev suffixes possible, -m_branch# is also a hotfix
 VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -2078,9 +2078,9 @@ MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitio
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Partitionen von %s umounted werden"
 MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK034)E: Umount von gemounteten Paritionen von %s nicht möglich"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
