@@ -6068,6 +6068,7 @@ function backupTar() {
 		--exclude=$devroot/sys/* \
 		--exclude=$devroot/dev/* \
 		--exclude=$devroot/tmp/* \
+		--exclude=$devroot/var/swap \
 		--exclude=$devroot/swapfile \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
@@ -6266,6 +6267,7 @@ function backupRsync() { # partition number (for partition based backup)
 --exclude=/lost+found/* \
 --exclude=/sys/* \
 --exclude=/dev/* \
+--exclude=/var/swap \
 --exclude=/swapfile \
 --exclude=/tmp/* \
 --exclude=/run/* \
