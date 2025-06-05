@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.3"							 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8.3"				 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -913,7 +913,7 @@ ${NL}${NL}欢迎翻译其他语言！."
 
 DESCRIPTION_KEEP=$((SCNT++))
 MSG_EN[$DESCRIPTION_KEEP]="${NL}Enter number of backups to keep. Number hast to be between 1 and 52."
-MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Beackups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
+MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Backups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
 MSG_FI[$DESCRIPTION_KEEP]="${NL}Syötä säilytettävien varmuuskopioiden lukumäärä. Numeron tulee olla 1:n ja 52:n väliltä."
 MSG_FR[$DESCRIPTION_KEEP]="${NL}Entrez le nombre de sauvegardes à conserver. Le nombre doit être compris entre 1 et 52."
 MSG_ZH[$DESCRIPTION_KEEP]="${NL}输入保存的备份数,在1和52之间."
@@ -2443,6 +2443,8 @@ function systemd_update_execute() {
 
 	writeToConsole $MSG_UPDATING_SYSTEMD "$SYSTEMD_TIMER_ABS_FILE"
 
+	logItem "$(cat $SYSTEMD_TIMER_ABS_FILE)"
+
 	logItem "systemd: $CONFIG_SYSTEMD_DAY $CONFIG_SYSTEMD_HOUR $CONFIG_SYSTEMD_MINUTE"
 
 #	OnCalendar=Sun *-*-* 05:00:42 # on sunday
@@ -2451,8 +2453,13 @@ function systemd_update_execute() {
 
 	local systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
 
-	logItem "Day: $systemd_day"
-	local v=$(awk -v minute=$CONFIG_SYSTEMD_MINUTE -v hour=$CONFIG_SYSTEMD_HOUR -v day=$systemd_day ' { print "OnCalendar="day, "*-*-*", hour":"minute":42" }' <<< "$l")
+	logItem "Day: -${systemd_day}-"
+	if [[ -z $systemd_day ]]; then
+		local v="OnCalendar=*-*-* ${CONFIG_SYSTEMD_HOUR}:${CONFIG_SYSTEMD_MINUTE}:42"
+	else
+		local v="OnCalendar=${systemd_day} *-*-* ${CONFIG_SYSTEMD_HOUR}:${CONFIG_SYSTEMD_MINUTE}:42"
+	fi
+
 	logItem "systemd update: $v"
 	sed -i "/^OnCalendar/c$v" "$SYSTEMD_TIMER_ABS_FILE"
 
@@ -2930,11 +2937,17 @@ function config_menu() {
 	elif isSystemdConfigInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
 		#	OnCalendar=*-*-* 05:00:00
-		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")" # Sun *-*-* 05:00:00 or *-*-* 05:00:00
-		logItem "parsed $l"
+		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")"
+		logItem "extracted line $l"
 
 		local token
-		IFS=" " token=( $l )
+		set -o noglob # *-*-* looks up files in local directory otherwise :-(
+		token=( $l )
+		set +o noglob
+
+		logItem "Token1: ${token[0]}"
+		logItem "Token2: ${token[1]}"
+		logItem "Token3: ${token[2]}"
 
 		if (( ${#token[@]} == 3 )); then
 			local day="${token[0]}"
@@ -4890,7 +4903,7 @@ function daynum_to_config_string() {
 		if (( $1 == 0 )); then
 			ret=""
 		else
-			ret="${DAYNUM_TO_MENU[$1]} " # addtl space to separate day
+			ret="${DAYNUM_TO_MENU[$1]}"
 		fi
 	else
 		if (( $1 == 0 )); then

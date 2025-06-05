@@ -73,7 +73,7 @@ fi
 
 IS_BETA=$(( ! $(grep -iqE "alpha|beta" <<< "$VERSION"; echo $?) ))
 IS_DEV=$(( ! $(grep -iq dev <<< "$VERSION"; echo $?) ))
-IS_HOTFIX=$(( ! $(grep -iq hotfix <<< "$VERSION"; echo $?) ))
+IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
@@ -1545,7 +1545,7 @@ MSG_FI[$MSG_TRUNCATING_ERROR]="RBK0204E: Typistetyn varmuuskopion kokoa ei voitu
 MSG_FR[$MSG_TRUNCATING_ERROR]="RBK0204E: Impossible de calculer la taille réduite de la sauvegarde"
 MSG_CLEANUP_BACKUP_VERSION=205
 MSG_EN[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Deleting oldest backup in %s. This may take some time. Please be patient"
-MSG_DE[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Älteste Backup %s in wird gelöscht. Das kann etwas dauern. Bitte Geduld"
+MSG_DE[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Ältestes Backup in %s wird gelöscht. Das kann etwas dauern. Bitte Geduld"
 MSG_FI[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Poistetaan vanhin varmuuskopio hakemistosta %s. Tämä saattaa kestää jonkin aikaa. Ole hyvä ja odota"
 MSG_FR[$MSG_CLEANUP_BACKUP_VERSION]="RBK0205I: Suppression de la sauvegarde la plus ancienne dans %s. Cela peut prendre du temps. SVP soyez patient"
 MSG_CREATING_UUID=206
@@ -2080,7 +2080,7 @@ MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK034)E: Umount von gemounteten Paritionen von %s nicht möglich"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5095,9 +5095,28 @@ function masquerade() { # text
 	return 0
 }
 
+# Escape slashes for masquerading with sed which will fail if slashes are included in the string
+
+function escapeSlashes() { # string
+
+        local i r="" p
+        local s="$1"
+
+        for (( i=0; i<${#s}; i++ )); do
+			p="${s:$i:1}"
+			if [[ "$p" == "/" ]]; then
+					r+='\/'
+			else
+					r+="$p"
+			fi
+        done
+
+        echo "$r"
+}
+
 function masqueradeSensitiveInfoInLog() {
 
-	local xEnabled=0
+	local xEnabled=0 e
 	if [ -o xtrace ]; then	# disable xtrace
 		xEnabled=1
         set +x
@@ -5112,7 +5131,8 @@ function masqueradeSensitiveInfoInLog() {
 	if [[ -n "$EMAIL" ]]; then
 		logItem "Masquerading eMail"
 		m="$(masquerade "$EMAIL")"
-		sed -i -E "s/$EMAIL/${m}/g" $LOG_FILE
+		e="$(escapeSlashes "$EMAIL")"
+		sed -i -E "s/$e/${m}/g" $LOG_FILE
 	fi
 
 	# sender email
@@ -5120,7 +5140,8 @@ function masqueradeSensitiveInfoInLog() {
 	if [[ -n "$SENDER_EMAIL" ]]; then
 		logItem "Masquerading sender eMail"
 		m="$(masquerade "$SENDER_EMAIL")"
-		sed -i -E "s/$SENDER_EMAIL/${m}/g" $LOG_FILE
+		e="$(escapeSlashes "$SENDER_EMAIL")"
+		sed -i -E "s/$e/${m}/g" $LOG_FILE
 	fi
 
 	# email parms usually also contain eMails and passwords
@@ -5128,7 +5149,8 @@ function masqueradeSensitiveInfoInLog() {
 	if [[ -n "$EMAIL_PARMS" ]]; then
 		logItem "Masquerading eMail parameters"
 		m="$(masquerade "$EMAIL_PARMS")"
-		sed -i -E "s/$EMAIL_PARMS/${m}/" "$LOG_FILE" # may contain passwords
+		e="$(escapeSlashes "$EMAIL_PARMS")"
+		sed -i -E "s/$e/${m}/" "$LOG_FILE" # may contain passwords
 	fi
 
 	# some mount options
@@ -5138,27 +5160,44 @@ function masqueradeSensitiveInfoInLog() {
 	sed -i -E "s/password=[^,]+\,/password=${MASQUERADE_STRING},/" $LOG_FILE
 	sed -i -E "s/domain=[^,]+\,/domain=${MASQUERADE_STRING},/" $LOG_FILE
 
-	# telegram token and chatid
+	# slack
 
-	if	m="$(masquerade $TELEGRAM_TOKEN)"; then
-		logItem "Masquerading telegram token"
-		sed -i -E "s/${TELEGRAM_TOKEN}/${m}/g" $LOG_FILE
+	if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+		logItem "Masquerading slack webhook"
+		m="$(masquerade $SLACK_WEBHOOK_URL)"
+		e="$(escapeSlashes "$SLACK_WEBHOOK_URL")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
-	if m="$(masquerade $TELEGRAM_CHATID)"; then
+	# telegram token and chatid
+
+	if [[ -n "$TELEGRAM_TOKEN" ]]; then
+		logItem "Masquerading telegram token"
+		m="$(masquerade $TELEGRAM_TOKEN)"
+		e="$(escapeSlashes "$TELEGRAM_TOKEN")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
+	fi
+
+	if [[ -n "$TELEGRAM_CHATID" ]]; then
 		logItem "Masquerading telegram chatid"
-		sed -i -E "s/${TELEGRAM_CHATID}/${m}/g" $LOG_FILE
+		m="$(masquerade $TELEGRAM_CHATID)"
+		e="$(escapeSlashes "$TELEGRAM_CHATID")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
 	# pushover token and user
 
-	if	m="$(masquerade $PUSHOVER_USER)"; then
+	if	[[ -n "$PUSHOVER_USER" ]]; then
 		logItem "Masquerading pushover user"
-		sed -i -E "s/${PUSHOVER_USER}/${m}/g" $LOG_FILE
+		m="$(masquerade $PUSHOVER_USER)"
+		e="$(escapeSlashes "$PUSHOVER_USER")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
-	if m="$(masquerade $PUSHOVER_TOKEN)"; then
+	if [[ -n "$PUSHOVER_TOKEN" ]]; then
 		logItem "Masquerading pushover token"
+		m="$(masquerade $PUSHOVER_TOKEN)"
+		e="$(escapeSlashes "$PUSHOVER_TOKEN")"
 		sed -i -E "s/${PUSHOVER_TOKEN}/${m}/g" $LOG_FILE
 	fi
 
@@ -5170,7 +5209,8 @@ function masqueradeSensitiveInfoInLog() {
 	# hostname may expose domain names
 
 	logItem "Masquerading hostname"
-	sed -i -E "s/$HOSTNAME/@HOSTNAME@/g" $LOG_FILE
+	e="$(escapeSlashes "$HOSTNAME")"
+	sed -i -E "s/$e/@HOSTNAME@/g" $LOG_FILE
 
 	# any non local IPs used somewhere (mounts et al)
 
@@ -6044,6 +6084,7 @@ function backupTar() {
 		--exclude=$devroot/sys/* \
 		--exclude=$devroot/dev/* \
 		--exclude=$devroot/tmp/* \
+		--exclude=$devroot/var/swap \
 		--exclude=$devroot/swapfile \
 		--exclude=$devroot/run/* \
 		--exclude=$devroot/media/* \
@@ -6242,6 +6283,7 @@ function backupRsync() { # partition number (for partition based backup)
 --exclude=/lost+found/* \
 --exclude=/sys/* \
 --exclude=/dev/* \
+--exclude=/var/swap \
 --exclude=/swapfile \
 --exclude=/tmp/* \
 --exclude=/run/* \
@@ -9835,7 +9877,7 @@ function SR_listBackupsToDelete() { # directory
 	local r
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	# shellcheck disable=SC2155,SC2010
-	r="$(ls -1 "$1" | grep -v -e "$(echo -n "$(SR_listUniqueBackups "$1")" -e "_" | sed "s/ /\\\|/g")" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" )" # make sure to delete only backup type files
+	r="$(ls -1 "$1" | grep -v "$(echo -n "$(SR_listUniqueBackups "$1")" )" | sed "s/ /\\\|/g" | grep "${HOSTNAME_OSR}\-${BACKUPTYPE}\-backup\-" | grep -v "_" )" # make sure to delete only backup type files and no snapshots
 	local rc
 	rc="$(countLines "$r")"
 	logItem "$r"
