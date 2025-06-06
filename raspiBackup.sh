@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.0.2-m_374"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.0.3-m_374"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -8304,7 +8304,7 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 		ROOT_RESTOREFILE="$(ls ${RESTOREFILE}/${HOSTNAME}*-*-backup*)"
 		logItem "ROOT_RESTOREFILE: $ROOT_RESTOREFILE"
 		if [[ -z "$ROOT_RESTOREFILE" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL "$MSG_NO_ROOTBACKUPFILE_FOUND" "$BACKUPTYPE"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_ROOTBACKUPFILE_FOUND "$BACKUPTYPE"
 			exitError $RC_MISC_ERROR
 		fi
 	fi
@@ -8327,14 +8327,14 @@ function findNonpartitionBackupBootAndRootpartitionFiles() {
 		local errorCnt=$?
 
 		if [[ $errorCnt == 0 ]]; then
-			writeToConsole $MSG_LEVEL_DETAILED "$MSG_BOOTPATITIONFILES_FOUND" "${bootpartitionDirectory[$i]}" "${bootpartitionExtension[$i]}"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_BOOTPATITIONFILES_FOUND "${bootpartitionDirectory[$i]}" "${bootpartitionExtension[$i]}"
 			logExit
 			return
 		fi
 	done
 
 	for (( i=0; i<${#bootpartitionDirectory[@]}; i++ )); do
-		writeToConsole $MSG_LEVEL_MINIMAL "$MSG_BOOTPATITIONFILES_NOT_FOUND" "${bootpartitionDirectory[$i]}" "${bootpartitionExtension[$i]}"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BOOTPATITIONFILES_NOT_FOUND "${bootpartitionDirectory[$i]}" "${bootpartitionExtension[$i]}"
 	done
 	logExit
 	exitError "$RC_MISC_ERROR"
@@ -10785,7 +10785,7 @@ fi
 
 if (( $RESTORE && $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
-		writeToConsole $MSG_LEVEL_MINIMAL "$MSG_YES_NO_DEVICE_MISMATCH" "$RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH "$RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
 		exitError $RC_MISC_ERROR
 	fi
 fi
