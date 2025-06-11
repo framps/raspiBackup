@@ -7755,9 +7755,11 @@ function inspect4Backup() {
 
 		logItem "bootPref: $bootPref - /dev/${bootPref}${boot[1]}"
 
-		if ! mount | grep "^/dev/${bootPref}${boot[1]}" &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}${boot[1]}"
-			exitError $RC_INVALID_BOOTDEVICE
+		if ! findmnt "/dev/${bootPref}1" &>/dev/null; then
+			if ! mount | grep "^/dev/${bootPref}${boot[1]}" &>/dev/null; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_BOOTDEVICE_MOUNTED "/dev/${bootPref}${boot[1]}"
+				exitError $RC_INVALID_BOOTDEVICE
+			fi
 		fi
 	fi
 
