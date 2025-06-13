@@ -150,7 +150,7 @@ VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
 VARS_FILE="/tmp/$MYNAME.vars"
-TEMPORARY_MOUNTPOINT_ROOT="/mnt/$MYNAME"
+TEMPORARY_MOUNTPOINT_ROOT="/tmp/mnt/$MYNAME"
 LOGFILE_EXT=".log"
 LOGFILE_NAME="${MYNAME}${LOGFILE_EXT}"
 LOGFILE_RESTORE_EXT=".logr"
@@ -5508,7 +5508,7 @@ function cleanupRestore() { # trap
 		umountPartition "$MNT_POINT"
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir $MNT_POINT &>>"$LOG_FILE"
+		rmdir -p $MNT_POINT &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
@@ -6668,7 +6668,11 @@ function restoreNormalBackupType() {
 			umountPartition "$MNT_POINT"
 
 			logItem "Creating mountpoint $MNT_POINT"
-			mkdir -p "$MNT_POINT"
+
+			if ! mkdir -p "$MNT_POINT"; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${MNT_POINT}"
+					exitError $RC_CREATE_ERROR
+			fi
 
 			partitionRestoredeviceIfRequested
 
@@ -7013,7 +7017,10 @@ function reportOldBackups() {
 
 		# create directory to save counter
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			mkdir -p "$VAR_LIB_DIRECTORY"
+			if ! mkdir -p "$VAR_LIB_DIRECTORY"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${VAR_LIB_DIRECTORY}"
+				exitError $RC_CREATE_ERROR
+			fi
 		fi
 
 		# initialize counter
@@ -7154,7 +7161,10 @@ function mountPartitions() { # sourcePath
 		for partition in ${PARTITIONS_TO_BACKUP[@]}; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			logItem "mkdir $1/$partitionName"
-			mkdir -p "$1/$partitionName" &>>"$LOG_FILE"
+			if ! mkdir -p "$1/$partitionName" &>>"$LOG_FILE"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${$1/$partitionName}"
+				exitError $RC_CREATE_ERROR
+			fi
 			logItem "mount /dev/$partitionName to $1/$partitionName"
 			mountAndCheck "/dev/$partitionName" "$1/$partitionName"
 		done
@@ -8491,7 +8501,11 @@ function restorePartitionBasedBackup() {
 	START_TIME="$(date +%s)"
 
 	logItem "Creating mountpoint $MNT_POINT"
-	mkdir -p "$MNT_POINT"
+
+	if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$MNT_POINT"
+		exitError "$RC_CREATE_ERROR"		
+	fi
 
 	# handle partitions
 
@@ -9235,7 +9249,10 @@ function updateRestoreReminder() {
 
 		# create directory to save state
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			mkdir -p "$VAR_LIB_DIRECTORY"
+			if ! mkdir -p "$VAR_LIB_DIRECTORY"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
+				exitError "$RC_CREATE_ERROR"		
+			fi
 		fi
 
 		# initialize reminder state
@@ -9314,7 +9331,10 @@ function remount() { # device mountpoint
 	fi
 
 	logItem "Creating mountpoint $2"
-	mkdir -p "$2"
+	if ! mkdir -p "$2"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$2"
+		exitError "$RC_CREATE_ERROR"		
+	fi
 	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
 	logExit $rc
 
