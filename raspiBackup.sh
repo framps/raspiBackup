@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#!/usr/bin/env bash
 # shellcheck disable=SC2004
 # SC2004: $ not required in arithmentic expressions
 #
@@ -5506,7 +5507,12 @@ function cleanupRestore() { # trap
 		umountPartition "$MNT_POINT"
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir -p "$MNT_POINT" &>>"$LOG_FILE"
+		rmdir "$MNT_POINT" &>>"$LOG_FILE"
+	fi
+
+	if [[ -d $TEMPORARY_MOUNTPOINT_ROOT ]]; then
+		logItem "Deleting dir $TEMPORARY_MOUNTPOINT_ROOT"
+		rmdir "$TEMPORARY_MOUNTPOINT_ROOT" &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
