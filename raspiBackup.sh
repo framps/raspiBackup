@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#!/usr/bin/env bash
 # shellcheck disable=SC2004
 # SC2004: $ not required in arithmentic expressions
 #
