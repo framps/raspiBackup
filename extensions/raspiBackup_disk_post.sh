@@ -10,7 +10,7 @@
 #
 ########################################################################################################################
 #
-#    Copyright (c) 2017-2018 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2017-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ else
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE2 "$(bytesToHuman $usagePost)" "$(bytesToHuman $freePost)"
 
 	if (( $freePre != 0 )); then
-		freeChangePercent=$( printf "%3.2f" $(bc <<<"( $freePost - $freePre ) * 100 / $freePre") )
+		freeChangePercent=$( printf "%3.2f" $(bc <<<"scale=2; $freeChange * 100 / $freePre" ) )
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE3 "$(bytesToHuman $freeChange)" "$freeChangePercent"
 	fi
 fi
