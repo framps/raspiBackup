@@ -2928,6 +2928,7 @@ function logOptions() { # option state
 	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
 	logItem "TELEGRAM_TOKEN=$TELEGRAM_TOKEN"
 	logItem "TELEGRAM_CHATID=$TELEGRAM_CHATID"
+	logItem "TELEGRAM_THREADID=$TELEGRAM_THREADID"
 	logItem "TELEGRAM_NOTIFICATIONS=$TELEGRAM_NOTIFICATIONS"
 	logItem "TIMESTAMPS=$TIMESTAMPS"
 	logItem "UPDATE_UUIDS=$UPDATE_UUIDS"
@@ -3071,6 +3072,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_TELEGRAM_TOKEN=""
 	# Telegram target chatid
 	DEFAULT_TELEGRAM_CHATID=""
+	# Telegram thread ID for the target chat (optional)
+	DEFAULT_TELEGRAM_THREADID=""
 	# Telegram notifications to send. S(uccess), F(ailure), M(messages as file), m(essages as text)
 	DEFAULT_TELEGRAM_NOTIFICATIONS="F"
 	# Pushover additional options
@@ -3184,6 +3187,7 @@ function copyDefaultConfigVariables() {
 	TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
 	TAR_IGNORE_ERRORS="$DEFAULT_TAR_IGNORE_ERRORS"
 	TELEGRAM_CHATID="$DEFAULT_TELEGRAM_CHATID"
+	TELEGRAM_THREADID="$DEFAULT_TELEGRAM_THREADID"
 	TELEGRAM_NOTIFICATIONS="$DEFAULT_TELEGRAM_NOTIFICATIONS"
 	TELEGRAM_TOKEN="$DEFAULT_TELEGRAM_TOKEN"
 	TIMESTAMPS="$DEFAULT_TIMESTAMPS"
@@ -4605,8 +4609,21 @@ function sendTelegramDocument() { # filename
 
 		local rsp curlRC error_code error_description
 
-		logItem "Telegram curl call: curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE"
-		rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
+		local curl_params=(
+			"-F" "chat_id=$TELEGRAM_CHATID"
+			"-F" "document=@$MSG_FILE"
+		)
+
+		if [[ -n "$TELEGRAM_THREADID" ]]; then
+			curl_params+=("-F" "message_thread_id=$TELEGRAM_THREADID")
+		fi
+
+		# Build log message
+		local log_cmd="curl -s -X GET '$TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument' ${curl_params[*]}"
+		logItem "Telegram curl call: $log_cmd"
+
+		# Execute the curl command
+		rsp="$(curl -s -X GET "$TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument" "${curl_params[@]}")"
 		curlRC=$?
 
 		if (( $curlRC )); then
@@ -4635,13 +4652,25 @@ function sendTelegramMessage() { # message html(yes/no)
 
 		local rsp error_code error_description
 
-		if [[ -z $2 ]]; then
-			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
-			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
-		else
-			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
-			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
+		local curl_params=(
+			"--data-urlencode" "chat_id=$TELEGRAM_CHATID"
+			"--data-urlencode" "text=$1"
+		)
+
+		if [[ -n "$TELEGRAM_THREADID" ]]; then
+			curl_params+=("--data-urlencode" "message_thread_id=$TELEGRAM_THREADID")
 		fi
+
+		if [[ -n $2 ]]; then
+			curl_params+=("--data" "parse_mode=html")
+		fi
+
+		# Build log message
+		local log_cmd="curl -s -X POST '$TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage' ${curl_params[*]}"
+		logItem "Telegram curl call: $log_cmd"
+
+		# Execute the curl command
+		rsp="$(curl -s -X POST "$TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage" "${curl_params[@]}")"
 		local curlRC=$?
 
 		if (( $curlRC )); then
