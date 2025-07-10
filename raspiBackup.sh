@@ -5198,7 +5198,7 @@ function masqueradeSensitiveInfoInLog() {
 		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
-	# telegram token and chatid
+	# telegram token, chatid and threadid
 
 	if [[ -n "$TELEGRAM_TOKEN" ]]; then
 		logItem "Masquerading telegram token"
@@ -5211,6 +5211,13 @@ function masqueradeSensitiveInfoInLog() {
 		logItem "Masquerading telegram chatid"
 		m="$(masquerade $TELEGRAM_CHATID)"
 		e="$(escapeSlashes "$TELEGRAM_CHATID")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
+	fi
+
+	if [[ -n "$TELEGRAM_THREADID" ]]; then
+		logItem "Masquerading telegram threadid"
+		m="$(masquerade $TELEGRAM_THREADID)"
+		e="$(escapeSlashes "$TELEGRAM_THREADID")"
 		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
