@@ -10669,6 +10669,13 @@ while (( "$#" )); do
 	  TELEGRAM_CHATID="$o"; shift 2
 	  ;;
 
+	--telegramThreadID)
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
+	  TELEGRAM_THREADID="$o"; shift 2
+	  ;;
+
 	--telegramNotifications)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
 		exitError $RC_PARAMETER_ERROR
