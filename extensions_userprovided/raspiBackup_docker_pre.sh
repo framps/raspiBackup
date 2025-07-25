@@ -4,7 +4,7 @@
 # Docker plugin for raspiBackup.sh
 # called before a backup is started
 #
-# Function: Stops all running docker-container gracefull.
+# Function: stops all running docker containers gracefully
 #
 # See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
 #
@@ -35,7 +35,7 @@ MSG_EN[$MSG_EXT_DOCKER3]="RBK2003I: Stopping Docker-Container: %s "
 MSG_DE[$MSG_EXT_DOCKER3]="RBK2003I: Beende Docker-Container: %s"
 
 
-# gets a list of all running Docker container in one line sperated with blanks
+# gets a list of all running Docker containers in one line separated with blanks
 function getRunningContainer () {
   if [[ -x  "$(which docker)"  ]] ; then
     local docker_bin=$(which docker)
@@ -48,7 +48,7 @@ function getRunningContainer () {
  fi 
 }
 
-# stops all given docker container
+# stops all given docker containers
 function stopRunningContainer () { 
   local running_container=$1	
   if [[ -n "${running_container}" ]] ; then
@@ -59,6 +59,6 @@ function stopRunningContainer () {
 }
 
 # ext_dockerContainer_pre is used in raspiBackup_docker_post.sh to start all 
-# stopped container
+# stopped containers
 ext_dockerContainer_pre="$(getRunningContainer)" 
 stopRunningContainer "$ext_dockerContainer_pre"
