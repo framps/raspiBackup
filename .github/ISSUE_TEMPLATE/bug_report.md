@@ -23,7 +23,8 @@ If you have an issue with raspiBackup execute following actions first
 
 If you still don't get any idea how to solve your issue with raspiBackup
 1. Explain in detail what's going wrong
-1. Attach raspiBackup debug log. Just **DRAG AND DROP** raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue. **If you don't attach a debug log the issue will be rejected**
+1. Attach the raspiBackup debug log. Just **DRAG AND DROP** raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue. 
+1. If you don't have a debug log at least copy and paste the command you used to invoke raspiBackup and the messages you get in the command window.
 
 **Note**
 Issues are closed automatically after 2 weeks if there is no activity any more
