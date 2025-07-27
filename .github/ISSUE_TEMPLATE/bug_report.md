@@ -7,24 +7,24 @@ assignees: ''
 
 ---
 
-**Note**
+NOTE
 raspiBackup is supported on RaspberryOS and Ubuntu as operating system and Raspberry HW only. There are environments out there which successfully run raspiBackup but any support requests or issues on unsupported environments will be rejected. 
 
-*If you have questions about raspiBackup please create a `discussion` entry instead of an `issue` entry in github*
+If you have questions about raspiBackup please create a `discussion` entry instead of an `issue` entry in github*
 
-If you have an issue with raspiBackup execute following actions first
-1. Read the FAQ pages of raspiBackup 
-   * [English](https://www.linux-tips-and-tricks.de/en/faq)
-   * [German](https://www.linux-tips-and-tricks.de/de/faq)
-1. Check whether the error messages of raspiBackup were listed on the messages page and all suggested actions don't fixes the issue
-   * [English](https://www.linux-tips-and-tricks.de/en/raspibackupmessagese)
-   * [German](https://www.linux-tips-and-tricks.de/de/raspibackupmeldungen)
-1. Use your preferred search engine and look up the error message number or the error message text you receive
+Do you run a Raspberry? (Y/N)
+
+* Have you read the FAQ pages of raspiBackup (Y/N)
+
+* Have you checked whether the error messages of raspiBackup were listed on the messages page and all suggested actions don't fixes the issue? (Y/N)
+
+* Have you used  your preferred search engine and look up the error message number or the error message text you receive?  (Y/N)
 
 If you still don't get any idea how to solve your issue with raspiBackup
-1. Explain in detail what's going wrong
-1. Attach the raspiBackup debug log. Just **DRAG AND DROP** raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue. 
-1. If you don't have a debug log at least copy and paste the command you used to invoke raspiBackup and the messages you get in the command window.
 
-**Note**
+1. Explain in detail what's going wrong
+2. Attach the raspiBackup debug log. Just DRAG AND DROP raspiBackup.log into the issue and don't copy and paste the contents of raspiBackup.log into the issue. 
+3. If you don't have a debug log at least copy and paste the command you used to invoke raspiBackup and the messages you get in the command window.
+
+NOTE
 Issues are closed automatically after 2 weeks if there is no activity any more
