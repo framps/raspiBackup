@@ -120,6 +120,7 @@ raspiBackup is maintained just by me - framp. If you find raspiBackup useful ple
  * [Youtube](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg) - Videos in English and German
  * [Twitter](https://twitter.com/search?q=%23raspiBackup&src=typed_query) - News and announcements - English only
  * [Facebook](https://www.facebook.com/raspiBackup) - News, discussions, announcements and misc background information in English and German
+ * [Reddit](https://www.reddit.com/r/raspiBackup/) - News, announcements 
 
 ## Miscellaneous sample scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
 
