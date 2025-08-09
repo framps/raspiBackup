@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1.1"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.1.1-m_916"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -5370,6 +5370,14 @@ function cleanup() { # trap
 	if (( $RESTORE )); then
 		cleanupRestore $1
 	else
+
+		if (( $PRE_BACKUP_EXTENSION_CALLED )); then
+			callExtensions $POST_BACKUP_EXTENSION $rc
+		fi
+
+		startServices "noexit"
+		executeAfterStartServices "noexit"
+
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
 			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 			if [[ -d "${BACKUPTARGET_DIR}" ]]; then   # does not exists if raspiBackup7412Test runs
@@ -5405,8 +5413,7 @@ function cleanup() { # trap
 		fi
 	fi
 
-	cleanupBackup $1
-
+	cleanupBackup
 	cleanupTempFiles
 
 	finalCommand "$CLEANUP_RC"
@@ -5651,23 +5658,13 @@ function isBetaAvailable() {
 
 }
 
-function cleanupBackup() { # trap
+function cleanupBackup() { 
 
 	logEntry
-
-	logItem "Got trap $1"
-	logItem "rc: $rc"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		umountPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
-
-	if (( $PRE_BACKUP_EXTENSION_CALLED )); then
-		callExtensions $POST_BACKUP_EXTENSION $rc
-	fi
-
-	startServices "noexit"
-	executeAfterStartServices "noexit"
 
 	cleanupBackupDirectory
 
