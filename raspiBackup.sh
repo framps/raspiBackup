@@ -4375,8 +4375,9 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 
 			logItem "Processing $p - Start: $start - Size: $((size*512)) - End: $end - id: $id"
 
-      if [[ "$id" != "83" && "$id" != "5" && "$id" != "c" && \
+      if [[ "$id" != "83" && "$id" != "82" && "$id" != "5" && "$id" != "c" && \
             "$id" != "0FC63DAF-8483-4772-8E79-3D69D8477DE4" && \
+            "$id" != "0657FD6D-A4AB-43C4-84E5-0933C84B4F4F" && \
             "$id" != "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7" ]]; then
 				continue
 			fi
@@ -4388,7 +4389,7 @@ function calcSumSizeFromSFDISK() { # sfdisk file name
 		fi
 	done < $file
 
-	if (( sumSize == 0 )) || { [[ "$id" != "83" ]] && [[ "$id" != "0FC63DAF-8483-4772-8E79-3D69D8477DE4" ]]; }; then
+	if (( sumSize == 0 )) || { [[ "$id" != "83" && "$id" != "82" ]] && [[ "$id" != "0FC63DAF-8483-4772-8E79-3D69D8477DE4" && "0657FD6D-A4AB-43C4-84E5-0933C84B4F4F" ]]; }; then
 		assertionFailed $LINENO "No matching last partition found"
 	fi
 
