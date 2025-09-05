@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1.1"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.1.1-m_918"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -2316,7 +2316,7 @@ function logFinish() {
 					fi
 				fi
 				DEST_LOGFILE="$LOG_BASE/$HOSTNAME$LOGFILE_EXT"
-				cat "$LOG_FILE" &>> "$DEST_LOGFILE"		# don't move, just append
+				DEST_MSGFILE="$LOG_BASE/$HOSTNAME$MSGFILE_EXT"
 				;;
 			"$LOG_OUTPUT_HOME")
 				DEST_LOGFILE="$CALLING_HOME/${MYNAME}$LOGFILE_EXT"
@@ -2335,16 +2335,28 @@ function logFinish() {
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-			logItem "Moving Logfile: $LOG_FILE"
-			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+			if [[ $LOG_OUTPUT == $LOG_OUTPUT_VARLOG ]]; then
+				logItem "Appending Logfile: $LOG_FILE to $DEST_LOGFILE"
+				cat "$LOG_FILE" 1>> "$DEST_LOGFILE" 2>>"$FINISH_LOG_FILE"
+				rm "$LOG_FILE" &>>"$FINISH_LOG_FILE"
+			else
+				logItem "Moving Logfile: $LOG_FILE to $DEST_LOGFILE"
+				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
+			fi
 			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
-			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
+			logItem "Logfile used: $LOG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
-			logItem "Moving Msgfile: $MSG_FILE"
-			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
+			if [[ $LOG_OUTPUT == $LOG_OUTPUT_VARLOG ]]; then
+				logItem "Appending Msgfile: $MSG_FILE to $DEST_MSGFILE"
+				cat "$MSG_FILE" 1>> "$DEST_MSGFILE" 2>>"$FINISH_LOG_FILE"
+				rm "$MSG_FILE" &>>"$FINISH_LOG_FILE"
+			else
+				logItem "Moving Msgfile: $MSG_FILE to $DEST_MSGFILE"
+				mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
+			fi
 			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
-			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
+			logItem "Msgfile used: $MSG_FILE"
 		fi
 
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE" # make sure logfile is owned by caller
