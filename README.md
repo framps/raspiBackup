@@ -71,12 +71,12 @@ Support is also given **only** for raspiBackup specific issues. For general Linu
 ## Documentation
 
 ### English
-* [Installation](https://www.linux-tips-and-tricks.de/en/installation/)
-* [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
-* [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
-* [Error messages, root causes and suggested actions](https://linux-tips-and-tricks.de/en/raspibackupmessagese/)
-* [Smart recycle backup strategy](https://linux-tips-and-tricks.de/en/smart-recycle/)
-* [Use synology as backup space](https://linux-tips-and-tricks.de/en/synology/)
+* [Complete raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
+* [Installation](https://framps.github.io/raspiBackupDoc/installation-in-5-minutes.html)
+* [FAQ](https://framps.github.io/raspiBackupDoc/faq.html)
+* [Error messages, root causes and suggested actions](https://framps.github.io/raspiBackupDoc/error-messages.html)
+* [Smart recycle backup strategy](https://framps.github.io/raspiBackupDoc/smart-recycle.html)
+* [Use synology as backup space](https://framps.github.io/raspiBackupDoc/nfs-as-backuptarget.html)
 
 ### German
 * [Installation](https://linux-tips-and-tricks.de/de/installation/)
