@@ -79,12 +79,12 @@ Support is also given **only** for raspiBackup specific issues. For general Linu
 * [Use synology as backup space](https://framps.github.io/raspiBackupDoc/nfs-as-backuptarget.html)
 
 ### German
-* [Installation](https://linux-tips-and-tricks.de/de/installation/)
-* [Benutzerhandbuch](https://linux-tips-and-tricks.de/de/raspibackup/)
-* [FAQ](https://linux-tips-and-tricks.de/de/faq/)
-* [Fehlermeldungen, Ursachen und Behebung](https://linux-tips-and-tricks.de/de/raspibackupmeldungen/)
-* [Intelligente Rotationsstrategie](https://linux-tips-and-tricks.de/de/rotationsstrategie/)
-* [Benutzung von Synology als Backupspace](https://linux-tips-and-tricks.de/de/synology/)
+* [Vollständige raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
+* [Installation](https://framps.github.io/raspiBackupDoc/installation-in-5-minutes.html)
+* [FAQ](https://framps.github.io/raspiBackupDoc/faq.html)
+* [Fehlermeldungen, Ursachen und Behebung](https://framps.github.io/raspiBackupDoc/error-messages.html)
+* [Intelligente Rotationstrategie](https://framps.github.io/raspiBackupDoc/smart-recycle.html)
+* [Nutzung von einer Synology/NFS Server als Backuspace](https://framps.github.io/raspiBackupDoc/nfs-as-backuptarget.html)
 
 ### French
 
