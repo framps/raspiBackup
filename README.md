@@ -8,7 +8,7 @@
 ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
 
 ***
-If you use raspiBackup to backup your Raspberries - I appreciate to be sponsored on [GitHub](https://github.com/sponsors/framps) or visit [this page](https://www.linux-tips-and-tricks.de/en/donations) which lists alternate ways to donate.
+If you use raspiBackup to backup your Raspberries - I appreciate to be sponsored on [GitHub](https://github.com/sponsors/framps) or visit [this page]([https://www.linux-tips-and-tricks.de/en/donations](https://framps.github.io/raspiBackupDoc/introduction.html?highlight=donation#donations)) which lists alternate ways to donate.
 ***
 
 #### A high level summary is available on [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
@@ -61,7 +61,7 @@ If you use raspiBackup to backup your Raspberries - I appreciate to be sponsored
 
 ## Support
 
-raspiBackup is supported **only** for RaspberryOS and Ubuntu as operating system and **only** for Raspberry hardware. raspiBackup runs successfully also on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just give it a try and be happy if it works but don't ask for any support. For details see [here](https://www.linux-tips-and-tricks.de/en/all-raspibackup-articles/609-supported-hard-and-software/).
+raspiBackup is supported **only** for RaspberryOS and Ubuntu as operating system and **only** for Raspberry hardware. raspiBackup runs successfully also on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just give it a try and be happy if it works but don't ask for any support. For details see [here](https://framps.github.io/raspiBackupDoc/supported-hardware-and-software.html).
 
 Support is also given **only** for raspiBackup specific issues. For general Linux related questions please use other information sources. 
 
