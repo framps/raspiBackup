@@ -110,11 +110,6 @@ Installation of raspiBackup is started with following command:
 
 raspiBackup is maintained just by me - framp. If you find raspiBackup useful please donate to support future development and acknowledge support. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
 
-## Much more detailed documentation
-
- * [English](https://linux-tips-and-tricks.de/en/all-raspibackup-articles/)
- * [German](https://linux-tips-and-tricks.de/de/alle-raspibackup-artikel/)
-
 ## Social media
 
  * [Youtube](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg) - Videos in English and German
