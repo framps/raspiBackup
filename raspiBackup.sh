@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1.1"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.1.1-m_923"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -254,6 +254,10 @@ for K in "${SORTED[@]}"; do
 	[[ -z $ALLOWED_TYPES ]] && ALLOWED_TYPES=$K || ALLOWED_TYPES="$ALLOWED_TYPES|$K"
 done
 
+TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
+TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
+TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=".bz2|.gz||.lz|.lzma|lzo|xz|.zst"
+
 declare -A mountPoints
 
 # variables exported to pass on to extensions
@@ -460,6 +464,23 @@ function containsElement() { # element ${array[@]}
   for e; do
 	[[ "$e" == "$match" ]] && return 0;
   done
+  return 1
+}
+
+# return index of element in array (0-n) and true, -1 and false otherwise
+
+function getIndexInArray() { # element ${array[@]}
+  local e match="$1" i=0
+  shift
+  for e; do
+	if [[ "$e" == "$match" ]]; then
+		echo "$i"
+		return 0
+	else 
+		(( i++ ))
+	fi
+  done
+  echo "-1"
   return 1
 }
 
@@ -2078,9 +2099,12 @@ MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitio
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Partitionen von %s umounted werden"
 MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
+MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
+MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %s"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
+MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2924,6 +2948,8 @@ function logOptions() { # option state
 	logItem "TAR_BACKUP_ADDITIONAL_OPTIONS=$TAR_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "TAR_BACKUP_OPTIONS=$TAR_BACKUP_OPTIONS"
 	logItem "TAR_BOOT_PARTITION_ENABLED=$TAR_BOOT_PARTITION_ENABLED"
+	logItem "TAR_COMPRESSION_TOOL=$TAR_COMPRESSION_TOOL"
+	logItem "TAR_COMPRESSION_TOOL_OPTIONS=$TAR_COMPRESSION_TOOL_OPTIONS"
 	logItem "TAR_IGNORE_ERRORS=$TAR_IGNORE_ERRORS"
 	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
 	logItem "TELEGRAM_TOKEN=$TELEGRAM_TOKEN"
@@ -3028,6 +3054,10 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_LINK_BOOTPARTITIONFILES=0
 	# save boot partition with tar
 	DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
+	# Compression tool to use for tar. Supported: bzip2 gzip lzip lzma lzop xz zstd
+	DEFAULT_TAR_COMPRESSION_TOOL=""
+	# Options to be passed to compression tool
+	DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS=""
 	# reboot system at end of backup
 	DEFAULT_REBOOT_SYSTEM=0
 	# Change these options only if you know what you are doing !!!
@@ -3184,6 +3214,8 @@ function copyDefaultConfigVariables() {
 	TAR_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS"
 	TAR_BACKUP_OPTIONS="$DEFAULT_TAR_BACKUP_OPTIONS"
 	TAR_BOOT_PARTITION_ENABLED="$DEFAULT_TAR_BOOT_PARTITION_ENABLED"
+	TAR_COMPRESSION_TOOL="$DEFAULT_TAR_COMPRESSION_TOOL"
+	TAR_COMPRESSION_TOOL_OPTIONS="$DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS"
 	TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
 	TAR_IGNORE_ERRORS="$DEFAULT_TAR_IGNORE_ERRORS"
 	TELEGRAM_CHATID="$DEFAULT_TELEGRAM_CHATID"
@@ -4246,8 +4278,22 @@ function setupEnvironment() {
 		BACKUPTARGET_TEMP_DIR="$BACKUP_TEMP_ROOT_DIR/$BACKUPFILE"			# temporary backup directory for current backup
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
-		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
-		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
+		TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# -z option 
+		if [[ -n $TAR_COMPRESSION_TOOL ]]; then
+			local i
+			i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
+			if (( ! $? )); then
+				TAR_COMPRESSION_EXTENSION="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$i]}"
+			fi
+		fi
+
+		logItem "Use tar extension $TAR_COMPRESSION_EXTENSION"
+
+		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${TAR_COMPRESSION_EXTENSION}"
+		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${TAR_COMPRESSION_EXTENSION}"
+
+		logItem "BACKUPTARGET_FILE=$BACKUPTARGET_FILE"
+		logItem "BACKUPTARGET_FINAL_FILE=$BACKUPTARGET_FINAL_FILE"
 
 		if [[ ! -d "${BACKUPTARGET_DIR}" ]]; then
 			if (( $FAKE || ( $SMART_RECYCLE && $SMART_RECYCLE_DRYRUN ) )); then
@@ -6070,19 +6116,25 @@ function backupDD() {
 
 function backupTar() {
 
-	local verbose zip cmd partition source target devroot sourceDir journalExclude=""
+	local verbose="" zip="" cmd partition source target devroot sourceDir journalExclude="" extension
 
 	logEntry
 
-	(( $VERBOSE )) && verbose="-v" || verbose=""
-	[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
+	(( $VERBOSE )) && verbose="-v"
+	if [[ -n "$TAR_COMPRESSION_TOOL" ]]; then
+			zip="-I\"${TAR_COMPRESSION_TOOL} $TAR_COMPRESSION_TOOL_OPTIONS\""
+			extension="$TAR_COMPRESSION_EXTENSION"
+	else
+		extension="${FILE_EXTENSION[$BACKUPTYPE]}"
+		[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z"
+	fi
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		source="."
 		devroot="."
 		sourceDir="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
-		target="${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}"
+		target="${BACKUPTARGET_DIR}/${partition}${extension}"
 
 	else
 		bootPartitionBackup
@@ -8010,7 +8062,16 @@ function doitBackup() {
 		fi
 	fi
 
-	if (( $ZIP_BACKUP_TYPE_INVALID )); then
+	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
+		local i
+		i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
+		if (( $? )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_TAR_COMPRESS_TOOL "$TAR_COMPRESSION_TOOL"
+			exitError $RC_PARAMETER_ERROR
+		else
+			logItem "tar compression of $TAR_COMPRESSION_TOOL is supported. Using extension $TAR_COMPRESSION_EXTENSION ($i)"
+		fi
+	elif (( $ZIP_BACKUP_TYPE_INVALID )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
 		mentionHelp
 		exitError $RC_PARAMETER_ERROR
@@ -10652,6 +10713,20 @@ while (( "$#" )); do
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
 	  ;;
+
+	--tarCompressionTool)
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
+	  TAR_COMPRESSION_TOOL="$o"; shift 2	  
+	  ;;	
+
+	--tarCompressionToolOptions)
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
+	  TAR_COMPRESSION_TOOL_OPTIONS="$o"; shift 2	  
+	  ;;	
 
 	--telegramToken)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
