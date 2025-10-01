@@ -44,8 +44,13 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1.1-m_923"           								# -beta, -hotfix or -dev suffixes possible
+<<<<<<< HEAD
+VERSION="0.7.1-m_893"           								# -beta, -hotfix or -dev suffixes possible
+VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
+=======
+VERSION="0.7.1.1"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
+>>>>>>> master
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -77,13 +82,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='$Date$'
+GIT_DATE='$Date: 2025-06-21 20:38:59 +0200$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='$Sha1$'
+GIT_COMMIT='$Sha1: f2458e5$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -150,7 +155,7 @@ VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
 VARS_FILE="/tmp/$MYNAME.vars"
-TEMPORARY_MOUNTPOINT_ROOT="/tmp/$MYNAME.mnt"
+TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}.mnt"
 LOGFILE_EXT=".log"
 LOGFILE_NAME="${MYNAME}${LOGFILE_EXT}"
 LOGFILE_RESTORE_EXT=".logr"
@@ -253,10 +258,6 @@ for K in "${SORTED[@]}"; do
 	fi
 	[[ -z $ALLOWED_TYPES ]] && ALLOWED_TYPES=$K || ALLOWED_TYPES="$ALLOWED_TYPES|$K"
 done
-
-TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=".bz2|.gz||.lz|.lzma|lzo|xz|.zst"
 
 declare -A mountPoints
 
@@ -464,23 +465,6 @@ function containsElement() { # element ${array[@]}
   for e; do
 	[[ "$e" == "$match" ]] && return 0;
   done
-  return 1
-}
-
-# return index of element in array (0-n) and true, -1 and false otherwise
-
-function getIndexInArray() { # element ${array[@]}
-  local e match="$1" i=0
-  shift
-  for e; do
-	if [[ "$e" == "$match" ]]; then
-		echo "$i"
-		return 0
-	else 
-		(( i++ ))
-	fi
-  done
-  echo "-1"
   return 1
 }
 
@@ -2099,15 +2083,9 @@ MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitio
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Partitionen von %s umounted werden"
 MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
-MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
-MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %s"
-MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s"
-MSG_TAR_COMPRESS_TOOL_USED=351
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using tar compression tool \"%s\""
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: tar Kompressionstool \"%s\" wird genutzt"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2951,8 +2929,6 @@ function logOptions() { # option state
 	logItem "TAR_BACKUP_ADDITIONAL_OPTIONS=$TAR_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "TAR_BACKUP_OPTIONS=$TAR_BACKUP_OPTIONS"
 	logItem "TAR_BOOT_PARTITION_ENABLED=$TAR_BOOT_PARTITION_ENABLED"
-	logItem "TAR_COMPRESSION_TOOL=$TAR_COMPRESSION_TOOL"
-	logItem "TAR_COMPRESSION_TOOL_OPTIONS=$TAR_COMPRESSION_TOOL_OPTIONS"
 	logItem "TAR_IGNORE_ERRORS=$TAR_IGNORE_ERRORS"
 	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
 	logItem "TELEGRAM_TOKEN=$TELEGRAM_TOKEN"
@@ -3057,10 +3033,6 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_LINK_BOOTPARTITIONFILES=0
 	# save boot partition with tar
 	DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
-	# Compression tool to use for tar. Supported: bzip2 gzip lzip lzma lzop xz zstd
-	DEFAULT_TAR_COMPRESSION_TOOL=""
-	# Options to be passed to compression tool
-	DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS=""
 	# reboot system at end of backup
 	DEFAULT_REBOOT_SYSTEM=0
 	# Change these options only if you know what you are doing !!!
@@ -3217,8 +3189,6 @@ function copyDefaultConfigVariables() {
 	TAR_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS"
 	TAR_BACKUP_OPTIONS="$DEFAULT_TAR_BACKUP_OPTIONS"
 	TAR_BOOT_PARTITION_ENABLED="$DEFAULT_TAR_BOOT_PARTITION_ENABLED"
-	TAR_COMPRESSION_TOOL="$DEFAULT_TAR_COMPRESSION_TOOL"
-	TAR_COMPRESSION_TOOL_OPTIONS="$DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS"
 	TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
 	TAR_IGNORE_ERRORS="$DEFAULT_TAR_IGNORE_ERRORS"
 	TELEGRAM_CHATID="$DEFAULT_TELEGRAM_CHATID"
@@ -4281,28 +4251,14 @@ function setupEnvironment() {
 		BACKUPTARGET_TEMP_DIR="$BACKUP_TEMP_ROOT_DIR/$BACKUPFILE"			# temporary backup directory for current backup
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
-		TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# -z option 
-		if [[ -n $TAR_COMPRESSION_TOOL ]]; then
-			local i
-			i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
-			if (( ! $? )); then
-				TAR_COMPRESSION_EXTENSION="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$i]}"
-			fi
-		fi
-
-		logItem "Use tar extension $TAR_COMPRESSION_EXTENSION"
-
-		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${TAR_COMPRESSION_EXTENSION}"
-		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${TAR_COMPRESSION_EXTENSION}"
-
-		logItem "BACKUPTARGET_FILE=$BACKUPTARGET_FILE"
-		logItem "BACKUPTARGET_FINAL_FILE=$BACKUPTARGET_FINAL_FILE"
+		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
+		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
 		if [[ ! -d "${BACKUPTARGET_DIR}" ]]; then
 			if (( $FAKE || ( $SMART_RECYCLE && $SMART_RECYCLE_DRYRUN ) )); then
 				: # don't create backupdirectory
 			else
-				if ! mkdir -p "${BACKUPTARGET_DIR}"; then
+				if ! mkdir -p "${BACKUPTARGET_DIR}" &>>"$LOG_FILE"; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPTARGET_DIR}"
 					exitError $RC_CREATE_ERROR
 				fi
@@ -5132,6 +5088,11 @@ function cleanupBackupDirectory() {
 				fi
 			fi
 		fi
+<<<<<<< HEAD
+		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
+		rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
+=======
+>>>>>>> master
 	fi
 
 	logExit
@@ -5454,8 +5415,6 @@ function cleanup() { # trap
 
 	cleanupBackup $1
 
-	cleanupTempFiles
-
 	finalCommand "$CLEANUP_RC"
 
 	logItem "Terminate now with rc $CLEANUP_RC"
@@ -5591,13 +5550,20 @@ function cleanupRestore() { # trap
 		umountPartition "$MNT_POINT"
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir $MNT_POINT &>>"$LOG_FILE"
+		rmdir "$MNT_POINT" &>>"$LOG_FILE"
+	fi
+
+	if [[ -d $TEMPORARY_MOUNTPOINT_ROOT ]]; then
+		logItem "Deleting dir $TEMPORARY_MOUNTPOINT_ROOT"
+		rmdir "$TEMPORARY_MOUNTPOINT_ROOT" &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
 		umountPartition "$BOOT_PARTITION"
 		umountPartition "$ROOT_PARTITION"
 	fi
+
+	cleanupTempFiles
 
 	logExit "$rc"
 
@@ -5717,6 +5683,7 @@ function cleanupBackup() { # trap
 	executeAfterStartServices "noexit"
 
 	cleanupBackupDirectory
+	cleanupTempFiles
 
 	logExit
 
@@ -5729,6 +5696,11 @@ function cleanupTempFiles() {
 	if [[ -f $MYSELF~ ]]; then
 		logItem "Removing new version $MYSELF~"
 		rm -f $MYSELF~ &>/dev/null
+	fi
+
+	if [[ -d "$TEMPORARY_MOUNTPOINT_ROOT" ]]; then
+		logItem "Removing $TEMPORARY_MOUNTPOINT_ROOT"
+		rmdir -p "$TEMPORARY_MOUNTPOINT_ROOT" &>/dev/null
 	fi
 
 	logExit
@@ -6119,25 +6091,19 @@ function backupDD() {
 
 function backupTar() {
 
-	local verbose="" zip="" cmd partition source target devroot sourceDir journalExclude="" extension
+	local verbose zip cmd partition source target devroot sourceDir journalExclude=""
 
 	logEntry
 
-	(( $VERBOSE )) && verbose="-v"
-	if [[ -n "$TAR_COMPRESSION_TOOL" ]]; then
-			zip="-I\"${TAR_COMPRESSION_TOOL} $TAR_COMPRESSION_TOOL_OPTIONS\""
-			extension="$TAR_COMPRESSION_EXTENSION"
-	else
-		extension="${FILE_EXTENSION[$BACKUPTYPE]}"
-		[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z"
-	fi
+	(( $VERBOSE )) && verbose="-v" || verbose=""
+	[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		source="."
 		devroot="."
 		sourceDir="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
-		target="${BACKUPTARGET_DIR}/${partition}${extension}"
+		target="${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}"
 
 	else
 		bootPartitionBackup
@@ -6188,10 +6154,6 @@ function backupTar() {
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
-
-	if [[ -n "$TAR_COMPRESSION_TOOL" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
-	fi
 
 	if (( ! $FAKE )); then
 		executeTar "${cmd}" "$TAR_IGNORE_ERRORS"
@@ -6761,7 +6723,11 @@ function restoreNormalBackupType() {
 			umountPartition "$MNT_POINT"
 
 			logItem "Creating mountpoint $MNT_POINT"
-			mkdir -p "$MNT_POINT"
+
+			if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${MNT_POINT}"
+					exitError $RC_CREATE_ERROR
+			fi
 
 			partitionRestoredeviceIfRequested
 
@@ -7106,7 +7072,10 @@ function reportOldBackups() {
 
 		# create directory to save counter
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			mkdir -p "$VAR_LIB_DIRECTORY"
+			if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${VAR_LIB_DIRECTORY}"
+				exitError $RC_CREATE_ERROR
+			fi
 		fi
 
 		# initialize counter
@@ -7247,7 +7216,10 @@ function mountPartitions() { # sourcePath
 		for partition in ${PARTITIONS_TO_BACKUP[@]}; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			logItem "mkdir $1/$partitionName"
-			mkdir -p "$1/$partitionName" &>>"$LOG_FILE"
+			if ! mkdir -p "$1/$partitionName" &>>"$LOG_FILE"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${$1/$partitionName}"
+				exitError $RC_CREATE_ERROR
+			fi
 			logItem "mount /dev/$partitionName to $1/$partitionName"
 			mountAndCheck "/dev/$partitionName" "$1/$partitionName"
 		done
@@ -8069,16 +8041,7 @@ function doitBackup() {
 		fi
 	fi
 
-	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
-		local i
-		i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
-		if (( $? )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_TAR_COMPRESS_TOOL "$TAR_COMPRESSION_TOOL"
-			exitError $RC_PARAMETER_ERROR
-		else
-			logItem "tar compression of $TAR_COMPRESSION_TOOL is supported. Using extension $TAR_COMPRESSION_EXTENSION ($i)"
-		fi
-	elif (( $ZIP_BACKUP_TYPE_INVALID )); then
+	if (( $ZIP_BACKUP_TYPE_INVALID )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
 		mentionHelp
 		exitError $RC_PARAMETER_ERROR
@@ -8262,7 +8225,7 @@ function doitBackup() {
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
 	if [[ ! -d "$BACKUPPATH" ]]; then
-		if ! mkdir -p "${BACKUPPATH}"; then
+		if ! mkdir -p "${BACKUPPATH}" &>>"$LOG_FILE"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
 			exitError "$RC_CREATE_ERROR"
 		fi
@@ -8593,7 +8556,11 @@ function restorePartitionBasedBackup() {
 	START_TIME="$(date +%s)"
 
 	logItem "Creating mountpoint $MNT_POINT"
-	mkdir -p "$MNT_POINT"
+
+	if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$MNT_POINT"
+		exitError "$RC_CREATE_ERROR"		
+	fi
 
 	# handle partitions
 
@@ -9337,7 +9304,10 @@ function updateRestoreReminder() {
 
 		# create directory to save state
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			mkdir -p "$VAR_LIB_DIRECTORY"
+			if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
+				exitError "$RC_CREATE_ERROR"		
+			fi
 		fi
 
 		# initialize reminder state
@@ -9416,7 +9386,10 @@ function remount() { # device mountpoint
 	fi
 
 	logItem "Creating mountpoint $2"
-	mkdir -p "$2"
+	if ! mkdir -p "$2" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$2"
+		exitError "$RC_CREATE_ERROR"		
+	fi
 	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
 	logExit $rc
 
@@ -9836,6 +9809,9 @@ function synchronizeCmdlineAndfstab() {
 
 	umount "$BOOT_MP" &>>"$LOG_FILE"
 	umount "$ROOT_MP" &>>"$LOG_FILE"
+
+	rmdir "$BOOT_MP" &>>"$LOG_FILE"
+	rmdir "$ROOT_MP" &>>"$LOG_FILE"
 
 	logExit
 }
@@ -10720,20 +10696,6 @@ while (( "$#" )); do
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
 	  ;;
-
-	--tarCompressionTool)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  TAR_COMPRESSION_TOOL="$o"; shift 2	  
-	  ;;	
-
-	--tarCompressionToolOptions)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  TAR_COMPRESSION_TOOL_OPTIONS="$o"; shift 2	  
-	  ;;	
 
 	--telegramToken)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
