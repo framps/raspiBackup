@@ -256,7 +256,24 @@ done
 
 TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
 TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=".bz2|.gz||.lz|.lzma|lzo|xz|.zst"
+TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=""
+for K in "${!TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}"; do
+	ext="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$K]}"
+	if [[ -z "$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP" ]]; then
+		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="${ext:1}"
+	else
+		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP}|${ext:1}"
+	fi
+done
+TAR_COMPRESSION_TOOLS_SUPPORTED_LIST=""
+for K in "${!TAR_COMPRESSION_TOOLS_SUPPORTED[@]}"; do
+	ext="${TAR_COMPRESSION_TOOLS_SUPPORTED[$K]}"
+	if [[ -z "$TAR_COMPRESSION_TOOLS_SUPPORTED_LIST" ]]; then
+		TAR_COMPRESSION_TOOLS_SUPPORTED_LIST="${ext}"
+	else
+		TAR_COMPRESSION_TOOLS_SUPPORTED_LIST="${TAR_COMPRESSION_TOOLS_SUPPORTED_LIST},${ext}"
+	fi
+done
 
 declare -A mountPoints
 
@@ -2105,9 +2122,12 @@ MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compressio
 MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s"
 MSG_TAR_COMPRESS_TOOL_USED=351
 MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using tar compression tool \"%s\""
+MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: tar Kompressionstool \"%s\" wird genutzt"
+MSG_TAR_COMPRESS_TOOL_NOT_FOUND=352
+MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: tar compression tool \"%s\" not installed"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: tar Kompressionstool \"%s\" wird genutzt"
+MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: tar Kompressionstool \"%s\" nicht installiert"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6190,7 +6210,7 @@ function backupTar() {
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
 	if [[ -n "$TAR_COMPRESSION_TOOL" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
 	fi
 
 	if (( ! $FAKE )); then
@@ -8078,6 +8098,10 @@ function doitBackup() {
 		else
 			logItem "tar compression of $TAR_COMPRESSION_TOOL is supported. Using extension $TAR_COMPRESSION_EXTENSION ($i)"
 		fi
+		if ! which "$TAR_COMPRESSION_TOOL" &>/dev/null; then
+			writeToConsole "$MSG_TAR_COMPRESS_TOOL_NOT_FOUND" "$TAR_COMPRESSION_TOOL"
+			exitError $RC_MISSING_COMMANDS
+		fi
 	elif (( $ZIP_BACKUP_TYPE_INVALID )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
 		mentionHelp
@@ -8632,8 +8656,11 @@ function restorePartitionBasedBackup() {
 		for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
 			logItem "partitionBackupFile: $partitionBackupFile"
 			local partitionNo
-			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
+			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ|$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing extension
 			logItem "Found partition no: $partitionNo"
+			if [[ -z "$partitionNo" ]]; then
+				assertionFailed $LINENO "Unable to retrieve partition number from $partitionBackupFile"
+			fi
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]] ||  containsElement "$partitionNo" "${partitionsToRestore[@]}"; then
 				restorePartitionBasedPartition "$partitionBackupFile"
 				partitionsRestored+=("$partitionNo")
@@ -10103,6 +10130,8 @@ function usageEN() {
 	echo "-P use partitionoriented backup mode to backup the first two partitions (Default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo "-t {backupType} ($ALLOWED_TYPES) (Default: $DEFAULT_BACKUPTYPE)"
 	echo "-T {List of partitions to backup in partition oriented mode} (Partition numbers, e.g. \"1 2 3\" or \"*\" for all) (Default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
+	echo "--tarCompressionTool {tar Comressiontool} ($TAR_COMPRESSION_TOOLS_SUPPORTED_LIST)"
+	echo "--tarCompressionToolOptions {Options for tar compressiontool}"
 	echo "-z compress DD and TAR backup file with gzip (Default: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Restore options-"
@@ -10158,6 +10187,8 @@ function usageDE() {
 	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
 	echo "-T Liste der Partitionen die im partitionsorientierten Mode zu sichern sind} (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
+	echo "--tarCompressionTool {tar Kompressionstool} ($TAR_COMPRESSION_TOOLS_SUPPORTED_LIST)"
+	echo "--tarCompressionToolOptions {Optionen für das tar Kompressionstool}"
 	echo "-z DD und TAR Backup verkleinern mit gzip (Standard: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Restore Optionen-"
