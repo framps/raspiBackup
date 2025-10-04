@@ -39,7 +39,7 @@ EXTENSION=`echo "$IMAGE" | cut -d'.' -f2`
 FORMAT="raw"
 [[ $EXTENSION != "img" ]] && FORMAT="qcow2"
 
-qemu-system-aarch64 -machine virt -cpu cortex-a72 \
+sudo qemu-system-aarch64 -machine virt -cpu cortex-a72 \
   -smp ${CPU_CORES} -m ${RAM_SIZE} \
   -kernel ${KERNEL_DIR}/kernel \
   -append "root=/dev/vda2 rootfstype=ext4 rw panic=0 console=ttyAMA0" \

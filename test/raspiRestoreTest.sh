@@ -6,7 +6,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013, 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013, 2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@ if [[ $UID != 0 ]]; then
 	sudo $0 $@
 	exit $?
 fi
+
+source ./env.defs
 
 #set -e
 

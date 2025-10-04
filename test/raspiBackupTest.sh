@@ -23,6 +23,8 @@
 #
 #######################################################################################################################
 
+source ./env.defs
+
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
@@ -35,18 +37,13 @@ CURRENT_DIR=$(pwd)
 #	exit
 #fi
 
-if [[ $UID != 0 ]]; then
-	sudo $0 """"$@""""
-	exit $?
-fi
-
 LOG_FILE="$CURRENT_DIR/${MYNAME}.log"
 #rm -f "$LOG_FILE" 2>&1 1>/dev/null
 exec 1> >(tee -a "$LOG_FILE" >&1)
 exec 2> >(tee -a "$LOG_FILE" >&2)
 
 VMs=$CURRENT_DIR
-IMAGES=$VMs/images
+IMAGES=$QEMU_IMAGES
 
 TEST_SCRIPT="testRaspiBackup.sh"
 BACKUP_ROOT_DIR="/disks/VMware"
@@ -123,7 +120,7 @@ if ! ping -c 1 $VM_IP; then
 	done
 fi
 
-SCRIPTS="raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
+SCRIPTS="$GIT_REPO/raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
 
 for file in $SCRIPTS; do
 	target="root@$VM_IP:/root"
