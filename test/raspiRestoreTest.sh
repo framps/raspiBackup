@@ -24,12 +24,8 @@
 #######################################################################################################################
 
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
-source $SCRIPT_DIR/constants.sh
 
-if [[ $UID != 0 ]]; then
-	sudo $0 $@
-	exit $?
-fi
+source $SCRIPT_DIR/constants.sh
 
 source ./env.defs
 
@@ -61,17 +57,12 @@ function log() { # text
 	fi
 }
 
-if [[ $UID != 0 ]]; then
-	echo "Invoke script as root"
-	exit 127
-fi
-
 exec 1> >(tee -a raspiBackup.log)
 exec 2> >(tee -a raspiBackup.log)
 
 DEBUG=0
 
-VMs=$CURRENT_DIR/images
+VMs=$QEMU_IMAGES
 
 BACKUP1="/disks/VMware/raspibackupTest_P/*"
 BACKUP2="/disks/VMware/raspibackupTest_N/*"
@@ -151,7 +142,7 @@ for backup in $BACKUPS_TO_RESTORE; do
 
 				echo "Starting restore of $image"
 
-				../raspiBackup.sh -d $LOOP $OPTS -Y "$image"
+				sudo $GIT_REPO/raspiBackup.sh -d $LOOP $OPTS -Y "$image"
 				rc=$?
 
 				if [[ $rc != 0 ]]; then
