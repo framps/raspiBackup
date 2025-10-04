@@ -69,7 +69,7 @@ exec 2> >(tee -a raspiBackup.log)
 
 DEBUG=0
 
-VMs=$CURRENT_DIR/qemu
+VMs=$CURRENT_DIR/images
 
 BACKUP1="/disks/VMware/raspibackupTest_P/*"
 BACKUP2="/disks/VMware/raspibackupTest_N/*"
@@ -101,7 +101,7 @@ for backup in $BACKUPS_TO_RESTORE; do
 
 	echo "Processing backup $backup ..."
 
-	IMAGES_TO_RESTORE=( $(ls -d "$backup"*"/raspberrypi-"*"-backup-"* | grep -v ".log$") )
+	IMAGES_TO_RESTORE=( $(ls -d "$backup"*"/raspberrypi"*"-backup-"* | grep -v ".log$") )
 #	IMAGES_TO_RESTORE=( $(ls -d "$backup"*"/raspberrypi-"*"dd-backup-"* | grep -v ".log$") )
 #	IMAGES_TO_RESTORE=( $(ls -d "$backup"*"/raspberrypi-"*"tar-backup-"* | grep -v ".log$") )
 #	IMAGES_TO_RESTORE=( $(ls -d "$backup"*"/raspberrypi-*"*"rsync-backup-"* | grep -v ".log$") )
@@ -210,7 +210,7 @@ for backup in $BACKUPS_TO_RESTORE; do
 			fi
 
 			echo "Starting restored vm"
-			$VMs/start.sh raspiBackupRestore.img &
+			./rpi-emu-start.sh $VMs/raspiBackupRestore.img &
 			pid=$!
 			echo "Qemu pid: $pid"
 
@@ -256,6 +256,8 @@ for backup in $BACKUPS_TO_RESTORE; do
 				break
 			fi
 		done
+		
+		echo "$DEPLOYED_IP started"
 
 #		log "$(ssh root@$DEPLOYED_IP 'fdisk -l; df -h')"
 		echo "$(ssh root@$DEPLOYED_IP 'df')"
@@ -296,8 +298,8 @@ for backup in $BACKUPS_TO_RESTORE; do
 			echo "service --status-all as user pi ..."
 			ssh $DEPLOYED_IP 'su - pi -l -c "service --status-all | grep "+" | wc -l > /tmp/srvrces.num"'
 			scp root@$DEPLOYED_IP:/tmp/srvrces.num .
-			if [[ $(cat srvrces.num) != 15 ]]; then
-				echo "Missing active services. Expected 15. Detected $(cat srvrces.num)"
+			if [[ $(cat srvrces.num) != 11 ]]; then
+				echo "Missing active services. Expected 11. Detected $(cat srvrces.num)"
 				error=1
 			else
 				echo "Active services detected: $(cat srvrces.num)"
@@ -312,13 +314,9 @@ for backup in $BACKUPS_TO_RESTORE; do
 			echo "@@@@@ Restore successfull"
 		fi
 
-		echo "Shutdown VM pid $pid ..."
-
-		# get firstly created child process id, which is running all tasks
 		PID_CHILD=$(pgrep -o -P $pid)
-		PID_CHILD2=$(pgrep -o -P $PID_CHILD)
-
-		kill -9 $PID_CHILD2
+		echo "Shutdown VM pid $pid($PID_CHILD) ..."
+		kill -9 $PID_CHILD
 
 	done
 

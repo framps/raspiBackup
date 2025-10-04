@@ -5,7 +5,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013, 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013, 2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -287,14 +287,18 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 		N)	buCnt=$(ls ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*.$extension 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
 			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
+			buCnt4=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*vda* 2>/dev/null | wc -l)
 			(( buCnt+=buCnt2 ))
 			(( buCnt+=buCnt3 ))
+			(( buCnt+=buCnt4 ))
 			;;
 		P)	buCnt=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*mmcblk* 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
 			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
+			buCnt4=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*vda* 2>/dev/null | wc -l)
 			(( buCnt+=buCnt2 ))
 			(( buCnt+=buCnt3 ))
+			(( buCnt+=buCnt4 ))
 			(( buCntToCheck=buCntToCheck*$PARTITIONS_PER_BACKUP ))
 			;;
 		*)	log "error - $1 $2 $3"
@@ -309,6 +313,7 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 		log "$(ls "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*".$extension")"
 		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"mmcblk"*)"
 		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"nvme"*)"
+		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"vda"*)"
 	else
 		(( $DEBUG )) && log "--- Found $buCnt root backups"
 	fi
