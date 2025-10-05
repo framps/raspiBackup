@@ -25,7 +25,9 @@
 #
 #######################################################################################################################
 
-IMAGE=$1	   	  # Image
+source ./env.defs
+
+IMAGE=$1	  # Image
 CPU_CORES=2       # CPU-Kerne (bis zu 8)
 RAM_SIZE=4G       # Größe des Arbeitsspeichers
 SSH_PORT=2222     # Lokaler Port für den SSH-Zugriff
@@ -39,9 +41,9 @@ FORMAT="raw"
 
 qemu-system-aarch64 -machine virt -cpu cortex-a72 \
   -smp ${CPU_CORES} -m ${RAM_SIZE} \
-  -kernel kernel \
+  -kernel ${KERNEL_DIR}/kernel \
   -append "root=/dev/vda2 rootfstype=ext4 rw panic=0 console=ttyAMA0" \
-  -drive format=$FORMAT,file=${IMAGE},if=none,id=hd0,cache=writeback \
+  -drive format=$FORMAT,file=${QEMU_IMAGES}/${IMAGE},if=none,id=hd0,cache=writeback \
   -device virtio-blk,drive=hd0,bootindex=0 \
   -net nic,macaddr=DE:AD:BE:EF:44:DC \
   -net tap \
