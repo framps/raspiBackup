@@ -8102,10 +8102,16 @@ function doitBackup() {
 		fi
 	fi
 
+	if [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
+			mentionHelp
+			exitError $RC_PARAMETER_ERROR
+	fi
+	
 	if [[ -z $TAR_COMPRESSION_TOOL ]]; then
 
 		# tgz and ddz ar no allowed backuptype, -z should be used instead
-		if  (( ! ZIP_BACKUP )) && ( [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]] || [[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] || [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]] ); then
+		if  (( ! ZIP_BACKUP )) && [[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] || [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
 				mentionHelp
 				exitError $RC_PARAMETER_ERROR
