@@ -4271,6 +4271,7 @@ function setupEnvironment() {
 	logEntry
 
 	if (( ! $RESTORE )); then
+:<<SKIP
 		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
 			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
@@ -4279,7 +4280,7 @@ function setupEnvironment() {
 				ZIP_BACKUP_TYPE_INVALID=1
 			fi
 		fi
-
+SKIP
 		if [[ -n "$DYNAMIC_MOUNT" ]]; then
 			dynamic_mount "$DYNAMIC_MOUNT"
 		fi
@@ -8101,17 +8102,20 @@ function doitBackup() {
 		fi
 	fi
 
-	# tgz and ddz ar no allowed backuptype, -z should be used instead
+	if [[ -z $TAR_COMPRESSION_TOOL ]]; then
 
-	if  [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]] \
-			|| [[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] \
-			|| [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
-		mentionHelp
-		exitError $RC_PARAMETER_ERROR
-	fi
+		# tgz and ddz ar no allowed backuptype, -z should be used instead
+		if  (( ! ZIP_BACKUP )) && ( [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]] || [[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] || [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]] ); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
+				mentionHelp
+				exitError $RC_PARAMETER_ERROR
+		elif (( ZIP_BACKUP &&  ! ZIP_BACKUP_TYPE_INVALID )) && [[ $BACKUPTYPE != $BACKUPTYPE_TAR ]] && [[ $BACKUPTYPE != $BACKUPTYPE_DD ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
+				mentionHelp
+				exitError $RC_PARAMETER_ERROR
+		fi
 
-	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
+	else
 		
 		if [[ $BACKUPTYPE != $BACKUPTYPE_TAR ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED "$BACKUPTYPE"
@@ -8131,10 +8135,6 @@ function doitBackup() {
 			writeToConsole "$MSG_TAR_COMPRESS_TOOL_NOT_FOUND" "$TAR_COMPRESSION_TOOL"
 			exitError $RC_MISSING_COMMANDS
 		fi
-	elif (( $ZIP_BACKUP_TYPE_INVALID )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
-		mentionHelp
-		exitError $RC_PARAMETER_ERROR
 	fi
 
 	if [[ -n "$TELEGRAM_CHATID" && -z "$TELEGRAM_TOKEN" ]] || [[ -z "$TELEGRAM_CHATID" && -n "$TELEGRAM_TOKEN" ]]; then
@@ -9153,7 +9153,7 @@ function doitRestore() {
 	logItem "regex: $regex"
 
 	if [[ ! $(basename "$RESTOREFILE") =~ $regex ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"POSSIBLE_TYPES
 		exitError $RC_MISSING_FILES
 	fi
 
