@@ -2121,13 +2121,16 @@ MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
 MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %s"
 MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s"
 MSG_TAR_COMPRESS_TOOL_USED=351
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using tar compression tool \"%s\""
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: tar Kompressionstool \"%s\" wird genutzt"
+MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
+MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: Konfiguriertbares tar Kompressionstool %s wird genutzt"
 MSG_TAR_COMPRESS_TOOL_NOT_FOUND=352
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: tar compression tool \"%s\" not installed"
+MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Custom tar compression tool %s not installed"
+MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Konfigurierbares tar Kompressionstool %s nicht installiert"
+MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED=353
+MSG_EN[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Custom tar compression not possible for backuptype %s"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: tar Kompressionstool \"%s\" nicht installiert"
+MSG_DE[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Konfigurierbare tar Kompression nicht für Backuptyp %s möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4301,19 +4304,26 @@ function setupEnvironment() {
 		BACKUPTARGET_TEMP_DIR="$BACKUP_TEMP_ROOT_DIR/$BACKUPFILE"			# temporary backup directory for current backup
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
-		TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# -z option 
-		if [[ -n $TAR_COMPRESSION_TOOL ]]; then
-			local i
-			i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
-			if (( ! $? )); then
-				TAR_COMPRESSION_EXTENSION="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$i]}"
+		local targetExtension="${FILE_EXTENSION[$BACKUPTYPE]}"
+	
+		if [[ -n $TAR_COMPRESSION_TOOL ]] || (( $ZIP_BACKUP )); then
+			TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# assume for now -z option is used 
+			if [[ -n $TAR_COMPRESSION_TOOL ]]; then								
+				local i
+				i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
+				if (( ! $? )); then
+					TAR_COMPRESSION_EXTENSION=".tar${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$i]}"
+				else
+					assertionFailed $LINENO "Unknown tar compressiontool"
+				fi
 			fi
+		
+			logItem "Use tar extension $TAR_COMPRESSION_EXTENSION"
+			targetExtension="$TAR_COMPRESSION_EXTENSION"
 		fi
 
-		logItem "Use tar extension $TAR_COMPRESSION_EXTENSION"
-
-		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${TAR_COMPRESSION_EXTENSION}"
-		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${TAR_COMPRESSION_EXTENSION}"
+		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${targetExtension}"
+		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${targetExtension}"
 
 		logItem "BACKUPTARGET_FILE=$BACKUPTARGET_FILE"
 		logItem "BACKUPTARGET_FINAL_FILE=$BACKUPTARGET_FINAL_FILE"
@@ -6209,9 +6219,9 @@ function backupTar() {
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
 
-	if [[ -n "$TAR_COMPRESSION_TOOL" ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
-	fi
+	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
+	fi	
 
 	if (( ! $FAKE )); then
 		executeTar "${cmd}" "$TAR_IGNORE_ERRORS"
@@ -8089,7 +8099,24 @@ function doitBackup() {
 		fi
 	fi
 
+	# tgz and ddz ar no allowed backuptype, -z should be used instead
+
+	if  [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]] \
+			|| [[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] \
+			|| [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
+		mentionHelp
+		exitError $RC_PARAMETER_ERROR
+	fi
+
 	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
+		
+		if [[ $BACKUPTYPE != $BACKUPTYPE_TAR ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED "$BACKUPTYPE"
+			mentionHelp
+			exitError $RC_PARAMETER_ERROR
+		fi
+
 		local i
 		i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
 		if (( $? )); then
@@ -8104,12 +8131,6 @@ function doitBackup() {
 		fi
 	elif (( $ZIP_BACKUP_TYPE_INVALID )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
-		mentionHelp
-		exitError $RC_PARAMETER_ERROR
-	fi
-
-	if [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
 		mentionHelp
 		exitError $RC_PARAMETER_ERROR
 	fi

@@ -6,4 +6,4 @@
 *.img
 constants.sh
 email.conf
-
+test/qemu
