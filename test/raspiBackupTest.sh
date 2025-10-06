@@ -93,7 +93,7 @@ if ! ping -c 1 $VM_IP; then
 		# SD card only
 		usb) qemu-img create -f qcow2 -F qcow2 -b $IMAGES/${RASPBIAN_OS}.qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
 			echo "Starting VM in $IMAGES/${RASPBIAN_OS}-snap.qcow2"
-			./rpi-emu-start.sh $IMAGES/${RASPBIAN_OS}-snap.qcow2 &
+			./rpi-emu-start.sh ${RASPBIAN_OS}-snap.qcow2 &
 			;;
 		# no SD card, USB boot
 		usb_) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-Nommcblk-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
@@ -126,13 +126,17 @@ fi
 SCRIPTS="$GIT_REPO/raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
 
 for file in $SCRIPTS; do
-	target="root@$VM_IP:/root"
+	filename=$(basename -- "$file")
+	target="root@$VM_IP:/root/$filename"
 	[[ $file == "raspiBackup.conf" ]] && target="root@$VM_IP:/usr/local/etc"
 	echo "Uploading $file to $target"
 	while ! scp $file $target; do
 		sleep 3
 	done
 done
+
+echo "***"
+read
 
 if (( $BOOT_ONLY )); then
 	echo "Finished"
