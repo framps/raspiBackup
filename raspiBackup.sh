@@ -256,13 +256,15 @@ done
 
 TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
 TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
+
+# grep regex used to extract partition numbers from partition oriented backups
 TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=""
 for K in "${!TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}"; do
 	ext="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$K]}"
 	if [[ -z "$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP" ]]; then
-		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="${ext:1}"
+		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="tar${ext}"
 	else
-		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP}|${ext:1}"
+		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP}|tar${ext}"
 	fi
 done
 TAR_COMPRESSION_TOOLS_SUPPORTED_LIST=""
@@ -8677,7 +8679,7 @@ function restorePartitionBasedBackup() {
 		for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
 			logItem "partitionBackupFile: $partitionBackupFile"
 			local partitionNo
-			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ|$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing extension
+			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ|$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP))?$" <<< "$partitionBackupFile" | sed -E 's/(\.tar)?\..+$//' )"  # delete trailing extension and optional .tar
 			logItem "Found partition no: $partitionNo"
 			if [[ -z "$partitionNo" ]]; then
 				assertionFailed $LINENO "Unable to retrieve partition number from $partitionBackupFile"
@@ -8980,13 +8982,12 @@ function restorePartitionBasedPartition() { # restorefile
 	restoreFile="$1"
 	restorePartition="$(basename "$restoreFile")"
 
-	logItem "restorePartition: $restorePartition"
-	local partitionNumber
-	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< "$restorePartition")
-	logItem "Partitionnumber: $partitionNumber"
-
-	restorePartition="${restorePartition%.*}"
+	restorePartition="$(sed -E 's%(\.tar)?\..+$%%' <<< ${restorePartition})"		# remove backup extension and optional .tar
 	logItem "RestorePartition: $restorePartition"
+
+	local partitionNumber
+	partitionNumber="$(sed -E 's%.+([0-9]+)$%\1%' <<< "$restorePartition")"			# extract partition number
+	logItem "Partitionnumber: $partitionNumber"
 
 	partitionLabel=$(getBackupPartitionLabel "$restorePartition")
 	partitionFilesystem=$(getBackupPartitionFilesystem "$restorePartition")
