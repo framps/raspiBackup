@@ -77,6 +77,9 @@ mode=${3:-"n p"}
 mode=${mode,,}
 bootmode=${4:-"d t"}
 bootmode=${bootmode,,}
+type="tar"
+mode="n"
+bootmode="t"
 
 echo "Executing test with following options: $environment $type $mode $bootmode"
 

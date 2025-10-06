@@ -2,7 +2,8 @@
 #
 
 VERSION_DIR="raspios_lite_arm64-2024-11-19"
-IMAGE_NAME="2024-11-19-raspios-bookworm-arm64-lite.img"
+IMAGE="2024-11-19-raspios-bookworm-arm64-lite"
+IMAGE_NAME="${IMAGE}.img"
 
 wget https://downloads.raspberrypi.com/raspios_lite_arm64/images/$VERSION_DIR/${IMAGE_NAME}.xz
 echo "Unzip image..."
@@ -33,3 +34,7 @@ qemu-img convert -f raw -O qcow2 disk.img bookworm.qcow2
 [[ ! -d images ]] && mkdir images
 echo "Moving image into image dir ..."
 mv bookworm.qcow2 images/bookworm.qcow2
+
+rm disk.img
+rm ${IMAGE_NAME}
+rm ${IMAGE}.xz
