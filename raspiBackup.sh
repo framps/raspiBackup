@@ -3270,7 +3270,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "$1"
 	local id
-	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/((s|v)d[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
 		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -5083,8 +5083,6 @@ function cleanupBackupDirectory() {
 				fi
 			fi
 		fi
-		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
-		rmdir $BACKUP_TEMP_ROOT_DIR &>>$LOG_FILE
 	fi
 
 	logExit
@@ -6643,7 +6641,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	logItem "Directories: $directories"
 
-	directories="$(grep -Po "((sd[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
+	directories="$(grep -Po "(((s|v)d[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
 
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
@@ -7698,6 +7696,7 @@ function inspect4Backup() {
 		BOOT_DEVICE="$updatedBootdeviceName"
 		logItem "Using configured bootdevice $BOOT_DEVICE"
 	elif (( $REGRESSION_TEST )); then
+		[[ -e /dev/vda ]] && BOOT_DEVICE="vda"
 		[[ -e /dev/sda ]] && BOOT_DEVICE="sda"
 		[[ -e /dev/mmcblk0 ]] && BOOT_DEVICE="mmcblk0"
 		[[ -e /dev/nvme0n1 ]] && BOOT_DEVICE="nvme0n1"
@@ -7783,7 +7782,7 @@ function inspect4Backup() {
 		fi
 	fi
 
-	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
+	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^(s|v)d[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
 		exitError $RC_INVALID_BOOTDEVICE
 	fi
