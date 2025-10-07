@@ -1,10 +1,10 @@
 #!/bin/bash
 #######################################################################################################################
 #
-# Sample plugin for raspiBackup.sh
+# Docker plugin for raspiBackup.sh
 # called after a backup finished
 #
-# Function: starts all stopped docker container
+# Function: starts all stopped docker containers
 #
 # See http://www.linux-tips-and-tricks.de/raspiBackup for additional information
 #

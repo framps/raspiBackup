@@ -44,8 +44,8 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1-m_893"           								# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
+VERSION="0.7.1.1-m_893"           								# -beta, -hotfix or -dev suffixes possible
+VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -2928,6 +2928,7 @@ function logOptions() { # option state
 	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
 	logItem "TELEGRAM_TOKEN=$TELEGRAM_TOKEN"
 	logItem "TELEGRAM_CHATID=$TELEGRAM_CHATID"
+	logItem "TELEGRAM_THREADID=$TELEGRAM_THREADID"
 	logItem "TELEGRAM_NOTIFICATIONS=$TELEGRAM_NOTIFICATIONS"
 	logItem "TIMESTAMPS=$TIMESTAMPS"
 	logItem "UPDATE_UUIDS=$UPDATE_UUIDS"
@@ -3071,6 +3072,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_TELEGRAM_TOKEN=""
 	# Telegram target chatid
 	DEFAULT_TELEGRAM_CHATID=""
+	# Telegram thread ID for the target chat (optional)
+	DEFAULT_TELEGRAM_THREADID=""
 	# Telegram notifications to send. S(uccess), F(ailure), M(messages as file), m(essages as text)
 	DEFAULT_TELEGRAM_NOTIFICATIONS="F"
 	# Pushover additional options
@@ -3184,6 +3187,7 @@ function copyDefaultConfigVariables() {
 	TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
 	TAR_IGNORE_ERRORS="$DEFAULT_TAR_IGNORE_ERRORS"
 	TELEGRAM_CHATID="$DEFAULT_TELEGRAM_CHATID"
+	TELEGRAM_THREADID="$DEFAULT_TELEGRAM_THREADID"
 	TELEGRAM_NOTIFICATIONS="$DEFAULT_TELEGRAM_NOTIFICATIONS"
 	TELEGRAM_TOKEN="$DEFAULT_TELEGRAM_TOKEN"
 	TIMESTAMPS="$DEFAULT_TIMESTAMPS"
@@ -3266,7 +3270,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "$1"
 	local id
-	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/((s|v)d[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
 		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -4605,8 +4609,21 @@ function sendTelegramDocument() { # filename
 
 		local rsp curlRC error_code error_description
 
-		logItem "Telegram curl call: curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE"
-		rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
+		local curl_params=(
+			"-F" "chat_id=$TELEGRAM_CHATID"
+			"-F" "document=@$MSG_FILE"
+		)
+
+		if [[ -n "$TELEGRAM_THREADID" ]]; then
+			curl_params+=("-F" "message_thread_id=$TELEGRAM_THREADID")
+		fi
+
+		# Build log message
+		local log_cmd="curl -s -X GET '$TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument' ${curl_params[*]}"
+		logItem "Telegram curl call: $log_cmd"
+
+		# Execute the curl command
+		rsp="$(curl -s -X GET "$TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument" "${curl_params[@]}")"
 		curlRC=$?
 
 		if (( $curlRC )); then
@@ -4635,13 +4652,25 @@ function sendTelegramMessage() { # message html(yes/no)
 
 		local rsp error_code error_description
 
-		if [[ -z $2 ]]; then
-			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
-			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
-		else
-			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
-			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
+		local curl_params=(
+			"--data-urlencode" "chat_id=$TELEGRAM_CHATID"
+			"--data-urlencode" "text=$1"
+		)
+
+		if [[ -n "$TELEGRAM_THREADID" ]]; then
+			curl_params+=("--data-urlencode" "message_thread_id=$TELEGRAM_THREADID")
 		fi
+
+		if [[ -n $2 ]]; then
+			curl_params+=("--data" "parse_mode=html")
+		fi
+
+		# Build log message
+		local log_cmd="curl -s -X POST '$TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage' ${curl_params[*]}"
+		logItem "Telegram curl call: $log_cmd"
+
+		# Execute the curl command
+		rsp="$(curl -s -X POST "$TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage" "${curl_params[@]}")"
 		local curlRC=$?
 
 		if (( $curlRC )); then
@@ -5169,7 +5198,7 @@ function masqueradeSensitiveInfoInLog() {
 		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
-	# telegram token and chatid
+	# telegram token, chatid and threadid
 
 	if [[ -n "$TELEGRAM_TOKEN" ]]; then
 		logItem "Masquerading telegram token"
@@ -5182,6 +5211,13 @@ function masqueradeSensitiveInfoInLog() {
 		logItem "Masquerading telegram chatid"
 		m="$(masquerade $TELEGRAM_CHATID)"
 		e="$(escapeSlashes "$TELEGRAM_CHATID")"
+		sed -i -E "s/${e}/${m}/g" $LOG_FILE
+	fi
+
+	if [[ -n "$TELEGRAM_THREADID" ]]; then
+		logItem "Masquerading telegram threadid"
+		m="$(masquerade $TELEGRAM_THREADID)"
+		e="$(escapeSlashes "$TELEGRAM_THREADID")"
 		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
@@ -6618,7 +6654,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	logItem "Directories: $directories"
 
-	directories="$(grep -Po "((sd[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
+	directories="$(grep -Po "(((s|v)d[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
 
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
@@ -7680,6 +7716,7 @@ function inspect4Backup() {
 		BOOT_DEVICE="$updatedBootdeviceName"
 		logItem "Using configured bootdevice $BOOT_DEVICE"
 	elif (( $REGRESSION_TEST )); then
+		[[ -e /dev/vda ]] && BOOT_DEVICE="vda"
 		[[ -e /dev/sda ]] && BOOT_DEVICE="sda"
 		[[ -e /dev/mmcblk0 ]] && BOOT_DEVICE="mmcblk0"
 		[[ -e /dev/nvme0n1 ]] && BOOT_DEVICE="nvme0n1"
@@ -7765,7 +7802,7 @@ function inspect4Backup() {
 		fi
 	fi
 
-	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
+	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^(s|v)d[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
 		exitError $RC_INVALID_BOOTDEVICE
 	fi
@@ -10665,6 +10702,13 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  TELEGRAM_CHATID="$o"; shift 2
+	  ;;
+
+	--telegramThreadID)
+	  if ! o="$(checkOptionParameter "$1" "$2")"; then
+		exitError $RC_PARAMETER_ERROR
+	  fi
+	  TELEGRAM_THREADID="$o"; shift 2
 	  ;;
 
 	--telegramNotifications)

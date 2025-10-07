@@ -10,7 +10,7 @@
 #
 ########################################################################################################################
 #
-#    Copyright (c) 2017-2018 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2017-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -42,8 +42,8 @@ MSG_EXT_DISK_USAGE2="ext_diskusage_2"
 MSG_EN[$MSG_EXT_DISK_USAGE2]="RBK1002I: Disk usage post backup: Used: %s Free: %s"
 MSG_DE[$MSG_EXT_DISK_USAGE2]="RBK1002I: Partitionsauslastung nach dem Backup: Belegt: %s Frei: %s"
 MSG_EXT_DISK_USAGE3="ext_diskusage_3"
-MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1003I: Disk usage change: %s (%s %%)"
-MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1003I: Partitionsauslastung Änderung freier Platz: %s (%s %%)"
+MSG_EN[$MSG_EXT_DISK_USAGE3]="RBK1003I: Disk usage change: %s (%s %)"
+MSG_DE[$MSG_EXT_DISK_USAGE3]="RBK1003I: Partitionsauslastung Änderung freier Platz: %s (%s %)"
 MSG_EXT_DISK_USAGE4="ext_diskusage_4"
 MSG_EN[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc not found. Please install bc first with with 'sudo apt-get install bc'."
 MSG_DE[$MSG_EXT_DISK_USAGE4]="RBK1004E: bc nicht gefunden. bc muss installiert werden mit 'sudo apt-get install bc'."
@@ -73,7 +73,7 @@ else
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE2 "$(bytesToHuman $usagePost)" "$(bytesToHuman $freePost)"
 
 	if (( $freePre != 0 )); then
-		freeChangePercent=$( printf "%3.2f" $(bc <<<"( $freePost - $freePre ) * 100 / $freePre") )
+		freeChangePercent=$( printf "%3.2f" $(bc <<<"scale=2; $freeChange * 100 / $freePre" ) )
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXT_DISK_USAGE3 "$(bytesToHuman $freeChange)" "$freeChangePercent"
 	fi
 fi
