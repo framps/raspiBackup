@@ -7,7 +7,7 @@ Steps to build regressionenvironment:
 4) Login into image and wait until new image finished all initial setup steps
 5) cd ..
 6) Adapt env.defs to you environment
-7) ssh-copy-id your pub user ssh credential to the image user pi
-8) ssh-copy-id your root user ssh credential to the image user pi
-9) copy the pi authorized_keys to root
+7) scp your pub user ssh credential to the image user pi
+8) scp your root user ssh credential to the image user pi
+9) copy the pi authorized_keys to root on the image
 

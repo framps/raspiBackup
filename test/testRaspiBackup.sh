@@ -24,7 +24,6 @@
 
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 
-source env.defs
 source $SCRIPT_DIR/constants.sh
 
 DEBUG=1

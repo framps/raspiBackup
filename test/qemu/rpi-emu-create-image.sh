@@ -35,6 +35,5 @@ qemu-img convert -f raw -O qcow2 disk.img bookworm.qcow2
 echo "Moving image into image dir ..."
 mv bookworm.qcow2 images/bookworm.qcow2
 
-rm disk.img
-rm ${IMAGE_NAME}
-rm ${IMAGE}.xz
+#rm disk.img
+#rm ${IMAGE_NAME}

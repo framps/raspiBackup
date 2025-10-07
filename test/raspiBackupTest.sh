@@ -52,7 +52,7 @@ BACKUP_DIR="raspibackupTest"
 BOOT_ONLY=0	# just boot vm and then exit
 KEEP_VM=0 # don't destroy VM at test end
 RASPBIAN_OS="bookworm"
-CLEANUP=1
+CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
 
@@ -123,6 +123,9 @@ if ! ping -c 1 $VM_IP; then
 	done
 fi
 
+echo "Before upload"
+read
+
 SCRIPTS="$GIT_REPO/raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
 
 for file in $SCRIPTS; do
@@ -135,9 +138,6 @@ for file in $SCRIPTS; do
 	done
 done
 
-echo "***"
-read
-
 if (( $BOOT_ONLY )); then
 	echo "Finished"
 	exit 0
@@ -149,6 +149,9 @@ function sshexec() { # cmd
 }
 
 sshexec "chmod +x ~/$TEST_SCRIPT"
+
+echo "Before test start"
+read
 
 sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
 
