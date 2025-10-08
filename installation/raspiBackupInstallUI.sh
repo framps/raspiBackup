@@ -2832,7 +2832,7 @@ function do_finish() {
 				first_steps
 			fi
 
-			help
+			#help
 		fi
 
 		reset
@@ -4102,7 +4102,7 @@ function uninstall_do() {
 		return
 	fi
 
-	help
+	#help
 
 	local m="$(getMessageText $MSG_QUESTION_UNINSTALL)"
 	local t=$(center $WINDOW_COLS "$m")
