@@ -25,7 +25,7 @@
 #
 #######################################################################################################################
 
-source ./env.defs
+source $(dirname "$0")/../env.defs
 
 IMAGE=$1	  # Image
 CPU_CORES=2       # CPU-Kerne (bis zu 8)
@@ -36,8 +36,7 @@ ARGS=             # Zusätzliche Argument (-nographic um ohne grafisches Fenster
 
 EXTENSION=`echo "$IMAGE" | cut -d'.' -f2`
 
-FORMAT="raw"
-[[ $EXTENSION != "img" ]] && FORMAT="qcow2"
+[[ $EXTENSION != "img" ]] && FORMAT="qcow2" || FORMAT="raw"
 
 sudo qemu-system-aarch64 -machine virt -cpu cortex-a72 \
   -smp ${CPU_CORES} -m ${RAM_SIZE} \

@@ -5,9 +5,11 @@ VERSION_DIR="raspios_lite_arm64-2024-11-19"
 IMAGE="2024-11-19-raspios-bookworm-arm64-lite"
 IMAGE_NAME="${IMAGE}.img"
 
-wget https://downloads.raspberrypi.com/raspios_lite_arm64/images/$VERSION_DIR/${IMAGE_NAME}.xz
-echo "Unzip image..."
-unxz ${IMAGE_NAME}.xz
+if [[ ! -f ${IMAGE_NAME}.xz ]]; then
+	wget https://downloads.raspberrypi.com/raspios_lite_arm64/images/$VERSION_DIR/${IMAGE_NAME}.xz
+	echo "Unzip image..."
+	unxz ${IMAGE_NAME}.xz
+fi
 
 echo "Copying $IMAGE_NAME ..."
 cp $IMAGE_NAME disk.img

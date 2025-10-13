@@ -1,17 +1,22 @@
 #!/bin/bash
 #
-source ../env.defs
+
+source $(dirname "$0")/../env.defs
 
 if ! ping -c 1 $DEPLOYED_IP; then
 
-cd ..
-. ./rpi-emu-start.sh bookworm.qcow2 &
-fi
+	rpi-emu-start.sh bookworm.qcow2 &
 
-echo "Waiting for VM with IP $DEPLOYED_IP to come up"
-        while ! ping -c 1 $DEPLOYED_IP &>/dev/null; do
-                sleep 3
+	echo "Waiting for VM with IP $DEPLOYED_IP to come up"
+       	while ! ping -c 1 $DEPLOYED_IP &>/dev/null; do
+               	sleep 3
         done
+
+	echo "Waiting for ssh to come up ..."
+	while ! nc -zv $DEPLOYED_IP 22; do
+		sleep 3
+	done
+fi
 
 echo "Copy pub key"
 ssh-copy-id pi@$DEPLOYED_IP
