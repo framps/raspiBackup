@@ -15,7 +15,7 @@ echo "Copying $IMAGE_NAME ..."
 cp $IMAGE_NAME disk.img
 
 echo "Truncating ..."
-truncate -s +5G disk.img
+truncate -s +3G disk.img
 
 echo "Resizing ..."
 sudo virt-resize --expand /dev/sda2 $IMAGE_NAME disk.img
