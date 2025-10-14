@@ -15,7 +15,7 @@ echo "Copying $IMAGE_NAME ..."
 cp $IMAGE_NAME disk.img
 
 echo "Truncating ..."
-truncate -s +3G disk.img
+truncate -s +5G disk.img
 
 echo "Resizing ..."
 sudo virt-resize --expand /dev/sda2 $IMAGE_NAME disk.img
@@ -30,12 +30,12 @@ sudo touch /mnt/ssh
 sudo umount /mnt
 sudo losetup -d /dev/loop0
 
-echo "Converting to qcow2 ..."
-qemu-img convert -f raw -O qcow2 disk.img bookworm.qcow2
+#echo "Converting to qcow2 ..."
+#qemu-img convert -f raw -O qcow2 disk.img bookworm.qcow2
 
 [[ ! -d images ]] && mkdir images
 echo "Moving image into image dir ..."
-mv bookworm.qcow2 images/bookworm.qcow2
+mv disk.img images/bookworm.img
 
 #rm disk.img
 #rm ${IMAGE_NAME}

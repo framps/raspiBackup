@@ -121,8 +121,8 @@ function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ..
 
 	for (( i=1; i<=$2; i++)); do
 		echo "--- Creating $1 backup number $i of mode $3 and option $5 in ${BACKUP_PATH}_${3^^}"
-		log "./raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}""
-		sudo ${GIT_REPO}/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}"
+		log "sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}""
+		sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}"
 		rc=$?
 
 		local logFile=$(getLogName $1 $3)

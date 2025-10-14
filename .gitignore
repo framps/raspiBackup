@@ -1,3 +1,4 @@
+*.xz
 *.log
 *.msg
 *.env
@@ -6,4 +7,5 @@
 *.img
 constants.sh
 email.conf
-
+kernel
+linux*

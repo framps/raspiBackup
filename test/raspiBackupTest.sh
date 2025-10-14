@@ -50,7 +50,7 @@ BACKUP_ROOT_DIR="/disks/VMware"
 BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOT_DIR"
 BACKUP_DIR="raspibackupTest"
 BOOT_ONLY=0	# just boot vm and then exit
-KEEP_VM=0 # don't destroy VM at test end
+KEEP_VM=1 # don't destroy VM at test end
 RASPBIAN_OS="bookworm"
 CLEANUP=0
 
@@ -90,10 +90,12 @@ if ! ping -c 1 $VM_IP; then
 	echo "Creating snapshot"
 
 	case $environment in
-		# SD card only
-		usb) qemu-img create -f qcow2 -F qcow2 -b $IMAGES/${RASPBIAN_OS}.qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
+		# USB boot only
+		usb)
+#			qemu-img create -f qcow2 -F qcow2 -b $IMAGES/${RASPBIAN_OS}.qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
+#			qemu-img create -f raw -b $IMAGES/${RASPBIAN_OS}.img -F qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
 			echo "Starting VM in $IMAGES/${RASPBIAN_OS}-snap.qcow2"
-			rpi-emu-start.sh ${RASPBIAN_OS}-snap.qcow2 &
+			rpi-emu-start.sh ${RASPBIAN_OS}.img -snapshot &
 			;;
 		# no SD card, USB boot
 		usb_) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-Nommcblk-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
@@ -123,9 +125,6 @@ if ! ping -c 1 $VM_IP; then
 	done
 fi
 
-echo "Before upload"
-read
-
 SCRIPTS="$GIT_REPO/raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
 
 for file in $SCRIPTS; do
@@ -149,9 +148,6 @@ function sshexec() { # cmd
 }
 
 sshexec "chmod +x ~/$TEST_SCRIPT"
-
-echo "Before test start"
-read
 
 sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
 

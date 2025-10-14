@@ -32,7 +32,7 @@ CPU_CORES=2       # CPU-Kerne (bis zu 8)
 RAM_SIZE=4G       # Größe des Arbeitsspeichers
 SSH_PORT=2222     # Lokaler Port für den SSH-Zugriff
 MONITOR_PORT=5555 # Lokaler Port für die QEMU Monitor Konsole
-ARGS=             # Zusätzliche Argument (-nographic um ohne grafisches Fenster zu starten)
+ARGS=$2           # Zusätzliche Argument (-nographic um ohne grafisches Fenster zu starten)
 
 EXTENSION=`echo "$IMAGE" | cut -d'.' -f2`
 
