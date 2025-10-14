@@ -122,10 +122,10 @@ function smartRecycleTest() {
 	fi
 }
 
-if (( $UID != 0 )); then
-	echo "Call me as root"
-	exit 1
-fi
+#if (( $UID != 0 )); then
+#	echo "Call me as root"
+#	exit 1
+#fi
 
 rm *.log >/dev/null
 

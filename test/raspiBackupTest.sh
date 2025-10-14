@@ -48,16 +48,13 @@ IMAGES=$QEMU_IMAGES
 TEST_SCRIPT="testRaspiBackup.sh"
 BACKUP_ROOT_DIR="/disks/VMware"
 BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOT_DIR"
-BACKUP_DIR="raspibackupTest"
+BACKUP_DIR="raspiBackupTest"
 BOOT_ONLY=0	# just boot vm and then exit
-KEEP_VM=1 # don't destroy VM at test end
+KEEP_VM=0 # don't destroy VM at test end
 RASPBIAN_OS="bookworm"
 CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
-
-echo "Removing snapshot"
-rm $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &>/dev/null
 
 if (( $CLEANUP )); then
 	echo "Cleaning up backup directories"
@@ -77,9 +74,6 @@ mode=${3:-"n p"}
 mode=${mode,,}
 bootmode=${4:-"d t"}
 bootmode=${bootmode,,}
-type="tar"
-mode="n"
-bootmode="t"
 
 echo "Executing test with following options: $environment $type $mode $bootmode"
 

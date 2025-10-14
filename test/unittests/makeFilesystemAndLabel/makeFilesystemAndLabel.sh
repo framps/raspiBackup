@@ -16,7 +16,7 @@ LOOP_DEVICE=""
 FILE_SYSTEMS=(fat16 fat32 ext2 ext3 ext4 btrfs f2fs)
 LABELS=(fat16Label fat32Label ext2Label ext3Label ext4Label btrfsLabel f2fsLabel)
 
-trap "{ losetup -D; rm $DEVICE_FILE; }" SIGINT SIGTERM SIGHUP EXIT 
+trap "{ losetup -D; rm $DEVICE_FILE; }" SIGINT SIGTERM SIGHUP EXIT
 
 function createDeviceWithPartition() {
 
@@ -58,5 +58,5 @@ if (( error )); then
 	exit 1
 else
 	echo  "Test OK"
-	exit 0 
-fi	
+	exit 0
+fi
