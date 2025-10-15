@@ -33,5 +33,5 @@ ssh pi@$DEPLOYED_IP "rm /home/pi/id_rsa.pub"
 echo "Updating authorized_keys of root on pi"
 ssh pi@$DEPLOYED_IP "sudo cp /home/pi/.ssh/authorized_keys /root/.ssh/authorized_keys"
 sudo rm id_rsa.pub
-#echo "Shutting down $DEPLOYED_IP
-#ssh pi@$DEPLOYED_IP "sudo shutdown -h now"
+echo "Shutting down $DEPLOYED_IP
+ssh pi@$DEPLOYED_IP "sudo shutdown -h now"

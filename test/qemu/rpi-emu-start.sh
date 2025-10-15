@@ -28,7 +28,7 @@
 source $(dirname "$0")/../env.defs
 
 IMAGE=$1	  # Image
-CPU_CORES=2       # CPU-Kerne (bis zu 8)
+CPU_CORES=4       # CPU-Kerne (bis zu 8)
 RAM_SIZE=4G       # Größe des Arbeitsspeichers
 SSH_PORT=2222     # Lokaler Port für den SSH-Zugriff
 MONITOR_PORT=5555 # Lokaler Port für die QEMU Monitor Konsole

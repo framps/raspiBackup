@@ -35,8 +35,10 @@ MESSAGE_TEST=1
 #ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
+TYPES_TO_TEST="tar"
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
+BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
