@@ -88,7 +88,7 @@ if ! ping -c 1 $VM_IP; then
 		usb)
 #			qemu-img create -f qcow2 -F qcow2 -b $IMAGES/${RASPBIAN_OS}.qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
 #			qemu-img create -f raw -b $IMAGES/${RASPBIAN_OS}.img -F qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
-			echo "Starting VM in $IMAGES/${RASPBIAN_OS}-snap.qcow2"
+			echo "Starting VM in $IMAGES/${RASPBIAN_OS}.img"
 			rpi-emu-start.sh ${RASPBIAN_OS}.img -snapshot &
 			;;
 		# no SD card, USB boot
