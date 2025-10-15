@@ -61,7 +61,7 @@ exec 1> >(tee -a raspiBackup.log)
 exec 2> >(tee -a raspiBackup.log)
 
 DEBUG=0
-KEEPVM=1
+KEEPVM=0
 
 VMs=$QEMU_IMAGES
 
@@ -132,9 +132,6 @@ for backup in $BACKUPS_TO_RESTORE; do
 
 			log "mounting image"
 			sudo losetup -vP $LOOP $VMs/raspiBackupRestore.img
-			if [[ ! $image =~ -dd.?- ]]; then
-				dd if=$MBR_FILE of=$LOOP count=1 # prime loop partitions
-			fi
 
 			[[ $image =~ -sdbootonly- ]]
 			SDBOOTONLY=$((! $? ))

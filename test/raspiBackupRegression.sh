@@ -25,8 +25,9 @@
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
-SMARTRECYCLE_TEST=1
+SMARTRECYCLE_TEST=0
 BACKUP_TEST=1
+UNIT_TEST=0
 RESTORE_TEST=1
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
@@ -137,6 +138,10 @@ if (( $MESSAGE_TEST )); then
 	fi
 fi
 
+(( UNIT_TEST )) && sudo ./unitTests.sh
+
+(( $SMARTRECYCLE_TEST )) && smartRecycleTest
+
 startTime=$(date +%Y-%M-%d/%H:%m:%S)
 echo "Start: $startTime"
 if (( $EMAIL_NOTIFICATION )); then
@@ -154,8 +159,6 @@ for environment in $ENVIRONMENTS_TO_TEST; do
 		done
 	done
 done
-
-(( $SMARTRECYCLE_TEST )) && smartRecycleTest
 
 (( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
 echo ":-) Raspibackup regression test finished successfully"
