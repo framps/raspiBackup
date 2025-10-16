@@ -7,11 +7,9 @@
 ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) 
 ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
 
-***
-If you use raspiBackup to backup your Raspberries - I appreciate to be sponsored on [GitHub](https://github.com/sponsors/framps) or visit [this page](https://www.linux-tips-and-tricks.de/en/donations) which lists alternate ways to donate.
-***
-
 #### A high level summary is available on [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
+
+#### The complete raspiBackup documentation is available on [this page](https://framps.github.io/raspiBackupDoc)
 
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.
@@ -61,7 +59,7 @@ If you use raspiBackup to backup your Raspberries - I appreciate to be sponsored
 
 ## Support
 
-raspiBackup is supported **only** for RaspberryOS and Ubuntu as operating system and **only** for Raspberry hardware. raspiBackup runs successfully also on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just give it a try and be happy if it works but don't ask for any support. For details see [here](https://www.linux-tips-and-tricks.de/en/all-raspibackup-articles/609-supported-hard-and-software/).
+raspiBackup is supported **only** for RaspberryOS and Ubuntu as operating system and **only** for Raspberry hardware. raspiBackup runs successfully also on other Raspberry compatible hardware and other Linux distros but any support request on these unsupported environments will be rejected. Just give it a try and be happy if it works but don't ask for any support. For details see [here](https://framps.github.io/raspiBackupDoc/supported-hardware-and-software.html).
 
 Support is also given **only** for raspiBackup specific issues. For general Linux related questions please use other information sources. 
 
@@ -71,20 +69,20 @@ Support is also given **only** for raspiBackup specific issues. For general Linu
 ## Documentation
 
 ### English
-* [Installation](https://www.linux-tips-and-tricks.de/en/installation/)
-* [Users guide](https://www.linux-tips-and-tricks.de/en/backup)
-* [FAQ](https://www.linux-tips-and-tricks.de/en/faq)
-* [Error messages, root causes and suggested actions](https://linux-tips-and-tricks.de/en/raspibackupmessagese/)
-* [Smart recycle backup strategy](https://linux-tips-and-tricks.de/en/smart-recycle/)
-* [Use synology as backup space](https://linux-tips-and-tricks.de/en/synology/)
+* [Complete raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
+* [Installation](https://framps.github.io/raspiBackupDoc/installation-in-5-minutes.html)
+* [FAQ](https://framps.github.io/raspiBackupDoc/faq.html)
+* [Error messages, root causes and suggested actions](https://framps.github.io/raspiBackupDoc/error-messages.html)
+* [Smart recycle backup strategy](https://framps.github.io/raspiBackupDoc/smart-recycle.html)
+* [Use synology as backup space](https://framps.github.io/raspiBackupDoc/nfs-as-backuptarget.html)
 
 ### German
-* [Installation](https://linux-tips-and-tricks.de/de/installation/)
-* [Benutzerhandbuch](https://linux-tips-and-tricks.de/de/raspibackup/)
-* [FAQ](https://linux-tips-and-tricks.de/de/faq/)
-* [Fehlermeldungen, Ursachen und Behebung](https://linux-tips-and-tricks.de/de/raspibackupmeldungen/)
-* [Intelligente Rotationsstrategie](https://linux-tips-and-tricks.de/de/rotationsstrategie/)
-* [Benutzung von Synology als Backupspace](https://linux-tips-and-tricks.de/de/synology/)
+* [Vollständige raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
+* [Installation](https://framps.github.io/raspiBackupDoc/installation-in-5-minutes.html)
+* [FAQ](https://framps.github.io/raspiBackupDoc/faq.html)
+* [Fehlermeldungen, Ursachen und Behebung](https://framps.github.io/raspiBackupDoc/error-messages.html)
+* [Intelligente Rotationstrategie](https://framps.github.io/raspiBackupDoc/smart-recycle.html)
+* [Nutzung von einer Synology/NFS Server als Backuspace](https://framps.github.io/raspiBackupDoc/nfs-as-backuptarget.html)
 
 ### French
 
@@ -109,11 +107,6 @@ Installation of raspiBackup is started with following command:
 ## Donations
 
 raspiBackup is maintained just by me - framp. If you find raspiBackup useful please donate to support future development and acknowledge support. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
-
-## Much more detailed documentation
-
- * [English](https://linux-tips-and-tricks.de/en/all-raspibackup-articles/)
- * [German](https://linux-tips-and-tricks.de/de/alle-raspibackup-artikel/)
 
 ## Social media
 
