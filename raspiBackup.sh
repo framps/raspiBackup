@@ -7674,6 +7674,7 @@ function inspect4Backup() {
 
 	logCommand "ls -1 /dev/mmcblk*"
 	logCommand "ls -1 /dev/sd*"
+	logCommand "ls -1 /dev/vd*"
 	logCommand "ls -1 /dev/nvme*"
 
 	if mount | grep -q "^overlay.* on / type"; then
