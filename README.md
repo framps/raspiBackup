@@ -7,11 +7,9 @@
 ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) 
 ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat)
 
-***
-If you use raspiBackup to backup your Raspberries - I appreciate to be sponsored on [GitHub](https://github.com/sponsors/framps) or visit [this page](https://framps.github.io/raspiBackupDoc/introduction.html?highlight=donation#donations) which lists alternate ways to donate.
-***
-
 #### A high level summary is available on [this page](https://raspibackup.linux-tips-and-tricks.de/en/home/).
+
+#### The complete raspiBackup documentation is available on [this page](https://framps.github.io/raspiBackupDoc)
 
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.

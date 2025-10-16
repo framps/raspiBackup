@@ -1117,27 +1117,22 @@ MSG_ABOUT=$((SCNT++))
 MSG_EN[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 This tool provides a straight-forward way of doing installation,${NL} updating and configuration of $RASPIBACKUP_NAME.${NL}${NL}\
-Visit https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}for details about all configuration options of $RASPIBACKUP_NAME.${NL}${NL}\
 Visit https://www.linux-tips-and-tricks.de/en/raspibackup${NL}for details about $RASPIBACKUP_NAME."
 MSG_DE[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Dieses Tool ermöglicht es möglichst einfach $RASPIBACKUP_NAME zu installieren,${NL} zu updaten und die Konfiguration anzupassen.${NL}${NL}\
-Besuche https://www.linux-tips-and-tricks.de/de/raspibackup#parameter${NL}um alle Konfigurationsoptionen von $RASPIBACKUP_NAME kennenzulernen.${NL}${NL}\
 Besuche https://www.linux-tips-and-tricks.de/de/raspibackup${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
 MSG_FI[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Tämä työkalu tarjoaa $RASPIBACKUP_NAME:n suoraviivaisen asennuksen,${NL} päivittämisen ja asetusten määrittämisen.${NL}${NL}\
-Kaikista $RASPIBACKUP_NAME:n asetuksista löydät tietoa osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
 Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup"
 MSG_FR[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Cet outil facilite au maximum la mise en place de $RASPIBACKUP_NAME ,la mise à jour ,${NL} et la configuration.${NL}${NL}\
-Visitez https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}pour plus de détails sur toutes les options de configuration de $RASPIBACKUP_NAME.${NL}${NL}\
 Visitez https://www.linux-tips-and-tricks.de/en/raspibackup${NL}pour plus de détails sur $RASPIBACKUP_NAME."
 MSG_ZH[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 此界面提供一个$RASPIBACKUP_NAME的安装引导,${NL}更新和设置页面.${NL}${NL}\
-$RASPIBACKUP_NAME的的详情设置请访问${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
 获取$RASPIBACKUP_NAME详情请访问:{NL}https://www.linux-tips-and-tricks.de/en/raspibackup "
 
 MSG_FIRST_STEPS=$((SCNT++))
@@ -2832,7 +2827,7 @@ function do_finish() {
 				first_steps
 			fi
 
-			help
+			#help
 		fi
 
 		reset
@@ -4102,7 +4097,7 @@ function uninstall_do() {
 		return
 	fi
 
-	help
+	#help
 
 	local m="$(getMessageText $MSG_QUESTION_UNINSTALL)"
 	local t=$(center $WINDOW_COLS "$m")
