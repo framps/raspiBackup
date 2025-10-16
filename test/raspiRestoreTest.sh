@@ -65,8 +65,8 @@ KEEPVM=0
 
 VMs=$QEMU_IMAGES
 
-BACKUP1="/disks/VMware/raspiBackupTest_P/*"
-BACKUP2="/disks/VMware/raspiBackupTest_N/*"
+BACKUP1="$BACKUP_DIRECTORY/raspiBackupTest_P/*"
+BACKUP2="$BACKUP_DIRECTORY/raspiBackupTest_N/*"
 
 BACKUPS_TO_RESTORE="$BACKUP2 $BACKUP1"
 
