@@ -36,10 +36,8 @@ MESSAGE_TEST=1
 #ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
-TYPES_TO_TEST="tar"
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
-BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
@@ -160,7 +158,7 @@ for environment in $ENVIRONMENTS_TO_TEST; do
 	done
 done
 
-(( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
+#(( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
 echo ":-) Raspibackup regression test finished successfully"
 if (( $EMAIL_NOTIFICATION )); then
 	echo "" | mailx -s ":-) Raspibackup regression test finished sucessfully" $attach "$NOTIFY_EMAIL"
