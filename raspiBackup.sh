@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1.1-m_893"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.1.2"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -7057,10 +7057,10 @@ function reportOldBackups() {
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 	fi
 
-	if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
-		assertionFailed $LINENO "push to $BACKUPPATH failed"
-	fi
+	if ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* &>/dev/null; then 
 
+		if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
+			assertionFailed $LINENO "push to $BACKUPPATH failed"
 	# Double quote to prevent globbing and word splitting.
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010,SC2086
@@ -7112,6 +7112,27 @@ function reportOldBackups() {
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
+			# only print report if counter says so
+			if (( $rf > 0 )); then
+
+				# update counter, but only if not in FAKE mode
+				local rfn=$(( ${rf} - 1 ))
+				if (( ! $FAKE )); then
+					echo "${rfn}" > "$report_counter_file"
+				fi
+
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
+				echo "$tobeListedOldBackups" | while read -r dir_to_list; do
+					[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
+				done
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
+
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+			fi
 		fi
 	fi
 
