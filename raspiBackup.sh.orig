@@ -44,8 +44,13 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1.2"           								# -beta, -hotfix or -dev suffixes possible
+<<<<<<< HEAD
+VERSION="0.7.1-m_893"           								# -beta, -hotfix or -dev suffixes possible
+VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
+=======
+VERSION="0.7.1.1"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
+>>>>>>> master
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -77,13 +82,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='$Date$'
+GIT_DATE='$Date: 2025-06-21 20:38:59 +0200$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='$Sha1$'
+GIT_COMMIT='$Sha1: f2458e5$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -150,8 +155,7 @@ VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
 VARS_FILE="/tmp/$MYNAME.vars"
-TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
-
+TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}.mnt"
 LOGFILE_EXT=".log"
 LOGFILE_NAME="${MYNAME}${LOGFILE_EXT}"
 LOGFILE_RESTORE_EXT=".logr"
@@ -253,29 +257,6 @@ for K in "${SORTED[@]}"; do
 		continue
 	fi
 	[[ -z $ALLOWED_TYPES ]] && ALLOWED_TYPES=$K || ALLOWED_TYPES="$ALLOWED_TYPES|$K"
-done
-
-TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
-
-# grep regex used to extract partition numbers from partition oriented backups
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=""
-for K in "${!TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}"; do
-	ext="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$K]}"
-	if [[ -z "$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP" ]]; then
-		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="tar${ext}"
-	else
-		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP}|tar${ext}"
-	fi
-done
-TAR_COMPRESSION_TOOLS_SUPPORTED_LIST=""
-for K in "${!TAR_COMPRESSION_TOOLS_SUPPORTED[@]}"; do
-	ext="${TAR_COMPRESSION_TOOLS_SUPPORTED[$K]}"
-	if [[ -z "$TAR_COMPRESSION_TOOLS_SUPPORTED_LIST" ]]; then
-		TAR_COMPRESSION_TOOLS_SUPPORTED_LIST="${ext}"
-	else
-		TAR_COMPRESSION_TOOLS_SUPPORTED_LIST="${TAR_COMPRESSION_TOOLS_SUPPORTED_LIST},${ext}"
-	fi
 done
 
 declare -A mountPoints
@@ -484,23 +465,6 @@ function containsElement() { # element ${array[@]}
   for e; do
 	[[ "$e" == "$match" ]] && return 0;
   done
-  return 1
-}
-
-# return index of element in array (0-n) and true, -1 and false otherwise
-
-function getIndexInArray() { # element ${array[@]}
-  local e match="$1" i=0
-  shift
-  for e; do
-	if [[ "$e" == "$match" ]]; then
-		echo "$i"
-		return 0
-	else 
-		(( i++ ))
-	fi
-  done
-  echo "-1"
   return 1
 }
 
@@ -1938,8 +1902,8 @@ MSG_INVALID_BOOT_DEVICE=276
 MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported"
 MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootgerät %s ist nicht unterstützt"
 MSG_USBMOUNT_INSTALLED=277
-MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when %s is installed"
-MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn %s installiert ist"
+MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when 'usbmount' is installed"
+MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn 'usbmount' installiert ist"
 MSG_BACKUP_CLEANUP_FAILED=278
 MSG_EN[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Cleanup of backupdirectories failed. Manual deletion of the last backup directory is strongly recommended !"
 MSG_DE[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Fehler bei den Aufräumarbeiten am Backupverzeichnis. Das letzte Backupverzeichnis sollte dringend manuell gelöscht werden !"
@@ -2119,21 +2083,9 @@ MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitio
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Partitionen von %s umounted werden"
 MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
-MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
-MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %s"
-MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s"
-MSG_TAR_COMPRESS_TOOL_USED=351
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: Konfiguriertbares tar Kompressionstool %s wird genutzt"
-MSG_TAR_COMPRESS_TOOL_NOT_FOUND=352
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Custom tar compression tool %s not installed"
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Konfigurierbares tar Kompressionstool %s nicht installiert"
-MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED=353
-MSG_EN[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Custom tar compression not possible for backuptype %s"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Konfigurierbare tar Kompression nicht für Backuptyp %s möglich"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2369,7 +2321,7 @@ function logFinish() {
 					fi
 				fi
 				DEST_LOGFILE="$LOG_BASE/$HOSTNAME$LOGFILE_EXT"
-				DEST_MSGFILE="$LOG_BASE/$HOSTNAME$MSGFILE_EXT"
+				cat "$LOG_FILE" &>> "$DEST_LOGFILE"		# don't move, just append
 				;;
 			"$LOG_OUTPUT_HOME")
 				DEST_LOGFILE="$CALLING_HOME/${MYNAME}$LOGFILE_EXT"
@@ -2388,28 +2340,16 @@ function logFinish() {
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-			if [[ $LOG_OUTPUT == $LOG_OUTPUT_VARLOG ]]; then
-				logItem "Appending Logfile: $LOG_FILE to $DEST_LOGFILE"
-				cat "$LOG_FILE" 1>> "$DEST_LOGFILE" 2>>"$FINISH_LOG_FILE"
-				rm "$LOG_FILE" &>>"$FINISH_LOG_FILE"
-			else
-				logItem "Moving Logfile: $LOG_FILE to $DEST_LOGFILE"
-				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-			fi
+			logItem "Moving Logfile: $LOG_FILE"
+			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
 			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
-			logItem "Logfile used: $LOG_FILE"
+			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
-			if [[ $LOG_OUTPUT == $LOG_OUTPUT_VARLOG ]]; then
-				logItem "Appending Msgfile: $MSG_FILE to $DEST_MSGFILE"
-				cat "$MSG_FILE" 1>> "$DEST_MSGFILE" 2>>"$FINISH_LOG_FILE"
-				rm "$MSG_FILE" &>>"$FINISH_LOG_FILE"
-			else
-				logItem "Moving Msgfile: $MSG_FILE to $DEST_MSGFILE"
-				mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
-			fi
+			logItem "Moving Msgfile: $MSG_FILE"
+			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
 			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
-			logItem "Msgfile used: $MSG_FILE"
+			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE" # make sure logfile is owned by caller
@@ -2973,7 +2913,6 @@ function logOptions() { # option state
 	logItem "RESTORE_REMINDER_REPEAT=$RESTORE_REMINDER_REPEAT"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-	logItem "RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"="RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
 	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
@@ -2990,8 +2929,6 @@ function logOptions() { # option state
 	logItem "TAR_BACKUP_ADDITIONAL_OPTIONS=$TAR_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "TAR_BACKUP_OPTIONS=$TAR_BACKUP_OPTIONS"
 	logItem "TAR_BOOT_PARTITION_ENABLED=$TAR_BOOT_PARTITION_ENABLED"
-	logItem "TAR_COMPRESSION_TOOL=$TAR_COMPRESSION_TOOL"
-	logItem "TAR_COMPRESSION_TOOL_OPTIONS=$TAR_COMPRESSION_TOOL_OPTIONS"
 	logItem "TAR_IGNORE_ERRORS=$TAR_IGNORE_ERRORS"
 	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
 	logItem "TELEGRAM_TOKEN=$TELEGRAM_TOKEN"
@@ -3096,16 +3033,11 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_LINK_BOOTPARTITIONFILES=0
 	# save boot partition with tar
 	DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
-	# Compression tool to use for tar. Supported: bzip2 gzip lzip lzma lzop xz zstd
-	DEFAULT_TAR_COMPRESSION_TOOL=""
-	# Options to be passed to compression tool
-	DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS=""
 	# reboot system at end of backup
 	DEFAULT_REBOOT_SYSTEM=0
 	# Change these options only if you know what you are doing !!!
 	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete --force --sparse" 						# -a <=> -rlptgoD, H = preserve hardlinks, x = one filesystem, A = preserver ACLs
 	DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
-	DEFAULT_RSYNC_BACKUP_OPTION_EXCLUDE_ACLS=0
 	DEFAULT_RSYNC_IGNORE_ERRORS="" 														# See https://bugzilla.samba.org/show_bug.cgi?id=3653
 	DEFAULT_TAR_BACKUP_OPTIONS="-cpi --one-file-system"
 	DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -3241,7 +3173,6 @@ function copyDefaultConfigVariables() {
 	RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
 	RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
 	RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-	RSYNC_BACKUP_OPTION_EXCLUDE_ACLS="RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	RSYNC_IGNORE_ERRORS="$DEFAULT_RSYNC_IGNORE_ERRORS"
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
@@ -3258,8 +3189,6 @@ function copyDefaultConfigVariables() {
 	TAR_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS"
 	TAR_BACKUP_OPTIONS="$DEFAULT_TAR_BACKUP_OPTIONS"
 	TAR_BOOT_PARTITION_ENABLED="$DEFAULT_TAR_BOOT_PARTITION_ENABLED"
-	TAR_COMPRESSION_TOOL="$DEFAULT_TAR_COMPRESSION_TOOL"
-	TAR_COMPRESSION_TOOL_OPTIONS="$DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS"
 	TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
 	TAR_IGNORE_ERRORS="$DEFAULT_TAR_IGNORE_ERRORS"
 	TELEGRAM_CHATID="$DEFAULT_TELEGRAM_CHATID"
@@ -3346,7 +3275,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "$1"
 	local id
-	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/((s|v)d[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
 		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -4287,7 +4216,6 @@ function setupEnvironment() {
 	logEntry
 
 	if (( ! $RESTORE )); then
-:<<SKIP
 		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
 			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
@@ -4296,7 +4224,7 @@ function setupEnvironment() {
 				ZIP_BACKUP_TYPE_INVALID=1
 			fi
 		fi
-SKIP
+
 		if [[ -n "$DYNAMIC_MOUNT" ]]; then
 			dynamic_mount "$DYNAMIC_MOUNT"
 		fi
@@ -4323,29 +4251,8 @@ SKIP
 		BACKUPTARGET_TEMP_DIR="$BACKUP_TEMP_ROOT_DIR/$BACKUPFILE"			# temporary backup directory for current backup
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
-		local targetExtension="${FILE_EXTENSION[$BACKUPTYPE]}"
-	
-		if [[ -n $TAR_COMPRESSION_TOOL ]] || (( $ZIP_BACKUP )); then
-			TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# assume for now -z option is used 
-			if [[ -n $TAR_COMPRESSION_TOOL ]]; then								
-				local i
-				i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
-				if (( ! $? )); then
-					TAR_COMPRESSION_EXTENSION=".tar${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$i]}"
-				else
-					assertionFailed $LINENO "Unknown tar compressiontool"
-				fi
-			fi
-		
-			logItem "Use tar extension $TAR_COMPRESSION_EXTENSION"
-			targetExtension="$TAR_COMPRESSION_EXTENSION"
-		fi
-
-		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${targetExtension}"
-		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${targetExtension}"
-
-		logItem "BACKUPTARGET_FILE=$BACKUPTARGET_FILE"
-		logItem "BACKUPTARGET_FINAL_FILE=$BACKUPTARGET_FINAL_FILE"
+		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
+		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
 		if [[ ! -d "${BACKUPTARGET_DIR}" ]]; then
 			if (( $FAKE || ( $SMART_RECYCLE && $SMART_RECYCLE_DRYRUN ) )); then
@@ -5181,8 +5088,11 @@ function cleanupBackupDirectory() {
 				fi
 			fi
 		fi
+<<<<<<< HEAD
 		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
 		rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
+=======
+>>>>>>> master
 	fi
 
 	logExit
@@ -5468,14 +5378,6 @@ function cleanup() { # trap
 	if (( $RESTORE )); then
 		cleanupRestore $1
 	else
-
-		if (( $PRE_BACKUP_EXTENSION_CALLED )); then
-			callExtensions $POST_BACKUP_EXTENSION $rc
-		fi
-
-		startServices "noexit"
-		executeAfterStartServices "noexit"
-
 		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
 			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 			if [[ -d "${BACKUPTARGET_DIR}" ]]; then   # does not exists if raspiBackup7412Test runs
@@ -5511,8 +5413,7 @@ function cleanup() { # trap
 		fi
 	fi
 
-	cleanupBackup
-	cleanupTempFiles
+	cleanupBackup $1
 
 	finalCommand "$CLEANUP_RC"
 
@@ -5763,13 +5664,23 @@ function isBetaAvailable() {
 
 }
 
-function cleanupBackup() { 
+function cleanupBackup() { # trap
 
 	logEntry
+
+	logItem "Got trap $1"
+	logItem "rc: $rc"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		umountPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
+
+	if (( $PRE_BACKUP_EXTENSION_CALLED )); then
+		callExtensions $POST_BACKUP_EXTENSION $rc
+	fi
+
+	startServices "noexit"
+	executeAfterStartServices "noexit"
 
 	cleanupBackupDirectory
 	cleanupTempFiles
@@ -6180,25 +6091,19 @@ function backupDD() {
 
 function backupTar() {
 
-	local verbose="" zip="" cmd partition source target devroot sourceDir journalExclude="" extension
+	local verbose zip cmd partition source target devroot sourceDir journalExclude=""
 
 	logEntry
 
-	(( $VERBOSE )) && verbose="-v"
-	if [[ -n "$TAR_COMPRESSION_TOOL" ]]; then
-			zip="-I\"${TAR_COMPRESSION_TOOL} $TAR_COMPRESSION_TOOL_OPTIONS\""
-			extension="$TAR_COMPRESSION_EXTENSION"
-	else
-		extension="${FILE_EXTENSION[$BACKUPTYPE]}"
-		[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z"
-	fi
+	(( $VERBOSE )) && verbose="-v" || verbose=""
+	[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		source="."
 		devroot="."
 		sourceDir="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
-		target="${BACKUPTARGET_DIR}/${partition}${extension}"
+		target="${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}"
 
 	else
 		bootPartitionBackup
@@ -6249,10 +6154,6 @@ function backupTar() {
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
-
-	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
-	fi	
 
 	if (( ! $FAKE )); then
 		executeTar "${cmd}" "$TAR_IGNORE_ERRORS"
@@ -6428,11 +6329,6 @@ function backupRsync() { # partition number (for partition based backup)
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
-
-	if (( $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
-		logItem "Excluding option A in rsync option"
-		RSYNC_BACKUP_OPTIONS="$(sed 's/A//' <<< "$RSYNC_BACKUP_OPTIONS")"
-	fi
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
 --exclude=\"$log_file\" \
@@ -6766,7 +6662,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	logItem "Directories: $directories"
 
-	directories="$(grep -Po "(((s|v)d[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
+	directories="$(grep -Po "((sd[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
 
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
@@ -7161,10 +7057,10 @@ function reportOldBackups() {
 		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
 	fi
 
-	if ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* &>/dev/null; then 
+	if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
+		assertionFailed $LINENO "push to $BACKUPPATH failed"
+	fi
 
-		if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
-			assertionFailed $LINENO "push to $BACKUPPATH failed"
 	# Double quote to prevent globbing and word splitting.
 	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 	#shellcheck disable=SC2010,SC2086
@@ -7216,27 +7112,6 @@ function reportOldBackups() {
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
-			# only print report if counter says so
-			if (( $rf > 0 )); then
-
-				# update counter, but only if not in FAKE mode
-				local rfn=$(( ${rf} - 1 ))
-				if (( ! $FAKE )); then
-					echo "${rfn}" > "$report_counter_file"
-				fi
-
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
-				echo "$tobeListedOldBackups" | while read -r dir_to_list; do
-					[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
-				done
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
-
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-
-			fi
 		fi
 	fi
 
@@ -7849,7 +7724,6 @@ function inspect4Backup() {
 		BOOT_DEVICE="$updatedBootdeviceName"
 		logItem "Using configured bootdevice $BOOT_DEVICE"
 	elif (( $REGRESSION_TEST )); then
-		[[ -e /dev/vda ]] && BOOT_DEVICE="vda"
 		[[ -e /dev/sda ]] && BOOT_DEVICE="sda"
 		[[ -e /dev/mmcblk0 ]] && BOOT_DEVICE="mmcblk0"
 		[[ -e /dev/nvme0n1 ]] && BOOT_DEVICE="nvme0n1"
@@ -7935,7 +7809,7 @@ function inspect4Backup() {
 		fi
 	fi
 
-	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^(s|v)d[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
+	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
 		exitError $RC_INVALID_BOOTDEVICE
 	fi
@@ -8167,45 +8041,16 @@ function doitBackup() {
 		fi
 	fi
 
-	if [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
-			mentionHelp
-			exitError $RC_PARAMETER_ERROR
+	if (( $ZIP_BACKUP_TYPE_INVALID )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
+		mentionHelp
+		exitError $RC_PARAMETER_ERROR
 	fi
-	
-	if [[ -z $TAR_COMPRESSION_TOOL ]]; then
 
-		# tgz and ddz ar no allowed backuptype, -z should be used instead
-		if  (( ! ZIP_BACKUP )) && [[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] || [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
-				mentionHelp
-				exitError $RC_PARAMETER_ERROR
-		elif (( ZIP_BACKUP &&  ! ZIP_BACKUP_TYPE_INVALID )) && [[ $BACKUPTYPE != $BACKUPTYPE_TAR ]] && [[ $BACKUPTYPE != $BACKUPTYPE_DD ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
-				mentionHelp
-				exitError $RC_PARAMETER_ERROR
-		fi
-
-	else
-		
-		if [[ $BACKUPTYPE != $BACKUPTYPE_TAR ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED "$BACKUPTYPE"
-			mentionHelp
-			exitError $RC_PARAMETER_ERROR
-		fi
-
-		local i
-		i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
-		if (( $? )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_TAR_COMPRESS_TOOL "$TAR_COMPRESSION_TOOL"
-			exitError $RC_PARAMETER_ERROR
-		else
-			logItem "tar compression of $TAR_COMPRESSION_TOOL is supported. Using extension $TAR_COMPRESSION_EXTENSION ($i)"
-		fi
-		if ! which "$TAR_COMPRESSION_TOOL" &>/dev/null; then
-			writeToConsole "$MSG_TAR_COMPRESS_TOOL_NOT_FOUND" "$TAR_COMPRESSION_TOOL"
-			exitError $RC_MISSING_COMMANDS
-		fi
+	if [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
+		mentionHelp
+		exitError $RC_PARAMETER_ERROR
 	fi
 
 	if [[ -n "$TELEGRAM_CHATID" && -z "$TELEGRAM_TOKEN" ]] || [[ -z "$TELEGRAM_CHATID" && -n "$TELEGRAM_TOKEN" ]]; then
@@ -8754,11 +8599,8 @@ function restorePartitionBasedBackup() {
 		for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
 			logItem "partitionBackupFile: $partitionBackupFile"
 			local partitionNo
-			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ|$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP))?$" <<< "$partitionBackupFile" | sed -E 's/(\.tar)?\..+$//' )"  # delete trailing extension and optional .tar
+			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
 			logItem "Found partition no: $partitionNo"
-			if [[ -z "$partitionNo" ]]; then
-				assertionFailed $LINENO "Unable to retrieve partition number from $partitionBackupFile"
-			fi
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]] ||  containsElement "$partitionNo" "${partitionsToRestore[@]}"; then
 				restorePartitionBasedPartition "$partitionBackupFile"
 				partitionsRestored+=("$partitionNo")
@@ -9057,12 +8899,13 @@ function restorePartitionBasedPartition() { # restorefile
 	restoreFile="$1"
 	restorePartition="$(basename "$restoreFile")"
 
-	restorePartition="$(sed -E 's%(\.tar)?\..+$%%' <<< ${restorePartition})"		# remove backup extension and optional .tar
-	logItem "RestorePartition: $restorePartition"
-
+	logItem "restorePartition: $restorePartition"
 	local partitionNumber
-	partitionNumber="$(sed -E 's%.+([0-9]+)$%\1%' <<< "$restorePartition")"			# extract partition number
+	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< "$restorePartition")
 	logItem "Partitionnumber: $partitionNumber"
+
+	restorePartition="${restorePartition%.*}"
+	logItem "RestorePartition: $restorePartition"
 
 	partitionLabel=$(getBackupPartitionLabel "$restorePartition")
 	partitionFilesystem=$(getBackupPartitionFilesystem "$restorePartition")
@@ -9228,7 +9071,7 @@ function doitRestore() {
 	logItem "regex: $regex"
 
 	if [[ ! $(basename "$RESTOREFILE") =~ $regex ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"POSSIBLE_TYPES
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
 	fi
 
@@ -9329,14 +9172,7 @@ function doitRestore() {
 	local usbMount
 	usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
 	if grep -q "install ok installed" <<< "$usbMount" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "usbmount"
-		exitError $RC_ENVIRONMENT_ERROR
-	fi
-	
-	local autofs
-	autofs="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' autofs 2>&1)"
-	if grep -q "install ok installed" <<< "$autofs" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "autofs"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
 
@@ -10243,8 +10079,6 @@ function usageEN() {
 	echo "-P use partitionoriented backup mode to backup the first two partitions (Default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo "-t {backupType} ($ALLOWED_TYPES) (Default: $DEFAULT_BACKUPTYPE)"
 	echo "-T {List of partitions to backup in partition oriented mode} (Partition numbers, e.g. \"1 2 3\" or \"*\" for all) (Default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo "--tarCompressionTool {tar Comressiontool} ($TAR_COMPRESSION_TOOLS_SUPPORTED_LIST)"
-	echo "--tarCompressionToolOptions {Options for tar compressiontool}"
 	echo "-z compress DD and TAR backup file with gzip (Default: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Restore options-"
@@ -10300,8 +10134,6 @@ function usageDE() {
 	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
 	echo "-T Liste der Partitionen die im partitionsorientierten Mode zu sichern sind} (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo "--tarCompressionTool {tar Kompressionstool} ($TAR_COMPRESSION_TOOLS_SUPPORTED_LIST)"
-	echo "--tarCompressionToolOptions {Optionen für das tar Kompressionstool}"
 	echo "-z DD und TAR Backup verkleinern mit gzip (Standard: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Restore Optionen-"
@@ -10802,7 +10634,7 @@ while (( "$#" )); do
 	  ROOT_PARTITION_DEFINED=1
   	  ;;
 
-	--resizeRootFS|--resizeRootFS[+-]|--resizeLastpartitionFS|--resizeLastpartitionFS[+-])
+	--resizeRootFS|--resizeRootFS[+-])
 	  RESIZE_ROOTFS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
@@ -10864,20 +10696,6 @@ while (( "$#" )); do
 	  PARTITIONBASED_BACKUP=1
 	  OPTION_T_USED=1
 	  ;;
-
-	--tarCompressionTool)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  TAR_COMPRESSION_TOOL="$o"; shift 2	  
-	  ;;	
-
-	--tarCompressionToolOptions)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  TAR_COMPRESSION_TOOL_OPTIONS="$o"; shift 2	  
-	  ;;	
 
 	--telegramToken)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
