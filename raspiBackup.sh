@@ -10674,7 +10674,7 @@ while (( "$#" )); do
 	  ROOT_PARTITION_DEFINED=1
   	  ;;
 
-	--resizeRootFS|--resizeRootFS[+-])
+	--resizeRootFS|--resizeRootFS[+-]|--resizeLastpartitionFS|--resizeLastpartitionFS[+-])
 	  RESIZE_ROOTFS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
