@@ -2388,7 +2388,7 @@ function logFinish() {
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-			if [[ $LOG_OUTPUT == $LOG_OUTPUT_VARLOG ]]; then
+			if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_VARLOG" ]]; then
 				logItem "Appending Logfile: $LOG_FILE to $DEST_LOGFILE"
 				cat "$LOG_FILE" 1>> "$DEST_LOGFILE" 2>>"$FINISH_LOG_FILE"
 				rm "$LOG_FILE" &>>"$FINISH_LOG_FILE"
@@ -2400,7 +2400,7 @@ function logFinish() {
 			logItem "Logfile used: $LOG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
-			if [[ $LOG_OUTPUT == $LOG_OUTPUT_VARLOG ]]; then
+			if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_VARLOG" ]]; then
 				logItem "Appending Msgfile: $MSG_FILE to $DEST_MSGFILE"
 				cat "$MSG_FILE" 1>> "$DEST_MSGFILE" 2>>"$FINISH_LOG_FILE"
 				rm "$MSG_FILE" &>>"$FINISH_LOG_FILE"
@@ -2973,7 +2973,7 @@ function logOptions() { # option state
 	logItem "RESTORE_REMINDER_REPEAT=$RESTORE_REMINDER_REPEAT"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-	logItem "RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"="RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
+	logItem "RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"="$RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
 	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
@@ -3241,7 +3241,7 @@ function copyDefaultConfigVariables() {
 	RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
 	RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
 	RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-	RSYNC_BACKUP_OPTION_EXCLUDE_ACLS="RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
+	RSYNC_BACKUP_OPTION_EXCLUDE_ACLS="$DEFAULT_RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	RSYNC_IGNORE_ERRORS="$DEFAULT_RSYNC_IGNORE_ERRORS"
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
@@ -7345,7 +7345,7 @@ function mountPartitions() { # sourcePath
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			logItem "mkdir $1/$partitionName"
 			if ! mkdir -p "$1/$partitionName" &>>"$LOG_FILE"; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${$1/$partitionName}"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$1/$partitionName"
 				exitError $RC_CREATE_ERROR
 			fi
 			logItem "mount /dev/$partitionName to $1/$partitionName"
@@ -8179,11 +8179,11 @@ function doitBackup() {
 	if [[ -z $TAR_COMPRESSION_TOOL ]]; then
 
 		# tgz and ddz ar no allowed backuptype, -z should be used instead
-		if  (( ! ZIP_BACKUP )) && [[ $BACKUPTYPE == $BACKUPTYPE_TGZ ]] || [[ $BACKUPTYPE == $BACKUPTYPE_DDZ ]]; then
+		if  (( ! ZIP_BACKUP )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] || [[ "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
 				mentionHelp
 				exitError $RC_PARAMETER_ERROR
-		elif (( ZIP_BACKUP &&  ! ZIP_BACKUP_TYPE_INVALID )) && [[ $BACKUPTYPE != $BACKUPTYPE_TAR ]] && [[ $BACKUPTYPE != $BACKUPTYPE_DD ]]; then
+		elif (( ZIP_BACKUP &&  ! ZIP_BACKUP_TYPE_INVALID )) && [[ "$BACKUPTYPE" != "$BACKUPTYPE_TAR" ]] && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
 				mentionHelp
 				exitError $RC_PARAMETER_ERROR
@@ -8191,7 +8191,7 @@ function doitBackup() {
 
 	else
 		
-		if [[ $BACKUPTYPE != $BACKUPTYPE_TAR ]]; then
+		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_TAR" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED "$BACKUPTYPE"
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
