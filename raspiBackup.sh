@@ -7165,56 +7165,38 @@ function reportOldBackups() {
 
 		if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
 			assertionFailed $LINENO "push to $BACKUPPATH failed"
-	# Double quote to prevent globbing and word splitting.
-	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-	#shellcheck disable=SC2010,SC2086
-	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE")
-
-	if [[ -n $tobeListedOldBackups ]]; then
-
-		local report_counter_file="$VAR_LIB_DIRECTORY/$REPORT_COUNTER_FILE"
-
-		# create directory to save counter
-		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${VAR_LIB_DIRECTORY}"
-				exitError $RC_CREATE_ERROR
-			fi
 		fi
+		
+		# Double quote to prevent globbing and word splitting.
+		# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
+		#shellcheck disable=SC2010,SC2086
+		tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE")
 
-		# initialize counter
-		if [[ ! -e "$report_counter_file" ]]; then
-			echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
-		fi
+		if [[ -n $tobeListedOldBackups ]]; then
 
-		# retrieve counter
-		local rf
-		rf=$(<$report_counter_file)
-		if [[ -z "${rf}" ]]; then				# counter file exists but is empty
-			echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
-			return
-		fi
-		rf=$(<$report_counter_file)
+			local report_counter_file="$VAR_LIB_DIRECTORY/$REPORT_COUNTER_FILE"
 
-		# only print report if counter says so
-		if (( $rf > 0 )); then
-
-			# update counter, but only if not in FAKE mode
-			local rfn=$(( ${rf} - 1 ))
-			if (( ! $FAKE )); then
-				echo "${rfn}" > "$report_counter_file"
+			# create directory to save counter
+			if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
+				if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${VAR_LIB_DIRECTORY}"
+					exitError $RC_CREATE_ERROR
+				fi
 			fi
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
-			echo "$tobeListedOldBackups" | while read -r dir_to_list; do
-				[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
-			done
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
+			# initialize counter
+			if [[ ! -e "$report_counter_file" ]]; then
+				echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
+			fi
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+			# retrieve counter
+			local rf
+			rf=$(<$report_counter_file)
+			if [[ -z "${rf}" ]]; then				# counter file exists but is empty
+				echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
+				return
+			fi
+			rf=$(<$report_counter_file)
 
 			# only print report if counter says so
 			if (( $rf > 0 )); then
@@ -7236,12 +7218,33 @@ function reportOldBackups() {
 
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
+				# only print report if counter says so
+				if (( $rf > 0 )); then
+
+					# update counter, but only if not in FAKE mode
+					local rfn=$(( ${rf} - 1 ))
+					if (( ! $FAKE )); then
+						echo "${rfn}" > "$report_counter_file"
+					fi
+
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
+					echo "$tobeListedOldBackups" | while read -r dir_to_list; do
+						[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
+					done
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
+
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+				fi
 			fi
 		fi
-	fi
-
-	if ! popd &>>"$LOG_FILE"; then
-		assertionFailed $LINENO "pop failed"
+		
+		if ! popd &>>"$LOG_FILE"; then
+			assertionFailed $LINENO "pop failed"
+		fi
 	fi
 }
 
