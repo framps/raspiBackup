@@ -2908,6 +2908,7 @@ function logOptions() { # option state
 	logItem "RESTORE_REMINDER_REPEAT=$RESTORE_REMINDER_REPEAT"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
+	logItem "RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"="RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
 	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
@@ -3033,6 +3034,7 @@ function initializeDefaultConfigVariables() {
 	# Change these options only if you know what you are doing !!!
 	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete --force --sparse" 						# -a <=> -rlptgoD, H = preserve hardlinks, x = one filesystem, A = preserver ACLs
 	DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
+	DEFAULT_RSYNC_BACKUP_OPTION_EXCLUDE_ACLS=0
 	DEFAULT_RSYNC_IGNORE_ERRORS="" 														# See https://bugzilla.samba.org/show_bug.cgi?id=3653
 	DEFAULT_TAR_BACKUP_OPTIONS="-cpi --one-file-system"
 	DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -3168,6 +3170,7 @@ function copyDefaultConfigVariables() {
 	RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
 	RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
 	RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
+	RSYNC_BACKUP_OPTION_EXCLUDE_ACLS="RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	RSYNC_IGNORE_ERRORS="$DEFAULT_RSYNC_IGNORE_ERRORS"
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
@@ -6308,6 +6311,11 @@ function backupRsync() { # partition number (for partition based backup)
 
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
+
+	if (( $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
+		logItem "Excluding option A in rsync option"
+		RSYNC_BACKUP_OPTIONS="$(sed 's/A//' <<< "$RSYNC_BACKUP_OPTIONS")"
+	fi
 
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
 --exclude=\"$log_file\" \
