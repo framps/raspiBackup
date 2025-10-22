@@ -5497,7 +5497,7 @@ function cleanup() { # trap
 				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
 			fi
 
-			if (( ! $CLEANUP_RC )); then # smartrecycle only if mv succeeded
+			if (( ! $CLEANUP_RC && ! $IS_SNAPSHOT )); then # smartrecycle only if mv succeeded and no snapshot was created
 				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
 					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
@@ -10426,6 +10426,7 @@ FORCE_SFDISK=0
 FORCE_UPDATE=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
+IS_SNAPSHOT=0
 IS_UBUNTU=0
 NO_YES_QUESTION=0
 OPTION_T_USED=0
@@ -10746,6 +10747,7 @@ while (( "$#" )); do
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[\"]/}
+  	  IS_SNAPSHOT=1
   	  ;;
 
 	-N)
