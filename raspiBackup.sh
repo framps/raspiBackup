@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.1.1"           								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.1.1-m_893"           								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.9"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -150,7 +150,7 @@ VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
 VARS_FILE="/tmp/$MYNAME.vars"
-TEMPORARY_MOUNTPOINT_ROOT="/mnt/$MYNAME"
+TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
 LOGFILE_EXT=".log"
 LOGFILE_NAME="${MYNAME}${LOGFILE_EXT}"
 LOGFILE_RESTORE_EXT=".logr"
@@ -4256,7 +4256,7 @@ function setupEnvironment() {
 			if (( $FAKE || ( $SMART_RECYCLE && $SMART_RECYCLE_DRYRUN ) )); then
 				: # don't create backupdirectory
 			else
-				if ! mkdir -p "${BACKUPTARGET_DIR}"; then
+				if ! mkdir -p "${BACKUPTARGET_DIR}" &>>"$LOG_FILE"; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPTARGET_DIR}"
 					exitError $RC_CREATE_ERROR
 				fi
@@ -5086,6 +5086,8 @@ function cleanupBackupDirectory() {
 				fi
 			fi
 		fi
+		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
+		rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
 	fi
 
 	logExit
@@ -5408,8 +5410,6 @@ function cleanup() { # trap
 
 	cleanupBackup $1
 
-	cleanupTempFiles
-
 	finalCommand "$CLEANUP_RC"
 
 	logItem "Terminate now with rc $CLEANUP_RC"
@@ -5545,13 +5545,20 @@ function cleanupRestore() { # trap
 		umountPartition "$MNT_POINT"
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir $MNT_POINT &>>"$LOG_FILE"
+		rmdir "$MNT_POINT" &>>"$LOG_FILE"
+	fi
+
+	if [[ -d $TEMPORARY_MOUNTPOINT_ROOT ]]; then
+		logItem "Deleting dir $TEMPORARY_MOUNTPOINT_ROOT"
+		rmdir "$TEMPORARY_MOUNTPOINT_ROOT" &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
 		umountPartition "$BOOT_PARTITION"
 		umountPartition "$ROOT_PARTITION"
 	fi
+
+	cleanupTempFiles
 
 	logExit "$rc"
 
@@ -5671,6 +5678,7 @@ function cleanupBackup() { # trap
 	executeAfterStartServices "noexit"
 
 	cleanupBackupDirectory
+	cleanupTempFiles
 
 	logExit
 
@@ -5683,6 +5691,11 @@ function cleanupTempFiles() {
 	if [[ -f $MYSELF~ ]]; then
 		logItem "Removing new version $MYSELF~"
 		rm -f $MYSELF~ &>/dev/null
+	fi
+
+	if [[ -d "$TEMPORARY_MOUNTPOINT_ROOT" ]]; then
+		logItem "Removing $TEMPORARY_MOUNTPOINT_ROOT"
+		rmdir -p "$TEMPORARY_MOUNTPOINT_ROOT" &>/dev/null
 	fi
 
 	logExit
@@ -6710,7 +6723,11 @@ function restoreNormalBackupType() {
 			umountPartition "$MNT_POINT"
 
 			logItem "Creating mountpoint $MNT_POINT"
-			mkdir -p "$MNT_POINT"
+
+			if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${MNT_POINT}"
+					exitError $RC_CREATE_ERROR
+			fi
 
 			partitionRestoredeviceIfRequested
 
@@ -7055,7 +7072,10 @@ function reportOldBackups() {
 
 		# create directory to save counter
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			mkdir -p "$VAR_LIB_DIRECTORY"
+			if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${VAR_LIB_DIRECTORY}"
+				exitError $RC_CREATE_ERROR
+			fi
 		fi
 
 		# initialize counter
@@ -7196,7 +7216,10 @@ function mountPartitions() { # sourcePath
 		for partition in ${PARTITIONS_TO_BACKUP[@]}; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			logItem "mkdir $1/$partitionName"
-			mkdir -p "$1/$partitionName" &>>"$LOG_FILE"
+			if ! mkdir -p "$1/$partitionName" &>>"$LOG_FILE"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${$1/$partitionName}"
+				exitError $RC_CREATE_ERROR
+			fi
 			logItem "mount /dev/$partitionName to $1/$partitionName"
 			mountAndCheck "/dev/$partitionName" "$1/$partitionName"
 		done
@@ -8203,7 +8226,7 @@ function doitBackup() {
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
 	if [[ ! -d "$BACKUPPATH" ]]; then
-		if ! mkdir -p "${BACKUPPATH}"; then
+		if ! mkdir -p "${BACKUPPATH}" &>>"$LOG_FILE"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
 			exitError "$RC_CREATE_ERROR"
 		fi
@@ -8534,7 +8557,11 @@ function restorePartitionBasedBackup() {
 	START_TIME="$(date +%s)"
 
 	logItem "Creating mountpoint $MNT_POINT"
-	mkdir -p "$MNT_POINT"
+
+	if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$MNT_POINT"
+		exitError "$RC_CREATE_ERROR"		
+	fi
 
 	# handle partitions
 
@@ -9278,7 +9305,10 @@ function updateRestoreReminder() {
 
 		# create directory to save state
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			mkdir -p "$VAR_LIB_DIRECTORY"
+			if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
+				exitError "$RC_CREATE_ERROR"		
+			fi
 		fi
 
 		# initialize reminder state
@@ -9357,7 +9387,10 @@ function remount() { # device mountpoint
 	fi
 
 	logItem "Creating mountpoint $2"
-	mkdir -p "$2"
+	if ! mkdir -p "$2" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$2"
+		exitError "$RC_CREATE_ERROR"		
+	fi
 	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
 	logExit $rc
 
@@ -9777,6 +9810,9 @@ function synchronizeCmdlineAndfstab() {
 
 	umount "$BOOT_MP" &>>"$LOG_FILE"
 	umount "$ROOT_MP" &>>"$LOG_FILE"
+
+	rmdir "$BOOT_MP" &>>"$LOG_FILE"
+	rmdir "$ROOT_MP" &>>"$LOG_FILE"
 
 	logExit
 }
