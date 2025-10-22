@@ -7092,7 +7092,7 @@ function reportOldBackups() {
 		if ! popd &>>"$LOG_FILE"; then
 			assertionFailed $LINENO "pop failed"
 		fi
-	
+	fi
 }
 
 function backup() {
