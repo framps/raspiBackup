@@ -1897,8 +1897,8 @@ MSG_INVALID_BOOT_DEVICE=276
 MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported"
 MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootgerät %s ist nicht unterstützt"
 MSG_USBMOUNT_INSTALLED=277
-MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when 'usbmount' is installed"
-MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn 'usbmount' installiert ist"
+MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when %s is installed"
+MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn %s installiert ist"
 MSG_BACKUP_CLEANUP_FAILED=278
 MSG_EN[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Cleanup of backupdirectories failed. Manual deletion of the last backup directory is strongly recommended !"
 MSG_DE[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Fehler bei den Aufräumarbeiten am Backupverzeichnis. Das letzte Backupverzeichnis sollte dringend manuell gelöscht werden !"
@@ -9173,7 +9173,14 @@ function doitRestore() {
 	local usbMount
 	usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
 	if grep -q "install ok installed" <<< "$usbMount" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "usbmount"
+		exitError $RC_ENVIRONMENT_ERROR
+	fi
+	
+	local autofs
+	autofs="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' autofs 2>&1)"
+	if grep -q "install ok installed" <<< "$autofs" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "autofs"
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
 
