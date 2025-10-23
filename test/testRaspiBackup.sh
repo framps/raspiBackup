@@ -5,7 +5,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013, 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013, 2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #######################################################################################################################
 
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
+
 source $SCRIPT_DIR/constants.sh
 
 DEBUG=1
@@ -120,8 +121,8 @@ function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ..
 
 	for (( i=1; i<=$2; i++)); do
 		echo "--- Creating $1 backup number $i of mode $3 and option $5 in ${BACKUP_PATH}_${3^^}"
-		log "./raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}""
-		./raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}"
+		log "sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}""
+		sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}"
 		rc=$?
 
 		local logFile=$(getLogName $1 $3)
@@ -287,14 +288,18 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 		N)	buCnt=$(ls ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*.$extension 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
 			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
+			buCnt4=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*vda* 2>/dev/null | wc -l)
 			(( buCnt+=buCnt2 ))
 			(( buCnt+=buCnt3 ))
+			(( buCnt+=buCnt4 ))
 			;;
 		P)	buCnt=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*mmcblk* 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
 			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
+			buCnt4=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*vda* 2>/dev/null | wc -l)
 			(( buCnt+=buCnt2 ))
 			(( buCnt+=buCnt3 ))
+			(( buCnt+=buCnt4 ))
 			(( buCntToCheck=buCntToCheck*$PARTITIONS_PER_BACKUP ))
 			;;
 		*)	log "error - $1 $2 $3"
@@ -309,6 +314,7 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 		log "$(ls "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*".$extension")"
 		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"mmcblk"*)"
 		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"nvme"*)"
+		log "$(ls -d "${BACKUP_PATH}_$3/$HOSTNAME/"*"-$1-backup"*/*"vda"*)"
 	else
 		(( $DEBUG )) && log "--- Found $buCnt root backups"
 	fi

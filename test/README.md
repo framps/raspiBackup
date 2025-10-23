@@ -5,12 +5,13 @@ Mixed environment with /boot od SD card an /root on USB is not tested. In additi
 
 See also [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/510-raspibackup-regressiontests-executed/) which tests are executed on the restored backup to verify it's working correctly.
 
-See [here](https://www.linux-tips-and-tricks.de/en/raspberrye/310-how-to-emulate-raspberry-pi-on-kvm-2/) how to setup qemu and the image to use for the tests.
+The qemu setup is based on the descriptions on [this German page](https://crycode.de/raspberry-pi-4-emulieren-mit-qemu/) and customized for raspiBackup special requirements .
+Previously the setup was done according [this page](https://www.linux-tips-and-tricks.de/en/raspberrye/310-how-to-emulate-raspberry-pi-on-kvm-2/).
 
 ## Prerequ
 
 1. Existing RaspberryPiOS image
-2. QEMU installed
+2. QEMU installed 
 3. QEMU image startup script
 
 ## Scripts
