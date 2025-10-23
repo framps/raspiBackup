@@ -10246,7 +10246,7 @@ function usageEN() {
 	echo "-d {restoreDevice} (Default: $DEFAULT_RESTORE_DEVICE) (Example: /dev/sda)"
 	echo "-R {rootPartition} (Default: restoreDevice) (Example: /dev/sdb1)"
 	echo "-T {List of partitions to restore from a partition oriented backup} (Partition numbers, e.g. \"1 2 3\" or \"*\" for all) (Default: ${DEFAULT_PARTITIONS_TO_RESTORE})"
-	echo "--resizeRootFS (Default: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
+	echo "--resizeRootFS|resizeLastPartitionFS (Default: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
 function usageDE() {
@@ -10303,7 +10303,7 @@ function usageDE() {
 	echo "-d {restoreGerät} (Standard: $DEFAULT_RESTORE_DEVICE) (Beispiel: /dev/sda)"
 	echo "-R {rootPartition} (Standard: restoreDevice) (Beispiel: /dev/sdb1)"
 	echo "-T {Liste der Partitionen die vom partitionsorientierten Backup zu restoren sind} (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo "--resizeRootFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
+	echo "--resizeRootFS|resizeLastPartitionFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
 function usageFI() {
@@ -10351,7 +10351,7 @@ function usageFI() {
 	echo "-C Tarkistetaan palautettavien osioiden epäkelvot lohkot (oletus: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {palautuslaite} (oletus: $DEFAULT_RESTORE_DEVICE) (Esimerkki: /dev/sda)"
 	echo "-R {juuriosio} (oletus: restoreDevice) (Esimerkki: /dev/sdb1)"
-	echo "--resizeRootFS (oletus: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
+	echo "--resizeRootFS|resizeLastPartitionFS (oletus: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
 function mentionHelp() {
@@ -10794,7 +10794,7 @@ while (( "$#" )); do
 	  ROOT_PARTITION_DEFINED=1
   	  ;;
 
-	--resizeRootFS|--resizeRootFS[+-]|--resizeLastpartitionFS|--resizeLastpartitionFS[+-])
+	--resizeRootFS|--resizeRootFS[+-]|--resizeLastPartitionFS|--resizeLastPartitionFS[+-])
 	  RESIZE_ROOTFS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
