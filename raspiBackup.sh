@@ -490,18 +490,21 @@ function containsElement() { # element ${array[@]}
 # return index of element in array (0-n) and true, -1 and false otherwise
 
 function getIndexInArray() { # element ${array[@]}
+  logEntry "$1 $2"
   local e match="$1" i=0
   shift
   for e; do
 	if [[ "$e" == "$match" ]]; then
 		echo "$i"
+		logExit "$i"
 		return 0
 	else
 		(( i++ ))
 	fi
   done
   echo "-1"
-  return 1
+  logExit "-1"
+  return "1"
 }
 
 #
@@ -2124,8 +2127,8 @@ MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
 MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %s"
 MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s"
 MSG_TAR_COMPRESS_TOOL_USED=351
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: Konfiguriertbares tar Kompressionstool %s wird genutzt"
+MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using compression tool %s"
+MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: Kompressionstool %s wird genutzt"
 MSG_TAR_COMPRESS_TOOL_NOT_FOUND=352
 MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Custom tar compression tool %s not installed"
 MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Konfigurierbares tar Kompressionstool %s nicht installiert"
@@ -4333,7 +4336,8 @@ SKIP
 				if (( ! $? )); then
 					TAR_COMPRESSION_EXTENSION=".tar${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$i]}"
 				else
-					assertionFailed $LINENO "Unknown tar compressiontool"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_TAR_COMPRESS_TOOL "$TAR_COMPRESSION_TOOL"
+					exitError $RC_PARAMETER_ERROR
 				fi
 			fi
 
@@ -8193,7 +8197,7 @@ function doitBackup() {
 			logItem "tar compression of $TAR_COMPRESSION_TOOL is supported. Using extension $TAR_COMPRESSION_EXTENSION ($i)"
 		fi
 		if ! which "$TAR_COMPRESSION_TOOL" &>/dev/null; then
-			writeToConsole "$MSG_TAR_COMPRESS_TOOL_NOT_FOUND" "$TAR_COMPRESSION_TOOL"
+			writeToConsole $MSG_LEVEL_MINIMAL "$MSG_TAR_COMPRESS_TOOL_NOT_FOUND" "$TAR_COMPRESSION_TOOL"
 			exitError $RC_MISSING_COMMANDS
 		fi
 	fi
