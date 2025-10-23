@@ -496,7 +496,7 @@ function getIndexInArray() { # element ${array[@]}
 	if [[ "$e" == "$match" ]]; then
 		echo "$i"
 		return 0
-	else 
+	else
 		(( i++ ))
 	fi
   done
@@ -4324,10 +4324,10 @@ SKIP
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
 		local targetExtension="${FILE_EXTENSION[$BACKUPTYPE]}"
-	
+
 		if [[ -n $TAR_COMPRESSION_TOOL ]] || (( $ZIP_BACKUP )); then
-			TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# assume for now -z option is used 
-			if [[ -n $TAR_COMPRESSION_TOOL ]]; then								
+			TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# assume for now -z option is used
+			if [[ -n $TAR_COMPRESSION_TOOL ]]; then
 				local i
 				i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
 				if (( ! $? )); then
@@ -4336,7 +4336,7 @@ SKIP
 					assertionFailed $LINENO "Unknown tar compressiontool"
 				fi
 			fi
-		
+
 			logItem "Use tar extension $TAR_COMPRESSION_EXTENSION"
 			targetExtension="$TAR_COMPRESSION_EXTENSION"
 		fi
@@ -5763,7 +5763,7 @@ function isBetaAvailable() {
 
 }
 
-function cleanupBackup() { 
+function cleanupBackup() {
 
 	logEntry
 
@@ -6252,7 +6252,7 @@ function backupTar() {
 
 	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
-	fi	
+	fi
 
 	if (( ! $FAKE )); then
 		executeTar "${cmd}" "$TAR_IGNORE_ERRORS"
@@ -7140,33 +7140,16 @@ function applyBackupStrategy() {
 
 function reportOldBackups() {
 
-	logEntry "$BACKUP_TARGETDIR"
+	logEntry
 
 	local dir_to_list
 
-	if (( $SMART_RECYCLE )); then
-
-		local keptBackups
-		keptBackups="$(SR_listUniqueBackups "$BACKUPTARGET_ROOT")"
-		local numKeptBackups
-		numKeptBackups="$(countLines "$keptBackups")"
-		logItem "Keptbackups $numKeptBackups: $keptBackups"
-
-	else
-
-		local bt="${BACKUPTYPE^^}"
-		local v="KEEPBACKUPS_${bt}"
-		local keepOverwrite="${!v}"
-		local keepBackups=$KEEPBACKUPS
-		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
+	if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
+		assertionFailed $LINENO "push to $BACKUPPATH failed"
 	fi
 
-	if ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* &>/dev/null; then 
+	if ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* &>/dev/null; then
 
-		if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
-			assertionFailed $LINENO "push to $BACKUPPATH failed"
-		fi
-		
 		# Double quote to prevent globbing and word splitting.
 		# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
 		#shellcheck disable=SC2010,SC2086
@@ -7241,11 +7224,15 @@ function reportOldBackups() {
 				fi
 			fi
 		fi
-		
-		if ! popd &>>"$LOG_FILE"; then
-			assertionFailed $LINENO "pop failed"
-		fi
+	else
+		logItem "No old backups found"
 	fi
+
+	if ! popd &>>"$LOG_FILE"; then
+		assertionFailed $LINENO "pop failed"
+	fi
+
+	logExit
 }
 
 function backup() {
@@ -8175,7 +8162,7 @@ function doitBackup() {
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
 	fi
-	
+
 	if [[ -z $TAR_COMPRESSION_TOOL ]]; then
 
 		# tgz and ddz ar no allowed backuptype, -z should be used instead
@@ -8190,7 +8177,7 @@ function doitBackup() {
 		fi
 
 	else
-		
+
 		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_TAR" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED "$BACKUPTYPE"
 			mentionHelp
@@ -8717,7 +8704,7 @@ function restorePartitionBasedBackup() {
 
 	if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$MNT_POINT"
-		exitError "$RC_CREATE_ERROR"		
+		exitError "$RC_CREATE_ERROR"
 	fi
 
 	# handle partitions
@@ -9335,7 +9322,7 @@ function doitRestore() {
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "usbmount"
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
-	
+
 	local autofs
 	autofs="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' autofs 2>&1)"
 	if grep -q "install ok installed" <<< "$autofs" &>>"$LOG_FILE"; then
@@ -9473,7 +9460,7 @@ function updateRestoreReminder() {
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
 			if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
-				exitError "$RC_CREATE_ERROR"		
+				exitError "$RC_CREATE_ERROR"
 			fi
 		fi
 
@@ -9555,7 +9542,7 @@ function remount() { # device mountpoint
 	logItem "Creating mountpoint $2"
 	if ! mkdir -p "$2" &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$2"
-		exitError "$RC_CREATE_ERROR"		
+		exitError "$RC_CREATE_ERROR"
 	fi
 	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
 	logExit $rc
@@ -10874,15 +10861,15 @@ while (( "$#" )); do
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
 		exitError $RC_PARAMETER_ERROR
 	  fi
-	  TAR_COMPRESSION_TOOL="$o"; shift 2	  
-	  ;;	
+	  TAR_COMPRESSION_TOOL="$o"; shift 2
+	  ;;
 
 	--tarCompressionToolOptions)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
 		exitError $RC_PARAMETER_ERROR
 	  fi
-	  TAR_COMPRESSION_TOOL_OPTIONS="$o"; shift 2	  
-	  ;;	
+	  TAR_COMPRESSION_TOOL_OPTIONS="$o"; shift 2
+	  ;;
 
 	--telegramToken)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
