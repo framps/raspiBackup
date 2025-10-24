@@ -18,7 +18,7 @@ EXTENSIONS=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
 TOOLS=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
 OPTS=(      ""      ""     ""     ""      "-3"   ""    "-T0" )
 
-rm -rf $DIR
+[[ -d $DIR ]] && rm -rf $DIR
 mkdir $DIR
 
 echo "Creating data ..."
@@ -46,8 +46,12 @@ check_magic_number () {
   esac
 }
 
+function restore() { # file tool opts
+	echo "Restoring $1 "
+	time tar -x -O -f $1 &>/dev/null
+}
 function save() { # file tool opts
-	echo -n "Compressing $1 wth $2($3)-> "
+	echo "Compressing $1 wth $2($3)"
 	#time tar -caf $1 $SOURCE
 	time tar -c -I"$2 $opts" -f $1 $SOURCE
 	#echo "Contents of $1"
@@ -59,9 +63,14 @@ for (( i=0; i<${#EXTENSIONS[@]}; i++ )) ; do
 	ext="${EXTENSIONS[$i]}"
 	tool="${TOOLS[$i]}"
 	opts="${OPTS[$i]}"
-	save "$DIR/data.tar$ext" "$tool" "$opts"
 	if ! which $tool &>/dev/null; then
 		echo "??? $tool for $ext not found"
 	fi
+	save "$DIR/data.tar$ext" "$tool" "$opts"
+	restore "$DIR/data.tar$ext"
 done
+
+rm -rf $DIR
+rm $SOURCE
+
 
