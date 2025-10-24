@@ -2124,11 +2124,11 @@ MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
-MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %s"
-MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s"
+MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported: bzip2,gzip,lzip,lzma,lzop,xz,zstd"
+MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützt: bzip2,gzip,lzip,lzma,lzop,xz,zstd"
 MSG_TAR_COMPRESS_TOOL_USED=351
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using compression tool %s"
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: Kompressionstool %s wird genutzt"
+MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
+MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: Konfigurierbares tar Kompressionstool %s wird genutzt"
 MSG_TAR_COMPRESS_TOOL_NOT_FOUND=352
 MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Custom tar compression tool %s not installed"
 MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Konfigurierbares tar Kompressionstool %s nicht installiert"
@@ -10861,14 +10861,14 @@ while (( "$#" )); do
 	  OPTION_T_USED=1
 	  ;;
 
-	--tarCompressionTool)
+	--tarCompressionTool|--tct)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  TAR_COMPRESSION_TOOL="$o"; shift 2
 	  ;;
 
-	--tarCompressionToolOptions)
+	--tarCompressionToolOptions|--tcto)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
 		exitError $RC_PARAMETER_ERROR
 	  fi
