@@ -7,10 +7,7 @@
 *.img
 constants.sh
 email.conf
-<<<<<<< HEAD
 test/qemu
-=======
 kernel
 linux*
 images
->>>>>>> m_new_emu
