@@ -10792,7 +10792,7 @@ while (( "$#" )); do
 	  ;;
 
 	-R)
-	  if o=$(checkOptionParameter "$1" "$2"); then
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  ROOT_PARTITION="$o"; shift 2
