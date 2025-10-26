@@ -7920,6 +7920,9 @@ function inspect4Backup() {
 			exitError $RC_NO_BOOT_FOUND
 		fi
 
+		[[ "${boot[0]}" == "${boot[1]}" ]]
+		EXTERNAL_ROOT=$?
+
 		BOOT_DEVICE="${boot[0]}"
 
 		#Arrays implicitly concatenate in [[ ]]. Use a loop (or explicit * instead of @)
@@ -8072,9 +8075,11 @@ function doitBackup() {
 
 	inspect4Backup
 
-	if ! checkSfdiskOK "$BOOT_DEVICENAME"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
-		exit $RC_COLLECT_PARTITIONS_FAILED
+	if (( ! EXTERNAL_ROOT )); then
+		if ! checkSfdiskOK "$BOOT_DEVICENAME"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
+			exit $RC_COLLECT_PARTITIONS_FAILED
+		fi
 	fi
 
 	commonChecks
@@ -9864,6 +9869,9 @@ function synchronizeCmdlineAndfstab() {
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
+				sed -i "s/$oldPartUUID/$newPartUUID/" "$FSTAB" &>> "$LOG_FILE"
+				# now handle other than root partitions
 				local oldpartuuidID
 				oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
 				local newpartuuidID
@@ -9871,6 +9879,9 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldpartuuidID/$newpartuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
+			logItem "Upd $FSTAB"
+			logItem "$(cat "$FSTAB")"
+
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldUUID=${BASH_REMATCH[1]}
 			local newUUID
@@ -9879,13 +9890,11 @@ function synchronizeCmdlineAndfstab() {
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				local olduuidID
-				olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
-				local newuuidID
-				newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
-				sed -i "s/$olduuidID/$newuuidID/g" "$FSTAB" &>> "$LOG_FILE"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$fstab"
+				sed -i "s/$oldUUID/$newUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
+			logItem "Upd $FSTAB"
+			logItem "$(cat "$FSTAB")"
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			if (( ! $rootLabelCreated )) ; then
 				local oldLABEL=${BASH_REMATCH[1]}
@@ -9926,6 +9935,8 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
+			logItem "Upd $FSTAB"
+			logItem "$(cat "$FSTAB")"
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldUUID=${BASH_REMATCH[1]}
 			local newUUID
@@ -9934,9 +9945,11 @@ function synchronizeCmdlineAndfstab() {
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$fstab"
 				sed -i "s/$oldUUID/$newUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
+			logItem "Upd $FSTAB"
+			logItem "$(cat "$FSTAB")"
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
