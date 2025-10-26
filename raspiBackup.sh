@@ -2198,6 +2198,7 @@ function logSystem() {
 	[[ -f /etc/os-release ]] &&	logCommand "cat /etc/os-release"
 	[[ -f /etc/debian_version ]] &&	logCommand "cat /etc/debian_version"
 	[[ -f /etc/fstab ]] &&	logCommand "cat /etc/fstab"
+	[[ -f /proc/cpuinfo ]] && logCommand "grep "^Model" /proc/cpuinfo"
 	logCommand "locale"
 	logExit
 }
