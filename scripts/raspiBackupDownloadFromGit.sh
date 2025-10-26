@@ -67,7 +67,7 @@ fi
 if (( $updateGitInfo )); then
 	if ! which jq &>/dev/null; then
 		echo "... Installing jq required to download $DOWNLOAD_FILE."
-		sudo apt install jq
+		sudo apt install jq &>/dev/null
 		if ! which jq &>/dev/null; then
 			echo "??? jq required by $MYNAME. Automatic jq installation failed. Please install jq manually."
 			exit 1
