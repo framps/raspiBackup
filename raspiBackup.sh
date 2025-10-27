@@ -3910,7 +3910,7 @@ function updateScript() {
 			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${tmpFile}")"
 			dlRC=$?
 			if (( $dlRC != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$$DOWNLOAD_URL" "$dlHttpCode" $dlRC
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DOWNLOAD_URL" "$dlHttpCode" $dlRC
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 				exitError $RC_DOWNLOAD_FAILED
 			fi
