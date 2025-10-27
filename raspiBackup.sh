@@ -1617,11 +1617,11 @@ MSG_EN[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Mo
 MSG_DE[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Es existieren mehr als zwei Partitionen. Nur die ersten beiden Partitionen werden gesichert"
 MSG_FI[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Havaittu enemmän kuin kaksi osiota. Vain kaksi ensimmäistä osiota tallennetaan"
 MSG_FR[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Il y a plus de deux partitions. Seules les deux premières partitions sont sauvegardées"
-MSG_EXTERNAL_PARTITION_NOT_SAVED=211
-MSG_EN[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: External partition %s mounted on %s will not be saved with option -P"
-MSG_DE[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Externe Partition %s die an %s gemounted ist wird mit Option -P nicht gesichert"
-MSG_FI[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Ulkoinsta osiota %s, joka on otettu käyttöön kohteessa %s, ei tallenneta valinnalla -P"
-MSG_FR[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E:La partition externe %s montée sur %s n'est pas sauvegardée avec l'option -P"
+#MSG_EXTERNAL_PARTITION_NOT_SAVED=211
+#MSG_EN[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: External partition %s mounted on %s will not be saved with option -P"
+#MSG_DE[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Externe Partition %s die an %s gemounted ist wird mit Option -P nicht gesichert"
+#MSG_FI[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Ulkoinsta osiota %s, joka on otettu käyttöön kohteessa %s, ei tallenneta valinnalla -P"
+#MSG_FR[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E:La partition externe %s montée sur %s n'est pas sauvegardée avec l'option -P"
 MSG_BACKUP_WARNING=212
 MSG_EN[$MSG_BACKUP_WARNING]="RBK0212W: Backup finished with warnings. Check previous warning messages for details"
 MSG_DE[$MSG_BACKUP_WARNING]="RBK0212W: Backup endete mit Warnungen. Siehe vorhergehende Warnmeldungen"
@@ -2134,9 +2134,12 @@ MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Custom tar compression tool 
 MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Konfigurierbares tar Kompressionstool %s nicht installiert"
 MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED=353
 MSG_EN[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Custom tar compression not possible for backuptype %s"
+MSG_DE[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Konfigurierbare tar Kompression nicht für Backuptyp %s möglich"
+MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED=354
+MSG_EN[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: External root partition not supported with option "-P""
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Konfigurierbare tar Kompression nicht für Backuptyp %s möglich"
+MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition ist mit Option -P nicht unterstützt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -7543,29 +7546,6 @@ function getPartitionName() { # /etc/fstab first col
 
 }
 
-# check there is no external root partition used if it's a standard raspbian
-
-# /etc/fstab
-# PARTUUID=d888a167-02  /           vfat    defaults          0       2
-
-function extractBootAndRootPartitionNames() {
-
-	logEntry
-
-	local pre
-	pre="$(grep -E "^[^#]+\s(/|/boot)\s.*" /etc/fstab | xargs -I {} bash -c "echo {} | cut -f 1 -d ' '")"
-	logItem "$pre"
-	local p part
-	local result
-	for p in "${pre[@]}"; do
-		part="$(getPartitionName "$p")"
-		result="$result $p $part"
-	done
-	echo "$result"
-
-	logExit "$result"
-}
-
 function collectPartitions() {
 
 	logEntry
@@ -7720,26 +7700,22 @@ function checksForPartitionBasedBackup() {
 		fi
 	done
 
-	if (( ! $REGRESSION_TEST )); then # skip test in regressiontest because in qemu /dev/mmcblk0 is a symlink to /dev/sda
-		local pn=( "$(extractBootAndRootPartitionNames)" )
-		local i p d ip1
-		for ((i=0; i<${#pn[@]}; i+=2)); do
-			p=${pn[i]}
-			(( ip1 = i+1 ))
-			d=${pn[$ip1]}
-			if [[ "$d" =~ /dev/sd && ! "$BOOT_DEVICENAME" =~ /dev/sd  ]]; then # allow -P for USB boot (all partitions are external but write error of SD card is used
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_PARTITION_NOT_SAVED "$p" "$d"
-				error=1
-			fi
-		done
-	fi
-
-	if (( $error )); then
+	if hasExternalRootpartition; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED "$r"
 		exitError $RC_PARAMETER_ERROR
 	fi
 
 	logExit
 
+}
+
+function hasExternalRootpartition() {
+
+	local b r
+	b="$(grep -E "^[^#]+\s/boot(/firmware)?\s.*" /etc/fstab | cut -f 1 -d ' ')"
+	r="$(grep -E "^[^#]+\s/\s.*" /etc/fstab | cut -f 1 -d ' ')"
+
+	[[ "$r" = "$b"  ]]
 }
 
 function commonChecks() {
@@ -7776,25 +7752,6 @@ function commonChecks() {
 	fi
 
 	logExit
-
-}
-
-function getRootPartition() {
-
-	logEntry
-#	cat /proc/cmdline
-#	dma.dmachans=0x7f35 bcm2708_fb.fbwidth=656 bcm2708_fb.fbheight=416 bcm2708.boardrev=0xf bcm2708.serial=0x3f3c9490 smsc95xx.macaddr=B8:27:EB:3C:94:90 bcm2708_fb.fbswap=1 sdhci-bcm2708.emmc_clock_freq=250000000 vc_mem.mem_base=0x1fa00000 vc_mem.mem_size=0x20000000  dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait
-
-	local cmdline
-	cmdline=$(cat /proc/cmdline)
-	logCommand "cat /proc/cmdline"
-	if [[ $cmdline =~ .*(imgpart|root|datadev)=([^ ]+) ]]; then # berryboot and volumio
-		ROOT_PARTITION=${BASH_REMATCH[2]}
-		logItem "RootPartition: $ROOT_PARTITION"
-	else
-		assertionFailed $LINENO "Unable to find root mountpoint in /proc/cmdline"
-	fi
-	logExit "$ROOT_PARTITION"
 
 }
 
