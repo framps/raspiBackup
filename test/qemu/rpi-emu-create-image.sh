@@ -9,7 +9,7 @@ TEMP_IMAGE_NAME="disk.img"
 EXPAND_DISK_SIZE="+3G"
 EXPAND_SECOND_PARTITION_SIZE="+1G"
 THIRD_PARTITION_SIZE="+1G"
-PWD_FILE="$(dirname "$0")/./passwd.conf"
+PWD_FILE="$(dirname "$0")/passwd.conf"
 
 if [[ ! -f $PWD_FILE ]]; then
 	echo "Missing $PWD_FILE"
@@ -68,8 +68,19 @@ if [[ ! -e $FINAL_IMAGE_NAME ]]; then
 	sudo umount /mnt
 	sudo losetup -d $LOOP
 
+	sudo losetup -P $LOOP $TEMP_IMAGE_NAME
+	sudo mount ${LOOP}p2 /mnt
+	echo "Copying keys ..."
+	sudo mkdir -p /mnt/home/pi/.ssh
+	echo "Copying pi keys ..."
+	cat ~/.ssh/id_rsa.pub | sudo tee -a /mnt/home/pi/.ssh/authorized_keys &>/dev/null
+	echo "Copying root keys ..."
+	sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /mnt/root/.ssh/authorized_keys &>/dev/null
+	sudo umount /mnt
+	sudo losetup -d $LOOP
+
 	echo "Moving image into image dir ..."
-	mv disk.img $FINAL_IMAGE_NAME
+	cp disk.img $FINAL_IMAGE_NAME
 else
 	echo "$FINAL_IMAGE_NAME found"
 fi
