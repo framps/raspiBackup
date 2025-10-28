@@ -40,12 +40,14 @@ fi
 
 source $ENV_FILE
 
-EXTENSION=`echo "$IMAGE" | cut -d'.' -f2`
+EXTENSION="${IMAGE##*.}"
+FILENAME="${IMAGE%.*}"
 
-[[ $EXTENSION != "img" ]] && FORMAT="qcow2" || FORMAT="raw"
 
-if [[ ! -f $QEMU_IMAGES/$IMAGE ]]; then
-	echo "$QEMU_IMAGES/$IMAGE not found"
+[[ $EXTENSION == "img" || $IMAGE == $EXTENSION ]] && { FORMAT="raw"; EXT="img"; } || { FORMAT="qcow2"; EXT="qcow2"; }
+
+if [[ ! -f ${QEMU_IMAGES}/${FILENAME}.$EXT ]]; then
+	echo "${QEMU_IMAGES}/${FILENAME}.$EXT not found"
 	exit 1
 fi
 
@@ -53,10 +55,13 @@ sudo qemu-system-aarch64 -machine virt -cpu cortex-a72 \
   -smp ${CPU_CORES} -m ${RAM_SIZE} \
   -kernel ${KERNEL_DIR}/kernel \
   -append "root=/dev/vda2 rootfstype=ext4 rw panic=0 console=ttyAMA0" \
-  -drive format=$FORMAT,file=${QEMU_IMAGES}/${IMAGE},if=none,id=hd0,cache=writeback \
-  -device virtio-blk,drive=hd0,bootindex=0 \
+  -drive format=$FORMAT,file=${QEMU_IMAGES}/$FILENAME.$EXT,if=none,id=hd0,cache=writeback \
   -net nic,macaddr=DE:AD:BE:EF:44:DC \
   -net tap \
-  -monitor telnet:127.0.0.1:${MONITOR_PORT},server,nowait \
+   -device virtio-blk,drive=hd0,bootindex=0 \
+ -monitor telnet:127.0.0.1:${MONITOR_PORT},server,nowait \
   $ARGS
+
+# -netdev user,id=mynet,hostfwd=tcp::${SSH_PORT}-:22 \
+
 
