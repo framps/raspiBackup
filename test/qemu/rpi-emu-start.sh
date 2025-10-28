@@ -25,18 +25,29 @@
 #
 #######################################################################################################################
 
-source $(dirname "$0")/../env.defs
-
 IMAGE=$1	  # Image
 CPU_CORES=4       # CPU-Kerne (bis zu 8)
 RAM_SIZE=4G       # Größe des Arbeitsspeichers
 SSH_PORT=2222     # Lokaler Port für den SSH-Zugriff
 MONITOR_PORT=5555 # Lokaler Port für die QEMU Monitor Konsole
 ARGS=$2           # Zusätzliche Argument (-nographic um ohne grafisches Fenster zu starten)
+ENV_FILE="$(dirname "$0")/../env.defs"
+
+if [[ ! -f $ENV_FILE ]]; then
+	echo "Missing $ENV_FILE"
+	exit 1
+fi
+
+source $ENV_FILE
 
 EXTENSION=`echo "$IMAGE" | cut -d'.' -f2`
 
 [[ $EXTENSION != "img" ]] && FORMAT="qcow2" || FORMAT="raw"
+
+if [[ ! -f $QEMU_IMAGES/$IMAGE ]]; then
+	echo "$QEMU_IMAGES/$IMAGE not found"
+	exit 1
+fi
 
 sudo qemu-system-aarch64 -machine virt -cpu cortex-a72 \
   -smp ${CPU_CORES} -m ${RAM_SIZE} \
