@@ -1,7 +1,14 @@
 #!/bin/bash
 #
 
-source $(dirname "$0")/../env.defs
+ENV_FILE="$(dirname "$0")/../env.defs"
+
+if [[ ! -f $ENV_FILE ]]; then
+        echo "Missing $ENV_FILE"
+        exit 1
+fi
+
+source $ENV_FILE
 
 if ! ping -c 1 $DEPLOYED_IP; then
 
