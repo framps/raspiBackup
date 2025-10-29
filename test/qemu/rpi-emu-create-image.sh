@@ -10,13 +10,18 @@ EXPAND_DISK_SIZE="+3G"
 EXPAND_SECOND_PARTITION_SIZE="+1G"
 THIRD_PARTITION_SIZE="+1G"
 PWD_FILE="$(dirname "$0")/passwd.conf"
+KEYS_FILE="$(dirname "$0")/keys.conf"
 
 if [[ ! -f $PWD_FILE ]]; then
 	echo "Missing $PWD_FILE"
 	exit 1
 fi
-
 source $PWD_FILE
+
+if [[ ! -f $KEYS_FILE ]]; then
+	echo "Missing $KEYS_FILE"
+	exit 1
+fi
 
 if [[ ! -e ${IMAGE_NAME}.xz && ! -e ${IMAGE_NAME} ]]; then
 	echo "Downloading ${IMAGE_NAME}.xz"
@@ -68,14 +73,13 @@ if [[ ! -e $FINAL_IMAGE_NAME ]]; then
 	sudo umount /mnt
 	sudo losetup -d $LOOP
 
+	echo "Copying keys ..."
 	sudo losetup -P $LOOP $TEMP_IMAGE_NAME
 	sudo mount ${LOOP}p2 /mnt
-	echo "Copying keys ..."
 	sudo mkdir -p /mnt/home/pi/.ssh
-	echo "Copying pi keys ..."
-	cat ~/.ssh/id_rsa.pub | sudo tee -a /mnt/home/pi/.ssh/authorized_keys &>/dev/null
-	echo "Copying root keys ..."
-	sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /mnt/root/.ssh/authorized_keys &>/dev/null
+	sudo mkdir -p /mnt/root/.ssh
+	sudo cp $KEYS_FILE /mnt/home/pi/.ssh/authorized_keys &>/dev/null
+	sudo cp $KEYS_FILE /mnt/root/.ssh/authorized_keys &>/dev/null
 	sudo umount /mnt
 	sudo losetup -d $LOOP
 
