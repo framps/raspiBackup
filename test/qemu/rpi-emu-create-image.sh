@@ -67,7 +67,7 @@ if [[ ! -e $FINAL_IMAGE_NAME ]]; then
 	sudo echo "Hello partition 3" | tee /mnt/partition3.txt &>/dev/null
 	sudo umount /mnt
 	sudo losetup -d $LOOP
-
+:<<SKIP
 	sudo losetup -P $LOOP $TEMP_IMAGE_NAME
 	sudo mount ${LOOP}p2 /mnt
 	echo "Copying keys ..."
@@ -75,10 +75,11 @@ if [[ ! -e $FINAL_IMAGE_NAME ]]; then
 	echo "Copying pi keys ..."
 	cat ~/.ssh/id_rsa.pub | sudo tee -a /mnt/home/pi/.ssh/authorized_keys &>/dev/null
 	echo "Copying root keys ..."
+	sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /mnt/home/pi/.ssh/authorized_keys &>/dev/null
 	sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /mnt/root/.ssh/authorized_keys &>/dev/null
 	sudo umount /mnt
 	sudo losetup -d $LOOP
-
+SKIP
 	echo "Moving image into image dir ..."
 	cp disk.img $FINAL_IMAGE_NAME
 else

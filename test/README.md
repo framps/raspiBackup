@@ -1,17 +1,12 @@
 # Regressiontest scripts
 
 The following scripts are used to execute regressiontests every time before a new release of raspiBackup is published. The regressiontest tests the basic backup and restore function for all backup modes and backup types on an SD only environment and and USB only environment to make sure the backup created with the new release can still be restored successfully and will boot up.
-Mixed environment with /boot od SD card an /root on USB is not tested. In addition the smart recycle strategy is tested.  
-
-See also [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/510-raspibackup-regressiontests-executed/) which tests are executed on the restored backup to verify it's working correctly.
-
-The qemu setup is based on the descriptions on [this German page](https://crycode.de/raspberry-pi-4-emulieren-mit-qemu/) and customized for raspiBackup special requirements .
-Previously the setup was done according [this page](https://www.linux-tips-and-tricks.de/en/raspberrye/310-how-to-emulate-raspberry-pi-on-kvm-2/).
+Mixed environment with /boot od SD card an /root on USB is not tested.
 
 ## Prerequ
 
-1. Existing RaspberryPiOS image
-2. QEMU installed 
+1. RaspberryPiOS image
+2. QEMU installed
 3. QEMU image startup script
 
 ## Scripts
