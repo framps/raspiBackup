@@ -1,5 +1,6 @@
 #!/bin/bash
-VERSION=6.6.49
+VERSION=6.6.85
+
 :<<SKIP
 sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
   qemubuilder qemu-system-gui qemu-system-arm qemu-utils qemu-system-data qemu-system \
@@ -8,7 +9,6 @@ sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
 wget https://cdn.kernel.org/pub/linux/kernel/v${VERSION//.*/.x}/linux-${VERSION}.tar.xz
 tar -xvJf linux-${VERSION}.tar.xz
 SKIP
-
 cd linux-${VERSION}
 
 ARCH=arm64 CROSS_COMPILE=/bin/aarch64-linux-gnu- make defconfig
