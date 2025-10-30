@@ -80,6 +80,9 @@ if [[ ! -e $FINAL_IMAGE_NAME ]]; then
 	sudo mkdir -p /mnt/root/.ssh
 	sudo cp $KEYS_FILE /mnt/home/pi/.ssh/authorized_keys &>/dev/null
 	sudo cp $KEYS_FILE /mnt/root/.ssh/authorized_keys &>/dev/null
+
+	echo "Updating fstab"
+	sed -i "s/default/default,x-systemd.device-timeout=180s/g" /mnt/etc/fstab
 	sudo umount /mnt
 	sudo losetup -d $LOOP
 

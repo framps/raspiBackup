@@ -48,23 +48,12 @@ IMAGES=$QEMU_IMAGES
 TEST_SCRIPT="testRaspiBackup.sh"
 BACKUP_ROOT_DIR="$BACKUP_DIRECTORY"
 BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOT_DIR"
-BACKUP_DIR="raspiBackupTest"
 BOOT_ONLY=0	# just boot vm and then exit
 KEEP_VM=1 # don't destroy VM at test end
 RASPBIAN_OS="bookworm"
 CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
-
-if (( $CLEANUP )); then
-	echo "Cleaning up backup directories"
-	rm -rf $BACKUP_ROOT_DIR/${BACKUP_DIR}_N > /dev/null
-	rm -rf $BACKUP_ROOT_DIR/${BACKUP_DIR}_P > /dev/null
-fi
-
-echo "Creating target backup directies"
-mkdir -p $BACKUP_ROOT_DIR/${BACKUP_DIR}_N
-mkdir -p $BACKUP_ROOT_DIR/${BACKUP_DIR}_P
 
 environment=${1:-"usb"}
 environment=${environment,,}

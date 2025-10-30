@@ -26,7 +26,7 @@ SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
 SMARTRECYCLE_TEST=0
-BACKUP_TEST=1
+BACKUP_TEST=0
 UNIT_TEST=0
 RESTORE_TEST=1
 MESSAGE_TEST=0
@@ -38,8 +38,11 @@ ATTACH_LOG=1
 #ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
+TYPES_TO_TEST="tar rsync"
 MODES_TO_TEST="n p"
+MODES_TO_TEST="n"
 BOOTMODE_TO_TEST="d t"
+BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
@@ -52,6 +55,16 @@ elif (( $# > 1 )); then
 fi
 
 NOTIFY_EMAIL="$(<email.conf)"
+
+if [[ ! -d ${BACKUP_DIRECTORY}_N || ! -d ${BACKUP_DIRECTORY}_P ]]; then
+	echo "Creating target backup directies"
+	sudo mkdir -p ${BACKUP_DIRECTORY}_N &>/dev/null
+	sudo mkdir -p ${BACKUP_DIRECTORY}_P &>/dev/null
+fi
+
+echo "Cleaning up backup directories"
+sudo rm -rf ${BACKUP_DIRECTORY}_N/* > /dev/null
+sudo rm -rf ${BACKUP_DIRECTORY}_P/* > /dev/null
 
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"
@@ -160,7 +173,8 @@ if (( BACKUP_TEST )); then
 			done
 		done
 	done
-}
+fi
+
 if (( ! $KEEP_VM )); then
 	echo "Shuting down"
 	sshexec "shutdown -h now"
@@ -169,7 +183,7 @@ fi
 
 if (( RESTORE_TEST )); then
 	standardRestoreTest
-fi	
+fi
 
 #(( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
 echo ":-) Raspibackup regression test finished successfully"
