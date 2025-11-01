@@ -10,6 +10,16 @@ fi
 
 source $ENV_FILE
 
+CONF_FILE="$(dirname "$0")/../config.conf"
+
+if [[ ! -f $CONF_FILE ]]; then
+        echo "Missing $CONF_FILE"
+        exit 1
+fi
+
+source $CONF_FILE
+
+
 if ! ping -c 1 $DEPLOYED_IP; then
 
 	rpi-emu-start.sh bookworm.img &

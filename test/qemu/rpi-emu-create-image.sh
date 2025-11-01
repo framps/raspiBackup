@@ -11,14 +11,14 @@ TEMP_IMAGE_NAME="disk.img"
 EXPAND_DISK_SIZE="+3G"
 EXPAND_SECOND_PARTITION_SIZE="+1G"
 THIRD_PARTITION_SIZE="+1G"
-PWD_FILE="$(dirname "$0")/passwd.conf"
+CONFIG_FILE="$(dirname "$0")/config.conf"
 KEYS_FILE="$(dirname "$0")/keys.conf"
 
-if [[ ! -f $PWD_FILE ]]; then
-	echo "Missing $PWD_FILE"
+if [[ ! -f $CONFIG_FILE ]]; then
+	echo "Missing $CONFIG_FILE"
 	exit 1
 fi
-source $PWD_FILE
+source $CONFIG_FILE
 
 if [[ ! -f $KEYS_FILE ]]; then
 	echo "Missing $KEYS_FILE"
