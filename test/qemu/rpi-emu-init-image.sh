@@ -10,7 +10,7 @@ fi
 
 source $ENV_FILE
 
-CONF_FILE="$(dirname "$0")/../config.conf"
+CONF_FILE="$(dirname "$0")/config.conf"
 
 if [[ ! -f $CONF_FILE ]]; then
         echo "Missing $CONF_FILE"
