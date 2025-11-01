@@ -4,6 +4,8 @@
 VERSION_DIR="raspios_lite_arm64-2024-11-19"
 IMAGE="2024-11-19-raspios-bookworm-arm64-lite"
 IMAGE_NAME="${IMAGE}.img"
+IMAGE_DIR="images"
+FINAL_IMAGE_NAME="$IMAGE_DIR/bookworm.img"
 FINAL_IMAGE_NAME="images/bookworm.img"
 TEMP_IMAGE_NAME="disk.img"
 EXPAND_DISK_SIZE="+3G"
@@ -87,6 +89,7 @@ if [[ ! -e $FINAL_IMAGE_NAME ]]; then
 	sudo losetup -d $LOOP
 
 	echo "Moving image into image dir ..."
+	[[ ! -d $IMAGE_DIR ]] && mkdir $IMAGE_DIR
 	cp disk.img $FINAL_IMAGE_NAME
 else
 	echo "$FINAL_IMAGE_NAME found"
