@@ -35,7 +35,7 @@ PARTITIONS_PER_BACKUP=2
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-PARMS=" -L 2 -l 1 -m 1"
+PARMS=" -L 2 -l 1 -m 1 -Z"
 
 # all backups have 2 backups each
 

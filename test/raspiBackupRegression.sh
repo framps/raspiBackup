@@ -70,6 +70,11 @@ function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"
 }
 
+function sshexec() { # cmd
+	echo "Executing $@"
+	ssh root@$VM_IP "$@"
+}
+
 function standardBackupTest() {
 
 	local rc
