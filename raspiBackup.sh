@@ -5188,6 +5188,9 @@ function cleanupBackupDirectory() {
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
 				fi
 			fi
+		else
+			logItem "Removing $BACKUP_TEMP_ROOT_DIR"
+			rmdir "$BACKUP_TEMP_ROOT_DIR"
 		fi
 		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
 		rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
