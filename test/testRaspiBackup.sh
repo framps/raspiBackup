@@ -46,7 +46,7 @@ KEEP_BACKUPS=1
 NUMBER_OF_BACKUPS=1
 
 MOUNT_POINT=${1:-"$MOUNT_HOST:/disks/VMware/"}
-BACKUP_PATH=${2:-"raspibackupTest"}
+BACKUP_PATH=${2:-"raspiBackupTest"}
 BACKUP_PATH="/mnt/$BACKUP_PATH"
 ENVIRONMENT=${3:-"SD USB SDBOOTONLY"}
 TYPES_TO_TEST=${4:-"dd ddz tar tgz rsync"}
@@ -470,7 +470,6 @@ rm "$LOG_FILE"
 
 mkdir -p ${BACKUP_PATH} 2>/dev/null
 
-cleanup
 createV612Backups 1 1	# createNum, keepNum
 checkAllV612Backups 1
 

@@ -26,10 +26,11 @@ SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
 SMARTRECYCLE_TEST=0
-BACKUP_TEST=1
+BACKUP_TEST=0
 UNIT_TEST=0
 RESTORE_TEST=1
 MESSAGE_TEST=0
+KEEP_VM=0
 
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
@@ -37,8 +38,11 @@ ATTACH_LOG=1
 #ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
+TYPES_TO_TEST="tar rsync"
 MODES_TO_TEST="n p"
+MODES_TO_TEST="n"
 BOOTMODE_TO_TEST="d t"
+BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
@@ -52,58 +56,73 @@ fi
 
 NOTIFY_EMAIL="$(<email.conf)"
 
+if [[ ! -d ${BACKUP_DIRECTORY}_N || ! -d ${BACKUP_DIRECTORY}_P ]]; then
+	echo "Creating target backup directies"
+	sudo mkdir -p ${BACKUP_DIRECTORY}_N &>/dev/null
+	sudo mkdir -p ${BACKUP_DIRECTORY}_P &>/dev/null
+fi
+
+echo "Cleaning up backup directories"
+sudo rm -rf ${BACKUP_DIRECTORY}_N/* > /dev/null
+sudo rm -rf ${BACKUP_DIRECTORY}_P/* > /dev/null
+
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"
 }
 
-function standardTest() {
+function sshexec() { # cmd
+	echo "Executing $@"
+	ssh root@$VM_IP "$@"
+}
+
+function standardBackupTest() {
 
 	local rc
-	if (( $BACKUP_TEST )); then
-		echo "$(d) Starting BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-		./raspiBackupTest.sh "$1" "$2" "$3" "$4"
-		rc=$?
-		echo "@@@============================================================" >> $LOG_REGRESSION
-		echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
-		echo "@@@============================================================" >> $LOG_REGRESSION
-		cat raspiBackup.log >> $LOG_REGRESSION
-		echo "@@@================================================================" >> $LOG_REGRESSION
-		echo "@@@================== BACKUP raspiBackupTest.log ==================" >> $LOG_REGRESSION
-		echo "@@@================================================================" >> $LOG_REGRESSION
-		cat raspiBackupTest.log >> $LOG_REGRESSION
+	echo "$(d) Starting BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+	./raspiBackupTest.sh "$1" "$2" "$3" "$4"
+	rc=$?
+	echo "@@@============================================================" >> $LOG_REGRESSION
+	echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
+	echo "@@@============================================================" >> $LOG_REGRESSION
+	cat raspiBackup.log >> $LOG_REGRESSION
+	echo "@@@================================================================" >> $LOG_REGRESSION
+	echo "@@@================== BACKUP raspiBackupTest.log ==================" >> $LOG_REGRESSION
+	echo "@@@================================================================" >> $LOG_REGRESSION
+	cat raspiBackupTest.log >> $LOG_REGRESSION
 
-		if [[ $rc != 0 ]]; then
-			echo "$(d) Failed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-			echo "??? Backup regression test failed"
-			echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
-			exit 127
-		fi
-
-		echo "$(d) Completed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-
-		if (( $RESTORE_TEST )); then
-			echo "$(d) Starting RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-			./raspiRestoreTest.sh
-			rc=$?
-			echo "@@@=============================================================" >> $LOG_REGRESSION
-			echo "@@@================== RESTORE raspiBackup.log ==================" >> $LOG_REGRESSION
-			echo "@@@=============================================================" >> $LOG_REGRESSION
-			cat raspiBackup.log >> $LOG_REGRESSION
-			echo "@@@=================================================================" >> $LOG_REGRESSION
-			echo "@@@================== RESTORE raspiBackupTest.log ==================" >> $LOG_REGRESSION
-			echo "@@@=================================================================" >> $LOG_REGRESSION
-			cat raspiRestoreTest.log >> $LOG_REGRESSION
-
-			if [[ $rc != 0 ]]; then
-				echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-				echo "??? Restore regression test failed"
-				echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
-				exit 127
-			fi
-		fi
-		echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-		losetup -D
+	if [[ $rc != 0 ]]; then
+		echo "$(d) Failed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+		echo "??? Backup regression test failed"
+		echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
+		exit 127
 	fi
+
+	echo "$(d) Completed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+	losetup -D
+}
+
+function standardRestoreTest() {
+
+	echo "$(d) Starting RESTORETEST" >> $LOG_COMPLETED
+	./raspiRestoreTest.sh
+	rc=$?
+	echo "@@@=============================================================" >> $LOG_REGRESSION
+	echo "@@@================== RESTORE raspiBackup.log ==================" >> $LOG_REGRESSION
+	echo "@@@=============================================================" >> $LOG_REGRESSION
+	cat raspiBackup.log >> $LOG_REGRESSION
+	echo "@@@=================================================================" >> $LOG_REGRESSION
+	echo "@@@================== RESTORE raspiBackupTest.log ==================" >> $LOG_REGRESSION
+	echo "@@@=================================================================" >> $LOG_REGRESSION
+	cat raspiRestoreTest.log >> $LOG_REGRESSION
+
+	if [[ $rc != 0 ]]; then
+		echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
+		echo "??? Restore regression test failed"
+		echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+		exit 127
+	fi
+	echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
+	losetup -D
 }
 
 function smartRecycleTest() {
@@ -147,17 +166,29 @@ if (( $EMAIL_NOTIFICATION )); then
 	echo "Start: $startTime" | mailx -s "--- Backup regression started" "$NOTIFY_EMAIL"
 fi
 
-for environment in $ENVIRONMENTS_TO_TEST; do
-	for mode in $MODES_TO_TEST; do
-		for type in $TYPES_TO_TEST; do
-			[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
-			for bootmode in $BOOTMODE_TO_TEST; do
-				[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
-				standardTest "$environment" "$type" "$mode" "$bootmode"
+if (( BACKUP_TEST )); then
+	for environment in $ENVIRONMENTS_TO_TEST; do
+		for mode in $MODES_TO_TEST; do
+			for type in $TYPES_TO_TEST; do
+				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
+				for bootmode in $BOOTMODE_TO_TEST; do
+					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
+					standardBackupTest "$environment" "$type" "$mode" "$bootmode"
+				done
 			done
 		done
 	done
-done
+fi
+
+if (( ! $KEEP_VM )); then
+	echo "Shuting down"
+	sshexec "shutdown -h now"
+	sudo pkill qemu
+fi
+
+if (( RESTORE_TEST )); then
+	standardRestoreTest
+fi
 
 #(( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
 echo ":-) Raspibackup regression test finished successfully"

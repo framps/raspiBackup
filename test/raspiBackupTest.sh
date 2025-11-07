@@ -48,23 +48,12 @@ IMAGES=$QEMU_IMAGES
 TEST_SCRIPT="testRaspiBackup.sh"
 BACKUP_ROOT_DIR="$BACKUP_DIRECTORY"
 BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOT_DIR"
-BACKUP_DIR="raspiBackupTest"
 BOOT_ONLY=0	# just boot vm and then exit
-KEEP_VM=0 # don't destroy VM at test end
+KEEP_VM=1 # don't destroy VM at test end
 RASPBIAN_OS="bookworm"
 CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
-
-if (( $CLEANUP )); then
-	echo "Cleaning up backup directories"
-	rm -rf $BACKUP_ROOT_DIR/${BACKUP_DIR}_N > /dev/null
-	rm -rf $BACKUP_ROOT_DIR/${BACKUP_DIR}_P > /dev/null
-fi
-
-echo "Creating target backup directies"
-mkdir -p $BACKUP_ROOT_DIR/${BACKUP_DIR}_N
-mkdir -p $BACKUP_ROOT_DIR/${BACKUP_DIR}_P
 
 environment=${1:-"usb"}
 environment=${environment,,}
@@ -81,13 +70,9 @@ echo "Checking for VM $VM_IP already active and start VM otherwise with environm
 
 if ! ping -c 1 $VM_IP; then
 
-	echo "Creating snapshot"
-
 	case $environment in
 		# USB boot only
 		usb)
-#			qemu-img create -f qcow2 -F qcow2 -b $IMAGES/${RASPBIAN_OS}.qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
-#			qemu-img create -f raw -b $IMAGES/${RASPBIAN_OS}.img -F qcow2 $IMAGES/${RASPBIAN_OS}-snap.qcow2
 			echo "Starting VM in $IMAGES/${RASPBIAN_OS}.img"
 			rpi-emu-start.sh ${RASPBIAN_OS}.img -snapshot &
 			;;

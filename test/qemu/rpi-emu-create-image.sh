@@ -4,19 +4,26 @@
 VERSION_DIR="raspios_lite_arm64-2024-11-19"
 IMAGE="2024-11-19-raspios-bookworm-arm64-lite"
 IMAGE_NAME="${IMAGE}.img"
+IMAGE_DIR="images"
+FINAL_IMAGE_NAME="$IMAGE_DIR/bookworm.img"
 FINAL_IMAGE_NAME="images/bookworm.img"
 TEMP_IMAGE_NAME="disk.img"
 EXPAND_DISK_SIZE="+3G"
 EXPAND_SECOND_PARTITION_SIZE="+1G"
 THIRD_PARTITION_SIZE="+1G"
-PWD_FILE="$(dirname "$0")/passwd.conf"
+CONFIG_FILE="$(dirname "$0")/config.conf"
+KEYS_FILE="$(dirname "$0")/keys.conf"
 
-if [[ ! -f $PWD_FILE ]]; then
-	echo "Missing $PWD_FILE"
+if [[ ! -f $CONFIG_FILE ]]; then
+	echo "Missing $CONFIG_FILE"
 	exit 1
 fi
+source $CONFIG_FILE
 
-source $PWD_FILE
+if [[ ! -f $KEYS_FILE ]]; then
+	echo "Missing $KEYS_FILE"
+	exit 1
+fi
 
 if [[ ! -e ${IMAGE_NAME}.xz && ! -e ${IMAGE_NAME} ]]; then
 	echo "Downloading ${IMAGE_NAME}.xz"
@@ -67,20 +74,34 @@ if [[ ! -e $FINAL_IMAGE_NAME ]]; then
 	sudo echo "Hello partition 3" | tee /mnt/partition3.txt &>/dev/null
 	sudo umount /mnt
 	sudo losetup -d $LOOP
+<<<<<<< HEAD
 :<<SKIP
+=======
+
+	echo "Copying keys ..."
+>>>>>>> a1bdf9e579b59b2e27ffaac4df2f692309ac5559
 	sudo losetup -P $LOOP $TEMP_IMAGE_NAME
 	sudo mount ${LOOP}p2 /mnt
-	echo "Copying keys ..."
 	sudo mkdir -p /mnt/home/pi/.ssh
+<<<<<<< HEAD
 	echo "Copying pi keys ..."
 	cat ~/.ssh/id_rsa.pub | sudo tee -a /mnt/home/pi/.ssh/authorized_keys &>/dev/null
 	echo "Copying root keys ..."
 	sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /mnt/home/pi/.ssh/authorized_keys &>/dev/null
 	sudo cat /root/.ssh/id_rsa.pub | sudo tee -a /mnt/root/.ssh/authorized_keys &>/dev/null
+=======
+	sudo mkdir -p /mnt/root/.ssh
+	sudo cp $KEYS_FILE /mnt/home/pi/.ssh/authorized_keys &>/dev/null
+	sudo cp $KEYS_FILE /mnt/root/.ssh/authorized_keys &>/dev/null
+
+	#echo "Updating fstab"
+	#sudo sed -i "s/default/default,x-systemd.device-timeout=300/g" /mnt/etc/fstab
+>>>>>>> a1bdf9e579b59b2e27ffaac4df2f692309ac5559
 	sudo umount /mnt
 	sudo losetup -d $LOOP
 SKIP
 	echo "Moving image into image dir ..."
+	[[ ! -d $IMAGE_DIR ]] && mkdir $IMAGE_DIR
 	cp disk.img $FINAL_IMAGE_NAME
 else
 	echo "$FINAL_IMAGE_NAME found"
