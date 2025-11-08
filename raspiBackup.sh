@@ -3658,13 +3658,13 @@ function stopServices() {
 		else
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_STOPPING_SERVICES "$STOPSERVICES"
 			logItem "$STOPSERVICES"
+			STOPPED_SERVICES=1
 			executeShellCommand "$STOPSERVICES"
 			local rc=$?
 			if [[ $rc != 0 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOP_SERVICES_FAILED "$rc"
 				exitError $RC_STOP_SERVICES_ERROR
 			fi
-			STOPPED_SERVICES=1
 		fi
 	fi
 	logSystemServices
