@@ -1737,7 +1737,7 @@ function isInternetAvailable() {
 
 	logEntry
 
-	wget -q --spider -t 1 -T 3 $MYHOMEDOMAIN
+	wget -q --spider -t 1 -T 3 https://$MYHOMEDOMAIN
     local rc=$?
 	logExit $rc
     return $rc
