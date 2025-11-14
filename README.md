@@ -54,7 +54,7 @@
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
 * Serviceability
-  * Extensive logging helps to locate and fix backup/restore issues 
+  * Extensive logging helps to locate and fix any issues 
 * Much more features available (see below).
 
 ## Support
