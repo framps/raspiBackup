@@ -26,11 +26,11 @@ SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
 SMARTRECYCLE_TEST=0
-BACKUP_TEST=0
+BACKUP_TEST=1
 UNIT_TEST=0
 RESTORE_TEST=1
 MESSAGE_TEST=0
-KEEP_VM=0
+KEEP_VM=1
 
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
@@ -62,7 +62,7 @@ if (( BACKUP_TEST )); then
 	echo "Cleaning up backup directories"
 	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_N/* > /dev/null
 	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_P/* > /dev/null
-fi
+fi	
 
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"

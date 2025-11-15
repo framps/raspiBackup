@@ -106,7 +106,7 @@ function sshexec() { # cmd
 
 sshexec "chmod +x ~/$TEST_SCRIPT"
 
-sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$EXPORT_DIR/$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
+sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
 
 tmp=$(mktemp)
 
