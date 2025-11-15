@@ -35,15 +35,10 @@ KEEP_VM=0
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
 
-#ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
-TYPES_TO_TEST="tar rsync"
-TYPES_TO_TEST="tar"
 MODES_TO_TEST="n p"
-MODES_TO_TEST="n"
 BOOTMODE_TO_TEST="d t"
-BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
@@ -67,7 +62,7 @@ if (( BACKUP_TEST )); then
 	echo "Cleaning up backup directories"
 	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_N/* > /dev/null
 	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_P/* > /dev/null
-fi	
+fi
 
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"
