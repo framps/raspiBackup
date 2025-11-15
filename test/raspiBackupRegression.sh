@@ -26,7 +26,7 @@ SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
 SMARTRECYCLE_TEST=0
-BACKUP_TEST=1
+BACKUP_TEST=0
 UNIT_TEST=0
 RESTORE_TEST=1
 MESSAGE_TEST=0
@@ -39,6 +39,7 @@ ATTACH_LOG=1
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
 TYPES_TO_TEST="tar rsync"
+TYPES_TO_TEST="tar"
 MODES_TO_TEST="n p"
 MODES_TO_TEST="n"
 BOOTMODE_TO_TEST="d t"
@@ -62,9 +63,11 @@ if [[ ! -d $EXPORT_DIR/${BACKUP_DIR}_N || ! -d $EXPORT_DIR/${BACKUP_DIR}_P ]]; t
 	sudo mkdir -p $EXPORT_DIR/${BACKUP_DIR}_P &>/dev/null
 fi
 
-echo "Cleaning up backup directories"
-sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_N/* > /dev/null
-sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_P/* > /dev/null
+if (( BACKUP_TEST )); then
+	echo "Cleaning up backup directories"
+	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_N/* > /dev/null
+	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_P/* > /dev/null
+fi	
 
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"
@@ -98,7 +101,7 @@ function standardBackupTest() {
 	fi
 
 	echo "$(d) Completed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-	losetup -D
+	sudo losetup -D
 }
 
 function standardRestoreTest() {
@@ -122,7 +125,7 @@ function standardRestoreTest() {
 		exit 127
 	fi
 	echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-	losetup -D
+	sudo losetup -D
 }
 
 function smartRecycleTest() {
