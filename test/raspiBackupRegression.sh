@@ -56,15 +56,15 @@ fi
 
 NOTIFY_EMAIL="$(<email.conf)"
 
-if [[ ! -d ${BACKUP_DIRECTORY}_N || ! -d ${BACKUP_DIRECTORY}_P ]]; then
+if [[ ! -d ${LOCAL_BACKUP_DIRECTORY}_N || ! -d ${LOCAL_BACKUP_DIRECTORY}_P ]]; then
 	echo "Creating target backup directies"
-	sudo mkdir -p ${BACKUP_DIRECTORY}_N &>/dev/null
-	sudo mkdir -p ${BACKUP_DIRECTORY}_P &>/dev/null
+	sudo mkdir -p ${LOCAL_BACKUP_DIRECTORY}_N &>/dev/null
+	sudo mkdir -p ${LOCAL_BACKUP_DIRECTORY}_P &>/dev/null
 fi
 
 echo "Cleaning up backup directories"
-sudo rm -rf ${BACKUP_DIRECTORY}_N/* > /dev/null
-sudo rm -rf ${BACKUP_DIRECTORY}_P/* > /dev/null
+sudo rm -rf ${LOCAL_BACKUP_DIRECTORY}_N/* > /dev/null
+sudo rm -rf ${LOCAL_BACKUP_DIRECTORY}_P/* > /dev/null
 
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"

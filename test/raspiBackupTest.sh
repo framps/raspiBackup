@@ -42,12 +42,8 @@ LOG_FILE="$CURRENT_DIR/${MYNAME}.log"
 exec 1> >(tee -a "$LOG_FILE" >&1)
 exec 2> >(tee -a "$LOG_FILE" >&2)
 
-VMs=$CURRENT_DIR
-IMAGES=$QEMU_IMAGES
-
 TEST_SCRIPT="testRaspiBackup.sh"
-BACKUP_ROOT_DIR="$BACKUP_DIRECTORY"
-BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOT_DIR"
+BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOTDIRECTORY"
 BOOT_ONLY=0	# just boot vm and then exit
 KEEP_VM=1 # don't destroy VM at test end
 RASPBIAN_OS="bookworm"
@@ -73,26 +69,8 @@ if ! ping -c 1 $VM_IP; then
 	case $environment in
 		# USB boot only
 		usb)
-			echo "Starting VM in $IMAGES/${RASPBIAN_OS}.img"
+			echo "Starting VM ${RASPBIAN_OS}.img"
 			rpi-emu-start.sh ${RASPBIAN_OS}.img -snapshot &
-			;;
-		# no SD card, USB boot
-		usb_) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-Nommcblk-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
-			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
-			$VMs/start.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &
-			;;
-		nvme_) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-nvme-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
-			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
-			$VMs/start.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &
-			;;
-			# boot on SD card but use external root filesystem
-		sdbootonly_) qemu-img create -f qcow2 -b $IMAGES/raspianRaspiBackup-BootSDOnly-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
-			qemu-img create -f qcow2 -b $IMAGES/raspianRaspiBackup-RootSDOnly-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-RootSDOnly-snap-${RASPBIAN_OS}.qcow
-			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
-			$VMs/startStretchBootSDOnly.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow raspianRaspiBackup-RootSDOnly-snap-${RASPBIAN_OS}.qcow &
-			types="tar"
-			modes="n"
-			bootModes="d"
 			;;
 		*) echo "invalid environment $environment"
 			exit 42
@@ -128,7 +106,7 @@ function sshexec() { # cmd
 
 sshexec "chmod +x ~/$TEST_SCRIPT"
 
-sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
+sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIRECTORY\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
 
 tmp=$(mktemp)
 
