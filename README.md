@@ -54,7 +54,7 @@
 * Reliability 
   * Automated regressiontests make sure a new release will still backup and restore successfully. 
 * Serviceability
-  * Extensive logging helps to locate and fix backup/restore issues 
+  * Extensive logging helps to locate and fix any issues 
 * Much more features available (see below).
 
 ## Support
@@ -111,9 +111,9 @@ raspiBackup is maintained just by me - framp. If you find raspiBackup useful ple
 ## Social media
 
  * [Youtube](https://www.youtube.com/channel/UCnFHtfMXVpWy6mzMazqyINg) - Videos in English and German
- * [Twitter](https://twitter.com/search?q=%23raspiBackup&src=typed_query) - News and announcements - English only
+ * [Twitter](https://twitter.com/search?q=%23raspiBackup&src=typed_query) - News and announcements in English only
  * [Facebook](https://www.facebook.com/raspiBackup) - News, discussions, announcements and misc background information in English and German
- * [Reddit](https://www.reddit.com/r/raspiBackup/) - News, announcements 
+ * [Reddit](https://www.reddit.com/r/raspiBackup/) - News, announcements in English only
 
 ## Miscellaneous sample scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
 
