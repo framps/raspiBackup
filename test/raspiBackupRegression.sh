@@ -26,7 +26,7 @@ SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
 SMARTRECYCLE_TEST=0
-BACKUP_TEST=0
+BACKUP_TEST=1
 UNIT_TEST=0
 RESTORE_TEST=1
 MESSAGE_TEST=0
@@ -56,15 +56,15 @@ fi
 
 NOTIFY_EMAIL="$(<email.conf)"
 
-if [[ ! -d ${LOCAL_BACKUP_DIRECTORY}_N || ! -d ${LOCAL_BACKUP_DIRECTORY}_P ]]; then
+if [[ ! -d $EXPORT_DIR/${BACKUP_DIR}_N || ! -d $EXPORT_DIR/${BACKUP_DIR}_P ]]; then
 	echo "Creating target backup directies"
-	sudo mkdir -p ${LOCAL_BACKUP_DIRECTORY}_N &>/dev/null
-	sudo mkdir -p ${LOCAL_BACKUP_DIRECTORY}_P &>/dev/null
+	sudo mkdir -p $EXPORT_DIR/${BACKUP_DIR}_N &>/dev/null
+	sudo mkdir -p $EXPORT_DIR/${BACKUP_DIR}_P &>/dev/null
 fi
 
 echo "Cleaning up backup directories"
-sudo rm -rf ${LOCAL_BACKUP_DIRECTORY}_N/* > /dev/null
-sudo rm -rf ${LOCAL_BACKUP_DIRECTORY}_P/* > /dev/null
+sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_N/* > /dev/null
+sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_P/* > /dev/null
 
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"

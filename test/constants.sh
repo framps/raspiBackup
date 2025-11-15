@@ -31,10 +31,10 @@ BACKUPTYPE_RSYNC="rsync"
 BOOTMODE_DD="-B-"
 BOOTMODE_TAR="-B+"
 
-MOUNT_HOST=192.168.0.6		# host used to mount remote backup dir
+MOUNT_HOST=192.168.0.194	# host used to mount remote backup dir
 DEPLOYED_IP=192.168.0.191	# IP of simulated Raspberry
-BACKUP_ROOTDIRECTORY="/backup"
-BACKUP_DIRECTORY="$BACKUP_ROOTDIRECTORY/raspiBackupTest" 
+EXPORT_DIR="/backup"		# backup directory on host which holds the backups and is exported
+BACKUP_DIR="regression"		# -> /backup/regression_N and /backup/regression_P 
 
 LOG_REGRESSION="raspiBackupRegression.log"
 LOG_COMPLETED="raspiBackupRegressionCompleted.log"

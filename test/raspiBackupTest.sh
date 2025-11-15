@@ -43,7 +43,7 @@ exec 1> >(tee -a "$LOG_FILE" >&1)
 exec 2> >(tee -a "$LOG_FILE" >&2)
 
 TEST_SCRIPT="testRaspiBackup.sh"
-BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOTDIRECTORY"
+BACKUP_MOUNT_POINT="$MOUNT_HOST:$EXPORT_DIR"
 BOOT_ONLY=0	# just boot vm and then exit
 KEEP_VM=1 # don't destroy VM at test end
 RASPBIAN_OS="bookworm"
@@ -106,7 +106,7 @@ function sshexec() { # cmd
 
 sshexec "chmod +x ~/$TEST_SCRIPT"
 
-sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIRECTORY\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
+sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$EXPORT_DIR/$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
 
 tmp=$(mktemp)
 
