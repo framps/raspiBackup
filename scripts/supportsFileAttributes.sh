@@ -57,7 +57,9 @@ function supportsFileAttributes() {	# directory
 	cp -a /tmp/$MYNAME.fileattributes /$1 
 	
 	read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
-	attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+	# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+	# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
+	# and a restored backup will populate these ACLs on the restored system which is wrong!
 
 	echo "Fileattributes of remote file:"
 	echo "   Attributes: $attrsT"
