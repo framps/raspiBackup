@@ -650,7 +650,7 @@ MSG_FI[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Tyypin %s varmuuskopiointisovellus 
 MSG_FR[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Sauvegarde de type %s terminé avec un Code Retour %s"
 MSG_UNKNOWN_BACKUPTYPE=22
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unknown backuptype %s"
-MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backtyp %s"
+MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backuptype %s"
 MSG_FI[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Tuntematon varmuuskopiotyyppi %s"
 MSG_FR[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Type de sauvegarde inconnu %s"
 MSG_KEEPBACKUP_INVALID=23
@@ -2124,11 +2124,11 @@ MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
-MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported: bzip2,gzip,lzip,lzma,lzop,xz,zstd"
-MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützt: bzip2,gzip,lzip,lzma,lzop,xz,zstd"
+MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported tools are bzip2,gzip,lzip,lzma,lzop,xz and zstd"
+MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützte Tools sind bzip2,gzip,lzip,lzma,lzop,xz und zstd"
 MSG_TAR_COMPRESS_TOOL_USED=351
 MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351E: Konfigurierbares tar Kompressionstool %s wird genutzt"
+MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Konfigurierbares tar Kompressionstool %s wird genutzt"
 MSG_TAR_COMPRESS_TOOL_NOT_FOUND=352
 MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Custom tar compression tool %s not installed"
 MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Konfigurierbares tar Kompressionstool %s nicht installiert"
@@ -4294,16 +4294,12 @@ function setupEnvironment() {
 	logEntry
 
 	if (( ! $RESTORE )); then
-:<<SKIP
-		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
+			TAR_COMPRESSION_TOOL=""			# zip has higher prio than tarcompressiontool
 			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
 				BACKUPTYPE=${Z_TYPE_MAPPING[${BACKUPTYPE}]}	# tar-> tgz and dd -> ddz
-			else
-				ZIP_BACKUP_TYPE_INVALID=1
 			fi
 		fi
-SKIP
 		if [[ -n "$DYNAMIC_MOUNT" ]]; then
 			dynamic_mount "$DYNAMIC_MOUNT"
 		fi
@@ -5182,11 +5178,7 @@ function cleanupBackupDirectory() {
 			rm -rfd $BACKUP_TEMP_ROOT_DIR &>> "$LOG_FILE"# delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
-				if [[ $MSG_LEVEL == "$MSG_LEVEL_DETAILED" ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUP_TEMP_ROOT_DIR" "$rmrc"
-				else
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
-				fi
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUP_TEMP_ROOT_DIR" "$rmrc"
 			fi
 		else
 			logItem "Removing $BACKUP_TEMP_ROOT_DIR"
@@ -8122,26 +8114,15 @@ function doitBackup() {
 		fi
 	fi
 
+	logItem "Backuptype selected: $BACKUPTYPE"
+
 	if [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
 			mentionHelp
 			exitError $RC_PARAMETER_ERROR
 	fi
 
-	if [[ -z $TAR_COMPRESSION_TOOL ]]; then
-
-		# tgz and ddz ar no allowed backuptype, -z should be used instead
-		if  (( ! ZIP_BACKUP )) && [[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] || [[ "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
-				mentionHelp
-				exitError $RC_PARAMETER_ERROR
-		elif (( ZIP_BACKUP &&  ! ZIP_BACKUP_TYPE_INVALID )) && [[ "$BACKUPTYPE" != "$BACKUPTYPE_TAR" ]] && [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
-				mentionHelp
-				exitError $RC_PARAMETER_ERROR
-		fi
-
-	else
+	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
 
 		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_TAR" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED "$BACKUPTYPE"
