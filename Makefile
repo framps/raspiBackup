@@ -47,8 +47,10 @@ help: ## help
 
 build: buildFiles
 
+deploy: buildFiles deployFiles
+
 buildFiles: ## Build raspiBackup {BRANCH=<branchName>}
- 
+
         ifndef BUILD_LOCATION
            $(error BUILD_LOCATION is not set)
         endif
@@ -82,7 +84,7 @@ update: buildFiles ## Update one file {FILE=<filename>}
     endif
 	@cp $(BUILD_LOCATION)/$(FILE) $(DEPLOYMENT_LOCATION)/$(notdir $(BUILD_LOCATION)/$(FILE)); echo "Updated $(FILE) on $(DEPLOYMENT_LOCATION)"; 
 
-deploy: ## Deploy build {BRANCH=<branchName>}
+deployFiles: ## Deploy build {BRANCH=<branchName>}
 
         ifndef DEPLOYMENT_LOCATION
 		$(error DEPLOYMENT_LOCATION is not set)
