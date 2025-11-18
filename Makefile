@@ -48,7 +48,7 @@ help: ## help
 build: buildFiles
 
 buildFiles: ## Build raspiBackup {BRANCH=<branchName>}
-   
+ 
         ifndef BUILD_LOCATION
            $(error BUILD_LOCATION is not set)
         endif
@@ -84,13 +84,13 @@ update: buildFiles ## Update one file {FILE=<filename>}
 
 deploy: ## Deploy build {BRANCH=<branchName>}
 
-	ifndef DEPLOYMENT_LOCATION
+        ifndef DEPLOYMENT_LOCATION
 		$(error DEPLOYMENT_LOCATION is not set)
-	endif
+        endif
 
-	ifndef BRANCH
+        ifndef BRANCH
 		$(error BRANCH is not set)
-	endif
+        endif
 
 	@echo "*** Deploying $(BRANCH) in $(DEPLOYMENT_LOCATION) ***"
 
