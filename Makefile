@@ -47,8 +47,10 @@ help: ## help
 
 build: buildFiles
 
+deploy: buildFiles deployFiles
+
 buildFiles: ## Build raspiBackup {BRANCH=<branchName>}
-   
+
         ifndef BUILD_LOCATION
            $(error BUILD_LOCATION is not set)
         endif
@@ -80,20 +82,19 @@ update: buildFiles ## Update one file {FILE=<filename>}
     ifeq ("$(wildcard $(DEPLOYMENT_LOCATION))", "")
 		$(error Directory $(DEPLOYMENT_LOCATION) not mounted)
     endif
-	@cp $(BUILD_LOCATION)/$(FILE) $(DEPLOYMENT_LOCATION)/$(notdir $(BUILD_LOCATION)/$(FILE)); echo "Updated $(FILE) on $(DEPLOYMENT_LOCATION)"; 
+	@cp $(BUILD_LOCATION)/$(FILE) $(DEPLOYMENT_LOCATION)/$(notdir $(BUILD_LOCATION)/$(FILE)); echo "Updated $(FILE) on $(DEPLOYMENT_LOCATION)";
 
-deploy: ## Deploy build {BRANCH=<branchName>}
+deployFiles: ## Deploy build {BRANCH=<branchName>}
 
-	ifndef DEPLOYMENT_LOCATION
+        ifndef DEPLOYMENT_LOCATION
 		$(error DEPLOYMENT_LOCATION is not set)
-	endif
+        endif
 
-	ifndef BRANCH
+        ifndef BRANCH
 		$(error BRANCH is not set)
-	endif
+        endif
 
 	@echo "*** Deploying $(BRANCH) in $(DEPLOYMENT_LOCATION) ***"
-
 	@$(foreach file, $(wildcard $(BUILD_LOCATION)/*), echo "Deploy $(file) "; cp $(file) $(DEPLOYMENT_LOCATION)/$(notdir $(file));)
 
 syncLocal: ## Sync github to local shadow git
