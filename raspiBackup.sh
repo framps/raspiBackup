@@ -2137,9 +2137,12 @@ MSG_EN[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Custom tar compre
 MSG_DE[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Konfigurierbare tar Kompression nicht für Backuptyp %s möglich"
 MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED=354
 MSG_EN[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: External root partition not supported with option "-P""
+MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition ist mit Option -P nicht unterstützt"
+MSG_OPTION_ACLS_DISABLED=355
+MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
 # MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition ist mit Option -P nicht unterstützt"
+MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -4002,6 +4005,13 @@ function supportsFileAttributes() {	# directory
 	logExit $result
 
 	return $result
+}
+
+function disableACLsIfRequested() {
+	if (( $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
+		RSYNC_BACKUP_OPTIONS="$(sed 's/A//' <<< "$RSYNC_BACKUP_OPTIONS")"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_ACLS_DISABLED
+	fi
 }
 
 # 0 = yes, no otherwise
@@ -6432,11 +6442,6 @@ function backupRsync() { # partition number (for partition based backup)
 	local log_file="${LOG_FILE/\//}" # remove leading /
 	local msg_file="${MSG_FILE/\//}" # remove leading /
 
-	if (( $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
-		logItem "Excluding option A in rsync option"
-		RSYNC_BACKUP_OPTIONS="$(sed 's/A//' <<< "$RSYNC_BACKUP_OPTIONS")"
-	fi
-
 	cmdParms="--exclude=\"$BACKUPPATH_PARAMETER/*\" \
 --exclude=\"$log_file\" \
 --exclude=\"$msg_file\" \
@@ -8199,6 +8204,8 @@ function doitBackup() {
 			exitError $RC_MISSING_COMMANDS
 		fi
 
+		disableACLsIfRequested
+
 		if ! supportsHardlinks "$BACKUPPATH"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH" "$RC_MISC_ERROR"
 			exitError $RC_MISC_ERROR
@@ -9320,6 +9327,8 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
 			exitError $RC_PARAMETER_ERROR
 		fi
+
+		disableACLsIfRequested
 	fi
 
 	if ! which dosfslabel &>/dev/null; then
