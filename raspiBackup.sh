@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2-beta"         								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-beta-938"         								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -3985,10 +3985,10 @@ function supportsFileAttributes() {	# directory
 			# SC2034: x appears unused. Verify it or export it.
 			# shellcheck disable=SC2034
 			read -r attrsT x ownerT groupT r <<< "$(ls -la "/$1/$MYNAME.fileattributes")"
+
 			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
 			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
 			# and a restored backup will populate these ACLs on the restored system which is wrong!
-			logItem "Remote: $attrsT # $ownerT # $groupT"
 
 			# check fileattributes and ownerships are identical
 			if [[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]]; then
