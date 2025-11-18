@@ -3985,8 +3985,9 @@ function supportsFileAttributes() {	# directory
 			# SC2034: x appears unused. Verify it or export it.
 			# shellcheck disable=SC2034
 			read -r attrsT x ownerT groupT r <<< "$(ls -la "/$1/$MYNAME.fileattributes")"
-
-			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+			if (( RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
+				attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+			fi
 			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
 			# and a restored backup will populate these ACLs on the restored system which is wrong!
 
@@ -4008,8 +4009,8 @@ function supportsFileAttributes() {	# directory
 }
 
 function disableACLsIfRequested() {
-	if (( RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
-		attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+	if (( $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
+		RSYNC_BACKUP_OPTIONS="$(sed 's/A//' <<< "$RSYNC_BACKUP_OPTIONS")"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_ACLS_DISABLED
 	fi
 }
@@ -9327,7 +9328,7 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
 			exitError $RC_PARAMETER_ERROR
 		fi
-		
+
 		disableACLsIfRequested
 	fi
 
