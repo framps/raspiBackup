@@ -64,6 +64,10 @@ echo "Executing test with following options: $environment $type $mode $bootmode"
 
 echo "Checking for VM $VM_IP already active and start VM otherwise with environment $environment"
 
+function d() {
+	echo "$(date +%Y%m%d-%H%M%S)"
+}
+
 if ! ping -c 1 $VM_IP; then
 
 	case $environment in

@@ -123,6 +123,8 @@ for backup in $BACKUPS_TO_RESTORE; do
 
 		retry=1
 
+		echo "$(d) Starting RESTORE $image" >> $LOG_COMPLETED
+
 		while (( retry > 0 )); do
 			log "Removing old image"
 			rm $VMs/raspiBackupRestore.img &>/dev/null
@@ -314,6 +316,8 @@ for backup in $BACKUPS_TO_RESTORE; do
 		PID_CHILD=$(pgrep -o -P $pid)
 		echo "Shutdown VM pid $pid($PID_CHILD) ..."
 		kill -9 $PID_CHILD
+
+		echo "$(d)Finished RESTORE $image with rc $error" >> $LOG_COMPLETED
 
 	done
 

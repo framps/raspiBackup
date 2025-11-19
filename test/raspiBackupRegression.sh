@@ -62,7 +62,7 @@ if (( BACKUP_TEST )); then
 	echo "Cleaning up backup directories"
 	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_N/* > /dev/null
 	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_P/* > /dev/null
-fi	
+fi
 
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"
