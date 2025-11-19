@@ -650,7 +650,7 @@ MSG_FI[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Tyypin %s varmuuskopiointisovellus 
 MSG_FR[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Sauvegarde de type %s terminé avec un Code Retour %s"
 MSG_UNKNOWN_BACKUPTYPE=22
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unknown backuptype %s"
-MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backuptype %s"
+MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backuptyp %s"
 MSG_FI[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Tuntematon varmuuskopiotyyppi %s"
 MSG_FR[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Type de sauvegarde inconnu %s"
 MSG_KEEPBACKUP_INVALID=23
@@ -4308,8 +4308,12 @@ function setupEnvironment() {
 			TAR_COMPRESSION_TOOL=""			# zip has higher prio than tarcompressiontool
 			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
 				BACKUPTYPE=${Z_TYPE_MAPPING[${BACKUPTYPE}]}	# tar-> tgz and dd -> ddz
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP $BACKUPTYPE
+				exitError $RC_PARAMETER_ERROR
 			fi
 		fi
+
 		if [[ -n "$DYNAMIC_MOUNT" ]]; then
 			dynamic_mount "$DYNAMIC_MOUNT"
 		fi
