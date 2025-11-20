@@ -54,21 +54,21 @@ function supportsFileAttributes() {	# directory
 
 	# following command will return an error and message
 	# cp: failed to preserve ownership for '/mnt/supportsFileattributes.fileattributes': Operation not permitted
-	cp -a /tmp/$MYNAME.fileattributes /$1 
-	
+	cp -a /tmp/$MYNAME.fileattributes /$1
+
 	read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
-	attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+	# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
 
 	echo "Fileattributes of remote file:"
 	echo "   Attributes: $attrsT"
 	echo "   Owner: $ownerT"
 	echo "   Group: $groupT"
-	
+
 	# check fileattributes and ownerships are identical
 	[[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]] && result=0
 
 	rm /tmp/$MYNAME.fileattributes
-	rm /$1/$MYNAME.fileattributes 
+	rm /$1/$MYNAME.fileattributes
 
 	return $result
 }
