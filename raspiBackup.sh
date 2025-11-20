@@ -9273,16 +9273,12 @@ function doitRestore() {
 		fi
 	fi
 
-	local usbMount
-	usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
-	if grep -q "install ok installed" <<< "$usbMount" &>>"$LOG_FILE"; then
+	if service usbmount status | grep -q "Active: active"  &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "usbmount"
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
 
-	local autofs
-	autofs="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' autofs 2>&1)"
-	if grep -q "install ok installed" <<< "$autofs" &>>"$LOG_FILE"; then
+	if service autofs status | grep -q "Active: active"  &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "autofs"
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
