@@ -10,6 +10,6 @@
 
 5. raspiBackupOnlineVersions - Lists current versions and commit shas of raspiBackup files which are available online for download
 
-6. supportsACLs - Checks if filesystem used by a directory supports ACLs
+6. checkACLs - Retrieves ACLs from a directory and tests for default ACL existence
 
 7. supportsFileAttributes - Checks if a filesystem used by a directory supports Linux fileattributes
