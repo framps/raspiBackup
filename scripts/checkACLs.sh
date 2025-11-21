@@ -2,11 +2,11 @@
 
 #######################################################################################################################
 #
-# Check if a filesystem supports Linux ACLs
+# 	 Check if a filesystem directory has Linux ACLs
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2021 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
-LOG_FILE="$MYNAME.log"
 
 function hasACLs() {
 	getfacl -p $1 | grep -q -E "^(user|group|other):[^:]+:|^(mask|default)"
@@ -42,34 +41,45 @@ if (( $# < 1 )); then
 	exit -1
 fi
 
-if ! which setfacl &>/dev/null; then
+if ! which getfacl &>/dev/null; then
 	echo "??? Package acl not installed"
 	exit -1
 fi
 
-if [[ ! -d $1 ]]; then
-	echo "??? Directory $1 does not exist"
+dir=$(sed 's:/*$::' <<< "$1")	# remove trailing / so that grep in mount finds directory
+
+if [[ ! -d $dir ]]; then
+	echo "??? Directory $dir does not exist or is no directory"
 	exit -1
 fi
 
 echo
-echo "@@@ ls -lad $1"
-ls -lad $1
+echo "@@@ mount | grep -m 1 $dir"
+mount | grep -m 1 $dir
+
+echo
+echo "@@@ ls -lad $dir"
+if ls -lad "$dir" | grep "+ "; then
+	echo "+++ $dir has ACLs according ls"
+else	
+	ls -lad "$dir"
+	echo "--- $dir has NO ACLs according ls"
+fi
 echo
 
-if hasACLs $1; then
-	echo "+++ $1 has ACLs"
+if hasACLs $dir; then
+	echo "+++ $dir has ACLs"
 else
-	echo "--- $1 has NO ACLs"
+	echo "--- $dir has NO ACLs"
 fi
 	
-if hasDefaultACLs $1; then
-	echo "+++ $1 has default ACLs"
+if hasDefaultACLs $dir; then
+	echo "+++ $dir has default ACLs"
 else
-	echo "--- $1 has NO default ACLs"
+	echo "--- $dir has NO default ACLs"
 fi
 
 echo
-echo "@@@ getfacl -p $1"
-getfacl -p $1
+echo "@@@ getfacl -p $dir"
+getfacl -p $dir
 
