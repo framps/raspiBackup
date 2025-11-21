@@ -27,14 +27,22 @@ MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 LOG_FILE="$MYNAME.log"
 
-function supportsACLs() {	# directory
+function hasACLs() {
+	getfacl -p $1 | grep -q -E "^(user|group|other):[^+]+:|^(mask|default)"
+	return 
+}
 
+function supportsACLs() {	# directory
 	local rc
 	touch $1/$MYNAME.acls &>>"$LOG_FILE"
 	setfacl -m $USER:rwx $1/$MYNAME.acls &>>"$LOG_FILE"
 	return
 }
 
+function hasDefaultACLs() {
+	getfacl -p $1 | grep -q -E "^(user|group|other):[^+]+:|^(mask|default)"
+	return
+}
 rm "$LOG_FILE" &>>"$LOG_FILE"
 
 trap "rm -f $LOG_FILE" EXIT
@@ -44,7 +52,7 @@ if (( $# < 1 )); then
 	exit -1
 fi
 
-if ! which setfacl; then
+if ! which setfacl &>/dev/null; then
 	echo "??? Package acl not installed"
 	exit -1
 fi
@@ -56,14 +64,25 @@ fi
 
 if supportsACLs $1; then
 	echo "*** $1 supports ACLs"
-	getfacl $1/$MYNAME.acls
+	if hasACLs $1; then
+		echo "*** $1 has ACLs"
+	else
+		echo "*** $1 has NO ACLs"
+	fi
+	
+	echo
+	echo "@@@ getfacl -p $1"
+	getfacl -p $1
+	
+	if hasDefaultACLs $1; then
+		echo "*** $1 has default ACLs"
+	else
+		echo "*** $1 has NO default ACLs"
+	fi
 else
-	echo "??? setfacl Fails on $1 with RC $?"
+	echo "??? setfacl Fails on $1"
+	echo @@@ LOG @@@
 	cat $LOG_FILE
 fi
 
 rm $1/$MYNAME.acls &>/dev/null
-
-
-
-
