@@ -28,24 +28,14 @@ MYNAME=${MYSELF%.*}
 LOG_FILE="$MYNAME.log"
 
 function hasACLs() {
-	getfacl -p $1 | grep -q -E "^(user|group|other):[^+]+:|^(mask|default)"
+	getfacl -p $1 | grep -q -E "^(user|group|other):[^:]+:|^(mask|default)"
 	return 
 }
 
-function supportsACLs() {	# directory
-	local rc
-	touch $1/$MYNAME.acls &>>"$LOG_FILE"
-	setfacl -m $USER:rwx $1/$MYNAME.acls &>>"$LOG_FILE"
-	return
-}
-
 function hasDefaultACLs() {
-	getfacl -p $1 | grep -q -E "^(user|group|other):[^+]+:|^(mask|default)"
+	getfacl -p $1 | grep -q -E "^default"
 	return
 }
-rm "$LOG_FILE" &>>"$LOG_FILE"
-
-trap "rm -f $LOG_FILE" EXIT
 
 if (( $# < 1 )); then
 	echo "??? Missing directory"
@@ -62,27 +52,24 @@ if [[ ! -d $1 ]]; then
 	exit -1
 fi
 
-if supportsACLs $1; then
-	echo "*** $1 supports ACLs"
-	if hasACLs $1; then
-		echo "*** $1 has ACLs"
-	else
-		echo "*** $1 has NO ACLs"
-	fi
-	
-	echo
-	echo "@@@ getfacl -p $1"
-	getfacl -p $1
-	
-	if hasDefaultACLs $1; then
-		echo "*** $1 has default ACLs"
-	else
-		echo "*** $1 has NO default ACLs"
-	fi
+echo
+echo "@@@ ls -lad $1"
+ls -lad $1
+echo
+
+if hasACLs $1; then
+	echo "+++ $1 has ACLs"
 else
-	echo "??? setfacl Fails on $1"
-	echo @@@ LOG @@@
-	cat $LOG_FILE
+	echo "--- $1 has NO ACLs"
+fi
+	
+if hasDefaultACLs $1; then
+	echo "+++ $1 has default ACLs"
+else
+	echo "--- $1 has NO default ACLs"
 fi
 
-rm $1/$MYNAME.acls &>/dev/null
+echo
+echo "@@@ getfacl -p $1"
+getfacl -p $1
+
