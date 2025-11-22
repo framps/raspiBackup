@@ -8238,6 +8238,9 @@ function doitBackup() {
 			exitError $RC_MISC_ERROR
 		fi
 
+		if hasDefaultACLs; then
+			logItem "DEFAULT ACLs detected on $BACKUPPATH"
+		fi
 #		if (( ! $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
 #			if hasDefaultACLs "$BACKUPPATH"; then
 #				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS "$(findMountPath "$BACKUPPATH")"
