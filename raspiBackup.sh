@@ -9273,12 +9273,12 @@ function doitRestore() {
 		fi
 	fi
 
-	if service usbmount status | grep -q "Active: active"  &>>"$LOG_FILE"; then
+	if service usbmount status 2>/dev/null | grep -q "Active: active"  &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "usbmount"
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
 
-	if service autofs status | grep -q "Active: active"  &>>"$LOG_FILE"; then
+	if service autofs status 2>/dev/null | grep -q "Active: active"  &>>"$LOG_FILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "autofs"
 		exitError $RC_ENVIRONMENT_ERROR
 	fi
