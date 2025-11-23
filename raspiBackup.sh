@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2-beta"         								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-beta-938"         								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -2136,13 +2136,15 @@ MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED=353
 MSG_EN[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Custom tar compression not possible for backuptype %s"
 MSG_DE[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Konfigurierbare tar Kompression nicht für Backuptyp %s möglich"
 MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED=354
-MSG_EN[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: External root partition not supported with option "-P""
+MSG_EN[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: External root partition not supported with option \"-P\""
 MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition ist mit Option -P nicht unterstützt"
 MSG_OPTION_ACLS_DISABLED=355
 MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
-# MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
+#MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS=356
+#MSG_EN[$MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS]="RBK0356E: Default ACLs not allowed on backuppartition %s"
+#MSG_DE[$MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS]="RBK0356E: Default ACLs sind an der Backuppartition %s nicht erlaubt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2260,7 +2262,7 @@ function logSystem() {
 	[[ -f /etc/os-release ]] &&	logCommand "cat /etc/os-release"
 	[[ -f /etc/debian_version ]] &&	logCommand "cat /etc/debian_version"
 	[[ -f /etc/fstab ]] &&	logCommand "cat /etc/fstab"
-	[[ -f /proc/cpuinfo ]] && logCommand "grep "^Model" /proc/cpuinfo"
+	[[ -f /proc/cpuinfo ]] && logCommand "grep ^Model /proc/cpuinfo"
 	logCommand "locale"
 	logExit
 }
@@ -3951,6 +3953,15 @@ function updateScript() {
 
 }
 
+function hasDefaultACLs() { # directory
+	local rc
+	logEntry "$1"
+	getfacl -p $1 | grep -q -E "^default" &>>$LOG_FILE
+	rc=$?
+	logExit "$rc"
+	return $rc
+}
+
 # 0 = yes, no otherwise
 
 function supportsFileAttributes() {	# directory
@@ -3985,10 +3996,9 @@ function supportsFileAttributes() {	# directory
 			# SC2034: x appears unused. Verify it or export it.
 			# shellcheck disable=SC2034
 			read -r attrsT x ownerT groupT r <<< "$(ls -la "/$1/$MYNAME.fileattributes")"
-			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
-			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
-			# and a restored backup will populate these ACLs on the restored system which is wrong!
+
 			logItem "Remote: $attrsT # $ownerT # $groupT"
+			attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present if there are any extended attributes
 
 			# check fileattributes and ownerships are identical
 			if [[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]]; then
@@ -8213,23 +8223,34 @@ function doitBackup() {
 		if ! supportsHardlinks "$BACKUPPATH"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH" "$RC_MISC_ERROR"
 			exitError $RC_MISC_ERROR
-		else
-			local fs
-			fs="$(getFsType "$BACKUPPATH")"
-			logItem "Filesystem: $fs"
-			if ! supportsFileAttributes "$BACKUPPATH"; then
-				if [[ $fs =~ ^nfs* ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTE_RIGHTS "$(findMountPath "$BACKUPPATH")" "$fs"
-				else
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$fs" "$(findMountPath "$BACKUPPATH")"
-				fi
-				exitError $RC_MISC_ERROR
+		fi
+
+		local fs
+		fs="$(getFsType "$BACKUPPATH")"
+		logItem "Filesystem: $fs"
+		if ! supportsFileAttributes "$BACKUPPATH"; then
+			if [[ $fs =~ ^nfs* ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTE_RIGHTS "$(findMountPath "$BACKUPPATH")" "$fs"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$fs" "$(findMountPath "$BACKUPPATH")"
 			fi
+			exitError $RC_MISC_ERROR
 		fi
+
 		if ! supportsSymlinks "$BACKUPPATH"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH" "softlinks"
-			exitError $RC_PARAMETER_ERROR
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$(findMountPath "$BACKUPPATH")" "softlinks"
+			exitError $RC_MISC_ERROR
 		fi
+
+		if hasDefaultACLs; then
+			logItem "DEFAULT ACLs detected on $BACKUPPATH"
+		fi
+#		if (( ! $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
+#			if hasDefaultACLs "$BACKUPPATH"; then
+#				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS "$(findMountPath "$BACKUPPATH")"
+#				exitError $RC_MISC_ERROR
+#			fi
+#		fi
 
 		local rsyncVersion
 		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
