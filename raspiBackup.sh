@@ -8242,7 +8242,7 @@ function doitBackup() {
 			exitError $RC_MISC_ERROR
 		fi
 
-		if hasDefaultACLs; then
+		if hasDefaultACLs "$BACKUPPATH"; then
 			logItem "DEFAULT ACLs detected on $BACKUPPATH"
 		fi
 #		if (( ! $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
