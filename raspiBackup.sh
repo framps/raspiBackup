@@ -3954,10 +3954,14 @@ function updateScript() {
 }
 
 function hasDefaultACLs() { # directory
-	local rc
+	local rc=2	# getfacl not found
 	logEntry "$1"
-	getfacl -p $1 | grep -q -E "^default" &>>$LOG_FILE
-	rc=$?
+	if hash "getfacl" 2>/dev/null; then
+		getfacl -p $1 | grep -q -E "^default" &>>$LOG_FILE
+		rc=$?
+	else
+		logItem "getfacl not found"
+	fi
 	logExit "$rc"
 	return $rc
 }
