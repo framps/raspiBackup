@@ -70,6 +70,7 @@ declare -A REQUIRED_COMMANDS=( \
 		["fdisk"]="fdisk" \
 		["blkid"]="util-linux" \
 		["sfdisk"]="fdisk" \
+		["curl"]="curl" \
 		)
 
 requiredCmds=()
