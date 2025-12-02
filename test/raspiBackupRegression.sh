@@ -25,12 +25,12 @@
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
-SMARTRECYCLE_TEST=0
+SMARTRECYCLE_TEST=1
 BACKUP_TEST=1
-UNIT_TEST=0
+UNIT_TEST=1
 RESTORE_TEST=1
-MESSAGE_TEST=0
-KEEP_VM=1
+MESSAGE_TEST=1
+KEEP_VM=0
 
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
@@ -127,7 +127,7 @@ function smartRecycleTest() {
 
 	local rc
 
-	./raspiBackup7412Test.sh
+	sudo ./raspiBackup7412Test.sh
 	rc=$?
 	echo "@@@=====================================================================" >> $LOG_REGRESSION
 	echo "@@@================== RECYCLE raspiBackup7412Test.log ==================" >> $LOG_REGRESSION

@@ -33,8 +33,8 @@ BOOTMODE_TAR="-B+"
 
 MOUNT_HOST=192.168.0.194	# host used to mount remote backup dir
 DEPLOYED_IP=192.168.0.191	# IP of simulated Raspberry
-EXPORT_DIR="/backup"		# backup directory on host which holds the backups and is exported
-BACKUP_DIR="regression"		# -> /backup/regression_N and /backup/regression_P 
+EXPORT_DIR="/nfs"		# backup directory on host which holds the backups and is exported
+BACKUP_DIR="regression"		# -> /nfs/regression_N and /nfs/regression_P
 
 LOG_REGRESSION="raspiBackupRegression.log"
 LOG_COMPLETED="raspiBackupRegressionCompleted.log"

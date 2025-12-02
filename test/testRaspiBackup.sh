@@ -468,7 +468,6 @@ fi
 rm "$LOG_FILE"
 
 BACKUP_PATH="/mnt/$BACKUP_PATH"
-mkdir -p ${BACKUP_PATH} 2>/dev/null
 
 createV612Backups 1 1	# createNum, keepNum
 checkAllV612Backups 1
