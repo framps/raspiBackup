@@ -15,7 +15,7 @@
   * Unattended full or incremental system backup with no shutdown of the system.
   * Backup types 
     * rsync
-    * tar/tgz
+    * tar/tgz, compression bzip2, gzip, lzip, lzma, lzop, xz and zstd can also be used 
     * dd/ddz
   * No manual intervention required. Backups are created via systemd timer over night.
   * Important services can be stopped before starting the backup and will be restarted when the backup finished.

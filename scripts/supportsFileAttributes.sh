@@ -58,6 +58,8 @@ function supportsFileAttributes() {	# directory
 
 	read attrsT x ownerT groupT r <<< $(ls -la /$1/$MYNAME.fileattributes)
 	# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+	# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
+	# and a restored backup will populate these ACLs on the restored system which is wrong!
 
 	echo "Fileattributes of remote file:"
 	echo "   Attributes: $attrsT"
@@ -76,12 +78,12 @@ function supportsFileAttributes() {	# directory
 if [[ -z "$1" ]]; then
 	echo "Missing directory to check for Linux filesystem support"
 	exit 42
-fi	
+fi
 
 if [[ ! -d "$1" ]]; then
 	echo "$1 is no directory"
 	exit 42
-fi	
+fi
 
 if supportsFileAttributes "$1"; then
 	echo "Success: Filesystem on $1 supports Linux fileattributes"

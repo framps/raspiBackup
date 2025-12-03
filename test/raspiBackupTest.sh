@@ -6,7 +6,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013, 2020 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013, 2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 #
 #######################################################################################################################
 
+source ./env.defs
+
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
@@ -35,44 +37,21 @@ CURRENT_DIR=$(pwd)
 #	exit
 #fi
 
-if [[ $UID != 0 ]]; then
-	sudo $0 """"$@""""
-	exit $?
-fi
-
 LOG_FILE="$CURRENT_DIR/${MYNAME}.log"
 #rm -f "$LOG_FILE" 2>&1 1>/dev/null
 exec 1> >(tee -a "$LOG_FILE" >&1)
 exec 2> >(tee -a "$LOG_FILE" >&2)
 
-VMs=$CURRENT_DIR/qemu
-IMAGES=$VMs/images
-
 TEST_SCRIPT="testRaspiBackup.sh"
-BACKUP_ROOT_DIR="/disks/VMware"
-BACKUP_MOUNT_POINT="$MOUNT_HOST:$BACKUP_ROOT_DIR"
-BACKUP_DIR="raspibackupTest"
+BACKUP_MOUNT_POINT="$MOUNT_HOST:$EXPORT_DIR"
 BOOT_ONLY=0	# just boot vm and then exit
-KEEP_VM=0 # don't destroy VM at test end
-RASPBIAN_OS="stretch"
-CLEANUP=1
+KEEP_VM=1 # don't destroy VM at test end
+RASPBIAN_OS="bookworm"
+CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
 
-echo "Removing snapshot"
-rm $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &>/dev/null
-
-if (( $CLEANUP )); then
-	echo "Cleaning up backup directories"
-	rm -rf $BACKUP_ROOT_DIR/${BACKUP_DIR}_N > /dev/null
-	rm -rf $BACKUP_ROOT_DIR/${BACKUP_DIR}_P > /dev/null
-fi
-
-echo "Creating target backup directies"
-mkdir -p $BACKUP_ROOT_DIR/${BACKUP_DIR}_N
-mkdir -p $BACKUP_ROOT_DIR/${BACKUP_DIR}_P
-
-environment=${1:-"sd usb"}
+environment=${1:-"usb"}
 environment=${environment,,}
 type=${2:-"dd ddz tar tgz rsync"}
 type=${type,,}
@@ -85,36 +64,20 @@ echo "Executing test with following options: $environment $type $mode $bootmode"
 
 echo "Checking for VM $VM_IP already active and start VM otherwise with environment $environment"
 
+function d() {
+	echo "$(date +%Y%m%d-%H%M%S)"
+}
+
 if ! ping -c 1 $VM_IP; then
 
-	echo "Creating snapshot"
-
 	case $environment in
-		# SD card only
-		sd) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
-			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
-			$VMs/start.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &
-			;;
-		# no SD card, USB boot
-		usb) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-Nommcblk-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
-			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
-			$VMs/start.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &
-			;;
-		nvme) qemu-img create -f qcow2 -o backing_file -b $IMAGES/raspianRaspiBackup-nvme-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
-			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
-			$VMs/start.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow &
-			;;
-			# boot on SD card but use external root filesystem
-		sdbootonly) qemu-img create -f qcow2 -b $IMAGES/raspianRaspiBackup-BootSDOnly-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow
-			qemu-img create -f qcow2 -b $IMAGES/raspianRaspiBackup-RootSDOnly-${RASPBIAN_OS}.qcow $IMAGES/raspianRaspiBackup-RootSDOnly-snap-${RASPBIAN_OS}.qcow
-			echo "Starting VM in raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow"
-			$VMs/startStretchBootSDOnly.sh raspianRaspiBackup-snap-${RASPBIAN_OS}.qcow raspianRaspiBackup-RootSDOnly-snap-${RASPBIAN_OS}.qcow &
-			types="tar"
-			modes="n"
-			bootModes="d"
+		# USB boot only
+		usb)
+			echo "Starting VM ${RASPBIAN_OS}.img"
+			rpi-emu-start.sh ${RASPBIAN_OS}.img -snapshot &
 			;;
 		*) echo "invalid environment $environment"
-			ext 42
+			exit 42
 	esac
 
 	echo "Waiting for VM with IP $VM_IP to come up"
@@ -123,10 +86,11 @@ if ! ping -c 1 $VM_IP; then
 	done
 fi
 
-SCRIPTS="raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
+SCRIPTS="$GIT_REPO/raspiBackup.sh $TEST_SCRIPT constants.sh raspiBackup.conf"
 
 for file in $SCRIPTS; do
-	target="root@$VM_IP:/root"
+	filename=$(basename -- "$file")
+	target="root@$VM_IP:/root/$filename"
 	[[ $file == "raspiBackup.conf" ]] && target="root@$VM_IP:/usr/local/etc"
 	echo "Uploading $file to $target"
 	while ! scp $file $target; do

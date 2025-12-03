@@ -1,9 +1,12 @@
+*.xz
 *.log
 *.msg
 *.env
 *.conf
 *.zip
 *.img
-constants.sh
 email.conf
-
+test/qemu
+kernel
+linux*
+images

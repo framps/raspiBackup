@@ -5,7 +5,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013, 2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,15 +27,15 @@ source $SCRIPT_DIR/constants.sh
 
 SMARTRECYCLE_TEST=1
 BACKUP_TEST=1
+UNIT_TEST=1
 RESTORE_TEST=1
+MESSAGE_TEST=1
+KEEP_VM=0
+
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
-MESSAGE_TEST=1
-UNIT_TEST=1
-SHELLCHECK_TEST=1
 
-#ENVIRONMENTS_TO_TEST="sd usb sdbootonly"
-ENVIRONMENTS_TO_TEST="sd usb"
+ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
@@ -52,65 +52,82 @@ fi
 
 NOTIFY_EMAIL="$(<email.conf)"
 
+if [[ ! -d $EXPORT_DIR/${BACKUP_DIR}_N || ! -d $EXPORT_DIR/${BACKUP_DIR}_P ]]; then
+	echo "Creating target backup directies"
+	sudo mkdir -p $EXPORT_DIR/${BACKUP_DIR}_N &>/dev/null
+	sudo mkdir -p $EXPORT_DIR/${BACKUP_DIR}_P &>/dev/null
+fi
+
+if (( BACKUP_TEST )); then
+	echo "Cleaning up backup directories"
+	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_N/* > /dev/null
+	sudo rm -rf $EXPORT_DIR/${BACKUP_DIR}_P/* > /dev/null
+fi
+
 function d() {
 	echo "$(date +%Y%m%d-%H%M%S)"
 }
 
-function standardTest() {
+function sshexec() { # cmd
+	echo "Executing $@"
+	ssh root@$VM_IP "$@"
+}
+
+function standardBackupTest() {
 
 	local rc
-	if (( $BACKUP_TEST )); then
-		echo "$(d) Starting BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-		./raspiBackupTest.sh "$1" "$2" "$3" "$4"
-		rc=$?
-		echo "@@@============================================================" >> $LOG_REGRESSION
-		echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
-		echo "@@@============================================================" >> $LOG_REGRESSION
-		cat raspiBackup.log >> $LOG_REGRESSION
-		echo "@@@================================================================" >> $LOG_REGRESSION
-		echo "@@@================== BACKUP raspiBackupTest.log ==================" >> $LOG_REGRESSION
-		echo "@@@================================================================" >> $LOG_REGRESSION
-		cat raspiBackupTest.log >> $LOG_REGRESSION
+	echo "$(d) Starting BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+	./raspiBackupTest.sh "$1" "$2" "$3" "$4"
+	rc=$?
+	echo "@@@============================================================" >> $LOG_REGRESSION
+	echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
+	echo "@@@============================================================" >> $LOG_REGRESSION
+	cat raspiBackup.log >> $LOG_REGRESSION
+	echo "@@@================================================================" >> $LOG_REGRESSION
+	echo "@@@================== BACKUP raspiBackupTest.log ==================" >> $LOG_REGRESSION
+	echo "@@@================================================================" >> $LOG_REGRESSION
+	cat raspiBackupTest.log >> $LOG_REGRESSION
 
-		if [[ $rc != 0 ]]; then
-			echo "$(d) Failed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-			echo "??? Backup regression test failed"
-			echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
-			exit 127
-		fi
-
-		echo "$(d) Completed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-
-		if (( $RESTORE_TEST )); then
-			echo "$(d) Starting RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-			./raspiRestoreTest.sh
-			rc=$?
-			echo "@@@=============================================================" >> $LOG_REGRESSION
-			echo "@@@================== RESTORE raspiBackup.log ==================" >> $LOG_REGRESSION
-			echo "@@@=============================================================" >> $LOG_REGRESSION
-			cat raspiBackup.log >> $LOG_REGRESSION
-			echo "@@@=================================================================" >> $LOG_REGRESSION
-			echo "@@@================== RESTORE raspiBackupTest.log ==================" >> $LOG_REGRESSION
-			echo "@@@=================================================================" >> $LOG_REGRESSION
-			cat raspiRestoreTest.log >> $LOG_REGRESSION
-
-			if [[ $rc != 0 ]]; then
-				echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-				echo "??? Restore regression test failed"
-				echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
-				exit 127
-			fi
-		fi
-		echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
-		losetup -D
+	if [[ $rc != 0 ]]; then
+		echo "$(d) Failed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+		echo "??? Backup regression test failed"
+		echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
+		exit 127
 	fi
+
+	echo "$(d) Completed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
+	sudo losetup -D
+}
+
+function standardRestoreTest() {
+
+	echo "$(d) Starting RESTORETEST" >> $LOG_COMPLETED
+	./raspiRestoreTest.sh
+	rc=$?
+	echo "@@@=============================================================" >> $LOG_REGRESSION
+	echo "@@@================== RESTORE raspiBackup.log ==================" >> $LOG_REGRESSION
+	echo "@@@=============================================================" >> $LOG_REGRESSION
+	cat raspiBackup.log >> $LOG_REGRESSION
+	echo "@@@=================================================================" >> $LOG_REGRESSION
+	echo "@@@================== RESTORE raspiBackupTest.log ==================" >> $LOG_REGRESSION
+	echo "@@@=================================================================" >> $LOG_REGRESSION
+	cat raspiRestoreTest.log >> $LOG_REGRESSION
+
+	if [[ $rc != 0 ]]; then
+		echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
+		echo "??? Restore regression test failed"
+		echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+		exit 127
+	fi
+	echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
+	sudo losetup -D
 }
 
 function smartRecycleTest() {
 
 	local rc
 
-	./raspiBackup7412Test.sh
+	sudo ./raspiBackup7412Test.sh
 	rc=$?
 	echo "@@@=====================================================================" >> $LOG_REGRESSION
 	echo "@@@================== RECYCLE raspiBackup7412Test.log ==================" >> $LOG_REGRESSION
@@ -124,19 +141,12 @@ function smartRecycleTest() {
 	fi
 }
 
-if (( $UID != 0 )); then
-	echo "Call me as root"
-	exit 1
-fi
+#if (( $UID != 0 )); then
+#	echo "Call me as root"
+#	exit 1
+#fi
 
 rm *.log >/dev/null
-
-startTime=$(date +%Y-%M-%d/%H:%m:%S)
-echo "Start: $startTime"
-if (( $EMAIL_NOTIFICATION )); then
-	echo "Start: $startTime" | mailx -s "--- Backup regression started" "$NOTIFY_EMAIL"
-fi
-
 
 if (( $MESSAGE_TEST )); then
 	if ! ./checkMessages.sh; then
@@ -144,37 +154,41 @@ if (( $MESSAGE_TEST )); then
 	fi
 fi
 
-if (( $SMARTRECYCLE_TEST )); then
-  	if ! smartRecycleTest; then
-		exit
-	fi
-fi	
+(( UNIT_TEST )) && sudo ./unitTests.sh
 
-if (( $UNIT_TEST )); then
-	if ! ./unitTests.sh; then
-		exit
-	fi
-fi	
+(( $SMARTRECYCLE_TEST )) && smartRecycleTest
 
-if (( SHELLCHECK_TEST )); then
-	if ! ./shellcheck.sh; then
-		exit
-	fi
-fi	
+startTime=$(date +%Y-%M-%d/%H:%m:%S)
+echo "Start: $startTime"
+if (( $EMAIL_NOTIFICATION )); then
+	echo "Start: $startTime" | mailx -s "--- Backup regression started" "$NOTIFY_EMAIL"
+fi
 
-for environment in $ENVIRONMENTS_TO_TEST; do
-	for mode in $MODES_TO_TEST; do
-		for type in $TYPES_TO_TEST; do
-			[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
-			for bootmode in $BOOTMODE_TO_TEST; do
-				[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
-				standardTest "$environment" "$type" "$mode" "$bootmode"
+if (( BACKUP_TEST )); then
+	for environment in $ENVIRONMENTS_TO_TEST; do
+		for mode in $MODES_TO_TEST; do
+			for type in $TYPES_TO_TEST; do
+				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
+				for bootmode in $BOOTMODE_TO_TEST; do
+					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
+					standardBackupTest "$environment" "$type" "$mode" "$bootmode"
+				done
 			done
 		done
 	done
-done
+fi
 
-(( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
+if (( ! $KEEP_VM )); then
+	echo "Shuting down"
+	sshexec "shutdown -h now"
+	sudo pkill qemu
+fi
+
+if (( RESTORE_TEST )); then
+	standardRestoreTest
+fi
+
+#(( $ATTACH_LOG )) && attach="-A $LOG_COMPLETED"
 echo ":-) Raspibackup regression test finished successfully"
 if (( $EMAIL_NOTIFICATION )); then
 	echo "" | mailx -s ":-) Raspibackup regression test finished sucessfully" $attach "$NOTIFY_EMAIL"

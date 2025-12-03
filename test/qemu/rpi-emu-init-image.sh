@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+
+ENV_FILE="$(dirname "$0")/../env.defs"
+
+if [[ ! -f $ENV_FILE ]]; then
+        echo "Missing $ENV_FILE"
+        exit 1
+fi
+
+source $ENV_FILE
+
+CONF_FILE="$(dirname "$0")/config.conf"
+
+if [[ ! -f $CONF_FILE ]]; then
+        echo "Missing $CONF_FILE"
+        exit 1
+fi
+
+source $CONF_FILE
+
+
+if ! ping -c 1 $DEPLOYED_IP; then
+
+	rpi-emu-start.sh bookworm.img &
+
+	echo "Waiting for VM with IP $DEPLOYED_IP to come up"
+       	while ! ping -c 1 $DEPLOYED_IP &>/dev/null; do
+               	sleep 3
+		echo -n "."
+        done
+	echo
+	echo "Waiting for ssh to come up ..."
+	while ! nc -zv $DEPLOYED_IP 22 &>/dev/null; do
+		sleep 3
+		echo -n "."
+	done
+	echo
+fi
+
+sudo ssh-keygen -f '/root/.ssh/known_hosts' -R '192.168.0.191'
+echo "Copy my pub key to pi"
+ssh-copy-id pi@$DEPLOYED_IP
+echo "Copy my root pub key to pi"
+sudo cp /root/.ssh/id_$ID_SUFFIX.pub .
+scp id_$ID_SUFFIX.pub pi@$DEPLOYED_IP:~
+echo "Updating authorized_keys of pi"
+ssh pi@$DEPLOYED_IP "cat /home/pi/id_$ID_SUFFIX.pub >> authorized_keys"
+ssh pi@$DEPLOYED_IP "rm /home/pi/id_$ID_SUFFIX.pub"
+echo "Updating authorized_keys of root on pi"
+ssh pi@$DEPLOYED_IP "sudo cp /home/pi/.ssh/authorized_keys /root/.ssh/authorized_keys"
+sudo rm id_$ID_SUFFIX.pub
+echo "Shutting down $DEPLOYED_IP"
+ssh pi@$DEPLOYED_IP "sudo shutdown -h now"

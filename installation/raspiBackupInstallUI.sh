@@ -45,11 +45,17 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.3"				 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8.4"				 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
 	exit 1
+fi
+
+if [[ -n $URLTARGET ]]; then
+	echo "===> URLTARGET: $URLTARGET"
+	URLTARGET="/$URLTARGET"
+	sleep 1s
 fi
 
 # Commands used by raspiBackup and which have to be available
@@ -64,6 +70,7 @@ declare -A REQUIRED_COMMANDS=( \
 		["fdisk"]="fdisk" \
 		["blkid"]="util-linux" \
 		["sfdisk"]="fdisk" \
+		["curl"]="curl" \
 		)
 
 requiredCmds=()
@@ -4068,6 +4075,7 @@ function isUpdatePossible() {
 		(( UPDATE_POSSIBLE != -1 )) && return
 		logEntry
 		logItem "script: c:$VERSION_CURRENT p:$VERSION_PROPERTY"
+
 		if isNewerVersion "$VERSION_CURRENT" "$VERSION_PROPERTY"; then
 			UPDATE_POSSIBLE=0
 			logExit 0
@@ -4722,6 +4730,39 @@ function logStack() {
 	done
 }
 
+# return 0 for ==, -1 for <, and 1 for >
+# version format 0.1.2.3-ext, -ext will be discarded
+function compareVersions() { # v1 v2
+
+	logEntry "$1 $2"
+	local v1 v2
+	v1="$(sed 's/-.*$//' <<< "$1")"
+	v2="$(sed 's/-.*$//' <<< "$2")"
+
+	local v1e v2e IFS rc
+	#Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+	#shellcheck disable=SC2206
+	IFS="." v1e=( $v1 0 0 0 0 )
+	#Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+	#shellcheck disable=SC2206
+	IFS="." v2e=( $v2 0 0 0 0 )
+
+	local rc=0
+	for (( i=0; i<=3; i++ )); do
+		if (( ${v1e[$i]} < ${v2e[$i]} )); then
+			rc=-1
+			break
+		fi
+		if (( ${v1e[$i]} > ${v2e[$i]} )); then
+			rc=1
+			break
+		fi
+	done
+	echo $rc
+	logExit $rc
+	return
+}
+
 # 0 -> yes (current is older than actual)
 # 1 -> no (current is actual)
 # 2 -> no (current is newer)
@@ -4753,9 +4794,9 @@ function isNewerVersion() { # current actual
 	grep -iq hotfix <<< "$version"
 	local IS_HOTFIX=$((! $? ))
 
-	if [[ $version < $newVersion ]]; then
+	if (( $(compareVersions "$version" "$newVersion") < 0 )); then
 		rc=0	# new version available
-	elif [[ $version > $newVersion ]]; then
+	elif (( $(compareVersions "$version" "$newVersion") > 0 )); then
 		rc=2	# current version is a newer version
 	else	    # versions are identical
 		if [[ -z $suffix ]]; then
@@ -4772,7 +4813,7 @@ function isNewerVersion() { # current actual
 	fi
 
 	logExit "isNewVersion $1 <-> $2 - RC: $rc"
-
+	
 	return $rc
 
 }
