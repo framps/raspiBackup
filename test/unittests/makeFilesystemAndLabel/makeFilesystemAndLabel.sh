@@ -13,8 +13,10 @@ source ../../../raspiBackup.sh
 DEVICE_FILE="device.dd"
 SFDISK_FILE="mkfs.sfdisk"
 LOOP_DEVICE=""
-FILE_SYSTEMS=(fat16 fat32 ext2 ext3 ext4 btrfs f2fs)
-LABELS=(fat16Label fat32Label ext2Label ext3Label ext4Label btrfsLabel f2fsLabel)
+#FILE_SYSTEMS=(fat16 fat32 ext2 ext3 ext4 btrfs f2fs)
+FILE_SYSTEMS=(fat16 fat32 ext2 ext3 ext4 btrfs)
+#LABELS=(fat16Label fat32Label ext2Label ext3Label ext4Label btrfsLabel f2fsLabel)
+LABELS=(fat16Label fat32Label ext2Label ext3Label ext4Label btrfsLabel)
 
 trap "{ losetup -D; rm $DEVICE_FILE; }" SIGINT SIGTERM SIGHUP EXIT
 
