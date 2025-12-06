@@ -2785,7 +2785,7 @@ function exitError() { # {rc}
 	if [[ -n "$1" ]]; then
 		rc="$1"
 	else
-		assertionFailed $LINENO "Unkown exit error"
+		assertionFailed $LINENO "Unkown exit error $rc"
 	fi
 
 	logExit "$rc"
@@ -7787,7 +7787,7 @@ function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3 or /dev/nvme0
 	if [[ $1 =~ ^/dev/([^0-9]+)([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)p([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+n[0-9])+p([0-9]+)$ ]]; then
 		r="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
 	else
-		assertionFailed $LINENO "Unable to extract device info"
+		assertionFailed $LINENO "Unable to extract device info from $1"
 	fi
 
 	echo "$r"
