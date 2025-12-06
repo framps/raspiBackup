@@ -9200,7 +9200,7 @@ function doitRestore() {
 	logItem "regex: $regex"
 
 	if [[ ! $(basename "$RESTOREFILE") =~ $regex ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"POSSIBLE_TYPES
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
 	fi
 
