@@ -20,7 +20,12 @@
   * No manual intervention required. Backups are created via systemd timer over night.
   * Important services can be stopped before starting the backup and will be restarted when the backup finished.
   * Any device mountable on Linux can be used as backup space (local USB disk, remote nfs drive, remote samba share, remote ssh server using sshfs, remote ftp server using curlftpfs, webdav drive using davfs, ...).
-  * Supported systems
+  * Supported storage devices
+    * SD card
+    * eMMC
+    * USB device (HDD, SSD, flash drive, USB SD adapter)
+    * NVMe
+  * Supported boot modes
     * SD card only
     * USB disk or SSD only (USB boot mode)
     * SD card for boot and USB disk or SSD for root system (for older Raspberries which don't support USB boot)
