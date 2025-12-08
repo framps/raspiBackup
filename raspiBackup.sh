@@ -1940,9 +1940,9 @@ MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein g
 MSG_INVALID_BOOT_DEVICE=276
 MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported"
 MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootgerät %s ist nicht unterstützt"
-MSG_USBMOUNT_INSTALLED=277
-MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when %s is active"
-MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn %s active ist"
+#MSG_USBMOUNT_INSTALLED=277
+#MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when %s is active"
+#MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn %s active ist"
 MSG_BACKUP_CLEANUP_FAILED=278
 MSG_EN[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Cleanup of backupdirectories failed. Manual deletion of the last backup directory is strongly recommended !"
 MSG_DE[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Fehler bei den Aufräumarbeiten am Backupverzeichnis. Das letzte Backupverzeichnis sollte dringend manuell gelöscht werden !"
@@ -9296,16 +9296,6 @@ function doitRestore() {
 				exitError $RC_RESTORE_IMPOSSIBLE
 			fi
 		fi
-	fi
-
-	if service usbmount status 2>/dev/null | grep -q "Active: active"  &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "usbmount"
-		exitError $RC_ENVIRONMENT_ERROR
-	fi
-
-	if service autofs status 2>/dev/null | grep -q "Active: active"  &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED "autofs"
-		exitError $RC_ENVIRONMENT_ERROR
 	fi
 
 	BASE_DIR=$(dirname "$RESTOREFILE")
