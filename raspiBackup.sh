@@ -1603,10 +1603,8 @@ MSG_DE[$MSG_MISSING_PARTITION]="RBK0207E: Keine Partitionen auf %s gefunden"
 MSG_FI[$MSG_MISSING_PARTITION]="RBK0207E: Osioita puuttuu laitteelta %s"
 MSG_FR[$MSG_MISSING_PARTITION]="RBK0207E: Aucune partition trouvée sur %s"
 MSG_NO_UUID_SYNCHRONIZED=208
-MSG_EN[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: No UUID updated in %s for %s. Backup may not boot correctly"
-MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Es konnte keine UUID in %s für %s erneuert werden. Das Backup könnte nicht starten"
-MSG_FI[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: %s ei päivittänyt UUID-tunnusta kohteelle %s. Varmuuskopio ei välttämättä käynnisty oikein"
-MSG_FR[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Un UUID dans %s pour %s n'a pas pu être renouvelé. La sauvegarde n'a pas pu démarrer"
+MSG_EN[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208E: No UUID updated in %s for %s"
+MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208E: Es konnte keine UUID in %s für %s erneuert werden"
 #MSG_UUIDS_NOT_UNIQUE=209
 #MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs are not unique on devices and/or partitions and may cause issues. In case of error messages check them with 'sudo blkid' and make them unique"
 #MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen und kann Probleme bereiten. Falls Fehlermeldungen auftreten sollten sie mit 'sudo blkid' überprüft und dann eindeutig gemacht werden"
@@ -9777,6 +9775,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
@@ -9789,6 +9788,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
 				sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
@@ -9802,6 +9802,7 @@ function synchronizeCmdlineAndfstab() {
 			if (( $rc )); then
 				local cmd="e2label $ROOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+				exitError "$RC_LABEL_ERROR"
 			else
 				rootLabelCreated=1
 			fi
@@ -9829,6 +9830,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab" "/"
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				local oldpartuuidID
 				oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
@@ -9844,6 +9846,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				local olduuidID
 				olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
@@ -9862,6 +9865,7 @@ function synchronizeCmdlineAndfstab() {
 				if (( $rc )); then
 					local cmd="e2label $ROOT_PARTITION $oldLABEL"
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+					exitError "$RC_LABEL_ERROR"
 				else
 					rootLabelCreated=1
 				fi
@@ -9888,6 +9892,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$FSTAB" &>> "$LOG_FILE"
@@ -9899,6 +9904,7 @@ function synchronizeCmdlineAndfstab() {
 			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
 				sed -i "s/$oldUUID/$newUUID/" "$FSTAB" &>> "$LOG_FILE"
@@ -9912,6 +9918,7 @@ function synchronizeCmdlineAndfstab() {
 			if (( $rc )); then
 				local cmd="dosfslabel $BOOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+				exitError "$RC_LABEL_ERROR"
 			fi
 		elif grep "^/dev/" "$FSTAB"; then
 			logItem "/dev detected in $FSTAB"
