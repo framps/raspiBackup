@@ -6633,14 +6633,14 @@ function partitionRestoredeviceIfRequested() {
 			local tmpSF
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
-			sfdisk -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
+			sfdisk --wipe always -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
 			rc=$?
 			if (( $rc )); then
 				if (( $rc == 1 )); then
 					tmpSF="$(basename $SF_FILE)"
 					cp "$SF_FILE" "/tmp/$tmpSF"
 					sed -i 's/sector-size/d' "/tmp/$tmpSF"
-					sfdisk -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
+					sfdisk --wipe always -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
 					rc=$?
 					rm "/tmp/$tmpSF"
 				fi
@@ -6739,14 +6739,14 @@ function partitionRestoredeviceIfRequested() {
 				cp "$SF_FILE" "$MODIFIED_SFDISK" # just use unmodified sfdisk when option -R is used for a hybrid system
 			fi
 
-			sfdisk -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+			sfdisk --wipe always -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
 			rc=$?
 			if (( $rc )); then
 				logItem "sfdisk first attempt fails with rc $rc"
 				if (( $rc == 1 )); then								# sector-size is new in bullseye and breaks restore with older OS
 					sed -i '/sector-size/d' "$MODIFIED_SFDISK"		# remove sector-size
 					logCommand "cat $MODIFIED_SFDISK"
-					sfdisk -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+					sfdisk --wipe always -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
 					rc=$?
 				fi
 			fi
