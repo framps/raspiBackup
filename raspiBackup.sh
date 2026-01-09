@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-m_943"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -5208,10 +5208,8 @@ function cleanupBackupDirectory() {
 			fi
 		else
 			logItem "Removing $BACKUP_TEMP_ROOT_DIR"
-			rmdir "$BACKUP_TEMP_ROOT_DIR"
+			rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
 		fi
-		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
-		rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
 	fi
 
 	logExit
@@ -5492,28 +5490,20 @@ function cleanup() { # trap
 
 	logSystemServices
 
-	CLEANUP_RC=$rc
-
 	if (( $RESTORE )); then
 		cleanupRestore $1
+
 	else
 
-		if (( $PRE_BACKUP_EXTENSION_CALLED )); then
-			callExtensions $POST_BACKUP_EXTENSION $rc
-		fi
-
-		startServices "noexit"
-		executeAfterStartServices "noexit"
-
-		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
+		if [[ $rc -eq 0 ]]; then # move new backup into backup directory
 			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 			if [[ -d "${BACKUPTARGET_DIR}" ]]; then   # does not exists if raspiBackup7412Test runs
-				local rc
+				local mv_rc
 				mv "${BACKUPTARGET_DIR}" "${BACKUPTARGET_FINAL_DIR}"
-				rc=$?
-				if (( $rc )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
-					CLEANUP_RC=$RC_TEMPMOVE_FAILED
+				mv_rc=$?
+				if (( $mv_rc )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $mv_rc
+					rc=$RC_TEMPMOVE_FAILED
 				else
 					if [[ $MSG_LEVEL == "$MSG_LEVEL_MINIMAL" ]]; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
@@ -5525,8 +5515,17 @@ function cleanup() { # trap
 			else
 				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
 			fi
+		fi
 
-			if (( ! $CLEANUP_RC && ! $IS_SNAPSHOT )); then # smartrecycle only if mv succeeded and no snapshot was created
+		if (( $PRE_BACKUP_EXTENSION_CALLED )); then
+			callExtensions $POST_BACKUP_EXTENSION $rc
+		fi
+
+		startServices "noexit"
+		executeAfterStartServices "noexit"
+
+		if [[ $rc -eq 0 ]]; then 
+			if (( ! $IS_SNAPSHOT )); then # smartrecycle only if backup OK and mv succeeded and no snapshot was created
 				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
 					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
@@ -5543,9 +5542,9 @@ function cleanup() { # trap
 	cleanupBackup
 	cleanupTempFiles
 
-	finalCommand "$CLEANUP_RC"
+	finalCommand "$rc"
 
-	logItem "Terminate now with rc $CLEANUP_RC"
+	logItem "Terminate now with rc $rc"
 
 	if (( $rc != 0 )); then
 		if (( ! $MAIL_ON_ERROR_ONLY )); then
@@ -10411,7 +10410,6 @@ UPDATE_MYSELF=0
 UPDATE_POSSIBLE=0
 VERSION_DEPRECATED=0
 WARNING_MESSAGE_WRITTEN=0
-CLEANUP_RC=0
 UPDATE_CONFIG=0
 UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
 rc=0
