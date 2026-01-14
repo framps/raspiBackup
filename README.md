@@ -74,7 +74,7 @@ Support is also given **only** for raspiBackup specific issues. For general Linu
 ## Documentation
 
 ### English
-* [Complete raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
+* [Comprehensive raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
 * [Installation](https://framps.github.io/raspiBackupDoc/installation-in-5-minutes.html)
 * [FAQ](https://framps.github.io/raspiBackupDoc/faq.html)
 * [Error messages, root causes and suggested actions](https://framps.github.io/raspiBackupDoc/error-messages.html)
