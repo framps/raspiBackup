@@ -34,6 +34,8 @@ source ./raspiBackupFuncs.sh
 
 readonly DB_FILENAME="raspiBackupServer.sql"
 
+declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 function DB_ctor() { 
 	readonly DB_filename="DB_FILENAME"
 }	
@@ -64,14 +66,28 @@ EOF
 EOF
 }
 
-function DB_addClient { # name, ip, username, password, sshkey
+function DB_ClientAdd { # name, ip, username, password, sshkey
 	sqlite3 "$DB_FILENAME" <<EOF
 		INSERT INTO clients (name, ip, username, password, sshkey)
 		VALUES ("$1", "$2", "$3", "$4", "$5");
 EOF
 }
 
-function DB_addJob { # name, ip, username, password, sshkey
+function DB_ClientGet { # name
+	
+    local result=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
+
+	echo "$result"
+}
+
+function DB_ClientDelete { # name
+	local clientid ip username password sshkey
+	DB_JobDelete "$1"
+	IFS="|" read -r clientid ip username password sshkey <<<"$(DB_JobGet "$1")"
+	sqlite3 "$DB_FILENAME" "DELETE FROM clients WHERE id = \"$clientid\";"	
+}
+
+function DB_JobAdd { # name, ip, username, password, sshkey
 	
     local clientId=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
 	if [[ -z "$clientId" ]]; then
@@ -84,7 +100,7 @@ function DB_addJob { # name, ip, username, password, sshkey
 EOF
 }
 
-function DB_getJob { # name
+function DB_JobGet { # name
 	
     local clientId=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
 	if [[ -z "$clientId" ]]; then
@@ -94,7 +110,12 @@ function DB_getJob { # name
 	local result=$(sqlite3 "$DB_FILENAME" "SELECT clientid, device, maxbackups, time, weekdays FROM jobs WHERE clientid = \"$clientId\";")
 
 	echo "$result"
+}
 
+function DB_JobDelete { # name
+	local clientid device maxbackups time weekdays
+	IFS="|" read -r clientid device maxbackups time weekdays <<<"$(DB_ClientGet "$1")"
+	sqlite3 "$DB_FILENAME" "DELETE FROM jobs WHERE clientid = \"$clientid\";"
 }
 
 function DB_drop() {	
@@ -102,6 +123,10 @@ function DB_drop() {
 		DROP TABLE IF EXISTS clients;
 		DROP TABLE IF EXISTS jobs;
 EOF
+}
+
+function DB_dtor() {	
+	rm $DB_FILENAME
 }
 
 function DB_tables() {	
@@ -126,10 +151,18 @@ DB_initialize
 
 DB_tables
 
-DB_addClient "CM4" "192.168.0.158" "pi" "password" "key"
-DB_addJob "CM4" "/dev/mmcblk0" "3" "13:00" "Mon"
+DB_ClientAdd "CM4" "192.168.0.158" "pi" "password" "key"
+DB_JobAdd "CM4" "/dev/mmcblk0" "3" "13:00" "Mon"
 
-IFS="|" read -r clientid device maxbackups time weekdays <<<"$(DB_getJob "CM4")"
+echo "Inserted CM4"
+DB_dump
+
+echo "Reading CM4"
+IFS="|" read -r clientid device maxbackups time weekdays <<<"$(DB_JobGet "CM4")"
 echo "CM4 => $device $maxbackups $time $weekdays"
 
+echo "Deleting CM4"
+DB_ClientDelete "CM4"
 DB_dump
+
+DB_dtor
