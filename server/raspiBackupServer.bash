@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2004
+# SC2004: $ not required in arithmentic expressions
+#
 #######################################################################################################################
 #
 #    Copyright (c) 2026 framp at linux-tips-and-tricks dot de

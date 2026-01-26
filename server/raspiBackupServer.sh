@@ -32,7 +32,8 @@ trap 'err $?' ERR
 
 SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
 
-source $SCRIPT_DIR/raspiBackupServer.bash
+#source "$SCRIPT_DIR"/raspiBackupServer.bash
+source ./raspiBackupServer.bash
 
 readonly DB_FILENAME="raspiBackupServer.sql"
 readonly DB_CONFIG_FILENAME=".sqliterc"
@@ -40,9 +41,6 @@ readonly DB_CONFIG_FILENAME=".sqliterc"
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 function DB_ctor() {
-	[[ -z "$1" ]] && error "Missing DB name"
-	readonly DB_filename="$1"
-
 	if [[ ! -f $DB_CONFIG_FILENAME ]]; then
 		cat > $DB_CONFIG_FILENAME <<-EOF
 .bail ON
@@ -88,21 +86,21 @@ EOF
 
 function DB_ClientGet { # name
 	
-    local result=$(sqlite3 "$DB_FILENAME" "SELECT * FROM clients WHERE name = \"$1\";")
-
+    local result; result=$(sqlite3 "$DB_FILENAME" "SELECT * FROM clients WHERE name = \"$1\";")
+	echo "---> $?"
 	echo "$result"
 }
 
 function DB_ClientDelete { # name 
-	local clientid ip username password sshkey
+	local clientid 
 	DB_JobDelete "$1"
-	IFS="|" read -r clientid ip username password sshkey <<<"$(DB_JobGet "$1")"
+	IFS="|" read -r clientid <<<"$(DB_JobGet "$1")"
 	sqlite3 "$DB_FILENAME" "DELETE FROM clients WHERE id = \"$clientid\";"	
 }
 
 function DB_JobAdd { # name, ip, username, password, sshkey
 	
-    local clientId=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
+    local clientId; clientId=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
 	if [[ -z "$clientId" ]]; then
 		error "$1 not defined"
 	fi
@@ -115,19 +113,19 @@ EOF
 
 function DB_JobGet { # name
 	
-    local clientId=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
+    local clientId; clientId=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
 	if [[ -z "$clientId" ]]; then
 		error "$1 not defined"
 	fi
 
-	local result=$(sqlite3 "$DB_FILENAME" "SELECT * FROM jobs WHERE clientid = \"$clientId\";")
+	local result; result=$(sqlite3 "$DB_FILENAME" "SELECT * FROM jobs WHERE clientid = \"$clientId\";")
 
 	echo "$result"
 }
 
 function DB_JobDelete { # name
-	local clientid device maxbackups time weekdays
-	IFS="|" read -r clientid device maxbackups time weekdays <<<"$(DB_ClientGet "$1")"
+	local clientid 
+	IFS="|" read -r clientid <<<"$(DB_ClientGet "$1")"
 	sqlite3 "$DB_FILENAME" "DELETE FROM jobs WHERE clientid = \"$clientid\";"
 }
 

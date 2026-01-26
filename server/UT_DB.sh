@@ -27,15 +27,16 @@
 
 set -euo pipefail
 
+
 SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
 
-source $SCRIPT_DIR/../raspiBackupServer.bash
-source $SCRIPT_DIR/../raspiBackupServer.sh
+#source $SCRIPT_DIR/../raspiBackupServer.sh
+source ./raspiBackupServer.sh
 
 trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 trap 'err $?' ERR
 
-DB_ctor "TestDB"
+DB_ctor
 DB_drop
 DB_initialize
 
@@ -46,6 +47,8 @@ DB_JobAdd "CM4" "/dev/mmcblk0" "3" "13:00" "Mon"
 
 echo "Inserted CM4"
 DB_dump
+
+#DB_ClientAdd "CM4" "192.168.0.158" "pi" "password" "key"
 
 client="CM4"
 echo "Get $client client"
