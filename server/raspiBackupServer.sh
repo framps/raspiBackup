@@ -30,19 +30,31 @@ set -euo pipefail
 trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 trap 'err $?' ERR
 
-source ./raspiBackupFuncs.sh
+SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
+
+source $SCRIPT_DIR/raspiBackupServer.bash
 
 readonly DB_FILENAME="raspiBackupServer.sql"
+readonly DB_CONFIG_FILENAME=".sqliterc"
 
 declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-function DB_ctor() { 
-	readonly DB_filename="DB_FILENAME"
+function DB_ctor() {
+	[[ -z "$1" ]] && error "Missing DB name"
+	readonly DB_filename="$1"
+
+	if [[ ! -f $DB_CONFIG_FILENAME ]]; then
+		cat > $DB_CONFIG_FILENAME <<-EOF
+.bail ON
+.echo OFF
+PRAGMA foreign_keys = TRUE;
+EOF
+	fi
 }	
 
 function DB_initialize() {
 	
-    sqlite3 "$DB_FILENAME" <<EOF
+    sqlite3 "$DB_FILENAME" <<-EOF
 		CREATE TABLE IF NOT EXISTS clients (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
@@ -52,8 +64,9 @@ function DB_initialize() {
 			sshkey BOOLEAN DEFAULT 0
 );
 EOF
+	echo "1) $?"
 
-    sqlite3 "$DB_FILENAME" <<EOF
+    sqlite3 "$DB_FILENAME" <<-EOF
 		CREATE TABLE IF NOT EXISTS jobs (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			clientid INTEGER NOT NULL,
@@ -67,7 +80,7 @@ EOF
 }
 
 function DB_ClientAdd { # name, ip, username, password, sshkey
-	sqlite3 "$DB_FILENAME" <<EOF
+	sqlite3 "$DB_FILENAME" <<-EOF
 		INSERT INTO clients (name, ip, username, password, sshkey)
 		VALUES ("$1", "$2", "$3", "$4", "$5");
 EOF
@@ -75,12 +88,12 @@ EOF
 
 function DB_ClientGet { # name
 	
-    local result=$(sqlite3 "$DB_FILENAME" "SELECT id FROM clients WHERE name = \"$1\";")
+    local result=$(sqlite3 "$DB_FILENAME" "SELECT * FROM clients WHERE name = \"$1\";")
 
 	echo "$result"
 }
 
-function DB_ClientDelete { # name
+function DB_ClientDelete { # name 
 	local clientid ip username password sshkey
 	DB_JobDelete "$1"
 	IFS="|" read -r clientid ip username password sshkey <<<"$(DB_JobGet "$1")"
@@ -94,7 +107,7 @@ function DB_JobAdd { # name, ip, username, password, sshkey
 		error "$1 not defined"
 	fi
 
-	sqlite3 "$DB_FILENAME" <<EOF
+	sqlite3 "$DB_FILENAME" <<-EOF
 		INSERT INTO jobs (clientid, device, maxbackups, time, weekdays)
 		VALUES ("$clientId", "$2", "$3", "$4", "$5");
 EOF
@@ -107,7 +120,7 @@ function DB_JobGet { # name
 		error "$1 not defined"
 	fi
 
-	local result=$(sqlite3 "$DB_FILENAME" "SELECT clientid, device, maxbackups, time, weekdays FROM jobs WHERE clientid = \"$clientId\";")
+	local result=$(sqlite3 "$DB_FILENAME" "SELECT * FROM jobs WHERE clientid = \"$clientId\";")
 
 	echo "$result"
 }
@@ -119,7 +132,7 @@ function DB_JobDelete { # name
 }
 
 function DB_drop() {	
-    sqlite3 "$DB_FILENAME" <<EOF
+    sqlite3 "$DB_FILENAME" <<-EOF
 		DROP TABLE IF EXISTS clients;
 		DROP TABLE IF EXISTS jobs;
 EOF
@@ -131,38 +144,17 @@ function DB_dtor() {
 
 function DB_tables() {	
 	sqlite3 "$DB_FILENAME" <<-EOF
-		.tables
-		.schema clients;
-		.schema jobs;
+.tables
+.schema clients;
+.schema jobs;
 EOF
 }
 
 function DB_dump() {	
 	sqlite3 "$DB_FILENAME" <<-EOF
-		.headers on	
+.headers on	
 		SELECT * FROM clients;
 		SELECT * FROM jobs;
 EOF
 }	
     
-DB_ctor
-DB_drop
-DB_initialize
-
-DB_tables
-
-DB_ClientAdd "CM4" "192.168.0.158" "pi" "password" "key"
-DB_JobAdd "CM4" "/dev/mmcblk0" "3" "13:00" "Mon"
-
-echo "Inserted CM4"
-DB_dump
-
-echo "Reading CM4"
-IFS="|" read -r clientid device maxbackups time weekdays <<<"$(DB_JobGet "CM4")"
-echo "CM4 => $device $maxbackups $time $weekdays"
-
-echo "Deleting CM4"
-DB_ClientDelete "CM4"
-DB_dump
-
-DB_dtor

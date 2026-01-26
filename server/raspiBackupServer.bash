@@ -33,6 +33,7 @@ function cleanup() {
 }
 
 function error() {
+	caller 0
     echo "??? $*" > /dev/tty
     exit 1
 }
