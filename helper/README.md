@@ -1,7 +1,7 @@
 ## Collection of some sample scripts useful for raspiBackup users
 
 
-__Note:__ Most of the scripts are provided by framps as is and are not included in any raspiBackup release and thus are not maintained. Enhancements and other helper scripts are welcome in a PR. raspiBackupDialog was provided by [franjo-G](https://github.com/franjo-G) and will be maintained by him. 
+__Note:__ Most of the scripts are provided by framps as is and are not included in any raspiBackup release and thus are not maintained. Enhancements and other helper scripts are welcome in a PR. raspiBackupDialog was provided by [franjo-G](https://github.com/franjo-G) and will be maintained by him.
 
 1. r2i-raspi - Sample code which retrieves the latest backup created with raspiBackup and uses raspiBackupRestore2Image to create an image from a tar or rsync backup
 
@@ -11,9 +11,7 @@ __Note:__ Most of the scripts are provided by framps as is and are not included 
 
 4. raspiImageMail - Send an email using the functions from raspiBackup, based of version 0.6.4
 
-5. stopStartAllServicesWrapper - Script wish either stops or starts all existing services.
-
-6. raspiBackupDialog.sh - Makes backup and restore of backups much more convenient. (Old name: raspiBackupRestoreHelper.sh) 
+5. raspiBackupDialog.sh - Makes backup and restore of backups much more convenient. (Old name: raspiBackupRestoreHelper.sh)
 
    Help script to create a backup or restore a backup created with raspiBackup in a simple, dialog-driven way.
    It can simply be started without any options. Then first a query appears whether a backup should be created or a restore should be performed. In case of a restore it is asked if the last backup should be restored. (y/N) At (N) a corresponding backup can be selected from a list. Then the target medium is selected and raspiBackup does the rest.
@@ -23,7 +21,7 @@ __Note:__ Most of the scripts are provided by framps as is and are not included 
         Option --last -> the last backup will be selected automatically and the target medium is requested without
                          further inquiry
         Option --select -> the desired backup can be selected from a list
-        Option --backup -> some options are asked like more than two default partitions, comment in backup name....    
+        Option --backup -> some options are asked like more than two default partitions, comment in backup name....
     - See [this flowchart](./images/raspiBackopRestoreHelper_simple_flow-chart.pdf) for details
 
    Upgrade 2022-07-22
