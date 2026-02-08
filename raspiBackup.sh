@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2-m_954"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -6570,7 +6570,6 @@ function partitionRestoredeviceIfRequested() {
 
 	logEntry
 
-	set -x
 	if (( $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
@@ -6764,7 +6763,6 @@ function partitionRestoredeviceIfRequested() {
 		logItem "Targetpartitionlayout$NL$(fdisk -l "$RESTORE_DEVICE")"
 	fi
 
-	set +x
 	logExit
 }
 
