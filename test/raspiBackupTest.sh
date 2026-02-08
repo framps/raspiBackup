@@ -51,14 +51,14 @@ CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
 
-environment=${1:-"usb"}
-environment=${environment,,}
-type=${2:-"dd ddz tar tgz rsync"}
-type=${type,,}
-mode=${3:-"n p"}
-mode=${mode,,}
-bootmode=${4:-"d t"}
-bootmode=${bootmode,,}
+environment="${1:-"usb"}"
+environment="${environment,,}"
+type="${2:-"dd ddz tar tgz rsync"}"
+type="${type,,}"
+mode="${3:-"n p"}"
+mode="${mode,,}"
+bootmode="${4:-"d t"}"
+bootmode="${bootmode,,}"
 
 echo "Executing test with following options: $environment $type $mode $bootmode"
 

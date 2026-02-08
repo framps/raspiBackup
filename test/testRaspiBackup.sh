@@ -45,12 +45,12 @@ CREATE_ANOTHER_BACKUP=0
 KEEP_BACKUPS=1
 NUMBER_OF_BACKUPS=1
 
-MOUNT_POINT=${1:-"$MOUNT_HOST:/disks/VMware/"}
-BACKUP_PATH=${2:-"raspiBackupTest"}
-ENVIRONMENT=${3:-"SD USB SDBOOTONLY"}
-TYPES_TO_TEST=${4:-"dd ddz tar tgz rsync"}
-MODES_TO_TEST=${5:-"n p"}
-BOOT_MODES=${6:-"d t"}
+MOUNT_POINT="${1:-"$MOUNT_HOST:/disks/VMware/"}"
+BACKUP_PATH="${2:-"raspiBackupTest"}"
+ENVIRONMENT="${3:-"SD USB SDBOOTONLY"}"
+TYPES_TO_TEST="${4:-"dd ddz tar tgz rsync"}"
+MODES_TO_TEST="${5:-"n p"}"
+BOOT_MODES="${6:-"d t"}"
 
 declare -A processedFiles
 
@@ -98,7 +98,7 @@ createV612Backups() { # number of backups, keep backups
 	local mode backupType bootMode bM
 
 	for mode in $MODES_TO_TEST; do
-		for backupType in $TYPES_TO_TEST; do
+		for backupType in "${TYPES_TO_TEST[@}"; do
 			[[ $backupType =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 			for bootMode in $BOOT_MODES; do
 				[[ $bootMode == "t" &&  ( $backupType =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
