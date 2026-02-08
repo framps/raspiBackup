@@ -25,20 +25,23 @@
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 source $SCRIPT_DIR/constants.sh
 
-SMARTRECYCLE_TEST=1
+SMARTRECYCLE_TEST=0
 BACKUP_TEST=1
-UNIT_TEST=1
+UNIT_TEST=0
 RESTORE_TEST=1
-MESSAGE_TEST=1
+MESSAGE_TEST=0
 KEEP_VM=0
 
 EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
 
 ENVIRONMENTS_TO_TEST="usb"
-TYPES_TO_TEST="dd tar rsync"
+TYPES_TO_TEST=( "dd" "tar" "tar --tarCompressionTool gzip" "rsync")
+TYPES_TO_TEST=( "tar --tarCompressionTool gzip" "tar --compressionTool zstd" )
+
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
+BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
@@ -167,7 +170,7 @@ fi
 if (( BACKUP_TEST )); then
 	for environment in $ENVIRONMENTS_TO_TEST; do
 		for mode in $MODES_TO_TEST; do
-			for type in $TYPES_TO_TEST; do
+			for type in "${TYPES_TO_TEST[@]}"; do
 				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 				for bootmode in $BOOTMODE_TO_TEST; do
 					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
