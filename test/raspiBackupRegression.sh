@@ -175,7 +175,7 @@ if (( BACKUP_TEST )); then
 				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 				for bootmode in $BOOTMODE_TO_TEST; do
 					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
-					standardBackupTest "$environment" "$type" "$mode" "$bootmode" "o"
+					standardBackupTest "$environment" "$t" "$mode" "$bootmode" "$o"
 				done
 			done
 		done
