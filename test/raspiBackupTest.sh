@@ -61,7 +61,7 @@ bootmode="${4}"
 bootmode="${bootmode,,}"
 options="${5}"
 
-echo "Executing test with following options: $environment $type $mode $bootmode"
+echo "Executing test with following options: $environment $type $mode $bootmode $options"
 
 echo "Checking for VM $VM_IP already active and start VM otherwise with environment $environment"
 

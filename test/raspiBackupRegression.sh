@@ -79,7 +79,7 @@ function standardBackupTest() {
 
 	local rc
 	echo "$(d) Starting BACKUP $1 $2 $3 $4 $5" >> $LOG_COMPLETED
-	./raspiBackupTest.sh "$1" "$2" "$3" "$4 $5"
+	./raspiBackupTest.sh "$1" "$2" "$3" "$4" "$5"
 	rc=$?
 	echo "@@@============================================================" >> $LOG_REGRESSION
 	echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
