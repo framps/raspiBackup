@@ -47,10 +47,11 @@ NUMBER_OF_BACKUPS=1
 
 MOUNT_POINT="${1:-"$MOUNT_HOST:/disks/VMware/"}"
 BACKUP_PATH="${2:-"raspiBackupTest"}"
-ENVIRONMENT="${3:-"SD USB SDBOOTONLY"}"
-TYPES_TO_TEST="${4:-"dd ddz tar tgz rsync"}"
-MODES_TO_TEST="${5:-"n p"}"
-BOOT_MODES="${6:-"d t"}"
+ENVIRONMENT="${3}"
+TYPES_TO_TEST="${4}"
+MODES_TO_TEST="${5}"
+BOOT_MODES="${6}"
+OPTIONS="${7}"
 
 declare -A processedFiles
 
@@ -103,7 +104,7 @@ createV612Backups() { # number of backups, keep backups
 			for bootMode in $BOOT_MODES; do
 				[[ $bootMode == "t" &&  ( $backupType =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
 				[[ $bootMode == "t" ]] && bM="$BOOTMODE_TAR" || bM="$BOOTMODE_DD"
-				createBackups $backupType $1 $mode $2 $bM
+				createBackups $backupType $1 $mode $2 $bM "$OPTIONS"
 			done
 		done
 	done
@@ -119,9 +120,9 @@ function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ..
 	fi
 
 	for (( i=1; i<=$2; i++)); do
-		echo "--- Creating $1 backup number $i of mode $3 and option $5 in ${BACKUP_PATH}_${3^^}"
+		echo "--- Creating $1 backup number $i of mode $3 and option $5 and $6 in ${BACKUP_PATH}_${3^^}"
 		log "sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}""
-		sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}"
+		sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "$6" "${BACKUP_PATH}_${3^^}"
 		rc=$?
 
 		local logFile=$(getLogName $1 $3)
@@ -325,10 +326,10 @@ function checkV612Backups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 
 	local e
 	log "--- checkV612Backups $1 $2 $3 ---"
-	checkV612BootBackups $1 $2 $3
+	checkV612BootBackups "$1" "$2" "$3"
 	e=$?
 	(( sumErrors += e ))
-	checkV612RootBackups $1 $2 $3
+	checkV612RootBackups "$1" "$2" "$3"
 	e=$?
 	(( sumErrors += e ))
 }
@@ -341,7 +342,7 @@ function checkAllV612Backups() {  # number of backups
 	for mode in $MODES_TO_TEST; do
 		for backupType in "${TYPES_TO_TEST[@]}"; do
 			[[ $backupType =~ "dd" && $mode == "p" ]] && continue
-			checkV612Backups $backupType $1 ${mode^^}
+			checkV612Backups "$backupType" "$1" "${mode^^}"
 		done
 	done
 

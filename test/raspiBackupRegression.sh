@@ -36,9 +36,8 @@ EMAIL_NOTIFICATION=1
 ATTACH_LOG=1
 
 ENVIRONMENTS_TO_TEST="usb"
-TYPES_TO_TEST=( "dd" "tar" "tar --tarCompressionTool gzip" "rsync")
-TYPES_TO_TEST=( "tar --tarCompressionTool gzip" "tar --compressionTool zstd" )
-
+TYPES_TO_TEST="dd tar rsync"
+TYPES_TO_TEST=("tar --tarCompressionTool gzip" "tar --compressionTool zstd" ) 
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
 BOOTMODE_TO_TEST="d"
@@ -79,8 +78,8 @@ function sshexec() { # cmd
 function standardBackupTest() {
 
 	local rc
-	echo "$(d) Starting BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
-	./raspiBackupTest.sh "$1" "$2" "$3" "$4"
+	echo "$(d) Starting BACKUP $1 $2 $3 $4 $5" >> $LOG_COMPLETED
+	./raspiBackupTest.sh "$1" "$2" "$3" "$4 $5"
 	rc=$?
 	echo "@@@============================================================" >> $LOG_REGRESSION
 	echo "@@@================== BACKUP raspiBackup.log ==================" >> $LOG_REGRESSION
@@ -170,11 +169,13 @@ fi
 if (( BACKUP_TEST )); then
 	for environment in $ENVIRONMENTS_TO_TEST; do
 		for mode in $MODES_TO_TEST; do
-			for type in "${TYPES_TO_TEST[@]}"; do
+			for type in "${TYPES_TO_TEST[0]}"; do
+				t="$(cut -f 1 -d " " <<< "$type")"
+				o="$(cut -f 2- -d " " <<< "$type")"				
 				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 				for bootmode in $BOOTMODE_TO_TEST; do
 					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
-					standardBackupTest "$environment" "$type" "$mode" "$bootmode"
+					standardBackupTest "$environment" "$type" "$mode" "$bootmode" "o"
 				done
 			done
 		done

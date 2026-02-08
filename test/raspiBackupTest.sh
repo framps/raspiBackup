@@ -51,14 +51,15 @@ CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
 
-environment="${1:-"usb"}"
+environment="${1}"
 environment="${environment,,}"
-type="${2:-"dd ddz tar tgz rsync"}"
+type="${2}"
 type="${type,,}"
-mode="${3:-"n p"}"
+mode="${3}"
 mode="${mode,,}"
-bootmode="${4:-"d t"}"
+bootmode="${4}"
 bootmode="${bootmode,,}"
+options="${5}"
 
 echo "Executing test with following options: $environment $type $mode $bootmode"
 
@@ -110,7 +111,7 @@ function sshexec() { # cmd
 
 sshexec "chmod +x ~/$TEST_SCRIPT"
 
-sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
+sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\" \"$options\""
 
 tmp=$(mktemp)
 
