@@ -47,10 +47,10 @@ if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
 	exit 42
 elif (( $# > 1 )); then
-	ENVIRONMENTS_TO_TEST=${1:-"$ENVIRONMENTS_TO_TEST"}
-	TYPES_TO_TEST=${2:-"$TYPES_TO_TEST"}
-	MODES_TO_TEST=${3:-"$MODES_TO_TEST"}
-	BOOTMODE_TO_TEST=${4:-"$BOOTMODE_TO_TEST"}
+	ENVIRONMENTS_TO_TEST="${1:-"$ENVIRONMENTS_TO_TEST"}"
+	TYPES_TO_TEST="${2:-"$TYPES_TO_TEST"}"
+	MODES_TO_TEST="${3:-"$MODES_TO_TEST"}"
+	BOOTMODE_TO_TEST="${4:-"$BOOTMODE_TO_TEST"}"
 fi
 
 NOTIFY_EMAIL="$(<email.conf)"

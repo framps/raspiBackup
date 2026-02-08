@@ -339,7 +339,7 @@ function checkAllV612Backups() {  # number of backups
 	errors=0
 
 	for mode in $MODES_TO_TEST; do
-		for backupType in $TYPES_TO_TEST; do
+		for backupType in "${TYPES_TO_TEST[@]}"; do
 			[[ $backupType =~ "dd" && $mode == "p" ]] && continue
 			checkV612Backups $backupType $1 ${mode^^}
 		done
@@ -387,7 +387,7 @@ function standardTest() {
 
 		log "--- Processing mode $backupMode ---"
 
-		for backupType in $TYPES_TO_TEST; do
+		for backupType in "${TYPES_TO_TEST[@]}"; do
 
 	# create initial backups
 
