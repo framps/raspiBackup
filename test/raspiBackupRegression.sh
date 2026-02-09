@@ -37,7 +37,7 @@ ATTACH_LOG=1
 
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
-TYPES_TO_TEST=("tar --tarCompressionTool gzip" "tar --compressionTool zstd" ) 
+TYPES_TO_TEST=( "tar --tarCompressionTool zst" ) 
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
 BOOTMODE_TO_TEST="d"

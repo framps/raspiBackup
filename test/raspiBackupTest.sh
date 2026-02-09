@@ -133,9 +133,9 @@ if (( ! $KEEP_VM )); then
 fi
 
 if (( $rc != 0 )); then
-	echo "??? Backup failed $1 $2 $3 $4"
+	echo "??? Backup failed $1 $2 $3 $4 $5"
 	(( $EXIT_ON_FAILURE )) && exit 127 || exit 0
 else
-	echo "--- Backup successfull $1 $2 $3 $4"
+	echo "--- Backup successfull $1 $2 $3 $4 $5"
 	exit 0
 fi

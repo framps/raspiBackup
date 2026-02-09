@@ -99,7 +99,7 @@ createV612Backups() { # number of backups, keep backups
 	local mode backupType bootMode bM
 
 	for mode in $MODES_TO_TEST; do
-		for backupType in "${TYPES_TO_TEST[@]}"; do
+		for backupType in ${TYPES_TO_TEST}; do
 			[[ $backupType =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 			for bootMode in $BOOT_MODES; do
 				[[ $bootMode == "t" &&  ( $backupType =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
