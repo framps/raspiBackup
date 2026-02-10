@@ -9025,12 +9025,12 @@ function getCompressionTool() { # backupfilename
 	logEntry "$1"
 	local extension="${1##*.}"
 	local compressionTool=""
-	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
+	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}")
 	if (( ! $? )); then
 		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
 		logItem "Compressiontool $compressionTool used"
 	else
-		assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
+		assertionFailed $LINENO "Incorrect compressiontool "$compressionTool""
 	fi
 	echo "$compressionTool"
 	logExit "$compressionTool"
