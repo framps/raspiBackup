@@ -9023,7 +9023,7 @@ function makeFilesystemAndLabel() { # partition filesystem label
 function getCompressionTool() { # backupfilename
 
 	logEntry "$1"
-	local extension="${1##*.}"
+	local extension=".${1##*.}"		# extension has to have a leading period
 	local compressionTool=""
 	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}")
 	if (( ! $? )); then
