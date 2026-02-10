@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #######################################################################################################################
 #
 # raspiBackup backup creation script for backup regression test
@@ -21,6 +21,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
+
+declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 
@@ -113,6 +115,10 @@ createV612Backups() { # number of backups, keep backups
 function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ... other parms
 
 	local i rc parms
+	type="$1"
+	count="$2"
+	type="$3"
+	keep="$4"
 
 	local m=""
 	if [[ $3 == "p" ]]; then
@@ -122,10 +128,10 @@ function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ..
 	for (( i=1; i<=$2; i++)); do
 		echo "--- Creating $1 backup number $i of mode $3 and option $5 and $6 in ${BACKUP_PATH}_${3^^}"
 		log "sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 $6 "${BACKUP_PATH}_${3^^}""
-		sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 $6 "${BACKUP_PATH}_${3^^}"
+		sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 "${BACKUP_PATH}_${3^^}"
 		rc=$?
 
-		local logFile=$(getLogName $1 $3)
+		local logFile=$(getLogName $type $type)
 		cat "$logFile" >> "$LOG_FILE"
 
 		if [[ $rc != 0 ]]; then
