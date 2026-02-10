@@ -9021,7 +9021,7 @@ function makeFilesystemAndLabel() { # partition filesystem label
 }
 
 function getCompressionTool() { # backupfilename
-	
+
 	logEntry "$1"
 	local extension="${1##*.}"
 	local compressionTool=""
@@ -9030,11 +9030,11 @@ function getCompressionTool() { # backupfilename
 		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
 		logItem "Compressiontool $compressionTool used"
 	else
-		assertionFailed $LINENO "Incorrect compressiontool"
+		assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
 	fi
 	echo "$compressionTool"
 	logExit "$compressionTool"
-	
+
 	}
 
 function restorePartitionBasedPartition() { # restorefile
