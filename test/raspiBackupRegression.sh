@@ -5,7 +5,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013, 2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013, 2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -37,10 +37,9 @@ ATTACH_LOG=1
 
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST="dd tar rsync"
-TYPES_TO_TEST=( "tar --tarCompressionTool zstd" ) 
+TYPES_TO_TEST=(dd tar rsync "tar --tarCompressionTool lz4" "tar --tarCompressionTool zstd" ) 
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
-BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
