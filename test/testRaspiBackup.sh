@@ -109,18 +109,18 @@ createV612Backups() { # number of backups, keep backups
 			for bootMode in $BOOT_MODES; do
 				[[ $bootMode == "t" &&  ( $backupType =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
 				[[ $bootMode == "t" ]] && bM="$BOOTMODE_TAR" || bM="$BOOTMODE_DD"
-				createBackups $backupType $1 $mode $2 $bM "$OPTIONS"
+				createBackups $backupType "$numBackups" "$mode" "$keepNum" "$bM" "$OPTIONS"
 			done
 		done
 	done
 }
 
-function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ... other parms
+function createBackups() { # backuptype (dd, ddz, rsync, ...) count mode (N,P) keep ... other parms
 
-	local i rc parms
+	local i rc parms type count mode keep
 	type="$1"
 	count="$2"
-	type="$3"
+	mode="$3"
 	keep="$4"
 
 	local m=""
@@ -129,9 +129,9 @@ function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ..
 	fi
 
 	for (( i=1; i<=$2; i++)); do
-		echo "--- Creating $1 backup number $i of mode $3 and option $5 and $6 in ${BACKUP_PATH}_${3^^}"
+		echo "--- Creating $1 backup number $i of mode $mode and option $5 and $6 in ${BACKUP_PATH}_${3^^}"
 		log "sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 $6 "${BACKUP_PATH}_${3^^}""
-		sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 "${BACKUP_PATH}_${3^^}"
+		sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 $6 "${BACKUP_PATH}_${3^^}"
 		rc=$?
 
 		local logFile=$(getLogName $type $type)
@@ -294,7 +294,7 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 	local buCntToCheck=$2
 
 	case $3 in
-		N)	buCnt=$(ls ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*.${extension}.* 2>/dev/null | wc -l)
+		N)	buCnt=$(ls ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*${extension}* 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
 			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
 			buCnt4=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*vda* 2>/dev/null | wc -l)

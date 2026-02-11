@@ -37,7 +37,7 @@ EMAIL_NOTIFICATION=0
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST=("dd" "tar" "rsync")
 TYPES_TO_TEST=( "dd" "tar" "rsync" "tar --tarCompressionTool lz4" "tar --tarCompressionTool zstd" ) 
-TYPES_TO_TEST=("tar")
+TYPES_TO_TEST=( "tar" "tar --tarCompressionTool lz4" ) 
 MODES_TO_TEST="n p"
 BOOTMODE_TO_TEST="d t"
 
@@ -61,7 +61,7 @@ if (( BACKUP_TEST )); then
 fi
 
 function d() {
-	"$(date +%Y%m%d-%H%M%S)"
+	echo "$(date +%Y%m%d-%H%M%S)"
 }
 
 function sshexec() { # cmd
@@ -175,7 +175,9 @@ if (( BACKUP_TEST )); then
 		for mode in $MODES_TO_TEST; do
 			for type in "${TYPES_TO_TEST[@]}"; do
 				t="$(cut -f 1 -d " " <<< "$type")"
-				o="$(cut -f 2- -d " " <<< "$type")"				
+				o="$(cut -f 2- -d " " <<< "$type")"	
+				echo "@@@@@@@@@@@@@@@@@@@@ -$t- -$o-" 
+				[[ "$t" == "$o" ]] && o="" # there is no option for type
 				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 				for bootmode in $BOOTMODE_TO_TEST; do
 					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
