@@ -37,7 +37,7 @@ PARTITIONS_PER_BACKUP=2
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-PARMS=" -L 2 -l 1 -m 1 -Z"
+PARMS=" -L 2 -l 1 -m 1 -Z --ignoreAdditionalPartitions"
 
 # all backups have 2 backups each
 
@@ -98,7 +98,10 @@ function isMounted() {
 
 createV612Backups() { # number of backups, keep backups
 
-	local mode backupType bootMode bM
+	local mode backupType bootMode bM numBackups keep
+	
+	numBackups="$1"
+	keepNum="$2"
 
 	for mode in $MODES_TO_TEST; do
 		for backupType in ${TYPES_TO_TEST}; do
@@ -127,7 +130,7 @@ function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ..
 
 	for (( i=1; i<=$2; i++)); do
 		echo "--- Creating $1 backup number $i of mode $3 and option $5 and $6 in ${BACKUP_PATH}_${3^^}"
-		log "sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 $6 "${BACKUP_PATH}_${3^^}""
+		log "sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 $6 "${BACKUP_PATH}_${3^^}""
 		sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 "${BACKUP_PATH}_${3^^}"
 		rc=$?
 
