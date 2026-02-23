@@ -177,9 +177,9 @@ if (( BACKUP_TEST )); then
 		for mode in $MODES_TO_TEST; do
 			for type in "${TYPES_TO_TEST[@]}"; do
 				t="$(cut -f 1 -d " " <<< "$type")"
-				o="$(cut -f 2- -d " " <<< "$type")"	
-				echo "@@@@@@@@@@@@@@@@@@@@ -$t- -$o-" 
+				o="$(cut -f 2- -d " " <<< "$type")"
 				[[ "$t" == "$o" ]] && o="" # there is no option for type
+				echo "@@@@@@@@@@@@@@@@@@@@ -$t- -$o-"
 				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 				for bootmode in $BOOTMODE_TO_TEST; do
 					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
