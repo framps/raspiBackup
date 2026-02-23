@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 #######################################################################################################################
 #
 # raspiBackup backup creation script for backup regression test
@@ -98,6 +98,12 @@ function isMounted() {
 
 createV612Backups() { # number of backups, keep backups
 
+local i
+echo "createV612Backups ###################################################################"
+for (( i=0; i<=$#; i++ )); do
+	echo "$i: ${!i}"
+done
+
 	local mode backupType bootMode bM numBackups keep
 	
 	numBackups="$1"
@@ -116,6 +122,12 @@ createV612Backups() { # number of backups, keep backups
 }
 
 function createBackups() { # backuptype (dd, ddz, rsync, ...) count mode (N,P) keep ... other parms
+
+local i
+echo "createBackups ###################################################################"
+for (( i=0; i<=$#; i++ )); do
+	echo "$i: ${!i}"
+done
 
 	local i rc parms type count mode keep
 	type="$1"
@@ -478,6 +490,11 @@ fi
 rm "$LOG_FILE"
 
 BACKUP_PATH="/mnt/$BACKUP_PATH"
+
+echo "testRaspiBackup ###################################################################"
+for (( i=0; i<=$#; i++ )); do
+	echo "$i: ${!i}"
+done
 
 createV612Backups 1 1	# createNum, keepNum
 checkAllV612Backups 1
