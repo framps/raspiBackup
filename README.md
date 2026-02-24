@@ -50,7 +50,7 @@
     * Chinese ([GoogleBeEvil](https://github.com/GoogleBeEvil))
     * French ([mgrafr](https://github.com/mgrafr))
     * Many thanks to the folks above who translated raspiBackup messages into their native language 👍 
-      * Any translation help to add other languages to raspiBackup is greatly appreciated. Please read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
+      * Any translation help to add other languages to raspiBackup is greatly appreciated. Please read [this page](https://framps.github.io/raspiBackupDoc/de/local-language-support-for-languages-other-than-de-and-en-l10n.html)
   * More than 270 messages inform about
     *  Backup progress 
     *  Configuration mismatches
