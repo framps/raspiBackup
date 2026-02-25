@@ -51,16 +51,17 @@ CLEANUP=0
 
 VM_IP="$DEPLOYED_IP"
 
-environment=${1:-"usb"}
-environment=${environment,,}
-type=${2:-"dd ddz tar tgz rsync"}
-type=${type,,}
-mode=${3:-"n p"}
-mode=${mode,,}
-bootmode=${4:-"d t"}
-bootmode=${bootmode,,}
+environment="${1}"
+environment="${environment,,}"
+type="${2}"
+type="${type,,}"
+mode="${3}"
+mode="${mode,,}"
+bootmode="${4}"
+bootmode="${bootmode,,}"
+options="${5}"
 
-echo "Executing test with following options: $environment $type $mode $bootmode"
+echo "Executing test with following options: $environment $type $mode $bootmode $options"
 
 echo "Checking for VM $VM_IP already active and start VM otherwise with environment $environment"
 
@@ -110,7 +111,7 @@ function sshexec() { # cmd
 
 sshexec "chmod +x ~/$TEST_SCRIPT"
 
-sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\""
+sshexec "time ~/$TEST_SCRIPT $BACKUP_MOUNT_POINT \"$BACKUP_DIR\" \"$environment\" \"$type\" \"$mode\" \"$bootmode\" \"$options\""
 
 tmp=$(mktemp)
 
@@ -132,9 +133,9 @@ if (( ! $KEEP_VM )); then
 fi
 
 if (( $rc != 0 )); then
-	echo "??? Backup failed $1 $2 $3 $4"
+	echo "??? Backup failed $1 $2 $3 $4 $5"
 	(( $EXIT_ON_FAILURE )) && exit 127 || exit 0
 else
-	echo "--- Backup successfull $1 $2 $3 $4"
+	echo "--- Backup successfull $1 $2 $3 $4 $5"
 	exit 0
 fi

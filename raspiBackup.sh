@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2-m_953"  		 								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-m_955"  		 								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -9021,20 +9021,20 @@ function makeFilesystemAndLabel() { # partition filesystem label
 }
 
 function getCompressionTool() { # backupfilename
-	
+
 	logEntry "$1"
-	local extension="${1##*.}"
+	local extension=".${1##*.}"		# extension has to have a leading period
 	local compressionTool=""
-	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
+	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}")
 	if (( ! $? )); then
 		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
 		logItem "Compressiontool $compressionTool used"
 	else
-		assertionFailed $LINENO "Incorrect compressiontool"
+		assertionFailed $LINENO "Incorrect compressiontool "$compressionTool""
 	fi
 	echo "$compressionTool"
 	logExit "$compressionTool"
-	
+
 	}
 
 function restorePartitionBasedPartition() { # restorefile
