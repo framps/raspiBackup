@@ -8045,7 +8045,7 @@ function doitBackup() {
 
 	inspect4Backup
 
-	if (( q$SHARED_BOOT_DIRECTORY )); then
+	if (( $SHARED_BOOT_DIRECTORY )); then
 		if ! checkSfdiskOK "$BOOT_DEVICENAME"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
 			exit $RC_COLLECT_PARTITIONS_FAILED
