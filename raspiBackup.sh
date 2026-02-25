@@ -17,7 +17,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-m_951"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
