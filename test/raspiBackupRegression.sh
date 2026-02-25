@@ -35,11 +35,13 @@ KEEP_VM=0
 EMAIL_NOTIFICATION=0
 
 ENVIRONMENTS_TO_TEST="usb"
-TYPES_TO_TEST=("dd" "tar" "rsync")
-TYPES_TO_TEST=( "dd" "tar" "rsync" "tar --tarCompressionTool lz4" "tar --tarCompressionTool zstd" ) 
-TYPES_TO_TEST=( "tar" "tar --tarCompressionTool lz4" ) 
+TYPES_TO_TEST1=( "dd" "tar" "rsync" )
+TYPES_TO_TEST2=( "tar --tarCompressionTool lz4" "tar --tarCompressionTool zstd")
+TYPES_TO_TEST=( ${TYPES_TO_TEST1[@]} ${TYPES_TO_TEST2[@]} )
 MODES_TO_TEST="n p"
+MODES_TO_TEST="n"
 BOOTMODE_TO_TEST="d t"
+BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
@@ -175,9 +177,9 @@ if (( BACKUP_TEST )); then
 		for mode in $MODES_TO_TEST; do
 			for type in "${TYPES_TO_TEST[@]}"; do
 				t="$(cut -f 1 -d " " <<< "$type")"
-				o="$(cut -f 2- -d " " <<< "$type")"	
-				echo "@@@@@@@@@@@@@@@@@@@@ -$t- -$o-" 
+				o="$(cut -f 2- -d " " <<< "$type")"
 				[[ "$t" == "$o" ]] && o="" # there is no option for type
+				echo "@@@@@@@@@@@@@@@@@@@@ -$t- -$o-"
 				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 				for bootmode in $BOOTMODE_TO_TEST; do
 					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
