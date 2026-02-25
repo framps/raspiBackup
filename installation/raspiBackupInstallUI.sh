@@ -3270,8 +3270,10 @@ function config_backuppath_do() {
 			elif ! isPathMounted "$ANSWER"; then
 				local m="$(getMessageText $MSG_LOCAL_BACKUPPATH "$ANSWER")"
 				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+				local ttm="$(getMessageText $TITLE_WARNING)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				CONFIG_BACKUPPATH="$ANSWER"
+				break				
 			else
 				CONFIG_BACKUPPATH="$ANSWER"
 				break
