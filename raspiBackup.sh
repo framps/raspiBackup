@@ -149,6 +149,8 @@ LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
+UPDATE_REMINDER_FILE="update.reminder"
+UPDATE_REMINDER_MAX=7
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
 
@@ -3432,15 +3434,17 @@ function isUpdatePossible() {
 	#shellcheck disable=SC2207
 	versions=( $(isNewVersionAvailable) )
 	version_rc=$?
-	if [[ $version_rc == 0 ]]; then
-		NEWS_AVAILABLE=1
-		UPDATE_POSSIBLE=1
-		latestVersion="${versions[0]}"
-		newVersion="${versions[1]}"
-		oldVersion="${versions[2]}"
+	if [[ $version_rc == 0 ]]; then			# new version available
+		if updateUpdateReminder; then		# update message counter still not zero
+			NEWS_AVAILABLE=1
+			UPDATE_POSSIBLE=1
+			latestVersion="${versions[0]}"
+			newVersion="${versions[1]}"
+			oldVersion="${versions[2]}"
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
+		fi
 	fi
 
 	logExit
@@ -9471,6 +9475,60 @@ function updateRestoreReminder() {
 				logItem "Reset reminder"
 				# reset reminder state
 				echo "$(date +%Y%m) 0" > "$reminder_file"
+			fi
+		fi
+	fi
+
+	logExit
+
+}
+
+function updateUpdateReminder() {
+
+	logEntry
+
+	local update_file="$VAR_LIB_DIRECTORY/$UPDATE_REMINDER_FILE"
+
+	# create directory to save state
+	if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
+		if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
+			exitError "$RC_CREATE_ERROR"
+		fi
+	fi
+
+	# initialize update version
+	if [[ ! -e "$update_file" ]]; then
+		echo "${VERSION} 0" > "$update_file"
+		return
+	fi
+
+	# retrieve update version
+	local rf
+	# Double quote to prevent globbing and word splitting.
+	#shellcheck disable=SC2086
+	rf="$(<$reminder_file)"
+	if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
+		echo "${VERSION} 0" > "$update_file"
+		return
+	fi
+
+	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
+	#shellcheck disable=SC2207
+	rf=( $(<$update_file) )
+
+	# check if reminder should be send
+	if (( $(compareVersions $VERSION $VERSION_PROPERTY) < 0 )); then		# is version older than available version?
+		if (( $(compareVersions "${rf[0]}" $VERSION_PROPERTY) < 0 )); then		# if reminder version older than available version ?
+			# update reminder state
+			local nr=$(( ${rf[1]} + 1 ))
+			echo "${VERSION}° $nr" > "$update_file"
+			local left=$(( $UPDATE_REMINDER_MAX - $nr ))
+			if (( $left > 0 )); then
+				echo "${VERSION} ${nr}" > "$update_file"
+				return 0
+			else
+				return 1
 			fi
 		fi
 	fi
