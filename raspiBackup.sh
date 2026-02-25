@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2-m_951"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.0-m_951"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -150,7 +150,7 @@ VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
 UPDATE_REMINDER_FILE="update.reminder"
-UPDATE_REMINDER_MAX=7
+UPDATE_REMINDER_MAX=3
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
 
@@ -9497,43 +9497,52 @@ function updateUpdateReminder() {
 		fi
 	fi
 
+	local version="$VERSION"
+	if [[ "$version" =~ ^([^-]*)(-(.*))?$ ]]; then
+		version=${BASH_REMATCH[1]}
+	fi
+
 	# initialize update version
 	if [[ ! -e "$update_file" ]]; then
-		echo "${VERSION} 0" > "$update_file"
-		return
+		echo "$version 0" > "$update_file"
 	fi
 
 	# retrieve update version
 	local rf
 	# Double quote to prevent globbing and word splitting.
 	#shellcheck disable=SC2086
-	rf="$(<$reminder_file)"
+	rf="$(<$update_file)"
 	if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
-		echo "${VERSION} 0" > "$update_file"
-		return
+		echo "$version 0" > "$update_file"
 	fi
 
 	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 	#shellcheck disable=SC2207
 	rf=( $(<$update_file) )
 
+	logItem "Vers: ${rf[0]} - cnt: ${rf[1]}"
+
+	local rc=0
 	# check if reminder should be send
-	if (( $(compareVersions $VERSION $VERSION_PROPERTY) < 0 )); then		# is version older than available version?
+	if (( $(compareVersions $version $VERSION_PROPERTY) < 0 )); then		# is version older than available version?
 		if (( $(compareVersions "${rf[0]}" $VERSION_PROPERTY) < 0 )); then		# if reminder version older than available version ?
-			# update reminder state
-			local nr=$(( ${rf[1]} + 1 ))
-			echo "${VERSION}° $nr" > "$update_file"
-			local left=$(( $UPDATE_REMINDER_MAX - $nr ))
-			if (( $left > 0 )); then
-				echo "${VERSION} ${nr}" > "$update_file"
-				return 0
+			local left=$(( $UPDATE_REMINDER_MAX - ${rf[1]} ))
+			if (( $left == 0 )); then
+				echo "$VERSION_PROPERTY 0" > "$update_file"
 			else
-				return 1
+				local nr=$(( ${rf[1]} + 1 ))
+				logItem "Updated counter $version $nr"
+				echo "$version $nr" > "$update_file"
 			fi
+			rc=$(( $left <= 0 ))
+			logItem "rc=$rc"
 		fi
+	else
+		rc=1
 	fi
 
-	logExit
+	logExit $rc
+	return $rc
 
 }
 
