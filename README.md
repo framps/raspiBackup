@@ -109,9 +109,9 @@ Installation of raspiBackup is started with following command:
 
 `curl -o install -L https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh; sudo bash ./install`
 
-## Donations
+## Donation
 
-raspiBackup is maintained just by me - framp. If you find raspiBackup useful please donate to support future development and acknowledge support. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donation/)
+raspiBackup is maintained just by me - framp. If you find raspiBackup useful please donate to support future development and acknowledge support. For details how to donate see [here](https://framps.github.io/raspiBackupDoc/introduction.html#donation)
 
 ## Social media
 
