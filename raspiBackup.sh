@@ -2924,8 +2924,6 @@ function logOptions() { # option state
 
 	logItem "Options: $INVOCATIONPARMS"
 	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
-	logItem "APPEND_LOG=$APPEND_LOG"
-	logItem "APPEND_LOG_OPTION=$APPEND_LOG_OPTION"
 	logItem "BACKUPPATH=$BACKUPPATH"
 	logItem "BACKUPTYPE=$BACKUPTYPE"
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
@@ -3072,10 +3070,6 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_MAIL_PROGRAM="mail"
 	# restore device
 	DEFAULT_RESTORE_DEVICE=""
-	# default append log (0 = false, 1 = true)
-	DEFAULT_APPEND_LOG=0
-	# option used by mail program to append log (for example -a or -A)
-	DEFAULT_APPEND_LOG_OPTION="-a"
 	# default verbose log (0 = false, 1 = true)
 	DEFAULT_VERBOSE=0
 	# skip check for remote mount of backup path (0 = false, 1 = true)
@@ -3197,8 +3191,6 @@ function initializeDefaultConfigVariables() {
 
 function copyDefaultConfigVariables() {
 
-	APPEND_LOG="$DEFAULT_APPEND_LOG"
-	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
 	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
@@ -5073,9 +5065,8 @@ function sendEMail() { # content subject
 	logEntry
 
 	if [[ -n "$EMAIL" && rc != "$RC_CTRLC" ]]; then
-		local attach content subject
+		local content subject
 
-		local attach=""
 		local subject="$2"
 		local coloringOption=""
 		local contentType=""
@@ -5121,11 +5112,6 @@ function sendEMail() { # content subject
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_SENDING_EMAIL
 
-			if (( $APPEND_LOG )); then
-				attach="$DEFAULT_APPEND_LOG_OPTION $LOG_FILE"
-				logItem "Appendlog $attach"
-			fi
-
 			IFS=" "
 			content="$NL$(<"$MSG_FILE")$NL$1$NL"
 			unset IFS
@@ -5146,14 +5132,14 @@ function sendEMail() { # content subject
 			local rc
 			case $EMAIL_PROGRAM in
 				"$EMAIL_MAILX_PROGRAM")
-					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
-					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
+					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $EMAIL <<< "\"$content\""
+					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				"$EMAIL_SENDEMAIL_PROGRAM")
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject $attach -t $EMAIL"
-					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" $attach -t "$EMAIL"
+					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject -t $EMAIL"
+					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" -t "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
@@ -5162,24 +5148,15 @@ function sendEMail() { # content subject
 					if [[ $EMAIL_PROGRAM == "$EMAIL_MSMTP_PROGRAM" ]]; then
 						msmtp_default="-a default"
 					fi
-					if (( $APPEND_LOG )); then
-						logItem "Sending email with mpack"
-						echo "$content" > /tmp/$$
-						mpack -s "$subject" -d /tmp/$$ "$LOG_FILE" "$EMAIL"
-						rm /tmp/$$ &>/dev/null
-					else
-						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
-						logItem "Sendig email with s/msmtp"
-						logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
-						echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
-						rc=$?
-						logItem "$EMAIL_PROGRAM: RC: $rc"
-					fi
+					local sender=${SENDER_EMAIL:-root@$(hostname -f)}
+					logItem "Sendig email with s/msmtp"
+					logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
+					echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
+					rc=$?
+					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				"$EMAIL_EXTENSION_PROGRAM")
-					local append=""
-					(( $APPEND_LOG )) && append="$LOG_FILE"
-					args=( "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" "$append" )
+					args=( "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" )
 					callExtensions $EMAIL_EXTENSION "${args[@]}"
 					rc=$?
 					;;
@@ -7754,12 +7731,6 @@ function commonChecks() {
 		if [[ ! $(which "$EMAIL_PROGRAM") && ( "$EMAIL_PROGRAM" != "$EMAIL_EXTENSION_PROGRAM" ) ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED "$EMAIL_PROGRAM"
 			exitError "$RC_EMAILPROG_ERROR"
-		fi
-		if [[ "$EMAIL_PROGRAM" == "$EMAIL_SSMTP_PROGRAM" || "$EMAIL_PROGRAM" == "$EMAIL_MSMTP_PROGRAM" ]] && (( $APPEND_LOG )); then
-			if ! which mpack &>/dev/null; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MPACK_NOT_INSTALLED
-				APPEND_LOG=0
-			fi
 		fi
 	fi
 
@@ -10591,11 +10562,6 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  STARTSERVICES="$o"; shift 2
-	  ;;
-
-	-A|-A[-+])
-	  APPEND_LOG=$(getEnableDisableOption "$1"); shift 1
-	  writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPRECATED_OPTION "-A"
 	  ;;
 
 	-b)
