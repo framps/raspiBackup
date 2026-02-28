@@ -168,4 +168,5 @@ if [[ $targetFilename == "$FILE_RASPIBACKUP" || $targetFilename == "$FILE_RASPIB
 	SDO="sudo "
 fi
 
-echo "--- Start $targetFilename with \`$SDO./$targetFilename\` now. NOTE THE LEADING PERIOD !"
+echo "--- Start $targetFilename with \`$SDO./$targetFilename\` now."
+echo "!!! NOTE THE LEADING PERIOD !!!"

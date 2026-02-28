@@ -50,7 +50,7 @@
     * Chinese ([GoogleBeEvil](https://github.com/GoogleBeEvil))
     * French ([mgrafr](https://github.com/mgrafr))
     * Many thanks to the folks above who translated raspiBackup messages into their native language 👍 
-      * Any translation help to add other languages to raspiBackup is greatly appreciated. Please read [this page](https://www.linux-tips-and-tricks.de/en/raspibackupcategorye/603-raspibackup-local-language-support-for-languages-other-than-de-and-en-l10n/)
+      * Any translation help to add other languages to raspiBackup is greatly appreciated. Please read [this page](https://framps.github.io/raspiBackupDoc/de/local-language-support-for-languages-other-than-de-and-en-l10n.html)
   * More than 270 messages inform about
     *  Backup progress 
     *  Configuration mismatches
@@ -74,7 +74,7 @@ Support is also given **only** for raspiBackup specific issues. For general Linu
 ## Documentation
 
 ### English
-* [Complete raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
+* [Comprehensive raspiBackup Documentation](https://framps.github.io/raspiBackupDoc/)
 * [Installation](https://framps.github.io/raspiBackupDoc/installation-in-5-minutes.html)
 * [FAQ](https://framps.github.io/raspiBackupDoc/faq.html)
 * [Error messages, root causes and suggested actions](https://framps.github.io/raspiBackupDoc/error-messages.html)
@@ -109,9 +109,9 @@ Installation of raspiBackup is started with following command:
 
 `curl -o install -L https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh; sudo bash ./install`
 
-## Donations
+## Donation
 
-raspiBackup is maintained just by me - framp. If you find raspiBackup useful please donate to support future development and acknowledge support. For details how to donate see [here](https://www.linux-tips-and-tricks.de/en/donations/)
+raspiBackup is maintained just by me - framp. If you find raspiBackup useful please donate to support future development and acknowledge support. For details how to donate see [here](https://framps.github.io/raspiBackupDoc/introduction.html#donation)
 
 ## Social media
 
