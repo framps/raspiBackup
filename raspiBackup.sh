@@ -458,7 +458,7 @@ RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
-RC_ENVIRONMENT_ERROR=139
+#RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 #RC_EXTENSION_ERROR=141
 #RC_UNPROTECTED_CONFIG=142
@@ -9006,7 +9006,7 @@ function getCompressionTool() { # backupfilename
 		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
 		logItem "Compressiontool $compressionTool used"
 	else
-		assertionFailed $LINENO "Incorrect compressiontool "$compressionTool""
+		assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
 	fi
 	echo "$compressionTool"
 	logExit "$compressionTool"
