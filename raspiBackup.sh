@@ -257,8 +257,8 @@ for K in "${SORTED[@]}"; do
 	[[ -z $ALLOWED_TYPES ]] && ALLOWED_TYPES=$K || ALLOWED_TYPES="$ALLOWED_TYPES|$K"
 done
 
-TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
+TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd" "lz4")
+TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst" ".lz4")
 
 # grep regex used to extract partition numbers from partition oriented backups
 TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=""
@@ -2124,8 +2124,8 @@ MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
-MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported tools are bzip2,gzip,lzip,lzma,lzop,xz and zstd"
-MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützte Tools sind bzip2,gzip,lzip,lzma,lzop,xz und zstd"
+MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported tools are bzip2,gzip,lzip,lzma,lzop,xz, zstd and lz4"
+MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützte Tools sind bzip2,gzip,lzip,lzma,lzop,xz, zstd und lz4"
 MSG_TAR_COMPRESS_TOOL_USED=351
 MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
 MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Konfigurierbares tar Kompressionstool %s wird genutzt"
@@ -6909,14 +6909,17 @@ function restoreNormalBackupType() {
 				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
 					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
+					local compressionTool; compressionTool="$(getCompressionTool "$ROOT_RESTOREFILE")"
+					
 					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 						assertionFailed $LINENO "push to $MNT_POINT failed"
 					fi
+					
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 					if (( $PROGRESS && $INTERACTIVE )); then
-						local cmd="pv -f $ROOT_RESTOREFILE | tar ${archiveFlags} -x ${verbose} ${zip} -f -"
+						local cmd="pv -f $ROOT_RESTOREFILE | tar ${compressionTool} ${archiveFlags} -x ${verbose} ${zip} -f -"
 					else
-						local cmd="tar ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
+						local cmd="tar ${compressionTool} ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
 					fi
 					executeTar "$cmd"
 					rc=$?
@@ -8993,6 +8996,23 @@ function makeFilesystemAndLabel() { # partition filesystem label
 
 }
 
+function getCompressionTool() { # backupfilename
+
+	logEntry "$1"
+	local extension=".${1##*.}"		# extension has to have a leading period
+	local compressionTool=""
+	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}")
+	if (( ! $? )); then
+		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
+		logItem "Compressiontool $compressionTool used"
+	else
+		assertionFailed $LINENO "Incorrect compressiontool "$compressionTool""
+	fi
+	echo "$compressionTool"
+	logExit "$compressionTool"
+
+	}
+
 function restorePartitionBasedPartition() { # restorefile
 
 	logEntry "$1"
@@ -9056,6 +9076,9 @@ function restorePartitionBasedPartition() { # restorefile
 			case $BACKUPTYPE in
 
 				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
+				
+					local compressionTool; compressionTool="$(getCompressionTool "$restoreFile")"
+
 					local archiveFlags=""
 
 					if [[ -n $fatSize  ]]; then
@@ -9068,9 +9091,9 @@ function restorePartitionBasedPartition() { # restorefile
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="z" || zip=""
 
 					if (( $PROGRESS && $INTERACTIVE )); then
-						cmd="pv -f $restoreFile | tar ${archiveFlags} -x${verbose}${zip}f -"
+						cmd="pv -f $restoreFile | tar ${compressionTool} ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
+						cmd="tar ${compressionTool} ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
 					fi
 					executeTar "$cmd"
 					rc=$?
