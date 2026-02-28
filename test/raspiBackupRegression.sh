@@ -37,7 +37,7 @@ EMAIL_NOTIFICATION=0
 ENVIRONMENTS_TO_TEST="usb"
 TYPES_TO_TEST1=( "dd" "tar" "rsync" )
 TYPES_TO_TEST2=( "tar --tarCompressionTool lz4" "tar --tarCompressionTool zstd")
-TYPES_TO_TEST=( ${TYPES_TO_TEST1[@]} ${TYPES_TO_TEST2[@]} )
+TYPES_TO_TEST=( "${TYPES_TO_TEST1[@]}" "${TYPES_TO_TEST2[@]}" )
 MODES_TO_TEST="n p"
 MODES_TO_TEST="n"
 BOOTMODE_TO_TEST="d t"
@@ -74,7 +74,7 @@ function sshexec() { # cmd
 function standardBackupTest() {
 
 	local env type mode bootmode options
-	
+
 	read -r env type mode bootmode options <<< "$*"
 	local rc
 	echo "$(d) Starting BACKUP $env $type $mode $bootmode $options" >> $LOG_COMPLETED
@@ -107,7 +107,7 @@ function standardRestoreTest() {
 	echo "$(d) Starting RESTORETEST" >> $LOG_COMPLETED
 	./raspiRestoreTest.sh
 	rc=$?
-	{ 
+	{
 		echo "@@@============================================================="
 		echo "@@@================== RESTORE raspiBackup.log =================="
 		echo "@@@============================================================="
@@ -116,7 +116,7 @@ function standardRestoreTest() {
 		echo "@@@================== RESTORE raspiBackupTest.log =================="
 		echo "@@@================================================================="
 	} >> $LOG_REGRESSION
-	
+
 	cat raspiRestoreTest.log >> $LOG_REGRESSION
 
 	if [[ $rc != 0 ]]; then
@@ -136,8 +136,8 @@ function smartRecycleTest() {
 	sudo ./raspiBackup7412Test.sh
 	rc=$?
 	{
-		echo "@@@=====================================================================" 
-		echo "@@@================== RECYCLE raspiBackup7412Test.log ==================" 
+		echo "@@@====================================================================="
+		echo "@@@================== RECYCLE raspiBackup7412Test.log =================="
 		echo "@@@====================================================================="
 	} >> $LOG_REGRESSION
 	cat raspiBackup72412Test.log >> $LOG_REGRESSION
@@ -173,8 +173,8 @@ if (( EMAIL_NOTIFICATION )); then
 fi
 
 if (( BACKUP_TEST )); then
-	for environment in $ENVIRONMENTS_TO_TEST; do
-		for mode in $MODES_TO_TEST; do
+	for environment in "${ENVIRONMENTS_TO_TEST[@]}"; do
+		for mode in "${MODES_TO_TEST[@]}"; do
 			for type in "${TYPES_TO_TEST[@]}"; do
 				t="$(cut -f 1 -d " " <<< "$type")"
 				o="$(cut -f 2- -d " " <<< "$type")"
