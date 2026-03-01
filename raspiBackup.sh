@@ -9006,11 +9006,15 @@ function getCompressionTool() { # backupfilename
 		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
 		logItem "Compressiontool $compressionTool used"
 	else
-		assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
+		if [[ "$extension" == ".tar" ]]; then
+			compressionTool=""
+			logItem "No compressiontool used"
+		else
+			assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
+		fi
 	fi
 	echo "$compressionTool"
-	logExit "$compressionTool"
-
+	logExit "- $compressionTool -"
 	}
 
 function restorePartitionBasedPartition() { # restorefile
