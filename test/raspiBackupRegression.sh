@@ -157,19 +157,29 @@ function smartRecycleTest() {
 
 rm -- *.log >/dev/null
 
-if ! ./shellcheck.sh; then
-	exit
+if (( SHELLCHECK_TEST )); then
+	echo "Executing shellsheck ..."
+	if ! ./shellcheck.sh; then
+		exit
+	fi
 fi
 
 if (( MESSAGE_TEST )); then
+	echo "Executin message test ..."
 	if ! ./checkMessages.sh; then
 		exit
 	fi
 fi
 
-(( UNIT_TEST )) && sudo ./unitTests.sh
+if (( UNIT_TEST ))i; then
+	echo "Executing unit tests ..."
+       sudo ./unitTests.sh
+fi
 
-(( SMARTRECYCLE_TEST )) && smartRecycleTest
+if (( SMARTRECYCLE_TEST )); then
+       echo "Executing msart recycle tests ..."
+       smartRecycleTest
+fi
 
 startTime=$(date +%Y-%M-%d/%H:%m:%S)
 echo "Start: $startTime"
