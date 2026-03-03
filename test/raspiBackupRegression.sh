@@ -171,7 +171,7 @@ if (( MESSAGE_TEST )); then
 	fi
 fi
 
-if (( UNIT_TEST ))i; then
+if (( UNIT_TEST )); then
 	echo "Executing unit tests ..."
        sudo ./unitTests.sh
 fi
