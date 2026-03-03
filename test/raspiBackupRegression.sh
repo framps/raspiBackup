@@ -25,12 +25,13 @@
 SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
 source "$SCRIPT_DIR"/constants.sh
 
-SMARTRECYCLE_TEST=0
+SMARTRECYCLE_TEST=1
 BACKUP_TEST=1
-UNIT_TEST=0
+UNIT_TEST=1
 RESTORE_TEST=1
-MESSAGE_TEST=0
+MESSAGE_TEST=1
 KEEP_VM=0
+SHELLCHECK_TEST=1
 
 EMAIL_NOTIFICATION=0
 
@@ -155,6 +156,10 @@ function smartRecycleTest() {
 #fi
 
 rm -- *.log >/dev/null
+
+if ! ./shellcheck.sh; then
+	exit
+fi
 
 if (( MESSAGE_TEST )); then
 	if ! ./checkMessages.sh; then
