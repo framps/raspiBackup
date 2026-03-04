@@ -156,9 +156,11 @@ Description=Creation of a Raspberry backup with raspiBackup
 
 [Service]
 Type=simple
-ExecStartPre=/bin/sleep 180                 # delay start for 3 minutes
+# delay start for 3 minutes
+ExecStartPre=/bin/sleep 180
 ExecStart=/usr/local/bin/raspiBackup.sh
-TimeoutStartSec=200                         # increase timeout default which is 90s
+# increase default timeout which is 90s
+TimeoutStartSec=200
 # For Use with Wrapper Script: ExecStart=/usr/local/bin/raspiBackupWrapper.sh
 [Install]
 WantedBy=multi-user.target
