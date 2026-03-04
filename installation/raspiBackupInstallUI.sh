@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.4"				 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8.5"				 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -156,7 +156,9 @@ Description=Creation of a Raspberry backup with raspiBackup
 
 [Service]
 Type=simple
+ExecStartPre=/bin/sleep 180                 # delay start for 3 minutes
 ExecStart=/usr/local/bin/raspiBackup.sh
+TimeoutStartSec=200                         # increase timeout default which is 90s
 # For Use with Wrapper Script: ExecStart=/usr/local/bin/raspiBackupWrapper.sh
 [Install]
 WantedBy=multi-user.target
