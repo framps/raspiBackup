@@ -6970,10 +6970,10 @@ function restoreNormalBackupType() {
 
 			mountAndCheck "$ROOT_PARTITION" "$MNT_POINT"
 
-			logItem "Updating hw clock"
 			# date -u +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
 			# make sure raspiBackup is not started during initial boot of restored image
 			date -d "$(date) 5min" +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
+			logItem "Updated hw clock to $(<$MNT_POINT/etc/fake-hwclock.data)"
 
 			#logItem "Force fsck on reboot"
 			#touch $MNT_POINT/forcefsck
