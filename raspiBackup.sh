@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-m_963-3"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -10424,6 +10424,13 @@ initializeDefaultConfigVariables
 copyDefaultConfigVariables
 
 ##### Now do your job
+
+if (( ! $INTERACTIVE )); then
+	if (( $(cut -d' ' -f1 /proc/uptime | cut -d'.' -f1) < 180 )); then
+		# exit immediately if script is called when the system is up for less than 3 minutes to get rid of a race condition
+		exit
+	fi
+fi
 
 ARG_BAK=("$@")				# save invocation options
 
