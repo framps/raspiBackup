@@ -10490,6 +10490,13 @@ copyDefaultConfigVariables
 
 ##### Now do your job
 
+if (( ! $INTERACTIVE )); then
+	if (( $(cut -d' ' -f1 /proc/uptime | cut -d'.' -f1) < 180 )); then
+		# exit immediately if script is called when the system is up for less than 3 minutes to get rid of a race condition
+		exit
+	fi
+fi
+
 ARG_BAK=("$@")				# save invocation options
 
 # handle options which don't require root access, use system language
