@@ -2284,8 +2284,8 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 
 	for s in "${startServices[@]}"; do
 		logItem "Processing $s"
-		pc="$pc $and systemctl stop $s"
-		sc="systemctl start $s $and $sc"
+		pc="$pc $and systemctl stop \'"$s"\'"
+		sc="systemctl start \'"$s"\' $and $sc"
 		[[ -z $and ]] && and="&&"
 	done
 
