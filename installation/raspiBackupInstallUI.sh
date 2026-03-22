@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.4_m-966"				 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8.5"				 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -2220,7 +2220,7 @@ function getActiveServices() {
 	local as=""
 	while 	IFS=" " read s r; do
 		if [[ $s == *".service" ]]; then
-			as+=" $(sed 's/.service//' <<< "$s")"
+			as+=" $(sed 's/\.service$//' <<< "$s")"
 		fi
 	done < <(systemctl list-units --type=service --state=active | grep "active running" | grep -v "$EXCLUDE_SERVICES_REGEX" | awk '{print $1}' )
 	echo "$as"
