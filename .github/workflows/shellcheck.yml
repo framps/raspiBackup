@@ -13,4 +13,7 @@ jobs:
             helper
             test
             scripts
+            installation
+            extensions
+            extensions_userprovided
           severity: warning
