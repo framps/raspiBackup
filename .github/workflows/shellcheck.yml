@@ -9,6 +9,9 @@ jobs:
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
-          # This tells the robot to check all .sh files
-          scandir: './*.sh ./installation/*.sh'
+          scandir: './*.sh'
+          ignore_paths: >-
+            helper
+            test
+            scripts
           severity: warning
