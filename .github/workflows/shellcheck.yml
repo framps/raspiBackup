@@ -16,4 +16,5 @@ jobs:
             installation
             extensions
             extensions_userprovided
+            docker
           severity: warning
