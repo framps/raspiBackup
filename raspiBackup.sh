@@ -9712,7 +9712,7 @@ function updateConfig() {
 				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
 			else
 				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
-				echo "$line" >> $MERGED_CONFIG						# add new option
+				echo "$line" >> "$MERGED_CONFIG"						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
 				(( merged ++ ))
 			fi
