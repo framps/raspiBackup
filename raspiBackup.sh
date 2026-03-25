@@ -8807,7 +8807,7 @@ function getBackupPartitionFilesystemUsed() { # partition
 
 	logEntry "$1"
 
-	mount $1 /mnt
+	mount "$1" /mnt
 	local used
 	used=$(df "$1" -B 1 | tail -1 | awk '{ printf "%.0f\n", $3 }')
 	umount /mnt
