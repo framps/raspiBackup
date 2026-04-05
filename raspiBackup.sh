@@ -9753,20 +9753,26 @@ function synchronizeCmdlineAndfstab() {
 	# on Ubuntu starting with 25.04 there exist two cmdlines, one in /boot/firmware/current and /boot/firmware/new, use current
 	# on pre 25.04 Ubuntu the file is located in /boot
 	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
+	# For both OS either /boot or /boot/firmware is mounted where cmdline.txt exists
 
 	local usedCmdline
 
-	for usedCmdline in firmware/current/cmdline.txt firmware/cmdline.txt cmdline.txt; do
+	CMDLINE=""
+	for usedCmdline in current/cmdline.txt cmdline.txt; do
 		if [[ -f "$BOOT_MP/$usedCmdline" ]]; then
 			CMDLINE="$BOOT_MP/$usedCmdline"
 			break
 		fi
 	done
 
-	if [[ -n "$CMDLINE" ]]; then
+	if [[ -z "$CMDLINE" ]]; then
+		assertionFailed $LINENO "Unable to find cmdline.txt"
+	fi
 
-		local cmdlineMsg # path for message
-		cmdlineMsg="$(sed "s#$BOOT_MP##" <<< "$CMDLINE")"
+	local cmdlineMsg # path for message
+	cmdlineMsg="$(sed "s#$TEMPORARY_MOUNTPOINT_ROOT##" <<< "$CMDLINE")"
+
+	if [[ -n "$CMDLINE" ]]; then
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdlineMsg"
 
