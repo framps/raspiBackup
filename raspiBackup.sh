@@ -9769,8 +9769,14 @@ function synchronizeCmdlineAndfstab() {
 		assertionFailed $LINENO "Unable to find cmdline.txt"
 	fi
 
-	local cmdlineMsg # path for message
-	cmdlineMsg="$(sed "s#$TEMPORARY_MOUNTPOINT_ROOT##" <<< "$CMDLINE")"
+	local cmdlineMsg="/boot/cmdline.txt" # path for message
+	if [[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware/current ]]; then
+		cmdlineMsg="/boot/firmware/current/cmdline.txt"
+	elif [[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware ]]; then
+		cmdlineMsg="/boot/firmware/cmdline.txt"
+    else 
+		cmdlineMsg="/boot/cmdline.txt"
+	fi
 
 	if [[ -n "$CMDLINE" ]]; then
 
