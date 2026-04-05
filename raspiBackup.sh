@@ -9759,7 +9759,7 @@ function synchronizeCmdlineAndfstab() {
 		for CMDLINE in $detectedCmdLines; do
 
 			local cmdlineMsg # path for message
-			cmdlineMsg="$(sed "s/$BOOT_MP//" <<< "cmdline")"
+			cmdlineMsg="$(sed "s/$BOOT_MP//" <<< "$CMDLINE")"
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdlineMsg" 
 	
