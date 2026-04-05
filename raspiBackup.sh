@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2_m-969"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-m_969"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -9725,7 +9725,7 @@ function synchronizeCmdlineAndfstab() {
 
 	logEntry
 
-	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL detectedCmdLines
+	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL
 
 	BOOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 1)"
 
@@ -9750,66 +9750,72 @@ function synchronizeCmdlineAndfstab() {
 
 	local rootLabelCreated=0
 
-	detectedCmdLines="$(find "$BOOT_MP" -name "cmdline.txt")"
+	# on Ubuntu starting with 25.04 there exist two cmdlines, one in /boot/firmware/current and /boot/firmware/new, use current
+	# on pre 25.04 Ubuntu the file is located in /boot
+	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
 
-	logItem "Detected cmdlines: $detectedCmdLines"
-		
-	if [[ -n $detectedCmdLines ]]; then
-	
-		for CMDLINE in $detectedCmdLines; do
+	local usedCmdline
 
-			local cmdlineMsg # path for message
-			cmdlineMsg="$(sed "s/$BOOT_MP//" <<< "$CMDLINE")"
+	for usedCmdline in firmware/current/cmdline.txt firmware/cmdline.txt cmdline.txt; do
+		if [[ -f "$BOOT_MP/$usedCmdline" ]]; then
+			CMDLINE="$BOOT_MP/$usedCmdline"
+			break
+		fi
+	done
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdlineMsg" 
-	
-			logItem "Org $CMDLINE"
-			logCommand "cat $CMDLINE"
+	if [[ -n "$CMDLINE" ]]; then
 
-			if [[ $(cat "$CMDLINE") =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
-				local oldPartUUID=${BASH_REMATCH[1]}
-				local newPartUUID
-				newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
-				logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
-				if [[ -z $newPartUUID ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
-					exitError $RC_UUID_UPDATE_IMPOSSIBLE
-				elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdlineMsg"
-					sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
-				fi
-			elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
-				local oldUUID
-				oldUUID=${BASH_REMATCH[1]}
-				local newUUID
-				newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
-				logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
-				if [[ -z $newUUID ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
-					exitError $RC_UUID_UPDATE_IMPOSSIBLE
-				elif [[ "$oldUUID" != "$newUUID" ]]; then
-					writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdlineMsg"
-					sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
-				fi
-			elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
-				local oldLABEL=${BASH_REMATCH[1]}
-				logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-				e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
-				local rc=$?
-				if (( $rc )); then
-					local cmd="e2label $ROOT_PARTITION $oldLABEL"
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-					exitError "$RC_LABEL_ERROR"
-				else
-					rootLabelCreated=1
-				fi
-			elif grep "root=/dev/" "$CMDLINE"; then
-				logItem "/dev detected in $CMDLINE"
-			else
+		local cmdlineMsg # path for message
+		cmdlineMsg="$(sed "s#$BOOT_MP##" <<< "$CMDLINE")"
+
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdlineMsg"
+
+		logItem "Org $CMDLINE"
+		logCommand "cat $CMDLINE"
+
+		if [[ $(cat "$CMDLINE") =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
+			local oldPartUUID=${BASH_REMATCH[1]}
+			local newPartUUID
+			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
+			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
+			if [[ -z $newPartUUID ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdlineMsg"
+				sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
-		done
+		elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
+			local oldUUID
+			oldUUID=${BASH_REMATCH[1]}
+			local newUUID
+			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
+			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
+			if [[ -z $newUUID ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+			elif [[ "$oldUUID" != "$newUUID" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdlineMsg"
+				sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
+			fi
+		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
+			local oldLABEL=${BASH_REMATCH[1]}
+			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+			e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
+			local rc=$?
+			if (( $rc )); then
+				local cmd="e2label $ROOT_PARTITION $oldLABEL"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+				exitError "$RC_LABEL_ERROR"
+			else
+				rootLabelCreated=1
+			fi
+		elif grep "root=/dev/" "$CMDLINE"; then
+			logItem "/dev detected in $CMDLINE"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
+		fi
 	else
 		logCommand "ls -la $BOOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdlineMsg"
@@ -9825,7 +9831,7 @@ function synchronizeCmdlineAndfstab() {
 		#shellcheck disable=SC2086
 		logItem "$(cat $FSTAB)"
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$fstabMsg" 
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$fstabMsg"
 
 		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
