@@ -17,7 +17,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2026 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2.1-dev"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -77,13 +77,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='$Date$'
+GIT_DATE='$Date: 2026-03-22 17:49:43 +0100$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='$Sha1$'
+GIT_COMMIT='$Sha1: f349781$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -149,8 +149,6 @@ LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
-UPDATE_REMINDER_FILE="update.reminder"
-UPDATE_REMINDER_MAX=3
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
 
@@ -257,8 +255,8 @@ for K in "${SORTED[@]}"; do
 	[[ -z $ALLOWED_TYPES ]] && ALLOWED_TYPES=$K || ALLOWED_TYPES="$ALLOWED_TYPES|$K"
 done
 
-TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd" "lz4")
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst" ".lz4")
+TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd")
+TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst")
 
 # grep regex used to extract partition numbers from partition oriented backups
 TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=""
@@ -458,7 +456,7 @@ RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
-#RC_ENVIRONMENT_ERROR=139
+RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 #RC_EXTENSION_ERROR=141
 #RC_UNPROTECTED_CONFIG=142
@@ -685,11 +683,11 @@ MSG_EN[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s is no backup directory
 MSG_DE[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ist kein Wiederherstellungsverzeichnis von $MYNAME"
 MSG_FI[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ei ole kohteen $MYNAME varmuuskopiohakemisto"
 MSG_FR[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s n'est pas un répertoire de restauration pour $MYNAME"
-#MSG_MPACK_NOT_INSTALLED=29
-#MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to send emails. No log can be attached to the eMail"
-#MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden"
-#MSG_FI[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Sähköpostisovellusta mpack ei ole asennettu sähköpostien lähetykseen. Lokitiedostoa ei voitu liittää sähköpostiin"
-#MSG_FR[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Le programme de messagerie mpack n'est pas installé. Aucune pièce jointe ne peut être ajoutée à l'e-mail"
+MSG_MPACK_NOT_INSTALLED=29
+MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to send emails. No log can be attached to the eMail"
+MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden"
+MSG_FI[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Sähköpostisovellusta mpack ei ole asennettu sähköpostien lähetykseen. Lokitiedostoa ei voitu liittää sähköpostiin"
+MSG_FR[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Le programme de messagerie mpack n'est pas installé. Aucune pièce jointe ne peut être ajoutée à l'e-mail"
 MSG_IMG_DD_FAILED=30
 MSG_EN[$MSG_IMG_DD_FAILED]="RBK0030E: %s file creation with dd failed with RC %s"
 MSG_DE[$MSG_IMG_DD_FAILED]="RBK0030E: %s Datei Erzeugung mit dd endet fehlerhaft mit RC %s"
@@ -1847,11 +1845,11 @@ MSG_EN[$MSG_RESTORE_WARNING]="RBK0256W: Restore finished with warnings. Check pr
 MSG_DE[$MSG_RESTORE_WARNING]="RBK0256W: Restore endete mit Warnungen. Siehe vorhergehende Warnmeldungen"
 MSG_FI[$MSG_RESTORE_WARNING]="RBK0256W: Palautus onnistui sisältäen vaoituksia. Katso lisätiedot edellisistä varoitusviesteistä"
 MSG_FR[$MSG_RESTORE_WARNING]="RBK0256W: Restauration terminée avec des avertissements. Consultez les messages pour plus de détails"
-#MSG_DEPRECATED_OPTION=257
-#MSG_EN[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s is deprecated and will be removed in a future release"
-#MSG_DE[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s ist veraltet und wird in einer zukünftigen Release entfernt werden"
-#MSG_FI[$MSG_DEPRECATED_OPTION]="RBK0257W: Valintaa %s ei enää tueta ja se poistetaan kokonaan tulevissa julkaisuissa"
-#MSG_FR[$MSG_DEPRECATED_OPTION]="RBK0257W: L'option %s est obsolète et sera supprimée dans une prochaine version"
+MSG_DEPRECATED_OPTION=257
+MSG_EN[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s is deprecated and will be removed in a future release"
+MSG_DE[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s ist veraltet und wird in einer zukünftigen Release entfernt werden"
+MSG_FI[$MSG_DEPRECATED_OPTION]="RBK0257W: Valintaa %s ei enää tueta ja se poistetaan kokonaan tulevissa julkaisuissa"
+MSG_FR[$MSG_DEPRECATED_OPTION]="RBK0257W: L'option %s est obsolète et sera supprimée dans une prochaine version"
 MSG_DYNAMIC_MOUNT_FAILED=258
 MSG_EN[$MSG_DYNAMIC_MOUNT_FAILED]="RBK0258E: Dynamic mount of %s failed with rc %s"
 MSG_DE[$MSG_DYNAMIC_MOUNT_FAILED]="RBK0258E: Dynamischer mount von %s bekommt Fehler %s"
@@ -2124,8 +2122,8 @@ MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
-MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported tools are bzip2,gzip,lzip,lzma,lzop,xz, zstd and lz4"
-MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützte Tools sind bzip2,gzip,lzip,lzma,lzop,xz, zstd und lz4"
+MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported tools are bzip2,gzip,lzip,lzma,lzop,xz and zstd"
+MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützte Tools sind bzip2,gzip,lzip,lzma,lzop,xz und zstd"
 MSG_TAR_COMPRESS_TOOL_USED=351
 MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
 MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Konfigurierbares tar Kompressionstool %s wird genutzt"
@@ -2924,6 +2922,8 @@ function logOptions() { # option state
 
 	logItem "Options: $INVOCATIONPARMS"
 	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
+	logItem "APPEND_LOG=$APPEND_LOG"
+	logItem "APPEND_LOG_OPTION=$APPEND_LOG_OPTION"
 	logItem "BACKUPPATH=$BACKUPPATH"
 	logItem "BACKUPTYPE=$BACKUPTYPE"
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
@@ -3070,6 +3070,10 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_MAIL_PROGRAM="mail"
 	# restore device
 	DEFAULT_RESTORE_DEVICE=""
+	# default append log (0 = false, 1 = true)
+	DEFAULT_APPEND_LOG=0
+	# option used by mail program to append log (for example -a or -A)
+	DEFAULT_APPEND_LOG_OPTION="-a"
 	# default verbose log (0 = false, 1 = true)
 	DEFAULT_VERBOSE=0
 	# skip check for remote mount of backup path (0 = false, 1 = true)
@@ -3191,6 +3195,8 @@ function initializeDefaultConfigVariables() {
 
 function copyDefaultConfigVariables() {
 
+	APPEND_LOG="$DEFAULT_APPEND_LOG"
+	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
 	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
@@ -3426,17 +3432,15 @@ function isUpdatePossible() {
 	#shellcheck disable=SC2207
 	versions=( $(isNewVersionAvailable) )
 	version_rc=$?
-	if [[ $version_rc == 0 ]]; then			# new version available
-		if updateUpdateReminder; then		# update message counter still not zero
-			NEWS_AVAILABLE=1
-			UPDATE_POSSIBLE=1
-			latestVersion="${versions[0]}"
-			newVersion="${versions[1]}"
-			oldVersion="${versions[2]}"
+	if [[ $version_rc == 0 ]]; then
+		NEWS_AVAILABLE=1
+		UPDATE_POSSIBLE=1
+		latestVersion="${versions[0]}"
+		newVersion="${versions[1]}"
+		oldVersion="${versions[2]}"
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
-		fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 	fi
 
 	logExit
@@ -5065,8 +5069,9 @@ function sendEMail() { # content subject
 	logEntry
 
 	if [[ -n "$EMAIL" && rc != "$RC_CTRLC" ]]; then
-		local content subject
+		local attach content subject
 
+		local attach=""
 		local subject="$2"
 		local coloringOption=""
 		local contentType=""
@@ -5112,6 +5117,11 @@ function sendEMail() { # content subject
 
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_SENDING_EMAIL
 
+			if (( $APPEND_LOG )); then
+				attach="$DEFAULT_APPEND_LOG_OPTION $LOG_FILE"
+				logItem "Appendlog $attach"
+			fi
+
 			IFS=" "
 			content="$NL$(<"$MSG_FILE")$NL$1$NL"
 			unset IFS
@@ -5132,14 +5142,14 @@ function sendEMail() { # content subject
 			local rc
 			case $EMAIL_PROGRAM in
 				"$EMAIL_MAILX_PROGRAM")
-					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $EMAIL <<< "\"$content\""
-					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" "$EMAIL" <<< "$content"
+					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
+					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				"$EMAIL_SENDEMAIL_PROGRAM")
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject -t $EMAIL"
-					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" -t "$EMAIL"
+					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject $attach -t $EMAIL"
+					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" $attach -t "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
@@ -5148,15 +5158,24 @@ function sendEMail() { # content subject
 					if [[ $EMAIL_PROGRAM == "$EMAIL_MSMTP_PROGRAM" ]]; then
 						msmtp_default="-a default"
 					fi
-					local sender=${SENDER_EMAIL:-root@$(hostname -f)}
-					logItem "Sendig email with s/msmtp"
-					logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
-					echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
-					rc=$?
-					logItem "$EMAIL_PROGRAM: RC: $rc"
+					if (( $APPEND_LOG )); then
+						logItem "Sending email with mpack"
+						echo "$content" > /tmp/$$
+						mpack -s "$subject" -d /tmp/$$ "$LOG_FILE" "$EMAIL"
+						rm /tmp/$$ &>/dev/null
+					else
+						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
+						logItem "Sendig email with s/msmtp"
+						logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
+						echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
+						rc=$?
+						logItem "$EMAIL_PROGRAM: RC: $rc"
+					fi
 					;;
 				"$EMAIL_EXTENSION_PROGRAM")
-					args=( "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" )
+					local append=""
+					(( $APPEND_LOG )) && append="$LOG_FILE"
+					args=( "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" "$append" )
 					callExtensions $EMAIL_EXTENSION "${args[@]}"
 					rc=$?
 					;;
@@ -5189,8 +5208,10 @@ function cleanupBackupDirectory() {
 			fi
 		else
 			logItem "Removing $BACKUP_TEMP_ROOT_DIR"
-			rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
+			rmdir "$BACKUP_TEMP_ROOT_DIR"
 		fi
+		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
+		rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
 	fi
 
 	logExit
@@ -5471,20 +5492,28 @@ function cleanup() { # trap
 
 	logSystemServices
 
+	CLEANUP_RC=$rc
+
 	if (( $RESTORE )); then
 		cleanupRestore $1
-
 	else
 
-		if [[ $rc -eq 0 ]]; then # move new backup into backup directory
+		if (( $PRE_BACKUP_EXTENSION_CALLED )); then
+			callExtensions $POST_BACKUP_EXTENSION $rc
+		fi
+
+		startServices "noexit"
+		executeAfterStartServices "noexit"
+
+		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
 			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 			if [[ -d "${BACKUPTARGET_DIR}" ]]; then   # does not exists if raspiBackup7412Test runs
-				local mv_rc
+				local rc
 				mv "${BACKUPTARGET_DIR}" "${BACKUPTARGET_FINAL_DIR}"
-				mv_rc=$?
-				if (( $mv_rc )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $mv_rc
-					rc=$RC_TEMPMOVE_FAILED
+				rc=$?
+				if (( $rc )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
+					CLEANUP_RC=$RC_TEMPMOVE_FAILED
 				else
 					if [[ $MSG_LEVEL == "$MSG_LEVEL_MINIMAL" ]]; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
@@ -5496,17 +5525,8 @@ function cleanup() { # trap
 			else
 				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
 			fi
-		fi
 
-		if (( $PRE_BACKUP_EXTENSION_CALLED )); then
-			callExtensions $POST_BACKUP_EXTENSION $rc
-		fi
-
-		startServices "noexit"
-		executeAfterStartServices "noexit"
-
-		if [[ $rc -eq 0 ]]; then 
-			if (( ! $IS_SNAPSHOT )); then # smartrecycle only if backup OK and mv succeeded and no snapshot was created
+			if (( ! $CLEANUP_RC && ! $IS_SNAPSHOT )); then # smartrecycle only if mv succeeded and no snapshot was created
 				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
 					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
@@ -5523,9 +5543,9 @@ function cleanup() { # trap
 	cleanupBackup
 	cleanupTempFiles
 
-	finalCommand "$rc"
+	finalCommand "$CLEANUP_RC"
 
-	logItem "Terminate now with rc $rc"
+	logItem "Terminate now with rc $CLEANUP_RC"
 
 	if (( $rc != 0 )); then
 		if (( ! $MAIL_ON_ERROR_ONLY )); then
@@ -6909,17 +6929,14 @@ function restoreNormalBackupType() {
 				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
 					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
-					local compressionTool; compressionTool="$(getCompressionTool "$ROOT_RESTOREFILE")"
-					
 					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 						assertionFailed $LINENO "push to $MNT_POINT failed"
 					fi
-					
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 					if (( $PROGRESS && $INTERACTIVE )); then
-						local cmd="pv -f $ROOT_RESTOREFILE | tar ${compressionTool} ${archiveFlags} -x ${verbose} ${zip} -f -"
+						local cmd="pv -f $ROOT_RESTOREFILE | tar ${archiveFlags} -x ${verbose} ${zip} -f -"
 					else
-						local cmd="tar ${compressionTool} ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
+						local cmd="tar ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
 					fi
 					executeTar "$cmd"
 					rc=$?
@@ -7735,6 +7752,12 @@ function commonChecks() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED "$EMAIL_PROGRAM"
 			exitError "$RC_EMAILPROG_ERROR"
 		fi
+		if [[ "$EMAIL_PROGRAM" == "$EMAIL_SSMTP_PROGRAM" || "$EMAIL_PROGRAM" == "$EMAIL_MSMTP_PROGRAM" ]] && (( $APPEND_LOG )); then
+			if ! which mpack &>/dev/null; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MPACK_NOT_INSTALLED
+				APPEND_LOG=0
+			fi
+		fi
 	fi
 
 	local co
@@ -8022,11 +8045,9 @@ function doitBackup() {
 
 	inspect4Backup
 
-	if (( $SHARED_BOOT_DIRECTORY )); then
-		if ! checkSfdiskOK "$BOOT_DEVICENAME"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
-			exit $RC_COLLECT_PARTITIONS_FAILED
-		fi
+	if ! checkSfdiskOK "$BOOT_DEVICENAME"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
+		exit $RC_COLLECT_PARTITIONS_FAILED
 	fi
 
 	commonChecks
@@ -8807,7 +8828,7 @@ function getBackupPartitionFilesystemUsed() { # partition
 
 	logEntry "$1"
 
-	mount "$1" /mnt
+	mount $1 /mnt
 	local used
 	used=$(df "$1" -B 1 | tail -1 | awk '{ printf "%.0f\n", $3 }')
 	umount /mnt
@@ -8996,27 +9017,6 @@ function makeFilesystemAndLabel() { # partition filesystem label
 
 }
 
-function getCompressionTool() { # backupfilename
-
-	logEntry "$1"
-	local extension=".${1##*.}"		# extension has to have a leading period
-	local compressionTool=""
-	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}")
-	if (( ! $? )); then
-		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
-		logItem "Compressiontool $compressionTool used"
-	else
-		if [[ "$extension" == ".tar" ]]; then
-			compressionTool=""
-			logItem "No compressiontool used"
-		else
-			assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
-		fi
-	fi
-	echo "$compressionTool"
-	logExit "- $compressionTool -"
-	}
-
 function restorePartitionBasedPartition() { # restorefile
 
 	logEntry "$1"
@@ -9080,9 +9080,6 @@ function restorePartitionBasedPartition() { # restorefile
 			case $BACKUPTYPE in
 
 				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
-				
-					local compressionTool; compressionTool="$(getCompressionTool "$restoreFile")"
-
 					local archiveFlags=""
 
 					if [[ -n $fatSize  ]]; then
@@ -9095,9 +9092,9 @@ function restorePartitionBasedPartition() { # restorefile
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="z" || zip=""
 
 					if (( $PROGRESS && $INTERACTIVE )); then
-						cmd="pv -f $restoreFile | tar ${compressionTool} ${archiveFlags} -x${verbose}${zip}f -"
+						cmd="pv -f $restoreFile | tar ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						cmd="tar ${compressionTool} ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
+						cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
 					fi
 					executeTar "$cmd"
 					rc=$?
@@ -9482,69 +9479,6 @@ function updateRestoreReminder() {
 
 }
 
-function updateUpdateReminder() {
-
-	logEntry
-
-	local update_file="$VAR_LIB_DIRECTORY/$UPDATE_REMINDER_FILE"
-
-	# create directory to save state
-	if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-		if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
-			exitError "$RC_CREATE_ERROR"
-		fi
-	fi
-
-	local version="$VERSION"
-	if [[ "$version" =~ ^([^-]*)(-(.*))?$ ]]; then
-		version=${BASH_REMATCH[1]}
-	fi
-
-	# initialize update version
-	if [[ ! -e "$update_file" ]]; then
-		echo "$version 0" > "$update_file"
-	fi
-
-	# retrieve update version
-	local rf
-	# Double quote to prevent globbing and word splitting.
-	#shellcheck disable=SC2086
-	rf="$(<$update_file)"
-	if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
-		echo "$version 0" > "$update_file"
-	fi
-
-	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	#shellcheck disable=SC2207
-	rf=( $(<$update_file) )
-
-	logItem "Vers: ${rf[0]} - cnt: ${rf[1]}"
-
-	local rc=0
-	# check if reminder should be send
-	if (( $(compareVersions $version $VERSION_PROPERTY) < 0 )); then		# is version older than available version?
-		if (( $(compareVersions "${rf[0]}" $VERSION_PROPERTY) < 0 )); then		# if reminder version older than available version ?
-			local left=$(( $UPDATE_REMINDER_MAX - ${rf[1]} ))
-			if (( $left == 0 )); then
-				echo "$VERSION_PROPERTY 0" > "$update_file"
-			else
-				local nr=$(( ${rf[1]} + 1 ))
-				logItem "Updated counter $version $nr"
-				echo "$version $nr" > "$update_file"
-			fi
-			rc=$(( $left <= 0 ))
-			logItem "rc=$rc"
-		fi
-	else
-		rc=1
-	fi
-
-	logExit $rc
-	return $rc
-
-}
-
 function mountAndCheck() { # device mountpoint
 
 	logEntry "$1 - $2"
@@ -9712,7 +9646,7 @@ function updateConfig() {
 				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
 			else
 				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
-				echo "$line" >> "$MERGED_CONFIG"						# add new option
+				echo "$line" >> $MERGED_CONFIG						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
 				(( merged ++ ))
 			fi
@@ -9791,7 +9725,7 @@ function synchronizeCmdlineAndfstab() {
 
 	logEntry
 
-	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL
+	local CMDLINE FSTAB newPartUUID oldPartUUID BOOT_MP ROOT_MP newUUID oldUUID BOOT_PARTITION oldLABEL detectedCmdLines
 
 	BOOT_PARTITION="$(createPartitionName "$RESTORE_DEVICE" 1)"
 
@@ -9816,84 +9750,66 @@ function synchronizeCmdlineAndfstab() {
 
 	local rootLabelCreated=0
 
-	# on Ubuntu starting with 25.04 there exist two cmdlines, one in /boot/firmware/current and /boot/firmware/new, use current
-	# on pre 25.04 Ubuntu the file is located in /boot
-	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
-	# For both OS either /boot or /boot/firmware is mounted where cmdline.txt exists
+	detectedCmdLines="$(find "$BOOT_MP" -name "cmdline.txt")"
 
-	local usedCmdline
+	logItem "Detected cmdlines: $detectedCmdLines"
+		
+	if [[ -n $detectedCmdLines ]]; then
+	
+		for CMDLINE in $detectedCmdLines; do
 
-	CMDLINE=""
-	for usedCmdline in current/cmdline.txt cmdline.txt; do
-		if [[ -f "$BOOT_MP/$usedCmdline" ]]; then
-			CMDLINE="$BOOT_MP/$usedCmdline"
-			break
-		fi
-	done
+			local cmdlineMsg # path for message
+			cmdlineMsg="$(sed "s/$BOOT_MP//" <<< "cmdline")"
 
-	if [[ -z "$CMDLINE" ]]; then
-		assertionFailed $LINENO "Unable to find cmdline.txt"
-	fi
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdlineMsg" 
+	
+			logItem "Org $CMDLINE"
+			logCommand "cat $CMDLINE"
 
-	local cmdlineMsg="/boot/cmdline.txt" # path for message
-	if [[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware/current ]]; then
-		cmdlineMsg="/boot/firmware/current/cmdline.txt"
-	elif [[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware ]]; then
-		cmdlineMsg="/boot/firmware/cmdline.txt"
-    else 
-		cmdlineMsg="/boot/cmdline.txt"
-	fi
-
-	if [[ -n "$CMDLINE" ]]; then
-
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdlineMsg"
-
-		logItem "Org $CMDLINE"
-		logCommand "cat $CMDLINE"
-
-		if [[ $(cat "$CMDLINE") =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
-			local oldPartUUID=${BASH_REMATCH[1]}
-			local newPartUUID
-			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
-			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
-			if [[ -z $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
-			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdlineMsg"
-				sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
-			fi
-		elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
-			local oldUUID
-			oldUUID=${BASH_REMATCH[1]}
-			local newUUID
-			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
-			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
-			if [[ -z $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
-			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdlineMsg"
-				sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
-			fi
-		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
-			local oldLABEL=${BASH_REMATCH[1]}
-			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
-			e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
-			local rc=$?
-			if (( $rc )); then
-				local cmd="e2label $ROOT_PARTITION $oldLABEL"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-				exitError "$RC_LABEL_ERROR"
+			if [[ $(cat "$CMDLINE") =~ root=PARTUUID=([a-z0-9\-]+) ]]; then
+				local oldPartUUID=${BASH_REMATCH[1]}
+				local newPartUUID
+				newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
+				logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
+				if [[ -z $newPartUUID ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
+					exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
+					writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdlineMsg"
+					sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
+				fi
+			elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
+				local oldUUID
+				oldUUID=${BASH_REMATCH[1]}
+				local newUUID
+				newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
+				logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
+				if [[ -z $newUUID ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
+					exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				elif [[ "$oldUUID" != "$newUUID" ]]; then
+					writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdlineMsg"
+					sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
+				fi
+			elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
+				local oldLABEL=${BASH_REMATCH[1]}
+				logItem "Writing label $oldLABEL on $ROOT_PARTITION"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+				e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
+				local rc=$?
+				if (( $rc )); then
+					local cmd="e2label $ROOT_PARTITION $oldLABEL"
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
+					exitError "$RC_LABEL_ERROR"
+				else
+					rootLabelCreated=1
+				fi
+			elif grep "root=/dev/" "$CMDLINE"; then
+				logItem "/dev detected in $CMDLINE"
 			else
-				rootLabelCreated=1
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
 			fi
-		elif grep "root=/dev/" "$CMDLINE"; then
-			logItem "/dev detected in $CMDLINE"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
-		fi
+		done
 	else
 		logCommand "ls -la $BOOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdlineMsg"
@@ -9909,7 +9825,7 @@ function synchronizeCmdlineAndfstab() {
 		#shellcheck disable=SC2086
 		logItem "$(cat $FSTAB)"
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$fstabMsg"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$fstabMsg" 
 
 		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
@@ -10500,6 +10416,7 @@ UPDATE_MYSELF=0
 UPDATE_POSSIBLE=0
 VERSION_DEPRECATED=0
 WARNING_MESSAGE_WRITTEN=0
+CLEANUP_RC=0
 UPDATE_CONFIG=0
 UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
 rc=0
@@ -10512,13 +10429,6 @@ initializeDefaultConfigVariables
 copyDefaultConfigVariables
 
 ##### Now do your job
-
-if (( ! $INTERACTIVE )); then
-	if (( $(cut -d' ' -f1 /proc/uptime | cut -d'.' -f1) < 180 )); then
-		# exit immediately if script is called when the system is up for less than 3 minutes to get rid of a race condition
-		exit
-	fi
-fi
 
 ARG_BAK=("$@")				# save invocation options
 
@@ -10619,6 +10529,11 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  STARTSERVICES="$o"; shift 2
+	  ;;
+
+	-A|-A[-+])
+	  APPEND_LOG=$(getEnableDisableOption "$1"); shift 1
+	  writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPRECATED_OPTION "-A"
 	  ;;
 
 	-b)
