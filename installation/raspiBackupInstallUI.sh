@@ -990,9 +990,9 @@ ${NL}${NL}更多备份模式类型见:https://www.linux-tips-and-tricks.de/en/ba
 ${NL}更多dd模式详情见 https://www.linux-tips-and-tricks.de/en/faq#a16"
 
 DESCRIPTION_TAR_COMPRESSION_TOOL=$((SCNT++))
-MSG_EN[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}There are various compressiontools available to compress a tar backup. \
-${NL}The default compressiontool of tar is gzip. \
-${NL}zstd is sugested to use because it has a much better compression rate and faster decompression speed."
+MSG_EN[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}There are various compression tools available to compress a tar backup. \
+${NL}The default compression tool of tar is gzip. \
+${NL}zstd is suggested to use because it has a much better compression rate and faster decompression speed."
 MSG_DE[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Es gibt verschiedene Kompressionstools um ein tar Backup zu verkleinern. \
 ${NL}Das Standardtool von tar ist gzip. \
 ${NL}zstd ist empfohlen da es hat eine wesentlich bessere Kompressionsrate und schnellere Dekompressionsgeschwindigkeit hat."
@@ -4097,7 +4097,12 @@ function config_compress_do() {
 						CONFIG_TAR_COMPRESSION_TOOL=""
 					 else
 						config_tar_compressiontool_do;
-						CONFIG_ZIP_BACKUP="0"
+						if [[ "$CONFIG_TAR_COMPRESSION_TOOL" == "gzip" ]]; then
+							CONFIG_ZIP_BACKUP="1"
+							CONFIG_TAR_COMPRESSION_TOOL=""
+						else												
+							CONFIG_ZIP_BACKUP="0"
+						fi
 					 fi
 					 ;;
 				$s2) CONFIG_ZIP_BACKUP="0"
