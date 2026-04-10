@@ -1508,7 +1508,7 @@ MENU_FR[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 MENU_ZH[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (sugested)"'
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (suggested)"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (empfohlen)"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ=$((MCNT++))
@@ -3633,7 +3633,12 @@ function config_tar_compressiontool_do() {
 		lzma) lzma_=on ;;
 		lzop) lzop_=on ;;
 		xz) xz_=on ;;
-		*) zstd_=on ;;
+		*) if (( CONFIG_ZIP_BACKUP )); then
+		      gzip=on
+		   else
+			  zstd_=on
+		   fi
+		   ;;
 	esac
 
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL tt
@@ -4059,6 +4064,10 @@ function config_compress_do() {
 			fi
 		else
 			if [[ -n "$CONFIG_TAR_COMPRESSION_TOOL" ]]; then
+				yes_=on
+				no_=off
+			elif (( CONFIG_ZIP_BACKUP )); then
+				CONFIG_TAR_COMPRESSION_TOOL="gzip"
 				yes_=on
 				no_=off
 			fi
