@@ -1560,15 +1560,12 @@ MENU_FR[$MENU_CONFIG_COMPRESS_OFF]='"off" "Pas de compression de sauvegarde"'
 MENU_ZH[$MENU_CONFIG_COMPRESS_OFF]='"off" "不压缩"'
 
 MENU_CONFIG_COMPRESS_TAR=$((MCNT++))
-MENU_EN[$MENU_CONFIG_COMPRESS_TAR]='"on" "tar compression"'
-MENU_DE[$MENU_CONFIG_COMPRESS_TAR]='"an" "tar Kompression"'
+MENU_EN[$MENU_CONFIG_COMPRESS_TAR]='"tar" "Non default tar compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_TAR]='"tar" "Keine Standard tar Kompression"'
 
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
-MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "Compress $CONFIG_BACKUPTYPE backup"'
-MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "Komprimiere den $CONFIG_BACKUPTYPE Backup"'
-MENU_FI[$MENU_CONFIG_COMPRESS_ON]='"on" "Pakkaa $CONFIG_BACKUPTYPE -varmuuskopio"'
-MENU_FR[$MENU_CONFIG_COMPRESS_ON]='"on" "Compresser la sauvegarde $CONFIG_BACKUPTYPE"'
-MENU_ZH[$MENU_CONFIG_COMPRESS_ON]='"on" "压缩 $CONFIG_BACKUPTYPE 备份"'
+MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "Default $CONFIG_BACKUPTYPE compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "Standard $CONFIG_BACKUPTYPE Kompression"'
 
 MENU_DAYS_SHORT=$((MCNT++))
 MENU_EN[$MENU_DAYS_SHORT]='"Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
@@ -3569,8 +3566,7 @@ function config_backuptype_do() {
 
 function config_tar_compressiontool_do() {
 
-	echo "???"
-	read
+	logEntry "$old"
 
 	local bzip2=off
 	local gzip=off
@@ -3581,8 +3577,6 @@ function config_tar_compressiontool_do() {
 	local zstd=off
 
 	local old="$CONFIG_TAR_COMPRESSION_TOOL"
-
-	logEntry "$old"
 
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_ZSTD m1
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_BZIP2 m2
@@ -4022,12 +4016,13 @@ function config_compress_do() {
 	local oldZip="$CONFIG_ZIP_BACKUP"
 	local oldTar="$CONFIG_TAR_COMPRESSION_TOOL"
 
+	set -x
 	if [ $CONFIG_BACKUPTYPE == "rsync" ]; then
 		local t=$(center $WINDOW_COLS "rsync backups cannot be compressed.")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MENU $WINDOW_COLS 2
 	else
-		set -x
+
 		local yes_=off
 		local no_=off
 		local tar_=off
@@ -4053,8 +4048,6 @@ function config_compress_do() {
 			tar_=off
 		fi
 		
-		read 
-		
 		local o1="$(getMessageText $BUTTON_OK)"
 		local c1="$(getMessageText $BUTTON_CANCEL)"
 
@@ -4070,11 +4063,14 @@ function config_compress_do() {
 
 		local tar_updated=0
 		
-		ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button  "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 2 \
+		read
+		set +x
+		ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button  "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 3 \
 			"${m1[@]}" "$yes_" \
 			"${m2[@]}" "$no_" \
 			"${m3[@]}" "$tar_" \
 			3>&1 1>&2 2>&3)
+			set -x
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			case "$ANSWER" in
@@ -4090,7 +4086,6 @@ function config_compress_do() {
 			esac
 		fi
 	fi
-
 	if (( ! $tar_updated )); then
 		[[ "$oldTar" == "$CONFIG_TAR_COMPRESSION_TOOL" ]]
 	else
