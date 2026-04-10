@@ -792,21 +792,10 @@ MSG_ZH[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME 允许插入自定义�
 ${NL}详情请 https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
 
 DESCRIPTION_COMPRESS=$((SCNT++))
-MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup. Please note this will increase backup time and will heaten the CPU. \
-Please note an option of $FILE_TO_INSTALL which will reduce the size of a dd backup also. \
-For details see https://www.linux-tips-and-tricks.de/en/faq#a16."
-MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups kompressen um die Backupgröße zu reduzieren. Das bedeutet aber dass die Backupzeit steigt und die CPU erwärmen wird. \
-$FILE_TO_INSTALL bietet auch eine Option an mit der ein dd Backup verkleinert werden kann. Siehe dazu \
-https://www.linux-tips-and-tricks.de/de/faq#a16."
-MSG_FI[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME voi pakata dd- ja tar-varmuuskopiot, jotta ne veisivät vähemmän tilaa. Huomioithan, että tämä pidentää varmuuskopioinnin aikaa ja nostaa CPU:n lämpötilaa. \
-Huomioi myös vaihtoehto $FILE_TO_INSTALL, joka vähentää dd-varmuuskopioiden käyttämää tilaa. \
-Lisätietoja löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a16."
-MSG_FR[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME peut compresser les sauvegardes dd et tar pour réduire leurs tailles . Cependant, cela signifie que le temps de sauvegarde augmentera et que le cpu se réchauffera. \
-$FILE_TO_INSTALL, offre également une option avec laquelle une sauvegarde dd peut être réduite. Voir. \
-https://www.linux-tips-and-tricks.de/en/faq#a16."
-MSG_ZH[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME 可以压缩 dd和tar备份文件. 但是这会在备份期间增加备份时间和使CPU升温. \
-勾选 $FILE_TO_INSTALL, 开启压缩. \
-详情见 https://www.linux-tips-and-tricks.de/en/faq#a16."
+MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup but this will increase backup time. \
+dd uses gzip and tar can use zstd, gzip, zip2, lzip, lzma, lzop or xz."
+MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups verkleinern um die Backupgröße zu reduzieren aber dadurch steigt die Backupzeit. \
+dd nutzt gzip und tar kann zstd, gzip, zip2, lzip, lzma, lzop oder nutzen."
 
 DESCRIPTION_CRON=$((SCNT++))
 MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
@@ -999,6 +988,14 @@ MSG_ZH[$DESCRIPTION_BACKUPTYPE]="${NL}rsync是建议的备份方法.因为ETX3/4
 dd和tar模式下生成的备份可以被压缩. \
 ${NL}${NL}更多备份模式类型见:https://www.linux-tips-and-tricks.de/en/backup#butypes. \
 ${NL}更多dd模式详情见 https://www.linux-tips-and-tricks.de/en/faq#a16"
+
+DESCRIPTION_TAR_COMPRESSION_TOOL=$((SCNT++))
+MSG_EN[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}There are various compressiontools available to compress a tar backup. \
+${NL}The default compressiontool of tar is gzip. \
+${NL}zstd is sugested to use because it has a much better compression rate and faster decompression speed."
+MSG_DE[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Es gibt verschiedene Kompressionstools um ein tar Backup zu verkleinern. \
+${NL}Das Standardtool von tar ist gzip. \
+${NL}zstd wird empfohlen da es hat eine wesentlich bessere Kompressionsrate und schnellere Dekompressionsgeschwindigkeit hat."
 
 DESCRIPTION_MAIL_PROGRAM=$((SCNT++))
 MSG_EN[$DESCRIPTION_MAIL_PROGRAM]="Select the mail program to use to send notification eMails."
@@ -1511,8 +1508,8 @@ MENU_FR[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 MENU_ZH[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD"'
-MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD"'
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (sugested)"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (empfohlen)"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
@@ -1531,8 +1528,8 @@ MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP"'
-MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP"'
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar default)"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar Standard)"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
@@ -1588,8 +1585,8 @@ MENU_FR[$MENU_CONFIG_COMPRESS_OFF]='"off" "Pas de compression de sauvegarde"'
 MENU_ZH[$MENU_CONFIG_COMPRESS_OFF]='"off" "不压缩"'
 
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
-MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "$CONFIG_BACKUPTYPE compression"'
-MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "$CONFIG_BACKUPTYPE Kompression"'
+MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "$COMPRESSION_TYPE compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "$COMPRESSION_TYPE Kompression"'
 
 MENU_DAYS_SHORT=$((MCNT++))
 MENU_EN[$MENU_DAYS_SHORT]='"Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
@@ -3603,13 +3600,13 @@ function config_tar_compressiontool_do() {
 	local old="$CONFIG_TAR_COMPRESSION_TOOL"
 
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD m1
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2 m2
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP m3
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA m4
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP m5
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ m6
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP m7
-
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP m2
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2 m3
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP m4
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA m5
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP m6
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ m7
+	
 	local s1="${m1[0]}"
 	local s2="${m2[0]}"
 	local s3="${m3[0]}"
@@ -3623,39 +3620,40 @@ function config_tar_compressiontool_do() {
 
 	case "$CONFIG_TAR_COMPRESSION_TOOL" in
 		zstd) zstd_=on ;;
+		gzip) gzip_=on ;;
 		bzip2) bzip2_=on ;;
 		lzip) lzip_=on ;;
 		lzma) lzma_=on ;;
 		lzop) lzop_=on ;;
 		xz) xz_=on ;;
-		gzip) gzip_=on ;;
+		*) zstd_=on ;;
 	esac
 
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL tt
 
 	local c1="$(getMessageText $BUTTON_CANCEL)"
 	local o1="$(getMessageText $BUTTON_OK)"
-	local d="$(getMessageText $DESCRIPTION_BACKUPTYPE)"
+	local d="$(getMessageText $DESCRIPTION_TAR_COMPRESSION_TOOL)"
 
 	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $WT_WIDTH 7 \
 		"${m1[@]}" "$zstd_" \
-		"${m2[@]}" "$bzip2_" \
-		"${m3[@]}" "$lzip_" \
-		"${m4[@]}" "$lzma_" \
-		"${m5[@]}" "$lzop_" \
-		"${m6[@]}" "$xz_" \
-		"${m7[@]}" "$gzip_" \
+		"${m2[@]}" "$gzip_" \
+		"${m3[@]}" "$bzip2_" \
+		"${m4[@]}" "$lzip_" \
+		"${m5[@]}" "$lzma_" \
+		"${m6[@]}" "$lzop_" \
+		"${m7[@]}" "$xz_" \
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
 			$s1) CONFIG_TAR_COMPRESSION_TOOL="zstd" ;;
-			$s2) CONFIG_TAR_COMPRESSION_TOOL="bzip2" ;;
-			$s3) CONFIG_TAR_COMPRESSION_TOOL="lzip" ;;
-			$s4) CONFIG_TAR_COMPRESSION_TOOL="lzma" ;;
-			$s5) CONFIG_TAR_COMPRESSION_TOOL="lzop" ;;
-			$s6) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
-			$s7) CONFIG_TAR_COMPRESSION_TOOL="gzip" ;;
+			$s2) CONFIG_TAR_COMPRESSION_TOOL="gzip" ;;
+			$s3) CONFIG_TAR_COMPRESSION_TOOL="bzip2" ;;
+			$s4) CONFIG_TAR_COMPRESSION_TOOL="lzip" ;;
+			$s5) CONFIG_TAR_COMPRESSION_TOOL="lzma" ;;
+			$s6) CONFIG_TAR_COMPRESSION_TOOL="lzop" ;;
+			$s7) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
 			"") : ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
@@ -4062,6 +4060,15 @@ function config_compress_do() {
 		local o1="$(getMessageText $BUTTON_OK)"
 		local c1="$(getMessageText $BUTTON_CANCEL)"
 
+		if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
+			COMPRESSION_TYPE="dd (gzip)"
+		else
+			COMPRESSION_TYPE="tar"
+			if [[ -n "$CONFIG_TAR_COMPRESSION_TOOL" ]]; then
+				COMPRESSION_TYPE="$COMPRESSION_TYPE ($CONFIG_TAR_COMPRESSION_TOOL)"
+			fi
+		fi
+		
 		getMenuText $MENU_CONFIG_COMPRESS_ON m1
 		getMenuText $MENU_CONFIG_COMPRESS_OFF m2
 		local s1="${m1[0]}"
