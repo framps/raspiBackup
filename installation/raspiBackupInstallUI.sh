@@ -995,7 +995,7 @@ ${NL}The default compressiontool of tar is gzip. \
 ${NL}zstd is sugested to use because it has a much better compression rate and faster decompression speed."
 MSG_DE[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Es gibt verschiedene Kompressionstools um ein tar Backup zu verkleinern. \
 ${NL}Das Standardtool von tar ist gzip. \
-${NL}zstd wird empfohlen da es hat eine wesentlich bessere Kompressionsrate und schnellere Dekompressionsgeschwindigkeit hat."
+${NL}zstd ist empfohlen da es hat eine wesentlich bessere Kompressionsrate und schnellere Dekompressionsgeschwindigkeit hat."
 
 DESCRIPTION_MAIL_PROGRAM=$((SCNT++))
 MSG_EN[$DESCRIPTION_MAIL_PROGRAM]="Select the mail program to use to send notification eMails."
@@ -1536,8 +1536,8 @@ MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2'
 
 MENU_CONFIG_TYPE_DD=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and restore on Windows"'
-MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und stelle unter Windows wieder her"'
+MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and a restore on Windows is also possible"'
+MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und eine Wiederherstellung unter Windows ist auch möglich"'
 MENU_FI[$MENU_CONFIG_TYPE_DD]='"dd" "dd-varmuuskopio, mahdollistaa palautuksen Windowsissa"'
 MENU_FR[$MENU_CONFIG_TYPE_DD]='"dd" "Sauvegarder avec dd et restaurer sous Windows"'
 MENU_ZH[$MENU_CONFIG_TYPE_DD]='"dd" "使用dd备份并且在Windows上恢复"'
@@ -3567,11 +3567,18 @@ function config_backuptype_do() {
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-			$s3) CONFIG_BACKUPTYPE="dd" ;;
-			$s2) CONFIG_BACKUPTYPE="tar" ;;
+			$s3) CONFIG_BACKUPTYPE="dd"
+				 CONFIG_TAR_COMPRESSION_TOOL=""
+  			     CONFIG_ZIP_BACKUP=0
+				 ;;
+			$s2) CONFIG_BACKUPTYPE="tar"
+  			     CONFIG_ZIP_BACKUP=0
+				 CONFIG_TAR_COMPRESSION_TOOL=""
+				 ;;
 			$s1) CONFIG_BACKUPTYPE="rsync"
 				 CONFIG_ZIP_BACKUP=0
-				 CONFIG_RESSION_TOOL="" ;;
+				 CONFIG_TAR_COMPRESSION_TOOL=""
+				 ;;
 			"") : ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
