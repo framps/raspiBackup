@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.5"				 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.8.6"				 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -300,6 +300,7 @@ CONFIG_BACKUPPATH="/backup"
 CONFIG_PARTITIONBASED_BACKUP="0"
 DEFAULT_CONFIG_PARTITIONS_TO_BACKUP="1 2"
 CONFIG_PARTITIONS_TO_BACKUP="$DEFAULT_CONFIG_PARTITIONS_TO_BACKUP"
+CONFIG_TAR_COMPRESSION_TOOL=""
 CONFIG_ZIP_BACKUP="0"
 CONFIG_CRON_HOUR="5"
 CONFIG_CRON_MINUTE="0"
@@ -1393,6 +1394,10 @@ MENU_FI[$MENU_CONFIG_TYPE]='"C4" "Varmuuskopiontien tyyppi"'
 MENU_FR[$MENU_CONFIG_TYPE]='"C4" "Type de sauvegarde"'
 MENU_ZH[$MENU_CONFIG_TYPE]='"C4" "备份类型"'
 
+MENU_CONFIG_TAR_COMPRESSION_TOOL=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR compression tool"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR Kompressiontool"'
+
 MENU_CONFIG_MODE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE]='"C5" "Backup mode"'
 MENU_DE[$MENU_CONFIG_MODE]='"C5" "Backup Modus"'
@@ -1553,6 +1558,10 @@ MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Backup Komprimierung"'
 MENU_FI[$MENU_CONFIG_COMPRESS_OFF]='"off" "Ei varmuuskopion pakkausta"'
 MENU_FR[$MENU_CONFIG_COMPRESS_OFF]='"off" "Pas de compression de sauvegarde"'
 MENU_ZH[$MENU_CONFIG_COMPRESS_OFF]='"off" "不压缩"'
+
+MENU_CONFIG_COMPRESS_TAR=$((MCNT++))
+MENU_EN[$MENU_CONFIG_COMPRESS_TAR]='"on" "tar compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_TAR]='"an" "tar Kompression"'
 
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "Compress $CONFIG_BACKUPTYPE backup"'
@@ -2340,6 +2349,7 @@ function config_update_execute() {
 	logItem "Partitions: $CONFIG_PARTITIONS_TO_BACKUP"
 	logItem "Type: $CONFIG_BACKUPTYPE"
 	logItem "Zip: $CONFIG_ZIP_BACKUP"
+	logItem "Tar compression tool: $CONFIG_TAR_COMPRESSION_TOOL"
 	logItem "Keep: $CONFIG_KEEPBACKUPS"
 	logItem "Recycle: $CONFIG_SMART_RECYCLE"
 	logItem "Recycleoptions: $CONFIG_SMART_RECYCLE_OPTIONS"
@@ -2357,6 +2367,7 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONS_TO_BACKUP=.*\$/DEFAULT_PARTITIONS_TO_BACKUP=\"$CONFIG_PARTITIONS_TO_BACKUP\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPTYPE=.*\$/DEFAULT_BACKUPTYPE=\"$CONFIG_BACKUPTYPE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_ZIP_BACKUP=.*\$/DEFAULT_ZIP_BACKUP=\"$CONFIG_ZIP_BACKUP\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_TAR_COMPRESSION_TOOL=.*\$/DEFAULT_TAR_COMPRESSION_TOOL=\"$CONFIG_TAR_COMPRESSION_TOOL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_KEEPBACKUPS=.*$/DEFAULT_KEEPBACKUPS=\"$CONFIG_KEEPBACKUPS\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_SMART_RECYCLE=.*$/DEFAULT_SMART_RECYCLE=\"$CONFIG_SMART_RECYCLE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_SMART_RECYCLE_OPTIONS=.*$/DEFAULT_SMART_RECYCLE_OPTIONS=\"$CONFIG_SMART_RECYCLE_OPTIONS\"/" "$CONFIG_ABS_FILE"
@@ -3541,7 +3552,8 @@ function config_backuptype_do() {
 			$s3) CONFIG_BACKUPTYPE="dd" ;;
 			$s2) CONFIG_BACKUPTYPE="tar" ;;
 			$s1) CONFIG_BACKUPTYPE="rsync"
-				 CONFIG_ZIP_BACKUP=0 ;;
+				 CONFIG_ZIP_BACKUP=0
+				 CONFIG_RESSION_TOOL="" ;;
 			"") : ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
@@ -3552,6 +3564,93 @@ function config_backuptype_do() {
 	[[ "$old" == "$CONFIG_BACKUPTYPE" ]]
 	local rc=$?
 	logExit "$rc - $CONFIG_BACKUPTYPE"
+	return $rc
+}
+
+function config_tar_compressiontool_do() {
+
+	echo "???"
+	read
+
+	local bzip2=off
+	local gzip=off
+	local lzip=off
+	local lzma=off
+	local lzop=off
+	local xz=off
+	local zstd=off
+
+	local old="$CONFIG_TAR_COMPRESSION_TOOL"
+
+	logEntry "$old"
+
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_ZSTD m1
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_BZIP2 m2
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_LZIP m3
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_LZMA m4
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_LZOP m5
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_XZ m6
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_GZIP m7
+
+	local s1="${m1[0]}"
+	local s2="${m2[0]}"
+	local s3="${m3[0]}"
+	local s4="${m4[0]}"
+	local s5="${m5[0]}"
+	local s6="${m6[0]}"
+	local s7="${m7[0]}"
+
+	local o1="$(getMessageText $BUTTON_OK)"
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+
+	case "$CONFIG_TAR_COMPRESSION_TOOL" in
+		zstd) zstd_=on ;;
+		bzip2) bzip2_=on ;;
+		lzip) lzip_=on ;;
+		lzma) lzma_=on ;;
+		lzop) lzop_=on ;;
+		xz) xz_=on ;;
+		gzip) gzip_=on ;;
+	esac
+
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL tt
+
+	logItem "$b1"
+	logItem "$t"
+
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1="$(getMessageText $BUTTON_OK)"
+	local d="$(getMessageText $DESCRIPTION_BACKUPTYPE)"
+
+	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $WT_WIDTH 3 \
+		"${m1[@]}" "$zstd_" \
+		"${m2[@]}" "$bzip2_" \
+		"${m3[@]}" "$lzip_" \
+		"${m4[@]}" "$lzma_" \
+		"${m5[@]}" "$lzop_" \
+		"${m6[@]}" "$xz_" \
+		"${m7[@]}" "$gzip_" \
+		3>&1 1>&2 2>&3)
+	if [ $? -eq 0 ]; then
+		logItem "Answer: $ANSWER"
+		case "$ANSWER" in
+			$s1) CONFIG_BACKUPTYPE="zstd" ;;
+			$s2) CONFIG_BACKUPTYPE="bzip2" ;;
+			$s3) CONFIG_BACKUPTYPE="lzip" ;;
+			$s4) CONFIG_BACKUPTYPE="lzma" ;;
+			$s5) CONFIG_BACKUPTYPE="lzop" ;;
+			$s6) CONFIG_BACKUPTYPE="xz" ;;
+			$s7) CONFIG_BACKUPTYPE="gzip" ;;
+			"") : ;;
+			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
+				logExit
+				return 1 ;;
+		esac
+	fi
+
+	[[ "$old" == "$CONFIG_TAR_COMPRESSION_TOOL" ]]
+	local rc=$?
+	logExit "$rc - $CONFIG_TAR_COMPRESSION_TOOL"
 	return $rc
 }
 
@@ -3920,55 +4019,85 @@ function config_systemday_do() {
 function config_compress_do() {
 
 	logEntry "$CONFIG_ZIP_BACKUP"
-	local old="$CONFIG_ZIP_BACKUP"
+	local oldZip="$CONFIG_ZIP_BACKUP"
+	local oldTar="$CONFIG_TAR_COMPRESSION_TOOL"
 
 	if [ $CONFIG_BACKUPTYPE == "rsync" ]; then
 		local t=$(center $WINDOW_COLS "rsync backups cannot be compressed.")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MENU $WINDOW_COLS 2
 	else
+		set -x
 		local yes_=off
 		local no_=off
+		local tar_=off
 
-		case "$CONFIG_ZIP_BACKUP" in
-			"1") yes_=on ;;
-			"0") no_=on ;;
-			*) whiptail --msgbox "Programm error, unrecognized compress mode $CONFIG_ZIP_BACKUP" $ROWS_MENU $WINDOW_COLS 2
+		if [[ -n "$CONFIG_TAR_COMPRESSION_TOOL" ]]; then
+			if [[ ! "$CONFIG_TAR_COMPRESSION_TOOL" =~ ^(bzip2|gzip||lzip|lzma|lzop|xz|zstd)$ ]]; then
+				whiptail --msgbox "Programm error, unrecognized compress mode $CONFIG_TAR_COMPRESSION_TOOL" $ROWS_MENU $WINDOW_COLS 2
 				logExit
 				return 1
-				;;
-		esac
-
+			fi
+			tar_=on
+			yes=off
+			no=off
+		else
+			case "$CONFIG_ZIP_BACKUP" in
+				"1") yes_=on ;;
+				"0") no_=on ;;
+				*) whiptail --msgbox "Programm error, unrecognized compress mode $CONFIG_ZIP_BACKUP" $ROWS_MENU $WINDOW_COLS 2
+					logExit
+					return 1
+					;;
+			esac
+			tar_=off
+		fi
+		
+		read 
+		
 		local o1="$(getMessageText $BUTTON_OK)"
 		local c1="$(getMessageText $BUTTON_CANCEL)"
 
 		getMenuText $MENU_CONFIG_COMPRESS_ON m1
 		getMenuText $MENU_CONFIG_COMPRESS_OFF m2
+		getMenuText $MENU_CONFIG_COMPRESS_TAR m3
 		local s1="${m1[0]}"
 		local s2="${m2[0]}"
+		local s3="${m3[0]}"
 
 		local d="$(getMessageText $DESCRIPTION_COMPRESS)"
 		getMenuText $MENU_CONFIG_ZIP tt
 
+		local tar_updated=0
+		
 		ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button  "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 2 \
 			"${m1[@]}" "$yes_" \
 			"${m2[@]}" "$no_" \
+			"${m3[@]}" "$tar_" \
 			3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			case "$ANSWER" in
-			$s1) CONFIG_ZIP_BACKUP="1" ;;
-			$s2) CONFIG_ZIP_BACKUP="0" ;;
-			*) whiptail --msgbox "Programm error, unrecognized compress mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
-				logExit
-				return 1
-				;;
+				$s1) CONFIG_ZIP_BACKUP="1" ;;
+				$s2) CONFIG_ZIP_BACKUP="0"
+					 CONFIG_TAR_COMPRESSION_TOOL="" ;;
+				$s3) config_tar_compressiontool_do
+					 tar_updated=$(( $tar_updated|$? )) ;;
+				*) whiptail --msgbox "Programm error, unrecognized compress mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
+					logExit
+					return 1
+					;;
 			esac
 		fi
 	fi
 
-	[[ "$old" == "$CONFIG_ZIP_BACKUP" ]]
+	if (( ! $tar_updated )); then
+		[[ "$oldTar" == "$CONFIG_TAR_COMPRESSION_TOOL" ]]
+	else
+		[[ "$oldZip" == "$CONFIG_ZIP_BACKUP" ]]
+	fi
 	local rc=$?
+	read
 	logExit "$rc - $CONFIG_ZIP_BACKUP"
 	return $rc
 
