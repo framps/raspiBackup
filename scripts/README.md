@@ -14,4 +14,4 @@
 
 7. supportsFileAttributes - Checks if a filesystem used by a directory supports Linux fileattributes
 
-8. stripANSI.sh - Strips VT100/ANSI chars from a debug typescript of a bash script which uses whiptail. Usefule to debug raspiBackupInstallUI.sh
+8. stripANSI - Strips VT100/ANSI chars from a typescript of a bash script running in debug mode which uses whiptail. Usefule to debug raspiBackupInstallUI.sh
