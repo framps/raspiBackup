@@ -793,9 +793,11 @@ ${NL}详情请 https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-
 
 DESCRIPTION_COMPRESS=$((SCNT++))
 MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup but this will increase backup time. \
-dd uses gzip and tar can use zstd, gzip, zip2, lzip, lzma, lzop or xz."
+dd uses gzip and tar can use zstd, gzip, zip2, lzip, lzma, lzop or xz. \
+${NL}Note: There exists a configuration option DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS to add additional invocation options."
 MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups verkleinern um die Backupgröße zu reduzieren aber dadurch steigt die Backupzeit. \
-dd nutzt gzip und tar kann zstd, gzip, zip2, lzip, lzma, lzop oder nutzen."
+dd nutzt gzip und tar kann zstd, gzip, zip2, lzip, lzma, lzop oder nutzen. \
+${NL}Hinweis: Es gibt eine Konfigurationsoption DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS mit der weitere Aufrufoptionen mitgegeben werden können."
 
 DESCRIPTION_CRON=$((SCNT++))
 MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
