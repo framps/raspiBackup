@@ -1,8 +1,8 @@
 Package: raspiBackup
-Version: 0.7.2 
+Version: 0.7.2
 Section: base
 Priority: optional
-Architecture: i386
-Depends: 
+Architecture: all
+Depends: bash
 Maintainer: framp <framp@linux-tips-and-tricks.de>
 Description: Hello World

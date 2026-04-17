@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+#
+function containsElement () {
+  local e
+  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+  return 1
+}
+
+SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ZH")
+
+[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
+LANG_EXT="${LANG,,*}"
+LANG_SYSTEM="${LANG_EXT:0:2}"
+if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
+        LANG_SYSTEM="en"
+fi
+
+mv /usr/local/etc/raspiBackup_$LANG_SYSTEM.conf /usr/local/etc/raspiBackup.conf
+chmod 600 /usr/local/etc/raspiBackup.conf
+rm /usr/local/etc/raspiBackup_*
