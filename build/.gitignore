@@ -1,1 +1,4 @@
-!*.conf
+! *.conf
+signInit.sh
+*.deb
+*.sig
