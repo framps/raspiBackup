@@ -17,5 +17,5 @@ if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
 fi
 
 mv /usr/local/etc/raspiBackup_$LANG_SYSTEM.conf /usr/local/etc/raspiBackup.conf
-chmod 600 /usr/local/etc/raspiBackup.conf
+chmod 660 /usr/local/etc/raspiBackup.conf
 rm /usr/local/etc/raspiBackup_*
