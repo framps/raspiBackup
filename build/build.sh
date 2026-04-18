@@ -9,6 +9,8 @@ show "Establish gpg ..."
 export DEBFULLNAME=framp
 export DEBSIGN_KEYID=8517A08D66D5D9B6
 export DEBEMAIL=framp@linux-tips-and-tricks.de
+# Export public key
+# gpg --armor --export 8517A08D66D5D9B6 > 8517A08D66D5D9B6.pub
 show "Cleanup installation"
 sudo apt remove -y raspibackup rsync
 show "Build package"
