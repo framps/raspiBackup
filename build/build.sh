@@ -29,6 +29,7 @@ TGT="./src"
 PACKAGE="./package"
 
 SRC="$HOME/depl"
+CURRENT_DIR=$PWD
 
 rm -rf $TGT
 
@@ -37,10 +38,16 @@ mkdir -p "$TGT/DEBIAN"
 mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
 
-install -Dm644 $SRC/raspiBackup.sh "$TGT/usr/local/bin/raspiBackup.sh"
-install -Dm644 $SRC/raspiBackupInstallUI.sh "$TGT/usr/local/bin/raspiBackupInstallUI.sh"
-install -Dm644 $SRC/raspiBackup_de.conf "$TGT/usr/local/etc/raspiBackup_de.conf"
-install -Dm644 $SRC/raspiBackup_en.conf "$TGT/usr/local/etc/raspiBackup_en.conf"
+# copy files
+install -Dm665 $SRC/raspiBackup.sh "$TGT/usr/local/bin/raspiBackup.sh"
+install -Dm665 $SRC/raspiBackupInstallUI.sh "$TGT/usr/local/bin/raspiBackupInstallUI.sh"
+install -Dm664 $SRC/raspiBackup_de.conf "$TGT/usr/local/etc/raspiBackup_de.conf"
+install -Dm664 $SRC/raspiBackup_en.conf "$TGT/usr/local/etc/raspiBackup_en.conf"
+# create links
+cd $TGT/usr/local/bin
+ln -s -r raspiBackup.sh raspiBackup
+ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
+cd $CURRENT_DIR
 
 cat > "$TGT/DEBIAN/control" <<EOF
 Package: raspiBackup

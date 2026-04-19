@@ -44,7 +44,7 @@ cleanup() {
 	rm -f raspiBackup_0.7.2.deb
 	rm -f raspiBackup_0.7.2.deb.sig
 	if (( $1 == 0 )); then
-		rm -f $LOG_FILE
+		: rm -f $LOG_FILE
 	else
 		echo "??? Installation failed"
 		echo "!!! Check $LOG_FILE for details"
