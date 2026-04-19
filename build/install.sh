@@ -7,14 +7,15 @@ trap 'err $?' ERR
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-show "Cleanup installation"
-sudo apt remove -y raspibackup rsync || true
+#show "Cleanup installation"
+#sudo apt remove -y raspibackup rsync || true
 
 if ! gpg --list-keys | grep framps; then
 	show "Retrieve key from github"
 	curl https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
 	show "Import framps key"
 	gpg --import  framps.gpg.asc
+	rm framps.gpg.asc
 fi
 
 show "Package verification"
