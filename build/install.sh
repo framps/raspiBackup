@@ -32,9 +32,9 @@ if ! gpg --list-keys | grep -q framps; then
 fi
 
 show "Downloading package"
-curl -fsSL https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/raspiBackup_0.7.2.deb -o raspiBackup_0.7.2.deb
+curl -fsSL https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/package/raspiBackup_0.7.2.deb -o raspiBackup_0.7.2.deb
 show "Downloading signature"
-curl -fsSL https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/raspiBackup_0.7.2.deb.sig -o raspiBackup_0.7.2.deb.sig
+curl -fsSL https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build//package/raspiBackup_0.7.2.deb.sig -o raspiBackup_0.7.2.deb.sig
 
 show "Package verification"
 gpg --verbose --verify raspiBackup_0.7.2.deb.sig raspiBackup_0.7.2.deb

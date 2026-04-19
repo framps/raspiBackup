@@ -1,8 +1,0 @@
-Package: raspiBackup
-Version: 0.7.2
-Section: base
-Priority: optional
-Architecture: all
-Depends: bash,parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux,fdisk,curl
-Maintainer: framp <framp@linux-tips-and-tricks.de>
-Description: Hello World
