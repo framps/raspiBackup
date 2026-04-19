@@ -80,10 +80,14 @@ if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
         LANG_SYSTEM="en"
 fi
 
-echo "Configuring raspiBackup.conf"
-mv /usr/local/etc/raspiBackup_$LANG_SYSTEM.conf /usr/local/etc/raspiBackup.conf
-chmod 660 /usr/local/etc/raspiBackup.conf
-rm /usr/local/etc/raspiBackup_*
+if [[ ! -f /usr/local/etc/raspiBackup ]]; then
+	echo "Configuring raspiBackup.conf"
+	mv /usr/local/etc/raspiBackup_$LANG_SYSTEM.conf /usr/local/etc/raspiBackup.conf
+	chmod 660 /usr/local/etc/raspiBackup.conf
+	rm /usr/local/etc/raspiBackup_*
+else
+	echo "Existing raspiBackup.conf is not replaced"
+fi
 EOF
 chmod 775 $TGT/DEBIAN/postinst
 
