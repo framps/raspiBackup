@@ -39,15 +39,16 @@ mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
 
 # copy files
-install -Dm775 $SRC/raspiBackup.sh "$TGT/usr/local/bin/raspiBackup.sh"
-install -Dm775 $SRC/raspiBackupInstallUI.sh "$TGT/usr/local/bin/raspiBackupInstallUI.sh"
-install -Dm770 $SRC/raspiBackup_de.conf "$TGT/usr/local/etc/raspiBackup_de.conf"
-install -Dm770 $SRC/raspiBackup_en.conf "$TGT/usr/local/etc/raspiBackup_en.conf"
+install -Dm775 $SRC/raspiBackup.sh $TGT/usr/local/bin/raspiBackup.sh
+install -Dm775 $SRC/raspiBackupInstallUI.sh $TGT/usr/local/bin/raspiBackupInstallUI.sh
+install -Dm770 $SRC/raspiBackup_de.conf $TGT/usr/local/etc/raspiBackup_de.conf
+install -Dm770 $SRC/raspiBackup_en.conf $TGT/usr/local/etc/raspiBackup_en.conf
 # create links
 cd $TGT/usr/local/bin
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 cd $CURRENT_DIR
+tar -x -f $SRC/raspiBackupSampleExtensions.tgz -C $TGT/usr/local/bin
 
 cat > "$TGT/DEBIAN/control" <<EOF
 Package: raspiBackup
