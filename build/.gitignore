@@ -1,2 +1,2 @@
-! *.conf
-signInit.sh
+raspiBackup*
+! raspiBackup_*.deb
