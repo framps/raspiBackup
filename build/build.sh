@@ -71,6 +71,7 @@ if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
         LANG_SYSTEM="en"
 fi
 
+echo "Configuring raspiBackup.conf"
 mv /usr/local/etc/raspiBackup_$LANG_SYSTEM.conf /usr/local/etc/raspiBackup.conf
 chmod 660 /usr/local/etc/raspiBackup.conf
 rm /usr/local/etc/raspiBackup_*
@@ -80,6 +81,7 @@ chmod 775 $TGT/DEBIAN/postinst
 cat > "$TGT/DEBIAN/postrm" <<"EOF"
 #!/bin/bash
 
+echo "Cleaning up temp dir"
 rm -f /tmp/raspiBackup*
 EOF
 chmod 775 $TGT/DEBIAN/postrm
