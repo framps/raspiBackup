@@ -1,23 +1,23 @@
 #!/bin/bash
 #
-function show() {
-	echo "==============================="
-	echo "@@@ $@ ..."
-	echo "==============================="
-}
+
+source common.sh
+
+trap 'err $?' ERR
+
+exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
+exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
+
 show "Cleanup installation"
-sudo apt remove -y raspibackup rsync
-# Retrieve key from github
-curl https://github.com/framps.gpg > framps.sig
-#
+sudo apt remove -y raspibackup rsync || true
+if ! gpg --list-keys | grep framps; then
+	show "Retrieve key from github"
+	curl https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
+	show "Import framps key"
+	gpg --import  framps.gpg.asc
+fi
 show "Package verification"
 gpg --verify raspiBackup_0.7.2.deb.sig raspiBackup_0.7.2.deb
-# Doesn't work :-(( Why???
-# gpg --verify framps.sig raspiBackup_0.7.2.deb
-if (( $? )); then
-	echo "Package verification failed !!!"
-	exit 42
-fi
 show "Install package"
 sudo apt install -y ./raspiBackup_0.7.2.deb
 show "Show installation result"
