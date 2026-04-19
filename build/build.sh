@@ -24,12 +24,13 @@
 
 set -euo pipefail
 
-version="0.7.2"
-TGT="./src"
-PACKAGE="./package"
+readonly version="0.7.2"
+readonly TGT="./src"
+readonly PACKAGE="./package"
 
-SRC="$HOME/depl"
-CURRENT_DIR=$PWD
+readonly SRC="$HOME/depl"
+readonly CURRENT_DIR=$PWD
+readonly LOG_FILE=build.log
 
 rm -rf $TGT
 
@@ -39,10 +40,10 @@ mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
 
 # copy files
-install -Dm775 $SRC/raspiBackup.sh $TGT/usr/local/bin/raspiBackup.sh
-install -Dm775 $SRC/raspiBackupInstallUI.sh $TGT/usr/local/bin/raspiBackupInstallUI.sh
-install -Dm770 $SRC/raspiBackup_de.conf $TGT/usr/local/etc/raspiBackup_de.conf
-install -Dm770 $SRC/raspiBackup_en.conf $TGT/usr/local/etc/raspiBackup_en.conf
+install -Dm755 $SRC/raspiBackup.sh $TGT/usr/local/bin/raspiBackup.sh
+install -Dm755 $SRC/raspiBackupInstallUI.sh $TGT/usr/local/bin/raspiBackupInstallUI.sh
+install -Dm750 $SRC/raspiBackup_de.conf $TGT/usr/local/etc/raspiBackup_de.conf
+install -Dm750 $SRC/raspiBackup_en.conf $TGT/usr/local/etc/raspiBackup_en.conf
 # create links
 cd $TGT/usr/local/bin
 ln -s -r raspiBackup.sh raspiBackup
@@ -58,7 +59,7 @@ Priority: optional
 Architecture: all
 Depends: bash,parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux,fdisk,curl
 Maintainer: framp <framp@linux-tips-and-tricks.de>
-Description: Hello world
+Description: Create and keep multiple backup versions of your running Raspberries with dd, tar or rsanc
 EOF
 
 cat > "$TGT/DEBIAN/postinst" <<"EOF"
@@ -94,7 +95,11 @@ rm -f /tmp/raspiBackup*
 EOF
 chmod 775 $TGT/DEBIAN/postrm
 
-source common.sh
+function show() {
+	echo "==============================="
+	echo "===> $@ ..."
+	echo "==============================="
+}
 
 #trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 trap 'err $?' ERR

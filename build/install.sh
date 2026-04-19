@@ -31,20 +31,20 @@ if ! gpg --list-keys | grep -q framps; then
 	gpg --import  framps.gpg.asc
 fi
 
-show "Downloading package"
+echo "Downloading package"
 curl -fsSL https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/package/raspiBackup_0.7.2.deb -o raspiBackup_0.7.2.deb
-show "Downloading signature"
+echo "Downloading signature"
 curl -fsSL https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build//package/raspiBackup_0.7.2.deb.sig -o raspiBackup_0.7.2.deb.sig
 
-show "Package verification"
+echo "Package verification"
 gpg --verbose --verify raspiBackup_0.7.2.deb.sig raspiBackup_0.7.2.deb
 
-show "Install package and all dependencies"
+echo "Install package and all dependencies"
 sudo apt install -y ./raspiBackup_0.7.2.deb
 
-show "Show installation result"
+echo "Show installation result"
 apt-cache policy raspibackup
 
-show "Files provided"
+echo "Files provided"
 dpkg -L raspibackup
 
