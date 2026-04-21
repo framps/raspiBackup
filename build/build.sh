@@ -24,7 +24,7 @@
 
 set -euo pipefail
 
-export readonly VERSION="0.7.2.1"
+export readonly VERSION="0.7.2"
 readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
 source ./common.sh
 
