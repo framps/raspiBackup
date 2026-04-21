@@ -33,8 +33,12 @@ LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 source ./common.sh
 
-#trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
+# fill GPG_KEYID with existing local key
+source ./gpg.conf
+
 trap 'err $?' ERR
+
+# extract version number from raspiBackup script
 version="$(grep "^VERSION=" "gitsrc/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
 REGEX='.*="([^"]*)"'
 if [[ $version =~ $REGEX ]]; then
@@ -87,15 +91,11 @@ exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 rm $LOG_FILE || true
 
-KEYID=4B9E02DBACA4DD24
-# Export public key
-# gpg --armor --export $KEYID > $KEYID.pub.asc
-
 show "Build package"
 dpkg-deb --root-owner-group --build "$TGT" "$PACKAGE/raspiBackup.deb"
 
 show "Sign raspiBackup package"
-gpg --verbose --yes --detach-sign -u "$KEYID" "$PACKAGE/raspiBackup.deb"
+gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$PACKAGE/raspiBackup.deb"
 
 show "Show files which will be installed"
 dpkg-deb -c "$PACKAGE/raspiBackup.deb"

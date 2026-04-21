@@ -30,7 +30,6 @@ readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
 
 cleanup() {
 	show "Cleanig up"
-	rm -f framps.gpg.asc
 	if (( $1 == 0 )); then
 		rm -f $LOG_FILE
 	else
@@ -45,14 +44,10 @@ trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-#show "Cleanup installation"
-#sudo apt remove -y raspibackup rsync || true
-
-if ! gpg --list-keys | grep -q framps; then
-	show "Retrieve key from github"
-	curl https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
-	show "Import framps key"
-	gpg --import  framps.gpg.asc
+cmd=${1:-i}	# install without clean
+if [[ $cmd == "c" ]]; then
+	show "Clean installation of raspiBackup and rsync"
+	sudo apt remove -y raspibackup rsync || true
 fi
 
 echo "Package verification"

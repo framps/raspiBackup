@@ -1,3 +1,4 @@
 ! raspiBackup_*.deb
 src
 gitsrc
+gpg.conf
