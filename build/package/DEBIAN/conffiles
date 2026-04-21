@@ -1,1 +1,3 @@
 /usr/local/etc/raspiBackup.conf
+/etc/systemd/system/raspiBackup.service
+/etc/systemd/system/raspiBackup.timer

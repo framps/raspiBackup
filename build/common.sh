@@ -25,7 +25,7 @@
 readonly PACKAGE="./package"
 readonly TGT="$PACKAGE/src"
 
-readonly SRC="$HOME/depl"
+readonly SRC="$HOME/github.com/framps/raspiBackup/build/gitsrc"
 readonly CURRENT_DIR=$PWD
 
 function show() {

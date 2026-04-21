@@ -24,6 +24,10 @@
 
 set -euo pipefail
 
+if [[ ! -d gitsrc ]]; then
+	git clone git@github.com:framps/raspiBackup.git gitsrc
+fi
+
 readonly VERSION="0.7.2"
 export VERSION
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
@@ -36,19 +40,30 @@ mkdir -p "$PACKAGE"
 mkdir -p "$TGT/DEBIAN"
 mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
+mkdir -p "$TGT/etc/systemd/system"
 
 # copy source files
-install -m755 "$SRC/raspiBackup.sh" "$TGT/usr/local/bin/raspiBackup.sh"
-install -m755 "$SRC/raspiBackupInstallUI.sh" "$TGT/usr/local/bin/raspiBackupInstallUI.sh"
-install -m600 "$SRC/raspiBackup_de.conf" "$TGT/usr/local/etc/raspiBackup_de.conf"
-install -m600 "$SRC/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
+install -m755 "$SRC/raspiBackup.sh" "$TGT/usr/local/bin"
+install -m755 "$SRC/installation/raspiBackupInstallUI.sh" "$TGT/usr/local/bin"
 
 # create links
 cd "$TGT/usr/local/bin"
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
-cd i"$CURRENT_DIR"
-tar -x -f "$SRC/raspiBackupSampleExtensions.tgz" -C "$TGT/usr/local/bin"
+cd "$CURRENT_DIR"
+
+# copy config files
+install -m600 "$SRC/config/raspiBackup_de.conf" "$TGT/usr/local/etc"
+install -m600 "$SRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
+
+# copy systemd files
+install -m655 "$SRC/installation/raspiBackup.service" "$TGT/etc/systemd/system"
+install -m655 "$SRC/installation/raspiBackup.timer" "$TGT/etc/systemd/system"
+
+# copy extension files
+for file in $SRC/extensions/raspiBackup_*; do
+	install -m755 "$file" "$TGT/usr/local/bin"
+done
 
 # create DEBIAN package files
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
@@ -64,8 +79,8 @@ trap 'err $?' ERR
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-rm build.log || true
-show "Establish gpg ..."
+rm $LOG_FILE || true
+
 KEYID=4B9E02DBACA4DD24
 # Export public key
 # gpg --armor --export $KEYID > $KEYID.pub.asc
