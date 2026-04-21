@@ -41,8 +41,8 @@ function err() {
 
 cleanup() {
 	rm -f framps.gpg.asc
-	rm -f raspiBackup_0.7.2.deb
-	rm -f raspiBackup_0.7.2.deb.sig
+	rm -f raspiBackup.deb
+	rm -f raspiBackup.deb.sig
 	if (( $1 == 0 )); then
 		: rm -f $LOG_FILE
 	else
@@ -57,6 +57,30 @@ trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
+rm -f $LOG_FILE
+
+echo "--- Downloading raspiBackup Debian package from github"
+curl -fsSL $GITHUB_URL/raspiBackup.deb -o raspiBackup.deb
+curl -fsSL $GITHUB_URL/raspiBackup.deb.sig -o raspiBackup.deb.sig
+
+version=$(dpkg -I package/raspiBackup.deb | grep "^ Version" | cut -f 3 -d ' ')
+
+echo -n "--- Installing raspiBackup $version. Are you sure? (y|N) "
+
+read -r -n 1 answer
+
+if [[ -n "${str//[[:space:]]/}" ]]; then
+	echo
+fi
+
+if [[ ! $answer =~ [yYjJ] ]]; then
+	echo "!!! Installation of raspiBackup $version aborted"
+	exit 0
+fi
+
+echo "--- Verifying Debian package was created by framp"
+gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
+
 if ! gpg --list-keys | grep -q framps; then
 	echo "--- Retrieve framps key from github"
 	curl https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
@@ -64,13 +88,8 @@ if ! gpg --list-keys | grep -q framps; then
 	gpg --import  framps.gpg.asc
 fi
 
-echo "--- Downloading raspiBackup package"
-curl -fsSL $GITHUB_URL/raspiBackup.deb -o raspiBackup.deb
-echo "--- Downloading raspiBackup package signature"
-curl -fsSL $GITHUB_URL/raspiBackup.deb.sig -o raspiBackup.deb.sig
-
-echo "--- Verify package"
-gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
-
-echo "--- Install raspiBackup package and all dependencies"
+echo "--- Installing raspiBackup package and all dependencies"
 sudo apt-get install -y ./raspiBackup.deb &>>$LOG_FILE
+
+dpkg --list | grep raspibackup | awk '{ print "--- raspiBackup", $3, "installed successfully"; }'
+
