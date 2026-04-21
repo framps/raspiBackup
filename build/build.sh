@@ -45,11 +45,15 @@ if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
 fi
 
+VERSION_FILES="_$(sed -E 's/\./_/g' <<< "$VERSION")"
+
 show "Building deb package for raspiBackup $VERSION"
 
 rm -rf "$TGT"
+rm -rf "$DEB_TGT"
 
 mkdir -p "$PACKAGE"
+mkdir -p "$DEB_TGT"
 mkdir -p "$TGT/DEBIAN"
 mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
@@ -80,11 +84,11 @@ done
 
 # create DEBIAN package files
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
-install -m755  /tmp/control "$TGT/DEBIAN/control"
+install -m655  /tmp/control "$TGT/DEBIAN/control"
 rm /tmp/control
+install -m655  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
-install -m755  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
 
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
@@ -92,13 +96,19 @@ exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 rm $LOG_FILE || true
 
 show "Build package"
-dpkg-deb --root-owner-group --build "$TGT" "$PACKAGE/raspiBackup.deb"
+dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
 show "Sign raspiBackup package"
-gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$PACKAGE/raspiBackup.deb"
+gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
 show "Show files which will be installed"
-dpkg-deb -c "$PACKAGE/raspiBackup.deb"
+dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
 show "raspiBackup package information"
-dpkg-deb -I "$PACKAGE/raspiBackup.deb"
+dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+
+cd $DEB_TGT
+ln -s "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
+ln -s "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
+cd ..
+

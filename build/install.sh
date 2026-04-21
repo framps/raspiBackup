@@ -51,10 +51,10 @@ if [[ $cmd == "c" ]]; then
 fi
 
 echo "Package verification"
-gpg --verbose --verify $PACKAGE/raspiBackup.deb.sig $PACKAGE/raspiBackup.deb
+gpg --verbose --verify $DEB_TGT/raspiBackup.deb.sig $DEB_TGT/raspiBackup.deb
 
 echo "Install package and all dependencies"
-sudo apt-get install --allow-downgrades -y $PACKAGE/raspiBackup.deb
+sudo apt-get install --allow-downgrades -y $DEB_TGT/raspiBackup.deb
 
 echo "Show installation result"
 apt-cache policy raspibackup

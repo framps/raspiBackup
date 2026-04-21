@@ -22,10 +22,11 @@
 #
 #######################################################################################################################
 
-readonly PACKAGE="./package"
+readonly BUILD_HOME="$HOME/github.com/framps/raspiBackup/build"
+readonly PACKAGE="$BUILD_HOME/package"
 readonly TGT="$PACKAGE/src"
-
-readonly SRC="$HOME/github.com/framps/raspiBackup/build/gitsrc"
+readonly DEB_TGT="$BUILD_HOME/deb"
+readonly SRC="$BUILD_HOME/gitsrc"
 readonly CURRENT_DIR=$PWD
 
 function show() {
