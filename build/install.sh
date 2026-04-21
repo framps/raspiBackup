@@ -59,7 +59,7 @@ echo "Package verification"
 gpg --verbose --verify $PACKAGE/raspiBackup.deb.sig $PACKAGE/raspiBackup.deb
 
 echo "Install package and all dependencies"
-sudo apt-get install -y $PACKAGE/raspiBackup.deb
+sudo apt-get install --allow-downgrades -y $PACKAGE/raspiBackup.deb
 
 echo "Show installation result"
 apt-cache policy raspibackup

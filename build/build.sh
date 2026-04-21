@@ -28,11 +28,20 @@ if [[ ! -d gitsrc ]]; then
 	git clone git@github.com:framps/raspiBackup.git gitsrc
 fi
 
-readonly VERSION="0.7.2"
 export VERSION
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 source ./common.sh
+
+#trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
+trap 'err $?' ERR
+version="$(grep "^VERSION=" "gitsrc/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
+REGEX='.*="([^"]*)"'
+if [[ $version =~ $REGEX ]]; then
+	VERSION=${BASH_REMATCH[1]}
+fi
+
+show "Building deb package for raspiBackup $VERSION"
 
 rm -rf "$TGT"
 
@@ -72,9 +81,6 @@ rm /tmp/control
 install -m755  "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
-
-#trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
-trap 'err $?' ERR
 
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)

@@ -5,4 +5,4 @@ Priority: optional
 Architecture: all
 Depends: bash,parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux,fdisk,curl
 Maintainer: framp <framp@linux-tips-and-tricks.de>
-Description: Create and keep multiple backup versions of your running Raspberries with dd, tar or rsanc
+Description: Create and keep multiple backup versions of your running Raspberries with dd, tar or rsync
