@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# save existing config
+if [[ ! -f /usr/local/etc/raspiBackup.conf ]]; then
+	echo "Save existing config file"
+	cp -a /usr/local/etc/raspiBackup.conf /usr/local/etc/raspiBackup.conf~
+fi
+
+# use German config file, English is default
+lang="${LANG:0:2}"
+if [[ "$lang" == "de" ]]; then
+	if [[ ! -f /usr/local/etc/raspiBackup ]]; then
+		mv /usr/local/etc/raspiBackup_de.conf /usr/local/etc/raspiBackup.conf
+	fi
+else
+	rm /usr/local/etc/raspiBackup_de.conf
+fi
+
+# @TBD - merge new config file with old file
+

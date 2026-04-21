@@ -1,9 +1,7 @@
 #!/bin/bash
 #######################################################################################################################
 #
-# Script to download and install the raspiBackup oackage
-#
-# Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
+# 	Common definitions to build raspiBackup Debian package
 #
 #######################################################################################################################
 #
@@ -24,8 +22,19 @@
 #
 #######################################################################################################################
 
-readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
-readonly GITHUB_URL="https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/package"
+readonly PACKAGE="./package"
+readonly TGT="$PACKAGE/src"
+
+readonly SRC="$HOME/depl"
+readonly CURRENT_DIR=$PWD
+
+function show() {
+	local l=${#1}
+	local s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
+	echo "$s"
+	echo "=== $@ ==="
+	echo "$s"
+}
 
 function err() {
     local rc="$1"
@@ -39,38 +48,3 @@ function err() {
     exit 42
 }
 
-cleanup() {
-	rm -f framps.gpg.asc
-	rm -f raspiBackup_0.7.2.deb
-	rm -f raspiBackup_0.7.2.deb.sig
-	if (( $1 == 0 )); then
-		: rm -f $LOG_FILE
-	else
-		echo "??? Installation failed"
-		echo "!!! Check $LOG_FILE for details"
-	fi
-}
-
-trap 'err $?' ERR
-trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
-
-exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
-exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
-
-if ! gpg --list-keys | grep -q framps; then
-	echo "--- Retrieve framps key from github"
-	curl https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
-	echo "--- Import framps key"
-	gpg --import  framps.gpg.asc
-fi
-
-echo "--- Downloading raspiBackup package"
-curl -fsSL $GITHUB_URL/raspiBackup.deb -o raspiBackup.deb
-echo "--- Downloading raspiBackup package signature"
-curl -fsSL $GITHUB_URL/raspiBackup.deb.sig -o raspiBackup.deb.sig
-
-echo "--- Verify package"
-gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
-
-echo "--- Install raspiBackup package and all dependencies"
-sudo apt-get install -y ./raspiBackup.deb &>>$LOG_FILE

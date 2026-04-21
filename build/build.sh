@@ -24,13 +24,9 @@
 
 set -euo pipefail
 
-readonly version="0.7.2"
-readonly TGT="./src"
-readonly PACKAGE="./package"
-
-readonly SRC="$HOME/depl"
-readonly CURRENT_DIR=$PWD
-readonly LOG_FILE=build.log
+export readonly VERSION="0.7.2.1"
+readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
+source ./common.sh
 
 rm -rf $TGT
 
@@ -39,11 +35,12 @@ mkdir -p "$TGT/DEBIAN"
 mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
 
-# copy files
-install -Dm755 $SRC/raspiBackup.sh $TGT/usr/local/bin/raspiBackup.sh
-install -Dm755 $SRC/raspiBackupInstallUI.sh $TGT/usr/local/bin/raspiBackupInstallUI.sh
-install -Dm750 $SRC/raspiBackup_de.conf $TGT/usr/local/etc/raspiBackup_de.conf
-install -Dm750 $SRC/raspiBackup_en.conf $TGT/usr/local/etc/raspiBackup_en.conf
+# copy source files
+install -m755 $SRC/raspiBackup.sh $TGT/usr/local/bin/raspiBackup.sh
+install -m755 $SRC/raspiBackupInstallUI.sh $TGT/usr/local/bin/raspiBackupInstallUI.sh
+install -m600 $SRC/raspiBackup_de.conf $TGT/usr/local/etc/raspiBackup_de.conf
+install -m600 $SRC/raspiBackup_en.conf $TGT/usr/local/etc/raspiBackup.conf
+
 # create links
 cd $TGT/usr/local/bin
 ln -s -r raspiBackup.sh raspiBackup
@@ -51,58 +48,20 @@ ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 cd $CURRENT_DIR
 tar -x -f $SRC/raspiBackupSampleExtensions.tgz -C $TGT/usr/local/bin
 
-cat > "$TGT/DEBIAN/control" <<EOF
-Package: raspiBackup
-Version: $version
-Section: base
-Priority: optional
-Architecture: all
-Depends: bash,parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux,fdisk,curl
-Maintainer: framp <framp@linux-tips-and-tricks.de>
-Description: Create and keep multiple backup versions of your running Raspberries with dd, tar or rsanc
-EOF
-
-cat > "$TGT/DEBIAN/postinst" <<"EOF"
-#!/bin/bash
-
-function containsElement () {
-  local e
-  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
-  return 1
-}
-
-SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ZH")
-
-[[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
-LANG_EXT="${LANG,,*}"
-LANG_SYSTEM="${LANG_EXT:0:2}"
-if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
-        LANG_SYSTEM="en"
-fi
-
-if [[ ! -f /usr/local/etc/raspiBackup ]]; then
-	echo "Configuring raspiBackup.conf"
-	mv /usr/local/etc/raspiBackup_$LANG_SYSTEM.conf /usr/local/etc/raspiBackup.conf
-	chmod 660 /usr/local/etc/raspiBackup.conf
-	rm /usr/local/etc/raspiBackup_*
-else
-	echo "Existing raspiBackup.conf is not replaced"
-fi
-EOF
-chmod 775 $TGT/DEBIAN/postinst
-
-cat > "$TGT/DEBIAN/postrm" <<"EOF"
-#!/bin/bash
-
-echo "Cleaning up temp dir"
-rm -f /tmp/raspiBackup*
-EOF
-chmod 775 $TGT/DEBIAN/postrm
+# create DEBIAN package files
+envsubst < $PACKAGE/DEBIAN/control > /tmp/control
+install -m755  /tmp/control $TGT/DEBIAN/control
+rm /tmp/control
+install -m755  $PACKAGE/DEBIAN/postinst $TGT/DEBIAN
+install -m755  $PACKAGE/DEBIAN/postrm $TGT/DEBIAN
+install -m755  $PACKAGE/DEBIAN/conffiles $TGT/DEBIAN
 
 function show() {
-	echo "==============================="
-	echo "===> $@ ..."
-	echo "==============================="
+	local l=${#1}
+	local s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
+	echo "$s"
+	echo "=== $@ ==="
+	echo "$s"
 }
 
 #trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
@@ -118,10 +77,13 @@ KEYID=4B9E02DBACA4DD24
 # gpg --armor --export $KEYID > $KEYID.pub.asc
 
 show "Build package"
-dpkg-deb --root-owner-group --build $TGT $PACKAGE/raspiBackup_0.7.2.deb
+dpkg-deb --root-owner-group --build $TGT $PACKAGE/raspiBackup.deb
 
-show "Sign package"
-gpg --verbose --yes --detach-sign -u $KEYID $PACKAGE/raspiBackup_0.7.2.deb
+show "Sign raspiBackup package"
+gpg --verbose --yes --detach-sign -u $KEYID $PACKAGE/raspiBackup.deb
 
 show "Show files which will be installed"
-dpkg-deb -c $PACKAGE/raspiBackup_0.7.2.deb
+dpkg-deb -c $PACKAGE/raspiBackup.deb
+
+show "raspiBackup package information"
+dpkg-deb -I $PACKAGE/raspiBackup.deb
