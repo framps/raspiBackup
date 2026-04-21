@@ -1,7 +1,7 @@
 #!/bin/bash
 #######################################################################################################################
 #
-# 	Build raspiBackup Debian package
+#    Build raspiBackup Debian package
 #
 #######################################################################################################################
 #
@@ -24,45 +24,39 @@
 
 set -euo pipefail
 
-export readonly VERSION="0.7.2"
-readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
+readonly VERSION="0.7.2"
+export VERSION
+LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
+readonly LOG_FILE
 source ./common.sh
 
-rm -rf $TGT
+rm -rf "$TGT"
 
-mkdir -p $PACKAGE
+mkdir -p "$PACKAGE"
 mkdir -p "$TGT/DEBIAN"
 mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
 
 # copy source files
-install -m755 $SRC/raspiBackup.sh $TGT/usr/local/bin/raspiBackup.sh
-install -m755 $SRC/raspiBackupInstallUI.sh $TGT/usr/local/bin/raspiBackupInstallUI.sh
-install -m600 $SRC/raspiBackup_de.conf $TGT/usr/local/etc/raspiBackup_de.conf
-install -m600 $SRC/raspiBackup_en.conf $TGT/usr/local/etc/raspiBackup.conf
+install -m755 "$SRC/raspiBackup.sh" "$TGT/usr/local/bin/raspiBackup.sh"
+install -m755 "$SRC/raspiBackupInstallUI.sh" "$TGT/usr/local/bin/raspiBackupInstallUI.sh"
+install -m600 "$SRC/raspiBackup_de.conf" "$TGT/usr/local/etc/raspiBackup_de.conf"
+install -m600 "$SRC/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
 
 # create links
-cd $TGT/usr/local/bin
+cd "$TGT/usr/local/bin"
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
-cd $CURRENT_DIR
-tar -x -f $SRC/raspiBackupSampleExtensions.tgz -C $TGT/usr/local/bin
+cd i"$CURRENT_DIR"
+tar -x -f "$SRC/raspiBackupSampleExtensions.tgz" -C "$TGT/usr/local/bin"
 
 # create DEBIAN package files
-envsubst < $PACKAGE/DEBIAN/control > /tmp/control
-install -m755  /tmp/control $TGT/DEBIAN/control
+envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
+install -m755  /tmp/control "$TGT/DEBIAN/control"
 rm /tmp/control
-install -m755  $PACKAGE/DEBIAN/postinst $TGT/DEBIAN
-install -m755  $PACKAGE/DEBIAN/postrm $TGT/DEBIAN
-install -m755  $PACKAGE/DEBIAN/conffiles $TGT/DEBIAN
-
-function show() {
-	local l=${#1}
-	local s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
-	echo "$s"
-	echo "=== $@ ==="
-	echo "$s"
-}
+install -m755  "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
+install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
+install -m755  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
 
 #trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 trap 'err $?' ERR
@@ -77,13 +71,13 @@ KEYID=4B9E02DBACA4DD24
 # gpg --armor --export $KEYID > $KEYID.pub.asc
 
 show "Build package"
-dpkg-deb --root-owner-group --build $TGT $PACKAGE/raspiBackup.deb
+dpkg-deb --root-owner-group --build "$TGT" "$PACKAGE/raspiBackup.deb"
 
 show "Sign raspiBackup package"
-gpg --verbose --yes --detach-sign -u $KEYID $PACKAGE/raspiBackup.deb
+gpg --verbose --yes --detach-sign -u "$KEYID" "$PACKAGE/raspiBackup.deb"
 
 show "Show files which will be installed"
-dpkg-deb -c $PACKAGE/raspiBackup.deb
+dpkg-deb -c "$PACKAGE/raspiBackup.deb"
 
 show "raspiBackup package information"
-dpkg-deb -I $PACKAGE/raspiBackup.deb
+dpkg-deb -I "$PACKAGE/raspiBackup.deb"

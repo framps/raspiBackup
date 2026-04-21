@@ -89,7 +89,7 @@ if ! gpg --list-keys | grep -q framps; then
 fi
 
 echo "--- Installing raspiBackup package and all dependencies"
-sudo apt-get install -y ./raspiBackup.deb &>>$LOG_FILE
+sudo apt-get install --allow-downgrades -y ./raspiBackup.deb &>>$LOG_FILE
 
 dpkg --list | grep raspibackup | awk '{ print "--- raspiBackup", $3, "installed successfully"; }'
 
