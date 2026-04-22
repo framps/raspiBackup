@@ -3,4 +3,4 @@
 src
 gitsrc
 gpg.conf
-deb
+deb/*
