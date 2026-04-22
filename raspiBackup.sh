@@ -17,7 +17,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2_m-974"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -2065,8 +2065,8 @@ MSG_MISSING_PARTITIONS_NOT_SAVED=330
 MSG_EN[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Not all partitions which were saved in the previous backup are included. Missing \"%s\""
 MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden gesichert. Es fehlen \"%s\""
 MSG_NO_SKIP_FORMAT_POSSIBLE=331
-MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 is only available with rsync backuptype and a partition oriented backup"
-MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 ist nur mit dem rsync Backuptyp und einem partitionsorientierten Backup möglich"
+MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 is only available for backuptype rsync"
+MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 ist nur mit dem Backuptyp rsync möglich"
 MSG_GENERIC_WARNING=332
 MSG_EN[$MSG_GENERIC_WARNING]="RBK0332W: %s"
 MSG_DE[$MSG_GENERIC_WARNING]="RBK0332W: %s"
@@ -2138,11 +2138,11 @@ MSG_EN[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: External root partiti
 MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition ist mit Option -P nicht unterstützt"
 MSG_OPTION_ACLS_DISABLED=355
 MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
-#MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS=356
-#MSG_EN[$MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS]="RBK0356E: Default ACLs not allowed on backuppartition %s"
-#MSG_DE[$MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS]="RBK0356E: Default ACLs sind an der Backuppartition %s nicht erlaubt"
+MSG_SYNCING_SECOND_PARTITION=355
+MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0355I: Synchronizing second partition (root partition) on %s"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0355I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -6903,25 +6903,30 @@ function restoreNormalBackupType() {
 
 			executeFilesystemCheck "$BOOT_PARTITION"
 
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
-			local check=""
-			(( $REGRESSION_TEST )) && check="-F "
-			if (( $CHECK_FOR_BAD_BLOCKS )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DETAILED_ROOT_CHECKING "$ROOT_PARTITION"
-				check="-c"
-				mkfs.ext4 $check "$ROOT_PARTITION"
+			if (( ! SKIP_FORMAT )) || [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
+				local check=""
+				(( $REGRESSION_TEST )) && check="-F "
+				if (( $CHECK_FOR_BAD_BLOCKS )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_DETAILED_ROOT_CHECKING "$ROOT_PARTITION"
+					check="-c"
+					mkfs.ext4 $check "$ROOT_PARTITION"
+				else
+					mkfs.ext4 $check "$ROOT_PARTITION" &>>"$LOG_FILE"
+				fi
+				rc=$?
+				if (( $rc != 0 )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
+					exitError $RC_NATIVE_RESTORE_FAILED
+				fi
+
+				waitForPartitionDefsChanged
+				
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
 			else
-				mkfs.ext4 $check "$ROOT_PARTITION" &>>"$LOG_FILE"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNCING_SECOND_PARTITION "$ROOT_PARTITION"
 			fi
-			rc=$?
-			if (( $rc != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
-				exitError $RC_NATIVE_RESTORE_FAILED
-			fi
-
-			waitForPartitionDefsChanged
-
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
+			
 			mountAndCheck $ROOT_PARTITION "$MNT_POINT"
 
 			case $BACKUPTYPE in
@@ -9310,12 +9315,7 @@ function doitRestore() {
 	logItem "Date: $DATE"
 
 	if (( $SKIP_FORMAT )); then
-		if (( $PARTITIONBASED_BACKUP )); then
-			if [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
-				exitError $RC_PARAMETER_ERROR
-			fi
-		else
+		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
 			exitError $RC_PARAMETER_ERROR
 		fi
