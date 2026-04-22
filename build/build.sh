@@ -45,12 +45,16 @@ if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
 fi
 
+if (( $# > 0 )); then
+	VERSION="$1"
+fi
+
 VERSION_FILES="_$(sed -E 's/\./_/g' <<< "$VERSION")"
 
 show "Building deb package for raspiBackup $VERSION"
 
 rm -rf "$TGT"
-rm -rf "$DEB_TGT"
+#rm -rf "$DEB_TGT"
 
 mkdir -p "$PACKAGE"
 mkdir -p "$DEB_TGT"
@@ -104,11 +108,13 @@ gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_
 show "Show files which will be installed"
 dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
-show "raspiBackup package information"
+show "raspiBackup $VERSION package information"
 dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
 cd $DEB_TGT
+rm -f "raspiBackup.deb"
 ln -s "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
+rm -f "raspiBackup.deb.sig"
 ln -s "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
 cd ..
 
