@@ -1,0 +1,8 @@
+[Unit]
+Description=Creation of a Raspberry backup with raspiBackup
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/raspiBackup.sh
+[Install]
+WantedBy=multi-user.target

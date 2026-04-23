@@ -1,12 +1,11 @@
+#!/bin/bash
 #######################################################################################################################
 #
-#   Property file for raspiBackup and raspiBackupInstallUI
-#
-#   See http://www.linux-tips-and-tricks.de/raspiBackup for details
+# 	Common definitions to build raspiBackup Debian package
 #
 #######################################################################################################################
 #
-#    Copyright (C) 2015-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,22 +21,30 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
-#
-# GIT_DATE="$Date$"
-# GIT_COMMIT="$Sha1$"
 
-VERSION="0.7.2"
-INCOMPATIBLE=""
-DEPRECATED=""
-BETA=""
+readonly PACKAGE="./package"
+readonly TGT="$PACKAGE/src"
 
-VERSION_INSTALLER="0.4.8.6"
-INCOMPATIBLE_INSTALLER=""
-DEPRECATED_INSTALLER=""
-BETA_INSTALLER=""
+readonly SRC="$HOME/depl"
+readonly CURRENT_DIR=$PWD
 
-VERSION_CONF="0.1.10"
-INCOMPATIBLE_CONF=""
-DEPRECATED_CONF=""
-BETA_CONF=""
+function show() {
+	local l=${#1}
+	local s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
+	echo "$s"
+	echo "=== $@ ==="
+	echo "$s"
+}
+
+function err() {
+    local rc="$1"
+    echo "??? Unexpected error occured with RC $rc"
+    local i=0
+    local FRAMES=${#BASH_LINENO[@]}
+    for ((i = FRAMES - 2; i >= 0; i--)); do
+        echo '  File' \"${BASH_SOURCE[i + 1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i + 1]}
+        sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
+    done
+    exit 42
+}
 

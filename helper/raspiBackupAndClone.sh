@@ -4,9 +4,16 @@
 #
 #  Sample script which calls raspiBackup.sh to create a backup and restores the backup to a device (e.g. SD card or USB disk) afterwards
 #  That way a cold backup, also called clone, is available all the time just in case the system breaks for some reasons
+#  and no manual restore of latest backup is required.
+# 
+#  NOTE: Since raspiBackup version 0.7.2 there exists an option which is used by this script 
+#        and forces the existing clone to be synchronized with the latest backup.
+#        This speeds up the clone synchronization significantly and should be used if possible.
 #
-#  NOTE: Backup can be synced to speed up the restore when rsync partition oriented mode and new option -00 introduced in raspiBackup release 0.7 is used
-#        Just restore once a -P backup and then define the USE_RSYNC variable
+#        For all other backup types and modes the backup will be a normal restore to the clone device.
+#
+#	Invocation: raspiBackupAndClone.sh <clonedevice>
+#               Clonedevice may be for example /dev/sda or /dev/mmcblk0	
 #
 #  Visit http://www.linux-tips-and-tricks.de/raspiBackup for details about raspiBackup
 #
@@ -14,7 +21,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (c) 2024-2025 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2024-2026 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -34,12 +41,7 @@
 set -euf -o pipefail
 
 MYSELF=${0##*/}
-VERSION="v0.2.1"
-
-#
-# Enable this option if rsync and option -00 should be used to speed up the restore
-#
-USE_RSYNC=1
+VERSION="v0.2.2"
 
 set +u
 #shellcheck disable=SC2154
@@ -119,19 +121,18 @@ fi
 
 echo "--- Creating backup and restore backup afterwards to $CLONE_DEVICE ..."
 
-if (( USE_RSYNC )); then
-    raspiBackup.sh -t rsync -P
-else
-    raspiBackup.sh
-fi  
+raspiBackup.sh
+
 #shellcheck disable= SC2181
 #(style): Check exit code directly with e.g. 'if ! mycmd;', not indirectly with $?.
 if (( ! $? )); then
    readVars
    # BACKUP_TARGETDIR now refers to the just created backup
+
    # now restore backup to device
    f=$(mktemp)
    echo "DEFAULT_YES_NO_RESTORE_DEVICE=$CLONE_DEVICE" > "$f"
+
    # shellcheck disable=SC1091
    # (info) Not following: /usr/local/etc/raspiBackup.conf was not specified as input (see shellcheck -x).
    source /usr/local/etc/raspiBackup.conf
@@ -140,13 +141,16 @@ if (( ! $? )); then
         sudo mount "$DEFAULT_BACKUPPATH"
         mounted=1
    fi
-if (( USE_RSYNC )); then
-   raspiBackup.sh -Y -d "$CLONE_DEVICE" -f "$f" -00 "$BACKUP_TARGETDIR"
-else
-   raspiBackup.sh -Y -d "$CLONE_DEVICE" -f "$f" "$BACKUP_TARGETDIR"
-fi   
-   rm "$f"
-   if (( mounted )); then
-        sudo umount "$DEFAULT_BACKUPPATH"
-   fi   
+
+	restoreOpts=""
+	if [[ "$DEFAULT_BACKUPTYPE" == "rsync" && "$DEFAULT_PARTITIONBASED_BACKUP" != "0" ]]; then
+			echo "Clone will be synchronized instead to be restored"
+			restoreOpts="-00"
+	fi
+
+	raspiBackup.sh -Y -d "$CLONE_DEVICE" -f "$f" $restoreOpts "$BACKUP_TARGETDIR"
+	rm "$f"
+	if (( mounted )); then
+		sudo umount "$DEFAULT_BACKUPPATH"
+	fi
 fi

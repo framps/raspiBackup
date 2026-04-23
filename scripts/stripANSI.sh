@@ -1,12 +1,19 @@
-#######################################################################################################################
-#
-#   Property file for raspiBackup and raspiBackupInstallUI
-#
-#   See http://www.linux-tips-and-tricks.de/raspiBackup for details
+#!/bin/bash
 #
 #######################################################################################################################
 #
-#    Copyright (C) 2015-2025 framp at linux-tips-and-tricks dot de
+# Tiny script strips VT100/ANSI control sequences from typescript output
+#
+# Useful to debug raspiBackupInstallUI or any other tool which uses whiptail
+#
+# 1) Turn on typescript with "script"
+# 2) Start raspiBackupInstallUI in debug mode with "sudo bash -x"
+# 3) Terminate typescript with "exit"
+# 4) Call this script with typescript file. Default is "typescript"
+#
+#######################################################################################################################
+#
+#    Copyright (c) 2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,22 +29,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
-#
-# GIT_DATE="$Date$"
-# GIT_COMMIT="$Sha1$"
 
-VERSION="0.7.2"
-INCOMPATIBLE=""
-DEPRECATED=""
-BETA=""
+typescriptFile="${1:-typescript}"
 
-VERSION_INSTALLER="0.4.8.6"
-INCOMPATIBLE_INSTALLER=""
-DEPRECATED_INSTALLER=""
-BETA_INSTALLER=""
+if [[ ! -f $typeScriptFile ]]; then
+	echo "??? $typescriptFile not found"
+	exit 1
+fi
 
-VERSION_CONF="0.1.10"
-INCOMPATIBLE_CONF=""
-DEPRECATED_CONF=""
-BETA_CONF=""
-
+sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" $typescriptFile
