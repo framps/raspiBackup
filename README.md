@@ -35,7 +35,9 @@
 * Backup strategies
   * Number of backup versions to keep configurable either for sum of backups or on individual backup types
   * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
-  * Manual backups allow to create a kind of snapshot (so called raspiBackup snapshots) of the system just before major updates are done on a system.
+  * Manual backups allow to create a kind of snapshot (so called raspiBackup snapshots) of the system just before major updates are done on
+* Possible to always keep one device up to date with the latest backup
+  * A script *raspiBackupAndClone* can be used to synchronize the last backup with any device. The device can be used immediately in the  event of an unexpected system failure.
 * Linux backup tools used
   * Standard Linux backup tools dd, tar and rsync can be used to create a backup.
   * dd and tar are full backups. rsync uses hardlinks for incremental backups.
