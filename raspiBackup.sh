@@ -2135,10 +2135,10 @@ MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition
 MSG_OPTION_ACLS_DISABLED=355
 MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
-MSG_SYNCING_SECOND_PARTITION=355
-MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0355I: Synchronizing second partition (root partition) on %s"
+MSG_SYNCING_SECOND_PARTITION=356
+MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
 #shellcheck disable=SC2034
-MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0355I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
+MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
