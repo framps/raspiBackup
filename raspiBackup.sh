@@ -9745,13 +9745,21 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup
+	set -x
+
+	# ubuntu uses /boot/firmware/current, RaspberryOS /boot/firmware starting from bookworm
+	CMDLINE=$(find "$BOOT_MP/firmware" -name "cmdline.txt")
+	if [[ -z $CMDLINE ]]; then	# older raspberryOS use /boot/cmdline.txt
+		CMDLINE="$BOOT_MP/cmdline.txt"
+	fi
+		
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
 	local cmdline # path for message
-	[[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware ]] && cmdline="/boot/firmware/cmdline.txt"  || cmdline="/boot/cmdline.txt"
+	cmdline="$(sed "s@$BOOT_MP@@" <<< "$CMDLINE")"
 
 	local fstab="/etc/fstab" # path for message
+	set +x
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
