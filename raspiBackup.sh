@@ -5566,6 +5566,8 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
+			logger "INTERACTIVE: $INTERACTIVE"
+
 			if (( ! $INTERACTIVE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
@@ -5605,6 +5607,8 @@ function cleanup() { # trap
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
+
+		logger "INTERACTIVE: $INTERACTIVE"
 
 		if (( ! $INTERACTIVE )); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
