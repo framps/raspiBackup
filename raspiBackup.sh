@@ -5568,7 +5568,7 @@ function cleanup() { # trap
 
 			logger "INTERACTIVE: $INTERACTIVE"
 
-			if (( ! $INTERACTIVE )); then
+			if (( ! $INTERACTIVE || $FAKE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					sendEMail "$msg" "$msgTitle"
@@ -5610,7 +5610,7 @@ function cleanup() { # trap
 
 		logger "INTERACTIVE: $INTERACTIVE"
 
-		if (( ! $INTERACTIVE )); then
+		if (( ! $INTERACTIVE || $FAKE)); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
