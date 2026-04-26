@@ -746,15 +746,11 @@ MSG_DE[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: Die neue Version %s hat inkompatible
 MSG_FI[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: Uusi versio %s ei ole täysin yhteensopiva edellisen version kanssa. Ole hyvä ja lue %s ja käytä valintaa -S yhdessä valinnan -U kanssa päivittääksesi skriptin"
 MSG_FR[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: La nouvelle version %s présente des incompatibilités avec les versions précédentes. Veuillez lire %s et utilisez les options -S et -U pour mettre à jour le script"
 MSG_TITLE_OK=41
-MSG_EN[$MSG_TITLE_OK]="%s: Backup finished successfully"
-MSG_DE[$MSG_TITLE_OK]="%s: Backup erfolgreich beendet"
-MSG_FI[$MSG_TITLE_OK]="%s: Varmuuskopiointi suoritettu onnistuneesti"
-MSG_FR[$MSG_TITLE_OK]="%s: Sauvegarde terminée avec succès"
+MSG_EN[$MSG_TITLE_OK]="%s: %s finished successfully"
+MSG_DE[$MSG_TITLE_OK]="%s: %s erfolgreich beendet"
 MSG_TITLE_ERROR=42
-MSG_EN[$MSG_TITLE_ERROR]="%s: Backup failed !!!"
-MSG_DE[$MSG_TITLE_ERROR]="%s: Backup nicht erfolgreich !!!"
-MSG_FI[$MSG_TITLE_ERROR]="%s: Varmuuskopiointi epäonnistui !!!"
-MSG_FR[$MSG_TITLE_ERROR]="%s: Échec de la sauvegarde !!!"
+MSG_EN[$MSG_TITLE_ERROR]="%s: %s failed !!!"
+MSG_DE[$MSG_TITLE_ERROR]="%s: %s nicht erfolgreich !!!"
 MSG_REMOVING_BACKUP=43
 MSG_EN[$MSG_REMOVING_BACKUP]="RBK0043I: Removing incomplete backup in %s. This may take some time. Please be patient"
 MSG_DE[$MSG_REMOVING_BACKUP]="RBK0043I: Unvollständiges Backup in %s wird gelöscht. Das kann etwas dauern. Bitte Geduld"
@@ -2141,10 +2137,14 @@ MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition
 MSG_OPTION_ACLS_DISABLED=355
 MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
-MSG_SYNCING_SECOND_PARTITION=355
-MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0355I: Synchronizing second partition (root partition) on %s"
+MSG_SYNCING_SECOND_PARTITION=356
+MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
+MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
+MSG_NOTIFICATION_SUPPRESSED=357
+MSG_EN[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: No notification and eMail sent. Use option -F to test them."
 #shellcheck disable=SC2034
-MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0355I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
+MSG_DE[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: Es wird keine eMail und Notification gesendet. Nutze die Option -F um sie zu testen."
+
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2899,7 +2899,7 @@ function compareVersions() { # v1 v2
 
 function repeat() { # char num
 	local s
-	s=$( yes "$1" | head -"$2" | tr -d "\n" )
+	s=$( yes 2>/dev/null "$1" | head -"$2" | tr -d "\n" )
 	echo $s
 }
 
@@ -5222,7 +5222,7 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 16 )); then
-		m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		m="$(yes 2>/dev/null ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -5346,7 +5346,7 @@ function masqueradeSensitiveInfoInLog() {
 	# In home directories usually first names are used
 
 	logItem "Masquerading home directory name"
-	sed -i -E "s/\/home\/([^\\/])+\/(.)/\/home\/@USER@\/\2/g" $LOG_FILE
+	sed -i -E -e 's|/home/[^/]+/([^/]+)|/home/@USER@/\1|g' -e 's|/home/[^/]+|/home/@USER@|g' $LOG_FILE
 
 	# hostname may expose domain names
 
@@ -5538,9 +5538,11 @@ function cleanup() { # trap
 			fi
 		fi
 
+		task="Backup"
 		if (( $rc != $RC_CTRLC )); then
 			if (( $RESTORE )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_FAILED
+				task="Restore"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_FAILED
 			fi
@@ -5548,37 +5550,43 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-			if (( ! $RESTORE )); then
+			logger "INTERACTIVE: $INTERACTIVE"
+
+			if (( ! $INTERACTIVE || $FAKE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
-					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					sendEMail "$msg" "$msgTitle"
 				fi
 				if [[ -n "$TELEGRAM_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
 						sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
 						sendTelegrammLogMessages
 					fi
 				fi
 				if [[ -n "$PUSHOVER_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
 				if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi
-			fi #  ! RESTORE
+			elif (( $INTERACTIVE )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOTIFICATION_SUPPRESSED
+			fi 
 		fi
 
 	else 	# success
 
+		local task="Backup"
 		if (( $RESTORE )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_OK
+			task="Restore"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
@@ -5586,31 +5594,35 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		if (( ! $RESTORE )); then
+		logger "INTERACTIVE: $INTERACTIVE"
+
+		if (( ! $INTERACTIVE || $FAKE)); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
 					sendTelegramm "${EMOJI_OK} $msg"
 					sendTelegrammLogMessages
 				fi
 			fi
 			if [[ -n "$PUSHOVER_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
 					sendPushover "${EMOJI_OK} $msg" 0
 				fi
 			fi
 			if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
 					sendSlack "${EMOJI_OK} $msg" 0
 				fi
 			fi
 
-			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 			sendEMail "" "$msg"
 
-		fi # ! $RESTORE
+		elif (( $INTERACTIVE )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOTIFICATION_SUPPRESSED
+		fi
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
@@ -11162,7 +11174,7 @@ logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 setupEnvironment
 
 if (( $NOTIFY_START )); then
-	if (( ! $RESTORE )); then
+	if (( ! $INTERACTIVE )); then
 		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 		if [[ -n "$EMAIL"  ]]; then
 			sendEMail "" "$msg"
@@ -11201,6 +11213,7 @@ if (( $CUSTOM_CONFIG_FILE_INCLUDED )); then
 	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 fi
 
+logItem "INTERACTIVE: $INTERACTIVE"
 logOptions "Invocation options"
 logSystem
 

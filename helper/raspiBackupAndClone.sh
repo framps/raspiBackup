@@ -61,7 +61,7 @@ GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
 
 if (( UID != 0 )); then
-      echo "--- Call me as root or with sudo"
+      echo "--- Call script as root or with sudo"
       exit 1
 fi
 
@@ -137,14 +137,13 @@ if (( ! $? )); then
    # (info) Not following: /usr/local/etc/raspiBackup.conf was not specified as input (see shellcheck -x).
    source /usr/local/etc/raspiBackup.conf
    mounted=0
-   if ! mount | grep "$DEFAULT_BACKUPPATH"; then
+   if ! mount | grep -q "$DEFAULT_BACKUPPATH"; then
         sudo mount "$DEFAULT_BACKUPPATH"
         mounted=1
    fi
 
 	restoreOpts=""
-	if [[ "$DEFAULT_BACKUPTYPE" == "rsync" && "$DEFAULT_PARTITIONBASED_BACKUP" != "0" ]]; then
-			echo "Clone will be synchronized instead to be restored"
+	if [[ "$DEFAULT_BACKUPTYPE" == "rsync" ]]; then
 			restoreOpts="-00"
 	fi
 

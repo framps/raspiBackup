@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034
 #######################################################################################################################
 #
 # 	Common definitions to build raspiBackup Debian package
@@ -30,9 +31,10 @@ readonly CURRENT_DIR=$PWD
 
 function show() {
 	local l=${#1}
-	local s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
+	local s
+	s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
 	echo "$s"
-	echo "=== $@ ==="
+	echo "=== $* ==="
 	echo "$s"
 }
 
@@ -42,9 +44,8 @@ function err() {
     local i=0
     local FRAMES=${#BASH_LINENO[@]}
     for ((i = FRAMES - 2; i >= 0; i--)); do
-        echo '  File' \"${BASH_SOURCE[i + 1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i + 1]}
+        echo '  File' \""${BASH_SOURCE[i + 1]}"\", line ${BASH_LINENO[i]}, in "${FUNCNAME[i + 1]}"
         sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
     done
     exit 42
 }
-
