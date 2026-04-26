@@ -26,13 +26,14 @@
 set -euo pipefail
 
 source common.sh
-readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
+LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
+readonly LOG_FILE
 
 cleanup() {
 	show "Cleanig up"
 	rm -f framps.gpg.asc
 	if (( $1 == 0 )); then
-		rm -f $LOG_FILE
+		rm -f "$LOG_FILE"
 	else
 		echo "??? Installation failed"
 		echo "Check $LOG_FILE for details"

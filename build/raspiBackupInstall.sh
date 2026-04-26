@@ -24,8 +24,10 @@
 #
 #######################################################################################################################
 
-readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
-readonly GITHUB_URL="https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/package"
+LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
+readonly LOG_FILE
+GITHUB_URL="https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/package"
+readonly GITHUB_URL
 
 function err() {
     local rc="$1"
@@ -33,7 +35,7 @@ function err() {
     local i=0
     local FRAMES=${#BASH_LINENO[@]}
     for ((i = FRAMES - 2; i >= 0; i--)); do
-        echo '  File' \"${BASH_SOURCE[i + 1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i + 1]}
+        echo '  File' \""${BASH_SOURCE[i + 1]}"\", line ${BASH_LINENO[i]}, in "${FUNCNAME[i + 1]}"
         sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
     done
     exit 42
@@ -44,7 +46,7 @@ cleanup() {
 	rm -f raspiBackup.deb
 	rm -f raspiBackup.deb.sig
 	if (( $1 == 0 )); then
-		: rm -f $LOG_FILE
+		: rm -f "$LOG_FILE"
 	else
 		echo "??? Installation failed"
 		echo "!!! Check $LOG_FILE for details"
@@ -57,7 +59,7 @@ trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-rm -f $LOG_FILE
+rm -f "$LOG_FILE"
 
 echo "--- Downloading raspiBackup Debian package from github"
 curl -fsSL $GITHUB_URL/raspiBackup.deb -o raspiBackup.deb
