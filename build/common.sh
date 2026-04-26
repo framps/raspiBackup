@@ -22,12 +22,18 @@
 #
 #######################################################################################################################
 
-readonly BUILD_HOME="$HOME/github.com/framps/raspiBackup/build"
-readonly PACKAGE="$BUILD_HOME/package"
-readonly TGT="$PACKAGE/src"
-readonly DEB_TGT="$BUILD_HOME/deb"
-readonly SRC="$BUILD_HOME/gitsrc"
-readonly CURRENT_DIR=$PWD
+BUILD_HOME="$HOME/github.com/framps/raspiBackup/build"
+readonly BUILD_HOME
+PACKAGE="$BUILD_HOME/package"
+readonly PACKAGE
+TGT="$PACKAGE/src"
+readonly TGT
+DEB_TGT="$BUILD_HOME/deb"
+readonly DEB_TGT
+SRC="$BUILD_HOME/gitsrc"
+readonly SRC
+CURRENT_DIR=$PWD
+readonly CURRENT_DIR
 
 function show() {
 	local l=${#1}
@@ -44,7 +50,7 @@ function err() {
     local i=0
     local FRAMES=${#BASH_LINENO[@]}
     for ((i = FRAMES - 2; i >= 0; i--)); do
-        echo '  File' \"${BASH_SOURCE[i + 1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i + 1]}
+        echo '  File' \""${BASH_SOURCE[i + 1]}"\", line ${BASH_LINENO[i]}, in "${FUNCNAME[i + 1]}"
         sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
     done
     exit 42

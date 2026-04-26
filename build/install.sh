@@ -26,12 +26,13 @@
 set -euo pipefail
 
 source common.sh
-readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
+LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
+readonly LOG_FILE
 
 cleanup() {
 	show "Cleanig up"
 	if (( $1 == 0 )); then
-		rm -f $LOG_FILE
+		rm -f "$LOG_FILE"
 	else
 		echo "??? Installation failed"
 		echo "Check $LOG_FILE for details"
@@ -39,7 +40,7 @@ cleanup() {
 }
 
 trap 'err $?' ERR
-trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
+#trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
@@ -51,10 +52,10 @@ if [[ $cmd == "c" ]]; then
 fi
 
 echo "Package verification"
-gpg --verbose --verify $DEB_TGT/raspiBackup.deb.sig $DEB_TGT/raspiBackup.deb
+gpg --verbose --verify "$DEB_TGT"/raspiBackup.deb.sig "$DEB_TGT"/raspiBackup.deb
 
 echo "Install package and all dependencies"
-sudo apt-get install --allow-downgrades -y $DEB_TGT/raspiBackup.deb
+sudo apt-get install --allow-downgrades -y "$DEB_TGT"/raspiBackup.deb
 
 echo "Show installation result"
 apt-cache policy raspibackup

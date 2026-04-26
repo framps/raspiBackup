@@ -9,13 +9,13 @@ cmp() {
 	echo -n "$1 ${m[$2]} $3 : "
 	dpkg --compare-versions "$1" "$2" "$3"
 	result=$?
-	(( $result )) && echo "no" || echo "yes"
+	(( result )) && echo "no" || echo "yes"
 	if [[ -n $4 ]]; then
-		if (( $result == 0 )); then
+		if (( result == 0 )); then
 			echo "Error: no expected"
 			exit 42
 		fi
-	elif (( $result ==  1 )); then
+	elif (( result ==  1 )); then
 			echo "Error yes expected"
 			exit 42
 	fi

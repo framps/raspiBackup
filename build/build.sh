@@ -82,7 +82,7 @@ install -m655 "$SRC/installation/raspiBackup.service" "$TGT/etc/systemd/system"
 install -m655 "$SRC/installation/raspiBackup.timer" "$TGT/etc/systemd/system"
 
 # copy extension files
-for file in $SRC/extensions/raspiBackup_*; do
+for file in "$SRC"/extensions/raspiBackup_*; do
 	install -m755 "$file" "$TGT/usr/local/bin"
 done
 
@@ -97,7 +97,7 @@ install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-rm $LOG_FILE || true
+rm "$LOG_FILE" || true
 
 show "Build package"
 dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
@@ -111,7 +111,7 @@ dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 show "raspiBackup $VERSION package information"
 dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
-cd $DEB_TGT
+cd "$DEB_TGT"
 rm -f "raspiBackup.deb"
 ln -s "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
 rm -f "raspiBackup.deb.sig"
