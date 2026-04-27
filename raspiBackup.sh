@@ -6989,7 +6989,7 @@ function restoreNormalBackupType() {
 
 			# date -u +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
 			# make sure raspiBackup is not started during initial boot of restored image
-			date -d "$(date) 5min" +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
+			date --date='now + 5 minutes' +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
 			logItem "Updated hw clock to $(<$MNT_POINT/etc/fake-hwclock.data)"
 
 			#logItem "Force fsck on reboot"
@@ -9757,8 +9757,6 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	set -x
-
 	# ubuntu uses /boot/firmware/current, RaspberryOS /boot/firmware starting from bookworm
 	CMDLINE=$(find "$BOOT_MP" -name "cmdline.txt")
 	if [[ -z $CMDLINE ]]; then	# older raspberryOS use /boot/cmdline.txt
@@ -9771,7 +9769,6 @@ function synchronizeCmdlineAndfstab() {
 	cmdline="$(sed "s|$BOOT_MP||" <<< "$CMDLINE")"
 
 	local fstab="/etc/fstab" # path for message
-	set +x
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
