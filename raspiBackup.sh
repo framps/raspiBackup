@@ -2137,8 +2137,12 @@ MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
 MSG_SYNCING_SECOND_PARTITION=356
 MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
+MSG_NOTIFICATION_SUPPRESSED=357
+MSG_EN[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: No notification and eMail sent. Use option -F to test them."
+#shellcheck disable=SC2034
+MSG_DE[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: Es wird keine eMail und Notification gesendet. Nutze die Option -F um sie zu testen."
+
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2893,7 +2897,7 @@ function compareVersions() { # v1 v2
 
 function repeat() { # char num
 	local s
-	s=$( yes "$1" | head -"$2" | tr -d "\n" )
+	s=$( yes 2>/dev/null "$1" | head -"$2" | tr -d "\n" )
 	echo $s
 }
 
@@ -5239,7 +5243,7 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 16 )); then
-		m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		m="$(yes 2>/dev/null ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -5363,7 +5367,7 @@ function masqueradeSensitiveInfoInLog() {
 	# In home directories usually first names are used
 
 	logItem "Masquerading home directory name"
-	sed -i -E "s/\/home\/([^\\/])+\/(.)/\/home\/@USER@\/\2/g" $LOG_FILE
+	sed -i -E -e 's|/home/[^/]+/([^/]+)|/home/@USER@/\1|g' -e 's|/home/[^/]+|/home/@USER@|g' $LOG_FILE
 
 	# hostname may expose domain names
 
@@ -5566,7 +5570,9 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-			if (( ! $RESTORE )); then
+			logger "INTERACTIVE: $INTERACTIVE"
+
+			if (( ! $INTERACTIVE || $FAKE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					sendEMail "$msg" "$msgTitle"
@@ -5590,7 +5596,9 @@ function cleanup() { # trap
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi
-			fi #  ! RESTORE
+			elif (( $INTERACTIVE )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOTIFICATION_SUPPRESSED
+			fi 
 		fi
 
 	else 	# success
@@ -5606,7 +5614,9 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		if (( ! $INTERACTIVE )); then
+		logger "INTERACTIVE: $INTERACTIVE"
+
+		if (( ! $INTERACTIVE || $FAKE)); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
@@ -5630,7 +5640,9 @@ function cleanup() { # trap
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 			sendEMail "" "$msg"
 
-		fi # ! $RESTORE
+		elif (( $INTERACTIVE )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOTIFICATION_SUPPRESSED
+		fi
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
@@ -11119,6 +11131,7 @@ if (( $CUSTOM_CONFIG_FILE_INCLUDED )); then
 	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 fi
 
+logItem "INTERACTIVE: $INTERACTIVE"
 logOptions "Invocation options"
 logSystem
 
