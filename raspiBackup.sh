@@ -9740,7 +9740,7 @@ function synchronizeCmdlineAndfstab() {
 	logEntry "BOOT_PARTITION: $BOOT_PARTITION - ROOT_PARTITION: $ROOT_PARTITION"
 
 	ROOT_MP="$TEMPORARY_MOUNTPOINT_ROOT/root"
-	BOOT_MP="$TEMPORARY_MOUNTPOINT_ROOT/boot"
+	BOOT_MP="$TEMPORARY_MOUNTPOINT_ROOT"
 	logEntry "ROOT_MP: $ROOT_MP - BOOT_MP: $BOOT_MP"
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
@@ -9748,15 +9748,15 @@ function synchronizeCmdlineAndfstab() {
 	set -x
 
 	# ubuntu uses /boot/firmware/current, RaspberryOS /boot/firmware starting from bookworm
-	CMDLINE=$(find "$BOOT_MP/firmware" -name "cmdline.txt")
+	CMDLINE=$(find "$BOOT_MP" -name "cmdline.txt")
 	if [[ -z $CMDLINE ]]; then	# older raspberryOS use /boot/cmdline.txt
-		CMDLINE="$BOOT_MP/cmdline.txt"
+		assertionFailed $LINENO "No commandlinx.txt found"
 	fi
 		
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
 	local cmdline # path for message
-	cmdline="$(sed "s@$BOOT_MP@@" <<< "$CMDLINE")"
+	cmdline="$(sed "s|$BOOT_MP||" <<< "$CMDLINE")"
 
 	local fstab="/etc/fstab" # path for message
 	set +x
