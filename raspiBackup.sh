@@ -9770,10 +9770,10 @@ function synchronizeCmdlineAndfstab() {
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
 	local cmdline4Message # path for message
-	cmdline4Message="$ROOT_PARTITION$(sed "s|$BOOT_MP||" <<< "$CMDLINE")"
+	cmdline4Message="$BOOT_PARTITION$(sed "s|$BOOT_MP||" <<< "$CMDLINE")"
 
 	local fstab4Message
-	fstab4Message="$BOOT_PARTITION/etc/fstab" # path for message
+	fstab4Message="$ROOT_PARTITION/etc/fstab" # path for message
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
