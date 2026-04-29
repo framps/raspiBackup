@@ -24,6 +24,8 @@
 
 set -euo pipefail
 
+# clone github code to get current commit sha into code
+# should be done finally all the time
 if [[ ! -d gitsrc ]]; then
 	git clone git@github.com:framps/raspiBackup.git gitsrc
 fi
@@ -45,10 +47,12 @@ if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
 fi
 
+# allow to pass another version number for upgrade/downgrade tests
 if (( $# > 0 )); then
 	VERSION="$1"
 fi
 
+# underscores are not allowed in debian version numbers
 VERSION_FILES="_$(sed -E 's/\./_/g' <<< "$VERSION")"
 
 show "Building deb package for raspiBackup $VERSION"
@@ -86,7 +90,7 @@ for file in "$SRC"/extensions/raspiBackup_*; do
 	install -m755 "$file" "$TGT/usr/local/bin"
 done
 
-# create DEBIAN package files
+# create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
 install -m655  /tmp/control "$TGT/DEBIAN/control"
 rm /tmp/control
@@ -102,7 +106,7 @@ rm "$LOG_FILE" || true
 show "Build package"
 dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
-show "Sign raspiBackup package"
+show "Sign package"
 gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
 show "Show files which will be installed"
@@ -111,6 +115,7 @@ dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 show "raspiBackup $VERSION package information"
 dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
+# create links
 cd "$DEB_TGT"
 rm -f "raspiBackup.deb"
 ln -s "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"

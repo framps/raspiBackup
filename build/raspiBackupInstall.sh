@@ -56,6 +56,7 @@ cleanup() {
 trap 'err $?' ERR
 trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 
+# enable logging
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
@@ -81,12 +82,14 @@ if [[ ! $answer =~ [yYjJ] ]]; then
 fi
 
 echo "--- Verifying Debian package was created by framp"
+# will fail with unexpected error if verification fails
 gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
 
+# retrieve and import framps gpg key from github if it doesn't exist already in keyring
 if ! gpg --list-keys | grep -q framps; then
-	echo "--- Retrieve framps key from github"
+	echo "--- Retrieving framps key from github"
 	curl https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
-	echo "--- Import framps key"
+	echo "--- Importing framps key"
 	gpg --import  framps.gpg.asc
 fi
 

@@ -45,7 +45,9 @@ trap 'err $?' ERR
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-cmd=${1:-i}	# install without clean
+# if no option was used don't delete old raspiBackup package
+cmd=${1:-i}
+# option c will delete raspiBackup and rsync packages to test whether dependent packages will also be installed
 if [[ $cmd == "c" ]]; then
 	show "Clean installation of raspiBackup and rsync"
 	sudo apt remove -y raspibackup rsync || true
