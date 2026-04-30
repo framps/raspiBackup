@@ -10401,6 +10401,46 @@ function getEnableDisableOption() { # option
 function backupAndClone() {
 	logEntry
 	
+	local arg i rc
+	
+	CLONE_BACKUP_OPTIONS=()
+	CLONE_RESTORE_OPTIONS=()
+	
+	# prepare args for future raspiBackup calls
+	for i in ${!ARG_BAK[@]}; do
+		arg="${ARG_BAK[i]}"
+		echo "Parm $i: $arg"
+		case $arg in
+		
+			--clone*) continue
+				;;									# skip clone option
+			
+			-d) CLONE_RESTORE_OPTIONS+=($arg)		# copy -d device for restore
+				(( i++ ))
+				arg="${ARG_BAK[i]}"
+				CLONE_RESTORE_OPTIONS+=($arg)
+				;;			
+				
+			*) CLONE_BACKUP_OPTIONS+=($arg)			# copy all other parms
+			   CLONE_RESTORE_OPTIONS+=($arg)
+			   ;;			
+		esac
+	done
+	
+	echo "BACKUP: ${CLONE_BACKUP_OPTIONS[*]}"
+	echo "RESTORE: ${CLONE_RESTORE_OPTIONS[*]}"
+
+	logItem "Starting raspiBackup ${CLONE_BACKUP_OPTIONS[*]}"
+	raspiBackup "${CLONE_BACKUP_OPTIONS[*]}"
+	rc=$?
+	
+	logItem "Backup RC: $rc"
+	
+	if (( $rc == 0 )); then
+		raspiBackup "${CLONE_RESTORE_OPTIONS[@]}"
+		rc=$?
+		logItem "Restore RC: $rc"		
+	fi
 	
 	logExit
 }
@@ -10979,11 +11019,6 @@ if (( ! $INCLUDE_ONLY )); then
 # set positional arguments in argument list $@
 set -- "$PARAMS"
 
-if (( $CLONE )); then
-	backupAndClone
-	exitNormal
-fi
-
 if (( $RESTORE )); then
 	rstFileName="${LOG_FILE/$LOGFILE_EXT/$LOGFILE_RESTORE_EXT}"
 	LOG_FILE="$rstFileName"
@@ -11034,6 +11069,11 @@ if ! isSupportedEnvironment; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_ENVIRONMENT
 		exitError $RC_UNSUPPORTED_ENVIRONMENT
 	fi
+fi
+
+if (( $CLONE )); then
+	backupAndClone
+	exitNormal
 fi
 
 if (( $DEPLOY )); then
