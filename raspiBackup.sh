@@ -44,7 +44,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2"   								# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.2-m_978"   								# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -2929,6 +2929,7 @@ function logOptions() { # option state
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
+	logItem "CLONE=$CLONE"
 	logItem "COLOR_CODES=${COLOR_CODES[*]}"
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
@@ -3028,6 +3029,8 @@ function initializeDefaultConfigVariables() {
 
 	# path to store the backupfile
 	DEFAULT_BACKUPPATH="/backup"
+	# Update clone at end of backup creation
+	DEFAULT_CLONE=0
 	# how many backups to keep of all backup types
 	DEFAULT_KEEPBACKUPS=3
 	# how many backups to keep of the specific backup type. If zero DEFAULT_KEEPBACKUPS is used
@@ -3197,6 +3200,7 @@ function copyDefaultConfigVariables() {
 
 	APPEND_LOG="$DEFAULT_APPEND_LOG"
 	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
+	CLONE="$DEFAULT_CLONE"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
 	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
@@ -10394,6 +10398,13 @@ function getEnableDisableOption() { # option
 	esac
 }
 
+function backupAndClone() {
+	logEntry
+	
+	
+	logExit
+}
+
 # misc other vars
 
 BACKUP_DIRECTORY_NAME=""
@@ -10569,6 +10580,10 @@ while (( "$#" )); do
 
 	-C|-C[-+])
 	  CHECK_FOR_BAD_BLOCKS=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
+	--clone|--clone[+-])
+	  CLONE=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	--coloring)
@@ -10963,6 +10978,11 @@ if (( ! $INCLUDE_ONLY )); then
 
 # set positional arguments in argument list $@
 set -- "$PARAMS"
+
+if (( $CLONE )); then
+	backupAndClone
+	exitNormal
+fi
 
 if (( $RESTORE )); then
 	rstFileName="${LOG_FILE/$LOGFILE_EXT/$LOGFILE_RESTORE_EXT}"
