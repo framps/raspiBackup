@@ -10401,18 +10401,20 @@ function getEnableDisableOption() { # option
 function backupAndClone() {
 	logEntry
 	
-	local arg i rc
+	local arg i rc size
 	
 	CLONE_BACKUP_OPTIONS=()
 	CLONE_RESTORE_OPTIONS=()
+	i=0
+	size=${#ARG_BAK[@]}
 	
 	# prepare args for future raspiBackup calls
-	for i in ${!ARG_BAK[@]}; do
+	while (( i < size )); do
 		arg="${ARG_BAK[i]}"
 		echo "Parm $i: $arg"
 		case $arg in
 		
-			--clone*) continue
+			--clone*) export CLONE_REQUESTED
 				;;									# skip clone option
 			
 			-d) CLONE_RESTORE_OPTIONS+=($arg)		# copy -d device for restore
@@ -10423,8 +10425,9 @@ function backupAndClone() {
 				
 			*) CLONE_BACKUP_OPTIONS+=($arg)			# copy all other parms
 			   CLONE_RESTORE_OPTIONS+=($arg)
-			   ;;			
+			   ;;
 		esac
+		(( i++ ))
 	done
 	
 	echo "BACKUP: ${CLONE_BACKUP_OPTIONS[*]}"
