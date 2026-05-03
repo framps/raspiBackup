@@ -2320,8 +2320,11 @@ function logEnable() {
 
 	LOG_FILE="$TEMP_LOG_FILE"
 	MSG_FILE="$TEMP_MSG_FILE"
-	rm -f "$LOG_FILE" &>/dev/null
-	rm -f "$MSG_FILE" &>/dev/null
+	
+	if (( ! $CLONE_REQUESTED )); then
+		rm -f "$LOG_FILE" &>/dev/null
+		rm -f "$MSG_FILE" &>/dev/null
+	fi
 
 	logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 
@@ -10414,7 +10417,7 @@ function backupAndClone() {
 		echo "Parm $i: $arg"
 		case $arg in
 		
-			--clone*) export CLONE_REQUESTED
+			--clone*) export CLONE_REQUESTED=1
 				;;									# skip clone option
 			
 			-d) CLONE_RESTORE_OPTIONS+=($arg)		# copy -d device for restore
@@ -10434,15 +10437,22 @@ function backupAndClone() {
 	echo "RESTORE: ${CLONE_RESTORE_OPTIONS[*]}"
 
 	logItem "Starting raspiBackup ${CLONE_BACKUP_OPTIONS[*]}"
-	raspiBackup "${CLONE_BACKUP_OPTIONS[*]}"
+	echo "Starting Clone backup: $CLONE_REQUESTED ${CLONE_BACKUP_OPTIONS[*]}"
+	raspiBackup ${CLONE_BACKUP_OPTIONS[*]}
 	rc=$?
 	
 	logItem "Backup RC: $rc"
 	
 	if (( $rc == 0 )); then
-		raspiBackup "${CLONE_RESTORE_OPTIONS[@]}"
+	     source /tmp/raspiBackup.vars # BACKUP_TARGETDIR refers to the backupdirectory just created
+		 f=$(mktemp)
+		echo "DEFAULT_YES_NO_RESTORE_DEVICE=$CLONE_DEVICE" > "$f"
+
+		echo "Starting Clone restore: $CLONE_REQUESTED ${CLONE_RESTORE_OPTIONS[*]}"
+		raspiBackup ${CLONE_RESTORE_OPTIONS[*]} -Y -f "$f" $BACKUP_TARGETDIR
 		rc=$?
-		logItem "Restore RC: $rc"		
+		logItem "Restore RC: $rc"
+		rm "$f"
 	fi
 	
 	logExit
@@ -10452,6 +10462,7 @@ function backupAndClone() {
 
 BACKUP_DIRECTORY_NAME=""
 BACKUPFILE=""
+CLONE_REQUESTED=0
 CUSTOM_CONFIG_FILE_INCLUDED=0
 DEPLOY=0
 DYNAMIC_MOUNT_EXECUTED=0
