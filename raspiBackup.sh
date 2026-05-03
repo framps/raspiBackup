@@ -2321,10 +2321,8 @@ function logEnable() {
 	LOG_FILE="$TEMP_LOG_FILE"
 	MSG_FILE="$TEMP_MSG_FILE"
 	
-	if (( ! $CLONE_REQUESTED )); then
-		rm -f "$LOG_FILE" &>/dev/null
-		rm -f "$MSG_FILE" &>/dev/null
-	fi
+	rm -f "$LOG_FILE" &>/dev/null
+	rm -f "$MSG_FILE" &>/dev/null
 
 	logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 
@@ -2932,7 +2930,7 @@ function logOptions() { # option state
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
-	logItem "CLONE=$CLONE"
+	logItem "CLONE_DEVICE=$CLONE_DEVICE"
 	logItem "COLOR_CODES=${COLOR_CODES[*]}"
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
@@ -3032,8 +3030,8 @@ function initializeDefaultConfigVariables() {
 
 	# path to store the backupfile
 	DEFAULT_BACKUPPATH="/backup"
-	# Update clone at end of backup creation
-	DEFAULT_CLONE=0
+	# Update clone at end of backup creation to clone device
+	DEFAULT_CLONE_DEVICE=""
 	# how many backups to keep of all backup types
 	DEFAULT_KEEPBACKUPS=3
 	# how many backups to keep of the specific backup type. If zero DEFAULT_KEEPBACKUPS is used
@@ -3203,7 +3201,7 @@ function copyDefaultConfigVariables() {
 
 	APPEND_LOG="$DEFAULT_APPEND_LOG"
 	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
-	CLONE="$DEFAULT_CLONE"
+	CLONE_DEVICE="$DEFAULT_CLONE_DEVICE"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
 	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
@@ -6592,18 +6590,7 @@ function partitionRestoredeviceIfRequested() {
 	if (( $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
-		if ! askYesNo; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-			exitError $RC_RESTORE_FAILED
-		fi
-
-		if (( $NO_YES_QUESTION )); then
-			echo "Y"
-		fi
-
-		if (( $SKIP_FORMAT )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
-
+		if (( ! $CLONE_REQUESTED )); then
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -6611,6 +6598,20 @@ function partitionRestoredeviceIfRequested() {
 
 			if (( $NO_YES_QUESTION )); then
 				echo "Y"
+			fi
+		fi
+		
+		if (( $SKIP_FORMAT )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
+			if (( ! $ CLONE_REQUESTED )); then
+				if ! askYesNo; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+					exitError $RC_RESTORE_FAILED
+				fi
+
+				if (( $NO_YES_QUESTION )); then
+					echo "Y"
+				fi
 			fi
 		else
 
@@ -6638,13 +6639,15 @@ function partitionRestoredeviceIfRequested() {
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_PARTITIONS $RESTORE_DEVICE
 
-		if ! askYesNo; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-			exitError $RC_RESTORE_FAILED
-		fi
+		if (( ! $CLONE_REQUESTED )); then
+			if ! askYesNo; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+				exitError $RC_RESTORE_FAILED
+			fi
 
-		if (( $NO_YES_QUESTION )); then
-			echo "Y"
+			if (( $NO_YES_QUESTION )); then
+				echo "Y"
+			fi
 		fi
 
 		if (( $FORCE_SFDISK )); then
@@ -8641,9 +8644,14 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 
-	if ! askYesNo; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-		exitError $RC_RESTORE_FAILED
+	echo "--------------> $CLONE_REQUESTED"
+	read
+
+	if (( ! $CLONE_REQUESTED)); then
+		if ! askYesNo; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+			exitError $RC_RESTORE_FAILED
+		fi
 	fi
 
 	restoreNormalBackupType
@@ -10404,52 +10412,49 @@ function getEnableDisableOption() { # option
 function backupAndClone() {
 	logEntry
 	
-	local arg i rc size
+	local arg i rc size cloneDevice cloneBackupOptions cloneRestoreOptions
 	
-	CLONE_BACKUP_OPTIONS=()
-	CLONE_RESTORE_OPTIONS=()
+	cloneBackupOptions=()
+	cloneRestoreOptions=()
 	i=0
 	size=${#ARG_BAK[@]}
-	
+
+	export CLONE_REQUESTED=1
+		
 	# prepare args for future raspiBackup calls
 	while (( i < size )); do
 		arg="${ARG_BAK[i]}"
 		echo "Parm $i: $arg"
 		case $arg in
 		
-			--clone*) export CLONE_REQUESTED=1
-				;;									# skip clone option
-			
-			-d) CLONE_RESTORE_OPTIONS+=($arg)		# copy -d device for restore
+			--clone) 
+				cloneRestoreOptions+=("-d")			# replace --clone with -d for restore to clone device 
 				(( i++ ))
 				arg="${ARG_BAK[i]}"
-				CLONE_RESTORE_OPTIONS+=($arg)
-				;;			
-				
-			*) CLONE_BACKUP_OPTIONS+=($arg)			# copy all other parms
-			   CLONE_RESTORE_OPTIONS+=($arg)
+				cloneRestoreOptions+=($arg)			
+				;;									# skip clone option
+							
+			*) cloneBackupOptions+=($arg)			# copy all other parms
+			   cloneRestoreOptions+=($arg)
 			   ;;
 		esac
 		(( i++ ))
 	done
 	
-	echo "BACKUP: ${CLONE_BACKUP_OPTIONS[*]}"
-	echo "RESTORE: ${CLONE_RESTORE_OPTIONS[*]}"
+	echo "BACKUP: ${cloneBackupOptions[*]}"
+	echo "RESTORE: ${cloneRestoreOptions[*]}"
 
-	logItem "Starting raspiBackup ${CLONE_BACKUP_OPTIONS[*]}"
-	echo "Starting Clone backup: $CLONE_REQUESTED ${CLONE_BACKUP_OPTIONS[*]}"
-	raspiBackup ${CLONE_BACKUP_OPTIONS[*]}
-	rc=$?
-	
+	logItem "Starting raspiBackup ${cloneBackupOptions[*]}"
+	echo "Starting Clone backup: ${cloneBackupOptions[*]}"
+	raspiBackup ${cloneBackupOptions[*]}
+	rc=$?	
 	logItem "Backup RC: $rc"
 	
 	if (( $rc == 0 )); then
-	     source /tmp/raspiBackup.vars # BACKUP_TARGETDIR refers to the backupdirectory just created
-		 f=$(mktemp)
-		echo "DEFAULT_YES_NO_RESTORE_DEVICE=$CLONE_DEVICE" > "$f"
-
-		echo "Starting Clone restore: $CLONE_REQUESTED ${CLONE_RESTORE_OPTIONS[*]}"
-		raspiBackup ${CLONE_RESTORE_OPTIONS[*]} -Y -f "$f" $BACKUP_TARGETDIR
+	    source /tmp/raspiBackup.vars # BACKUP_TARGETDIR now refers to the backupdirectory just created
+		
+		echo "Starting Clone restore: ${cloneRestoreOptions[*]}"
+		raspiBackup ${cloneRestoreOptions[*]} $BACKUP_TARGETDIR
 		rc=$?
 		logItem "Restore RC: $rc"
 		rm "$f"
@@ -10462,8 +10467,8 @@ function backupAndClone() {
 
 BACKUP_DIRECTORY_NAME=""
 BACKUPFILE=""
-CLONE_REQUESTED=0
 CUSTOM_CONFIG_FILE_INCLUDED=0
+CLONE_REQUESTED=0
 DEPLOY=0
 DYNAMIC_MOUNT_EXECUTED=0
 EXCLUDE_DD=0
@@ -10526,7 +10531,7 @@ if (( $UID != 0 && ! INCLUDE_ONLY )); then
 	exitError $RC_MISC_ERROR
 fi
 
-lockingFramework
+#lockingFramework
 
 trapWithArg cleanupStartup SIGINT SIGTERM EXIT
 
@@ -10636,8 +10641,12 @@ while (( "$#" )); do
 	  CHECK_FOR_BAD_BLOCKS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-	--clone|--clone[+-])
-	  CLONE=$(getEnableDisableOption "$1"); shift 1
+	--clone)
+	  if ! o=$(checkOptionParameter "$1" "$2"); then
+		exitError $RC_PARAMETER_ERROR
+	  fi
+	  CLONE_DEVICE="$o"; shift 2
+	  CLONE_REQUESTED=1
 	  ;;
 
 	--coloring)
@@ -10899,7 +10908,7 @@ while (( "$#" )); do
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
 
-	--timestamps|--timestamps[+-])
+	--timestamps|--timestamps[+-]|--ts|--ts[+-])
 	  TIMESTAMPS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
@@ -11042,8 +11051,8 @@ if (( $RESTORE )); then
 	MSGFILE_EXT="$MSGFILE_RESTORE_EXT"
 fi
 
-if (( ! $RESTORE )); then
-	exlock_now
+if (( ! $RESTORE || ! $CLONE_REQUESTED )); then
+	#exlock_now
 	# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 	#shellcheck disable=SC2181
 	if (( $? )); then
@@ -11085,7 +11094,7 @@ if ! isSupportedEnvironment; then
 	fi
 fi
 
-if (( $CLONE )); then
+if [[ -n "$CLONE_DEVICE" ]]; then
 	backupAndClone
 	exitNormal
 fi
@@ -11143,10 +11152,12 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	exitError $RC_PARAMETER_ERROR
 fi
 
-_prepare_locking
+if (( CLONE_STAGE==0 )); then
+	: _prepare_locking
+fi	
 logItem "Enabling trap handler"
 trapWithArg cleanup SIGINT SIGTERM EXIT
-lockMe
+#lockMe
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)"
 logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
