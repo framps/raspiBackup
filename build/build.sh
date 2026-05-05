@@ -24,16 +24,18 @@
 
 set -euo pipefail
 
+# shellcheck disable=1091
+source ./common.sh
+
 # clone github code to get current commit sha into code
 # should be done finally all the time
-if [[ ! -d gitsrc ]]; then
-	git clone git@github.com:framps/raspiBackup.git gitsrc
+if [[ ! -d "$GITSRC" ]]; then
+	git clone https://github.com/framps/raspiBackup.git "$GITSRC"
 fi
 
 export VERSION
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
-source ./common.sh
 
 # fill GPG_KEYID with existing local key
 source ./gpg.conf
@@ -41,7 +43,7 @@ source ./gpg.conf
 trap 'err $?' ERR
 
 # extract version number from raspiBackup script
-version="$(grep "^VERSION=" "gitsrc/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
+version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
 REGEX='.*="([^"]*)"'
 if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
@@ -68,25 +70,23 @@ mkdir -p "$TGT/usr/local/etc"
 mkdir -p "$TGT/etc/systemd/system"
 
 # copy source files
-install -m755 "$SRC/raspiBackup.sh" "$TGT/usr/local/bin"
-install -m755 "$SRC/installation/raspiBackupInstallUI.sh" "$TGT/usr/local/bin"
+install -m755 -D -t "$TGT/usr/local/bin" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
 
 # create links
-cd "$TGT/usr/local/bin"
+pushd "$TGT/usr/local/bin" > /dev/null
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
-cd "$CURRENT_DIR"
+popd > /dev/null
 
 # copy config files
-install -m600 "$SRC/config/raspiBackup_de.conf" "$TGT/usr/local/etc"
-install -m600 "$SRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
+install -m644 -D -t "$TGT/usr/local/etc" "$GITSRC/config/raspiBackup_de.conf"
+install -m644 -D "$GITSRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
 
 # copy systemd files
-install -m655 "$SRC/installation/raspiBackup.service" "$TGT/etc/systemd/system"
-install -m655 "$SRC/installation/raspiBackup.timer" "$TGT/etc/systemd/system"
+install -m755 -D -t "$TGT/etc/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
 # copy extension files
-for file in "$SRC"/extensions/raspiBackup_*; do
+for file in "$GITSRC"/extensions/raspiBackup_*; do
 	install -m755 "$file" "$TGT/usr/local/bin"
 done
 
