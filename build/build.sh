@@ -60,14 +60,7 @@ VERSION_FILES="_$(sed -E 's/\./_/g' <<< "$VERSION")"
 show "Building deb package for raspiBackup $VERSION"
 
 rm -rf "$TGT"
-#rm -rf "$DEB_TGT"
-
-mkdir -p "$PACKAGE"
 mkdir -p "$DEB_TGT"
-mkdir -p "$TGT/DEBIAN"
-mkdir -p "$TGT/usr/local/bin"
-mkdir -p "$TGT/usr/local/etc"
-mkdir -p "$TGT/etc/systemd/system"
 
 # copy source files
 install -m755 -D -t "$TGT/usr/local/bin" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
@@ -92,9 +85,9 @@ done
 
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
-install -m655  /tmp/control "$TGT/DEBIAN/control"
+install -m644 -D /tmp/control "$TGT/DEBIAN/control"
 rm /tmp/control
-install -m655  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
+install -m644  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
 
@@ -116,10 +109,10 @@ show "raspiBackup $VERSION package information"
 dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
 # create links
-cd "$DEB_TGT"
-rm -f "raspiBackup.deb"
-ln -s "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
-rm -f "raspiBackup.deb.sig"
-ln -s "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
-cd ..
+pushd "$DEB_TGT" > /dev/null
+ln -sf "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
+if [[ -n "$GPG_KEYID" ]] ; then
+	ln -sf "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
+fi
+popd > /dev/null
 
