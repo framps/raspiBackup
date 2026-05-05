@@ -87,6 +87,10 @@ for file in "$GITSRC"/extensions/raspiBackup_*; do
 	install -m755 "$file" "$TGT/usr/local/bin"
 done
 
+# copy doc files (copyright in this case)
+# TODO: Fix copyright file to make lintian happy
+install -m644 -D -t "$TGT/usr/share/doc/raspiBackup" "$PACKAGE/DEBIAN/copyright"
+
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
 install -m644 -D /tmp/control "$TGT/DEBIAN/control"
