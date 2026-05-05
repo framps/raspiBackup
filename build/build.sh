@@ -126,3 +126,10 @@ if [[ -n "$GPG_KEYID" ]] ; then
 fi
 popd > /dev/null
 
+show "Check package with lintian "
+
+if command -v lintian > /dev/null ; then
+	# Note: The default behaviour for rc=2 is: `--fail-on error`
+	#       But since there are still several know errors we ignore them for now.
+	lintian --color always --fail-on pedantic "$DEB_TGT/raspiBackup.deb"
+fi
