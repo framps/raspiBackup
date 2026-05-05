@@ -37,8 +37,12 @@ export VERSION
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 
-# fill GPG_KEYID with existing local key
-source ./gpg.conf
+GPG_KEYID=""
+if [[ -f gpg.conf ]] ; then
+	# fill GPG_KEYID with existing local key
+	# shellcheck disable=1091
+	source ./gpg.conf
+fi
 
 trap 'err $?' ERR
 
@@ -99,8 +103,10 @@ rm "$LOG_FILE" || true
 show "Build package"
 dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
-show "Sign package"
-gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+if [[ -n "$GPG_KEYID" ]] ; then
+	show "Sign package"
+	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+fi
 
 show "Show files which will be installed"
 dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
