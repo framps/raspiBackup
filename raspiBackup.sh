@@ -2320,7 +2320,7 @@ function logEnable() {
 
 	LOG_FILE="$TEMP_LOG_FILE"
 	MSG_FILE="$TEMP_MSG_FILE"
-	
+
 	rm -f "$LOG_FILE" &>/dev/null
 	rm -f "$MSG_FILE" &>/dev/null
 
@@ -5603,7 +5603,7 @@ function cleanup() { # trap
 				fi
 			elif (( $INTERACTIVE )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOTIFICATION_SUPPRESSED
-			fi 
+			fi
 		fi
 
 	else 	# success
@@ -5671,6 +5671,18 @@ function cleanup() { # trap
 
 	if (( ! $RESTORE && $REBOOT_SYSTEM )); then
 		shutdown -r +3						# wait some time to allow eMail to be sent
+	fi
+
+	if (( $rc == 0 )) && isCloneMode && [[ -z $RESTORE_DEVICE ]]; then
+
+	    source /tmp/raspiBackup.vars # BACKUP_TARGETDIR now refers to the backupdirectory just created
+		set -x
+		echo "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
+		shopt -s execfail
+		exec raspiBackup ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
+		set +x
+		rc=$?
+		assertionFailed $LINENO "Unable to start clone restore, RC: $rc"
 	fi
 
 	exit $rc
@@ -6590,7 +6602,7 @@ function partitionRestoredeviceIfRequested() {
 	if (( $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
-		if (( ! $CLONE_REQUESTED )); then
+		if ! isCloneMode; then
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -6600,10 +6612,10 @@ function partitionRestoredeviceIfRequested() {
 				echo "Y"
 			fi
 		fi
-		
+
 		if (( $SKIP_FORMAT )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
-			if (( ! $ CLONE_REQUESTED )); then
+			if ! isCloneMode; then
 				if ! askYesNo; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 					exitError $RC_RESTORE_FAILED
@@ -6639,7 +6651,7 @@ function partitionRestoredeviceIfRequested() {
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_PARTITIONS $RESTORE_DEVICE
 
-		if (( ! $CLONE_REQUESTED )); then
+		if ! isCloneMode; then
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -6943,12 +6955,12 @@ function restoreNormalBackupType() {
 				fi
 
 				waitForPartitionDefsChanged
-				
+
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNCING_SECOND_PARTITION "$ROOT_PARTITION"
 			fi
-			
+
 			mountAndCheck $ROOT_PARTITION "$MNT_POINT"
 
 			case $BACKUPTYPE in
@@ -8644,10 +8656,7 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 
-	echo "--------------> $CLONE_REQUESTED"
-	read
-
-	if (( ! $CLONE_REQUESTED)); then
+	if ! isCloneMode; then
 		if ! askYesNo; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 			exitError $RC_RESTORE_FAILED
@@ -10409,57 +10418,42 @@ function getEnableDisableOption() { # option
 	esac
 }
 
-function backupAndClone() {
+function isCloneMode() {
+	[[ -n "$CLONE_DEVICE" ]]
+	return
+}
+
+function backupAndCloneSetParms() {
+
 	logEntry
-	
-	local arg i rc size cloneDevice cloneBackupOptions cloneRestoreOptions
-	
-	cloneBackupOptions=()
-	cloneRestoreOptions=()
+
+	local arg i rc size
+
+	CLONE_RESTORE_OPTIONS=()
 	i=0
 	size=${#ARG_BAK[@]}
 
-	export CLONE_REQUESTED=1
-		
-	# prepare args for future raspiBackup calls
+	# prepare args for future raspiBackup restore calls
 	while (( i < size )); do
 		arg="${ARG_BAK[i]}"
-		echo "Parm $i: $arg"
+		logItem "Parm $i: $arg"
 		case $arg in
-		
-			--clone) 
-				cloneRestoreOptions+=("-d")			# replace --clone with -d for restore to clone device 
+
+			--clone)
+				CLONE_RESTORE_OPTIONS+=("-d")			# replace --clone with -d for restore to clone device
 				(( i++ ))
 				arg="${ARG_BAK[i]}"
-				cloneRestoreOptions+=($arg)			
-				;;									# skip clone option
-							
-			*) cloneBackupOptions+=($arg)			# copy all other parms
-			   cloneRestoreOptions+=($arg)
-			   ;;
+				CLONE_RESTORE_OPTIONS+=($arg)			# restore device
+				;;
+			*)
+				CLONE_RESTORE_OPTIONS+=($arg)			# all other options
+				;;
 		esac
 		(( i++ ))
 	done
-	
-	echo "BACKUP: ${cloneBackupOptions[*]}"
-	echo "RESTORE: ${cloneRestoreOptions[*]}"
 
-	logItem "Starting raspiBackup ${cloneBackupOptions[*]}"
-	echo "Starting Clone backup: ${cloneBackupOptions[*]}"
-	raspiBackup ${cloneBackupOptions[*]}
-	rc=$?	
-	logItem "Backup RC: $rc"
-	
-	if (( $rc == 0 )); then
-	    source /tmp/raspiBackup.vars # BACKUP_TARGETDIR now refers to the backupdirectory just created
-		
-		echo "Starting Clone restore: ${cloneRestoreOptions[*]}"
-		raspiBackup ${cloneRestoreOptions[*]} $BACKUP_TARGETDIR
-		rc=$?
-		logItem "Restore RC: $rc"
-		rm "$f"
-	fi
-	
+	echo "RESTORE: ${CLONE_RESTORE_OPTIONS[*]}"
+
 	logExit
 }
 
@@ -10468,7 +10462,6 @@ function backupAndClone() {
 BACKUP_DIRECTORY_NAME=""
 BACKUPFILE=""
 CUSTOM_CONFIG_FILE_INCLUDED=0
-CLONE_REQUESTED=0
 DEPLOY=0
 DYNAMIC_MOUNT_EXECUTED=0
 EXCLUDE_DD=0
@@ -10531,7 +10524,7 @@ if (( $UID != 0 && ! INCLUDE_ONLY )); then
 	exitError $RC_MISC_ERROR
 fi
 
-#lockingFramework
+lockingFramework
 
 trapWithArg cleanupStartup SIGINT SIGTERM EXIT
 
@@ -10646,7 +10639,6 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  CLONE_DEVICE="$o"; shift 2
-	  CLONE_REQUESTED=1
 	  ;;
 
 	--coloring)
@@ -11051,8 +11043,8 @@ if (( $RESTORE )); then
 	MSGFILE_EXT="$MSGFILE_RESTORE_EXT"
 fi
 
-if (( ! $RESTORE || ! $CLONE_REQUESTED )); then
-	#exlock_now
+if (( ! $RESTORE )); then
+	exlock_now
 	# Check exit code directly with e.g. if mycmd;, not indirectly with $?
 	#shellcheck disable=SC2181
 	if (( $? )); then
@@ -11095,8 +11087,7 @@ if ! isSupportedEnvironment; then
 fi
 
 if [[ -n "$CLONE_DEVICE" ]]; then
-	backupAndClone
-	exitNormal
+	backupAndCloneSetParms
 fi
 
 if (( $DEPLOY )); then
@@ -11152,12 +11143,10 @@ if [[ -z $RESTORE_DEVICE ]] && (( $ROOT_PARTITION_DEFINED )); then
 	exitError $RC_PARAMETER_ERROR
 fi
 
-if (( CLONE_STAGE==0 )); then
-	: _prepare_locking
-fi	
+_prepare_locking
 logItem "Enabling trap handler"
 trapWithArg cleanup SIGINT SIGTERM EXIT
-#lockMe
+lockMe
 
 writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)"
 logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
