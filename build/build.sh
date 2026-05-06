@@ -58,8 +58,8 @@ if (( $# > 0 )); then
 	VERSION="$1"
 fi
 
-# dots are not allowed in debian version numbers
-VERSION_FILES="_$(sed -E 's/\./_/g' <<< "$VERSION")"
+# underscores are not allowed in debian version numbers
+VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
 show "Building deb package for raspiBackup $VERSION"
 
