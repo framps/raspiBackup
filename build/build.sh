@@ -64,6 +64,7 @@ VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 show "Building deb package for raspiBackup $VERSION"
 
 rm -rf "$TGT"
+rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
 
 # copy source files
