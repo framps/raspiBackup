@@ -41,6 +41,7 @@ function show() {
 	local l=${#1}
 	local s
 	s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
+	echo ""
 	echo "$s"
 	echo "=== $* ==="
 	echo "$s"

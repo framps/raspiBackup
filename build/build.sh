@@ -115,6 +115,9 @@ fi
 show "Show files which will be installed"
 dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
+show "The final package in $DEB_TGT"
+ls -l "$DEB_TGT"
+
 show "raspiBackup $VERSION package information"
 dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
