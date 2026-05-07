@@ -53,6 +53,14 @@ if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
 fi
 
+CHECK_PACKAGE=1
+if (( $# > 0 )); then
+	if [[ "$1" == "--no-check" ]] ; then
+		CHECK_PACKAGE=0
+		shift
+	fi
+fi
+
 # allow to pass another version number for upgrade/downgrade tests
 if (( $# > 0 )); then
 	VERSION="$1"
@@ -145,10 +153,14 @@ if [[ -n "$GPG_KEYID" ]] ; then
 fi
 popd > /dev/null
 
-show "Check package with lintian "
+if (( CHECK_PACKAGE != 0 )) ; then
+	show "Check package with lintian "
 
-if command -v lintian > /dev/null ; then
-	# Note: The default behaviour for rc=2 is: `--fail-on error`
-	#       But since there are still several know errors we ignore them for now.
-	lintian --color always --fail-on pedantic "$DEB_TGT/raspiBackup.deb"
+	if command -v lintian > /dev/null ; then
+		# Note: The default behaviour for rc=2 is: `--fail-on error`
+		#       But since there are still several know errors we ignore them for now.
+		lintian --color always --fail-on pedantic "$DEB_TGT/raspiBackup.deb"
+	else
+		echo "Warning: Can't check package because 'lintian' isn't installed!"
+	fi
 fi
