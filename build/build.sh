@@ -111,6 +111,21 @@ dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.d
 if [[ -n "$GPG_KEYID" ]] ; then
 	show "Sign package"
 	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+else
+	echo ""
+	echo "Warning: The package can't be signed!"
+	if [[ -f gpg.conf ]] ; then
+		echo "         File 'gpg.conf' not set up correctly!"
+	else
+		echo "         File 'gpg.conf' not found!"
+		echo "         Creating a template 'gpg.conf' now."
+		cat >> ./gpg.conf <<EOF_GPG
+# Please set GPG_KEYID to the ID to be used for signing the built package.
+GPG_KEYID=""
+EOF_GPG
+	fi
+	echo "         Please fill in the correct ID and build again!"
+	echo ""
 fi
 
 show "Show files which will be installed"
