@@ -30,7 +30,7 @@ LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 
 cleanup() {
-	show "Cleanig up"
+	show "Cleaning up"
 	if (( $1 == 0 )); then
 		rm -f "$LOG_FILE"
 	else
@@ -53,19 +53,16 @@ if [[ $cmd == "c" ]]; then
 	sudo apt remove -y raspibackup rsync || true
 fi
 
-echo "Package verification"
+show "Package verification"
 gpg --verbose --verify "$DEB_TGT"/raspiBackup.deb.sig "$DEB_TGT"/raspiBackup.deb
 
-echo "Install package and all dependencies"
+show "Install package and all dependencies"
 sudo apt-get install --allow-downgrades -y "$DEB_TGT"/raspiBackup.deb
 
-echo "Show installation result"
+show "Show installation result"
 apt-cache policy raspibackup
 
-echo "Files provided"
+show "Files provided"
 dpkg -L raspibackup
 
 dpkg --list | grep raspibackup
-
-
-
