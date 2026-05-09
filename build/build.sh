@@ -24,27 +24,41 @@
 
 set -euo pipefail
 
+# shellcheck disable=1091
+source ./common.sh
+
 # clone github code to get current commit sha into code
 # should be done finally all the time
-if [[ ! -d gitsrc ]]; then
-	git clone git@github.com:framps/raspiBackup.git gitsrc
+if [[ ! -d "$GITSRC" ]]; then
+	git clone https://github.com/framps/raspiBackup.git "$GITSRC"
 fi
 
 export VERSION
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
-source ./common.sh
 
-# fill GPG_KEYID with existing local key
-source ./gpg.conf
+GPG_KEYID=""
+if [[ -f gpg.conf ]] ; then
+	# fill GPG_KEYID with existing local key
+	# shellcheck disable=1091
+	source ./gpg.conf
+fi
 
 trap 'err $?' ERR
 
 # extract version number from raspiBackup script
-version="$(grep "^VERSION=" "gitsrc/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
+version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
 REGEX='.*="([^"]*)"'
 if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
+fi
+
+CHECK_PACKAGE=1
+if (( $# > 0 )); then
+	if [[ "$1" == "--no-check" ]] ; then
+		CHECK_PACKAGE=0
+		shift
+	fi
 fi
 
 # allow to pass another version number for upgrade/downgrade tests
@@ -53,48 +67,44 @@ if (( $# > 0 )); then
 fi
 
 # underscores are not allowed in debian version numbers
-VERSION_FILES="_$(sed -E 's/\./_/g' <<< "$VERSION")"
+VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
 show "Building deb package for raspiBackup $VERSION"
 
 rm -rf "$TGT"
-#rm -rf "$DEB_TGT"
-
-mkdir -p "$PACKAGE"
+rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
-mkdir -p "$TGT/DEBIAN"
-mkdir -p "$TGT/usr/local/bin"
-mkdir -p "$TGT/usr/local/etc"
-mkdir -p "$TGT/etc/systemd/system"
 
 # copy source files
-install -m755 "$SRC/raspiBackup.sh" "$TGT/usr/local/bin"
-install -m755 "$SRC/installation/raspiBackupInstallUI.sh" "$TGT/usr/local/bin"
+install -m755 -D -t "$TGT/usr/local/bin" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
 
 # create links
-cd "$TGT/usr/local/bin"
+pushd "$TGT/usr/local/bin" > /dev/null
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
-cd "$CURRENT_DIR"
+popd > /dev/null
 
-# copy config files
-install -m600 "$SRC/config/raspiBackup_de.conf" "$TGT/usr/local/etc"
-install -m600 "$SRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
+# copy config files - Note: They might contain credentials later
+install -m600 -D -t "$TGT/usr/local/etc" "$GITSRC/config/raspiBackup_de.conf"
+install -m600 -D "$GITSRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
 
 # copy systemd files
-install -m655 "$SRC/installation/raspiBackup.service" "$TGT/etc/systemd/system"
-install -m655 "$SRC/installation/raspiBackup.timer" "$TGT/etc/systemd/system"
+install -m755 -D -t "$TGT/etc/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
 # copy extension files
-for file in "$SRC"/extensions/raspiBackup_*; do
+for file in "$GITSRC"/extensions/raspiBackup_*; do
 	install -m755 "$file" "$TGT/usr/local/bin"
 done
 
+# copy doc files (copyright in this case)
+# TODO: Fix copyright file to make lintian happy
+install -m644 -D -t "$TGT/usr/share/doc/raspiBackup" "$PACKAGE/DEBIAN/copyright"
+
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
-install -m655  /tmp/control "$TGT/DEBIAN/control"
+install -m644 -D /tmp/control "$TGT/DEBIAN/control"
 rm /tmp/control
-install -m655  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
+install -m644  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
 install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
 
@@ -102,24 +112,61 @@ exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 rm "$LOG_FILE" || true
+rc=1
 
 show "Build package"
 dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
-show "Sign package"
-gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+if [[ -n "$GPG_KEYID" ]] ; then
+	show "Sign package"
+	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+else
+	echo ""
+	echo "Error: The package can't be signed!"
+	if [[ -f gpg.conf ]] ; then
+		echo "         File 'gpg.conf' not set up correctly!"
+	else
+		echo "         File 'gpg.conf' not found!"
+		echo "         Creating a template 'gpg.conf' now."
+		cat >> ./gpg.conf <<EOF_GPG
+# Please set GPG_KEYID to the ID to be used for signing the built package.
+GPG_KEYID=""
+EOF_GPG
+	fi
+	echo "         Please fill in the correct ID and build again!"
+	echo ""
+	rc=1
+fi
 
 show "Show files which will be installed"
 dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+
+show "The final package in $DEB_TGT"
+ls -l "$DEB_TGT"
 
 show "raspiBackup $VERSION package information"
 dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 
 # create links
-cd "$DEB_TGT"
-rm -f "raspiBackup.deb"
-ln -s "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
-rm -f "raspiBackup.deb.sig"
-ln -s "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
-cd ..
+pushd "$DEB_TGT" > /dev/null
+ln -sf "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
+if [[ -n "$GPG_KEYID" ]] ; then
+	ln -sf "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
+fi
+popd > /dev/null
+
+if (( CHECK_PACKAGE != 0 )) ; then
+	show "Check package with lintian "
+
+	if command -v lintian > /dev/null ; then
+		# Note: The default behaviour for rc=2 is: `--fail-on error`
+		#       But since there are still several know errors we ignore them for now.
+		lintian --color always --fail-on pedantic "$DEB_TGT/raspiBackup.deb"
+		rc=$?
+	else
+		echo "Warning: Can't check package because 'lintian' isn't installed!"
+	fi
+fi
+
+exit "$rc"
 

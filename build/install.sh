@@ -30,7 +30,7 @@ LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 
 cleanup() {
-	show "Cleanig up"
+	show "Cleaning up"
 	if (( $1 == 0 )); then
 		rm -f "$LOG_FILE"
 	else
@@ -51,21 +51,25 @@ cmd=${1:-i}
 if [[ $cmd == "c" ]]; then
 	show "Clean installation of raspiBackup and rsync"
 	sudo apt remove -y raspibackup rsync || true
+	echo ""
+	echo "******************************************************************"
+	echo "Attention: Might have uninstalled packages depending on rsync too!"
+	echo "           Please check the output..."
+	echo "           ... and reinstall needed packages afterwards manually!"
+	echo "******************************************************************"
+	echo ""
 fi
 
-echo "Package verification"
+show "Package verification"
 gpg --verbose --verify "$DEB_TGT"/raspiBackup.deb.sig "$DEB_TGT"/raspiBackup.deb
 
-echo "Install package and all dependencies"
+show "Install package and all dependencies"
 sudo apt-get install --allow-downgrades -y "$DEB_TGT"/raspiBackup.deb
 
-echo "Show installation result"
+show "Show installation result"
 apt-cache policy raspibackup
 
-echo "Files provided"
+show "Files provided"
 dpkg -L raspibackup
 
 dpkg --list | grep raspibackup
-
-
-

@@ -22,23 +22,25 @@
 #
 #######################################################################################################################
 
-BUILD_HOME="$HOME/github.com/framps/raspiBackup/build"
+BUILD_HOME="."
 readonly BUILD_HOME
 PACKAGE="$BUILD_HOME/package"
 readonly PACKAGE
 TGT="$PACKAGE/src"
+# shellcheck disable=2034
 readonly TGT
 DEB_TGT="$BUILD_HOME/deb"
+# shellcheck disable=2034
 readonly DEB_TGT
-SRC="$BUILD_HOME/gitsrc"
-readonly SRC
-CURRENT_DIR=$PWD
-readonly CURRENT_DIR
+GITSRC="$BUILD_HOME/gitsrc"
+# shellcheck disable=2034
+readonly GITSRC
 
 function show() {
 	local l=${#1}
 	local s
 	s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
+	echo ""
 	echo "$s"
 	echo "=== $* ==="
 	echo "$s"
