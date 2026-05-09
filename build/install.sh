@@ -51,6 +51,13 @@ cmd=${1:-i}
 if [[ $cmd == "c" ]]; then
 	show "Clean installation of raspiBackup and rsync"
 	sudo apt remove -y raspibackup rsync || true
+	echo ""
+	echo "******************************************************************"
+	echo "Attention: Might have uninstalled packages depending on rsync too!"
+	echo "           Please check the output..."
+	echo "           ... and reinstall needed packages afterwards manually!"
+	echo "******************************************************************"
+	echo ""
 fi
 
 show "Package verification"
