@@ -84,9 +84,9 @@ ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
 
-# copy config files
-install -m644 -D -t "$TGT/usr/local/etc" "$GITSRC/config/raspiBackup_de.conf"
-install -m644 -D "$GITSRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
+# copy config files - Note: They might contain credentials later
+install -m600 -D -t "$TGT/usr/local/etc" "$GITSRC/config/raspiBackup_de.conf"
+install -m600 -D "$GITSRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
 
 # copy systemd files
 install -m755 -D -t "$TGT/etc/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
@@ -112,6 +112,7 @@ exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 rm "$LOG_FILE" || true
+rc=1
 
 show "Build package"
 dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
@@ -121,7 +122,7 @@ if [[ -n "$GPG_KEYID" ]] ; then
 	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
 else
 	echo ""
-	echo "Warning: The package can't be signed!"
+	echo "Error: The package can't be signed!"
 	if [[ -f gpg.conf ]] ; then
 		echo "         File 'gpg.conf' not set up correctly!"
 	else
@@ -134,6 +135,7 @@ EOF_GPG
 	fi
 	echo "         Please fill in the correct ID and build again!"
 	echo ""
+	rc=1
 fi
 
 show "Show files which will be installed"
@@ -160,7 +162,11 @@ if (( CHECK_PACKAGE != 0 )) ; then
 		# Note: The default behaviour for rc=2 is: `--fail-on error`
 		#       But since there are still several know errors we ignore them for now.
 		lintian --color always --fail-on pedantic "$DEB_TGT/raspiBackup.deb"
+		rc=$?
 	else
 		echo "Warning: Can't check package because 'lintian' isn't installed!"
 	fi
 fi
+
+exit "$rc"
+

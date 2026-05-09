@@ -22,8 +22,7 @@
 #
 #######################################################################################################################
 
-# TODO: make path of BUILD_HOME more flexible
-BUILD_HOME="$HOME/github.com/framps/raspiBackup/build"
+BUILD_HOME="."
 readonly BUILD_HOME
 PACKAGE="$BUILD_HOME/package"
 readonly PACKAGE
