@@ -31,6 +31,7 @@ source ./common.sh
 # should be done finally all the time
 if [[ ! -d "$GITSRC" ]]; then
 	git clone https://github.com/framps/raspiBackup.git "$GITSRC"
+	git checkout m_972
 fi
 
 export VERSION
@@ -76,24 +77,23 @@ rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
 
 # copy source files
-install -m755 -D -t "$TGT/usr/local/bin" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
+install -m755 -D -t "$TGT/usr/share/raspiBackup" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
 
 # create links
-pushd "$TGT/usr/local/bin" > /dev/null
+pushd "$TGT/usr/share/raspiBackup" > /dev/null
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
 
 # copy config files - Note: They might contain credentials later
-install -m600 -D -t "$TGT/usr/local/etc" "$GITSRC/config/raspiBackup_de.conf"
-install -m600 -D "$GITSRC/config/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
+install -m600 -D -t "$TGT/etc/raspiBackup" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
 
 # copy systemd files
-install -m755 -D -t "$TGT/etc/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
+install -m755 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
 # copy extension files
 for file in "$GITSRC"/extensions/raspiBackup_*; do
-	install -m755 "$file" "$TGT/usr/local/bin"
+	install -m755 "$file" "$TGT/usr/share/raspiBackup"
 done
 
 # copy doc files (copyright in this case)

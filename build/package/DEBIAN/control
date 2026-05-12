@@ -1,4 +1,4 @@
-Package: raspiBackup
+Package: raspibackup
 Version: $VERSION
 Section: utils
 Priority: optional
