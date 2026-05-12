@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 if [[ ! -d /etc/raspiBackup ]]; then
 	mkdir /etc/raspiBackup
 fi
