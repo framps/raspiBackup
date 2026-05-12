@@ -94,7 +94,7 @@ popd > /dev/null
 install -m600 -D -t "$TGT/etc/raspiBackup" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
 
 # copy systemd files
-install -m755 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
+install -m644 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
 # copy extension files
 for file in "$GITSRC"/extensions/raspiBackup_*; do
