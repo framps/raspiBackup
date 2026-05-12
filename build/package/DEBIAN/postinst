@@ -9,7 +9,7 @@ fi
 # save existing config
 if [[ ! -f /etc/raspiBackup/raspiBackup.conf ]]; then
 	echo "Save existing config file"
-	cp -a /etc/raspiBackup(raspiBackup.conf /etc/raspiBackup/raspiBackup.conf~
+	cp -a /etc/raspiBackup/raspiBackup.conf /etc/raspiBackup/raspiBackup.conf~
 fi
 
 # use German config file, English is default
