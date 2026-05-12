@@ -1,4 +1,2 @@
 /etc/raspiBackup/raspiBackup_de.conf
 /etc/raspiBackup/raspiBackup_en.conf
-/usr/lib/systemd/system/raspiBackup.service
-/usr/lib/systemd/system/raspiBackup.timer

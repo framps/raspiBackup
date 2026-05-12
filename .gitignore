@@ -11,3 +11,5 @@ kernel
 linux*
 images
 *.swp
+build/package/usr
+build/package/etc

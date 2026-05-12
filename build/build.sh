@@ -29,9 +29,12 @@ source ./common.sh
 
 # clone github code to get current commit sha into code
 # should be done finally all the time
+
 if [[ ! -d "$GITSRC" ]]; then
 	git clone https://github.com/framps/raspiBackup.git "$GITSRC"
+	pushd "$GITSRC"
 	git checkout m_972
+	popd
 fi
 
 export VERSION
@@ -68,6 +71,8 @@ if (( $# > 0 )); then
 fi
 
 # underscores are not allowed in debian version numbers
+# change m_972 to m-972
+VERSION="$(sed -E 's/_/-/g' <<< "$VERSION")"
 VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
 show "Building deb package for raspiBackup $VERSION"
