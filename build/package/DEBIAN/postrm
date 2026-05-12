@@ -1,6 +1,6 @@
 #!/bin/bash
 
 echo "Cleaning up temp dir"
-rm -f /tmp/raspiBackup*
-rm -f /root/raspiBackup*
+rm -f /etc/raspiBackup/*
+rmdir /etc/raspiBackup
 

@@ -90,8 +90,8 @@ ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
 
-# copy config files - Note: They might contain credentials later
-install -m600 -D -t "$TGT/etc/raspiBackup" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
+# copy config files - Note: They may contain credentials - therefore change to 600 during installation
+install -m644 -D -t "$TGT/etc/raspiBackup" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
 
 # copy systemd files
 install -m644 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
