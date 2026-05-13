@@ -47,17 +47,23 @@ exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 # if no option was used don't delete old raspiBackup package
 cmd=${1:-i}
-# option c will delete raspiBackup and rsync packages to test whether dependent packages will also be installed
-if [[ $cmd == "c" ]]; then
-	show "Clean installation of raspiBackup and rsync"
-	sudo apt remove -y raspibackup rsync || true
-	echo ""
-	echo "******************************************************************"
-	echo "Attention: Might have uninstalled packages depending on rsync too!"
-	echo "           Please check the output..."
-	echo "           ... and reinstall needed packages afterwards manually!"
-	echo "******************************************************************"
-	echo ""
+# option ca will delete raspiBackup and rsync packages to test whether dependent packages will also be installed
+# option c only raspiBackup
+if [[ $cmd =~ ^-c ]]; then
+	if [[ $cmd =~ a$ ]]; then
+		show "Clean installation of raspiBackup and rsync"
+		sudo apt remove -y raspibackup rsync || true
+		echo ""
+		echo "******************************************************************"
+		echo "Attention: Might have uninstalled packages depending on rsync too!"
+		echo "           Please check the output..."
+		echo "           ... and reinstall needed packages afterwards manually!"
+		echo "******************************************************************"
+		echo ""
+	else
+		show "Removing raspiBackup ..."
+		sudo apt remove -y raspibackup || true
+	fi
 fi
 
 show "Package verification"

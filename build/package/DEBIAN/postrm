@@ -1,6 +1,10 @@
 #!/bin/bash
 
-echo "Cleaning up temp dir"
-rm -f /tmp/raspiBackup*
-rm -f /root/raspiBackup*
+set -euo pipefail
+
+echo "Cleaning up temp files"
+if [[ -d /etc/raspiBackup ]]; then
+	rm -f /etc/raspiBackup/*
+	rmdir /etc/raspiBackup
+fi
 
