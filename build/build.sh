@@ -30,11 +30,19 @@ source ./common.sh
 # clone github code to get current commit sha into code
 # should be done finally all the time
 
+show "Clone (or update) github code locally"
+
 if [[ ! -d "$GITSRC" ]]; then
+	echo "Cloning fresh source repo"
 	git clone https://github.com/framps/raspiBackup.git "$GITSRC"
-	pushd "$GITSRC"
+	pushd "$GITSRC" > /dev/null
 	git checkout m_972
-	popd
+	popd > /dev/null
+    else
+	echo "Updating already existing repo"
+	pushd "$GITSRC" > /dev/null
+	git pull
+	popd > /dev/null
 fi
 
 export VERSION
