@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -107,11 +107,11 @@ MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2026-04-25 15:28:07 +0200$"
+GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: e1a8ed1$"
+GIT_COMMIT="$Sha1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
