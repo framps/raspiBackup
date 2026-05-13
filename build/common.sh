@@ -35,6 +35,8 @@ readonly DEB_TGT
 GITSRC="$BUILD_HOME/gitsrc"
 # shellcheck disable=2034
 readonly GITSRC
+MAN="../debian/man"
+readonly MAN
 
 function show() {
 	local l=${#1}

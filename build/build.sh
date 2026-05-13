@@ -82,10 +82,10 @@ rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
 
 # copy source files
-install -m755 -D -t "$TGT/usr/share/raspiBackup" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
+install -m755 -D -t "$TGT/usr/bin" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
 
 # create links
-pushd "$TGT/usr/share/raspiBackup" > /dev/null
+pushd "$TGT/usr/bin" > /dev/null
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
@@ -98,8 +98,13 @@ install -m644 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBac
 
 # copy extension files
 for file in "$GITSRC"/extensions/raspiBackup_*; do
-	install -m755 "$file" "$TGT/usr/share/raspiBackup"
+	install -m755 -D -t "$TGT/usr/share/raspiBackup" "$file"
 done
+
+# Handle man files
+install -m644 -D -t "$TGT/usr/share/man/man1" "$MAN/raspiBackup.1" "$MAN/raspiBackupInstallUI.1"
+gzip -9 "$TGT"/usr/share/man/man1/raspiBackup.1
+gzip -9 "$TGT"/usr/share/man/man1/raspiBackupInstallUI.1
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
