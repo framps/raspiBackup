@@ -52,7 +52,7 @@ fi
 trap 'err $?' ERR
 
 # extract version number from raspiBackup script
-version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
+version="$(grep "^VERSION=" "$GITSRC/raspiBackup" 2>/dev/null) | cut -f 2 -d "=" )"
 REGEX='.*="([^"]*)"'
 if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
@@ -98,8 +98,8 @@ done
 
 # Handle man files
 install -m644 -D -t "$TGT/usr/share/man/man1" "$MAN/raspiBackup.1" "$MAN/raspiBackupInstallUI.1"
-gzip -n -9 "$TGT"/usr/share/man/man1/raspiBackup.1
-gzip -n -9 "$TGT"/usr/share/man/man1/raspiBackupInstallUI.1
+gzip -9n "$TGT"/usr/share/man/man1/raspiBackup.1
+gzip -9n "$TGT"/usr/share/man/man1/raspiBackupInstallUI.1
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
