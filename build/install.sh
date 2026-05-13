@@ -62,7 +62,7 @@ if [[ $cmd =~ ^-c ]]; then
 		echo ""
 	else
 		show "Removing raspiBackup ..."
-		sudo apt remove -y raspibackup || true
+		sudo apt purge -y raspibackup || true
 	fi
 fi
 
