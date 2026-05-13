@@ -1,3 +1,4 @@
-*.sh filter=dater
+raspiBackup filter=dater
+raspiBackupInstallUI filter=dater
 *.conf filter=dater
 *.properties filter=dater
