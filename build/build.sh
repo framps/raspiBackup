@@ -32,10 +32,11 @@ source ./common.sh
 
 if [[ ! -d "$GITSRC" ]]; then
 	git clone https://github.com/framps/raspiBackup.git "$GITSRC"
-	pushd "$GITSRC"
-	git checkout m_972
-	popd
 fi
+pushd "$GITSRC"
+#git checkout m_972
+git checkout manpages
+popd
 
 export VERSION
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
@@ -82,13 +83,7 @@ rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
 
 # copy source files
-install -m755 -D -t "$TGT/usr/bin" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
-
-# create links
-pushd "$TGT/usr/bin" > /dev/null
-ln -s -r raspiBackup.sh raspiBackup
-ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
-popd > /dev/null
+install -m755 -D -t "$TGT/usr/bin" "$GITSRC/raspiBackup"  "$GITSRC/installation/raspiBackupInstallUI"
 
 # copy config files - Note: They may contain credentials - therefore change to 600 during installation
 install -m644 -D -t "$TGT/etc/raspiBackup" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
@@ -103,8 +98,8 @@ done
 
 # Handle man files
 install -m644 -D -t "$TGT/usr/share/man/man1" "$MAN/raspiBackup.1" "$MAN/raspiBackupInstallUI.1"
-gzip -9 "$TGT"/usr/share/man/man1/raspiBackup.1
-gzip -9 "$TGT"/usr/share/man/man1/raspiBackupInstallUI.1
+gzip -n -9 "$TGT"/usr/share/man/man1/raspiBackup.1
+gzip -n -9 "$TGT"/usr/share/man/man1/raspiBackupInstallUI.1
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
