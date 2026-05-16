@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # save existing config
-if [[ -f /etc/raspiBackup/raspiBackup.conf ]]; then
+if [[ -f /etc/raspibackup/raspiBackup.conf ]]; then
 	echo "Saving existing config file ..."
 	cp -a /etc/raspibackup/raspiBackup.conf /etc/raspibackup/raspiBackup.conf~
 fi

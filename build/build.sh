@@ -125,7 +125,7 @@ install -m644 -D -t "$TGT/usr/share/doc/raspibackup" "$DEBIAN/copyright"
 
 # changelog
 install -m644 -D -t "$TGT/usr/share/doc/raspibackup" "$DEBIAN/changelog.Debian"
-currentDate="$(date +"%a, %d %B %Y %H:%M:%S %z")"
+currentDate="$(LC_ALL=C date -R)"
 # Insert current date & time
 sed -i -e "s/\\\$Date\\\$/$currentDate/g" "$TGT/usr/share/doc/raspibackup/changelog.Debian"
 gzip -9n "$TGT/usr/share/doc/raspibackup/changelog.Debian"

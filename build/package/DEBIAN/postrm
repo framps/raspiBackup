@@ -4,7 +4,7 @@ set -euo pipefail
 
 echo "Cleaning up temp files"
 if [[ -d /etc/raspiBackup ]]; then
-	rm -f /etc/raspiBackup/*
-	rmdir /etc/raspiBackup
+	rm -f /etc/raspibackup/*
+	rmdir /etc/raspibackup
 fi
 
