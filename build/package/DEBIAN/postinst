@@ -5,7 +5,7 @@ set -euo pipefail
 # save existing config
 if [[ -f /etc/raspiBackup/raspiBackup.conf ]]; then
 	echo "Saving existing config file ..."
-	cp -a /etc/raspiBackup/raspiBackup.conf /etc/raspiBackup/raspiBackup.conf~
+	cp -a /etc/raspibackup/raspiBackup.conf /etc/raspibackup/raspiBackup.conf~
 fi
 
 
@@ -13,16 +13,16 @@ fi
 lang="${LANG:0:2}"
 if [[ "$lang" == "de" ]]; then
 	echo "Installing de ..."
-	mv /etc/raspiBackup/raspiBackup_de.conf /etc/raspiBackup/raspiBackup.conf
-	rm /etc/raspiBackup/raspiBackup_en.conf
+	mv /etc/raspibackup/raspiBackup_de.conf /etc/raspibackup/raspiBackup.conf
+	rm /etc/raspibackup/raspiBackup_en.conf
 else
 	echo "Installing en ..."
-	mv /etc/raspiBackup/raspiBackup_en.conf /etc/raspiBackup/raspiBackup.conf
-	rm /etc/raspiBackup/raspiBackup_de.conf
+	mv /etc/raspibackup/raspiBackup_en.conf /etc/raspibackup/raspiBackup.conf
+	rm /etc/raspibackup/raspiBackup_de.conf
 fi
 
 # config may contain sensitive information like pwds, keys et al
-chmod 600 /etc/raspiBackup/raspiBackup.conf
+chmod 600 /etc/raspibackup/raspiBackup.conf
 
 echo "DONE: postinst"
 # @TBD - merge new config file with old file

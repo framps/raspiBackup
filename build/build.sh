@@ -125,6 +125,9 @@ install -m644 -D -t "$TGT/usr/share/doc/raspibackup" "$DEBIAN/copyright"
 
 # changelog
 install -m644 -D -t "$TGT/usr/share/doc/raspibackup" "$DEBIAN/changelog.Debian"
+currentDate="$(date +"%a, %d %B %Y %H:%M:%S %z")"
+# Insert current date & time
+sed -i -e "s/\\\$Date\\\$/$currentDate/g" "$TGT/usr/share/doc/raspibackup/changelog.Debian"
 gzip -9n "$TGT/usr/share/doc/raspibackup/changelog.Debian"
 
 # create DEBIAN package files and insert version number in control file
