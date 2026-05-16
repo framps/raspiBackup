@@ -31,9 +31,12 @@ GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
 # shellcheck disable=2034
 readonly GITSRC
 
-# BRANCH_TO_DEB="m_972"
-BRANCH_TO_DEB="master"
+BRANCH_TO_DEB="m_972"
+# BRANCH_TO_DEB="master"
+
 CURRENT_BRANCH=$(git branch --show-current)
+
+show "Using branch '$BRANCH_TO_DEB' as source for the build"
 
 if [[ "$CURRENT_BRANCH" == "$BRANCH_TO_DEB" ]] ; then
     git worktree add --detach "$GITSRC"
@@ -114,13 +117,8 @@ popd > /dev/null
 # the gitsrc worktree is no longer needed here
 git worktree remove "$GITSRC"
 
-# echo ">>> $last_date  $sha1"
-for f in "$TGT"/usr/share/raspiBackup/* ; do
-    # cp -p "$f" "${f}.sav"
-    sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$f"
-    # diff "${f}.sav" "$f" || true
-done
-
+# Insert commit date and sha1 into the scripts
+sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT"/usr/share/raspiBackup/*
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
