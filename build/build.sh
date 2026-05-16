@@ -120,8 +120,12 @@ git worktree remove "$GITSRC"
 # Insert commit date and sha1 into the scripts
 sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT"/usr/share/raspibackup/*
 
-# copy copyright
+# copyright
 install -m644 -D -t "$TGT/usr/share/doc/raspibackup" "$DEBIAN/copyright"
+
+# changelog
+install -m644 -D -t "$TGT/usr/share/doc/raspibackup" "$DEBIAN/changelog.Debian"
+gzip -9n "$TGT/usr/share/doc/raspibackup/changelog.Debian"
 
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control

@@ -1,0 +1,8 @@
+raspibackup (0.7.2_m972) trixie; urgency=low
+
+  * Use apt package
+    - Distribute signed package
+    - Install raspiBackup with apt
+
+ -- framp <framp@linux-tips-and-tricks.de>  Sat, 16 May 2026 23:05:22 +0100
+
