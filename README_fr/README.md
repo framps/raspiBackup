@@ -40,7 +40,7 @@ Le programme d’installation utilise des menus, des listes et des boutons radio
 
 L’installation démarre avec la commande suivante :
 
-`curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
+`curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/build/raspiBackupInstall.sh | bash`
 
 ## Dons
 

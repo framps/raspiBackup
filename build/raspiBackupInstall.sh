@@ -24,7 +24,10 @@
 #
 #######################################################################################################################
 
-readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
+set -euo pipefail
+
+LOG_FILE="$(cut -d'.' -f1 <<< "$(basename "$0")").log"
+readonly LOG_FILE
 readonly GITHUB_URL="https://raw.githubusercontent.com/framps/raspiBackup/refs/heads/master/build/package"
 
 function err() {
@@ -63,13 +66,13 @@ echo "--- Downloading raspiBackup Debian package from github"
 curl -fsSL $GITHUB_URL/raspiBackup.deb -o raspiBackup.deb
 curl -fsSL $GITHUB_URL/raspiBackup.deb.sig -o raspiBackup.deb.sig
 
-version=$(dpkg -I package/raspiBackup.deb | grep "^ Version" | cut -f 3 -d ' ')
+version="$(dpkg-deb -f ./raspiBackup.deb Version)"
 
 echo -n "--- Installing raspiBackup $version. Are you sure? (y|N) "
 
 read -r -n 1 answer
 
-if [[ -n "${str//[[:space:]]/}" ]]; then
+if [[ -n "${answer//[[:space:]]/}" ]]; then
 	echo
 fi
 
@@ -78,18 +81,18 @@ if [[ ! $answer =~ [yYjJ] ]]; then
 	exit 0
 fi
 
-echo "--- Verifying Debian package was created by framp"
-gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
-
 if ! gpg --list-keys | grep -q framps; then
 	echo "--- Retrieve framps key from github"
-	curl https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
+	curl -fsSL https://github.com/framps.gpg | gpg --yes --dearmor -o framps.gpg.asc
 	echo "--- Import framps key"
 	gpg --import  framps.gpg.asc
 fi
+
+echo "--- Verifying Debian package was created by framp"
+gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
 
 echo "--- Installing raspiBackup package and all dependencies"
 sudo apt-get install --allow-downgrades -y ./raspiBackup.deb # &>>$LOG_FILE
 
 dpkg --list | grep raspibackup | awk '{ print "--- raspiBackup", $3, "installed successfully"; }'
-
+echo "--- Use raspiBackupConfig to configure and update raspiBackup"

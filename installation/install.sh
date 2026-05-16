@@ -2,7 +2,7 @@
 
 #######################################################################################################################
 #
-# Script to download, install and configure raspiBackup.sh.
+# Script to download and start the raspiBackup apt installer.
 #
 # Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
@@ -29,13 +29,11 @@ MYSELF="install"
 VERSION="0.1.4"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
-URL="https://www.linux-tips-and-tricks.de"
-INSTALLER="raspiBackupInstallUI.sh"
-INSTALLER_DOWNLOAD_URL="$URL/raspiBackup${URLTARGET}/$INSTALLER"
+INSTALLER="raspiBackupInstall.sh"
+INSTALLER_DOWNLOAD_URL="https://raw.githubusercontent.com/framps/raspiBackup/master/build/$INSTALLER"
 
 CURRENT_DIR=$(pwd)
 
-TO_BE_INSTALLED="raspiBackup.sh"
 LOG_FILE="$CURRENT_DIR/$MYSELF.log"
 
 GIT_DATE="$Date$"
@@ -49,7 +47,7 @@ GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_O
 
 function cleanup() {
 	[[ -f "$INSTALLER" ]] && rm -f "$INSTALLER" &>/dev/null
-	cd "$CURRENT_DIR"
+	cd "$CURRENT_DIR" || exit
 	[[ -f "$CURRENT_DIR/$MYSELF" ]] && rm -f "$CURRENT_DIR/$MYSELF" &>/dev/null
 }
 
@@ -58,14 +56,9 @@ if [[ $# == 1 && ( $1 == "-v" || $1 == "--version" ) ]]; then
 	exit 0
 fi
 
-if (( $UID != 0 )) && [[ $1 != "-h" ]]; then
-	echo "Root access required to install $TO_BE_INSTALLED. Please use 'sudo ./$MYSELF'."
-	exit 1
-fi
-
 trap cleanup SIGINT SIGTERM EXIT
 
-cd ~
+cd ~ || exit
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." > "$LOG_FILE"
 curl -L "$INSTALLER_DOWNLOAD_URL" -o $INSTALLER &>> "$LOG_FILE"
@@ -78,7 +71,7 @@ if (( $rc )); then
 fi
 
 echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
-sudo -E bash "./$INSTALLER" "$1"
+bash "./$INSTALLER" "$@"
 rc=$?
 if (( $rc )); then
 	echo "??? $INSTALLER failed. RC: $rc" >> "$LOG_FILE"

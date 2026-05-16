@@ -1,4 +1,13 @@
 #!/bin/bash
 
-echo "Cleaning up temp dir"
-rm -f /tmp/raspiBackup*
+set -e
+
+case "$1" in
+	remove|purge)
+		echo "Cleaning up generated raspiBackup files"
+		rm -f /tmp/raspiBackup*
+		rm -f /usr/local/etc/raspiBackup.conf~
+		rm -f /usr/local/etc/raspiBackupDialog.conf~
+		rm -f /usr/local/etc/raspiBackup*.bak
+		;;
+esac

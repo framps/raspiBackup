@@ -24,8 +24,10 @@
 
 set -euo pipefail
 
-export readonly VERSION="0.7.2"
-readonly LOG_FILE=$(cut -d'.' -f1 <<< $(basename "$0")).log
+readonly VERSION="0.7.2"
+export VERSION
+LOG_FILE="$(cut -d'.' -f1 <<< "$(basename "$0")").log"
+readonly LOG_FILE
 source ./common.sh
 
 rm -rf $TGT
@@ -36,31 +38,37 @@ mkdir -p "$TGT/usr/local/bin"
 mkdir -p "$TGT/usr/local/etc"
 
 # copy source files
-install -m755 $SRC/raspiBackup.sh $TGT/usr/local/bin/raspiBackup.sh
-install -m755 $SRC/raspiBackupInstallUI.sh $TGT/usr/local/bin/raspiBackupInstallUI.sh
-install -m600 $SRC/raspiBackup_de.conf $TGT/usr/local/etc/raspiBackup_de.conf
-install -m600 $SRC/raspiBackup_en.conf $TGT/usr/local/etc/raspiBackup.conf
+install -m755 "$SRC/raspiBackup.sh" "$TGT/usr/local/bin/raspiBackup.sh"
+install -m755 "$SRC/raspiBackupInstallUI.sh" "$TGT/usr/local/bin/raspiBackupConfig.sh"
+dialogSource="$SRC/raspiBackupDialog.sh"
+[[ -f "$dialogSource" ]] || dialogSource="$SRC/helper/raspiBackupDialog.sh"
+install -m755 "$dialogSource" "$TGT/usr/local/bin/raspiBackupDialog.sh"
+install -m600 "$SRC/raspiBackup_de.conf" "$TGT/usr/local/etc/raspiBackup_de.conf"
+install -m600 "$SRC/raspiBackup_en.conf" "$TGT/usr/local/etc/raspiBackup.conf"
 
 # create links
-cd $TGT/usr/local/bin
+cd "$TGT/usr/local/bin"
 ln -s -r raspiBackup.sh raspiBackup
-ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
-cd $CURRENT_DIR
-tar -x -f $SRC/raspiBackupSampleExtensions.tgz -C $TGT/usr/local/bin
+ln -s -r raspiBackupConfig.sh raspiBackupConfig
+ln -s -r raspiBackupConfig.sh raspiBackupInstallUI
+ln -s -r raspiBackupDialog.sh raspiBackupDialog
+cd "$CURRENT_DIR"
+tar -x -f "$SRC/raspiBackupSampleExtensions.tgz" -C "$TGT/usr/local/bin"
 
 # create DEBIAN package files
-envsubst < $PACKAGE/DEBIAN/control > /tmp/control
-install -m755  /tmp/control $TGT/DEBIAN/control
+envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
+install -m755 /tmp/control "$TGT/DEBIAN/control"
 rm /tmp/control
-install -m755  $PACKAGE/DEBIAN/postinst $TGT/DEBIAN
-install -m755  $PACKAGE/DEBIAN/postrm $TGT/DEBIAN
-install -m755  $PACKAGE/DEBIAN/conffiles $TGT/DEBIAN
+install -m755 "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
+install -m755 "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
+install -m755 "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
 
 function show() {
 	local l=${#1}
-	local s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
+	local s
+	s=$(printf '=%.0s' $(seq 1 $(( l+8 )) ) )
 	echo "$s"
-	echo "=== $@ ==="
+	echo "=== $* ==="
 	echo "$s"
 }
 
