@@ -1,3 +1,0 @@
-*.sh filter=dater
-*.conf filter=dater
-*.properties filter=dater

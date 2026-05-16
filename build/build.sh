@@ -27,22 +27,21 @@ set -euo pipefail
 # shellcheck disable=1091
 source ./common.sh
 
-# clone github code to get current commit sha into code
-# should be done finally all the time
+GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
+# shellcheck disable=2034
+readonly GITSRC
 
-show "Clone (or update) github code locally"
+BRANCH_TO_DEB="m_972"
+# BRANCH_TO_DEB="master"
 
-if [[ ! -d "$GITSRC" ]]; then
-	echo "Cloning fresh source repo"
-	git clone https://github.com/framps/raspiBackup.git "$GITSRC"
-	pushd "$GITSRC" > /dev/null
-	git checkout m_972
-	popd > /dev/null
-    else
-	echo "Updating already existing repo"
-	pushd "$GITSRC" > /dev/null
-	git pull
-	popd > /dev/null
+CURRENT_BRANCH=$(git branch --show-current)
+
+show "Using branch '$BRANCH_TO_DEB' as source for the build"
+
+if [[ "$CURRENT_BRANCH" == "$BRANCH_TO_DEB" ]] ; then
+    git worktree add --detach "$GITSRC"
+else
+    git worktree add "$GITSRC" "$BRANCH_TO_DEB"
 fi
 
 export VERSION
@@ -108,6 +107,18 @@ install -m644 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBac
 for file in "$GITSRC"/extensions/raspiBackup_*; do
 	install -m755 "$file" "$TGT/usr/share/raspiBackup"
 done
+
+# get current commit sha and date into code
+pushd "$GITSRC" > /dev/null
+last_date=$(git log --pretty=format:"%ai" -1)
+sha1=$(git log --pretty=format:"%h" -1)
+popd > /dev/null
+
+# the gitsrc worktree is no longer needed here
+git worktree remove "$GITSRC"
+
+# Insert commit date and sha1 into the scripts
+sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT"/usr/share/raspiBackup/*
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
@@ -180,6 +191,7 @@ if (( CHECK_PACKAGE != 0 )) ; then
 		echo "Warning: Can't check package because 'lintian' isn't installed!"
 	fi
 fi
+
 
 exit "$rc"
 
