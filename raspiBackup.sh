@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#!/usr/bin/env bash
 # shellcheck disable=SC2004
 # SC2004: $ not required in arithmentic expressions
 #
@@ -44,7 +45,7 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-SCRIPT_ABS_LOCATION="$0"									# to invoke myself for clone
+RASPIBACKUP_ABS_LOCATION="$0"								# to invoke myself for clone
 VERSION="0.7.2-m_978"   									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
@@ -1256,10 +1257,10 @@ MSG_DE[$MSG_FORCE_SFDISK]="RBK0143W: Ziel %s passt nicht zu dem Backup. Partitio
 MSG_FI[$MSG_FORCE_SFDISK]="RBK0143W: Kohde %s ei täsmää varmuuskopion kanssa. Pakotetaan osiointi"
 MSG_FR[$MSG_FORCE_SFDISK]="RBK0143W: La cible %s ne correspond pas à la sauvegarde. Partitionnement forcé"
 MSG_SKIP_SFDISK=144
-MSG_EN[$MSG_SKIP_SFDISK]="RBK0144W: Target %s will not be partitioned. Using existing partitions"
-MSG_DE[$MSG_SKIP_SFDISK]="RBK0144W: Ziel %s wird nicht partitioniert. Existierende Partitionen werden benutzt"
-MSG_FI[$MSG_SKIP_SFDISK]="RBK0144W: Kohdetta %s ei osioida. Käytetään olemassaolevia osioita"
-MSG_FR[$MSG_SKIP_SFDISK]="RBK0144W: La cible %s ne sera pas partitionné. Les partitions existantes sont utilisées"
+MSG_EN[$MSG_SKIP_SFDISK]="RBK0144I: Target %s will not be partitioned. Using existing partitions"
+MSG_DE[$MSG_SKIP_SFDISK]="RBK0144I: Ziel %s wird nicht partitioniert. Existierende Partitionen werden benutzt"
+MSG_FI[$MSG_SKIP_SFDISK]="RBK0144I: Kohdetta %s ei osioida. Käytetään olemassaolevia osioita"
+MSG_FR[$MSG_SKIP_SFDISK]="RBK0144I: La cible %s ne sera pas partitionné. Les partitions existantes sont utilisées"
 MSG_SKIP_CREATING_PARTITIONS=145
 MSG_EN[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Partition creation skipped. Using existing partitions"
 MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Partitionen werden nicht erstellt. Existierende Partitionen werden benutzt"
@@ -5666,15 +5667,15 @@ function cleanup() { # trap
 	fi
 
 	if (( ! $RESTORE && $REBOOT_SYSTEM )); then
-		shutdown -r +3						# wait some time to allow eMail to be sent
+		shutdown -r +3													# wait some time to allow eMail to be sent
 	fi
 
-	if (( $rc == 0 )) && [[ -n "$CLONE_DEVICE" ]]; then
+	if (( $rc == 0 )) && [[ -n "$CLONE_DEVICE" && -z $RESTORE_DEVICE ]]; then
 
-	    source /tmp/raspiBackup.vars # BACKUP_TARGETDIR now refers to the backupdirectory just created
+	    source /tmp/raspiBackup.vars 									# BACKUP_TARGETDIR now refers to the backupdirectory just created
 		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
 		shopt -s execfail
-		exec $SCRIPT_ABS_LOCATION ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
+		exec $RASPIBACKUP_ABS_LOCATION ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
 		rc=$?
 		assertionFailed $LINENO "Unable to start clone restore, RC: $rc"
 	fi
@@ -8692,24 +8693,26 @@ function restorePartitionBasedBackup() {
 		echo "$current_partition_table"
 	fi
 
-	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-		local partitions
-		partitions=( "$(collectAvailableBackupPartitions "$RESTOREFILE" )" )
-		local partitionsString="${partitions[*]}"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
-	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
-	fi
+	if [[ -z $CLONE_DEVICE ]] then
+		if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
+			local partitions
+			partitions=( "$(collectAvailableBackupPartitions "$RESTOREFILE" )" )
+			local partitionsString="${partitions[*]}"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
+		fi
 
-	if ! askYesNo; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-		exitError "$RC_RESTORE_FAILED"
-	fi
+		if ! askYesNo; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+			exitError "$RC_RESTORE_FAILED"
+		fi
 
-	if (( $NO_YES_QUESTION )); then
-		echo "Y"
+		if (( $NO_YES_QUESTION )); then
+			echo "Y"
+		fi
 	fi
-
+	
 	initRestoreVariables
 
 	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
@@ -10435,9 +10438,11 @@ function backupAndCloneSetParms() {
 		case $arg in
 
 			--clone)
-				CLONE_RESTORE_OPTIONS+=("-d")			# replace --clone with -d for restore to clone device
+				CLONE_RESTORE_OPTIONS+=("-d")			# add --clone device with -d for restore to clone
 				(( i++ ))
 				arg="${ARG_BAK[i]}"
+				CLONE_RESTORE_OPTIONS+=($arg)			# restore device
+				CLONE_RESTORE_OPTIONS+=("--clone")		# keep --clone option
 				CLONE_RESTORE_OPTIONS+=($arg)			# restore device
 				;;
 			*)
