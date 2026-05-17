@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "Cleaning up temp dir"
-rm -f /tmp/raspiBackup*
