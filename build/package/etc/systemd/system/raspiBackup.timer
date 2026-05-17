@@ -1,0 +1,9 @@
+[Unit]
+Description=Timer for raspiBackup.service to start backup
+
+[Timer]
+OnCalendar=Sun *-*-* 05:00:42
+Unit=raspiBackup.service
+
+[Install]
+WantedBy=multi-user.target

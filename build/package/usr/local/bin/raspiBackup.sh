@@ -456,7 +456,7 @@ RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
-#RC_ENVIRONMENT_ERROR=139
+RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 #RC_EXTENSION_ERROR=141
 #RC_UNPROTECTED_CONFIG=142
@@ -2137,8 +2137,12 @@ MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
 MSG_SYNCING_SECOND_PARTITION=356
 MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
+MSG_NOTIFICATION_SUPPRESSED=357
+MSG_EN[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: No notification and eMail sent. Use option -F to test them."
+#shellcheck disable=SC2034
+MSG_DE[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: Es wird keine eMail und Notification gesendet. Nutze die Option -F um sie zu testen."
+
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2941,7 +2945,6 @@ function logOptions() { # option state
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "FAKE=$FAKE"
 	logItem "FINAL_COMMAND=$FINAL_COMMAND"
-	logItem "FORCE_EMAIL=$FORCE_EMAIL"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
 	logItem "IGNORE_MISSING_PARTITIONS=$IGNORE_MISSING_PARTITIONS"
@@ -3187,8 +3190,6 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_BOOT_DEVICE=""
 	# How often inform about possible old-named backups
 	DEFAULT_OLD_REMINDER_REPEAT="5"
-	# Sent notifications and eMails also when script is invoked in the foreground on the console
-	DEFAULT_FORCE_EMAIL=1
 	############# End default config section #############
 }
 
@@ -3216,7 +3217,6 @@ function copyDefaultConfigVariables() {
 	EXCLUDE_LIST="$DEFAULT_EXCLUDE_LIST"
 	EXTENSIONS="$DEFAULT_EXTENSIONS"
 	FINAL_COMMAND="$DEFAULT_FINAL_COMMAND"
-	FORCE_EMAIL="$DEFAULT_FORCE_EMAIL"
 	IGNORE_ADDITIONAL_PARTITIONS="$DEFAULT_IGNORE_ADDITIONAL_PARTITIONS"
 	IGNORE_MISSING_PARTITIONS="$DEFAULT_IGNORE_MISSING_PARTITIONS"
 	KEEPBACKUPS="$DEFAULT_KEEPBACKUPS"
@@ -5572,7 +5572,7 @@ function cleanup() { # trap
 
 			logger "INTERACTIVE: $INTERACTIVE"
 
-			if (( ! $INTERACTIVE || $FAKE || FORCE_EMAIL )); then
+			if (( ! $INTERACTIVE || $FAKE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					sendEMail "$msg" "$msgTitle"
@@ -5596,6 +5596,8 @@ function cleanup() { # trap
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi
+			elif (( $INTERACTIVE )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOTIFICATION_SUPPRESSED
 			fi 
 		fi
 
@@ -5614,7 +5616,7 @@ function cleanup() { # trap
 
 		logger "INTERACTIVE: $INTERACTIVE"
 
-		if (( ! $INTERACTIVE || $FAKE | $FORCE_EMAIL )); then
+		if (( ! $INTERACTIVE || $FAKE)); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
@@ -5637,6 +5639,9 @@ function cleanup() { # trap
 
 			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 			sendEMail "" "$msg"
+
+		elif (( $INTERACTIVE )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NOTIFICATION_SUPPRESSED
 		fi
 	fi
 
@@ -10620,10 +10625,6 @@ while (( "$#" )); do
 
 	-F|-F[-+])
 	  FAKE=$(getEnableDisableOption "$1"); shift 1
-	  ;;
-
-	--forceEmail|--forceEmail[+-])
-	  FORCE_EMAIL=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	-g|-g[-+])
