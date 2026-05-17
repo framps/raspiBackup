@@ -81,6 +81,7 @@ fi
 
 version=$(dpkg -I raspiBackup.deb | grep "^ Version" | cut -f 3 -d ' ')
 
+:<<"SKIP"
 echo -n "--- Installing raspiBackup $version. Are you sure? (y|N) "
 
 read -r -n 1 answer
@@ -93,6 +94,7 @@ if [[ ! $answer =~ [yYjJ] ]]; then
 	echo "!!! Installation of raspiBackup $version aborted"
 	exit 0
 fi
+SKIP
 
 # retrieve and import framps gpg key from github if it doesn't exist already in keyring
 if ! gpg --list-keys | grep -q framps; then

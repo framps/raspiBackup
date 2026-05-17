@@ -5,24 +5,32 @@ set -euo pipefail
 # save existing config
 if [[ -f /etc/raspiBackup/raspiBackup.conf ]]; then
 	echo "Saving existing config file ..."
-	cp -a /etc/raspiBackup/raspiBackup.conf /etc/raspiBackup/raspiBackup.conf~
+	cp -a /etc/raspiBackup/raspiBackup.conf /etc/raspiBackup/raspiBackup.conf~ || true
 fi
 
 
 # use German config file, English is default
 lang="${LANG:0:2}"
 if [[ "$lang" == "de" ]]; then
-	echo "Installing de ..."
-	mv /etc/raspiBackup/raspiBackup_de.conf /etc/raspiBackup/raspiBackup.conf
-	rm /etc/raspiBackup/raspiBackup_en.conf
+	if [[ -f /etc/raspiBackup/raspiBackup_de.conf ]]; then
+		echo "Installing de ..."
+		mv /etc/raspiBackup/raspiBackup_de.conf /etc/raspiBackup/raspiBackup.conf || true
+		rm /etc/raspiBackup/raspiBackup_en.conf || true
+	else
+		echo "??? Installation raspiBackup.conf (de) failed"
+	fi
 else
-	echo "Installing en ..."
-	mv /etc/raspiBackup/raspiBackup_en.conf /etc/raspiBackup/raspiBackup.conf
-	rm /etc/raspiBackup/raspiBackup_de.conf
+	if [[ -f /etc/raspiBackup/raspiBackup_de.conf ]]; then
+		echo "Installing en ..."
+		mv /etc/raspiBackup/raspiBackup_en.conf /etc/raspiBackup/raspiBackup.conf || true
+		rm /etc/raspiBackup/raspiBackup_de.conf || true
+	else
+		echo "??? Installation raspiBackup.conf (en) failed"
+	fi
 fi
 
 # config may contain sensitive information like pwds, keys et al
-chmod 600 /etc/raspiBackup/raspiBackup.conf
+chmod 600 /etc/raspiBackup/raspiBackup.conf || true
 
 echo "DONE: postinst"
 # @TBD - merge new config file with old file
