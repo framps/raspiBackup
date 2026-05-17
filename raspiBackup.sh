@@ -2139,9 +2139,9 @@ MSG_SYNCING_SECOND_PARTITION=356
 MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
 MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
 MSG_NOTIFICATION_SUPPRESSED=357
-MSG_EN[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: No notification and eMail sent. Use option -F to test them."
+MSG_EN[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: No notification and eMail sent because $MYSELF is invoked in the console."
 #shellcheck disable=SC2034
-MSG_DE[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: Es wird keine eMail und Notification gesendet. Nutze die Option -F um sie zu testen."
+MSG_DE[$MSG_NOTIFICATION_SUPPRESSED]="RBK0357I: Keine eMail und Notification gesendet da $MYSELF in der Konsole aufgerufen wurde"
 
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
