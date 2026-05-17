@@ -5673,13 +5673,14 @@ function cleanup() { # trap
 		shutdown -r +3						# wait some time to allow eMail to be sent
 	fi
 
-	if (( $rc == 0 )) && isCloneMode && [[ -z $RESTORE_DEVICE ]]; then
+	if (( $rc == 0 && isCloneMode )) && [[ -z $RESTORE_DEVICE ]]; then
 
 	    source /tmp/raspiBackup.vars # BACKUP_TARGETDIR now refers to the backupdirectory just created
 		set -x
 		echo "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
 		shopt -s execfail
-		exec raspiBackup ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
+		read
+		exec ./raspiBackup.sh ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
 		set +x
 		rc=$?
 		assertionFailed $LINENO "Unable to start clone restore, RC: $rc"
