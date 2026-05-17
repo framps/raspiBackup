@@ -43,8 +43,8 @@ function err() {
 
 cleanup() {
 	rm -f framps.gpg.asc
-	rm -f raspiBackup.deb
-	rm -f raspiBackup.deb.sig
+	# rm -f raspiBackup.deb
+	# rm -f raspiBackup.deb.sig
 	if (( $1 == 0 )); then
 		: rm -f "$LOG_FILE"
 	else
@@ -62,11 +62,24 @@ exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 rm -f "$LOG_FILE"
 
-echo "--- Downloading raspiBackup Debian package from github"
-curl -fsSL $GITHUB_URL/raspiBackup.deb -o raspiBackup.deb
-curl -fsSL $GITHUB_URL/raspiBackup.deb.sig -o raspiBackup.deb.sig
+if [[ -n $1 && -d "$1" ]]; then
 
-version=$(dpkg -I package/raspiBackup.deb | grep "^ Version" | cut -f 3 -d ' ')
+	cd $1
+	if [[ ! -f "raspiBackup.deb" ]]; then
+		echo "??? $1/raspiBackup.deb not found"
+		exit 42
+	fi
+	if [[ ! -f "raspiBackup.deb.sig" ]]; then
+		echo "??? $1/raspiBackup.deb.sig not found"
+		exit 42
+	fi
+else
+	echo "--- Downloading raspiBackup Debian package from github"
+	curl -fsSL $GITHUB_URL/raspiBackup.deb -o raspiBackup.deb
+	curl -fsSL $GITHUB_URL/raspiBackup.deb.sig -o raspiBackup.deb.sig
+fi
+
+version=$(dpkg -I raspiBackup.deb | grep "^ Version" | cut -f 3 -d ' ')
 
 echo -n "--- Installing raspiBackup $version. Are you sure? (y|N) "
 
@@ -81,10 +94,6 @@ if [[ ! $answer =~ [yYjJ] ]]; then
 	exit 0
 fi
 
-echo "--- Verifying Debian package was created by framp"
-# will fail with unexpected error if verification fails
-gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
-
 # retrieve and import framps gpg key from github if it doesn't exist already in keyring
 if ! gpg --list-keys | grep -q framps; then
 	echo "--- Retrieving framps key from github"
@@ -92,6 +101,10 @@ if ! gpg --list-keys | grep -q framps; then
 	echo "--- Importing framps key"
 	gpg --import  framps.gpg.asc
 fi
+
+echo "--- Verifying Debian package was created by framp"
+# will fail with unexpected error if verification fails
+gpg --verbose --verify raspiBackup.deb.sig raspiBackup.deb
 
 echo "--- Installing raspiBackup package and all dependencies"
 sudo apt-get install --allow-downgrades -y ./raspiBackup.deb | tee -a "$LOG_FILE" 2>&1
