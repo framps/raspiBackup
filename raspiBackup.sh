@@ -44,7 +44,8 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.7.2-m_978"   								# -beta, -hotfix or -dev suffixes possible
+SCRIPT_ABS_LOCATION="$0"									# to invoke myself for clone
+VERSION="0.7.2-m_978"   									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.10"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -795,10 +796,10 @@ MSG_DE[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Ziel %s mit %s ist größer als 2TB 
 MSG_FI[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Kohde %s kooltaan %s, on suurempi kuin 2Tt ja vaatii mbr:n sijasta gpt:n. Muutoin vain 2Tt voidaan käyttää"
 MSG_FR[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: La cible %s avec %s, est supérieure à 2 To et nécessite GPT au lieu de MBR. Sinon, seuls 2 To seront utilisés"
 MSG_CREATING_PARTITIONS=52
-MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052W: Creating partitions on %s"
-MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052W: Partitionen werden auf %s erstellt"
-MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052W: Luodaan osioita kohteelle %s"
-MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052W: Les partitions seront créées sur %s"
+MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052I: Creating partitions on %s"
+MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052I: Partitionen werden auf %s erstellt"
+MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052I: Luodaan osioita kohteelle %s"
+MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052I: Les partitions seront créées sur %s"
 MSG_RESTORING_FIRST_PARTITION=53
 MSG_EN[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Restoring first partition (boot partition) to %s"
 MSG_DE[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Erste Partition (Bootpartition) wird auf %s zurückgespielt"
@@ -860,10 +861,10 @@ MSG_DE[$MSG_ROOT_PARTTITION_NOT_FOUND]="RBK0064E: Partition für die Rootpartiti
 MSG_FI[$MSG_ROOT_PARTTITION_NOT_FOUND]="RBK0064E: Osiota juuriosiolle %s ei löytynyt (Esimerkki: /dev/sdb1)"
 MSG_FR[$MSG_ROOT_PARTTITION_NOT_FOUND]="RBK0064E: La partition Root %s est introuvable (exemple:/dev/sdb1)"
 MSG_REPARTITION_WARNING=65
-MSG_EN[$MSG_REPARTITION_WARNING]="RBK0065W: Device %s will be repartitioned and all data will be lost"
-MSG_DE[$MSG_REPARTITION_WARNING]="RBK0065W: Gerät %s wird repartitioniert und die gesamten Daten werden gelöscht"
-MSG_FI[$MSG_REPARTITION_WARNING]="RBK0065W: Laite %s osioidaan uudelleen ja kaikki tieto hävitetään"
-MSG_FR[$MSG_REPARTITION_WARNING]="RBK0065W: Le périphérique %s sera repartitionné, toutes les données seront perdues"
+MSG_EN[$MSG_REPARTITION_WARNING]="RBK0065I: Device %s will be repartitioned and all data will be lost"
+MSG_DE[$MSG_REPARTITION_WARNING]="RBK0065I: Gerät %s wird repartitioniert und die gesamten Daten werden gelöscht"
+MSG_FI[$MSG_REPARTITION_WARNING]="RBK0065I: Laite %s osioidaan uudelleen ja kaikki tieto hävitetään"
+MSG_FR[$MSG_REPARTITION_WARNING]="RBK0065I: Le périphérique %s sera repartitionné, toutes les données seront perdues"
 MSG_WARN_RESTORE_DEVICE_OVERWRITTEN=66
 MSG_EN[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Device %s will be overwritten with the saved boot and root partition"
 MSG_DE[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Gerät %s wird überschrieben mit der gesicherten Boot- und Rootpartition"
@@ -1260,10 +1261,10 @@ MSG_DE[$MSG_SKIP_SFDISK]="RBK0144W: Ziel %s wird nicht partitioniert. Existieren
 MSG_FI[$MSG_SKIP_SFDISK]="RBK0144W: Kohdetta %s ei osioida. Käytetään olemassaolevia osioita"
 MSG_FR[$MSG_SKIP_SFDISK]="RBK0144W: La cible %s ne sera pas partitionné. Les partitions existantes sont utilisées"
 MSG_SKIP_CREATING_PARTITIONS=145
-MSG_EN[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partition creation skipped. Using existing partitions"
-MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partitionen werden nicht erstellt. Existierende Partitionen werden benutzt"
-MSG_FI[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Osion luonti ohitettu. Käytetään olemassaolevia osioita"
-MSG_FR[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Création de partition ignorée. Les partitions existantes sont utilisées"
+MSG_EN[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Partition creation skipped. Using existing partitions"
+MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Partitionen werden nicht erstellt. Existierende Partitionen werden benutzt"
+MSG_FI[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Osion luonti ohitettu. Käytetään olemassaolevia osioita"
+MSG_FR[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Création de partition ignorée. Les partitions existantes sont utilisées"
 MSG_NO_PARTITION_TABLE_DEFINED=146
 MSG_EN[$MSG_NO_PARTITION_TABLE_DEFINED]="RBK0146I: No partitiontable found on %s"
 MSG_DE[$MSG_NO_PARTITION_TABLE_DEFINED]="RBK0146I: Keine Partitionstabelle auf %s gefunden"
@@ -2019,8 +2020,8 @@ MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE=304
 MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Not all OS partitions were restored. System may not boot"
 MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Nicht alle OS Partitionen wurden zurückgespielt. Das System könnte nicht booten"
 MSG_RESTORING_PARTITIONS=305
-MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partitions %s to %s"
-MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partitionen %s werden auf %s zurüchgespielt"
+MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305I: Restoring partitions %s to %s"
+MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305I: Partitionen %s werden auf %s zurüchgespielt"
 #MSG_ANSWER_ALL=306
 #MSG_EN[$MSG_ANSWER_ALL]="all"
 #MSG_DE[$MSG_ANSWER_ALL]="Alle"
@@ -2034,8 +2035,8 @@ MSG_DE[$MSG_REMOVING_BACKUP_NO_FILE]="RBK0320I: Unvollständiges Backup wird gel
 #MSG_EN[$MSG_SAVING_LOG]="RBK0321I: Saving logfile"
 #MSG_DE[$MSG_SAVING_LOG]="RBK0321I: Logdatei wird gesichert"
 MSG_ADJUSTING_WARNING_P=322
-MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small"
-MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird"
+MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322I: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small"
+MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322I: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird"
 MSG_ADJUSTING_WARNING_P2=323
 MSG_EN[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Target %s with %s is larger than backup source with %s. Last partition will be expanded accordingly to use the whole available space"
 MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die letzte Partition wird entsprechend vergrößert um den ganzen verfügbaren Speicherplatz zu benutzen"
@@ -2046,8 +2047,8 @@ MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Part
 #MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated"
 #MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert"
 MSG_SKIP_FORMATING=326
-MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: Partitions will not be formatted"
-MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partitionen werden nicht formatiert"
+MSG_EN[$MSG_SKIP_FORMATING]="RBK0326I: Partitions will not be formatted"
+MSG_DE[$MSG_SKIP_FORMATING]="RBK0326I: Partitionen werden nicht formatiert"
 MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=327
 MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Not all partitions which were saved in the previous backup are included in option -T. Missing \"%s\""
 MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden mit der Option -T gesichert. Es fehlen \"%s\""
@@ -3659,30 +3660,30 @@ function askYesNo() { # message message_parms
 
 	local answer
 
-	if (( $addtlMsg )); then
-		noNL=1
-		#Expanding an array without an index only gives the element in the index 0.
-		#shellcheck disable=SC2128
-		writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
-	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
-	fi
-
-	if (( $NO_YES_QUESTION )); then
-		answer=$(getMessage $MSG_ANSWER_CHARS_YES)
-	else
+	if (( ! $NO_YES_QUESTION )); then
+		if (( $addtlMsg )); then
+			noNL=1
+			#Expanding an array without an index only gives the element in the index 0.
+			#shellcheck disable=SC2128
+			writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
+		fi
+		yes=$(getMessage $MSG_ANSWER_CHARS_YES)
 		read answer
-	fi
+		
+		answer=${answer:0:1}	# first char only
+		answer=${answer:-"n"}	# set default no
 
-	answer=${answer:0:1}	# first char only
-	answer=${answer:-"n"}	# set default no
-
-	yes=$(getMessage $MSG_ANSWER_CHARS_YES)
-	if [[ ! $yes =~ $answer ]]; then
-		return 1
+		if [[ ! $yes =~ $answer ]]; then
+			return 1
+		else
+			return 0
+		fi
 	else
 		return 0
 	fi
+	
 }
 
 function isNewVersionAvailable() {
@@ -5601,7 +5602,7 @@ function cleanup() { # trap
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi
-			fi 
+			fi
 		fi
 
 	else 	# success
@@ -5668,15 +5669,12 @@ function cleanup() { # trap
 		shutdown -r +3						# wait some time to allow eMail to be sent
 	fi
 
-	if (( $rc == 0 && isCloneMode )) && [[ -z $RESTORE_DEVICE ]]; then
+	if (( $rc == 0 )) && [[ -n "$CLONE_DEVICE" ]]; then
 
 	    source /tmp/raspiBackup.vars # BACKUP_TARGETDIR now refers to the backupdirectory just created
-		set -x
-		echo "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
+		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
 		shopt -s execfail
-		read
-		exec ./raspiBackup.sh ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
-		set +x
+		exec $SCRIPT_ABS_LOCATION ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
 		rc=$?
 		assertionFailed $LINENO "Unable to start clone restore, RC: $rc"
 	fi
@@ -6598,7 +6596,7 @@ function partitionRestoredeviceIfRequested() {
 	if (( $SKIP_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
-		if ! isCloneMode; then
+		if [[ -z $CLONE_DEVICE ]]; then
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -6611,7 +6609,7 @@ function partitionRestoredeviceIfRequested() {
 
 		if (( $SKIP_FORMAT )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
-			if ! isCloneMode; then
+			if [[ -z $CLONE_DEVICE ]]; then
 				if ! askYesNo; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 					exitError $RC_RESTORE_FAILED
@@ -6647,7 +6645,7 @@ function partitionRestoredeviceIfRequested() {
 
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_PARTITIONS $RESTORE_DEVICE
 
-		if ! isCloneMode; then
+		if [[ -z $CLONE_DEVICE ]]; then
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -8612,14 +8610,16 @@ function restoreNonPartitionBasedBackup() {
 	fi
 
 	if (( ! $ROOT_PARTITION_DEFINED )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
-		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
-		if [[ -n "$current_partition_table" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
-			logItem "$current_partition_table"
-			echo "$current_partition_table"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
+		if [[ -z $CLONE_DEVICE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
+			current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
+			if [[ -n "$current_partition_table" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+				logItem "$current_partition_table"
+				echo "$current_partition_table"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
+			fi
 		fi
 	else
 		if isSpecialBlockDevice "$ROOT_DEVICE"; then
@@ -8629,16 +8629,18 @@ function restoreNonPartitionBasedBackup() {
 		fi
 
 		if [[ $ROOT_DEVICE != "$RESTORE_DEVICE" ]]; then
-			current_partition_table="$(listDeviceInfo "$ROOT_DEVICE")"
-			if [[ -n "$current_partition_table" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE"
-				logItem "$current_partition_table"
-				echo "$current_partition_table"
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$ROOT_DEVICE"
-				if (( $SKIP_SFDISK )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITION "$ROOT_DEVICE"
-					exitError $RC_MISSING_PARTITION
+			if [[ -z $CLONE_DEVICE ]]; then
+				current_partition_table="$(listDeviceInfo "$ROOT_DEVICE")"
+				if [[ -n "$current_partition_table" ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE"
+					logItem "$current_partition_table"
+					echo "$current_partition_table"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$ROOT_DEVICE"
+					if (( $SKIP_SFDISK )); then
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITION "$ROOT_DEVICE"
+						exitError $RC_MISSING_PARTITION
+					fi
 				fi
 			fi
 		fi
@@ -8652,7 +8654,7 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 
-	if ! isCloneMode; then
+	if [[ -z $CLONE_DEVICE ]]; then
 		if ! askYesNo; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 			exitError $RC_RESTORE_FAILED
@@ -8683,10 +8685,12 @@ function restorePartitionBasedBackup() {
 		logItem "$(mount | grep "$RESTORE_DEVICE")"
 	fi
 
-	current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
-	logItem "$current_partition_table"
-	echo "$current_partition_table"
+	if [[ -z $CLONE_DEVICE ]]; then
+		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+		logItem "$current_partition_table"
+		echo "$current_partition_table"
+	fi
 
 	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 		local partitions
@@ -10414,11 +10418,6 @@ function getEnableDisableOption() { # option
 	esac
 }
 
-function isCloneMode() {
-	[[ -n "$CLONE_DEVICE" ]]
-	return
-}
-
 function backupAndCloneSetParms() {
 
 	logEntry
@@ -10448,7 +10447,7 @@ function backupAndCloneSetParms() {
 		(( i++ ))
 	done
 
-	echo "RESTORE: ${CLONE_RESTORE_OPTIONS[*]}"
+	logItem "Restore cloneoptions: ${CLONE_RESTORE_OPTIONS[*]}"
 
 	logExit
 }
