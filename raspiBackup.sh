@@ -8691,7 +8691,7 @@ function restorePartitionBasedBackup() {
 		echo "$current_partition_table"
 	fi
 
-	if [[ -z $CLONE_DEVICE ]] then
+	if [[ -z $CLONE_DEVICE ]]; then
 		if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 			local partitions
 			partitions=( "$(collectAvailableBackupPartitions "$RESTOREFILE" )" )
