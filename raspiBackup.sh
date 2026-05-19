@@ -9847,18 +9847,16 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-<<<<<<< HEAD
-=======
 	# ubuntu uses /boot/firmware/current, RaspberryOS uses starting from bookworm /boot/firmware and /boot in earlier OS releases
 	# Note: boot parition is mounted on /boot/firmware or /boot all the time
 	CMDLINE="$(find "$BOOT_MP" -name "cmdline.txt" 2>/dev/null | sort | head -1 )" # for ubuntu "current" comes before "old"
-		
+
 	logItem "CMDLINE found: $CMDLINE"
-	
+
 	if [[ -z "$CMDLINE" ]]; then
 		assertionFailed $LINENO "No cmdline.txt found"
 	fi
-		
+
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
 	local cmdline4Message # path for message
