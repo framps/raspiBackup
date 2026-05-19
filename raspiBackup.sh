@@ -5572,7 +5572,7 @@ function cleanup() { # trap
 
 			logger "INTERACTIVE: $INTERACTIVE"
 
-			if (( ! $INTERACTIVE || $FAKE || FORCE_EMAIL )); then
+			if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
 					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					sendEMail "$msg" "$msgTitle"
@@ -11083,7 +11083,7 @@ logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 setupEnvironment
 
 if (( $NOTIFY_START )); then
-	if (( ! $INTERACTIVE )); then
+	if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
 		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 		if [[ -n "$EMAIL"  ]]; then
 			sendEMail "" "$msg"
