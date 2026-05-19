@@ -11160,7 +11160,7 @@ logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 setupEnvironment
 
 if (( $NOTIFY_START )); then
-	if (( ! $INTERACTIVE )); then
+	if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
 		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 		if [[ -n "$EMAIL"  ]]; then
 			sendEMail "" "$msg"
