@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -156,7 +156,11 @@ Description=Creation of a Raspberry backup with raspiBackup
 
 [Service]
 Type=simple
+# delay start for 3 minutes
+ExecStartPre=/bin/sleep 180
 ExecStart=/usr/local/bin/raspiBackup.sh
+# increase default timeout which is 90s
+TimeoutStartSec=200
 # For Use with Wrapper Script: ExecStart=/usr/local/bin/raspiBackupWrapper.sh
 [Install]
 WantedBy=multi-user.target
