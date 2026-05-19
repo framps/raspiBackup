@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#!/usr/bin/env bash
 # shellcheck disable=SC2004
 # SC2004: $ not required in arithmentic expressions
 #
@@ -9867,7 +9866,6 @@ function synchronizeCmdlineAndfstab() {
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
->>>>>>> m_975
 	partprobe "$BOOT_PARTITION"		# reload partition table
 	partprobe "$ROOT_PARTITION"		# reload partition table
 
@@ -9875,14 +9873,11 @@ function synchronizeCmdlineAndfstab() {
 
 	local rootLabelCreated=0
 
-<<<<<<< HEAD
 	# on Ubuntu starting with 25.04 there exist two cmdlines, one in /boot/firmware/current and /boot/firmware/new, use current
 	# on pre 25.04 Ubuntu the file is located in /boot
 	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
 	# For both OS either /boot or /boot/firmware is mounted where cmdline.txt exists
-=======
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC_CMDLINE_FSTAB "$cmdline4Message" "$fstab4Message"
->>>>>>> m_975
 
 	local usedCmdline
 
