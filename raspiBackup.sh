@@ -9877,7 +9877,7 @@ function synchronizeCmdlineAndfstab() {
 	# on pre 25.04 Ubuntu the file is located in /boot
 	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
 	# For both OS either /boot or /boot/firmware is mounted where cmdline.txt exists
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC_CMDLINE_FSTAB "$cmdline4Message" "$fstab4Message"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdline4Message" "$fstab4Message"
 
 	local usedCmdline
 
