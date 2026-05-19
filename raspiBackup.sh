@@ -6986,7 +6986,7 @@ function restoreNormalBackupType() {
 
 			# date -u +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
 			# make sure raspiBackup is not started during initial boot of restored image
-			date -d "$(date) 5min" +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
+			date --date='now + 5 minutes' +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
 			logItem "Updated hw clock to $(<$MNT_POINT/etc/fake-hwclock.data)"
 
 			#logItem "Force fsck on reboot"
@@ -9847,6 +9847,29 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
+<<<<<<< HEAD
+=======
+	# ubuntu uses /boot/firmware/current, RaspberryOS uses starting from bookworm /boot/firmware and /boot in earlier OS releases
+	# Note: boot parition is mounted on /boot/firmware or /boot all the time
+	CMDLINE="$(find "$BOOT_MP" -name "cmdline.txt" 2>/dev/null | sort | head -1 )" # for ubuntu "current" comes before "old"
+		
+	logItem "CMDLINE found: $CMDLINE"
+	
+	if [[ -z "$CMDLINE" ]]; then
+		assertionFailed $LINENO "No cmdline.txt found"
+	fi
+		
+	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
+
+	local cmdline4Message # path for message
+	cmdline4Message="$BOOT_PARTITION$(sed "s|$BOOT_MP||" <<< "$CMDLINE")"
+
+	local fstab4Message
+	fstab4Message="$ROOT_PARTITION/etc/fstab" # path for message
+
+	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
+
+>>>>>>> m_975
 	partprobe "$BOOT_PARTITION"		# reload partition table
 	partprobe "$ROOT_PARTITION"		# reload partition table
 
@@ -9854,10 +9877,14 @@ function synchronizeCmdlineAndfstab() {
 
 	local rootLabelCreated=0
 
+<<<<<<< HEAD
 	# on Ubuntu starting with 25.04 there exist two cmdlines, one in /boot/firmware/current and /boot/firmware/new, use current
 	# on pre 25.04 Ubuntu the file is located in /boot
 	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
 	# For both OS either /boot or /boot/firmware is mounted where cmdline.txt exists
+=======
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC_CMDLINE_FSTAB "$cmdline4Message" "$fstab4Message"
+>>>>>>> m_975
 
 	local usedCmdline
 
@@ -9895,10 +9922,17 @@ function synchronizeCmdlineAndfstab() {
 			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdlineMsg"
+=======
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline4Message" "root="
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline4Message"
+>>>>>>> m_975
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
@@ -9908,10 +9942,17 @@ function synchronizeCmdlineAndfstab() {
 			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdlineMsg"
+=======
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline4Message" "root="
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+			elif [[ "$oldUUID" != "$newUUID" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline4Message"
+>>>>>>> m_975
 				sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
@@ -9930,11 +9971,19 @@ function synchronizeCmdlineAndfstab() {
 		elif grep "root=/dev/" "$CMDLINE"; then
 			logItem "/dev detected in $CMDLINE"
 		else
+<<<<<<< HEAD
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdlineMsg" "root="
 		fi
 	else
 		logCommand "ls -la $BOOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdlineMsg"
+=======
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline4Message" "root="
+		fi
+	else
+		logCommand "ls -la $BOOT_MP"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline4Message"
+>>>>>>> m_975
 		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
 
@@ -9955,14 +10004,22 @@ function synchronizeCmdlineAndfstab() {
 			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstabMsg" "/"
+=======
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab4Message" "/"
+>>>>>>> m_975
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				local oldpartuuidID
 				oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
 				local newpartuuidID
 				newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstabMsg"
+=======
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab4Message"
+>>>>>>> m_975
 				sed -i "s/$oldpartuuidID/$newpartuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
@@ -9971,14 +10028,22 @@ function synchronizeCmdlineAndfstab() {
 			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstabMsg" "/"
+=======
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/"
+>>>>>>> m_975
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				local olduuidID
 				olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
 				local newuuidID
 				newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstabMsg"
+=======
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab4Message"
+>>>>>>> m_975
 				sed -i "s/$olduuidID/$newuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
@@ -9999,11 +10064,19 @@ function synchronizeCmdlineAndfstab() {
 		elif grep "^/dev/" "$FSTAB"; then
 			logItem "/dev detected in $FSTAB"
 		else
+<<<<<<< HEAD
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstabMsg" "/"
 		fi
 	else
 		logCommand "ls -la $ROOT_MP"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstabMsg"
+=======
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/"
+		fi
+	else
+		logCommand "ls -la $ROOT_MP"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab4Message"
+>>>>>>> m_975
 		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
 
@@ -10017,10 +10090,17 @@ function synchronizeCmdlineAndfstab() {
 			newPartUUID=$(blkid -o udev "$BOOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstabMsg" "/boot"
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstabMsg"
+=======
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/boot"
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab4Message"
+>>>>>>> m_975
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
@@ -10029,10 +10109,17 @@ function synchronizeCmdlineAndfstab() {
 			newUUID=$(blkid -o udev "$BOOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
+<<<<<<< HEAD
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstabMsg" "/boot"
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstabMsg"
+=======
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message	" "/boot"
+				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+			elif [[ "$oldUUID" != "$newUUID" ]]; then
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab4Message"
+>>>>>>> m_975
 				sed -i "s/$oldUUID/$newUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
@@ -10049,10 +10136,17 @@ function synchronizeCmdlineAndfstab() {
 		elif grep "^/dev/" "$FSTAB"; then
 			logItem "/dev detected in $FSTAB"
 		else
+<<<<<<< HEAD
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstabMsg" "/boot"
 		fi
 	else
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstabMsg" "/boot"
+=======
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/boot"
+		fi
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/boot"
+>>>>>>> m_975
 	fi
 
 	if [[ -f "$CMDLINE" ]]; then
