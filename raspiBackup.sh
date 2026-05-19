@@ -8356,6 +8356,10 @@ function doitBackup() {
 		fi
 	fi
 
+	if [[ -n $CLONE_DEVICE ]]; then
+		checkRestoreDeviceOK "$CLONE_DEVICE"
+	fi
+
 # all tests succeeded
 
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
@@ -9207,6 +9211,24 @@ function executeFilesystemCheck { # partition
 	logExit
 }
 
+function checkRestoreDeviceOK() { # restoreDevice
+
+	logEntry
+
+	if [[ ! -b "$1" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$1"
+		exitError $RC_RESTORE_IMPOSSIBLE
+	fi
+
+	if isMounted "$1"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$1"
+		exitError $RC_MISC_ERROR
+	fi
+	
+	logExit
+
+}
+
 function doitRestore() {
 
 	logEntry
@@ -9217,6 +9239,8 @@ function doitRestore() {
 
 	commonChecks
 
+	checkRestoreDeviceOK "$RESTORE_DEVICE"
+
 	if hasSpaces "$RESTOREFILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_CONTAINS_SPACES "$RESTOREFILE"
 		exitError $RC_MISC_ERROR
@@ -9225,11 +9249,6 @@ function doitRestore() {
 	if [[ ! -d "$RESTOREFILE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_NO_DIRECTORY "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
-	fi
-
-	if [[ ! -b "$RESTORE_DEVICE" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$RESTORE_DEVICE"
-		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
 
 	logItem "ls $RESTOREFILE$NL$(ls "$RESTOREFILE")"
@@ -9245,11 +9264,6 @@ function doitRestore() {
 	if [[ ! $(basename "$RESTOREFILE") =~ $regex ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
-	fi
-
-	if isMounted "$RESTORE_DEVICE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$RESTORE_DEVICE"
-		exitError $RC_MISC_ERROR
 	fi
 
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
