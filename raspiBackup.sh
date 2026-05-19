@@ -5653,9 +5653,8 @@ function cleanup() { # trap
 	    source /tmp/raspiBackup.vars 									# BACKUP_TARGETDIR now refers to the backupdirectory just created
 		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
 		shopt -s execfail
-		exec $RASPIBACKUP_ABS_LOCATION ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR
-		rc=$?
-		assertionFailed $LINENO "Unable to start clone restore, RC: $rc"
+		exec $RASPIBACKUP_ABS_LOCATION "${CLONE_RESTORE_OPTIONS[@]}" -Y $BACKUP_TARGETDIR
+		# no return
 	fi
 
 	exit $rc
@@ -8670,7 +8669,7 @@ function restorePartitionBasedBackup() {
 		echo "$current_partition_table"
 	fi
 
-	if [[ -z $CLONE_DEVICE ]] then
+	if [[ -z $CLONE_DEVICE ]]; then
 		if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
 			local partitions
 			partitions=( "$(collectAvailableBackupPartitions "$RESTOREFILE" )" )
@@ -10528,12 +10527,12 @@ function backupAndCloneSetParms() {
 				CLONE_RESTORE_OPTIONS+=("-d")			# add --clone device with -d for restore to clone
 				(( i++ ))
 				arg="${ARG_BAK[i]}"
-				CLONE_RESTORE_OPTIONS+=($arg)			# restore device
+				CLONE_RESTORE_OPTIONS+=("$arg")			# restore device
 				CLONE_RESTORE_OPTIONS+=("--clone")		# keep --clone option
-				CLONE_RESTORE_OPTIONS+=($arg)			# restore device
+				CLONE_RESTORE_OPTIONS+=("$arg")			# restore device
 				;;
 			*)
-				CLONE_RESTORE_OPTIONS+=($arg)			# all other options
+				CLONE_RESTORE_OPTIONS+=("$arg")			# all other options
 				;;
 		esac
 		(( i++ ))
