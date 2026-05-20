@@ -11147,7 +11147,7 @@ while (( "$#" )); do
   esac
 done
 
-if (( ! $INTERACTIVE && ! $REGRESSION_TEST )); then
+if (( ! $INTERACTIVE && ( $REGRESSION_TEST == 0 ) )); then
 	if (( $(cut -d' ' -f1 /proc/uptime | cut -d'.' -f1) < 180 )); then
 		# exit immediately if script is called when the system is up for less than 3 minutes to get rid of a race condition
 		exit
