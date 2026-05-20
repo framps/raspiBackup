@@ -40,9 +40,7 @@ TYPES_TO_TEST1=( "dd" "tar" "rsync" )
 TYPES_TO_TEST2=( "tar --tarCompressionTool lz4" "tar --tarCompressionTool zstd")
 TYPES_TO_TEST=( "${TYPES_TO_TEST1[@]}" "${TYPES_TO_TEST2[@]}" )
 MODES_TO_TEST="n p"
-MODES_TO_TEST="n"
 BOOTMODE_TO_TEST="d t"
-BOOTMODE_TO_TEST="d"
 
 if [[ "$1" == "-h" ]]; then
 	echo "Environments types modes bootmodes"
@@ -192,15 +190,14 @@ if (( EMAIL_NOTIFICATION )); then
 fi
 
 if (( BACKUP_TEST )); then
-	for environment in "${ENVIRONMENTS_TO_TEST[@]}"; do
-		for mode in "${MODES_TO_TEST[@]}"; do
+	for environment in ${ENVIRONMENTS_TO_TEST[@]}; do
+		for mode in ${MODES_TO_TEST[@]}; do
 			for type in "${TYPES_TO_TEST[@]}"; do
 				t="$(cut -f 1 -d " " <<< "$type")"
 				o="$(cut -f 2- -d " " <<< "$type")"
 				[[ "$t" == "$o" ]] && o="" # there is no option for type
-				echo "@@@@@@@@@@@@@@@@@@@@ -$t- -$o-"
 				[[ $type =~ dd && $mode == "p" ]] && continue # dd not supported for -P
-				for bootmode in $BOOTMODE_TO_TEST; do
+				for bootmode in ${BOOTMODE_TO_TEST[@]}; do
 					[[ $bootmode == "t" &&  ( $type =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
 					standardBackupTest "$environment" "$t" "$mode" "$bootmode" "$o"
 				done
