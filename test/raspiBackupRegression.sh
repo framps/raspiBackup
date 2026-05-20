@@ -123,7 +123,9 @@ function standardRestoreTest() {
 	if [[ $rc != 0 ]]; then
 		echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
 		echo "??? Restore regression test failed"
-		echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+		if (( $EMAIL_NOTIFICATION )); then
+			echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+		fi
 		exit 127
 	fi
 	echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
@@ -145,7 +147,9 @@ function smartRecycleTest() {
 
 	if [[ $rc != 0 ]]; then
 		echo "??? 7412 regression test failed" >> $LOG_COMPLETED
-		echo "End: $endTime" | mailx -s "??? 7412 regression test failed" "$NOTIFY_EMAIL"
+		if (( $EMAIL_NOTIFICATION )); then
+			echo "End: $endTime" | mailx -s "??? 7412 regression test failed" "$NOTIFY_EMAIL"
+		fi
 		exit 127
 	fi
 }
