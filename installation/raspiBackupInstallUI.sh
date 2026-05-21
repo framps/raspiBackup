@@ -1076,8 +1076,8 @@ MSG_FR[$TITLE_CONFIRM]="SVP Confirmez"
 MSG_ZH[$TITLE_CONFIRM]="请确认"
 
 MSG_INVALID_CLONE_DEVICE=$((SCNT++))
-MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Invalid clone device %1"
-MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Ungültiges Clonegerät %1"
+MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Invalid clone device %1 or does not exist. Examples: /dev/sda, /dev/mmcblk1p or /dev/nvme1n1."
+MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Ungültiges Clonegerät %1 oder Gerät existiert nicht. Beispiele: /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1."
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
