@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#!/usr/bin/env bash
 # shellcheck disable=SC2004
 # SC2004: $ not required in arithmentic expressions
 #
@@ -467,6 +466,7 @@ RC_TEMPMOVE_FAILED=144
 RC_RESIZE_ERROR=145
 #RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
 RC_UUID_UPDATE_IMPOSSIBLE=147
+RC_CLONE_IMPOSSIBLE=148
 
 tty -s
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
@@ -2139,8 +2139,11 @@ MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
 MSG_SYNCING_SECOND_PARTITION=356
 MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
+MSG_CLONE_IMPOSSIBLE=357
+MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match bootdevice %s. Run an initial restore with option -d to $s first"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Bootgerät %s überein. Zuerst einen initialen Restore mit Option -d auf %s starten"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3672,7 +3675,7 @@ function askYesNo() { # message message_parms
 		fi
 		yes=$(getMessage $MSG_ANSWER_CHARS_YES)
 		read answer
-		
+
 		answer=${answer:0:1}	# first char only
 		answer=${answer:-"n"}	# set default no
 
@@ -3684,7 +3687,7 @@ function askYesNo() { # message message_parms
 	else
 		return 0
 	fi
-	
+
 }
 
 function isNewVersionAvailable() {
@@ -8070,6 +8073,31 @@ function reportNews() {
 
 }
 
+function checkSourceAndTargetPartitioning() {
+
+	logEntry
+	local src tgt rc
+
+	src=$(sfdisk -d $BACKUP_BOOT_DEVICENAME)
+	tgt=$(sfdisk -d $RESTORE_DEVICE)
+	rc=$?
+
+	diff &>/dev/null <(lsblk -o FSTYPE $BACKUP_BOOT_DEVICENAME 2>/dev/null) <(lsblk -o FSTYPE $RESTORE_DEVICE 2>/dev/null) # different number of partitions or fstype
+	(( rc=rc | $? ))
+
+	logItem "SRC partitioning: <$src>"
+	logItem "TGT partitioning: <$tgt>"
+
+	if (( $rc )); then	# no partitions or different partitioning or filesystem
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$RESTORE_DEVICE" "$BACKUP_BOOT_DEVICENAME" "$RESTORE_DEVICE"
+		exitError $RC_CLONE_IMPOSSIBLE
+	fi
+
+	logExit $rc
+
+	return $rc
+}
+
 function doitBackup() {
 
 	logEntry "$PARTITIONBASED_BACKUP"
@@ -8709,7 +8737,7 @@ function restorePartitionBasedBackup() {
 			echo "Y"
 		fi
 	fi
-	
+
 	initRestoreVariables
 
 	MNT_POINT="$TEMPORARY_MOUNTPOINT_ROOT"
@@ -9392,6 +9420,10 @@ function doitRestore() {
 	fi
 
 	inspect4Restore
+
+	if [[ -n $CLONE_DEVICE ]]; then
+		checkSourceAndTargetPartitioning
+	fi
 
 	if (( $FORCE_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCE_SFDISK "$RESTORE_DEVICE"
