@@ -945,11 +945,11 @@ DESCRIPTION_CLONE_DEVICE=$((SCNT++))
 MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Immediately after backup a clone can be created on a local attached device. \
 The device has to be connected already. Examples are /dev/sda, /dev/mmcblk1p or /dev/nvme1n1. \
 No clone will be created if no clone device is defined. \
-${NL}ATTENTION: Makes sure you use the correct device. Otherwise there is a risk of data loss"
+${NL}${NL}ATTENTION: Makes sure you use the correct device. Otherwise there is a risk of data loss."
 MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Direkt nach den Backup kann ein Clone erstellt werden an einem lokal angeschlossenen Gerät. \
 Das Gerät muss schon angeschlossen sein. Beispiele sind /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1. \
 Kein Clone wird erstellt wenn kein Clonegerät definiert ist. \
-${NL}WARNUNG: Sicherstellen, dass das korrekte Gerät genutzt wird. Ansonsten droht Datenverlust."
+${NL}${NL}WARNUNG: Es ist Sicherzustellen, dass das korrekte Gerät genutzt wird. Ansonsten droht Datenverlust."
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
