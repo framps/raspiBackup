@@ -2144,8 +2144,11 @@ MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition 
 MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
 MSG_CLONE_IMPOSSIBLE=357
 MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match bootdevice %s. Run an initial restore with option -d to $s first"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Bootgerät %s überein. Zuerst einen initialen Restore mit Option -d auf %s starten"
+MSG_CLONE_ENABLED=358
+MSG_EN[$MSG_CLONE_ENABLED]="RBK0358I: Clone to clonedevice %s scheduled after backup"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_CLONE_ENABLED]="RBK0358I: Clone auf Clonegeräte %s am ende des Backups vorgemerkt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -10578,9 +10581,11 @@ function backupAndCloneSetParms() {
 
 	logEntry
 
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_ENABLED "$CLONE_DEVICE"
+
 	CLONE_RESTORE_OPTIONS=( "${ARG_BAK[@]}" )			# copy all options
 
-	# prepare args for future raspiBackup restore call
+	# prepare args for scheduled raspiBackup restore call
 
 	CLONE_RESTORE_OPTIONS+=("-d")						# add clone device with -d for restore to clone
 	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
