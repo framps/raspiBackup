@@ -10424,30 +10424,12 @@ function backupAndCloneSetParms() {
 
 	local arg i rc size
 
-	CLONE_RESTORE_OPTIONS=()
-	i=0
-	size=${#ARG_BAK[@]}
+	CLONE_RESTORE_OPTIONS=( "${ARG_BAK[@]}" )			# copy all options
 
-	# prepare args for future raspiBackup restore calls
-	while (( i < size )); do
-		arg="${ARG_BAK[i]}"
-		logItem "Parm $i: $arg"
-		case $arg in
+	# prepare args for future raspiBackup restore call
 
-			--clone)
-				CLONE_RESTORE_OPTIONS+=("-d")			# add --clone device with -d for restore to clone
-				(( i++ ))
-				arg="${ARG_BAK[i]}"
-				CLONE_RESTORE_OPTIONS+=("$arg")			# restore device
-				CLONE_RESTORE_OPTIONS+=("--clone")		# keep --clone option
-				CLONE_RESTORE_OPTIONS+=("$arg")			# restore device
-				;;
-			*)
-				CLONE_RESTORE_OPTIONS+=("$arg")			# all other options
-				;;
-		esac
-		(( i++ ))
-	done
+	CLONE_RESTORE_OPTIONS+=("-d")						# add clone device with -d for restore to clone
+	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
 
 	logItem "Restore cloneoptions: ${CLONE_RESTORE_OPTIONS[*]}"
 
