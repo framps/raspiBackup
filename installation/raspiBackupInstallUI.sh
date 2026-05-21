@@ -944,10 +944,12 @@ MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$
 DESCRIPTION_CLONE_DEVICE=$((SCNT++))
 MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Immediately after backup a clone can be created on a local attached device. \
 The device has to be connected already. Examples are /dev/sda, /dev/mmcblk1p or /dev/nvme1n1. \
-No clone will be created if no clone device is defined."
+No clone will be created if no clone device is defined. \
+${NL}ATTENTION: Makes sure you use the correct device. Otherwise there is a risk of data loss"
 MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Direkt nach den Backup kann ein Clone erstellt werden an einem lokal angeschlossenen Gerät. \
 Das Gerät muss schon angeschlossen sein. Beispiele sind /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1. \
-Kein Clone wird erstellt wenn kein Clonegerät definiert ist."
+Kein Clone wird erstellt wenn kein Clonegerät definiert ist. \
+${NL}WARNUNG: Sicherstellen, dass das korrekte Gerät genutzt wird. Ansonsten droht Datenverlust."
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -1076,8 +1078,8 @@ MSG_FR[$TITLE_CONFIRM]="SVP Confirmez"
 MSG_ZH[$TITLE_CONFIRM]="请确认"
 
 MSG_INVALID_CLONE_DEVICE=$((SCNT++))
-MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Invalid clone device %1 or does not exist. Examples: /dev/sda, /dev/mmcblk1p or /dev/nvme1n1."
-MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Ungültiges Clonegerät %1 oder Gerät existiert nicht. Beispiele: /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1."
+MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Clone device %1 not found.${NL}Examples: /dev/sda, /dev/mmcblk1p or /dev/nvme1n1."
+MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Clonegerät %1 nicht gefunden.${NL}Beispiele: /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1."
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"

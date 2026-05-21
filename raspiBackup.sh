@@ -2145,10 +2145,10 @@ MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition
 MSG_CLONE_IMPOSSIBLE=357
 MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match bootdevice %s. Run an initial restore with option -d to $s first"
 MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Bootgerät %s überein. Zuerst einen initialen Restore mit Option -d auf %s starten"
-MSG_CLONE_ENABLED=358
-MSG_EN[$MSG_CLONE_ENABLED]="RBK0358I: Clone to clonedevice %s scheduled after backup"
+MSG_CLONE_SCHEDULED=358
+MSG_EN[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone of backup to clonedevice %s scheduled"
 #shellcheck disable=SC2034
-MSG_DE[$MSG_CLONE_ENABLED]="RBK0358I: Clone auf Clonegeräte %s am ende des Backups vorgemerkt"
+MSG_DE[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone des Backups auf Clonegerät %s ist vorgemerkt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -8390,6 +8390,7 @@ function doitBackup() {
 
 	if [[ -n $CLONE_DEVICE ]]; then
 		checkRestoreDeviceOK "$CLONE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
 	fi
 
 # all tests succeeded
@@ -10580,8 +10581,6 @@ function getEnableDisableOption() { # option
 function backupAndCloneSetParms() {
 
 	logEntry
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_ENABLED "$CLONE_DEVICE"
 
 	CLONE_RESTORE_OPTIONS=( "${ARG_BAK[@]}" )			# copy all options
 
