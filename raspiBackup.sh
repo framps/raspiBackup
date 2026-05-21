@@ -11247,7 +11247,7 @@ if (( $UPDATE_MYSELF )); then
 	exitNormal
 fi
 
-if (( $RESTORE && $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
+if (( $RESTORE && $NO_YES_QUESTION )) && [[ -z $CLONE_DEVICE ]] ; then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH "$RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
 		exitError $RC_MISC_ERROR

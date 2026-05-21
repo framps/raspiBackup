@@ -944,10 +944,10 @@ MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$
 DESCRIPTION_CLONE_DEVICE=$((SCNT++))
 MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Immediately after backup a clone can be created on a local attached device. \
 The device has to be connected already. Examples are /dev/sda, /dev/mmcblk1p or /dev/nvme1n1. \
-If no clone should be created don't define a clone device."
+No clone will be created if no clone device is defined."
 MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Direkt nach den Backup kann ein Clone erstellt werden an einem lokal angeschlossenen Gerät. \
 Das Gerät muss schon angeschlossen sein. Beispiele sind /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1. \
-Wenn kein CLone erstellt werden soll darf kein Clonegerät definiert werden."
+Kein Clone wird erstellt wenn kein Clonegerät definiert ist."
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -1450,8 +1450,8 @@ MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
 MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 
 MENU_CONFIG_CLONE=$((MCNT++))
-MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Clone creation at the end of backup"'
-MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Clone Erstellung am Ende des Backups"'
+MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Clone creation at end of backup"'
+MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Clone Erstellung am Ende eines Backups"'
 
 MENU_CONFIG_ZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP]='"C11" "Compression with $CONFIG_BACKUPTYPE"'
