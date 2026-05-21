@@ -10578,8 +10578,6 @@ function backupAndCloneSetParms() {
 
 	logEntry
 
-	local arg i rc size
-
 	CLONE_RESTORE_OPTIONS=( "${ARG_BAK[@]}" )			# copy all options
 
 	# prepare args for future raspiBackup restore call
