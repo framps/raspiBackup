@@ -1452,8 +1452,8 @@ MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
 MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 
 MENU_CONFIG_CLONE=$((MCNT++))
-MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Clone creation at end of backup"'
-MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Clone Erstellung am Ende eines Backups"'
+MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Create clone"'
+MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Erstellung eines Clones"'
 
 MENU_CONFIG_ZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP]='"C11" "Compression with $CONFIG_BACKUPTYPE"'
