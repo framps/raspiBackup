@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.6"				 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.9"				 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -292,6 +292,7 @@ CONFIG_LANGUAGE=$LANG_SYSTEM
 # CONFIG_LANGUAGE= will become the configured language later on
 
 CONFIG_MSG_LEVEL="0"
+CONFIG_CLONE_DEVICE=""
 CONFIG_BACKUPTYPE="rsync"
 CONFIG_KEEPBACKUPS="3"
 DEFAULT_CONFIG_SMART_RECYCLE="0"
@@ -940,6 +941,16 @@ MSG_FI[$DESCRIPTION_ERROR]="Tapahtui peruuttamaton virhe. Tarkista lokitiedosto 
 MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le fichier journal $LOG_FILE."
 MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
 
+DESCRIPTION_CLONE_DEVICE=$((SCNT++))
+MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Immediately after backup a clone can be created on a local attached device. \
+The device has to be connected already. Examples are /dev/sda, /dev/mmcblk1p or /dev/nvme1n1. \
+No clone will be created if no clone device is defined. \
+${NL}${NL}ATTENTION: Makes sure you use the correct device. Otherwise there is a risk of data loss."
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Direkt nach den Backup kann ein Clone erstellt werden an einem lokal angeschlossenen Gerät. \
+Das Gerät muss schon angeschlossen sein. Beispiele sind /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1. \
+Kein Clone wird erstellt wenn kein Clonegerät definiert ist. \
+${NL}${NL}WARNUNG: Es ist Sicherzustellen, dass das korrekte Gerät genutzt wird. Ansonsten droht Datenverlust."
+
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
 This can be a local partition or a mounted remote partition."
@@ -1065,6 +1076,10 @@ MSG_DE[$TITLE_CONFIRM]="Bitte bestätigen"
 MSG_FI[$TITLE_CONFIRM]="Ole hyvä ja varmista"
 MSG_FR[$TITLE_CONFIRM]="SVP Confirmez"
 MSG_ZH[$TITLE_CONFIRM]="请确认"
+
+MSG_INVALID_CLONE_DEVICE=$((SCNT++))
+MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Clone device %1 not found.${NL}Examples: /dev/sda, /dev/mmcblk1p or /dev/nvme1n1."
+MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Clonegerät %1 nicht gefunden.${NL}Beispiele: /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1."
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
@@ -1436,12 +1451,13 @@ MENU_FI[$MENU_CONFIG_REGULAR]='"C9" "Säännöllinen varmuuskopiointi"'
 MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
 MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 
+MENU_CONFIG_CLONE=$((MCNT++))
+MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Create clone"'
+MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Erstellung eines Clones"'
+
 MENU_CONFIG_ZIP=$((MCNT++))
-MENU_EN[$MENU_CONFIG_ZIP]='"C10" "Compression"'
-MENU_DE[$MENU_CONFIG_ZIP]='"C10" "Komprimierung"'
-MENU_FI[$MENU_CONFIG_ZIP]='"C10" "Pakkaaminen"'
-MENU_FR[$MENU_CONFIG_ZIP]='"C10" "Compression"'
-MENU_ZH[$MENU_CONFIG_ZIP]='"C10" "压缩"'
+MENU_EN[$MENU_CONFIG_ZIP]='"C11" "Compression with $CONFIG_BACKUPTYPE"'
+MENU_DE[$MENU_CONFIG_ZIP]='"C11" "Komprimierung bei $CONFIG_BACKUPTYPE"'
 
 MENU_CONFIG_ZIP_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP_NA]='" " " "'
@@ -1541,6 +1557,10 @@ MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2'
 
+MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+
 MENU_CONFIG_TYPE_DD=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and a restore on Windows is also possible"'
 MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und eine Wiederherstellung unter Windows ist auch möglich"'
@@ -1584,11 +1604,8 @@ MENU_FR[$MENU_CONFIG_TYPE_DD_NA]='"" "Un enregistrement avec dd ne peut se faire
 MENU_ZH[$MENU_CONFIG_TYPE_DD_NA]='"" "此模式不可使用dd备份"'
 
 MENU_CONFIG_COMPRESS_OFF=$((MCNT++))
-MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No backup compression"'
-MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Backup Komprimierung"'
-MENU_FI[$MENU_CONFIG_COMPRESS_OFF]='"off" "Ei varmuuskopion pakkausta"'
-MENU_FR[$MENU_CONFIG_COMPRESS_OFF]='"off" "Pas de compression de sauvegarde"'
-MENU_ZH[$MENU_CONFIG_COMPRESS_OFF]='"off" "不压缩"'
+MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Komprimierung"'
 
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "$COMPRESSION_TYPE compression"'
@@ -2340,7 +2357,7 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 function parseConfig() {
 	logEntry
 
-	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL)=" "$CONFIG_ABS_FILE")
+	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL|CLONE_DEVICE)=" "$CONFIG_ABS_FILE")
 	while IFS="=" read key value; do
 		key=${key//\"/}
 		key=${key/DEFAULT/CONFIG}
@@ -2379,6 +2396,7 @@ function config_update_execute() {
 	logItem "Recycleoptions: $CONFIG_SMART_RECYCLE_OPTIONS"
 	logItem "Dryrun: $CONFIG_SMART_RECYCLE_DRYRUN"
 	logItem "Msglevel: $CONFIG_MSG_LEVEL"
+	logItem "CloneDevice: $CONFIG_CLONE_DEVICE"
 	logItem "Backuppath: $CONFIG_BACKUPPATH"
 	logItem "Stop: $CONFIG_STOPSERVICES"
 	logItem "Start: $CONFIG_STARTSERVICES"
@@ -2399,6 +2417,8 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_MSG_LEVEL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
+	local c=$(sed 's_/_\\/_g' <<< "$CONFIG_CLONE_DEVICE")
+	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$/DEFAULT_CLONE_DEVICE=\"$c\"/" "$CONFIG_ABS_FILE"
 	local f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
 	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPPATH=.*$/DEFAULT_BACKUPPATH=\"$f\"/" "$CONFIG_ABS_FILE"
 
@@ -3021,6 +3041,7 @@ function config_menu() {
 		getMenuText $MENU_CONFIG_MESSAGE m7
 		getMenuText $MENU_CONFIG_EMAIL m8
 		getMenuText $MENU_CONFIG_REGULAR m9
+		getMenuText $MENU_CONFIG_CLONE m10
 
 		local p="${m1[0]}"
 		m1[0]="C${p:1}"
@@ -3034,6 +3055,7 @@ function config_menu() {
 		local s7="${m7[0]}"
 		local s8="${m8[0]}"
 		local s9="${m9[0]}"
+		local s10="${m10[0]}"
 
 		local mx=( 	\
 			"${m1[@]}" \
@@ -3045,6 +3067,7 @@ function config_menu() {
 			"${m7[@]}" \
 			"${m8[@]}" \
 			"${m9[@]}" \
+			"${m10[@]}" \
 			)
 
 		if [[ $CONFIG_BACKUPTYPE == "dd" || $CONFIG_BACKUPTYPE == "tar" ]]; then
@@ -3105,6 +3128,7 @@ function config_menu() {
 				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s9) config_timer_menu; TIMER_UPDATED=$? ;;
+				$s10) config_clone_menu; CONFIG_UPDATED=$? ;;
 				$scp) config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
@@ -3618,7 +3642,8 @@ function config_tar_compressiontool_do() {
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP m4
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA m5
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP m6
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ m7
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4 m7
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ m8
 	
 	local s1="${m1[0]}"
 	local s2="${m2[0]}"
@@ -3627,6 +3652,7 @@ function config_tar_compressiontool_do() {
 	local s5="${m5[0]}"
 	local s6="${m6[0]}"
 	local s7="${m7[0]}"
+	local s8="${m8[0]}"
 
 	local o1="$(getMessageText $BUTTON_OK)"
 	local c1="$(getMessageText $BUTTON_CANCEL)"
@@ -3638,6 +3664,7 @@ function config_tar_compressiontool_do() {
 		lzip) lzip_=on ;;
 		lzma) lzma_=on ;;
 		lzop) lzop_=on ;;
+		lz4) lz4_=on ;;
 		xz) xz_=on ;;
 		*) if (( CONFIG_ZIP_BACKUP )); then
 		      gzip=on
@@ -3660,7 +3687,8 @@ function config_tar_compressiontool_do() {
 		"${m4[@]}" "$lzip_" \
 		"${m5[@]}" "$lzma_" \
 		"${m6[@]}" "$lzop_" \
-		"${m7[@]}" "$xz_" \
+		"${m7[@]}" "$lz4" \
+		"${m8[@]}" "$xz_" \
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
@@ -3671,7 +3699,8 @@ function config_tar_compressiontool_do() {
 			$s4) CONFIG_TAR_COMPRESSION_TOOL="lzip" ;;
 			$s5) CONFIG_TAR_COMPRESSION_TOOL="lzma" ;;
 			$s6) CONFIG_TAR_COMPRESSION_TOOL="lzop" ;;
-			$s7) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
+			$s7) CONFIG_TAR_COMPRESSION_TOOL="lz4" ;;
+			$s8) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
 			"") : ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
@@ -4839,6 +4868,50 @@ function config_message_detail_do() {
 	[[ "$old" == "$CONFIG_MSG_LEVEL" ]]
 	local rc=$?
 	logExit "$rc - $CONFIG_MSG_LEVEL"
+	return $rc
+
+}
+
+function config_clone_menu() {
+
+	logEntry
+
+	local current="$CONFIG_CLONE_DEVICE"
+	local old="$current"
+
+	while :; do
+
+		getMenuText $MENU_CONFIG_CLONE tt
+		local c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1="$(getMessageText $BUTTON_OK)"
+		local d="$(getMessageText $DESCRIPTION_CLONE_DEVICE)"
+
+		ANSWER=$(whiptail --inputbox "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS "$current" --ok-button "$o1" --cancel-button "$c1" 3>&1 1>&2 2>&3)
+		if [ $? -eq 0 ]; then
+			logItem "Answer: $ANSWER"
+			current="$ANSWER"
+			if [[ -n "$ANSWER" ]]; then
+				if [[ ! -b "$ANSWER" ]]; then
+					local m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$ANSWER")"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				else
+					CONFIG_CLONE_DEVICE="$ANSWER"
+					break
+				fi
+			else
+				CONFIG_CLONE_DEVICE="$ANSWER"
+				break
+			fi
+		else
+			break
+		fi
+	done
+
+	[[ "$old" == "$CONFIG_CLONE_DEVICE" ]]
+	local rc=$?
+	logExit "$rc -$CONFIG_CLONE_DEVICE"
 	return $rc
 
 }
