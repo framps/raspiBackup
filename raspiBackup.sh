@@ -3470,7 +3470,7 @@ function downloadPropertiesFile() { # FORCE
 
 	if shouldRenewDownloadPropertiesFile "$1"  && (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't execute any update checks
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_FOR_NEW_VERSION
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_NEW_VERSION
 
 		if (( $SEND_STATS )); then
 			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
@@ -7305,9 +7305,9 @@ function backup() {
 	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || (( $PARTITIONBASED_BACKUP )) ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FINAL_DIR"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FINAL_DIR"
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
 	fi
 
 	logItem "Storing backup in backuppath $BACKUPPATH"
@@ -8079,7 +8079,7 @@ function checkSourceAndTargetPartitioning() {
 	logItem "TGT partitioning: <$tgt>"
 
 	if (( $rc )); then	# no partitions or different partitioning or filesystem
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$RESTORE_DEVICE" "$BACKUP_BOOT_DEVICENAME" "$RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$RESTORE_DEVICE" "$RESTORE_DEVICE"
 		exitError $RC_CLONE_FAILED
 	fi
 
@@ -8375,7 +8375,7 @@ function doitBackup() {
 		exitError "$RC_MISSING_COMMANDS"
 	fi
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
 	if (( ! $SKIPLOCALCHECK )); then
 		if ! isPathMounted "$BACKUPPATH"; then
@@ -8669,7 +8669,7 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 	if (( ! $SKIP_SFDISK )); then
-		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" &&  "$BACKUPTYPE" = "$BACKUPTYPE_DDZ" ]]; then
+		if [[ "$BACKUPTYPE" == "$BACKUPTYPE_DD" ||  "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_REPARTITION_WARNING "$BOOT_PARTITION"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_BOOT_PARTITION_OVERWRITTEN "$BOOT_PARTITION"
@@ -9452,8 +9452,8 @@ function doitRestore() {
 
 	inspect4Restore
 
-	if [[ -n $CLONE_DEVICE ]]; then
-		checkSourceAndTargetPartitioning
+	if [[ -n $CLONE_DEVICE && $BACKUPTYPE == "$BACKUPTYPE_RSYNC" ]]; then
+			checkSourceAndTargetPartitioning
 	fi
 
 	if (( $FORCE_SFDISK )); then
