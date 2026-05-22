@@ -5524,7 +5524,7 @@ function cleanup() { # trap
 		startServices "noexit"
 		executeAfterStartServices "noexit"
 
-		if [[ $rc -eq 0 ]]; then 
+		if [[ $rc -eq 0 ]]; then
 			if (( ! $IS_SNAPSHOT )); then # smartrecycle only if backup OK and mv succeeded and no snapshot was created
 				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
@@ -5661,7 +5661,7 @@ function cleanup() { # trap
 	if (( $rc == 0 )) && [[ -n "$CLONE_DEVICE" && -z $RESTORE_DEVICE ]]; then
 
 	    source /tmp/raspiBackup.vars 									# BACKUP_TARGETDIR now refers to the backupdirectory just created
-		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
+		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTED "$CLONE_DEVICE"
 		shopt -s execfail
 		# shellcheck disable=SC2093
@@ -6586,9 +6586,9 @@ function partitionRestoredeviceIfRequested() {
 	logEntry
 
 	if (( $SKIP_SFDISK )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
 		if [[ -z $CLONE_DEVICE ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -6955,11 +6955,11 @@ function restoreNormalBackupType() {
 					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
 					local compressionTool; compressionTool="$(getCompressionTool "$ROOT_RESTOREFILE")"
-					
+
 					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 						assertionFailed $LINENO "push to $MNT_POINT failed"
 					fi
-					
+
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 					if (( $PROGRESS && $INTERACTIVE )); then
 						local cmd="pv -f $ROOT_RESTOREFILE | tar ${compressionTool} ${archiveFlags} -x ${verbose} ${zip} -f -"
@@ -7546,13 +7546,13 @@ function doit() {
 	fi
 
 	if (( $RESTORE )); then
-		logger -t "$MYSELF" "Started restore"
+		logger -t "$MYNAME" "Started restore"
 		doitRestore
 	else
 		if (( $FAKE )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FAKE_MODE_ON
 		fi
-		logger -t "$MYSELF" "Started backup"
+		logger -t "$MYNAME" "Started backup"
 		doitBackup
 	fi
 
@@ -9169,7 +9169,7 @@ function restorePartitionBasedPartition() { # restorefile
 			case $BACKUPTYPE in
 
 				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
-				
+
 					local compressionTool; compressionTool="$(getCompressionTool "$restoreFile")"
 
 					local archiveFlags=""
@@ -9267,7 +9267,7 @@ function checkRestoreDeviceOK() { # restoreDevice
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$1"
 		exitError $RC_MISC_ERROR
 	fi
-	
+
 	logExit
 
 }
@@ -9938,7 +9938,7 @@ function synchronizeCmdlineAndfstab() {
 	# on pre 25.04 Ubuntu the file is located in /boot
 	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
 	# For both OS either /boot or /boot/firmware is mounted where cmdline.txt exists
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdline4Message" "$fstab4Message"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_SYNC "$cmdline4Message" "$fstab4Message"
 
 	local usedCmdline
 
@@ -9959,13 +9959,13 @@ function synchronizeCmdlineAndfstab() {
 		cmdlineMsg="/boot/firmware/current/cmdline.txt"
 	elif [[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware ]]; then
 		cmdlineMsg="/boot/firmware/cmdline.txt"
-    else 
+    else
 		cmdlineMsg="/boot/cmdline.txt"
 	fi
 
 	if [[ -n "$CMDLINE" ]]; then
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$cmdlineMsg"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_SYNC "$cmdlineMsg"
 
 		logItem "Org $CMDLINE"
 		logCommand "cat $CMDLINE"
@@ -10028,7 +10028,7 @@ function synchronizeCmdlineAndfstab() {
 		#shellcheck disable=SC2086
 		logItem "$(cat $FSTAB)"
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC "$fstabMsg"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_SYNC "$fstabMsg"
 
 		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
@@ -10592,14 +10592,20 @@ function cloneSetBackupParms() {
 
 	logEntry
 
-	CLONE_RESTORE_OPTIONS=( "${ARG_BAK[@]}" )			# copy all options
+	local opt
 
-	# prepare args for scheduled raspiBackup restore call
+	CLONE_RESTORE_OPTIONS=( )
+
+	for opt in "${ARG_BAK[@]}"; do
+		if [[ "$opt" != "$BACKUPPATH" ]]; then # remove backuppath
+			CLONE_RESTORE_OPTIONS+=("$opt")
+		fi
+	done
 
 	CLONE_RESTORE_OPTIONS+=("-d")						# add clone device with -d for restore to clone
 	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
 
-	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
+	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]] && ! containsElement "-00" "${CLONE_RESTORE_OPTIONS[@]}"; then
 		CLONE_RESTORE_OPTIONS+=("-00")
 	fi
 
