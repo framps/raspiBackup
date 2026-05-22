@@ -5609,8 +5609,6 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		logger "INTERACTIVE: $INTERACTIVE"
-
 		if (( ! $INTERACTIVE || $FAKE | $FORCE_EMAIL )); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
 				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
@@ -5666,6 +5664,8 @@ function cleanup() { # trap
 		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTED "$CLONE_DEVICE"
 		shopt -s execfail
+		# shellcheck disable=SC2093
+		#  SC2093 (warning): Remove "exec " if script should continue after this command.
 		exec $RASPIBACKUP_ABS_LOCATION "${CLONE_RESTORE_OPTIONS[@]}" -Y $BACKUP_TARGETDIR		# no return
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_FAILED "$CLONE_DEVICE"
 		exitError $RC_CLONE_FAILED
@@ -7546,11 +7546,13 @@ function doit() {
 	fi
 
 	if (( $RESTORE )); then
+		logger -t "$MYSELF" "Started restore"
 		doitRestore
 	else
 		if (( $FAKE )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FAKE_MODE_ON
 		fi
+		logger -t "$MYSELF" "Started backup"
 		doitBackup
 	fi
 
@@ -10597,7 +10599,7 @@ function cloneSetBackupParms() {
 	CLONE_RESTORE_OPTIONS+=("-d")						# add clone device with -d for restore to clone
 	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
 
-	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
+	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]]; then
 		CLONE_RESTORE_OPTIONS+=("-00")
 	fi
 
