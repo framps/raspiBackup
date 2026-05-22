@@ -468,7 +468,7 @@ RC_TEMPMOVE_FAILED=144
 RC_RESIZE_ERROR=145
 #RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
 RC_UUID_UPDATE_IMPOSSIBLE=147
-RC_CLONE_IMPOSSIBLE=148
+RC_CLONE_FAILED=148
 
 tty -s
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
@@ -2147,8 +2147,14 @@ MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't 
 MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Bootgerät %s überein. Zuerst einen initialen Restore mit Option -d auf %s starten"
 MSG_CLONE_SCHEDULED=358
 MSG_EN[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone of backup to clonedevice %s scheduled"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone des Backups auf Clonegerät %s ist vorgemerkt"
+MSG_CLONE_FAILED=359
+MSG_EN[$MSG_CLONE_FAILED]="RBK0359E: Failed to start clone of backup to %s"
+MSG_DE[$MSG_CLONE_FAILED]="RBK0359E: Start des Clones des Backups auf Clonegerät %s fehlerhaft beendet"
+MSG_CLONE_STARTED=360
+MSG_EN[$MSG_CLONE_STARTED]="RBK0360I: Starting clone of backup to %s"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_CLONE_STARTED]="RBK0360I: Start des Clones des Backups auf Clonegerät %s beginnt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5658,9 +5664,11 @@ function cleanup() { # trap
 
 	    source /tmp/raspiBackup.vars 									# BACKUP_TARGETDIR now refers to the backupdirectory just created
 		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]}"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTED "$CLONE_DEVICE"
 		shopt -s execfail
-		exec $RASPIBACKUP_ABS_LOCATION "${CLONE_RESTORE_OPTIONS[@]}" -Y $BACKUP_TARGETDIR
-		# no return
+		exec $RASPIBACKUP_ABS_LOCATION "${CLONE_RESTORE_OPTIONS[@]}" -Y $BACKUP_TARGETDIR		# no return
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_FAILED "$CLONE_DEVICE"
+		exitError $RC_CLONE_FAILED
 	fi
 
 	exit $rc
@@ -8070,7 +8078,7 @@ function checkSourceAndTargetPartitioning() {
 
 	if (( $rc )); then	# no partitions or different partitioning or filesystem
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$RESTORE_DEVICE" "$BACKUP_BOOT_DEVICENAME" "$RESTORE_DEVICE"
-		exitError $RC_CLONE_IMPOSSIBLE
+		exitError $RC_CLONE_FAILED
 	fi
 
 	logExit $rc
@@ -10578,7 +10586,7 @@ function getEnableDisableOption() { # option
 	esac
 }
 
-function backupAndCloneSetParms() {
+function cloneSetBackupParms() {
 
 	logEntry
 
@@ -10588,6 +10596,10 @@ function backupAndCloneSetParms() {
 
 	CLONE_RESTORE_OPTIONS+=("-d")						# add clone device with -d for restore to clone
 	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
+
+	if [[ $BACKUPTYPE == $BACKUPTYPE_RSYNC ]]; then
+		CLONE_RESTORE_OPTIONS+=("-00")
+	fi
 
 	logItem "Restore cloneoptions: ${CLONE_RESTORE_OPTIONS[*]}"
 
@@ -11229,7 +11241,7 @@ if ! isSupportedEnvironment; then
 fi
 
 if [[ -n "$CLONE_DEVICE" ]]; then
-	backupAndCloneSetParms
+	cloneSetBackupParms
 fi
 
 if (( $DEPLOY )); then
