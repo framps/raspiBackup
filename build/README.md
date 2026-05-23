@@ -10,7 +10,6 @@ Directories:
 ├── common.sh			# common definitions for build and install
 ├── compareVersions.sh	# script used to test version up- and downgrade recognition
 ├── deb					# directory which receives the built deb packages
-├── gitsrc				# clone of raspiBackup repository used to populate package directory
 ├── gpg.conf			# gpg key id used to sign the packages
 ├── install.log			# installation log
 ├── install.sh			# install packages
