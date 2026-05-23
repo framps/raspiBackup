@@ -2599,7 +2599,7 @@ function writeToConsole() {  # msglevel messagenumber message
 		NEWS_AVAILABLE=1
 	fi
 
-	if (( $level <= $MSG_LEVEL )); then
+	if (( $level <= $MSG_LEVEL )) || [[ $msgSev == "E" ]] ; then # make sure all errors are reported
 
 # --- RBK0105I: Deleting new backup directory /backup/obelix/obelix-rsync-backup-20180912-215541.
 # ??? RBK0005E: Backup failed. Check previous error messages for details.
@@ -3415,6 +3415,7 @@ function dynamic_mount() { # mountpoint
 	logEntry "$1"
 
 	local rc=0
+
 	if ! isMounted $1; then
 		mount "$1" &>> $LOG_FILE
 		rc=$?
@@ -3426,10 +3427,11 @@ function dynamic_mount() { # mountpoint
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_MOUNT_OK "$1"
 		fi
 	else
+		if [[ -n $CLONE_DEVICE && -n $RESTORE_DEVICE ]]; then # clone restore should execute umount for dynamic mount executed for backup
+			DYNAMIC_MOUNT_EXECUTED=1
+		fi
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_MOUNT_NOT_REQUIRED "$1"
 	fi
-
-	logCommand "mount"
 
 	logExit
 
@@ -4421,7 +4423,12 @@ function setupEnvironment() {
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
 			logItem "LOG_OUTPUT=$LOG_OUTPUT"
 		fi
-	fi
+	else # restore
+		if [[ -n "$DYNAMIC_MOUNT" && -n $CLONE_DEVICE && -n $RESTORE_DEVICE ]]; then
+			dynamic_mount "$DYNAMIC_MOUNT"
+		fi
+
+	fi # not restore
 
 	logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 	logItem "BACKUPTARGET_FINAL_DIR: $BACKUPTARGET_FINAL_DIR"
@@ -5649,7 +5656,8 @@ function cleanup() { # trap
 
 	unLockMe
 
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
+	# don't umount if clone and backup run                                no clone                      clone restore
+	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )) && [[ -z $CLONE_DEVICE || ( -n $CLONE_DEVICE && -n $RESTORE_DEVICE ) ]]; then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
 		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
 	fi
@@ -10607,6 +10615,11 @@ function cloneSetBackupParms() {
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]] && ! containsElement "-00" "${CLONE_RESTORE_OPTIONS[@]}"; then
 		CLONE_RESTORE_OPTIONS+=("-00")
+	fi
+
+	if [[ -n $DYNAMIC_MOUNT ]]; then						# pass dynamic mount option to clone
+		CLONE_RESTORE_OPTIONS+=("--dynamicMount")
+		CLONE_RESTORE_OPTIONS+=("$BACKUPPATH")
 	fi
 
 	logItem "Restore cloneoptions: ${CLONE_RESTORE_OPTIONS[*]}"
