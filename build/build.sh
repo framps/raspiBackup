@@ -185,7 +185,11 @@ if (( CHECK_PACKAGE != 0 )) ; then
 	if command -v lintian > /dev/null ; then
 		# Note: The default behaviour for rc=2 is: `--fail-on error`
 		#       But since there are still several know errors we ignore them for now.
-		lintian --color always --fail-on pedantic "$DEB_TGT/raspiBackup.deb"
+		SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
+		SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
+		SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
+		# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
+		lintian --color always --fail-on pedantic $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
 		rc=$?
 	else
 		echo "Warning: Can't check package because 'lintian' isn't installed!"
