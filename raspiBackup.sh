@@ -9460,8 +9460,8 @@ function doitRestore() {
 
 	inspect4Restore
 
-	if [[ -n $CLONE_DEVICE && $BACKUPTYPE == "$BACKUPTYPE_RSYNC" ]]; then
-			checkSourceAndTargetPartitioning
+	if [[ -n $CLONE_DEVICE && $BACKUPTYPE == "$BACKUPTYPE_RSYNC" ]]; then 
+			: checkSourceAndTargetPartitioning # @TBD
 	fi
 
 	if (( $FORCE_SFDISK )); then
@@ -11261,7 +11261,7 @@ if ! isSupportedEnvironment; then
 	fi
 fi
 
-if [[ -n "$CLONE_DEVICE" ]]; then
+if [[ -n "$CLONE_DEVICE" && -n "$RESTORE_DEVICE" ]]; then
 	cloneSetBackupParms
 fi
 
