@@ -77,35 +77,44 @@ if (( $# > 0 )); then
 	VERSION="$1"
 fi
 
-# underscores are not allowed in debian version numbers
+# Debian wants to have all-lowercase package names
+PACKAGE_NAME="raspibackup"
+
+# relative pathes for the files in the package
+DIR_BIN="usr/local/bin"
+DIR_ETC="usr/local/etc"
+DIR_LIB="usr/local/lib"
+DIR_SHARE="usr/local/share"
+
+# underscores are not allowed in Debian version numbers
 # change m_972 to m-972
 VERSION="$(sed -E 's/_/-/g' <<< "$VERSION")"
 VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
-show "Building deb package for raspiBackup $VERSION"
+show "Building deb package '${PACKAGE_NAME}' for raspiBackup $VERSION"
 
 rm -rf "$TGT"
 rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
 
 # copy source files
-install -m755 -D -t "$TGT/usr/share/raspiBackup" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
+install -m755 -D -t "$TGT/$DIR_BIN" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
 
 # create links
-pushd "$TGT/usr/share/raspiBackup" > /dev/null
+pushd "$TGT/$DIR_BIN" > /dev/null
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
 
 # copy config files - Note: They may contain credentials - therefore change to 600 during installation
-install -m644 -D -t "$TGT/etc/raspiBackup" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
+install -m644 -D -t "$TGT/$DIR_ETC/${PACKAGE_NAME}" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
 
 # copy systemd files
-install -m644 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
+install -m644 -D -t "$TGT/$DIR_LIB/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
 # copy extension files
 for file in "$GITSRC"/extensions/raspiBackup_*; do
-	install -m755 "$file" "$TGT/usr/share/raspiBackup"
+	install -m755 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}" "$file"
 done
 
 # get current commit sha and date into code
@@ -118,11 +127,11 @@ popd > /dev/null
 git worktree remove "$GITSRC"
 
 # Insert commit date and sha1 into the scripts
-sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT"/usr/share/raspiBackup/*
+sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
-install -m644 -D -t "$TGT/usr/share/doc/raspiBackup" "$PACKAGE/DEBIAN/copyright"
+install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
 
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
@@ -139,11 +148,11 @@ rm "$LOG_FILE" || true
 rc=1
 
 show "Build package"
-dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
 if [[ -n "$GPG_KEYID" ]] ; then
 	show "Sign package"
-	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 else
 	echo ""
 	echo "Error: The package can't be signed!"
@@ -163,19 +172,19 @@ EOF_GPG
 fi
 
 show "Show files which will be installed"
-dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+dpkg-deb -c "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
 show "The final package in $DEB_TGT"
 ls -l "$DEB_TGT"
 
-show "raspiBackup $VERSION package information"
-dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+show "${PACKAGE_NAME} $VERSION package information"
+dpkg-deb -I "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
 # create links
 pushd "$DEB_TGT" > /dev/null
-ln -sf "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
+ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
 if [[ -n "$GPG_KEYID" ]] ; then
-	ln -sf "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
+	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
 fi
 popd > /dev/null
 
