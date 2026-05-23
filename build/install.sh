@@ -67,10 +67,10 @@ if [[ $cmd =~ ^-c ]]; then
 fi
 
 show "Package verification"
-gpg --verbose --verify "$DEB_TGT"/raspiBackup.deb.sig "$DEB_TGT"/raspiBackup.deb
+gpg --verbose --verify "$DEB_TGT"/raspibackup.deb.sig "$DEB_TGT"/raspibackup.deb
 
 show "Install package and all dependencies"
-sudo apt-get install --allow-downgrades -y "$DEB_TGT"/raspiBackup.deb
+sudo apt-get install --allow-downgrades -y "$DEB_TGT"/raspibackup.deb
 
 show "Show installation result"
 apt-cache policy raspibackup
