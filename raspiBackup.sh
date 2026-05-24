@@ -2143,7 +2143,7 @@ MSG_SYNCING_SECOND_PARTITION=356
 MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
 MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
 MSG_CLONE_IMPOSSIBLE=357
-MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match bootdevice %s. Run an initial restore with option -d to $s first"
+MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match bootdevice %s. Run an initial restore with option -d to %s first"
 MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Bootgerät %s überein. Zuerst einen initialen Restore mit Option -d auf %s starten"
 MSG_CLONE_SCHEDULED=358
 MSG_EN[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone of backup to clonedevice %s scheduled"
@@ -2159,8 +2159,11 @@ MSG_EN[$MSG_CLONE_STARTED]="RBK0361I: Started clone of backup to %s"
 MSG_DE[$MSG_CLONE_STARTED]="RBK0361I: StartClones des Backups auf Clonegerät %s gestartet"
 MSG_RESTOREDEVICE_IS_NO_PARTUUID=362
 MSG_EN[$MSG_RESTOREDEVICE_IS_NO_PARTUUID]="RBK0361E: Clonedevice %s is no partuuid device. Format: /dev/disk/by-partuuid/<PARTUUID> (No trailing partition number)"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_RESTOREDEVICE_IS_NO_PARTUUID]="RBK0361E: Clonegeraät %s ist kein partuuid Gerät. Format: /dev/disk/by-partuuid/<PARTUUID> (Keine Partitionsnummer am Ende)"
+MSG_DD_NOT_SUPPORTED_FOR_CLONE=363
+MSG_EN[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0361E: Backuptype dd and ddz are not supported for a clone"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0361E: Backuptyp dd und ddz sind nicht für clone unterstützt"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2946,7 +2949,7 @@ function logOptions() { # option state
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
-	logItem "CLONE_DEVICE=$CLONE_DEVICE"
+	logItem "=$CLONE_DEVICE"
 	logItem "COLOR_CODES=${COLOR_CODES[*]}"
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
@@ -5986,7 +5989,7 @@ function bootPartitionBackup() {
 			local ext=$BOOT_DD_EXT
 			(( $TAR_BOOT_PARTITION_ENABLED )) && ext=$BOOT_TAR_EXT
 			if  [[ ! -e "$BACKUPTARGET_DIR/$BACKUPFILES_PARTITION_DATE.$ext" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_FINAL_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_CREATING_BOOT_BACKUP "$BACKUPTARGET_FINAL_DIR/$BACKUPFILES_PARTITION_DATE.$ext"
 				if (( $TAR_BOOT_PARTITION_ENABLED )); then
 					local bootMountpoint
 					[[ -d /boot/firmware ]] && bootMountpoint="/boot/firmware" || bootMountpoint="/boot"
@@ -6637,13 +6640,15 @@ function partitionRestoredeviceIfRequested() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$PARTITIONS_TO_RESTORE\""
 			fi
 
-			if ! askYesNo; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-				exitError $RC_RESTORE_FAILED
-			fi
+			if [[ -z $CLONE_DEVICE ]]; then
+				if ! askYesNo; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+					exitError $RC_RESTORE_FAILED
+				fi
 
-			if (( $NO_YES_QUESTION )); then
-				echo "Y"
+				if (( $NO_YES_QUESTION )); then
+					echo "Y"
+				fi
 			fi
 		fi
 
@@ -8077,23 +8082,32 @@ function reportNews() {
 
 }
 
-function checkSourceAndTargetPartitioning() {
+function checkSourceAndTargetPartitioning() { # src target
 
-	logEntry
-	local src tgt rc
+	logEntry "$1" "$2"
+	local src tgt rc srcDevice tgtDevice
+	
+	srcDevice="$1"
+	tgtDevice="$2"
 
-	src=$(sfdisk -d $BACKUP_BOOT_DEVICENAME)
-	tgt=$(sfdisk -d $RESTORE_DEVICE)
+	src=$(sfdisk -d $srcDevice | grep -E -v "^label-id|^device" | sed -E s'|.+, ||')
+	tgt=$(sfdisk -d $tgtDevice | grep -E -v "^label-id|^device"| sed -E s'|.+, ||')
 	rc=$?
-
-	diff &>/dev/null <(lsblk -o FSTYPE $BACKUP_BOOT_DEVICENAME 2>/dev/null) <(lsblk -o FSTYPE $RESTORE_DEVICE 2>/dev/null) # different number of partitions or fstype
-	(( rc=rc | $? ))
+	logItem "First comp: $rc"
 
 	logItem "SRC partitioning: <$src>"
 	logItem "TGT partitioning: <$tgt>"
 
+	logCommand "lsblk -o FSTYPE $srcDevice"
+	logCommand "lsblk -o FSTYPE $tgtDevice"
+	
+	# diff &>/dev/null <<< "$srcLsblk" <<< "$tgtLsblk" # different number of partitions or fstype
+	diff &>/dev/null <(lsblk -o FSTYPE $srcDevice 2>/dev/null) <(lsblk -o FSTYPE $tgtDevice 2>/dev/null) # different number of partitions or fstype
+	(( rc=rc | $? ))
+	logItem "Second comp: $rc"
+	
 	if (( $rc )); then	# no partitions or different partitioning or filesystem
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$RESTORE_DEVICE" "$RESTORE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$tgtDevice" "$srcDevice" "$tgtDevice"
 		exitError $RC_CLONE_FAILED
 	fi
 
@@ -8410,6 +8424,15 @@ function doitBackup() {
 				exitError $RC_MISC_ERROR
 			fi
 		fi
+	fi
+
+	if [[ -n "$CLONE_DEVICE" && ( "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ) ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_NOT_SUPPORTED_FOR_CLONE 
+		exitError $RC_PARAMETER_ERROR
+	fi
+	
+	if [[ -n "$CLONE_DEVICE" && ( "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" )]]; then 
+		checkSourceAndTargetPartitioning $BOOT_DEVICENAME $CLONE_DEVICE
 	fi
 
 # all tests succeeded
@@ -9465,10 +9488,6 @@ function doitRestore() {
 	fi
 
 	inspect4Restore
-
-	if [[ -n $CLONE_DEVICE && $BACKUPTYPE == "$BACKUPTYPE_RSYNC" ]]; then 
-			: checkSourceAndTargetPartitioning # @TBD
-	fi
 
 	if (( $FORCE_SFDISK )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCE_SFDISK "$RESTORE_DEVICE"
