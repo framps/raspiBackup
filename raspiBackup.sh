@@ -5519,9 +5519,9 @@ function cleanup() { # trap
 					rc=$RC_TEMPMOVE_FAILED
 				else
 					if [[ $MSG_LEVEL == "$MSG_LEVEL_MINIMAL" ]]; then
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
 					else
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_MOVED "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
+						writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPDIR_MOVED "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
 					fi
 					BACKUPTARGET_FILE="$BACKUPTARGET_FINAL_FILE"
 				fi
@@ -6847,7 +6847,7 @@ function restoreNormalBackupType() {
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE "$RESTOREFILE"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_FILE "$RESTOREFILE"
 	logCommand "ls -la $RESTOREFILE"
 
 	START_TIME=$(date +%s)
