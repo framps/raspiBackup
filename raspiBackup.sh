@@ -2151,10 +2151,16 @@ MSG_DE[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone des Backups auf Clonegerät %s ist
 MSG_CLONE_FAILED=359
 MSG_EN[$MSG_CLONE_FAILED]="RBK0359E: Failed to start clone of backup to %s"
 MSG_DE[$MSG_CLONE_FAILED]="RBK0359E: Start des Clones des Backups auf Clonegerät %s fehlerhaft beendet"
-MSG_CLONE_STARTED=360
-MSG_EN[$MSG_CLONE_STARTED]="RBK0360I: Starting clone of backup to %s"
+MSG_CLONE_STARTING=360
+MSG_EN[$MSG_CLONE_STARTING]="RBK0360I: Starting clone of backup to %s"
+MSG_DE[$MSG_CLONE_STARTING]="RBK0360I: Start des Clones des Backups auf Clonegerät %s beginnt"
+MSG_CLONE_STARTED=361
+MSG_EN[$MSG_CLONE_STARTED]="RBK0361I: Started clone of backup to %s"
+MSG_DE[$MSG_CLONE_STARTED]="RBK0361I: StartClones des Backups auf Clonegerät %s gestartet"
+MSG_RESTOREDEVICE_IS_NO_PARTUUID=362
+MSG_EN[$MSG_RESTOREDEVICE_IS_NO_PARTUUID]="RBK0361E: Clonedevice %s is no partuuid device. Format: /dev/disk/by-partuuid/<PARTUUID> (No trailing partition number)"
 #shellcheck disable=SC2034
-MSG_DE[$MSG_CLONE_STARTED]="RBK0360I: Start des Clones des Backups auf Clonegerät %s beginnt"
+MSG_DE[$MSG_RESTOREDEVICE_IS_NO_PARTUUID]="RBK0361E: Clonegeraät %s ist kein partuuid Gerät. Format: /dev/disk/by-partuuid/<PARTUUID> (Keine Partitionsnummer am Ende)"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5670,7 +5676,7 @@ function cleanup() { # trap
 
 	    source /tmp/raspiBackup.vars 									# BACKUP_TARGETDIR now refers to the backupdirectory just created
 		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTED "$CLONE_DEVICE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTING "$CLONE_DEVICE"
 		shopt -s execfail
 		# shellcheck disable=SC2093
 		#  SC2093 (warning): Remove "exec " if script should continue after this command.
@@ -8406,11 +8412,6 @@ function doitBackup() {
 		fi
 	fi
 
-	if [[ -n $CLONE_DEVICE ]]; then
-		checkRestoreDeviceOK "$CLONE_DEVICE"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
-	fi
-
 # all tests succeeded
 
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
@@ -9266,6 +9267,8 @@ function checkRestoreDeviceOK() { # restoreDevice
 
 	logEntry
 
+	local device="$"
+
 	if [[ ! -b "$1" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$1"
 		exitError $RC_RESTORE_IMPOSSIBLE
@@ -9353,6 +9356,11 @@ function doitRestore() {
 
 	if ! (( $FAKE )); then
 		RESTORE_DEVICE=${RESTORE_DEVICE%/} # delete trailing /
+#		if [[ -n $CLONE_DEVICE ]];then
+#			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/disk/by-partuuid/[a-fA-F0-9]+$ ]] ; then
+#				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_NO_PARTUUID "$RESTORE_DEVICE"
+#				exitError $RC_PARAMETER_ERROR
+#			fi
 		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]+$ ) && ! ( $RESTORE_DEVICE =~ /dev/loop[0-9]+ ) && ! ( $RESTORE_DEVICE =~ /dev/nvme[0-9]+n[0-9]+ )]]; then
 			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/[a-zA-Z]+$ ]] ; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_PARTITION "$RESTORE_DEVICE"
@@ -10602,6 +10610,9 @@ function cloneSetBackupParms() {
 
 	local opt
 
+	checkRestoreDeviceOK "$CLONE_DEVICE"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
+
 	CLONE_RESTORE_OPTIONS=( )
 
 	for opt in "${ARG_BAK[@]}"; do
@@ -10617,12 +10628,19 @@ function cloneSetBackupParms() {
 		CLONE_RESTORE_OPTIONS+=("-00")
 	fi
 
+	if [[ ( "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" )  ]] && ! containsElement "-0" "${CLONE_RESTORE_OPTIONS[@]}"; then
+		CLONE_RESTORE_OPTIONS+=("-0")
+	fi
+	
 	if [[ -n $DYNAMIC_MOUNT ]]; then						# pass dynamic mount option to clone
 		CLONE_RESTORE_OPTIONS+=("--dynamicMount")
 		CLONE_RESTORE_OPTIONS+=("$BACKUPPATH")
 	fi
 
-	logItem "Restore cloneoptions: ${CLONE_RESTORE_OPTIONS[*]}"
+	CLONE_RESTORE_OPTIONS+=("--updateUUIDs-")
+	CLONE_RESTORE_OPTIONS+=("--clonePath")
+
+	logItem "CLONEOPTIONS:${CLONE_RESTORE_OPTIONS[*]}"
 
 	logExit
 }
@@ -10632,6 +10650,7 @@ function cloneSetBackupParms() {
 BACKUP_DIRECTORY_NAME=""
 BACKUPFILE=""
 CUSTOM_CONFIG_FILE_INCLUDED=0
+CLONEPATH=0
 DEPLOY=0
 DYNAMIC_MOUNT_EXECUTED=0
 EXCLUDE_DD=0
@@ -10803,6 +10822,10 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  CLONE_DEVICE="$o"; shift 2
+	  ;;
+
+	--clonePath)
+	  CLONE_PATH=1; shift 2
 	  ;;
 
 	--coloring)
@@ -11261,10 +11284,6 @@ if ! isSupportedEnvironment; then
 	fi
 fi
 
-if [[ -n "$CLONE_DEVICE" && -n "$RESTORE_DEVICE" ]]; then
-	cloneSetBackupParms
-fi
-
 if (( $DEPLOY )); then
 	deployMyself
 	exitNormal
@@ -11353,7 +11372,6 @@ if (( $NOTIFY_START )); then
 	fi
 fi
 
-
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"
 	logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$ETC_CONFIG_FILE")"
@@ -11372,7 +11390,6 @@ if (( $CUSTOM_CONFIG_FILE_INCLUDED )); then
 	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 fi
 
-logItem "INTERACTIVE: $INTERACTIVE"
 logOptions "Invocation options"
 logSystem
 
@@ -11381,6 +11398,14 @@ downloadPropertiesFile
 updateRestoreReminder
 
 reportNews
+
+if [[ -n "$CLONE_DEVICE" ]]; then
+	if (( $CLONEPATH )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTED "$CLONE_DEVICE"
+	else
+		cloneSetBackupParms
+	fi
+fi
 
 if isVersionDeprecated "$VERSION"; then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
