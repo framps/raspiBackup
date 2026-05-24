@@ -9267,8 +9267,6 @@ function checkRestoreDeviceOK() { # restoreDevice
 
 	logEntry
 
-	local device="$"
-
 	if [[ ! -b "$1" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$1"
 		exitError $RC_RESTORE_IMPOSSIBLE
