@@ -10611,7 +10611,6 @@ function cloneSetBackupParms() {
 	local opt
 
 	checkRestoreDeviceOK "$CLONE_DEVICE"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
 
 	CLONE_RESTORE_OPTIONS=( )
 
@@ -10641,6 +10640,8 @@ function cloneSetBackupParms() {
 	CLONE_RESTORE_OPTIONS+=("--clonePath")
 
 	logItem "CLONEOPTIONS:${CLONE_RESTORE_OPTIONS[*]}"
+
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
 
 	logExit
 }
@@ -10825,7 +10826,7 @@ while (( "$#" )); do
 	  ;;
 
 	--clonePath)
-	  CLONE_PATH=1; shift 2
+	  CLONEPATH=1; shift 2
 	  ;;
 
 	--coloring)
