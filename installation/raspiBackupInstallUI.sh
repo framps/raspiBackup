@@ -943,15 +943,11 @@ MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$
 
 DESCRIPTION_CLONE_DEVICE=$((SCNT++))
 MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Immediately after backup a clone can be created on a local attached device. \
-Use /dev/disk/by-partuuid/<PARTUUID> format only.
-${NL}Use 'lsblk -o NAME,FSTYPE,LABEL,PARTUUID' to retrieve the correct clone PARTUUID. \
-No clone will be created if no clone device is defined. \
-${NL}${NL}ATTENTION: Make sure you configure the correct PARTUUID. Otherwise there is a risk of data loss."
+${NL}Format: /dev/sda, /dev/mmcblk1 or /dev/nvme0n1 or similar. \
+No clone will be created if no clone device is defined."
 MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Direkt nach den Backup kann ein Clone erstellt werden an einem lokal angeschlossenen Gerät. \
-Es muss im /dev/disk/by-partuuid/<PARTUUID> Format definiert werden. \
-${NL}Nutze 'lsblk -o NAME,FSTYPE,LABEL,PARTUUID' um die korrekte PARTUUID zu erfahen. \
 No clone will be created if no clone device is defined. \
-${NL}${NL}ACHTUNG: Es muss die korrekte PARTUUID definiert werden. Ansonsten droht Datenverlust."
+${NL}Format: /dev/sda, /dev/mmcblk1 or /dev/nvme1n1 or similar"
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
