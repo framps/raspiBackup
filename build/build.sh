@@ -31,7 +31,7 @@ GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
 # shellcheck disable=2034
 readonly GITSRC
 
-BRANCH_TO_DEB="m_972"
+BRANCH_TO_DEB="m_972_testing"
 # BRANCH_TO_DEB="master"
 
 CURRENT_BRANCH=$(git branch --show-current)
