@@ -31,11 +31,16 @@ GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
 # shellcheck disable=2034
 readonly GITSRC
 
-BRANCH_TO_DEB="m_972_testing"
+# The branch used to build the Debian package from.
+# If empty then the curent branch is used.
+# Note: Always only the commited changes are taken into account!
 # BRANCH_TO_DEB="master"
+# BRANCH_TO_DEB="m_972"
+BRANCH_TO_DEB=""
 
 CURRENT_BRANCH=$(git branch --show-current)
 
+BRANCH_TO_DEB="${BRANCH_TO_DEB:-${CURRENT_BRANCH}}"
 show "Using branch '$BRANCH_TO_DEB' as source for the build"
 
 if [[ "$CURRENT_BRANCH" == "$BRANCH_TO_DEB" ]] ; then
