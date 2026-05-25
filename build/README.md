@@ -17,13 +17,13 @@ Directories:
 │   ├── DEBIAN			# DEBIAN package source
 │   │   ├── conffiles	# definition of config files
 │   │   ├── control		# package control file
-│   │   ├── postinst	# script executed after package installation 
+│   │   ├── postinst	# script executed after package installation
 │   │   └── postrm		# script executed after apt remove
 │   └── src				# deb package build directory
 │       ├── DEBIAN
-│       ├── etc
 │       └── usr
-├── raspiBackupInstall.sh	# draft public installation script, uses the deb and gpg key from github 
+│           └── local
+├── raspiBackupInstall.sh	# draft public installation script, uses the deb and gpg key from github
 └── README.md
 
 ```
