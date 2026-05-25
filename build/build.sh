@@ -202,6 +202,7 @@ if (( CHECK_PACKAGE != 0 )) ; then
 		SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
+		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
 		# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
 		lintian --color always --fail-on pedantic $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
 		rc=$?
