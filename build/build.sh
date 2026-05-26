@@ -83,13 +83,14 @@ if (( $# > 0 )); then
 fi
 
 # Debian wants to have all-lowercase package names
-PACKAGE_NAME="raspibackup"
+export PACKAGE_NAME="raspibackup"
 
-# relative pathes for the files in the package
-DIR_BIN="usr/local/bin"
-DIR_ETC="usr/local/etc"
-DIR_LIB="usr/local/lib"
-DIR_SHARE="usr/local/share"
+# absolute pathes for the files in the package
+# will be used relatively below and absolutely in envsubst results
+export DIR_BIN="/usr/local/bin"
+export DIR_ETC="/usr/local/etc"
+export DIR_LIB="/usr/local/lib"
+export DIR_SHARE="/usr/local/share"
 
 # underscores are not allowed in Debian version numbers
 # change m_972 to m-972
@@ -138,11 +139,22 @@ sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha
 # TODO: Fix copyright file to make lintian happy
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
 
+mkdir -p "$TGT/DEBIAN"
 # create DEBIAN package files and insert version number in control file
-install -m644 -D -t "$TGT/DEBIAN" "$PACKAGE/DEBIAN/conffiles"
-install -m755    -t "$TGT/DEBIAN" "$PACKAGE/DEBIAN/postinst" "$PACKAGE/DEBIAN/postrm"
-envsubst < "$PACKAGE/DEBIAN/control" >  "$TGT/DEBIAN/control"
-chmod 644 "$TGT/DEBIAN/control"
+envsubst < "$PACKAGE/DEBIAN/control"   > "$TGT/DEBIAN/control"
+envsubst < "$PACKAGE/DEBIAN/conffiles" > "$TGT/DEBIAN/conffiles"
+envsubst < "$PACKAGE/DEBIAN/postinst"  > "$TGT/DEBIAN/postinst"
+envsubst < "$PACKAGE/DEBIAN/postrm"    > "$TGT/DEBIAN/postrm"
+chmod 644 "$TGT/DEBIAN/conffiles" "$TGT/DEBIAN/control"
+chmod 755 "$TGT/DEBIAN/postinst" "$TGT/DEBIAN/postrm"
+
+show "Resulting DEBIAN package files ..."
+
+for f in "$TGT"/DEBIAN/* ; do
+    echo ""
+    show "... $f"
+    cat "$f"
+done
 
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)

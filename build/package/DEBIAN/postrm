@@ -3,9 +3,9 @@
 set -euo pipefail
 
 echo "Cleaning up config files"
-if [[ -d /usr/local/etc/raspibackup ]]; then
-	rm -f /usr/local/etc/raspibackup/* || true
-	rmdir /usr/local/etc/raspibackup || true
+if [[ -d "${DIR_ETC}/${PACKAGE_NAME}" ]]; then
+	rm -f "${DIR_ETC}/${PACKAGE_NAME}"/* || true
+	rmdir "${DIR_ETC}/${PACKAGE_NAME}" || true
 fi
 
 echo "DONE: postrm"

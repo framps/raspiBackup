@@ -3,35 +3,34 @@
 set -euo pipefail
 
 # save existing config
-if [[ -f /usr/local/etc/raspibackup/raspiBackup.conf ]]; then
+if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup.conf ]]; then
 	echo "Saving existing config file ..."
-	cp -a /usr/local/etc/raspibackup/raspiBackup.conf /usr/local/etc/raspibackup/raspiBackup.conf~ || true
+	cp -a "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf~ || true
 fi
 
 
 # use German config file, English is default
 lang="${LANG:0:2}"
 if [[ "$lang" == "de" ]]; then
-	if [[ -f /usr/local/etc/raspibackup/raspiBackup_de.conf ]]; then
+	if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf ]]; then
 		echo "Installing de ..."
-		mv /usr/local/etc/raspibackup/raspiBackup_de.conf /usr/local/etc/raspibackup/raspiBackup.conf || true
-		rm /usr/local/etc/raspibackup/raspiBackup_en.conf || true
+		mv "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_de.conf "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf || true
+		rm "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_en.conf || true
 	else
 		echo "??? Installation raspiBackup.conf (de) failed"
 	fi
 else
-	if [[ -f /usr/local/etc/raspibackup/raspiBackup_de.conf ]]; then
+	if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf ]]; then
 		echo "Installing en ..."
-		mv /usr/local/etc/raspibackup/raspiBackup_en.conf /usr/local/etc/raspibackup/raspiBackup.conf || true
-		rm /usr/local/etc/raspibackup/raspiBackup_de.conf || true
+		mv "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_en.conf "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf || true
+		rm "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_de.conf || true
 	else
 		echo "??? Installation raspiBackup.conf (en) failed"
 	fi
 fi
 
 # config may contain sensitive information like pwds, keys et al
-chmod 600 /usr/local/etc/raspibackup/raspiBackup.conf || true
+chmod 600 "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf || true
 
 echo "DONE: postinst"
 # @TBD - merge new config file with old file
-
