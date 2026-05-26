@@ -942,12 +942,12 @@ MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le f
 MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
 
 DESCRIPTION_CLONE_DEVICE=$((SCNT++))
-MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Immediately after backup a clone can be created on a local attached device. \
-${NL}Format: /dev/sda, /dev/mmcblk1 or /dev/nvme0n1 or similar. \
-No clone will be created if no clone device is defined."
-MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Direkt nach den Backup kann ein Clone erstellt werden an einem lokal angeschlossenen Gerät. \
-No clone will be created if no clone device is defined. \
-${NL}Format: /dev/sda, /dev/mmcblk1 or /dev/nvme1n1 or similar"
+MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define the clone device. Format: /dev/sdb, /dev/mmcblk1 or /dev/nvme0n1. \
+${NL}${NL}Note: No other devices of the same devicetype of the clone device are allowed (E.g. only /dev/sda and no /dev/sdb) \
+Otherwise configure option DEFAULT_CLONE_ROOT_PARTUUID in addition."
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät. Format: /dev/sdb, /dev/mmcblk1 oder /dev/nvme1n1. \
+${NL}${NL}Hinweis: Es darf kein anderes Gerät vom selben Typ des Clonegerätes genutzt werden (Z.B. nur /dev/sda aber kein /dev/sdb) \
+Anderenfalls muss die Option DEFAULT_CLONE_ROOT_PARTUUID zusätzlich konfiguriert werden"
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -3039,7 +3039,6 @@ function config_menu() {
 		getMenuText $MENU_CONFIG_MESSAGE m7
 		getMenuText $MENU_CONFIG_EMAIL m8
 		getMenuText $MENU_CONFIG_REGULAR m9
-		getMenuText $MENU_CONFIG_CLONE m10
 
 		local p="${m1[0]}"
 		m1[0]="C${p:1}"
@@ -3065,8 +3064,15 @@ function config_menu() {
 			"${m7[@]}" \
 			"${m8[@]}" \
 			"${m9[@]}" \
-			"${m10[@]}" \
 			)
+
+		if [[ $CONFIG_BACKUPTYPE != "dd" ]]; then
+			getMenuText $MENU_CONFIG_CLONE mcc
+			local scc="${mcc[0]}"
+			mx+=("${mcc[@]}")
+		else
+			local scc=""
+		fi
 
 		if [[ $CONFIG_BACKUPTYPE == "dd" || $CONFIG_BACKUPTYPE == "tar" ]]; then
 			getMenuText $MENU_CONFIG_ZIP mcp
@@ -3126,7 +3132,7 @@ function config_menu() {
 				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s9) config_timer_menu; TIMER_UPDATED=$? ;;
-				$s10) config_clone_menu; CONFIG_UPDATED=$? ;;
+				$scc) config_clone_menu; CONFIG_UPDATED=$? ;;
 				$scp) config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
