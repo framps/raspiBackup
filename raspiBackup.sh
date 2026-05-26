@@ -10691,14 +10691,14 @@ function cloneSetBackupParms() {
 
 	CLONE_RESTORE_OPTIONS=( )
 
+	CLONE_RESTORE_OPTIONS+=("-d")					# add clone device with -d for restore to clone
+	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
+
 	for opt in "${ARG_BAK[@]}"; do
 		if [[ "$opt" != "$BACKUPPATH" ]]; then # remove backuppath
 			CLONE_RESTORE_OPTIONS+=("$opt")
 		fi
 	done
-
-	CLONE_RESTORE_OPTIONS+=("-d")						# add clone device with -d for restore to clone
-	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]] && ! containsElement "-00" "${CLONE_RESTORE_OPTIONS[@]}"; then
 		CLONE_RESTORE_OPTIONS+=("-00")
@@ -10919,6 +10919,7 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
+	  CLONE_DEVICE=""
 	  ;;
 
 	-D)
