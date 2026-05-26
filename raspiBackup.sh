@@ -6825,10 +6825,10 @@ function partitionRestoredeviceIfRequested() {
 function countSameDevices() { # device
 
 	logEntry "$1"
-	
+
 	local devices d n
-	
-	devices="$(blkid -o device | grep -E "/dev/(mmcblk|sd|nvme)" | grep -v "boot" | sed -E 's|/dev/(nvme.+)p[0-9]+$|\1|' | sed -E 's|/dev/(mmcblk.+)p[0-9]+$|\1|' | sed -E 's|/dev/(sd.+)[0-9]+$|\1|' | uniq)" 
+
+	devices="$(blkid -o device | grep -E "/dev/(mmcblk|sd|nvme)" | grep -v "boot" | sed -E 's|/dev/(nvme.+)p[0-9]+$|\1|' | sed -E 's|/dev/(mmcblk.+)p[0-9]+$|\1|' | sed -E 's|/dev/(sd.+)[0-9]+$|\1|' | uniq)"
 
 	logItem "Found: $devices"
 
@@ -6839,9 +6839,9 @@ function countSameDevices() { # device
 	n="$(grep "$d" <<< "$devices" | wc -l)"
 
 	logItem "Detectcount: $n"
-	
+
 	echo "$n"
-	
+
 	logExit "$n"
 
 }
@@ -8127,7 +8127,7 @@ function checkSourceAndTargetPartitioning() { # src target
 
 	logEntry "$1" "$2"
 	local src tgt rc srcDevice tgtDevice
-	
+
 	srcDevice="$1"
 	tgtDevice="$2"
 
@@ -8141,12 +8141,12 @@ function checkSourceAndTargetPartitioning() { # src target
 
 	logCommand "lsblk -o FSTYPE $srcDevice"
 	logCommand "lsblk -o FSTYPE $tgtDevice"
-	
+
 	# diff &>/dev/null <<< "$srcLsblk" <<< "$tgtLsblk" # different number of partitions or fstype
 	diff &>/dev/null <(lsblk -o FSTYPE $srcDevice 2>/dev/null) <(lsblk -o FSTYPE $tgtDevice 2>/dev/null) # different number of partitions or fstype
 	(( rc=rc | $? ))
 	logItem "Second comp: $rc"
-	
+
 	if (( $rc )); then	# no partitions or different partitioning or filesystem
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$tgtDevice" "$srcDevice" "$tgtDevice"
 		exitError $RC_CLONE_FAILED
@@ -8468,11 +8468,11 @@ function doitBackup() {
 	fi
 
 	if [[ -n "$CLONE_DEVICE" && ( "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ) ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_NOT_SUPPORTED_FOR_CLONE 
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_NOT_SUPPORTED_FOR_CLONE
 		exitError $RC_PARAMETER_ERROR
 	fi
-	
-	if [[ -n "$CLONE_DEVICE" && ( "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" )]]; then 
+
+	if [[ -n "$CLONE_DEVICE" && ( "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" )]]; then
 		checkSourceAndTargetPartitioning $BOOT_DEVICENAME $CLONE_DEVICE
 	fi
 
@@ -9418,11 +9418,6 @@ function doitRestore() {
 
 	if ! (( $FAKE )); then
 		RESTORE_DEVICE=${RESTORE_DEVICE%/} # delete trailing /
-#		if [[ -n $CLONE_DEVICE ]];then
-#			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/disk/by-partuuid/[a-fA-F0-9]+$ ]] ; then
-#				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_NO_PARTUUID "$RESTORE_DEVICE"
-#				exitError $RC_PARAMETER_ERROR
-#			fi
 		if [[ ! ( $RESTORE_DEVICE =~ ^/dev/mmcblk[0-9]+$ ) && ! ( $RESTORE_DEVICE =~ /dev/loop[0-9]+ ) && ! ( $RESTORE_DEVICE =~ /dev/nvme[0-9]+n[0-9]+ )]]; then
 			if ! [[ "$RESTORE_DEVICE" =~ ^/dev/[a-zA-Z]+$ ]] ; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTOREDEVICE_IS_PARTITION "$RESTORE_DEVICE"
@@ -9557,23 +9552,8 @@ function doitRestore() {
 
 	rc=0
 
-	local n
 	if [[ -n $CLONE_DEVICE ]] && (( $CLONEPATH )); then
-		n="$(countSameDevices $CLONE_DEVICE)"		
-		if (( $n > 1 )); then
-			local uuid
-			uuid="$(blkid | grep "$CLONE_DEVICE" | sed -E 's|.+PARTUUID="([a-f0-9]+.+)"|\1|' | grep "\-02")"	# retrieve partuuid of second partition
-			logItem "Clone root partition PARTUUID: $uuid - defined PARTUUID: $CLONE_ROOT_PARTUUID"
-			if [[ -n $CLONE_ROOT_PARTUUID ]]; then
-				if [[ $CLONE_ROOT_PARTUUID != "$uuid" ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_MATCH "$CLONE_ROOT_PARTUUID" "$uuid" "$CLONE_DEVICE"
-					exitError $RC_CLONE_FAILED
-				fi
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_TOO_MANY_DEVICES "$(( $n-1 ))" "$CLONE_DEVICE"
-				exitError $RC_CLONE_FAILED
-			fi
-		fi
+		check4MultipleSimilarCloneDevices
 	fi
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
@@ -9592,6 +9572,30 @@ function doitRestore() {
 
 	logExit
 
+}
+
+function check4MultipleSimilarCloneDevices() {
+
+	logEntry
+
+	local n
+	n="$(countSameDevices $CLONE_DEVICE)"
+	if (( $n > 1 )); then
+		local uuid
+		uuid="$(blkid | grep "$CLONE_DEVICE" | sed -E 's|.+PARTUUID="([a-f0-9]+.+)"|\1|' | grep "\-02")"	# retrieve partuuid of second partition
+		logItem "Clone root partition PARTUUID: $uuid - defined PARTUUID: $CLONE_ROOT_PARTUUID"
+		if [[ -n $CLONE_ROOT_PARTUUID ]]; then
+			if [[ $CLONE_ROOT_PARTUUID != "$uuid" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_MATCH "$CLONE_ROOT_PARTUUID" "$uuid" "$CLONE_DEVICE"
+				exitError $RC_CLONE_FAILED
+			fi
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_TOO_MANY_DEVICES "$(( $n-1 ))" "$CLONE_DEVICE"
+			exitError $RC_CLONE_FAILED
+		fi
+	fi
+
+	logExit
 }
 
 # calculate diff in months of two dates (yyyymm)
@@ -10707,7 +10711,7 @@ function cloneSetBackupParms() {
 	if [[ ( "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" )  ]] && ! containsElement "-0" "${CLONE_RESTORE_OPTIONS[@]}"; then
 		CLONE_RESTORE_OPTIONS+=("-0")
 	fi
-	
+
 	if [[ -n $DYNAMIC_MOUNT ]]; then						# pass dynamic mount option to clone
 		CLONE_RESTORE_OPTIONS+=("--dynamicMount")
 		CLONE_RESTORE_OPTIONS+=("$BACKUPPATH")
@@ -10717,6 +10721,8 @@ function cloneSetBackupParms() {
 	CLONE_RESTORE_OPTIONS+=("--clonePath")
 
 	logItem "CLONEOPTIONS:${CLONE_RESTORE_OPTIONS[*]}"
+
+	check4MultipleSimilarCloneDevices
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
 
@@ -11483,7 +11489,7 @@ if [[ -n "$CLONE_DEVICE" ]]; then
 	if (( $CLONEPATH )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTED "$CLONE_DEVICE"
 	else
-		cloneSetBackupParms		
+		cloneSetBackupParms
 	fi
 fi
 
