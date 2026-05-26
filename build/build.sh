@@ -139,12 +139,10 @@ sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
 
 # create DEBIAN package files and insert version number in control file
-envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
-install -m644 -D /tmp/control "$TGT/DEBIAN/control"
-rm /tmp/control
-install -m644  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
-install -m755  "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
-install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
+install -m644 -D -t "$TGT/DEBIAN" "$PACKAGE/DEBIAN/conffiles"
+install -m755    -t "$TGT/DEBIAN" "$PACKAGE/DEBIAN/postinst" "$PACKAGE/DEBIAN/postrm"
+envsubst < "$PACKAGE/DEBIAN/control" >  "$TGT/DEBIAN/control"
+chmod 644 "$TGT/DEBIAN/control"
 
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
