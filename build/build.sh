@@ -133,7 +133,7 @@ popd > /dev/null
 git worktree remove "$GITSRC"
 
 # Insert commit date and sha1 into the scripts
-sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*
+sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
