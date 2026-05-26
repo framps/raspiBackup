@@ -1574,11 +1574,8 @@ MENU_FR[$MENU_CONFIG_TYPE_TAR]='"tar" "Sauvegarde avec tar"'
 MENU_ZH[$MENU_CONFIG_TYPE_TAR]='"tar" "使用tar备份"'
 
 MENU_CONFIG_TYPE_RSYNC=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks if possible"'
-MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks wenn möglich"'
-MENU_FI[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "rsync-varmuuskopio ja hardlinkkien käyttö"'
-MENU_FR[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sécuriser avec rsync en utilisant si possible des liens physiques"'
-MENU_ZH[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "使用rsync备份,如果可能,使用硬链接"'
+MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks"'
+MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks"'
 
 MENU_UNINSTALL_UNINSTALL=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL_UNINSTALL]='"U1" "Uninstall $RASPIBACKUP_NAME"'

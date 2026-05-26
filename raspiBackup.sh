@@ -10704,6 +10704,11 @@ function cloneSetBackupParms() {
 		fi
 	done
 
+	if ! containsElement "--clone" "${CLONE_RESTORE_OPTIONS[@]}"; then
+		CLONE_RESTORE_OPTIONS+=("--clone")
+		CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			
+	fi
+
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]] && ! containsElement "-00" "${CLONE_RESTORE_OPTIONS[@]}"; then
 		CLONE_RESTORE_OPTIONS+=("-00")
 	fi
@@ -10717,8 +10722,8 @@ function cloneSetBackupParms() {
 		CLONE_RESTORE_OPTIONS+=("$BACKUPPATH")
 	fi
 
-	CLONE_RESTORE_OPTIONS+=("--updateUUIDs-")
-	CLONE_RESTORE_OPTIONS+=("--clonePath")
+	CLONE_RESTORE_OPTIONS+=("--updateUUIDs-")				# don't update UUIDs in clone
+	CLONE_RESTORE_OPTIONS+=("--clonePath")					# tag we're on the clone restore path
 
 	logItem "CLONEOPTIONS:${CLONE_RESTORE_OPTIONS[*]}"
 
