@@ -31,11 +31,16 @@ GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
 # shellcheck disable=2034
 readonly GITSRC
 
-BRANCH_TO_DEB="m_972"
+# The branch used to build the Debian package from.
+# If empty then the curent branch is used.
+# Note: Always only the commited changes are taken into account!
 # BRANCH_TO_DEB="master"
+# BRANCH_TO_DEB="m_972"
+BRANCH_TO_DEB=""
 
 CURRENT_BRANCH=$(git branch --show-current)
 
+BRANCH_TO_DEB="${BRANCH_TO_DEB:-${CURRENT_BRANCH}}"
 show "Using branch '$BRANCH_TO_DEB' as source for the build"
 
 if [[ "$CURRENT_BRANCH" == "$BRANCH_TO_DEB" ]] ; then
@@ -77,35 +82,45 @@ if (( $# > 0 )); then
 	VERSION="$1"
 fi
 
-# underscores are not allowed in debian version numbers
+# Debian wants to have all-lowercase package names
+export PACKAGE_NAME="raspibackup"
+
+# absolute pathes for the files in the package
+# will be used relatively below and absolutely in envsubst results
+export DIR_BIN="/usr/local/bin"
+export DIR_ETC="/usr/local/etc"
+export DIR_LIB="/usr/local/lib"
+export DIR_SHARE="/usr/local/share"
+
+# underscores are not allowed in Debian version numbers
 # change m_972 to m-972
 VERSION="$(sed -E 's/_/-/g' <<< "$VERSION")"
 VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
-show "Building deb package for raspiBackup $VERSION"
+show "Building deb package '${PACKAGE_NAME}' for raspiBackup $VERSION"
 
 rm -rf "$TGT"
 rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
 
 # copy source files
-install -m755 -D -t "$TGT/usr/share/raspiBackup" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
+install -m755 -D -t "$TGT/$DIR_BIN" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
 
 # create links
-pushd "$TGT/usr/share/raspiBackup" > /dev/null
+pushd "$TGT/$DIR_BIN" > /dev/null
 ln -s -r raspiBackup.sh raspiBackup
 ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
 
 # copy config files - Note: They may contain credentials - therefore change to 600 during installation
-install -m644 -D -t "$TGT/etc/raspiBackup" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
+install -m644 -D -t "$TGT/$DIR_ETC/${PACKAGE_NAME}" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
 
 # copy systemd files
-install -m644 -D -t "$TGT/usr/lib/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
+install -m644 -D -t "$TGT/$DIR_LIB/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
 # copy extension files
 for file in "$GITSRC"/extensions/raspiBackup_*; do
-	install -m755 "$file" "$TGT/usr/share/raspiBackup"
+	install -m755 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}" "$file"
 done
 
 # get current commit sha and date into code
@@ -118,32 +133,42 @@ popd > /dev/null
 git worktree remove "$GITSRC"
 
 # Insert commit date and sha1 into the scripts
-sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT"/usr/share/raspiBackup/*
+sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*
 
 # copy doc files (copyright in this case)
 # TODO: Fix copyright file to make lintian happy
-install -m644 -D -t "$TGT/usr/share/doc/raspiBackup" "$PACKAGE/DEBIAN/copyright"
+install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
 
+mkdir -p "$TGT/DEBIAN"
 # create DEBIAN package files and insert version number in control file
-envsubst < "$PACKAGE/DEBIAN/control" > /tmp/control
-install -m644 -D /tmp/control "$TGT/DEBIAN/control"
-rm /tmp/control
-install -m644  "$PACKAGE/DEBIAN/conffiles" "$TGT/DEBIAN"
-install -m755  "$PACKAGE/DEBIAN/postinst" "$TGT/DEBIAN"
-install -m755  "$PACKAGE/DEBIAN/postrm" "$TGT/DEBIAN"
+envsubst < "$PACKAGE/DEBIAN/control"   > "$TGT/DEBIAN/control"
+envsubst < "$PACKAGE/DEBIAN/conffiles" > "$TGT/DEBIAN/conffiles"
+envsubst < "$PACKAGE/DEBIAN/postinst"  > "$TGT/DEBIAN/postinst"
+envsubst < "$PACKAGE/DEBIAN/postrm"    > "$TGT/DEBIAN/postrm"
+chmod 644 "$TGT/DEBIAN/conffiles" "$TGT/DEBIAN/control"
+chmod 755 "$TGT/DEBIAN/postinst" "$TGT/DEBIAN/postrm"
+
+show "Resulting DEBIAN package files ..."
+
+for f in "$TGT"/DEBIAN/* ; do
+    echo ""
+    show "... $f"
+    cat "$f"
+done
 
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 rm "$LOG_FILE" || true
-rc=1
+rc=0
 
 show "Build package"
-dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+LC_ALL=C dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
 if [[ -n "$GPG_KEYID" ]] ; then
 	show "Sign package"
-	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+	rc=$?
 else
 	echo ""
 	echo "Error: The package can't be signed!"
@@ -162,20 +187,24 @@ EOF_GPG
 	rc=1
 fi
 
+if [[ "$rc" -ne 0 ]] ; then
+    exit "$rc"
+fi
+
 show "Show files which will be installed"
-dpkg-deb -c "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+dpkg-deb -c "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
 show "The final package in $DEB_TGT"
 ls -l "$DEB_TGT"
 
-show "raspiBackup $VERSION package information"
-dpkg-deb -I "$DEB_TGT/raspiBackup$VERSION_FILES.deb"
+show "${PACKAGE_NAME} $VERSION package information"
+dpkg-deb -I "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
 # create links
 pushd "$DEB_TGT" > /dev/null
-ln -sf "raspiBackup$VERSION_FILES.deb" "raspiBackup.deb"
+ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
 if [[ -n "$GPG_KEYID" ]] ; then
-	ln -sf "raspiBackup$VERSION_FILES.deb.sig" "raspiBackup.deb.sig"
+	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
 fi
 popd > /dev/null
 
@@ -183,9 +212,21 @@ if (( CHECK_PACKAGE != 0 )) ; then
 	show "Check package with lintian "
 
 	if command -v lintian > /dev/null ; then
-		# Note: The default behaviour for rc=2 is: `--fail-on error`
-		#       But since there are still several know errors we ignore them for now.
-		lintian --color always --fail-on pedantic "$DEB_TGT/raspiBackup.deb"
+		# Note: The default behaviour for lintian exiting with rc=2 is:
+		#         `--fail-on error`
+		#       Since this packet isn't a real Debian one there are some
+		#       "accepted" errors. We simply **could** ignore all of the
+		#       failing checks by using option '--fail-on pedantic'.
+		#       But the cleaner way is:
+		#       Only suppress the unwanted checks via --suppress_tags:
+		SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
+		SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
+		SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
+		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
+		# SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+		#
+		# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
+		lintian --color always $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
 		rc=$?
 	else
 		echo "Warning: Can't check package because 'lintian' isn't installed!"

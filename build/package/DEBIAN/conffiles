@@ -1,2 +1,2 @@
-/etc/raspiBackup/raspiBackup_de.conf
-/etc/raspiBackup/raspiBackup_en.conf
+${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf
+${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_en.conf
