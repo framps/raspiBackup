@@ -91,7 +91,9 @@ function standardBackupTest() {
 	if [[ $rc != 0 ]]; then
 		echo "$(d) Failed BACKUP $1 $2 $3 $4" >> $LOG_COMPLETED
 		echo "??? Backup regression test failed"
-		echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
+		if (( $EMAIL_NOTIFICATION )); then
+			echo "End: $endTime" | mailx -s "??? Backup regression test failed" "$NOTIFY_EMAIL"
+		fi
 		exit 127
 	fi
 
@@ -116,7 +118,9 @@ function standardRestoreTest() {
 	if [[ $rc != 0 ]]; then
 		echo "$(d) Failed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED
 		echo "??? Restore regression test failed"
-		echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+		if (( $EMAIL_NOTIFICATION )); then
+			echo "End: $endTime" | mailx -s "??? Restore regression test failed" "$NOTIFY_EMAIL"
+		fi
 		exit 127
 	fi
 	echo "$(d) Completed RESTORE $1 $2 $3 $4" >> $LOG_COMPLETED

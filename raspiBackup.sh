@@ -17,7 +17,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -456,7 +456,7 @@ RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
-RC_ENVIRONMENT_ERROR=139
+#RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 #RC_EXTENSION_ERROR=141
 #RC_UNPROTECTED_CONFIG=142
@@ -744,15 +744,11 @@ MSG_DE[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: Die neue Version %s hat inkompatible
 MSG_FI[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: Uusi versio %s ei ole täysin yhteensopiva edellisen version kanssa. Ole hyvä ja lue %s ja käytä valintaa -S yhdessä valinnan -U kanssa päivittääksesi skriptin"
 MSG_FR[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: La nouvelle version %s présente des incompatibilités avec les versions précédentes. Veuillez lire %s et utilisez les options -S et -U pour mettre à jour le script"
 MSG_TITLE_OK=41
-MSG_EN[$MSG_TITLE_OK]="%s: Backup finished successfully"
-MSG_DE[$MSG_TITLE_OK]="%s: Backup erfolgreich beendet"
-MSG_FI[$MSG_TITLE_OK]="%s: Varmuuskopiointi suoritettu onnistuneesti"
-MSG_FR[$MSG_TITLE_OK]="%s: Sauvegarde terminée avec succès"
+MSG_EN[$MSG_TITLE_OK]="%s: %s finished successfully"
+MSG_DE[$MSG_TITLE_OK]="%s: %s erfolgreich beendet"
 MSG_TITLE_ERROR=42
-MSG_EN[$MSG_TITLE_ERROR]="%s: Backup failed !!!"
-MSG_DE[$MSG_TITLE_ERROR]="%s: Backup nicht erfolgreich !!!"
-MSG_FI[$MSG_TITLE_ERROR]="%s: Varmuuskopiointi epäonnistui !!!"
-MSG_FR[$MSG_TITLE_ERROR]="%s: Échec de la sauvegarde !!!"
+MSG_EN[$MSG_TITLE_ERROR]="%s: %s failed !!!"
+MSG_DE[$MSG_TITLE_ERROR]="%s: %s nicht erfolgreich !!!"
 MSG_REMOVING_BACKUP=43
 MSG_EN[$MSG_REMOVING_BACKUP]="RBK0043I: Removing incomplete backup in %s. This may take some time. Please be patient"
 MSG_DE[$MSG_REMOVING_BACKUP]="RBK0043I: Unvollständiges Backup in %s wird gelöscht. Das kann etwas dauern. Bitte Geduld"
@@ -2065,8 +2061,8 @@ MSG_MISSING_PARTITIONS_NOT_SAVED=330
 MSG_EN[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Not all partitions which were saved in the previous backup are included. Missing \"%s\""
 MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden gesichert. Es fehlen \"%s\""
 MSG_NO_SKIP_FORMAT_POSSIBLE=331
-MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 is only available with rsync backuptype and a partition oriented backup"
-MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 ist nur mit dem rsync Backuptyp und einem partitionsorientierten Backup möglich"
+MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 is only available for backuptype rsync"
+MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 ist nur mit dem Backuptyp rsync möglich"
 MSG_GENERIC_WARNING=332
 MSG_EN[$MSG_GENERIC_WARNING]="RBK0332W: %s"
 MSG_DE[$MSG_GENERIC_WARNING]="RBK0332W: %s"
@@ -2138,11 +2134,11 @@ MSG_EN[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: External root partiti
 MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition ist mit Option -P nicht unterstützt"
 MSG_OPTION_ACLS_DISABLED=355
 MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
-#shellcheck disable=SC2034
 MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
-#MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS=356
-#MSG_EN[$MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS]="RBK0356E: Default ACLs not allowed on backuppartition %s"
-#MSG_DE[$MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS]="RBK0356E: Default ACLs sind an der Backuppartition %s nicht erlaubt"
+MSG_SYNCING_SECOND_PARTITION=356
+MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2897,7 +2893,7 @@ function compareVersions() { # v1 v2
 
 function repeat() { # char num
 	local s
-	s=$( yes "$1" | head -"$2" | tr -d "\n" )
+	s=$( yes 2>/dev/null "$1" | head -"$2" | tr -d "\n" )
 	echo $s
 }
 
@@ -2945,6 +2941,7 @@ function logOptions() { # option state
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "FAKE=$FAKE"
 	logItem "FINAL_COMMAND=$FINAL_COMMAND"
+	logItem "FORCE_EMAIL=$FORCE_EMAIL"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
 	logItem "IGNORE_MISSING_PARTITIONS=$IGNORE_MISSING_PARTITIONS"
@@ -3190,6 +3187,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_BOOT_DEVICE=""
 	# How often inform about possible old-named backups
 	DEFAULT_OLD_REMINDER_REPEAT="5"
+	# Sent notifications and eMails also when script is invoked in the foreground on the console
+	DEFAULT_FORCE_EMAIL=1
 	############# End default config section #############
 }
 
@@ -3217,6 +3216,7 @@ function copyDefaultConfigVariables() {
 	EXCLUDE_LIST="$DEFAULT_EXCLUDE_LIST"
 	EXTENSIONS="$DEFAULT_EXTENSIONS"
 	FINAL_COMMAND="$DEFAULT_FINAL_COMMAND"
+	FORCE_EMAIL="$DEFAULT_FORCE_EMAIL"
 	IGNORE_ADDITIONAL_PARTITIONS="$DEFAULT_IGNORE_ADDITIONAL_PARTITIONS"
 	IGNORE_MISSING_PARTITIONS="$DEFAULT_IGNORE_MISSING_PARTITIONS"
 	KEEPBACKUPS="$DEFAULT_KEEPBACKUPS"
@@ -5243,7 +5243,7 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 16 )); then
-		m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		m="$(yes 2>/dev/null ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -5367,7 +5367,7 @@ function masqueradeSensitiveInfoInLog() {
 	# In home directories usually first names are used
 
 	logItem "Masquerading home directory name"
-	sed -i -E "s/\/home\/([^\\/])+\/(.)/\/home\/@USER@\/\2/g" $LOG_FILE
+	sed -i -E -e 's|/home/[^/]+/([^/]+)|/home/@USER@/\1|g' -e 's|/home/[^/]+|/home/@USER@|g' $LOG_FILE
 
 	# hostname may expose domain names
 
@@ -5558,9 +5558,11 @@ function cleanup() { # trap
 			fi
 		fi
 
+		task="Backup"
 		if (( $rc != $RC_CTRLC )); then
 			if (( $RESTORE )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_FAILED
+				task="Restore"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_FAILED
 			fi
@@ -5568,37 +5570,41 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-			if (( ! $RESTORE )); then
+			logger "INTERACTIVE: $INTERACTIVE"
+
+			if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
-					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					sendEMail "$msg" "$msgTitle"
 				fi
 				if [[ -n "$TELEGRAM_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
 						sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
 						sendTelegrammLogMessages
 					fi
 				fi
 				if [[ -n "$PUSHOVER_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
 				if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
 					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi
-			fi #  ! RESTORE
+			fi 
 		fi
 
 	else 	# success
 
+		local task="Backup"
 		if (( $RESTORE )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_OK
+			task="Restore"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
@@ -5606,31 +5612,32 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		if (( ! $RESTORE )); then
+		logger "INTERACTIVE: $INTERACTIVE"
+
+		if (( ! $INTERACTIVE || $FAKE | $FORCE_EMAIL )); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
 					sendTelegramm "${EMOJI_OK} $msg"
 					sendTelegrammLogMessages
 				fi
 			fi
 			if [[ -n "$PUSHOVER_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
 					sendPushover "${EMOJI_OK} $msg" 0
 				fi
 			fi
 			if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 				if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
 					sendSlack "${EMOJI_OK} $msg" 0
 				fi
 			fi
 
-			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
+			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
 			sendEMail "" "$msg"
-
-		fi # ! $RESTORE
+		fi
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
@@ -6903,25 +6910,30 @@ function restoreNormalBackupType() {
 
 			executeFilesystemCheck "$BOOT_PARTITION"
 
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
-			local check=""
-			(( $REGRESSION_TEST )) && check="-F "
-			if (( $CHECK_FOR_BAD_BLOCKS )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DETAILED_ROOT_CHECKING "$ROOT_PARTITION"
-				check="-c"
-				mkfs.ext4 $check "$ROOT_PARTITION"
+			if (( ! SKIP_FORMAT )) || [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
+				local check=""
+				(( $REGRESSION_TEST )) && check="-F "
+				if (( $CHECK_FOR_BAD_BLOCKS )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_DETAILED_ROOT_CHECKING "$ROOT_PARTITION"
+					check="-c"
+					mkfs.ext4 $check "$ROOT_PARTITION"
+				else
+					mkfs.ext4 $check "$ROOT_PARTITION" &>>"$LOG_FILE"
+				fi
+				rc=$?
+				if (( $rc != 0 )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
+					exitError $RC_NATIVE_RESTORE_FAILED
+				fi
+
+				waitForPartitionDefsChanged
+				
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
 			else
-				mkfs.ext4 $check "$ROOT_PARTITION" &>>"$LOG_FILE"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNCING_SECOND_PARTITION "$ROOT_PARTITION"
 			fi
-			rc=$?
-			if (( $rc != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
-				exitError $RC_NATIVE_RESTORE_FAILED
-			fi
-
-			waitForPartitionDefsChanged
-
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
+			
 			mountAndCheck $ROOT_PARTITION "$MNT_POINT"
 
 			case $BACKUPTYPE in
@@ -9310,12 +9322,7 @@ function doitRestore() {
 	logItem "Date: $DATE"
 
 	if (( $SKIP_FORMAT )); then
-		if (( $PARTITIONBASED_BACKUP )); then
-			if [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
-				exitError $RC_PARAMETER_ERROR
-			fi
-		else
+		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
 			exitError $RC_PARAMETER_ERROR
 		fi
@@ -10615,6 +10622,10 @@ while (( "$#" )); do
 	  FAKE=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
+	--forceEmail|--forceEmail[+-])
+	  FORCE_EMAIL=$(getEnableDisableOption "$1"); shift 1
+	  ;;
+
 	-g|-g[-+])
 	  PROGRESS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
@@ -11072,7 +11083,7 @@ logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 setupEnvironment
 
 if (( $NOTIFY_START )); then
-	if (( ! $RESTORE )); then
+	if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
 		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 		if [[ -n "$EMAIL"  ]]; then
 			sendEMail "" "$msg"
@@ -11111,6 +11122,7 @@ if (( $CUSTOM_CONFIG_FILE_INCLUDED )); then
 	logItem "Read ${CUSTOM_CONFIG_FILE} : ${CUSTOM_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CUSTOM_CONFIG_FILE")"
 fi
 
+logItem "INTERACTIVE: $INTERACTIVE"
 logOptions "Invocation options"
 logSystem
 
