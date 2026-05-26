@@ -150,14 +150,15 @@ exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 rm "$LOG_FILE" || true
-rc=1
+rc=0
 
 show "Build package"
-dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+LC_ALL=C dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
 if [[ -n "$GPG_KEYID" ]] ; then
 	show "Sign package"
 	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+	rc=$?
 else
 	echo ""
 	echo "Error: The package can't be signed!"
@@ -174,6 +175,10 @@ EOF_GPG
 	echo "         Please fill in the correct ID and build again!"
 	echo ""
 	rc=1
+fi
+
+if [[ "$rc" -ne 0 ]] ; then
+    exit "$rc"
 fi
 
 show "Show files which will be installed"
@@ -197,14 +202,21 @@ if (( CHECK_PACKAGE != 0 )) ; then
 	show "Check package with lintian "
 
 	if command -v lintian > /dev/null ; then
-		# Note: The default behaviour for rc=2 is: `--fail-on error`
-		#       But since there are still several know errors we ignore them for now.
+		# Note: The default behaviour for lintian exiting with rc=2 is:
+		#         `--fail-on error`
+		#       Since this packet isn't a real Debian one there are some
+		#       "accepted" errors. We simply **could** ignore all of the
+		#       failing checks by using option '--fail-on pedantic'.
+		#       But the cleaner way is:
+		#       Only suppress the unwanted checks via --suppress_tags:
 		SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
+		# SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+		#
 		# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
-		lintian --color always --fail-on pedantic $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
+		lintian --color always $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
 		rc=$?
 	else
 		echo "Warning: Can't check package because 'lintian' isn't installed!"
