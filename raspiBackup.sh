@@ -9578,21 +9578,21 @@ function check4MultipleSimilarCloneDevices() {
 
 	logEntry
 
-	local n
-	n="$(countSameDevices $CLONE_DEVICE)"
-	if (( $n > 1 )); then
+	if [[ -n $CLONE_ROOT_PARTUUID ]]; then
 		local uuid
 		uuid="$(blkid | grep "$CLONE_DEVICE" | sed -E 's|.+PARTUUID="([a-f0-9]+.+)"|\1|' | grep "\-02")"	# retrieve partuuid of second partition
 		logItem "Clone root partition PARTUUID: $uuid - defined PARTUUID: $CLONE_ROOT_PARTUUID"
-		if [[ -n $CLONE_ROOT_PARTUUID ]]; then
-			if [[ $CLONE_ROOT_PARTUUID != "$uuid" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_MATCH "$CLONE_ROOT_PARTUUID" "$uuid" "$CLONE_DEVICE"
-				exitError $RC_CLONE_FAILED
-			fi
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_TOO_MANY_DEVICES "$(( $n-1 ))" "$CLONE_DEVICE"
+		if [[ $CLONE_ROOT_PARTUUID != "$uuid" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_MATCH "$CLONE_ROOT_PARTUUID" "$uuid" "$CLONE_DEVICE"
 			exitError $RC_CLONE_FAILED
 		fi
+	fi
+	
+	local n
+	n="$(countSameDevices $CLONE_DEVICE)"
+	if (( $n > 1 )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_TOO_MANY_DEVICES "$(( $n-1 ))" "$CLONE_DEVICE"
+		exitError $RC_CLONE_FAILED
 	fi
 
 	logExit
