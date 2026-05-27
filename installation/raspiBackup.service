@@ -3,6 +3,6 @@ Description=Creation of a Raspberry backup with raspiBackup
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/raspiBackup.sh
+ExecStart=/usr/local/bin/raspiBackup
 [Install]
 WantedBy=multi-user.target
