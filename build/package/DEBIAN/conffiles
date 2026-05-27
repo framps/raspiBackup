@@ -1,2 +1,2 @@
+${DIR_ETC}/${PACKAGE_NAME}/raspiBackup.conf
 ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf
-${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_en.conf

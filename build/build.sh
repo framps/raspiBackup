@@ -106,14 +106,16 @@ mkdir -p "$DEB_TGT"
 # copy source files
 install -m755 -D -t "$TGT/$DIR_BIN" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
 
-# create links
+# and get rid of .sh extension
 pushd "$TGT/$DIR_BIN" > /dev/null
-ln -s -r raspiBackup.sh raspiBackup
-ln -s -r raspiBackupInstallUI.sh raspiBackupInstallUI
+mv raspiBackup.sh raspiBackup
+mv raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
 
 # copy config files - Note: They may contain credentials - therefore change to 600 during installation
 install -m644 -D -t "$TGT/$DIR_ETC/${PACKAGE_NAME}" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
+# make the english version the default
+mv "$TGT/$DIR_ETC/${PACKAGE_NAME}/raspiBackup_en.conf" "$TGT/$DIR_ETC/${PACKAGE_NAME}/raspiBackup.conf"
 
 # copy systemd files
 install -m644 -D -t "$TGT/$DIR_LIB/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
@@ -144,9 +146,8 @@ mkdir -p "$TGT/DEBIAN"
 envsubst < "$PACKAGE/DEBIAN/control"   > "$TGT/DEBIAN/control"
 envsubst < "$PACKAGE/DEBIAN/conffiles" > "$TGT/DEBIAN/conffiles"
 envsubst < "$PACKAGE/DEBIAN/postinst"  > "$TGT/DEBIAN/postinst"
-envsubst < "$PACKAGE/DEBIAN/postrm"    > "$TGT/DEBIAN/postrm"
 chmod 644 "$TGT/DEBIAN/conffiles" "$TGT/DEBIAN/control"
-chmod 755 "$TGT/DEBIAN/postinst" "$TGT/DEBIAN/postrm"
+chmod 755 "$TGT/DEBIAN/postinst"
 
 show "Resulting DEBIAN package files ..."
 

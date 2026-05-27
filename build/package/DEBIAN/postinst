@@ -15,17 +15,12 @@ if [[ "$lang" == "de" ]]; then
 	if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf ]]; then
 		echo "Installing de ..."
 		mv "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_de.conf "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf || true
-		rm "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_en.conf || true
 	else
-		echo "??? Installation raspiBackup.conf (de) failed"
+	    echo "??? Installation raspiBackup.conf (de) failed! Using default (en)."
 	fi
 else
 	if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf ]]; then
-		echo "Installing en ..."
-		mv "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_en.conf "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf || true
 		rm "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_de.conf || true
-	else
-		echo "??? Installation raspiBackup.conf (en) failed"
 	fi
 fi
 
