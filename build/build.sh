@@ -159,6 +159,15 @@ for f in "$TGT"/DEBIAN/* ; do
     cat "$f"
 done
 
+show "Resulting systemd files ..."
+
+
+for f in "$TGT$DIR_LIB"/systemd/system/* ; do
+    echo ""
+    show "... $f"
+    cat "$f"
+done
+
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
