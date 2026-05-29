@@ -138,8 +138,10 @@ git worktree remove "$GITSRC"
 sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*
 
 # copy doc files (copyright in this case)
-# TODO: Fix copyright file to make lintian happy
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
+# The above locations isn't accepted by lintian, the one below is okay:
+#   install -m644 -D -t "$TGT/usr/share/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
+# But perhaps we should keep the first location and just silence lintian a bit... See below.
 
 mkdir -p "$TGT/DEBIAN"
 # create DEBIAN package files and insert version number in control file
@@ -224,10 +226,10 @@ if (( CHECK_PACKAGE != 0 )) ; then
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
 		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
-		# SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
 		#
 		# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
-		lintian --color always $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
+		lintian --verbose --info --color always $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
 		rc=$?
 	else
 		echo "Warning: Can't check package because 'lintian' isn't installed!"
