@@ -162,9 +162,9 @@ done
 show "Resulting systemd files ..."
 
 
-for f in "$TGT$DIR_LIB"/systemd/system/* ; do
+for f in "$TGT/$DIR_LIB"/systemd/system/* ; do
     echo ""
-    show "... $f"
+    show "... $(realpath --relative-to . "$f")"
     cat "$f"
 done
 
