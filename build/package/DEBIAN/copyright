@@ -1,6 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: raspiBackup
+Upstream-Name: raspibackup
 Upstream-Contact: framp at linux-tips-and-tricks dot de
+Source: https://github.com/framps/raspiBackup
 
 Files:     *
 Copyright: 2013-2026 framp at linux-tips-and-tricks dot de
@@ -18,3 +19,4 @@ License:   GPL
 
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ Or see locally here: <file:///usr/share/common-licenses/GPL>.
