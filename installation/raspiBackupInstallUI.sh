@@ -943,10 +943,16 @@ MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le f
 MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
 
 DESCRIPTION_CLONE_DEVICE=$((SCNT++))
-MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define the clone device. Format: /dev/sdb, /dev/mmcblk1 or /dev/nvme0n1 \
-${NL}followed by a space and a PARTUUID of the clonedevice"
-MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät. Format: /dev/sdb, /dev/mmcblk1 oder /dev/nvme1n1 \
-${NL}gefolgt von einem Leerzeichen und einer PARTUUID des Clonegerätes."
+MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define a clone device and any clone device PARTUUID separated by spaces. \
+${NL}${NL}Examples: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät und irgendeine Clonegerät PARTUUID durch Leerzeichen getrennt. \
+${NL}${NL}Beispiele: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -1076,19 +1082,40 @@ MSG_ZH[$TITLE_CONFIRM]="请确认"
 
 MSG_INVALID_CLONE_DEVICE=$((SCNT++))
 MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Clone device %1 not found. \
-${NL}${NL}Examples: /dev/sda, /dev/mmcblk1p or /dev/nvme1n1."
+${NL}${NL}Examples: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
 MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Clonegerät %1 nicht gefunden. \
-${NL}${NL}Beispiele: /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1."
+${NL}${NL}Beispiele: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
 
 MSG_MISSING_PARTUUID=$((SCNT++))
-MSG_EN[$MSG_MISSING_PARTUUID]="Missing trailing clone PARTUUID serataed by a space. \
-${NL}${NL}Examples: ef429bca-01 or 8a852566-5f18-416a-9639-bcfd1f674054."
-MSG_DE[$MSG_MISSING_PARTUUID]="Keine Clone PARTUUID am Ende durch ein Leerzeichen getrennt angegeben. \
-${NL}${NL}Beispiele: ef429bca-01 oder 8a852566-5f18-416a-9639-bcfd1f674054."
+MSG_EN[$MSG_MISSING_PARTUUID]="Missing clone device PARTUUID. \
+${NL}${NL}Examples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Note: Separate clone device and PARTUUID by spaces"
+MSG_DE[$MSG_MISSING_PARTUUID]="Es fehlt eine PARTUUID des Clonegeräts. \
+${NL}${NL}Beispiele: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch Leerzeichen"
 
 MSG_INVALID_PARTUUID=$((SCNT++))
-MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1"
-MSG_DE[$MSG_INVALID_PARTUUID]="Ungültige PARTUUID %1"
+MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1 \
+${NL}${NL}Examples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Note: Separate clone device and PARTUUID by spaces"
+
+MSG_DE[$MSG_INVALID_PARTUUID]="Ungültige PARTUUID %1 \
+${NL}${NL}Beispiele: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch Leerzeichen"
 
 MSG_PARTUUID_NOT_FOUND=$((SCNT++))
 MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
@@ -4897,7 +4924,10 @@ function config_clone_menu() {
 	local current_device=$CONFIG_CLONE_DEVICE
 	local current_partuuid=$CONFIG_CLONE_PARTUUID
 	
-	local current="$CONFIG_CLONE_DEVICE $CONFIG_CLONE_PARTUUID"
+	local current="$CONFIG_CLONE_DEVICE"
+	if [[ -n "$CONFIG_CLONE_PARTUUID" ]]; then
+		current="$current $CONFIG_CLONE_PARTUUID"
+	fi
 	
 	local current_device="$CONFIG_CLONE_DEVICE"
 	local old_device="$current_device"
@@ -4916,20 +4946,20 @@ function config_clone_menu() {
 			logItem "Answer: $ANSWER"
 			current="$ANSWER"
 			if [[ -n "$ANSWER" ]]; then
-				local device="$(cut -f 1 -d ' ' <<< "$ANSWER")"
-				local partuuid="$(cut -f 2 -d ' ' <<< "$ANSWER")"
+				local device partuuid
+				read -r device partuuid <<< "$ANSWER"
 				if [[ ! -b "$device" ]]; then
 					local m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$device")"
 					local t=$(center $WINDOW_COLS "$m")
 					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
-				elif [[ "$partuuid" == "$device" ]]; then
+				elif [[ -z "$partuuid" ]]; then
 					local m="$(getMessageText $MSG_MISSING_PARTUUID "$partuuid")"
 					local t=$(center $WINDOW_COLS "$m")
 					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				else
-					if [[ ! "$partuuid" =~ [0-9a-f\-]+ ]]; then
+					if [[ ! "$partuuid" =~ ^[0-9a-f\-]+$ ]]; then
 						local m="$(getMessageText $MSG_INVALID_PARTUUID "$partuuid")"
 						local t=$(center $WINDOW_COLS "$m")
 						local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
@@ -4950,6 +4980,10 @@ function config_clone_menu() {
 						fi
 					fi
 				fi
+			else # empty answer
+				CONFIG_CLONE_DEVICE=""
+				CONFIG_CLONE_PARTUUID=""
+				break
 			fi # no answer
 		else
 			break
