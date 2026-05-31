@@ -246,7 +246,7 @@ if [[ -n "$GPG_KEYID" ]] ; then
 fi
 popd > /dev/null
 
-if (( CHECK_PACKAGE != 0 )) ; then
+if (( CHECK_PACKAGE )) ; then
 	show "Check package with lintian "
 
 	if ! command -v lintian > /dev/null ; then
@@ -260,14 +260,15 @@ if (( CHECK_PACKAGE != 0 )) ; then
 	#       "accepted" errors. We simply **could** ignore all of the
 	#       failing checks by using option '--fail-on pedantic'.
 	#       But the cleaner way is:
-	#       Only suppress the unwanted checks via --suppress_tags:
-	if (( CHECK_PACKAGE == 1 )) ; then
-		SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
-	else
+	#       Only suppress the unwanted checks via --suppress_tags.
+	SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+
+	# But perhaps we sometimes want to do a full check
+	if (( CHECK_PACKAGE == 2 )) ; then
 		echo "Note: Reports all errors, even the accepted/known ones!"
 		echo ""
 		SUPPRESS_TAGS=""
