@@ -2643,6 +2643,8 @@ function writeToConsole() {  # msglevel messagenumber message
 		if (( "$LOG_LEVEL" != "$LOG_NONE" )); then
 			echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
 		fi
+	else
+		echo $noNL -e "$msg" >>$LOG_FILE	# write all non error messages into debug log
 	fi
 
 	if (( ! $INTERACTIVE || $RESTORE )); then # don't write message twice into log for backup but once for restore
@@ -3450,7 +3452,7 @@ function dynamic_mount() { # mountpoint
 		if [[ -n $CLONE_DEVICE && -n $RESTORE_DEVICE ]]; then # clone restore should execute umount for dynamic mount executed for backup
 			DYNAMIC_MOUNT_EXECUTED=1
 		fi
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_MOUNT_NOT_REQUIRED "$1"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DYNAMIC_MOUNT_NOT_REQUIRED "$1"
 	fi
 
 	logExit
@@ -3778,7 +3780,7 @@ function stopServices() {
 		if [[ "$STOPSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STOPPING_SERVICES
 		else
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_STOPPING_SERVICES "$STOPSERVICES"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPING_SERVICES "$STOPSERVICES"
 			logItem "$STOPSERVICES"
 			STOPPED_SERVICES=1
 			executeShellCommand "$STOPSERVICES"
@@ -3838,7 +3840,7 @@ function startServices() {
 			elif [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STARTING_SERVICES
 			else
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_STARTING_SERVICES "$STARTSERVICES"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTING_SERVICES "$STARTSERVICES"
 				logItem "$STARTSERVICES"
 				executeShellCommand "$STARTSERVICES"
 				local rc=$?
@@ -5156,7 +5158,7 @@ function sendEMail() { # content subject
 
 		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $NEWS_AVAILABLE ) ) ) )); then
 
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_SENDING_EMAIL
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SENDING_EMAIL
 
 			IFS=" "
 			content="$NL$(<"$MSG_FILE")$NL$1$NL"
@@ -5481,7 +5483,7 @@ function cleanupStartup() { # trap
 	logExit
 
 	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
 		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
 	fi
 
@@ -5533,7 +5535,7 @@ function cleanup() { # trap
 					rc=$RC_TEMPMOVE_FAILED
 				else
 					if [[ $MSG_LEVEL == "$MSG_LEVEL_MINIMAL" ]]; then
-						writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
 					else
 						writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPDIR_MOVED "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
 					fi
@@ -8497,7 +8499,7 @@ function doitBackup() {
 		rc=0
 	else
 		if (( $SMART_RECYCLE && !$SMART_RECYCLE_DRYRUN )); then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_WILL_BE_APPLIED
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_WILL_BE_APPLIED
 		fi
 		backup
 	fi
@@ -10042,7 +10044,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline4Message" "root="
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline4Message"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline4Message"
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
@@ -10061,7 +10063,7 @@ function synchronizeCmdlineAndfstab() {
 		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
 			e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 			local rc=$?
 			if (( $rc )); then
@@ -10122,14 +10124,14 @@ function synchronizeCmdlineAndfstab() {
 				olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
 				local newuuidID
 				newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab4Message"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab4Message"
 				sed -i "s/$olduuidID/$newuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			if (( ! $rootLabelCreated )) ; then
 				local oldLABEL=${BASH_REMATCH[1]}
 				logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
 				e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 				local rc=$?
 				if (( $rc )); then
@@ -10164,7 +10166,7 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/boot"
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab4Message"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab4Message"
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
@@ -10176,13 +10178,13 @@ function synchronizeCmdlineAndfstab() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message	" "/boot"
 				exitError $RC_UUID_UPDATE_IMPOSSIBLE
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab4Message"
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab4Message"
 				sed -i "s/$oldUUID/$newUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
 			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 			local rc=$?
 			if (( $rc )); then
@@ -11430,15 +11432,15 @@ if (( $NOTIFY_START )); then
 fi
 
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"
 	logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$ETC_CONFIG_FILE")"
 fi
 if (( $HOME_CONFIG_FILE_INCLUDED )); then
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE" # "$HOME_CONFIG_FILE_VERSION"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE" # "$HOME_CONFIG_FILE_VERSION"
 	logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$HOME_CONFIG_FILE")"
 fi
 if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE" # "$CURRENTDIR_CONFIG_FILE_VERSION"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE" # "$CURRENTDIR_CONFIG_FILE_VERSION"
 	logItem "Read ${CURRENTDIR_CONFIG_FILE} : ${CURRENTDIR_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CURRENTDIR_CONFIG_FILE")"
 fi
 
