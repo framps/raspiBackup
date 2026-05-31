@@ -2143,8 +2143,8 @@ MSG_SYNCING_SECOND_PARTITION=356
 MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
 MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
 MSG_CLONE_IMPOSSIBLE=357
-MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match bootdevice %s. Run an initial restore with option -d to %s first"
-MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Bootgerät %s überein. Zuerst einen initialen Restore mit Option -d auf %s starten"
+MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match systemdevice %s. Initial restore to %s is required"
+MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Systemgerät %s überein. Ein initialer Restore auf %s ist notwendig"
 MSG_CLONE_SCHEDULED=358
 MSG_EN[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone of backup to clonedevice %s scheduled"
 MSG_DE[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone des Backups auf Clonegerät %s ist vorgemerkt"
@@ -2158,15 +2158,15 @@ MSG_CLONE_STARTED=361
 MSG_EN[$MSG_CLONE_STARTED]="RBK0361I: Started clone of backup to %s"
 MSG_DE[$MSG_CLONE_STARTED]="RBK0361I: StartClones des Backups auf Clonegerät %s gestartet"
 MSG_DD_NOT_SUPPORTED_FOR_CLONE=362
-MSG_EN[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0363E: Backuptype dd and ddz are not supported for a clone"
-MSG_DE[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0363E: Backuptyp dd und ddz sind nicht für clone unterstützt"
-MSG_CLONE_TOO_MANY_DEVICES=363
-MSG_EN[$MSG_CLONE_TOO_MANY_DEVICES]="RBK0364E: %s similar devices for %s detected. Configure DEFAULT_CLONE_ROOT_PARTUUID"
-MSG_DE[$MSG_CLONE_TOO_MANY_DEVICES]="RBK0364E: %s gleiche Gerätetypen für %s entdeckt. Definiere DEFAULT_CLONE_ROOT_PARTUUID"
+MSG_EN[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0362E: Backuptype dd and ddz are not supported for a clone"
+MSG_DE[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0362E: Backuptyp dd und ddz sind nicht für clone unterstützt"
+MSG_CLONE_NO_PARTUUID_DEFINED=363
+MSG_EN[$MSG_CLONE_NO_PARTUUID_DEFINED]="RBK0363E: No DEFAULT_CLONE_PARTUUID for %s configured"
+MSG_DE[$MSG_CLONE_NO_PARTUUID_DEFINED]="RBK0363E: Keine DEFAULT_CLONE_PARTUUID für %s konfiguriert"
 MSG_CLONE_NO_PARTUUID_MATCH=364
-MSG_EN[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0365E: Configured clone root PARTUUID %s does not match existing UUID %s of %s"
+MSG_EN[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0364E: Configured PARTUUID %s does not match any PARTUUID of %s"
 #shellcheck disable=SC2034
-MSG_DE[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0365E: Konfigurierte clone root PARTUUID %s stimmt nicht mit der existierenden UUID von %s von %s überein"
+MSG_DE[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0364E: Konfigurierte PARTUUID %s stimmt mit keiner PARTUUID von %s überein"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2957,7 +2957,7 @@ function logOptions() { # option state
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
 	logItem "$CLONE_DEVICE"
-	logItem "$CLONE_ROOT_PARTUUID"
+	logItem "$CLONE_PARTUUID"
 	logItem "COLOR_CODES=${COLOR_CODES[*]}"
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
@@ -3060,8 +3060,8 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_BACKUPPATH="/backup"
 	# Update clone at end of backup creation to clone device
 	DEFAULT_CLONE_DEVICE=""
-	# Partuuid of root clone partition
-	DEFAULT_CLONE_ROOT_PARTUUID=""
+	# Partuuid of a clone partition
+	DEFAULT_CLONE_PARTUUID=""
 	# how many backups to keep of all backup types
 	DEFAULT_KEEPBACKUPS=3
 	# how many backups to keep of the specific backup type. If zero DEFAULT_KEEPBACKUPS is used
@@ -3228,7 +3228,7 @@ function initializeDefaultConfigVariables() {
 function copyDefaultConfigVariables() {
 
 	CLONE_DEVICE="$DEFAULT_CLONE_DEVICE"
-	CLONE_ROOT_PARTUUID="$DEFAULT_CLONE_ROOT_PARTUUID"
+	CLONE_PARTUUID="$DEFAULT_CLONE_PARTUUID"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
 	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
@@ -6816,33 +6816,6 @@ function partitionRestoredeviceIfRequested() {
 	logExit
 }
 
-# count number of same devicetypes
-# device = /dev/sda, /dev/mmcblk1 or /dev/nvme1n2
-
-function countSameDevices() { # device
-
-	logEntry "$1"
-
-	local devices d n
-
-	devices="$(blkid -o device | grep -E "/dev/(mmcblk|sd|nvme)" | grep -v "boot" | sed -E 's|/dev/(nvme.+)p[0-9]+$|\1|' | sed -E 's|/dev/(mmcblk.+)p[0-9]+$|\1|' | sed -E 's|/dev/(sd.+)[0-9]+$|\1|' | uniq)"
-
-	logItem "Found: $devices"
-
-	d="$(sed -E 's@/dev/((sd|mmcblk|nvme).+)@\2@' <<< "$1" )"
-
-	logItem "Checking $d"
-
-	n="$(grep "$d" <<< "$devices" | wc -l)"
-
-	logItem "Detectcount: $n"
-
-	echo "$n"
-
-	logExit "$n"
-
-}
-
 # return all partitionnumbers available in backup
 
 function collectAvailableBackupPartitions() { # lastBackupDir
@@ -9550,7 +9523,7 @@ function doitRestore() {
 	rc=0
 
 	if [[ -n $CLONE_DEVICE ]] && (( $CLONEPATH )); then
-		check4MultipleSimilarCloneDevices
+		checkCloneDevice
 	fi
 
 	if ! (( $PARTITIONBASED_BACKUP )); then
@@ -9571,27 +9544,23 @@ function doitRestore() {
 
 }
 
-function check4MultipleSimilarCloneDevices() {
+function checkCloneDevice() {
 
 	logEntry
-
-	if [[ -n $CLONE_ROOT_PARTUUID ]]; then
-		local uuid
-		uuid="$(blkid | grep "$CLONE_DEVICE" | sed -E 's|.+PARTUUID="([a-f0-9]+.+)"|\1|' | grep "\-02")"	# retrieve partuuid of second partition
-		logItem "Clone root partition PARTUUID: $uuid - defined PARTUUID: $CLONE_ROOT_PARTUUID"
-		if [[ $CLONE_ROOT_PARTUUID != "$uuid" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_MATCH "$CLONE_ROOT_PARTUUID" "$uuid" "$CLONE_DEVICE"
+	
+	if [[ -z $CLONE_PARTUUID ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_DEFINED "$CLONE_DEVICE"
+		exitError $RC_CLONE_FAILED
+	else
+		local partuuids
+		partuuids="$(blkid | grep -E "^$CLONE_DEVICE" | sed -E 's|^(.+)PARTUUID="(.+)"|\2|')"
+		logItem "PARTUUIDs: $partuuids - defined PARTUUID: $CLONE_PARTUUID"		
+		if [[ ! "$partuuids" =~ $CLONE_PARTUUID ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_MATCH "$CLONE_PARTUUID" "$CLONE_DEVICE"
 			exitError $RC_CLONE_FAILED
 		fi
 	fi
 	
-	local n
-	n="$(countSameDevices $CLONE_DEVICE)"
-	if (( $n > 1 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_TOO_MANY_DEVICES "$(( $n-1 ))" "$CLONE_DEVICE"
-		exitError $RC_CLONE_FAILED
-	fi
-
 	logExit
 }
 
@@ -10724,7 +10693,7 @@ function cloneSetBackupParms() {
 
 	logItem "CLONEOPTIONS:${CLONE_RESTORE_OPTIONS[*]}"
 
-	check4MultipleSimilarCloneDevices
+	checkCloneDevice
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
 
