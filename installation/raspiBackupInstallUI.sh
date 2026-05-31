@@ -293,6 +293,7 @@ CONFIG_LANGUAGE=$LANG_SYSTEM
 
 CONFIG_MSG_LEVEL="0"
 CONFIG_CLONE_DEVICE=""
+CONFIG_CLONE_PARTUUID=""
 CONFIG_BACKUPTYPE="rsync"
 CONFIG_KEEPBACKUPS="3"
 DEFAULT_CONFIG_SMART_RECYCLE="0"
@@ -942,12 +943,10 @@ MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le f
 MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
 
 DESCRIPTION_CLONE_DEVICE=$((SCNT++))
-MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define the clone device. Format: /dev/sdb, /dev/mmcblk1 or /dev/nvme0n1. \
-${NL}${NL}Note: No other devices of the same devicetype of the clone device are allowed (E.g. only /dev/sda and no /dev/sdb) \
-Otherwise configure option DEFAULT_CLONE_ROOT_PARTUUID in addition."
-MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät. Format: /dev/sdb, /dev/mmcblk1 oder /dev/nvme1n1. \
-${NL}${NL}Hinweis: Es darf kein anderes Gerät vom selben Typ des Clonegerätes genutzt werden (Z.B. nur /dev/sda aber kein /dev/sdb) \
-Anderenfalls muss die Option DEFAULT_CLONE_ROOT_PARTUUID zusätzlich konfiguriert werden"
+MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define the clone device. Format: /dev/sdb, /dev/mmcblk1 or /dev/nvme0n1 \
+${NL}followed by a space and a PARTUUID of the clonedevice"
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät. Format: /dev/sdb, /dev/mmcblk1 oder /dev/nvme1n1 \
+${NL}gefolgt von einem Leerzeichen und einer PARTUUID des Clonegerätes."
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -1076,8 +1075,24 @@ MSG_FR[$TITLE_CONFIRM]="SVP Confirmez"
 MSG_ZH[$TITLE_CONFIRM]="请确认"
 
 MSG_INVALID_CLONE_DEVICE=$((SCNT++))
-MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Clone device %1 not found.${NL}Examples: /dev/sda, /dev/mmcblk1p or /dev/nvme1n1."
-MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Clonegerät %1 nicht gefunden.${NL}Beispiele: /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1."
+MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Clone device %1 not found. \
+${NL}${NL}Examples: /dev/sda, /dev/mmcblk1p or /dev/nvme1n1."
+MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Clonegerät %1 nicht gefunden. \
+${NL}${NL}Beispiele: /dev/sda, /dev/mmcblk1p oder /dev/nvme1n1."
+
+MSG_MISSING_PARTUUID=$((SCNT++))
+MSG_EN[$MSG_MISSING_PARTUUID]="Missing trailing clone PARTUUID serataed by a space. \
+${NL}${NL}Examples: ef429bca-01 or 8a852566-5f18-416a-9639-bcfd1f674054."
+MSG_DE[$MSG_MISSING_PARTUUID]="Keine Clone PARTUUID am Ende durch ein Leerzeichen getrennt angegeben. \
+${NL}${NL}Beispiele: ef429bca-01 oder 8a852566-5f18-416a-9639-bcfd1f674054."
+
+MSG_INVALID_PARTUUID=$((SCNT++))
+MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1"
+MSG_DE[$MSG_INVALID_PARTUUID]="Ungültige PARTUUID %1"
+
+MSG_PARTUUID_NOT_FOUND=$((SCNT++))
+MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
+MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2"
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
@@ -2352,7 +2367,7 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 function parseConfig() {
 	logEntry
 
-	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL|CLONE_DEVICE)=" "$CONFIG_ABS_FILE")
+	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL|CLONE_DEVICE|CLONE_PARTUUID)=" "$CONFIG_ABS_FILE")
 	while IFS="=" read key value; do
 		key=${key//\"/}
 		key=${key/DEFAULT/CONFIG}
@@ -2392,6 +2407,7 @@ function config_update_execute() {
 	logItem "Dryrun: $CONFIG_SMART_RECYCLE_DRYRUN"
 	logItem "Msglevel: $CONFIG_MSG_LEVEL"
 	logItem "CloneDevice: $CONFIG_CLONE_DEVICE"
+	logItem "ClonePartuuid: $CONFIG_CLONE_PARTUUID"
 	logItem "Backuppath: $CONFIG_BACKUPPATH"
 	logItem "Stop: $CONFIG_STOPSERVICES"
 	logItem "Start: $CONFIG_STARTSERVICES"
@@ -2412,6 +2428,7 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_MSG_LEVEL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_PARTUUID=.*$/DEFAULT_CLONE_PARTUUID=\"$CONFIG_CLONE_PARTUUID\"/" "$CONFIG_ABS_FILE"
 	local c=$(sed 's_/_\\/_g' <<< "$CONFIG_CLONE_DEVICE")
 	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$/DEFAULT_CLONE_DEVICE=\"$c\"/" "$CONFIG_ABS_FILE"
 	local f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
@@ -4877,8 +4894,15 @@ function config_clone_menu() {
 
 	logEntry
 
-	local current="$CONFIG_CLONE_DEVICE"
-	local old="$current"
+	local current_device=$CONFIG_CLONE_DEVICE
+	local current_partuuid=$CONFIG_CLONE_PARTUUID
+	
+	local current="$CONFIG_CLONE_DEVICE $CONFIG_CLONE_PARTUUID"
+	
+	local current_device="$CONFIG_CLONE_DEVICE"
+	local old_device="$current_device"
+	local current_partuuid="$CONFIG_CLONE_PARTUUID"
+	local old_partuuid="$current_partuuid"
 
 	while :; do
 
@@ -4892,27 +4916,49 @@ function config_clone_menu() {
 			logItem "Answer: $ANSWER"
 			current="$ANSWER"
 			if [[ -n "$ANSWER" ]]; then
-				if [[ ! -b "$ANSWER" ]]; then
-					local m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$ANSWER")"
+				local device="$(cut -f 1 -d ' ' <<< "$ANSWER")"
+				local partuuid="$(cut -f 2 -d ' ' <<< "$ANSWER")"
+				if [[ ! -b "$device" ]]; then
+					local m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$device")"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				elif [[ "$partuuid" == "$device" ]]; then
+					local m="$(getMessageText $MSG_MISSING_PARTUUID "$partuuid")"
 					local t=$(center $WINDOW_COLS "$m")
 					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				else
-					CONFIG_CLONE_DEVICE="$ANSWER"
-					break
+					if [[ ! "$partuuid" =~ [0-9a-f\-]+ ]]; then
+						local m="$(getMessageText $MSG_INVALID_PARTUUID "$partuuid")"
+						local t=$(center $WINDOW_COLS "$m")
+						local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+						whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2 
+					else
+						local partuuidList
+						partuuidList=( $(blkid | grep -E "^$device" | sed -E 's|^(.+)PARTUUID="(.+)"|\2|') )
+						logItem "PARTUUIDs: ${partuuidList[*]} - defined PARTUUID: $partuuid"
+						if ! containsElement "$partuuid" "${partuuidList[@]}"; then
+							local m="$(getMessageText $MSG_PARTUUID_NOT_FOUND "$partuuid" "$device")"
+							local t=$(center $WINDOW_COLS "$m")
+							local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+							whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+						else
+							CONFIG_CLONE_DEVICE="$device"
+							CONFIG_CLONE_PARTUUID="$partuuid"
+							break
+						fi
+					fi
 				fi
-			else
-				CONFIG_CLONE_DEVICE="$ANSWER"
-				break
-			fi
+			fi # no answer
 		else
 			break
 		fi
 	done
 
-	[[ "$old" == "$CONFIG_CLONE_DEVICE" ]]
+	[[ "$old_device" == "$CONFIG_CLONE_DEVICE" && "$old_partuuid" == "$CONFIG_CLONE_PARTUUID" ]]
 	local rc=$?
-	logExit "$rc -$CONFIG_CLONE_DEVICE"
+	logExit "$rc -$CONFIG_CLONE_DEVICE - $CONFIG_CLONE_PARTUUID"
 	return $rc
 
 }
