@@ -24,8 +24,43 @@
 
 set -euo pipefail
 
+usage() {
+	cat <<"EOF_USAGE"
+Usage:
+
+	build.sh [options]
+
+That simple call builds a Debian package from raspiBackup.
+Finally it runs `lintian` to check the package for compliance.
+That is a reduced check to fit this package not being a "real" Debian package.
+
+Options:
+
+    --no-check     don't check anything with `lintian`
+    --full-check   do a full `lintian` check, including accepted-to-fail tests
+    -h | --help    display this short help
+
+EOF_USAGE
+}
+
+
 # shellcheck disable=1091
 source ./common.sh
+
+CHECK_PACKAGE=1
+if (( $# > 0 )); then
+	case "$1" in
+	    -h|--help) usage
+		       exit
+		       ;;
+	    --no-check) CHECK_PACKAGE=0
+			shift
+			;;
+	    --full-check) CHECK_PACKAGE=2
+			  shift
+			  ;;
+	esac
+fi
 
 GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
 # shellcheck disable=2034
@@ -67,14 +102,6 @@ version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d 
 REGEX='.*="([^"]*)"'
 if [[ $version =~ $REGEX ]]; then
 	VERSION=${BASH_REMATCH[1]}
-fi
-
-CHECK_PACKAGE=1
-if (( $# > 0 )); then
-	if [[ "$1" == "--no-check" ]] ; then
-		CHECK_PACKAGE=0
-		shift
-	fi
 fi
 
 # allow to pass another version number for upgrade/downgrade tests
@@ -161,7 +188,6 @@ done
 
 show "Resulting systemd files ..."
 
-
 for f in "$TGT/$DIR_LIB"/systemd/system/* ; do
     echo ""
     show "... $(realpath --relative-to . "$f")"
@@ -220,29 +246,37 @@ if [[ -n "$GPG_KEYID" ]] ; then
 fi
 popd > /dev/null
 
-if (( CHECK_PACKAGE != 0 )) ; then
+if (( CHECK_PACKAGE )) ; then
 	show "Check package with lintian "
 
-	if command -v lintian > /dev/null ; then
-		# Note: The default behaviour for lintian exiting with rc=2 is:
-		#         `--fail-on error`
-		#       Since this packet isn't a real Debian one there are some
-		#       "accepted" errors. We simply **could** ignore all of the
-		#       failing checks by using option '--fail-on pedantic'.
-		#       But the cleaner way is:
-		#       Only suppress the unwanted checks via --suppress_tags:
-		SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
-		SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
-		#
-		# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
-		lintian --verbose --info --color always $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
-		rc=$?
-	else
-		echo "Warning: Can't check package because 'lintian' isn't installed!"
+	if ! command -v lintian > /dev/null ; then
+		echo "Error: Can't check package because 'lintian' isn't installed!"
+		exit 1
 	fi
+
+	# Note: The default behaviour for lintian exiting with rc=2 is:
+	#         `--fail-on error`
+	#       Since this packet isn't a real Debian one there are some
+	#       "accepted" errors. We simply **could** ignore all of the
+	#       failing checks by using option '--fail-on pedantic'.
+	#       But the cleaner way is:
+	#       Only suppress the unwanted checks via --suppress_tags.
+	SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
+	SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+
+	# But perhaps we sometimes want to do a full check
+	if (( CHECK_PACKAGE == 2 )) ; then
+		echo "Note: Reports all errors, even the accepted/known ones!"
+		echo ""
+		SUPPRESS_TAGS=""
+	fi
+
+	# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
+	lintian --verbose --info --color always $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
+	rc=$?
 fi
 
 
