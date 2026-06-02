@@ -37,8 +37,9 @@ That is a reduced check to fit this package not being a "real" Debian package.
 Options:
 
     --no-check     don't check anything with `lintian`
-    --full-check   do a full `lintian` check, including accepted-to-fail tests
     -h | --help    display this short help
+
+In file 'build.conf' you can configure some aspects of the build process.
 
 EOF_USAGE
 }
@@ -47,31 +48,101 @@ EOF_USAGE
 # shellcheck disable=1091
 source ./common.sh
 
-CHECK_PACKAGE=1
-if (( $# > 0 )); then
-	case "$1" in
-	    -h|--help) usage
-		       exit
-		       ;;
-	    --no-check) CHECK_PACKAGE=0
-			shift
-			;;
-	    --full-check) CHECK_PACKAGE=2
-			  shift
-			  ;;
-	esac
-fi
+if [[ ! -f ./build.conf ]] ; then
+	echo "Error: Configuration file 'build.conf' not found."
+	echo "Creating one for you now. Please check/edit it and try again..."
 
-GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
-# shellcheck disable=2034
-readonly GITSRC
-
+	cat <<EOF_CONF > ./build.conf
+# BRANCH_TO_DEB
 # The branch used to build the Debian package from.
 # If empty then the curent branch is used.
 # Note: Always only the commited changes are taken into account!
 # BRANCH_TO_DEB="master"
 # BRANCH_TO_DEB="m_972"
 BRANCH_TO_DEB=""
+
+# Note: Some of the following variables need to be exported
+#       because they are used in/with envsubst.
+
+# Debian wants to have all-lowercase package names
+export PACKAGE_NAME="raspibackup"
+
+# absolute pathes for the files in the package
+# will be used relatively and absolutely
+export DIR_BIN="/usr/local/bin"
+export DIR_ETC="/usr/local/etc"
+export DIR_LIB="/usr/local/lib"
+export DIR_SHARE="/usr/local/share"
+
+# LINTIAN_CHECK
+#   - "full"    : all checks
+#   - "reduced" : intentionally suppress some checks (default here)
+#   - ""        : no checks at all
+LINTIAN_CHECK=reduced
+
+# LINTIAN_OPTIONS
+#   - "--info" : display more details on failed checks
+LINTIAN_OPTIONS="--verbose --info --color always --fail-on error"
+
+# VERBOSITY
+#   - normal
+#   - debug
+VERBOSITY=normal
+
+# GPG_KEYID
+# The GPG key ID used for signing the built package. Required!
+GPG_KEYID=
+EOF_CONF
+
+	exit 1
+fi
+
+
+source ./build.conf
+
+[[ -v LINTIAN_CHECK ]] || LINTIAN_CHECK=reduced
+[[ -v LINTIAN_OPTIONS ]] || LINTIAN_OPTIONS="--verbose --info --color always"
+
+VERBOSITY="${VERBOSITY:-debug}"
+
+
+if (( $# > 0 )); then
+	case "$1" in
+	    -h|--help) usage
+		       exit
+		       ;;
+	    --no-check) LINTIAN_CHECK=""
+			shift
+			;;
+	esac
+fi
+
+## For the transition of older gpg.conf to build.conf:
+#
+# if [[ -f gpg.conf ]] ; then
+# 	# fill GPG_KEYID with existing local key
+# 	# shellcheck disable=1091
+# 	source ./gpg.conf
+# 	cat ./gpg.conf >> build.conf
+# 	mv gpg.conf gpg.conf.bak
+# 	echo "Note: Moved the GPG_KEYID from 'gpg.conf' into 'build.conf'!"
+# fi
+
+
+LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
+readonly LOG_FILE
+
+exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
+exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
+
+rm "$LOG_FILE" || true
+
+trap 'err $?' ERR
+
+
+GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
+# shellcheck disable=2034
+readonly GITSRC
 
 CURRENT_BRANCH=$(git branch --show-current)
 
@@ -85,18 +156,6 @@ else
 fi
 
 export VERSION
-LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
-readonly LOG_FILE
-
-GPG_KEYID=""
-if [[ -f gpg.conf ]] ; then
-	# fill GPG_KEYID with existing local key
-	# shellcheck disable=1091
-	source ./gpg.conf
-fi
-
-trap 'err $?' ERR
-
 # extract version number from raspiBackup script
 version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
 REGEX='.*="([^"]*)"'
@@ -108,16 +167,6 @@ fi
 if (( $# > 0 )); then
 	VERSION="$1"
 fi
-
-# Debian wants to have all-lowercase package names
-export PACKAGE_NAME="raspibackup"
-
-# absolute pathes for the files in the package
-# will be used relatively below and absolutely in envsubst results
-export DIR_BIN="/usr/local/bin"
-export DIR_ETC="/usr/local/etc"
-export DIR_LIB="/usr/local/lib"
-export DIR_SHARE="/usr/local/share"
 
 # underscores are not allowed in Debian version numbers
 # change m_972 to m-972
@@ -178,26 +227,24 @@ envsubst < "$PACKAGE/DEBIAN/postinst"  > "$TGT/DEBIAN/postinst"
 chmod 644 "$TGT/DEBIAN/conffiles" "$TGT/DEBIAN/control"
 chmod 755 "$TGT/DEBIAN/postinst"
 
-show "Resulting DEBIAN package files ..."
+if [[ "$VERBOSITY" == debug ]] ; then
+	show "Resulting DEBIAN package files ..."
 
-for f in "$TGT"/DEBIAN/* ; do
-    echo ""
-    show "... $f"
-    cat "$f"
-done
+	for f in "$TGT"/DEBIAN/* ; do
+		echo ""
+		show "... $f"
+		cat "$f"
+	done
 
-show "Resulting systemd files ..."
+	show "Resulting systemd files ..."
 
-for f in "$TGT/$DIR_LIB"/systemd/system/* ; do
-    echo ""
-    show "... $(realpath --relative-to . "$f")"
-    cat "$f"
-done
+	for f in "$TGT/$DIR_LIB"/systemd/system/* ; do
+		echo ""
+		show "... $(realpath --relative-to . "$f")"
+		cat "$f"
+	done
+fi
 
-exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
-exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
-
-rm "$LOG_FILE" || true
 rc=0
 
 show "Build package"
@@ -205,7 +252,12 @@ LC_ALL=C dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${V
 
 if [[ -n "$GPG_KEYID" ]] ; then
 	show "Sign package"
-	gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+	if [[ "$VERBOSITY" == debug ]] ; then
+		GPG_VERBOSE="--verbose"
+	else
+		GPG_VERBOSE=""
+	fi
+	gpg $GPG_VERBOSE --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 	rc=$?
 else
 	echo ""
@@ -229,15 +281,6 @@ if [[ "$rc" -ne 0 ]] ; then
     exit "$rc"
 fi
 
-show "Show files which will be installed"
-dpkg-deb -c "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
-
-show "The final package in $DEB_TGT"
-ls -l "$DEB_TGT"
-
-show "${PACKAGE_NAME} $VERSION package information"
-dpkg-deb -I "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
-
 # create links
 pushd "$DEB_TGT" > /dev/null
 ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
@@ -246,7 +289,7 @@ if [[ -n "$GPG_KEYID" ]] ; then
 fi
 popd > /dev/null
 
-if (( CHECK_PACKAGE )) ; then
+if [[ -n "$LINTIAN_CHECK" ]] ; then
 	show "Check package with lintian "
 
 	if ! command -v lintian > /dev/null ; then
@@ -261,24 +304,35 @@ if (( CHECK_PACKAGE )) ; then
 	#       failing checks by using option '--fail-on pedantic'.
 	#       But the cleaner way is:
 	#       Only suppress the unwanted checks via --suppress_tags.
-	SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
-	SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
-	SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
-	SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
-	SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+	case "$LINTIAN_CHECK" in
+		full) # Sometimes we might want to do a full check
+		      echo "Note: Reports all errors, even the accepted/known ones!"
+		      echo ""
+		      SUPPRESS_TAGS=""
+		      ;;
 
-	# But perhaps we sometimes want to do a full check
-	if (( CHECK_PACKAGE == 2 )) ; then
-		echo "Note: Reports all errors, even the accepted/known ones!"
-		echo ""
-		SUPPRESS_TAGS=""
-	fi
+		*) # "reduced" checks is the default
+		   SUPPRESS_TAGS="--suppress-tags file-in-unusual-dir"
+		   SUPPRESS_TAGS="$SUPPRESS_TAGS,dir-in-usr-local,file-in-usr-local"
+		   SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
+		   SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
+		   SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+		   ;;
+	esac
+
 
 	# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
-	lintian --verbose --info --color always $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb"
-	rc=$?
+	lintian $LINTIAN_OPTIONS $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb" || exit $?
 fi
 
 
-exit "$rc"
+show "The final package in $DEB_TGT"
+ls -l "$DEB_TGT"
 
+if [[ "$VERBOSITY" == debug ]] ; then
+	show "${PACKAGE_NAME} $VERSION package information"
+	dpkg-deb -I "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+
+	show "Show files which will be installed"
+	dpkg-deb -c "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+fi
