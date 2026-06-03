@@ -140,6 +140,7 @@ fi
 
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
+
 DEBUG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")")-debug.log
 readonly DEBUG_FILE
 
@@ -244,11 +245,14 @@ rc=0
 show "Build (and sign) package"
 LC_ALL=C dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
+## Start of special debug block ##
+
+# With non-debug output the details of the following commands
+# are collected in a debug log and later added to the build.log.
+# They are displayed on the terminal only when in debug mode.
+
 if [[ "$VERBOSITY" != debug ]] ; then
-	exec 3> "$DEBUG_FILE"
-	exec 4>&1
-	exec 5>&2
-	exec 1>&3 2>&1
+	exec 3> "$DEBUG_FILE" 4>&1 5>&2 1>&3 2>&1
 fi
 
 show "Resulting DEBIAN package files ..."
@@ -273,21 +277,18 @@ dpkg-deb -I "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 show "Show files which will be installed"
 dpkg-deb -c "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
-
 show "Sign package"
-
 gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb" || exit $?
-
 
 if [[ "$VERBOSITY" != debug ]] ; then
 	if [[ -f "$DEBUG_FILE" ]] ; then
 		cat "$DEBUG_FILE" >> "$LOG_FILE"
 		rm "$DEBUG_FILE"
 	fi
-	exec 3>&-
-	exec 1>&4-
-	exec 2>&5-
+	exec 3>&- 1>&4- 2>&5-
 fi
+
+## End of special debug block ##
 
 
 # create links
