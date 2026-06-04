@@ -105,17 +105,15 @@ source ./build.conf
 
 VERBOSITY="${VERBOSITY:-debug}"
 
-
-if (( $# > 0 )); then
-	case "$1" in
-	    -h|--help) usage
-		       exit
-		       ;;
-	    --no-check) LINTIAN_CHECK=""
-			shift
-			;;
-	esac
+if [[ -z "$GPG_KEYID" ]] ; then
+	echo ""
+	echo "Error: The package can't be signed due to missing GPG_KEYID!"
+	echo "       Please set GPG_KEYID in 'build.conf' to the ID to be used"
+	echo "       for signing the built package."
+	echo ""
+	exit 1
 fi
+
 
 ## For the transition of older gpg.conf to build.conf:
 #
@@ -129,13 +127,28 @@ fi
 # fi
 
 
+if (( $# > 0 )); then
+	case "$1" in
+	    -h|--help) usage
+		       exit
+		       ;;
+	    --no-check) LINTIAN_CHECK=""
+			shift
+			;;
+	esac
+fi
+
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
+
+DEBUG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")")-debug.log
+readonly DEBUG_FILE
 
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
-rm "$LOG_FILE" || true
+rm -f "$LOG_FILE" || true
+rm -f "$DEBUG_FILE" || true
 
 trap 'err $?' ERR
 
@@ -227,59 +240,56 @@ envsubst < "$PACKAGE/DEBIAN/postinst"  > "$TGT/DEBIAN/postinst"
 chmod 644 "$TGT/DEBIAN/conffiles" "$TGT/DEBIAN/control"
 chmod 755 "$TGT/DEBIAN/postinst"
 
-if [[ "$VERBOSITY" == debug ]] ; then
-	show "Resulting DEBIAN package files ..."
-
-	for f in "$TGT"/DEBIAN/* ; do
-		echo ""
-		show "... $f"
-		cat "$f"
-	done
-
-	show "Resulting systemd files ..."
-
-	for f in "$TGT/$DIR_LIB"/systemd/system/* ; do
-		echo ""
-		show "... $(realpath --relative-to . "$f")"
-		cat "$f"
-	done
-fi
-
 rc=0
 
-show "Build package"
+show "Build (and sign) package"
 LC_ALL=C dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
-if [[ -n "$GPG_KEYID" ]] ; then
-	show "Sign package"
-	if [[ "$VERBOSITY" == debug ]] ; then
-		GPG_VERBOSE="--verbose"
-	else
-		GPG_VERBOSE=""
-	fi
-	gpg $GPG_VERBOSE --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
-	rc=$?
-else
-	echo ""
-	echo "Error: The package can't be signed!"
-	if [[ -f gpg.conf ]] ; then
-		echo "         File 'gpg.conf' not set up correctly!"
-	else
-		echo "         File 'gpg.conf' not found!"
-		echo "         Creating a template 'gpg.conf' now."
-		cat >> ./gpg.conf <<EOF_GPG
-# Please set GPG_KEYID to the ID to be used for signing the built package.
-GPG_KEYID=""
-EOF_GPG
-	fi
-	echo "         Please fill in the correct ID and build again!"
-	echo ""
-	rc=1
+## Start of special debug block ##
+
+# With non-debug output the details of the following commands
+# are collected in a debug log and later added to the build.log.
+# They are displayed on the terminal only when in debug mode.
+
+if [[ "$VERBOSITY" != debug ]] ; then
+	exec 3> "$DEBUG_FILE" 4>&1 5>&2 1>&3 2>&1
 fi
 
-if [[ "$rc" -ne 0 ]] ; then
-    exit "$rc"
+show "Resulting DEBIAN package files ..."
+
+for f in "$TGT"/DEBIAN/* ; do
+	echo ""
+	show "... $f"
+	cat "$f"
+done
+
+show "Resulting systemd files ..."
+
+for f in "$TGT/$DIR_LIB"/systemd/system/* ; do
+	echo ""
+	show "... $(realpath --relative-to . "$f")"
+	cat "$f"
+done
+
+show "${PACKAGE_NAME} $VERSION package information"
+dpkg-deb -I "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+
+show "Show files which will be installed"
+dpkg-deb -c "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+
+show "Sign package"
+gpg --verbose --yes --detach-sign -u "$GPG_KEYID" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb" || exit $?
+
+if [[ "$VERBOSITY" != debug ]] ; then
+	if [[ -f "$DEBUG_FILE" ]] ; then
+		cat "$DEBUG_FILE" >> "$LOG_FILE"
+		rm "$DEBUG_FILE"
+	fi
+	exec 3>&- 1>&4- 2>&5-
 fi
+
+## End of special debug block ##
+
 
 # create links
 pushd "$DEB_TGT" > /dev/null
@@ -288,6 +298,7 @@ if [[ -n "$GPG_KEYID" ]] ; then
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
 fi
 popd > /dev/null
+
 
 if [[ -n "$LINTIAN_CHECK" ]] ; then
 	show "Check package with lintian "
@@ -320,7 +331,6 @@ if [[ -n "$LINTIAN_CHECK" ]] ; then
 		   ;;
 	esac
 
-
 	# shellcheck disable=2086  # Double quote to prevent globbing and word splitting
 	lintian $LINTIAN_OPTIONS $SUPPRESS_TAGS "$DEB_TGT/${PACKAGE_NAME}.deb" || exit $?
 fi
@@ -329,10 +339,3 @@ fi
 show "The final package in $DEB_TGT"
 ls -l "$DEB_TGT"
 
-if [[ "$VERBOSITY" == debug ]] ; then
-	show "${PACKAGE_NAME} $VERSION package information"
-	dpkg-deb -I "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
-
-	show "Show files which will be installed"
-	dpkg-deb -c "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
-fi
