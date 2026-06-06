@@ -370,6 +370,7 @@ COLORING_VALID_OPTIONS="$COLORING_CONSOLE$COLORING_MAIL"
 
 NEWS_AVAILABLE=0
 BETA_AVAILABLE=0
+FORCE_MESSAGE=0
 LOG_INDENT=0
 WARNING_MESSAGE_WRITTEN=0
 
@@ -2609,6 +2610,7 @@ function writeToConsole() {  # msglevel messagenumber message
 	if [[ $msgSev == "W" ]]; then
 		WARNING_MESSAGE_WRITTEN=1
 		NEWS_AVAILABLE=1
+		FORCE_MESSAGE=1
 	fi
 
 	if [[ $msgSev == "E" ]]; then
@@ -3473,6 +3475,7 @@ function isUpdatePossible() {
 		if updateUpdateReminder; then		# update message counter still not zero
 			NEWS_AVAILABLE=1
 			UPDATE_POSSIBLE=1
+			FORCE_MESSAGE=1
 			latestVersion="${versions[0]}"
 			newVersion="${versions[1]}"
 			oldVersion="${versions[2]}"
@@ -5156,7 +5159,7 @@ function sendEMail() { # content subject
 			fi
 		fi
 
-		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $NEWS_AVAILABLE ) ) ) )); then
+		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $FORCE_MESSAGE ) ) ) )); then
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SENDING_EMAIL
 
@@ -11472,6 +11475,7 @@ if isVersionDeprecated "$VERSION"; then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
 	VERSION_DEPRECATED=1
 	NEWS_AVAILABLE=1
+	FORCE_MESSAGE=1
 fi
 
 doit # no return
