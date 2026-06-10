@@ -3503,7 +3503,13 @@ function downloadPropertiesFile() { # FORCE
 			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
 			local type=$BACKUPTYPE
 			local keep=$KEEPBACKUPS
-			local func="B"; (( $RESTORE )) && func="R"
+			local func="B"; 
+			if (( $RESTORE )); then
+				if (( $CLONEPATH )); then
+					func="C"
+				else
+					func="R"
+				fi
 			local srOptions
 			srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
