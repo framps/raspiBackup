@@ -943,12 +943,12 @@ MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le f
 MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
 
 DESCRIPTION_CLONE_DEVICE=$((SCNT++))
-MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define a clone device and any clone device PARTUUID separated by spaces. \
+MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define a clone device and one PARTUUID. \
 ${NL}${NL}Examples: \
 ${NL}/dev/sdb ef429bca-01 \
 ${NL}/dev/mmcblk1 ef429bca-02 \
 ${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
-MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät und irgendeine Clonegerät PARTUUID durch Leerzeichen getrennt. \
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät und eine PARTUUIDs. \
 ${NL}${NL}Beispiele: \
 ${NL}/dev/sdb ef429bca-01 \
 ${NL}/dev/mmcblk1 ef429bca-02 \
@@ -1093,16 +1093,16 @@ ${NL}/dev/mmcblk1p \
 ${NL}/dev/nvme1n1"
 
 MSG_MISSING_PARTUUID=$((SCNT++))
-MSG_EN[$MSG_MISSING_PARTUUID]="Missing clone device PARTUUID. \
+MSG_EN[$MSG_MISSING_PARTUUID]="Missing a PARTUUID of the clone device. \
 ${NL}${NL}Examples: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
-${NL}${NL}Note: Separate clone device and PARTUUID by spaces"
+${NL}${NL}Note: Separate clone device and PARTUUID by a space"
 MSG_DE[$MSG_MISSING_PARTUUID]="Es fehlt eine PARTUUID des Clonegeräts. \
 ${NL}${NL}Beispiele: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
-${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch Leerzeichen"
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
 
 MSG_INVALID_PARTUUID=$((SCNT++))
 MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1 \
@@ -1115,7 +1115,7 @@ MSG_DE[$MSG_INVALID_PARTUUID]="Ungültige PARTUUID %1 \
 ${NL}${NL}Beispiele: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
-${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch Leerzeichen"
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
 
 MSG_PARTUUID_NOT_FOUND=$((SCNT++))
 MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
@@ -1492,8 +1492,8 @@ MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
 MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 
 MENU_CONFIG_CLONE=$((MCNT++))
-MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Create clone"'
-MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Erstellung eines Clones"'
+MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Configure clone creation"'
+MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Cloneerzeugung konfigurieren"'
 
 MENU_CONFIG_ZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP]='"C11" "Compression with $CONFIG_BACKUPTYPE"'
