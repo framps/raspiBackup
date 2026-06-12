@@ -2358,6 +2358,7 @@ function parseConfig() {
 
 		done <<< "$matches"
 		CONFIG_PARSED=1
+	fi
 	logExit $CONFIG_PARSED
 }
 
