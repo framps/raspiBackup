@@ -948,7 +948,7 @@ ${NL}${NL}Examples: \
 ${NL}/dev/sdb ef429bca-01 \
 ${NL}/dev/mmcblk1 ef429bca-02 \
 ${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
-MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät und eine PARTUUIDs. \
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät und eine PARTUUID. \
 ${NL}${NL}Beispiele: \
 ${NL}/dev/sdb ef429bca-01 \
 ${NL}/dev/mmcblk1 ef429bca-02 \
