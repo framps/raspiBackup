@@ -2334,28 +2334,31 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 }
 
 function parseConfig() {
-	logEntry
+	logEntry $CONFIG_PARSED
 
-	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL)=" "$CONFIG_ABS_FILE")
-	while IFS="=" read key value; do
-		key=${key//\"/}
-		key=${key/DEFAULT/CONFIG}
-		value=${value//\"/}
-		if [[ $key =~ .*SERVICES.* ]]; then
-			if [[ "$value" == "$IGNORE_START_STOP_CHAR" ]]; then
-				value=""
-			else
-				value=$(sed -e 's/start//g' -e 's/stop//g' -e 's/systemctl//g' -e 's/\&\&//g' -e 's/ \+/ /g' <<< "$value"  | xargs )
+	if (( ! $CONFIG_PARSED )); then
+
+		matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL)=" "$CONFIG_ABS_FILE")
+		while IFS="=" read key value; do
+			key=${key//\"/}
+			key=${key/DEFAULT/CONFIG}
+			value=${value//\"/}
+			if [[ $key =~ .*SERVICES.* ]]; then
+				if [[ "$value" == "$IGNORE_START_STOP_CHAR" ]]; then
+					value=""
+				else
+					value=$(sed -e 's/start//g' -e 's/stop//g' -e 's/systemctl//g' -e 's/\&\&//g' -e 's/ \+/ /g' <<< "$value"  | xargs )
+				fi
 			fi
-		fi
-		logItem "$key=$value"
-		eval "$key=\"$value\""
-		if [[ $key == "CONFIG_LANGUAGE" ]]; then
-			[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
-		fi
+			logItem "$key=$value"
+			eval "$key=\"$value\""
+			if [[ $key == "CONFIG_LANGUAGE" ]]; then
+				[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
+			fi
 
-	done <<< "$matches"
-	logExit
+		done <<< "$matches"
+		CONFIG_PARSED=1
+	logExit $CONFIG_PARSED
 }
 
 function config_update_execute() {
@@ -5438,6 +5441,8 @@ MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 
 UPDATE_POSSIBLE=-1 # -1 -> check whether update possible, 0 -> no, 1 -> yes
+
+CONFIG_PARSED=0
 
 if isCrontabConfigInstalled; then # use cron if already installed
 	USE_SYSTEMD=0
