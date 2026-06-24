@@ -3514,6 +3514,7 @@ function downloadPropertiesFile() { # FORCE
 					func="R"
 				fi
 			fi
+
 			local srOptions
 			srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
