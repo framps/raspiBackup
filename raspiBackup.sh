@@ -3495,9 +3495,12 @@ function downloadPropertiesFile() { # FORCE
 
 	NEW_PROPERTIES_FILE=0
 
-	if shouldRenewDownloadPropertiesFile "$1"  && (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't execute any update checks
+	if ( shouldRenewDownloadPropertiesFile "$1" || (( CLONEPATH )) ) \
+		&& (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't execute any update checks
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_NEW_VERSION
+		if (( ! CLONEPATH )); then
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_NEW_VERSION
+		fi
 
 		if (( $SEND_STATS )); then
 			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
