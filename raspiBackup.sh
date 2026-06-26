@@ -3495,13 +3495,10 @@ function downloadPropertiesFile() { # FORCE
 
 	NEW_PROPERTIES_FILE=0
 
-	if ( shouldRenewDownloadPropertiesFile "$1" || (( CLONEPATH )) ) \
-		&& (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't execute any update checks
+	if (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't report any usage otherwise
 
-		if (( ! CLONEPATH )); then
-			writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_NEW_VERSION
-		fi
-
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_NEW_VERSION
+	
 		if (( $SEND_STATS )); then
 			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
 			local type=$BACKUPTYPE
@@ -3589,33 +3586,6 @@ function isVersionDeprecated() { # versionNumber
 	if containsElement "$1" "${skip[@]}"; then
 		rc=1
 		logItem "Version $1 is deprecated but message is disabled"
-	fi
-
-	logExit "$rc"
-	return $rc
-}
-
-function shouldRenewDownloadPropertiesFile() { # FORCE
-
-	logEntry
-
-	local rc currentTime lastCheckTime
-
-	if [[ -e $LATEST_TEMP_PROPERTY_FILE ]]; then
-		lastCheckTime=$(stat -c %y $LATEST_TEMP_PROPERTY_FILE | cut -d ' ' -f 1 | sed 's/-//g')
-	else
-		lastCheckTime="00000000"
-	fi
-
-	currentTime=$(date +%Y%m%d)
-
-	logItem "$currentTime : $lastCheckTime"
-
-	if [[ $currentTime == "$lastCheckTime" && "$1" != "FORCE" ]]; then
-		logItem "Skip download"
-		rc=1		#  download already done today
-	else
-		rc=0
 	fi
 
 	logExit "$rc"
