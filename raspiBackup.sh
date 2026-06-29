@@ -3451,10 +3451,12 @@ function dynamic_mount() { # mountpoint
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_MOUNT_OK "$1"
 		fi
 	else
-		if [[ -n $CLONE_DEVICE && -n $RESTORE_DEVICE ]]; then # clone restore should execute umount for dynamic mount executed for backup
-			DYNAMIC_MOUNT_EXECUTED=1
+		if [[ -n $DYNAMIC_MOUNT ]]; then
+			if [[ -n $CLONE_DEVICE && -n $RESTORE_DEVICE ]]; then # clone restore should execute umount for dynamic mount executed for backup
+				DYNAMIC_MOUNT_EXECUTED=1
+			fi
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DYNAMIC_MOUNT_NOT_REQUIRED "$1"
 		fi
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DYNAMIC_MOUNT_NOT_REQUIRED "$1"
 	fi
 
 	logExit
@@ -4113,20 +4115,16 @@ function isMounted() { # dir
 	return $rc
 }
 
-function getFsType() { # file or path
+function getFsType() { # path
 
 	logEntry "$1"
 
-	local mp
-	mp="$(findMountPath "$1")"
-	logItem "Mountpoint: $mp"
+	local fstype
+	fstype="$(findmnt -T "$1" -n -o FSTYPE)"
 
-	local df
-	df="$(LC_ALL=C df --output=fstype,target | grep -E " ${mp}$" | cut -f 1 -d " ")"
-	logItem "df -T: $df"
-	echo $df
+	echo $fstype
 
-	logExit "$df"
+	logExit "$fstype"
 
 }
 
@@ -4186,21 +4184,12 @@ function isPathMounted() {
 
 	logEntry "$1"
 
-	local path
-	local rc=1
-	path=$1
-
-	# backup path has to be mount point of the file system (second field fs_file in /etc/fstab) and NOT fs_spec otherwise test algorithm will create endless loop
-	if [[ "${1:0:1}" == "/" ]]; then
-		while [[ "$path" != "" ]]; do
-			logItem "Path: $path"
-			if mountpoint -q "$path"; then
-				rc=0
-				break
-			fi
-			path=${path%/*}
-		done
-	fi
+	local rc
+	local fmt
+	fmt="$(findmnt -T "$1" -n -o SOURCE)"
+	[[ -n "$fmt" && "$fmt" != $(findmnt / -n -o SOURCE) ]]
+	rc=$?
+	
 	logExit "$rc"
 
 	return $rc
@@ -4213,18 +4202,8 @@ function findMountPath() {
 	logEntry "$1"
 
 	local path
-	path="$1"
+	path="$(findmnt -T "$1" -n -o TARGET)"
 
-	# path has to be mount point of the file system (second field fs_file in /etc/fstab) and NOT fs_spec otherwise test algorithm will create endless loop
-	if [[ "${1:0:1}" == "/" ]]; then
-		while [[ "$path" != "" ]]; do
-			logItem "Path: $path"
-			if mountpoint -q "$path"; then
-				break
-			fi
-			path=${path%/*}
-		done
-	fi
 	echo "$path"
 	logExit "$path"
 
@@ -6589,9 +6568,8 @@ function areDevicesUnique() {
 function logSystemDiskState() {
 	logEntry
 	logCommand "blkid"
-	logCommand "fdisk -l"
-	logCommand "mount"
-	logCommand "df -h -l"
+	#logCommand "fdisk -l"
+	logCommand "findmnt -D"
 	logExit
 }
 
@@ -7395,7 +7373,7 @@ function mountPartitions() { # sourcePath
 	logEntry "${PARTITIONS_TO_BACKUP[@]}"
 
 	if (( ! $FAKE )); then
-		logItem "BEFORE: mount $(mount)"
+		#logItem "BEFORE: findmnt $(findmnt -D)"
 		# Double quote array expansions to avoid re-splitting elements.
 		#shellcheck disable=SC2068
 		for partition in ${PARTITIONS_TO_BACKUP[@]}; do
@@ -7408,7 +7386,7 @@ function mountPartitions() { # sourcePath
 			logItem "mount /dev/$partitionName to $1/$partitionName"
 			mountAndCheck "/dev/$partitionName" "$1/$partitionName"
 		done
-		logItem "AFTER: mount $(mount)"
+		#logItem "AFTER: findmnt $(findmnt -D)"
 	fi
 	logExit
 }
@@ -7418,8 +7396,8 @@ function umountPartitions() { # sourcePath
 	local partitionName partition
 	logEntry
 	if (( ! $FAKE )); then
-		logItem "BEFORE: mount $(mount)"
-		for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
+		#logItem "BEFORE: findmnt $(findmnt -D)"		
+       		for partition in "${PARTITIONS_TO_BACKUP[@]}"; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			umountPartition "$1/$partitionName"
 			if [[ -d "$1/$partitionName" ]]; then
@@ -7427,7 +7405,7 @@ function umountPartitions() { # sourcePath
 				rmdir "$1/$partitionName" &>>"$LOG_FILE"
 			fi
 		done
-		logItem "AFTER: mount $(mount)"
+		#logItem "AFTER: findmnt $(findmnt -D)"
 	fi
 	logExit
 }
@@ -7554,8 +7532,8 @@ function doit() {
 
 	local msg
 	logItem "Startingdirectory: $(pwd)"
-	logCommand "fdisk -l | grep -v "^$""
-	logCommand "mount"
+	# logCommand "fdisk -l | grep -v "^$""
+	logCommand "findmnt -D"
 
 	if isUnsupportedVersion; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_VERSION
@@ -8849,7 +8827,7 @@ function restorePartitionBasedBackup() {
 
 	END_TIME="$(date +%s)"
 
-	logCommand "fdisk -l $RESTORE_DEVICE"
+	#logCommand "fdisk -l $RESTORE_DEVICE"
 
 	logExit
 
