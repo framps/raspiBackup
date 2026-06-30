@@ -1,3 +1,0 @@
-.bail ON
-.echo OFF
-PRAGMA foreign_keys = TRUE;
