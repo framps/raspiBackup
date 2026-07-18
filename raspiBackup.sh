@@ -45,7 +45,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 RASPIBACKUP_ABS_LOCATION="$0"								# to invoke myself for clone
-VERSION="0.7.3-beta"   									# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.3"   									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.11"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
