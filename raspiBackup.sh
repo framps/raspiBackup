@@ -9670,7 +9670,7 @@ function updateUpdateReminder() {
 
 	local rc=0
 	# check if reminder should be send
-	if (( $(compareVersions $version $VERSION_PROPERTY) < 0 )); then		# is version older than available version?
+	if (( $(compareVersions $version $VERSION_PROPERTY) < 0 || $IS_BETA )); then		# is version older than available version?
 		if (( $(compareVersions "${rf[0]}" $VERSION_PROPERTY) < 0 )); then		# if reminder version older than available version ?
 			local left=$(( $UPDATE_REMINDER_MAX - ${rf[1]} ))
 			if (( $left == 0 )); then
