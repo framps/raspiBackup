@@ -132,8 +132,6 @@ raspiBackup is maintained just by me - framp. If you find raspiBackup useful ple
 
 * Convenient helper script to backup and restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupDialog.sh)
 
-* Sample script which creates a backup and a clone as a cold standby boot medium[(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupAndClone.sh)
-
 ## Sample extensions
 
 There exist [sample extensions](./extensions) for raspiBackup which report for example memory usage, CPU temperature, disk usage and more. There exist also [user provided extensions](./extensions_userprovided). 
