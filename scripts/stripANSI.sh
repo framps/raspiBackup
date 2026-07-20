@@ -32,7 +32,7 @@
 
 typescriptFile="${1:-typescript}"
 
-if [[ ! -f $typeScriptFile ]]; then
+if [[ ! -f $typescriptFile ]]; then
 	echo "??? $typescriptFile not found"
 	exit 1
 fi

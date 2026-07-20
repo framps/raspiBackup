@@ -5,7 +5,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013, 2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013, 2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #
 #######################################################################################################################
 
+declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 SCRIPT_DIR=$( cd $( dirname ${BASH_SOURCE[0]}); pwd | xargs readlink -f)
 
 source $SCRIPT_DIR/constants.sh
@@ -35,7 +37,7 @@ PARTITIONS_PER_BACKUP=2
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-PARMS=" -L 2 -l 1 -m 1 -Z"
+PARMS=" -L 2 -l 1 -m 1 -Z --ignoreAdditionalPartitions"
 
 # all backups have 2 backups each
 
@@ -45,12 +47,13 @@ CREATE_ANOTHER_BACKUP=0
 KEEP_BACKUPS=1
 NUMBER_OF_BACKUPS=1
 
-MOUNT_POINT=${1:-"$MOUNT_HOST:/disks/VMware/"}
-BACKUP_PATH=${2:-"raspiBackupTest"}
-ENVIRONMENT=${3:-"SD USB SDBOOTONLY"}
-TYPES_TO_TEST=${4:-"dd ddz tar tgz rsync"}
-MODES_TO_TEST=${5:-"n p"}
-BOOT_MODES=${6:-"d t"}
+MOUNT_POINT="${1:-"$MOUNT_HOST:/disks/VMware/"}"
+BACKUP_PATH="${2:-"raspiBackupTest"}"
+ENVIRONMENT="${3}"
+TYPES_TO_TEST="${4}"
+MODES_TO_TEST="${5}"
+BOOT_MODES="${6}"
+OPTIONS="${7}"
 
 declare -A processedFiles
 
@@ -95,23 +98,42 @@ function isMounted() {
 
 createV612Backups() { # number of backups, keep backups
 
-	local mode backupType bootMode bM
+local i
+echo "createV612Backups ###################################################################"
+for (( i=0; i<=$#; i++ )); do
+	echo "$i: ${!i}"
+done
+
+	local mode backupType bootMode bM numBackups keep
+	
+	numBackups="$1"
+	keepNum="$2"
 
 	for mode in $MODES_TO_TEST; do
-		for backupType in $TYPES_TO_TEST; do
+		for backupType in ${TYPES_TO_TEST}; do
 			[[ $backupType =~ dd && $mode == "p" ]] && continue # dd not supported for -P
 			for bootMode in $BOOT_MODES; do
 				[[ $bootMode == "t" &&  ( $backupType =~ dd || $mode == "p" ) ]] && continue # -B+ not supported for -P and dd
 				[[ $bootMode == "t" ]] && bM="$BOOTMODE_TAR" || bM="$BOOTMODE_DD"
-				createBackups $backupType $1 $mode $2 $bM
+				createBackups $backupType "$numBackups" "$mode" "$keepNum" "$bM" "$OPTIONS"
 			done
 		done
 	done
 }
 
-function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ... other parms
+function createBackups() { # backuptype (dd, ddz, rsync, ...) count mode (N,P) keep ... other parms
 
-	local i rc parms
+local i
+echo "createBackups ###################################################################"
+for (( i=0; i<=$#; i++ )); do
+	echo "$i: ${!i}"
+done
+
+	local i rc parms type count mode keep
+	type="$1"
+	count="$2"
+	mode="$3"
+	keep="$4"
 
 	local m=""
 	if [[ $3 == "p" ]]; then
@@ -119,12 +141,12 @@ function createBackups() { # type (dd, ddz, rsync, ...) count type (N,P) keep ..
 	fi
 
 	for (( i=1; i<=$2; i++)); do
-		echo "--- Creating $1 backup number $i of mode $3 and option $5 in ${BACKUP_PATH}_${3^^}"
-		log "sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}""
-		sudo ~/raspiBackup.sh -t $1 $PARMS $m -k $4 $5 "${BACKUP_PATH}_${3^^}"
+		echo "--- Creating $1 backup number $i of mode $mode and option $5 and $6 in ${BACKUP_PATH}_${3^^}"
+		log "sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 $6 "${BACKUP_PATH}_${3^^}""
+		sudo ~/raspiBackup.sh -t $type $PARMS $m -k $keep $5 $6 "${BACKUP_PATH}_${3^^}"
 		rc=$?
 
-		local logFile=$(getLogName $1 $3)
+		local logFile=$(getLogName $type $type)
 		cat "$logFile" >> "$LOG_FILE"
 
 		if [[ $rc != 0 ]]; then
@@ -284,7 +306,7 @@ function checkV612RootBackups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 	local buCntToCheck=$2
 
 	case $3 in
-		N)	buCnt=$(ls ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*.$extension 2>/dev/null | wc -l)
+		N)	buCnt=$(ls ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*${extension}* 2>/dev/null | wc -l)
 			buCnt2=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*sda* 2>/dev/null | wc -l)
 			buCnt3=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*nvme* 2>/dev/null | wc -l)
 			buCnt4=$(ls -d ${BACKUP_PATH}_$3/$HOSTNAME/*-$1-backup*/*vda* 2>/dev/null | wc -l)
@@ -325,10 +347,10 @@ function checkV612Backups() { # type (dd, ddz, rsync, ...) count mode (N,P)
 
 	local e
 	log "--- checkV612Backups $1 $2 $3 ---"
-	checkV612BootBackups $1 $2 $3
+	checkV612BootBackups "$1" "$2" "$3"
 	e=$?
 	(( sumErrors += e ))
-	checkV612RootBackups $1 $2 $3
+	checkV612RootBackups "$1" "$2" "$3"
 	e=$?
 	(( sumErrors += e ))
 }
@@ -339,9 +361,9 @@ function checkAllV612Backups() {  # number of backups
 	errors=0
 
 	for mode in $MODES_TO_TEST; do
-		for backupType in $TYPES_TO_TEST; do
+		for backupType in "${TYPES_TO_TEST[@]}"; do
 			[[ $backupType =~ "dd" && $mode == "p" ]] && continue
-			checkV612Backups $backupType $1 ${mode^^}
+			checkV612Backups "$backupType" "$1" "${mode^^}"
 		done
 	done
 
@@ -387,7 +409,7 @@ function standardTest() {
 
 		log "--- Processing mode $backupMode ---"
 
-		for backupType in $TYPES_TO_TEST; do
+		for backupType in "${TYPES_TO_TEST[@]}"; do
 
 	# create initial backups
 
@@ -468,6 +490,11 @@ fi
 rm "$LOG_FILE"
 
 BACKUP_PATH="/mnt/$BACKUP_PATH"
+
+echo "testRaspiBackup ###################################################################"
+for (( i=0; i<=$#; i++ )); do
+	echo "$i: ${!i}"
+done
 
 createV612Backups 1 1	# createNum, keepNum
 checkAllV612Backups 1

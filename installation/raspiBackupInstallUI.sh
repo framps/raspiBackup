@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.6"				 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.9"				 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -156,7 +156,11 @@ Description=Creation of a Raspberry backup with raspiBackup
 
 [Service]
 Type=simple
+# delay start for 3 minutes
+ExecStartPre=/bin/sleep 180
 ExecStart=/usr/local/bin/raspiBackup.sh
+# increase default timeout which is 90s
+TimeoutStartSec=200
 # For Use with Wrapper Script: ExecStart=/usr/local/bin/raspiBackupWrapper.sh
 [Install]
 WantedBy=multi-user.target
@@ -288,6 +292,8 @@ CONFIG_LANGUAGE=$LANG_SYSTEM
 # CONFIG_LANGUAGE= will become the configured language later on
 
 CONFIG_MSG_LEVEL="0"
+CONFIG_CLONE_DEVICE=""
+CONFIG_CLONE_PARTUUID=""
 CONFIG_BACKUPTYPE="rsync"
 CONFIG_KEEPBACKUPS="3"
 DEFAULT_CONFIG_SMART_RECYCLE="0"
@@ -936,6 +942,18 @@ MSG_FI[$DESCRIPTION_ERROR]="Tapahtui peruuttamaton virhe. Tarkista lokitiedosto 
 MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le fichier journal $LOG_FILE."
 MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
 
+DESCRIPTION_CLONE_DEVICE=$((SCNT++))
+MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define a clone device and one PARTUUID. \
+${NL}${NL}Examples: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät und eine PARTUUID. \
+${NL}${NL}Beispiele: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
 This can be a local partition or a mounted remote partition."
@@ -1061,6 +1079,47 @@ MSG_DE[$TITLE_CONFIRM]="Bitte bestätigen"
 MSG_FI[$TITLE_CONFIRM]="Ole hyvä ja varmista"
 MSG_FR[$TITLE_CONFIRM]="SVP Confirmez"
 MSG_ZH[$TITLE_CONFIRM]="请确认"
+
+MSG_INVALID_CLONE_DEVICE=$((SCNT++))
+MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Clone device %1 not found. \
+${NL}${NL}Examples: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
+MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Clonegerät %1 nicht gefunden. \
+${NL}${NL}Beispiele: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
+
+MSG_MISSING_PARTUUID=$((SCNT++))
+MSG_EN[$MSG_MISSING_PARTUUID]="Missing a PARTUUID of the clone device. \
+${NL}${NL}Examples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Note: Separate clone device and PARTUUID by a space"
+MSG_DE[$MSG_MISSING_PARTUUID]="Es fehlt eine PARTUUID des Clonegeräts. \
+${NL}${NL}Beispiele: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+
+MSG_INVALID_PARTUUID=$((SCNT++))
+MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1 \
+${NL}${NL}Examples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Note: Separate clone device and PARTUUID by spaces"
+
+MSG_DE[$MSG_INVALID_PARTUUID]="Ungültige PARTUUID %1 \
+${NL}${NL}Beispiele: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+
+MSG_PARTUUID_NOT_FOUND=$((SCNT++))
+MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
+MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2"
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
@@ -1432,12 +1491,13 @@ MENU_FI[$MENU_CONFIG_REGULAR]='"C9" "Säännöllinen varmuuskopiointi"'
 MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
 MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 
+MENU_CONFIG_CLONE=$((MCNT++))
+MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Backup clone"'
+MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Backup Clone"'
+
 MENU_CONFIG_ZIP=$((MCNT++))
-MENU_EN[$MENU_CONFIG_ZIP]='"C10" "Compression"'
-MENU_DE[$MENU_CONFIG_ZIP]='"C10" "Komprimierung"'
-MENU_FI[$MENU_CONFIG_ZIP]='"C10" "Pakkaaminen"'
-MENU_FR[$MENU_CONFIG_ZIP]='"C10" "Compression"'
-MENU_ZH[$MENU_CONFIG_ZIP]='"C10" "压缩"'
+MENU_EN[$MENU_CONFIG_ZIP]='"C11" "Compression with $CONFIG_BACKUPTYPE"'
+MENU_DE[$MENU_CONFIG_ZIP]='"C11" "Komprimierung bei $CONFIG_BACKUPTYPE"'
 
 MENU_CONFIG_ZIP_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP_NA]='" " " "'
@@ -1537,6 +1597,10 @@ MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2'
 
+MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+
 MENU_CONFIG_TYPE_DD=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and a restore on Windows is also possible"'
 MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und eine Wiederherstellung unter Windows ist auch möglich"'
@@ -1552,11 +1616,8 @@ MENU_FR[$MENU_CONFIG_TYPE_TAR]='"tar" "Sauvegarde avec tar"'
 MENU_ZH[$MENU_CONFIG_TYPE_TAR]='"tar" "使用tar备份"'
 
 MENU_CONFIG_TYPE_RSYNC=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks if possible"'
-MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks wenn möglich"'
-MENU_FI[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "rsync-varmuuskopio ja hardlinkkien käyttö"'
-MENU_FR[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sécuriser avec rsync en utilisant si possible des liens physiques"'
-MENU_ZH[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "使用rsync备份,如果可能,使用硬链接"'
+MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks"'
+MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks"'
 
 MENU_UNINSTALL_UNINSTALL=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL_UNINSTALL]='"U1" "Uninstall $RASPIBACKUP_NAME"'
@@ -1580,11 +1641,8 @@ MENU_FR[$MENU_CONFIG_TYPE_DD_NA]='"" "Un enregistrement avec dd ne peut se faire
 MENU_ZH[$MENU_CONFIG_TYPE_DD_NA]='"" "此模式不可使用dd备份"'
 
 MENU_CONFIG_COMPRESS_OFF=$((MCNT++))
-MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No backup compression"'
-MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Backup Komprimierung"'
-MENU_FI[$MENU_CONFIG_COMPRESS_OFF]='"off" "Ei varmuuskopion pakkausta"'
-MENU_FR[$MENU_CONFIG_COMPRESS_OFF]='"off" "Pas de compression de sauvegarde"'
-MENU_ZH[$MENU_CONFIG_COMPRESS_OFF]='"off" "不压缩"'
+MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Komprimierung"'
 
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "$COMPRESSION_TYPE compression"'
@@ -2334,28 +2392,32 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 }
 
 function parseConfig() {
-	logEntry
+	logEntry $CONFIG_PARSED
 
-	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL)=" "$CONFIG_ABS_FILE")
-	while IFS="=" read key value; do
-		key=${key//\"/}
-		key=${key/DEFAULT/CONFIG}
-		value=${value//\"/}
-		if [[ $key =~ .*SERVICES.* ]]; then
-			if [[ "$value" == "$IGNORE_START_STOP_CHAR" ]]; then
-				value=""
-			else
-				value=$(sed -e 's/start//g' -e 's/stop//g' -e 's/systemctl//g' -e 's/\&\&//g' -e 's/ \+/ /g' <<< "$value"  | xargs )
+	if (( ! $CONFIG_PARSED )); then
+
+		matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL)=" "$CONFIG_ABS_FILE")
+		while IFS="=" read key value; do
+			key=${key//\"/}
+			key=${key/DEFAULT/CONFIG}
+			value=${value//\"/}
+			if [[ $key =~ .*SERVICES.* ]]; then
+				if [[ "$value" == "$IGNORE_START_STOP_CHAR" ]]; then
+					value=""
+				else
+					value=$(sed -e 's/start//g' -e 's/stop//g' -e 's/systemctl//g' -e 's/\&\&//g' -e 's/ \+/ /g' <<< "$value"  | xargs )
+				fi
 			fi
-		fi
-		logItem "$key=$value"
-		eval "$key=\"$value\""
-		if [[ $key == "CONFIG_LANGUAGE" ]]; then
-			[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
-		fi
+			logItem "$key=$value"
+			eval "$key=\"$value\""
+			if [[ $key == "CONFIG_LANGUAGE" ]]; then
+				[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
+			fi
 
-	done <<< "$matches"
-	logExit
+		done <<< "$matches"
+		CONFIG_PARSED=1
+	fi
+	logExit $CONFIG_PARSED
 }
 
 function config_update_execute() {
@@ -2375,6 +2437,8 @@ function config_update_execute() {
 	logItem "Recycleoptions: $CONFIG_SMART_RECYCLE_OPTIONS"
 	logItem "Dryrun: $CONFIG_SMART_RECYCLE_DRYRUN"
 	logItem "Msglevel: $CONFIG_MSG_LEVEL"
+	logItem "CloneDevice: $CONFIG_CLONE_DEVICE"
+	logItem "ClonePartuuid: $CONFIG_CLONE_PARTUUID"
 	logItem "Backuppath: $CONFIG_BACKUPPATH"
 	logItem "Stop: $CONFIG_STOPSERVICES"
 	logItem "Start: $CONFIG_STARTSERVICES"
@@ -2395,6 +2459,9 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_MSG_LEVEL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_PARTUUID=.*$/DEFAULT_CLONE_PARTUUID=\"$CONFIG_CLONE_PARTUUID\"/" "$CONFIG_ABS_FILE"
+	local c=$(sed 's_/_\\/_g' <<< "$CONFIG_CLONE_DEVICE")
+	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$/DEFAULT_CLONE_DEVICE=\"$c\"/" "$CONFIG_ABS_FILE"
 	local f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
 	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPPATH=.*$/DEFAULT_BACKUPPATH=\"$f\"/" "$CONFIG_ABS_FILE"
 
@@ -3030,6 +3097,7 @@ function config_menu() {
 		local s7="${m7[0]}"
 		local s8="${m8[0]}"
 		local s9="${m9[0]}"
+		local s10="${m10[0]}"
 
 		local mx=( 	\
 			"${m1[@]}" \
@@ -3042,6 +3110,14 @@ function config_menu() {
 			"${m8[@]}" \
 			"${m9[@]}" \
 			)
+
+		if [[ $CONFIG_BACKUPTYPE != "dd" ]]; then
+			getMenuText $MENU_CONFIG_CLONE mcc
+			local scc="${mcc[0]}"
+			mx+=("${mcc[@]}")
+		else
+			local scc=""
+		fi
 
 		if [[ $CONFIG_BACKUPTYPE == "dd" || $CONFIG_BACKUPTYPE == "tar" ]]; then
 			getMenuText $MENU_CONFIG_ZIP mcp
@@ -3101,6 +3177,7 @@ function config_menu() {
 				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s9) config_timer_menu; TIMER_UPDATED=$? ;;
+				$scc) config_clone_menu; CONFIG_UPDATED=$? ;;
 				$scp) config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
@@ -3614,7 +3691,8 @@ function config_tar_compressiontool_do() {
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP m4
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA m5
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP m6
-	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ m7
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4 m7
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ m8
 	
 	local s1="${m1[0]}"
 	local s2="${m2[0]}"
@@ -3623,6 +3701,7 @@ function config_tar_compressiontool_do() {
 	local s5="${m5[0]}"
 	local s6="${m6[0]}"
 	local s7="${m7[0]}"
+	local s8="${m8[0]}"
 
 	local o1="$(getMessageText $BUTTON_OK)"
 	local c1="$(getMessageText $BUTTON_CANCEL)"
@@ -3634,6 +3713,7 @@ function config_tar_compressiontool_do() {
 		lzip) lzip_=on ;;
 		lzma) lzma_=on ;;
 		lzop) lzop_=on ;;
+		lz4) lz4_=on ;;
 		xz) xz_=on ;;
 		*) if (( CONFIG_ZIP_BACKUP )); then
 		      gzip=on
@@ -3656,7 +3736,8 @@ function config_tar_compressiontool_do() {
 		"${m4[@]}" "$lzip_" \
 		"${m5[@]}" "$lzma_" \
 		"${m6[@]}" "$lzop_" \
-		"${m7[@]}" "$xz_" \
+		"${m7[@]}" "$lz4" \
+		"${m8[@]}" "$xz_" \
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
@@ -3667,7 +3748,8 @@ function config_tar_compressiontool_do() {
 			$s4) CONFIG_TAR_COMPRESSION_TOOL="lzip" ;;
 			$s5) CONFIG_TAR_COMPRESSION_TOOL="lzma" ;;
 			$s6) CONFIG_TAR_COMPRESSION_TOOL="lzop" ;;
-			$s7) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
+			$s7) CONFIG_TAR_COMPRESSION_TOOL="lz4" ;;
+			$s8) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
 			"") : ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
@@ -4839,6 +4921,86 @@ function config_message_detail_do() {
 
 }
 
+function config_clone_menu() {
+
+	logEntry
+
+	local current_device=$CONFIG_CLONE_DEVICE
+	local current_partuuid=$CONFIG_CLONE_PARTUUID
+	
+	local current="$CONFIG_CLONE_DEVICE"
+	if [[ -n "$CONFIG_CLONE_PARTUUID" ]]; then
+		current="$current $CONFIG_CLONE_PARTUUID"
+	fi
+	
+	local current_device="$CONFIG_CLONE_DEVICE"
+	local old_device="$current_device"
+	local current_partuuid="$CONFIG_CLONE_PARTUUID"
+	local old_partuuid="$current_partuuid"
+
+	while :; do
+
+		getMenuText $MENU_CONFIG_CLONE tt
+		local c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1="$(getMessageText $BUTTON_OK)"
+		local d="$(getMessageText $DESCRIPTION_CLONE_DEVICE)"
+
+		ANSWER=$(whiptail --inputbox "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS "$current" --ok-button "$o1" --cancel-button "$c1" 3>&1 1>&2 2>&3)
+		if [ $? -eq 0 ]; then
+			logItem "Answer: $ANSWER"
+			current="$ANSWER"
+			if [[ -n "$ANSWER" ]]; then
+				local device partuuid
+				read -r device partuuid <<< "$ANSWER"
+				if [[ ! -b "$device" ]]; then
+					local m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$device")"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				elif [[ -z "$partuuid" ]]; then
+					local m="$(getMessageText $MSG_MISSING_PARTUUID "$partuuid")"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				else
+					if [[ ! "$partuuid" =~ ^[0-9a-f\-]+$ ]]; then
+						local m="$(getMessageText $MSG_INVALID_PARTUUID "$partuuid")"
+						local t=$(center $WINDOW_COLS "$m")
+						local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+						whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2 
+					else
+						local partuuidList
+						partuuidList=( $(blkid | grep -E "^$device" | sed -E 's|^(.+)PARTUUID="(.+)"|\2|') )
+						logItem "PARTUUIDs: ${partuuidList[*]} - defined PARTUUID: $partuuid"
+						if ! containsElement "$partuuid" "${partuuidList[@]}"; then
+							local m="$(getMessageText $MSG_PARTUUID_NOT_FOUND "$partuuid" "$device")"
+							local t=$(center $WINDOW_COLS "$m")
+							local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+							whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+						else
+							CONFIG_CLONE_DEVICE="$device"
+							CONFIG_CLONE_PARTUUID="$partuuid"
+							break
+						fi
+					fi
+				fi
+			else # empty answer
+				CONFIG_CLONE_DEVICE=""
+				CONFIG_CLONE_PARTUUID=""
+				break
+			fi # no answer
+		else
+			break
+		fi
+	done
+
+	[[ "$old_device" == "$CONFIG_CLONE_DEVICE" && "$old_partuuid" == "$CONFIG_CLONE_PARTUUID" ]]
+	local rc=$?
+	logExit "$rc -$CONFIG_CLONE_DEVICE - $CONFIG_CLONE_PARTUUID"
+	return $rc
+
+}
+
 function config_language_do() {
 
 	local old="$CONFIG_LANGUAGE"
@@ -5438,6 +5600,8 @@ MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 
 UPDATE_POSSIBLE=-1 # -1 -> check whether update possible, 0 -> no, 1 -> yes
+
+CONFIG_PARSED=0
 
 if isCrontabConfigInstalled; then # use cron if already installed
 	USE_SYSTEMD=0
