@@ -64,7 +64,7 @@ rm -f "$LOG_FILE"
 
 if [[ -n $1 && -d "$1" ]]; then
 
-	cd $1
+	cd $1 || exit
 	if [[ ! -f "raspiBackup.deb" ]]; then
 		echo "??? $1/raspiBackup.deb not found"
 		exit 42
@@ -79,7 +79,7 @@ else
 	curl -fsSL $GITHUB_URL/raspiBackup.deb.sig -o raspiBackup.deb.sig
 fi
 
-version=$(dpkg -I raspiBackup.deb | grep "^ Version" | cut -f 3 -d ' ')
+#version=$(dpkg -I raspiBackup.deb | grep "^ Version" | cut -f 3 -d ' ')
 
 :<<"SKIP"
 echo -n "--- Installing raspiBackup $version. Are you sure? (y|N) "
