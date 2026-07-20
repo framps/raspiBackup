@@ -240,8 +240,6 @@ envsubst < "$PACKAGE/DEBIAN/postinst"  > "$TGT/DEBIAN/postinst"
 chmod 644 "$TGT/DEBIAN/conffiles" "$TGT/DEBIAN/control"
 chmod 755 "$TGT/DEBIAN/postinst"
 
-rc=0
-
 show "Build (and sign) package"
 LC_ALL=C dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
 
