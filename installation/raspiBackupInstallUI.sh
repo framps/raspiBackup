@@ -783,19 +783,19 @@ MSG_DE[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd Konfiguration fehlerhaft mit RC %1."
 DESCRIPTION_INSTALLATION=$((SCNT++))
 MSG_EN[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME allows to plug in custom extensions which are called before and after the backup process. \
 There exist sample extensions which report the memory usage, CPU temperature and disk usage of the backup partition. \
-For details see${NL}https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+For details see${NL}https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_DE[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME erlaubt selbstgeschriebene Erweiterungen vor und nach dem Backupprozess aufzurufen. \
 Es gibt Beispielerweiterungen die die Speicherauslastung, die CPU Temperatur sowie die Speicherplatzbenutzung der Backuppartition anzeigen. \
-Für weitere Details siehe${NL}https://www.linux-tips-and-tricks.de/de/13-raspberry/442-raspibackup-erweiterungen."
+Für weitere Details siehe${NL}https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_FI[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME tukee lisäosia, joiden toimintoja voidaan suorittaa ennen ja jälkeen varmuuskopioinnin. \
 Mukana tulevat näytelisäosat esittävät prosessorin lämpötilan sekä tietoja muistin ja varmuuskopiointilevyn käytöstä. \
-${NL}Lue lisätietoja osoitteesta https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+${NL}Lue lisätietoja osoitteesta https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_FR[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME vous permet d'appeler des extensions auto-écrites avant et après le processus de sauvegarde. \
 Il existe des exemples d'extensions qui montrent l'utilisation de la mémoire, la température du processeur et l'utilisation de l'espace de stockage de la partition de sauvegarde. \
-${NL}Pour plus de détails voir https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+${NL}Pour plus de détails voir https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_ZH[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME 允许插入自定义扩展，备份前后均可插入. \
 已有示例扩展报告内存占用,CPU温度和备份硬盘占用. \
-${NL}详情请 https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+${NL}详情请 https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 
 DESCRIPTION_COMPRESS=$((SCNT++))
 MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup but this will increase backup time. \
@@ -825,15 +825,15 @@ Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Int
 
 DESCRIPTION_SMARTMODE=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMARTMODE]="${NL}There exist two different ways to define the number of backups. Just by defining the maximum number of backups to keep or \
-by using the smart backup strategy. See https://www.linux-tips-and-tricks.de/en/smart-recycle/ for details about the strategy."
+by using the smart backup strategy. See https://framps.github.io/raspiBackupDoc/smart-recycle for details about the strategy."
 MSG_DE[$DESCRIPTION_SMARTMODE]="${NL}Es gibt grundsätzlich zwei Methoden, die Anzahl der vorzuhaltenden Backups festzulegen. Dies erfolgt entweder durch die Definition der maximalen Anzahl oder durch Verwendung der intelligenten Backupstrategie. \
-Eine Detailbeschreibung der Strategie befindet sich auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/."
+Eine Detailbeschreibung der Strategie befindet sich auf https://framps.github.io/raspiBackupDoc/smart-recycle."
 MSG_FI[$DESCRIPTION_SMARTMODE]="${NL}Voit määrittää säilytettävien varmuuskopioiden lukumäärän joko määrittämällä säilytettävien varmuuskopioiden maksimimäärän tai \
-käyttämällä älykästä varmuuskopiointia.${NL}Katso lisätietoa osoitteesta https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+käyttämällä älykästä varmuuskopiointia.${NL}Katso lisätietoa osoitteesta https://framps.github.io/raspiBackupDoc/smart-recycle."
 MSG_FR[$DESCRIPTION_SMARTMODE]="${NL}Il existe deux méthodes pour définir le nombre de sauvegardes à conserver : SIMPLE ou INTELLIGENTE. Cela se fait soit en définissant un nombre maximum, soit en utilisant la stratégie de sauvegarde intelligente. \
-Une description détaillée de la stratégie est disponible sur https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+Une description détaillée de la stratégie est disponible sur https://framps.github.io/raspiBackupDoc/smart-recycle."
 MSG_ZH[$DESCRIPTION_SMARTMODE]="${NL}当前有两种方法定义备份数量:定义最大备份数或者用只能备份策略,策略详情: \
-${NL} https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+${NL} https://framps.github.io/raspiBackupDoc/smart-recycle."
 
 DESCRIPTION_MESSAGEDETAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME can either be very verbose or just write important messages. \
@@ -849,32 +849,32 @@ MSG_ZH[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME 可以非常详细或
 
 DESCRIPTION_STARTSTOP=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP]="${NL}Before and after creating a backup important services should be stopped and started. Add the required services separated by a space which should be stopped in the correct order. \
-The services will be started in reverse order when backup finished. For further details see https://www.linux-tips-and-tricks.de/en/faq#a18."
+The services will be started in reverse order when backup finished. For further details see https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_DE[$DESCRIPTION_STARTSTOP]="${NL}Vor und nach einem Backup sollten immer alle wichtigen Services gestoppt und gestartet werden. Dazu müssen die notwendigen Services die gestoppt werden sollen getrennt durch Leerzeichen in der richtigen Reihenfolge eingegeben werden. \
-In umgekehrter Reihenfolge werden die Services nach dem Backup wieder gestartet. Weitere Details finden sich auf https://www.linux-tips-and-tricks.de/de/faq#a18."
+In umgekehrter Reihenfolge werden die Services nach dem Backup wieder gestartet. Weitere Details finden sich auf https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FI[$DESCRIPTION_STARTSTOP]="${NL}Tärkeät palvelut tulisi pysäyttää varmuuskopioinnin ajaksi. Lisää pysäytettävät palvelut välilyönnillä erotettuna pysäytysjärjestyksessä. \
-Palvelut käynnistetään käänteisessä järjestyksessä varmuuskopioinnin päättyessä. Lisätietoa löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a18."
+Palvelut käynnistetään käänteisessä järjestyksessä varmuuskopioinnin päättyessä. Lisätietoa löydät osoitteesta https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FR[$DESCRIPTION_STARTSTOP]="${NL}Avant et après une sauvegarde, tous les services importants doivent toujours être arrêtés et démarrés. Pour ce faire, les services nécessaires qui doivent être arrêtés doivent être saisis dans le bon ordre, séparés par des espaces. \
-Les services sont redémarrés dans l'ordre inverse après la sauvegarde. Vous trouverez plus de détails sur https://www.linux-tips-and-tricks.de/de/faq#a18."
+Les services sont redémarrés dans l'ordre inverse après la sauvegarde. Vous trouverez plus de détails sur https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_ZH[$DESCRIPTION_STARTSTOP]="${NL}备份前，重要服务会被停止，备份后自动重启服务.按顺序添加需要停止的服务，多个服务用空格分割 \
-服务会在备份完成后按反序重启，详情见 https://www.linux-tips-and-tricks.de/en/faq#a18."
+服务会在备份完成后按反序重启，详情见 https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 
 DESCRIPTION_STARTSTOP_SEQUENCE=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Select step by step every service which should be stopped first, second, third and so on and confirm every single service with <Ok> until there is no service any more. \
 Actual sequence is displayed top down. \
-For further details see https://www.linux-tips-and-tricks.de/en/faq#a18."
+For further details see https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_DE[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Wähle der Reihe nach die Services aus wie sie vor dem Backup gestoppt werden sollen und bestätige jeden einzelnen Service mit <Bestätigen> bis keine Services mehr angezeigt werden. \
 Die aktuelle Reihenfolge wird von oben nach unten angezeigt. \
-Weitere Details finden sich auf https://www.linux-tips-and-tricks.de/de/faq#a18."
+Weitere Details finden sich auf https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FI[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Valitse pysäytettävät palvelut yksi kerrallaan painaen <OK>, kunnes listalla ei ole palveluita. \
 Toteutuva järjestys näytetään ylhäältä alas. \
-${NL}Lisätietoja näet osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a18."
+${NL}Lisätietoja näet osoitteesta https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FR[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Sélectionnez les services les uns après les autres car ils doivent être arrêtés avant la sauvegarde et confirmez chaque service individuel avec <Confirmer> jusqu'à ce qu'aucun autre service ne s'affiche. \
 L'ordre en cours est affiché de haut en bas. \
-Vous trouverez plus de détails sur https://www.linux-tips-and-tricks.de/de/faq#a18."
+Vous trouverez plus de détails sur https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_ZH[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}一个一个的选择需要停止的服务,按<Ok>确定. \
 停止顺序自上而下. \
-${NL}详情见 https://www.linux-tips-and-tricks.de/en/faq#a18."
+${NL}详情见 https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 
 DESCRIPTION_STARTSTOP_SERVICES=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Select all services in sequence how they should be stopped before the backup starts. \
@@ -925,15 +925,15 @@ MSG_ZH[$DESCRIPTION_KEEP]="${NL}输入保存的备份数,在1和52之间."
 
 DESCRIPTION_SMART=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMART]="${NL}Enter four numbers separated by spaces to define the smart recycle backup strategy parameters. The numbers define how many daily, weekly, monthly and yearly backups are kept. \
-For details about the backup strategy see https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+For details about the backup strategy see https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 MSG_DE[$DESCRIPTION_SMART]="${NL}Gib mit vier durch Leerzeichen getrennten Zahlen die Parameter für die intelligente Rotationsstrategie ein. Die Zahlen definieren wie viele tägliche, wöchentliche, monatliche und jährliche Backups vorgehalten werden. \
-Details zur Backupstrategie können auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/ nachgelesen werden."
+Details zur Backupstrategie können auf https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options nachgelesen werden."
 MSG_FI[$DESCRIPTION_SMART]="${NL}Syötä neljä välilyönnein erotettua numeroa määrittääksesi älykkään varmuuskopioinnin parametrit. Numerot määrittävät kuinka monta päivittäistä, viikoittaista, kuukausittaista ja vuosittaista varmuuskopiota säilytetään. \
-Lisätietoa löydät osoitteesta https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+Lisätietoa löydät osoitteesta https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 MSG_FR[$DESCRIPTION_SMART]="${NL}Saisissez les paramètres de la stratégie intelligente avec quatre nombres séparés par des espaces. Les nombres définissent combien de sauvegardes quotidiennes, hebdomadaires, mensuelles et annuelles sont conservées. \
-Des détails sur la stratégie de sauvegarde sont disponibles sur https://www.linux-tips-and-tricks.de/de/rotationsstrategy/."
+Des détails sur la stratégie de sauvegarde sont disponibles sur https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 MSG_ZH[$DESCRIPTION_SMART]="${NL}输入四个数字定义备份策略. 这决定备份周期. \
-详情见 https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+详情见 https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 
 DESCRIPTION_ERROR=$((SCNT++))
 MSG_EN[$DESCRIPTION_ERROR]="Unrecoverable error occurred. Check logfile $LOG_FILE."
@@ -983,31 +983,26 @@ MSG_EN[$DESCRIPTION_BACKUPTYPE]="${NL}rsync is the suggested backuptype because 
 tar should be used if the backup filesystem is no EXT3/4, e.g a remote mounted samba share. Don't use a FAT32 filesystem because the maximum filesize is 4GB. \
 dd should be used if you want to restore the backup on a Windows OS. \
 dd and tar backups can be compressed. \
-For further details about backup type see${NL}https://www.linux-tips-and-tricks.de/en/backup#butypes. \
-For further details about the option for dd see${NL}https://www.linux-tips-and-tricks.de/en/faq#a16"
+For further details about backup type see${NL}https://framps.github.io/raspiBackupDoc/backup-types."
 MSG_DE[$DESCRIPTION_BACKUPTYPE]="${NL}rsync ist der empfohlene Backuptyp da durch Hardlinks vom ETX3/4 Dateisystem der Backup schnell ist da nur neue oder geänderte Dateien gesichert werden. \
 tar sollte man benutzen wenn das Backupdateisystem kein EXT3/4 ist, z.B. ein remotes Samba Laufwerk. Ein FAT32 Dateisystem ist ungeeignet da die maximale Dateigröße nur 4GB ist. \
 dd ist die richtige Wahl wenn man den Backup auf einem Windows OS wiederherstellen will. \
 dd und tar Backups können noch zusätzlich komprimiert werden. \
-Weiter Details zum Backuptyp finden sich${NL}https://www.linux-tips-and-tricks.de/de/raspibackup#vornach. \
-Weitere Details zu der Option für dd siehe${NL}https://www.linux-tips-and-tricks.de/de/faq#a16"
+Weiter Details zum Backuptyp finden sich${NL}https://framps.github.io/raspiBackupDoc/backup-types"
 MSG_FI[$DESCRIPTION_BACKUPTYPE]="${NL}EXT3/4-tiedostojärjetelmässä on suositeltavaa valita rsync, sillä hardlinkit nopeuttavat varmuuskopiointia: vain uudet ja muuttuneet tiedostot kopioidaan. \
 Valitse tar, jos varmuuskopioitava tiedostojärjestelmä ei ole EXT3/4 tai se on esim. etänä käyttöönotettu samba-jako. Älä käytä FAT32-tiedostojärjestelmää, koska sen maksimitiedostokoko on 4Gt. \
 Valitse dd, jos haluat palauttaa varmuuskopion Windows-järjestelmässä. dd- ja tar-varmuuskopiot voidaan pakata tilan säästämiseksi. \
-${NL}${NL}Lisätietoja varmuuskopiotyypeistä löydät osoitteestahttps://www.linux-tips-and-tricks.de/en/backup#butypes. \
-${NL}Lisätietoja dd:n valinnoista löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a16"
+${NL}${NL}Lisätietoja varmuuskopiotyypeistä löydät osoitteesta https://framps.github.io/raspiBackupDoc/backup-types."
 MSG_FR[$DESCRIPTION_BACKUPTYPE]="${NL}rsync est le type de sauvegarde recommandé car le système de fichiers ETX3/4 rend la sauvegarde rapide, seuls les fichiers nouveaux ou modifiés sont enregistrés. \
 tar doit être utilisé si le système de fichiers de sauvegarde n'est pas un EXT3/4, par exemple un lecteur Samba distant. Un système de fichiers FAT32 ne convient pas car la taille maximale du fichier n'est que de 4 Go. \
 dd est le bon choix si vous souhaitez restaurer la sauvegarde sur un système d'exploitation Windows. \
 les sauvegardes dd et tar peuvent également être compressées. \
-Vous trouverez plus de détails sur le type de sauvegarde sur${NL}https://www.linux-tips-and-tricks.de/de/raspibackup#vornach. \
-Pour dd voir : ${NL}https://www.linux-tips-and-tricks.de/de/faq#a16 "
+Vous trouverez plus de détails sur le type de sauvegarde sur${NL}https://framps.github.io/raspiBackupDoc/backup-types."
 MSG_ZH[$DESCRIPTION_BACKUPTYPE]="${NL}rsync是建议的备份方法.因为ETX3/4文件系统的硬链接只有在改变时才会被保存\
 建议tar在非EXT3/4文件系统上使用，比如云端samba设备 \
 建议dd模式在有在windows系统上恢复备份需求时使用. \
 dd和tar模式下生成的备份可以被压缩. \
-${NL}${NL}更多备份模式类型见:https://www.linux-tips-and-tricks.de/en/backup#butypes. \
-${NL}更多dd模式详情见 https://www.linux-tips-and-tricks.de/en/faq#a16"
+${NL}${NL}更多备份模式类型见:https://framps.github.io/raspiBackupDoc/backup-types."
 
 DESCRIPTION_TAR_COMPRESSION_TOOL=$((SCNT++))
 MSG_EN[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}There are various compression tools available to compress a tar backup. \
@@ -1183,23 +1178,23 @@ MSG_ABOUT=$((SCNT++))
 MSG_EN[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 This tool provides a straight-forward way of doing installation,${NL} updating and configuration of $RASPIBACKUP_NAME.${NL}${NL}\
-Visit https://www.linux-tips-and-tricks.de/en/raspibackup${NL}for details about $RASPIBACKUP_NAME."
+Visit https://framps.github.io/raspiBackupDoc/introduction${NL}for details about $RASPIBACKUP_NAME."
 MSG_DE[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Dieses Tool ermöglicht es möglichst einfach $RASPIBACKUP_NAME zu installieren,${NL} zu updaten und die Konfiguration anzupassen.${NL}${NL}\
-Besuche https://www.linux-tips-and-tricks.de/de/raspibackup${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
+Besuche https://framps.github.io/raspiBackupDoc/introduction${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
 MSG_FI[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Tämä työkalu tarjoaa $RASPIBACKUP_NAME:n suoraviivaisen asennuksen,${NL} päivittämisen ja asetusten määrittämisen.${NL}${NL}\
-Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup"
+Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://framps.github.io/raspiBackupDoc/introduction"
 MSG_FR[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Cet outil facilite au maximum la mise en place de $RASPIBACKUP_NAME ,la mise à jour ,${NL} et la configuration.${NL}${NL}\
-Visitez https://www.linux-tips-and-tricks.de/en/raspibackup${NL}pour plus de détails sur $RASPIBACKUP_NAME."
+Visitez https://framps.github.io/raspiBackupDoc/introduction${NL}pour plus de détails sur $RASPIBACKUP_NAME."
 MSG_ZH[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 此界面提供一个$RASPIBACKUP_NAME的安装引导,${NL}更新和设置页面.${NL}${NL}\
-获取$RASPIBACKUP_NAME详情请访问:{NL}https://www.linux-tips-and-tricks.de/en/raspibackup "
+获取$RASPIBACKUP_NAME详情请访问:{NL}https://framps.github.io/raspiBackupDoc/introduction"
 
 MSG_FIRST_STEPS=$((SCNT++))
 MSG_EN[$MSG_FIRST_STEPS]="Congratulations! $RASPIBACKUP_NAME installed successfully.${NL}${NL}\
@@ -1207,80 +1202,80 @@ Next steps:${NL}
 1) Start $RASPIBACKUP_NAME in the commandline and create a backup${NL}\
 2) Start $RASPIBACKUP_NAME to restore the backup on a different SD card${NL}\
 3) Verify the restored backup works fine.${NL}\
-4) Read the FAQ page https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) Read the FAQ page https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Visit the options page and fine tune $RASPIBACKUP_NAME${NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Enable regular backup with the installer${NL}\
-7) Visit https://www.linux-tips-and-tricks.de/en/backup for a lot more information about $RASPIBACKUP_NAME"
+7) Visit https://framps.github.io/raspiBackupDoc/introduction for a lot more information about $RASPIBACKUP_NAME"
 MSG_DE[$MSG_FIRST_STEPS]="Herzlichen Glückwunsch! $RASPIBACKUP_NAME wurde erfolgreich installiert.${NL}${NL}\
 Nächsten Schritte:${NL}
 1) Starte $RASPIBACKUP_NAME in der Befehlszeile und erzeuge ein Backup${NL}\
 2) Starte $RASPIBACKUP_NAME um das erzeugte Backup auf einer andere SD Karte wiederherzustellen.${NL}\
 3) Verifiziere dass das System ohne Probleme läuft.${NL}\
-4) Lies die FAQ Seite https://www.linux-tips-and-tricks.de/de/faq${NL}\
+4) Lies die FAQ Seite https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Besuche die Optionsseite und konfiguriere $RASPIBACKUP_NAME genau nach Deinen Vorstellungen${NL}\
-   https://www.linux-tips-and-tricks.de/de/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Schalte den regelmäßigen Backup mit dem Installer ein${NL}\
-7) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten"
+7) Besuche https://framps.github.io/raspiBackupDoc/introduction um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten"
 MSG_FI[$MSG_FIRST_STEPS]="Onnittelut! $RASPIBACKUP_NAME on asennettu onnistuneesti.${NL}${NL}\
 Seuraavat vaiheet:${NL}
 1) Käynnistä $RASPIBACKUP_NAME komentoriviltä ja luo varmuuskopio${NL}\
 2) Käynnistä $RASPIBACKUP_NAME palauttaaksesi varmuuskopion toiselle SD-kortille${NL}\
 3) Varmista, että palautettu varmuuskopio toimii oikein.${NL}\
-4) Lue FAQ-sivu osoitteessa https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) Lue FAQ-sivu osoitteessa https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Käy valintasivulla ja tee $RASPIBACKUP_NAME$-hienosäädöt{NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Ota käyttöön säännölliset varmuuskopiot asennusohjelmalla${NL}\
-7) Käy osoitteessa https://www.linux-tips-and-tricks.de/en/backup ja lue paljon lisää $RASPIBACKUP_NAME-tietoa"
+7) Käy osoitteessa https://framps.github.io/raspiBackupDoc/introduction ja lue paljon lisää $RASPIBACKUP_NAME-tietoa"
 MSG_FR[$MSG_FIRST_STEPS]="Toutes nos félicitations! $RASPIBACKUP_NAME est installé avec succès.${NL}${NL}\
 Prochaines étapes :${NL}
 1) Démarrez $RASPIBACKUP_NAME dans la ligne de commande et créez une sauvegarde${NL}\
 2) Démarrez $RASPIBACKUP_NAME pour restaurer la sauvegarde sur une autre carte SD${NL}\
 3) Vérifiez que la sauvegarde restaurée fonctionne correctement.${NL}\
-4) Lisez la page FAQ https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) Lisez la page FAQ https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Visitez la page des options et améliorez $RASPIBACKUP_NAME${NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Activez la sauvegarde régulière avec le programme raspiBackupInstallUI.sh${NL}\
-7) Visitez https://www.linux-tips-and-tricks.de/en/backup pour avoir des informations sur $RASPIBACKUP_NAME"
+7) Visitez https://framps.github.io/raspiBackupDoc/introduction pour avoir des informations sur $RASPIBACKUP_NAME"
 MSG_ZH[$MSG_FIRST_STEPS]="恭喜! $RASPIBACKUP_NAME 安装成功.${NL}${NL}\
 接下来你可以:${NL}
 1) 在终端输入 $RASPIBACKUP_NAME开始备份 ${NL}\
 2) 在终端输入 $RASPIBACKUP_NAME 还原备份到SD卡${NL}\
 3) 校验备份文件.${NL}\
-4) 参考FAQ页面 https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) 参考FAQ页面 https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) 进行设置和微调项 $RASPIBACKUP_NAME${NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) 开启定期备份${NL}\
-7) 访问https://www.linux-tips-and-tricks.de/en/backup 获取更多$RASPIBACKUP_NAME信息"
+7) 访问https://framps.github.io/raspiBackupDoc/introduction 获取更多$RASPIBACKUP_NAME信息"
 
 MSG_HELP=$((SCNT++))
 MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAME just use one of the following paths to get help${NL}
-1) Read the FAQ page https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) Visit https://www.linux-tips-and-tricks.de/en/backup for a lot more information about $RASPIBACKUP_NAME${NL}\
+1) Read the FAQ page https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Visit https://framps.github.io/raspiBackupDoc/introduction for a lot more information about $RASPIBACKUP_NAME${NL}\
 3) Create an issue on github https://github.com/framps/raspiBackup/issues. That's my preference${NL}\
 4) Add comments on any webpage dealing with $RASPIBACKUP_NAME on $MYHOMEDOMAIN${NL}\
 5) Visit $RASPIBACKUP_NAME on Facebook"
 MSG_DE[$MSG_HELP]="Falls es irgendwelche Fragen oder Probleme zu $RASPIBACKUP_NAME gibt bestehen folgende Möglichkeiten Hilfe zu bekommen${NL}
-1) Lies die FAQ Seite https://www.linux-tips-and-tricks.de/de/faq${NL}\
-2) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten${NL}\
+1) Lies die FAQ Seite https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Besuche https://framps.github.io/raspiBackupDoc/introduction um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten${NL}\
 3) Erstelle einen Fehlerbericht auf github https://github.com/framps/raspiBackup/issues. Gerne auch in Deutsch. Das ist meine Präferenz.${NL} \
 4) Erstelle einen Kommentar auf jeder Webseite zu $RASPIBACKUP_NAME auf $MYHOMEDOMAIN${NL}\
 5) Besuche $RASPIBACKUP_NAME auf Facebook"
 MSG_FI[$MSG_HELP]="Jos sinulla on kysymyksiä tai ongelmia $RASPIBACKUP_NAME:n kanssa, käytä jotain seuraavista tavoista saadaksesi apua${NL}
-1) Lue FAQ-sivu osoitteessa https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) Käy osoitteessa https://www.linux-tips-and-tricks.de/en/backup ja lue paljon lisää $RASPIBACKUP_NAME-tietoa${NL}\
+1) Lue FAQ-sivu osoitteessa https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Käy osoitteessa https://framps.github.io/raspiBackupDoc/introduction ja lue paljon lisää $RASPIBACKUP_NAME-tietoa${NL}\
 3) Luo issue githubissa https://github.com/framps/raspiBackup/issues. Tätä suosin.${NL}\
 4) Lisää kommentti $RASPIBACKUP_NAME-verkkosivuilla osoitteessa $MYHOMEDOMAIN${NL}\
 5) Käy $RASPIBACKUP_NAME:n Facebook-sivulla"
 MSG_FR[$MSG_HELP]="Si vous avez un problème ou une question concernant $RASPIBACKUP_NAME, utilisez simplement un des liens suivants pour obtenir une aide :${NL}
-1) Lisez la page FAQ https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) Visitez https://www.linux-tips-and-tricks.de/en/backup pour plus d'informations sur $RASPIBACKUP_NAME${NL}\
+1) Lisez la page FAQ https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Visitez https://framps.github.io/raspiBackupDoc/introduction pour plus d'informations sur $RASPIBACKUP_NAME${NL}\
 3) Exposez le problème sur github https://github.com/framps/raspiBackup/issues. C'est ma préférence${NL}\
 4) Ajoutez des commentaires sur toute page Web traitant de $RASPIBACKUP_NAME sur $MYHOMEDOMAIN${NL}\
 5) Visitez $RASPIBACKUP_NAME sur Facebook"
 MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用以下方式联系${NL}
-1) 参考FAQ页面 https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) 访问 https://www.linux-tips-and-tricks.de/en/backup 获取更多$RASPIBACKUP_NAME$信息{NL}\
+1) 参考FAQ页面 https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) 访问 https://framps.github.io/raspiBackupDoc/introduction 获取更多$RASPIBACKUP_NAME$信息{NL}\
 3) 在github上创建issues https://github.com/framps/raspiBackup/issues. 通常选这项!${NL}\
 4) 在 $MYHOMEDOMAIN$上关于$RASPIBACKUP_NAME的页面留言评论{NL}\
 5) 访问$RASPIBACKUP_NAME 的Facebook页面"
