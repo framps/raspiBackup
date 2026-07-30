@@ -9124,9 +9124,9 @@ function getCompressionTool() { # backupfilename
 		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
 		logItem "Compressiontool $compressionTool used"
 	else
-		if [[ "$extension" == ".tar" ]]; then
+		if [[ "$extension" == ".tar" || "$extension" == ".tgz" ]]; then
 			compressionTool=""
-			logItem "No compressiontool used"
+			logItem "No compressiontool used. Default tar used"
 		else
 			assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
 		fi
