@@ -195,12 +195,12 @@ if (( CREATE_DD_BACKUP )); then
 
 	SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK $SFDISK_FILE)
 
-	mb=$( ($SOURCE_DISK_SIZE + $MiB - 1 ) / $MiB * $MiB) # round up to a multiple of 1 MiB
+	mb=$( ($SOURCE_DISK_SIZE + $MiB - 1 ) / $MiB + 4) # round up to a multiple of 1 MiB
 	echo "===> Backup source disk size: $mb (MiB)"
 
 	# create image file
 
-	dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
+	dd if=/dev/zero of="$IMAGE_FILENAME" bs=1MiB seek=$mb count=0
 	losetup $RBRI_RESTOREDEVICE $IMAGE_FILENAME
 fi
 
