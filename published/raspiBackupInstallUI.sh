@@ -60,6 +60,7 @@ fi
 
 # Commands used by raspiBackup and which have to be available
 # [command]=package
+#
 declare -A REQUIRED_COMMANDS=( \
 		["parted"]="parted" \
 		["fsck.vfat"]="dosfstools" \
@@ -106,11 +107,11 @@ MYHOMEURL=https://raw.githubusercontent.com/framps/raspiBackup/published
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date$"
+GIT_DATE="$Date: 2026-08-03 12:24:50 +0200$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1$"
+GIT_COMMIT="$Sha1: 0f2a02a$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
