@@ -45,7 +45,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 RASPIBACKUP_ABS_LOCATION="$0"								# to invoke myself for clone
-VERSION="0.7.3.1"   									# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.4"   									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.11"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -105,7 +105,7 @@ function findUser() {
 
 # some general constants
 
-readonly MYHOMEURL="https://www.linux-tips-and-tricks.de"
+readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
@@ -129,18 +129,16 @@ if [[ -n $URLTARGET ]]; then
 	URLTARGET="/$URLTARGET"
 fi
 
-DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.sh"
-CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
-BETA_CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-#INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
-#INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
-PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
+DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.sh"
+CONFIG_URL="$MYHOMEURL${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
+BETA_CONFIG_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+PROPERTIES_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
 VERSION_PAGE="https://github.com/framps/raspiBackup/releases"
 
 # dd warning website
-DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
-DD_WARNING_URL_EN="$MYHOMEURL/en/all-pages-about-raspibackup/581-raspibackup-why-shouldn-t-you-use-dd-as-backup-method/"
+#DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
+#DD_WARNING_URL_EN="$MYHOMEURL/en/all-pages-about-raspibackup/581-raspibackup-why-shouldn-t-you-use-dd-as-backup-method/"
 
 CALLING_USER="$(findUser)"
 CALLING_HOME="$(eval echo "~${CALLING_USER}")"
