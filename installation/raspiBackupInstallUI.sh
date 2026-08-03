@@ -60,6 +60,7 @@ fi
 
 # Commands used by raspiBackup and which have to be available
 # [command]=package
+#
 declare -A REQUIRED_COMMANDS=( \
 		["parted"]="parted" \
 		["fsck.vfat"]="dosfstools" \
