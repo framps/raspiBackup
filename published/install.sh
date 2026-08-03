@@ -8,7 +8,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2020-2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2020-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -26,23 +26,23 @@
 #######################################################################################################################
 
 MYSELF="install"
-VERSION="0.1.4"
+VERSION="0.1.5"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
-URL="https://www.linux-tips-and-tricks.de"
+URL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
 INSTALLER="raspiBackupInstallUI.sh"
-INSTALLER_DOWNLOAD_URL="$URL/raspiBackup${URLTARGET}/$INSTALLER"
+INSTALLER_DOWNLOAD_URL="$URL/${URLTARGET}/$INSTALLER"
 
 CURRENT_DIR=$(pwd)
 
 TO_BE_INSTALLED="raspiBackup.sh"
 LOG_FILE="$CURRENT_DIR/$MYSELF.log"
 
-GIT_DATE="$Date: 2026-08-03 16:05:54 +0200$"
+GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="$Sha1: c98f357$"
+GIT_COMMIT="$Sha1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
