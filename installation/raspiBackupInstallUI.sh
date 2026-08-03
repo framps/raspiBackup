@@ -103,7 +103,7 @@ if (( ${#requiredCmds[@]} > 0 )); then
 	fi
 fi
 
-MYHOMEURL=https://raw.githubusercontent.com/framps/raspiBackup/published
+MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/m_published/published"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

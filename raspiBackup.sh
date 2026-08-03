@@ -105,7 +105,7 @@ function findUser() {
 
 # some general constants
 
-readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/published"
+readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/m_published/published"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
