@@ -103,6 +103,7 @@ if (( ${#requiredCmds[@]} > 0 )); then
 	fi
 fi
 
+GITHUB_URL="https://github.com"
 MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/m_published/published"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -1826,7 +1827,7 @@ function isInternetAvailable() {
 
 	logEntry
 
-	wget -q --spider -t 1 -T 3 https://$MYHOMEDOMAIN
+	wget -q --spider -t 1 -T 3 https://$GITHUB_URL
     local rc=$?
 	logExit $rc
     return $rc
