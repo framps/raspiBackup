@@ -45,7 +45,7 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.5"			 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.4.9.1"			 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
@@ -102,7 +102,8 @@ if (( ${#requiredCmds[@]} > 0 )); then
 	fi
 fi
 
-MYHOMEURL=https://raw.githubusercontent.com/framps/raspiBackup/published
+MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
+MYHOMEURL="https://$MYHOMEDOMAIN"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -130,12 +131,12 @@ MASQUERADE_STRING="@@@@"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 
-PROPERTY_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
-BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
+PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupInstallUI.sh"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
@@ -1805,7 +1806,7 @@ function logItem() { # message
 
 function downloadURL() { # fileName
 	logEntry "$1"
-	local u="$MYHOMEURL$URLTARGET/$1"
+	local u="$MYHOMEURL/raspiBackup$URLTARGET/$1"
 	echo "$u"
 	logExit "$u"
 }
