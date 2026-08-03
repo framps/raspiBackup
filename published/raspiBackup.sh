@@ -78,13 +78,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='$Date: 2026-08-03 13:34:01 +0200$'
+GIT_DATE='$Date: 2026-08-03 14:12:10 +0200$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='$Sha1: ea89247$'
+GIT_COMMIT='$Sha1: 9ab54f5$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -105,7 +105,7 @@ function findUser() {
 
 # some general constants
 
-readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/published"
+readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/m_published/published"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
