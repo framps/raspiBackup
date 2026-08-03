@@ -8,7 +8,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2020-2022 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2020-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -26,12 +26,12 @@
 #######################################################################################################################
 
 MYSELF="install"
-VERSION="0.1.4"
+VERSION="0.1.5"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
-URL="https://www.linux-tips-and-tricks.de"
+URL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
 INSTALLER="raspiBackupInstallUI.sh"
-INSTALLER_DOWNLOAD_URL="$URL/raspiBackup${URLTARGET}/$INSTALLER"
+INSTALLER_DOWNLOAD_URL="$URL/${URLTARGET}/$INSTALLER"
 
 CURRENT_DIR=$(pwd)
 
