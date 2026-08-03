@@ -1827,7 +1827,7 @@ function isInternetAvailable() {
 
 	logEntry
 
-	wget -q --spider -t 1 -T 3 https://$GITHUB_URL
+	wget -q --spider -t 1 -T 3 $GITHUB_URL
     local rc=$?
 	logExit $rc
     return $rc
