@@ -31,7 +31,8 @@
 GIT_DATE="$Date$"
 GIT_COMMIT="$Sha1$"
 
-# Parameters received by script: "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" "$append"
+# the fifth parameter "apend" was removed from version 0.7.2 to 0.7.3
+# Parameters received by script: "$EMAIL" "$subject" "$content" "$EMAIL_PARMS"
 
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
@@ -40,8 +41,8 @@ DEBUG=0			# 0/1 toggle for debugging
 
 # guard for invalid invocation
 
-if [[ $# != 5 ]]; then
-	echo "Missing parameters for $MYNAME. Expected: 5. Received $#"
+if [[ $# != 4 ]]; then
+	echo "Missing parameters for $MYNAME. Expected: 4. Received $#"
 	exit 127
 fi
 
@@ -51,7 +52,7 @@ email="$1"		# target email address
 subject="$2"	# email subject
 content="$3"	# email contents
 parms="$4"		# addtl email parms passed with -E
-append="$5"		# file to append
+# append="$5"		# file to append
 
 # print received parameters for debugging purposes
 
@@ -60,15 +61,16 @@ if (( $DEBUG )); then
 	echo "subject: ->$subject<-"
 	echo "content: ->$content<-"
 	echo "parms: ->$parms<-"
-	echo "append: ->$append<-"
+# 	echo "append: ->$append<-"
 fi
 
-[[ -n $append ]] && append="-a $append"
+# [[ -n $append ]] && append="-a $append"
 
 (( $DEBUG )) && set -x
 
 # sample to send mail with mailx client
 
-mailx $parms -s "$subject" $append "$email"	<<< "$content"
+# mailx $parms -s "$subject" $append "$email"	<<< "$content"
+mailx $parms -s "$subject" "$email"	<<< "$content"
 
 exit 0
