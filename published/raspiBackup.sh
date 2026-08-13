@@ -78,13 +78,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='$Date: 2026-08-03 22:00:07 +0200$'
+GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='$Sha1: 321a995$'
+GIT_COMMIT='$Sha1$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -764,7 +764,7 @@ MSG_FI[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: Luodaan varmuuskopiota kohteeseen %
 MSG_FR[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: La partition de boot sera sauvegardée en %s"
 MSG_CREATING_PARTITION_BACKUP=45
 MSG_EN[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Creating backup of partition layout in %s"
-MSG_DE[$MSG_CREATING_PARTITION_BACKUP]="RBK0044I: Backup des Partitionlayouts wird in %s erstellt"
+MSG_DE[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Backup des Partitionlayouts wird in %s erstellt"
 MSG_FI[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Luodaan varmuuskopiota osioasettelusta kohteeseen %s"
 MSG_FR[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: La disposition de la partition sera sauvegardée sous %s"
 MSG_CREATING_MBR_BACKUP=46
@@ -9396,7 +9396,7 @@ function doitRestore() {
 			exitError $RC_DEVICES_NOTFOUND
 		fi
 
-		local rc rr
+		local rd rr
 		rd=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
 		rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
 
