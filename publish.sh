@@ -24,8 +24,26 @@
 
 set -euo pipefail
 
+usage() {
+	cat <<"EOF_USAGE"
+Usage:
+
+	publish.sh [options]
+
+Options:
+
+    $1: branch to publish (default: Current branch)
+    $2: subdirectory name is published into
+    -h | --help    display this short help
+
+EOF_USAGE
+}
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLISH_DIR="$REPO_DIR/published"
+CURRENT_BRANCH=$(git branch --show-current)
+PUBLISH_BRANCH=$CURRENT_BRANCH
+GITSRC=$(mktemp --tmpdir -d raspiBackup_git.XXXXXX)
 
 FILES=(
     "raspiBackup.sh"
@@ -37,10 +55,40 @@ FILES=(
     "properties/raspiBackup.properties"
 )
 
+if (( $# > 0 )); then
+	case "$1" in
+	    -h|--help) usage
+		       exit
+		       ;;
+		*) PUBLISH_BRANCH="$1"
+			;;
+	esac
+	if (( $# > 1 )); then
+		case "$2" in
+			*) PUBLISH_DIR="$PUBLISH_DIR/$2"			
+				;;
+		esac
+	fi
+	
+fi
+
+if [[ "$CURRENT_BRANCH" == "$PUBLISH_BRANCH" ]] ; then
+    git worktree add --detach "$PUBLISH_BRANCH"
+else
+    git worktree add "$GITSRC" "$PUBLISH_BRANCH"
+fi
+
+if [[ ! -d $PUBLISH_DIR ]]; then
+	mkdir $PUBLISH_DIR
+fi	
+
+echo -n "@@@ Publishing $PUBLISH_BRANCH into $PUBLISH_DIR"
+	
 # Current repository HEAD
+pushd "$GITSRC" > /dev/null
 sha="$(git rev-parse --short HEAD)"
 date="$(git log -1 --format='%ci' HEAD)"
-
+	
 for file in "${FILES[@]}"; do
 
 	# remove path
@@ -53,9 +101,11 @@ for file in "${FILES[@]}"; do
         -e "s/\\\$Date\\\$/$date/g" \
         "$file" > "$destination"
 
-    echo "Published: $file"
+#    echo "@@@ Published: $file"
 done
 
 file=$PUBLISH_DIR/raspiBackupSampleExtensions.tgz
-tar --owner=root --group =root -cvzf $file  extensions/*
-echo "Published: $file"
+tar --owner=root --group =root -cvzf $file  extensions/* >/dev/null
+echo "@@@Published: $file"
+
+git worktree remove "$GITSRC"
