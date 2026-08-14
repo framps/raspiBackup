@@ -39,6 +39,11 @@ Options:
 EOF_USAGE
 }
 
+function error() {
+   echo "??? $*" >/dev/tty
+   exit 1
+}
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLISH_DIR="$REPO_DIR/published"
 CURRENT_BRANCH=$(git branch --show-current)
@@ -72,6 +77,9 @@ if (( $# > 0 )); then
 	
 fi
 
+#trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
+#trap 'error $?' ERR
+
 if [[ "$CURRENT_BRANCH" == "$PUBLISH_BRANCH" ]] ; then
     git worktree add --detach "$PUBLISH_BRANCH"
 else
@@ -79,10 +87,13 @@ else
 fi
 
 if [[ ! -d $PUBLISH_DIR ]]; then
-	mkdir $PUBLISH_DIR
+	echo "??? $PUBLISH_DIR does not exist"
+	exit
 fi	
 
-echo -n "@@@ Publishing $PUBLISH_BRANCH into $PUBLISH_DIR"
+d="$(sed -e "s@$REPO_DIR@\.@" <<< "$PUBLISH_DIR")"
+
+echo "Publishing $PUBLISH_BRANCH into $d"
 	
 # Current repository HEAD
 pushd "$GITSRC" > /dev/null
@@ -101,11 +112,9 @@ for file in "${FILES[@]}"; do
         -e "s/\\\$Date\\\$/$date/g" \
         "$file" > "$destination"
 
-#    echo "@@@ Published: $file"
 done
 
 file=$PUBLISH_DIR/raspiBackupSampleExtensions.tgz
 tar --owner=root --group =root -cvzf $file  extensions/* >/dev/null
-echo "@@@Published: $file"
 
 git worktree remove "$GITSRC"
