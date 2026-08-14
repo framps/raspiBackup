@@ -13,7 +13,7 @@
 #
 # Credits to following people for their translation work
 #	  FI - teemue
-#	  FR - mgrafr
+#	  FR - mgrafr 
 #
 #######################################################################################################################
 #
@@ -45,7 +45,7 @@ fi
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
 RASPIBACKUP_ABS_LOCATION="$0"								# to invoke myself for clone
-VERSION="0.7.4-m_972"   									# -beta, -hotfix or -dev suffixes possible
+VERSION="0.7.4"   									# -beta, -hotfix or -dev suffixes possible
 VERSION_SCRIPT_CONFIG="0.1.11"           					# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
@@ -78,13 +78,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='$Date$'
+GIT_DATE='$Date: 2026-08-13 20:36:29 +0200$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='$Sha1$'
+GIT_COMMIT='$Sha1: 394eba0$'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"

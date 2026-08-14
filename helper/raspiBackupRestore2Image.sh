@@ -12,7 +12,7 @@
 #
 #######################################################################################################################
 #
-#   Copyright (c) 2017-2024 framp at linux-tips-and-tricks dot de
+#   Copyright (c) 2017-2026 framp at linux-tips-and-tricks dot de
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -34,7 +34,9 @@
 MYSELF=${0##*/}
 MYNAME=${MYSELF%.*}
 
-VERSION="v0.2.1"
+VERSION="v0.2.2"
+
+readonly MiB=$(( 1024*1024 ))
 
 function usage() {	
 	echo "Syntax: $MYSELF <BackupDirectory> [ <restoredevice> (e.g. /dev/sda, /dev/mmcblk1, /dev/nvme0n1) ]"
@@ -189,16 +191,16 @@ trap cleanup SIGINT SIGTERM EXIT
 if (( CREATE_DD_BACKUP )); then
 	rm "$IMAGE_FILENAME" &>/dev/null
 
-	# calculate required image dis size
+	# calculate required image disk size
 
 	SOURCE_DISK_SIZE=$(calcSumSizeFromSFDISK $SFDISK_FILE)
 
-	mb=$(( $SOURCE_DISK_SIZE / 1024 / 1024 )) # calc MB
+	mb=$(( ($SOURCE_DISK_SIZE + $MiB - 1 ) / $MiB + 4 )) # round up to a multiple of 1 MiB
 	echo "===> Backup source disk size: $mb (MiB)"
 
 	# create image file
 
-	dd if=/dev/zero of="$IMAGE_FILENAME" bs=1024k seek=$(( $mb )) count=0
+	dd if=/dev/zero of="$IMAGE_FILENAME" bs=1MiB seek=$mb count=0
 	losetup $RBRI_RESTOREDEVICE $IMAGE_FILENAME
 fi
 
@@ -213,6 +215,11 @@ fi
 # prime partitions
 
 sfdisk -uSL -f $RBRI_RESTOREDEVICE < "$SFDISK_FILE"
+rc=$?
+if (( rc != 0 )); then
+	echo "??? Error $RC received from sfdisk"
+	exit 42
+fi
 
 echo "===> Reloading new partition table"
 partprobe $RBRI_RESTOREDEVICE
@@ -252,15 +259,14 @@ if (( CREATE_DD_BACKUP )); then
 		RC=$?
 		if (( $RC )); then
 			echo "??? Error $RC received from piShrink"
-				RC=1
-			echo "Program ends wihn error 42"
+			RC=1
 		fi
 	else
 		echo "??? Error $RC received"
 		RC=1
 	fi
 
-	# pishrink destroyes PARTUUID with resizsefs, restore original PTUUID now
+	# pishrink destroys PARTUUID with resizsefs, restore original PTUUID now
 	if (( ! $RC )); then
 	  RBRI_RESTOREDEVICE=$(losetup -f)
 
