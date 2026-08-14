@@ -1,12 +1,11 @@
+#!/bin/bash
 #######################################################################################################################
 #
-#   Property file for raspiBackup and raspiBackupInstallUI
-#
-#   See http://www.linux-tips-and-tricks.de/raspiBackup for details
+#    Publish raspiBackup
 #
 #######################################################################################################################
 #
-#    Copyright (C) 2015-2026 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,22 +21,41 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################################################################
-#
-# GIT_DATE="2026-08-13 21:10:50 +0200"
-# GIT_COMMIT="3f9f6c7"
 
-VERSION="0.7.4"
-INCOMPATIBLE=""
-DEPRECATED=""
-BETA=""
+set -euo pipefail
 
-VERSION_INSTALLER="0.5"
-INCOMPATIBLE_INSTALLER=""
-DEPRECATED_INSTALLER=""
-BETA_INSTALLER=""
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PUBLISH_DIR="$REPO_DIR/published"
 
-VERSION_CONF="0.1.11"
-INCOMPATIBLE_CONF=""
-DEPRECATED_CONF=""
-BETA_CONF=""
+FILES=(
+    "raspiBackup.sh"
+    "installation/raspiBackupInstallUI.sh"
+    "installation/install.sh"
+    "config/raspiBackup_de.conf"
+    "config/raspiBackup_en.conf"
+    "config/raspiBackup_sample_notify.conf"
+    "properties/raspiBackup.properties"
+)
 
+# Current repository HEAD
+sha="$(git rev-parse --short HEAD)"
+date="$(git log -1 --format='%ci' HEAD)"
+
+for file in "${FILES[@]}"; do
+
+	# remove path
+	tgtFile=${file##*/}  
+
+    destination="$PUBLISH_DIR/$tgtFile"
+
+    sed \
+        -e "s/\\\$Sha1\\\$/$sha/g" \
+        -e "s/\\\$Date\\\$/$date/g" \
+        "$file" > "$destination"
+
+    echo "Published: $file"
+done
+
+file=$PUBLISH_DIR/raspiBackupSampleExtensions.tgz
+tar --owner=root --group =root -cvzf $file  extensions/*
+echo "Published: $file"
