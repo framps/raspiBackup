@@ -3,6 +3,11 @@
 #
 #    Publish raspiBackup
 #
+#	 Steps:
+#	 1) Call publish.sh
+#	 2) Add published to git
+#	 3) Commit published directory 
+#
 #######################################################################################################################
 #
 #    Copyright (c) 2026 framp at linux-tips-and-tricks dot de
@@ -28,110 +33,137 @@ usage() {
 	cat <<"EOF_USAGE"
 Usage:
 
-	publish.sh [options]
+    publish.sh [branch] [subdirectory]
+
+Arguments:
+
+    branch          branch to publish (default: current branch)
+    subdirectory    subdirectory below published/
 
 Options:
 
-    $1: branch to publish (default: Current branch)
-    $2: subdirectory name is published into
-    -h | --help    display this short help
-
+    -h, --help      display this help
 EOF_USAGE
 }
 
+FILES=(
+	"raspiBackup.sh"
+	"installation/raspiBackupInstallUI.sh"
+	"installation/install.sh"
+	"config/raspiBackup_de.conf"
+	"config/raspiBackup_en.conf"
+	"config/raspiBackup_sample_notify.conf"
+	"properties/raspiBackup.properties"
+)
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PUBLISH_DIR="$REPO_DIR/published"
+
 function cleanup() {
 
-	if [[ -n $GITSRC ]]; then
-		git worktree remove "$GITSRC"
+	if [[ "${WORKTREE_CREATED:-false}" == true ]]; then
+		git worktree remove --force "$GITSRC" 2>/dev/null || true
 	fi
 }
 
 function error() {
-   local rc="$1"
-   echo "??? Unexpected error occurred with RC $rc"
-   local i=0
-   local FRAMES=${#BASH_LINENO[@]}
-   for ((i = FRAMES - 2; i >= 0; i--)); do
-      echo '  File' \"${BASH_SOURCE[i + 1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i + 1]}
-      sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
-   done
+
+	local rc=$1
+
+	echo "ERROR: command failed with exit code $rc" >&2
+
+	local i
+	for ((i = 1; i < ${#FUNCNAME[@]} - 1; i++)); do
+		printf '  at %s:%s in %s()\n' \
+			"${BASH_SOURCE[i]}" \
+			"${BASH_LINENO[i - 1]}" \
+			"${FUNCNAME[i]}"
+	done
 }
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PUBLISH_DIR="$REPO_DIR/published"
-CURRENT_BRANCH=$(git branch --show-current)
-PUBLISH_BRANCH=$CURRENT_BRANCH
+function main() {
 
-FILES=(
-    "raspiBackup.sh"
-    "installation/raspiBackupInstallUI.sh"
-    "installation/install.sh"
-    "config/raspiBackup_de.conf"
-    "config/raspiBackup_en.conf"
-    "config/raspiBackup_sample_notify.conf"
-    "properties/raspiBackup.properties"
-)
+	if (($# > 2)); then
+		printf 'ERROR: Too many arguments\n\n' >&2
+		usage >&2
+		exit 2
+	fi
 
-if (( $# > 0 )); then
-	case "$1" in
-	    -h|--help) usage
-		       exit
-		       ;;
-		*) PUBLISH_BRANCH="$1"
+	current_branch=$(git branch --show-current)
+
+	if [[ -z "$current_branch" ]]; then
+		echo "??? HEAD is detached; no current branch available" >&2
+		exit 1
+	fi
+
+	publish_branch=$current_branch
+
+	if (($# > 0)); then
+		case "$1" in
+		-h | --help)
+			usage
+			exit 0
 			;;
-	esac
-	if (( $# > 1 )); then
-		case "$2" in
-			*) PUBLISH_DIR="$PUBLISH_DIR/$2"			
-				;;
+		*)
+			publish_branch="$1"
+			;;
 		esac
+		if (($# > 1)); then
+
+			if [[ ! "$2" =~ ^[[:alnum:]_.-]+$ ]]; then
+				printf 'ERROR: Invalid subdirectory: %s\n' "$2" >&2
+				exit 2
+			fi
+
+			PUBLISH_DIR="$PUBLISH_DIR/$2"
+		fi
+
 	fi
-	
-fi
 
-trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
-trap 'error $?' ERR
+	trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
+	trap 'error $?' ERR
 
-if [[ "$CURRENT_BRANCH" == "$PUBLISH_BRANCH" ]] ; then
-    GITSRC="./$CURRENT_BRANCH"
-    git worktree add --detach "$PUBLISH_BRANCH"
-else
-    GITSRC=$(mktemp --tmpdir -d raspiBackup_git.XXXXXX)
-    git worktree add "$GITSRC" "$PUBLISH_BRANCH"
-fi
-
-if [[ ! -d $PUBLISH_DIR ]]; then
-	echo "??? $PUBLISH_DIR does not exist"
-	exit
-fi	
-
-d="$(sed -e "s@$REPO_DIR@\.@" <<< "$PUBLISH_DIR")"
-
-echo "Publishing $PUBLISH_BRANCH into $d"
-	
-# Current repository HEAD
-pushd "$GITSRC" > /dev/null
-sha="$(git rev-parse --short HEAD)"
-date="$(git log -1 --format='%ci' HEAD)"
-	
-for file in "${FILES[@]}"; do
-
-	# remove path
-	tgtFile=${file##*/}  
-
-    destination="$PUBLISH_DIR/$tgtFile"
-
-	if [[ -f $file ]]; then
-
-		sed \
-			-e "s/\\\$Sha1\\\$/$sha/g" \
-			-e "s/\\\$Date\\\$/$date/g" \
-			"$file" > "$destination"
+	if [[ ! -d $PUBLISH_DIR ]]; then
+		echo "??? $PUBLISH_DIR does not exist" >&2
+		exit 1
 	fi
-	
-done
 
-file=$PUBLISH_DIR/raspiBackupSampleExtensions.tgz
-tar --owner=root --group=root -cvzf $file  extensions/* >/dev/null
+	GITSRC=$(mktemp --tmpdir -d raspiBackup_git.XXXXXX)
+	git worktree add --detach "$GITSRC" "$publish_branch"
+	WORKTREE_CREATED=true
 
-popd >/dev/null
+	printf 'Publishing %s into %s\n' "$publish_branch" "${PUBLISH_DIR#"$REPO_DIR"/}"
+
+	sha="$(git -C "$GITSRC" rev-parse --short HEAD)"
+	date="$(git -C "$GITSRC" log -1 --format='%ci' HEAD)"
+
+	(
+		cd "$GITSRC"
+		for file in "${FILES[@]}"; do
+
+			# remove path
+			tgtFile="${file##*/}"
+
+			destination="$PUBLISH_DIR/$tgtFile"
+
+			if [[ -f $file ]]; then
+				sed \
+					-e "s/\\\$Sha1\\\$/$sha/g" \
+					-e "s/\\\$Date\\\$/$date/g" \
+					"$file" >"$destination"
+			else
+				echo "??? Missing $file" >&2
+				exit 1
+			fi
+
+		done
+
+		file=$PUBLISH_DIR/raspiBackupSampleExtensions.tgz
+		tar --owner=root --group=root -czf "$file" -C extensions .
+	)
+
+	printf '\nPublished files:\n'
+	ls -lh "$PUBLISH_DIR"
+}
+
+main "$@"
