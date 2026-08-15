@@ -6,7 +6,7 @@
 #	 Steps:
 #	 1) Call publish.sh
 #	 2) Add published to git
-#	 3) Commit published directory 
+#	 3) Commit published directory
 #
 #######################################################################################################################
 #
@@ -134,9 +134,6 @@ function main() {
 
 	printf 'Publishing %s into %s\n' "$publish_branch" "${PUBLISH_DIR#"$REPO_DIR"/}"
 
-	sha="$(git -C "$GITSRC" rev-parse --short HEAD)"
-	date="$(git -C "$GITSRC" log -1 --format='%ci' HEAD)"
-
 	(
 		cd "$GITSRC"
 		for file in "${FILES[@]}"; do
@@ -147,6 +144,11 @@ function main() {
 			destination="$PUBLISH_DIR/$tgtFile"
 
 			if [[ -f $file ]]; then
+
+				# retrieve sha and date for current file
+				sha="$(git -C "$GITSRC" rev-parse --short HEAD)"
+				date="$(git -C "$GITSRC" log -1 --format='%ci' HEAD)"
+
 				sed \
 					-e "s/\\\$Sha1\\\$/$sha/g" \
 					-e "s/\\\$Date\\\$/$date/g" \
@@ -158,8 +160,29 @@ function main() {
 
 		done
 
-		file=$PUBLISH_DIR/raspiBackupSampleExtensions.tgz
-		tar --owner=root --group=root -czf "$file" -C extensions .
+		printf 'Publishing extensions into %s\n' "${PUBLISH_DIR#"$REPO_DIR"/}"
+
+		extensions_tmp="$(mktemp --tmpdir -d raspiBackup_extensions.XXXXXX)"
+		trap 'rm -rf "$extensions_tmp"' RETURN
+
+		for file in extensions/*; do
+			if [[ ! -f "$file" ]]; then
+				continue
+			fi
+
+			tgtFile="${file##*/}"
+
+			file_sha="$(git log -1 --format='%h' -- "$file")"
+			file_date="$(git log -1 --format='%ci' -- "$file")"
+
+			sed \
+				-e "s/\\\$Sha1\\\$/$file_sha/g" \
+				-e "s/\\\$Date\\\$/$file_date/g" \
+				"$file" >"$extensions_tmp/$tgtFile"
+		done
+
+		file="$PUBLISH_DIR/raspiBackupSampleExtensions.tgz"
+		tar --owner=root --group=root -czf "$file" -C "$extensions_tmp" .
 	)
 
 	printf '\nPublished files:\n'
