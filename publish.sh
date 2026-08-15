@@ -37,7 +37,10 @@ Usage:
 
 Arguments:
 
-    branch          branch to publish (default: current branch)
+    branch          branch to publish 
+					default: current branch
+					'local' will use current local code
+					
     subdirectory    subdirectory below published/
 
 Options:
@@ -128,9 +131,13 @@ function main() {
 		exit 1
 	fi
 
-	GITSRC=$(mktemp --tmpdir -d raspiBackup_git.XXXXXX)
-	git worktree add --detach "$GITSRC" "$publish_branch"
-	WORKTREE_CREATED=true
+	if [[ "$publish_branch" == "local" ]]; then
+		GITSRC="$REPO_DIR"
+	else
+		GITSRC=$(mktemp --tmpdir -d raspiBackup_git.XXXXXX)
+		git worktree add --detach "$GITSRC" "$publish_branch"
+		WORKTREE_CREATED=true
+	fi
 
 	printf 'Publishing %s into %s\n' "$publish_branch" "${PUBLISH_DIR#"$REPO_DIR"/}"
 
