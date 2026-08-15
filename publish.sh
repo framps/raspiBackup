@@ -47,8 +47,14 @@ function cleanup() {
 }
 
 function error() {
-   echo "Unexpected errro occured ??? $*" >/dev/tty
-   exit 1
+   local rc="$1"
+   echo "??? Unexpected error occurred with RC $rc"
+   local i=0
+   local FRAMES=${#BASH_LINENO[@]}
+   for ((i = FRAMES - 2; i >= 0; i--)); do
+      echo '  File' \"${BASH_SOURCE[i + 1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i + 1]}
+      sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
+   done
 }
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -84,7 +90,7 @@ if (( $# > 0 )); then
 fi
 
 trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
-#trap 'error $?' ERR
+trap 'error $?' ERR
 
 if [[ "$CURRENT_BRANCH" == "$PUBLISH_BRANCH" ]] ; then
     GITSRC="./$CURRENT_BRANCH"
