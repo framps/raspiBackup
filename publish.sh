@@ -39,8 +39,15 @@ Options:
 EOF_USAGE
 }
 
+function cleanup() {
+
+	if [[ -n $GITSRC ]]; then
+		git worktree remove "$GITSRC"
+	fi
+}
+
 function error() {
-   echo "??? $*" >/dev/tty
+   echo "Unexpected errro occured ??? $*" >/dev/tty
    exit 1
 }
 
@@ -48,7 +55,6 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLISH_DIR="$REPO_DIR/published"
 CURRENT_BRANCH=$(git branch --show-current)
 PUBLISH_BRANCH=$CURRENT_BRANCH
-GITSRC=$(mktemp --tmpdir -d raspiBackup_git.XXXXXX)
 
 FILES=(
     "raspiBackup.sh"
@@ -77,12 +83,14 @@ if (( $# > 0 )); then
 	
 fi
 
-#trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
+trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 #trap 'error $?' ERR
 
 if [[ "$CURRENT_BRANCH" == "$PUBLISH_BRANCH" ]] ; then
+    GITSRC="./$CURRENT_BRANCH"
     git worktree add --detach "$PUBLISH_BRANCH"
 else
+    GITSRC=$(mktemp --tmpdir -d raspiBackup_git.XXXXXX)
     git worktree add "$GITSRC" "$PUBLISH_BRANCH"
 fi
 
@@ -107,14 +115,17 @@ for file in "${FILES[@]}"; do
 
     destination="$PUBLISH_DIR/$tgtFile"
 
-    sed \
-        -e "s/\\\$Sha1\\\$/$sha/g" \
-        -e "s/\\\$Date\\\$/$date/g" \
-        "$file" > "$destination"
+	if [[ -f $file ]]; then
 
+		sed \
+			-e "s/\\\$Sha1\\\$/$sha/g" \
+			-e "s/\\\$Date\\\$/$date/g" \
+			"$file" > "$destination"
+	fi
+	
 done
 
 file=$PUBLISH_DIR/raspiBackupSampleExtensions.tgz
-tar --owner=root --group =root -cvzf $file  extensions/* >/dev/null
+tar --owner=root --group=root -cvzf $file  extensions/* >/dev/null
 
-git worktree remove "$GITSRC"
+popd >/dev/null
