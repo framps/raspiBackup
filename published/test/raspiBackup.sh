@@ -17,7 +17,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2013-2026 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2013-2025 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -44,9 +44,8 @@ fi
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-RASPIBACKUP_ABS_LOCATION="$0"								# to invoke myself for clone
-VERSION="0.7.4"   									# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.11"           					# required config version for script
+VERSION="0.7.1"           								# -beta, -hotfix or -dev suffixes possible
+VERSION_SCRIPT_CONFIG="0.1.8"								# required config version for script
 
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
@@ -78,13 +77,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='2026-08-13 21:10:50 +0200'
+GIT_DATE='2025-06-11 19:31:12 +0200'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='3f9f6c7'
+GIT_COMMIT='cd37c5f'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -105,7 +104,7 @@ function findUser() {
 
 # some general constants
 
-readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
+readonly MYHOMEURL="https://www.linux-tips-and-tricks.de"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
@@ -129,16 +128,18 @@ if [[ -n $URLTARGET ]]; then
 	URLTARGET="/$URLTARGET"
 fi
 
-DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.sh"
-CONFIG_URL="$MYHOMEURL${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
-BETA_CONFIG_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-PROPERTIES_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
+DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.sh"
+CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
+BETA_CONFIG_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+#INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
+#INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackupInstallUI.sh"
+PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
 VERSION_PAGE="https://github.com/framps/raspiBackup/releases"
 
 # dd warning website
-#DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
-#DD_WARNING_URL_EN="$MYHOMEURL/en/all-pages-about-raspibackup/581-raspibackup-why-shouldn-t-you-use-dd-as-backup-method/"
+DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
+DD_WARNING_URL_EN="$MYHOMEURL/en/all-pages-about-raspibackup/581-raspibackup-why-shouldn-t-you-use-dd-as-backup-method/"
 
 CALLING_USER="$(findUser)"
 CALLING_HOME="$(eval echo "~${CALLING_USER}")"
@@ -148,11 +149,8 @@ LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
-UPDATE_REMINDER_FILE="update.reminder"
-UPDATE_REMINDER_MAX=3
 VARS_FILE="/tmp/$MYNAME.vars"
-TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
-
+TEMPORARY_MOUNTPOINT_ROOT="/mnt/$MYNAME"
 LOGFILE_EXT=".log"
 LOGFILE_NAME="${MYNAME}${LOGFILE_EXT}"
 LOGFILE_RESTORE_EXT=".logr"
@@ -256,29 +254,6 @@ for K in "${SORTED[@]}"; do
 	[[ -z $ALLOWED_TYPES ]] && ALLOWED_TYPES=$K || ALLOWED_TYPES="$ALLOWED_TYPES|$K"
 done
 
-TAR_COMPRESSION_TOOLS_SUPPORTED=(     "bzip2" "gzip" "lzip" "lzma"  "lzop" "xz"  "zstd" "lz4")
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED=(".bz2"  ".gz"  ".lz"  ".lzma" ".lzo" ".xz" ".zst" ".lz4")
-
-# grep regex used to extract partition numbers from partition oriented backups
-TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP=""
-for K in "${!TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}"; do
-	ext="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$K]}"
-	if [[ -z "$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP" ]]; then
-		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="tar${ext}"
-	else
-		TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP="${TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP}|tar${ext}"
-	fi
-done
-TAR_COMPRESSION_TOOLS_SUPPORTED_LIST=""
-for K in "${!TAR_COMPRESSION_TOOLS_SUPPORTED[@]}"; do
-	ext="${TAR_COMPRESSION_TOOLS_SUPPORTED[$K]}"
-	if [[ -z "$TAR_COMPRESSION_TOOLS_SUPPORTED_LIST" ]]; then
-		TAR_COMPRESSION_TOOLS_SUPPORTED_LIST="${ext}"
-	else
-		TAR_COMPRESSION_TOOLS_SUPPORTED_LIST="${TAR_COMPRESSION_TOOLS_SUPPORTED_LIST},${ext}"
-	fi
-done
-
 declare -A mountPoints
 
 # variables exported to pass on to extensions
@@ -368,7 +343,6 @@ COLORING_VALID_OPTIONS="$COLORING_CONSOLE$COLORING_MAIL"
 
 NEWS_AVAILABLE=0
 BETA_AVAILABLE=0
-FORCE_MESSAGE=0
 LOG_INDENT=0
 WARNING_MESSAGE_WRITTEN=0
 
@@ -458,7 +432,7 @@ RC_DOWNLOAD_FAILED=135
 RC_BACKUP_DIRNAME_ERROR=136
 RC_RESTORE_IMPOSSIBLE=137
 RC_INVALID_BOOTDEVICE=138
-#RC_ENVIRONMENT_ERROR=139
+RC_ENVIRONMENT_ERROR=139
 RC_CLEANUP_ERROR=140
 #RC_EXTENSION_ERROR=141
 #RC_UNPROTECTED_CONFIG=142
@@ -467,7 +441,6 @@ RC_TEMPMOVE_FAILED=144
 RC_RESIZE_ERROR=145
 #RC_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=146
 RC_UUID_UPDATE_IMPOSSIBLE=147
-RC_CLONE_FAILED=148
 
 tty -s
 # Check exit code directly with e.g. if mycmd;, not indirectly with $?
@@ -488,26 +461,6 @@ function containsElement() { # element ${array[@]}
 	[[ "$e" == "$match" ]] && return 0;
   done
   return 1
-}
-
-# return index of element in array (0-n) and true, -1 and false otherwise
-
-function getIndexInArray() { # element ${array[@]}
-  logEntry "$1 $2"
-  local e match="$1" i=0
-  shift
-  for e; do
-	if [[ "$e" == "$match" ]]; then
-		echo "$i"
-		logExit "$i"
-		return 0
-	else
-		(( i++ ))
-	fi
-  done
-  echo "-1"
-  logExit "-1"
-  return "1"
 }
 
 #
@@ -653,7 +606,7 @@ MSG_FI[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Tyypin %s varmuuskopiointisovellus 
 MSG_FR[$MSG_BACKUP_PROGRAM_ERROR]="RBK0021E: Sauvegarde de type %s terminé avec un Code Retour %s"
 MSG_UNKNOWN_BACKUPTYPE=22
 MSG_EN[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unknown backuptype %s"
-MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backuptyp %s"
+MSG_DE[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Unbekannter Backtyp %s"
 MSG_FI[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Tuntematon varmuuskopiotyyppi %s"
 MSG_FR[$MSG_UNKNOWN_BACKUPTYPE]="RBK0022E: Type de sauvegarde inconnu %s"
 MSG_KEEPBACKUP_INVALID=23
@@ -686,11 +639,11 @@ MSG_EN[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s is no backup directory
 MSG_DE[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ist kein Wiederherstellungsverzeichnis von $MYNAME"
 MSG_FI[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s ei ole kohteen $MYNAME varmuuskopiohakemisto"
 MSG_FR[$MSG_RESTORE_DIRECTORY_NO_DIRECTORY]="RBK0028E: %s n'est pas un répertoire de restauration pour $MYNAME"
-#MSG_MPACK_NOT_INSTALLED=29
-#MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to send emails. No log can be attached to the eMail"
-#MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden"
-#MSG_FI[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Sähköpostisovellusta mpack ei ole asennettu sähköpostien lähetykseen. Lokitiedostoa ei voitu liittää sähköpostiin"
-#MSG_FR[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Le programme de messagerie mpack n'est pas installé. Aucune pièce jointe ne peut être ajoutée à l'e-mail"
+MSG_MPACK_NOT_INSTALLED=29
+MSG_EN[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail program mpack not installed to send emails. No log can be attached to the eMail"
+MSG_DE[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Mail Program mpack is nicht installiert. Es kann kein Log an die eMail angehängt werden"
+MSG_FI[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Sähköpostisovellusta mpack ei ole asennettu sähköpostien lähetykseen. Lokitiedostoa ei voitu liittää sähköpostiin"
+MSG_FR[$MSG_MPACK_NOT_INSTALLED]="RBK0029E: Le programme de messagerie mpack n'est pas installé. Aucune pièce jointe ne peut être ajoutée à l'e-mail"
 MSG_IMG_DD_FAILED=30
 MSG_EN[$MSG_IMG_DD_FAILED]="RBK0030E: %s file creation with dd failed with RC %s"
 MSG_DE[$MSG_IMG_DD_FAILED]="RBK0030E: %s Datei Erzeugung mit dd endet fehlerhaft mit RC %s"
@@ -747,11 +700,15 @@ MSG_DE[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: Die neue Version %s hat inkompatible
 MSG_FI[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: Uusi versio %s ei ole täysin yhteensopiva edellisen version kanssa. Ole hyvä ja lue %s ja käytä valintaa -S yhdessä valinnan -U kanssa päivittääksesi skriptin"
 MSG_FR[$MSG_INCOMPATIBLE_UPDATE]="RBK0040W: La nouvelle version %s présente des incompatibilités avec les versions précédentes. Veuillez lire %s et utilisez les options -S et -U pour mettre à jour le script"
 MSG_TITLE_OK=41
-MSG_EN[$MSG_TITLE_OK]="%s: %s finished successfully"
-MSG_DE[$MSG_TITLE_OK]="%s: %s erfolgreich beendet"
+MSG_EN[$MSG_TITLE_OK]="%s: Backup finished successfully"
+MSG_DE[$MSG_TITLE_OK]="%s: Backup erfolgreich beendet"
+MSG_FI[$MSG_TITLE_OK]="%s: Varmuuskopiointi suoritettu onnistuneesti"
+MSG_FR[$MSG_TITLE_OK]="%s: Sauvegarde terminée avec succès"
 MSG_TITLE_ERROR=42
-MSG_EN[$MSG_TITLE_ERROR]="%s: %s failed !!!"
-MSG_DE[$MSG_TITLE_ERROR]="%s: %s nicht erfolgreich !!!"
+MSG_EN[$MSG_TITLE_ERROR]="%s: Backup failed !!!"
+MSG_DE[$MSG_TITLE_ERROR]="%s: Backup nicht erfolgreich !!!"
+MSG_FI[$MSG_TITLE_ERROR]="%s: Varmuuskopiointi epäonnistui !!!"
+MSG_FR[$MSG_TITLE_ERROR]="%s: Échec de la sauvegarde !!!"
 MSG_REMOVING_BACKUP=43
 MSG_EN[$MSG_REMOVING_BACKUP]="RBK0043I: Removing incomplete backup in %s. This may take some time. Please be patient"
 MSG_DE[$MSG_REMOVING_BACKUP]="RBK0043I: Unvollständiges Backup in %s wird gelöscht. Das kann etwas dauern. Bitte Geduld"
@@ -764,7 +721,7 @@ MSG_FI[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: Luodaan varmuuskopiota kohteeseen %
 MSG_FR[$MSG_CREATING_BOOT_BACKUP]="RBK0044I: La partition de boot sera sauvegardée en %s"
 MSG_CREATING_PARTITION_BACKUP=45
 MSG_EN[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Creating backup of partition layout in %s"
-MSG_DE[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Backup des Partitionlayouts wird in %s erstellt"
+MSG_DE[$MSG_CREATING_PARTITION_BACKUP]="RBK0044I: Backup des Partitionlayouts wird in %s erstellt"
 MSG_FI[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: Luodaan varmuuskopiota osioasettelusta kohteeseen %s"
 MSG_FR[$MSG_CREATING_PARTITION_BACKUP]="RBK0045I: La disposition de la partition sera sauvegardée sous %s"
 MSG_CREATING_MBR_BACKUP=46
@@ -798,10 +755,10 @@ MSG_DE[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Ziel %s mit %s ist größer als 2TB 
 MSG_FI[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: Kohde %s kooltaan %s, on suurempi kuin 2Tt ja vaatii mbr:n sijasta gpt:n. Muutoin vain 2Tt voidaan käyttää"
 MSG_FR[$MSG_TARGET_REQUIRES_GPT]="RBK0051W: La cible %s avec %s, est supérieure à 2 To et nécessite GPT au lieu de MBR. Sinon, seuls 2 To seront utilisés"
 MSG_CREATING_PARTITIONS=52
-MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052I: Creating partitions on %s"
-MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052I: Partitionen werden auf %s erstellt"
-MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052I: Luodaan osioita kohteelle %s"
-MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052I: Les partitions seront créées sur %s"
+MSG_EN[$MSG_CREATING_PARTITIONS]="RBK0052W: Creating partitions on %s"
+MSG_DE[$MSG_CREATING_PARTITIONS]="RBK0052W: Partitionen werden auf %s erstellt"
+MSG_FI[$MSG_CREATING_PARTITIONS]="RBK0052W: Luodaan osioita kohteelle %s"
+MSG_FR[$MSG_CREATING_PARTITIONS]="RBK0052W: Les partitions seront créées sur %s"
 MSG_RESTORING_FIRST_PARTITION=53
 MSG_EN[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Restoring first partition (boot partition) to %s"
 MSG_DE[$MSG_RESTORING_FIRST_PARTITION]="RBK0053I: Erste Partition (Bootpartition) wird auf %s zurückgespielt"
@@ -863,10 +820,10 @@ MSG_DE[$MSG_ROOT_PARTTITION_NOT_FOUND]="RBK0064E: Partition für die Rootpartiti
 MSG_FI[$MSG_ROOT_PARTTITION_NOT_FOUND]="RBK0064E: Osiota juuriosiolle %s ei löytynyt (Esimerkki: /dev/sdb1)"
 MSG_FR[$MSG_ROOT_PARTTITION_NOT_FOUND]="RBK0064E: La partition Root %s est introuvable (exemple:/dev/sdb1)"
 MSG_REPARTITION_WARNING=65
-MSG_EN[$MSG_REPARTITION_WARNING]="RBK0065I: Device %s will be repartitioned and all data will be lost"
-MSG_DE[$MSG_REPARTITION_WARNING]="RBK0065I: Gerät %s wird repartitioniert und die gesamten Daten werden gelöscht"
-MSG_FI[$MSG_REPARTITION_WARNING]="RBK0065I: Laite %s osioidaan uudelleen ja kaikki tieto hävitetään"
-MSG_FR[$MSG_REPARTITION_WARNING]="RBK0065I: Le périphérique %s sera repartitionné, toutes les données seront perdues"
+MSG_EN[$MSG_REPARTITION_WARNING]="RBK0065W: Device %s will be repartitioned and all data will be lost"
+MSG_DE[$MSG_REPARTITION_WARNING]="RBK0065W: Gerät %s wird repartitioniert und die gesamten Daten werden gelöscht"
+MSG_FI[$MSG_REPARTITION_WARNING]="RBK0065W: Laite %s osioidaan uudelleen ja kaikki tieto hävitetään"
+MSG_FR[$MSG_REPARTITION_WARNING]="RBK0065W: Le périphérique %s sera repartitionné, toutes les données seront perdues"
 MSG_WARN_RESTORE_DEVICE_OVERWRITTEN=66
 MSG_EN[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Device %s will be overwritten with the saved boot and root partition"
 MSG_DE[$MSG_WARN_RESTORE_DEVICE_OVERWRITTEN]="RBK0066I: Gerät %s wird überschrieben mit der gesicherten Boot- und Rootpartition"
@@ -1258,15 +1215,15 @@ MSG_DE[$MSG_FORCE_SFDISK]="RBK0143W: Ziel %s passt nicht zu dem Backup. Partitio
 MSG_FI[$MSG_FORCE_SFDISK]="RBK0143W: Kohde %s ei täsmää varmuuskopion kanssa. Pakotetaan osiointi"
 MSG_FR[$MSG_FORCE_SFDISK]="RBK0143W: La cible %s ne correspond pas à la sauvegarde. Partitionnement forcé"
 MSG_SKIP_SFDISK=144
-MSG_EN[$MSG_SKIP_SFDISK]="RBK0144I: Target %s will not be partitioned. Using existing partitions"
-MSG_DE[$MSG_SKIP_SFDISK]="RBK0144I: Ziel %s wird nicht partitioniert. Existierende Partitionen werden benutzt"
-MSG_FI[$MSG_SKIP_SFDISK]="RBK0144I: Kohdetta %s ei osioida. Käytetään olemassaolevia osioita"
-MSG_FR[$MSG_SKIP_SFDISK]="RBK0144I: La cible %s ne sera pas partitionné. Les partitions existantes sont utilisées"
+MSG_EN[$MSG_SKIP_SFDISK]="RBK0144W: Target %s will not be partitioned. Using existing partitions"
+MSG_DE[$MSG_SKIP_SFDISK]="RBK0144W: Ziel %s wird nicht partitioniert. Existierende Partitionen werden benutzt"
+MSG_FI[$MSG_SKIP_SFDISK]="RBK0144W: Kohdetta %s ei osioida. Käytetään olemassaolevia osioita"
+MSG_FR[$MSG_SKIP_SFDISK]="RBK0144W: La cible %s ne sera pas partitionné. Les partitions existantes sont utilisées"
 MSG_SKIP_CREATING_PARTITIONS=145
-MSG_EN[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Partition creation skipped. Using existing partitions"
-MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Partitionen werden nicht erstellt. Existierende Partitionen werden benutzt"
-MSG_FI[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Osion luonti ohitettu. Käytetään olemassaolevia osioita"
-MSG_FR[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145I: Création de partition ignorée. Les partitions existantes sont utilisées"
+MSG_EN[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partition creation skipped. Using existing partitions"
+MSG_DE[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Partitionen werden nicht erstellt. Existierende Partitionen werden benutzt"
+MSG_FI[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Osion luonti ohitettu. Käytetään olemassaolevia osioita"
+MSG_FR[$MSG_SKIP_CREATING_PARTITIONS]="RBK0145W: Création de partition ignorée. Les partitions existantes sont utilisées"
 MSG_NO_PARTITION_TABLE_DEFINED=146
 MSG_EN[$MSG_NO_PARTITION_TABLE_DEFINED]="RBK0146I: No partitiontable found on %s"
 MSG_DE[$MSG_NO_PARTITION_TABLE_DEFINED]="RBK0146I: Keine Partitionstabelle auf %s gefunden"
@@ -1602,8 +1559,10 @@ MSG_DE[$MSG_MISSING_PARTITION]="RBK0207E: Keine Partitionen auf %s gefunden"
 MSG_FI[$MSG_MISSING_PARTITION]="RBK0207E: Osioita puuttuu laitteelta %s"
 MSG_FR[$MSG_MISSING_PARTITION]="RBK0207E: Aucune partition trouvée sur %s"
 MSG_NO_UUID_SYNCHRONIZED=208
-MSG_EN[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208E: No UUID updated in %s for %s"
-MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208E: Es konnte keine UUID in %s für %s erneuert werden"
+MSG_EN[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: No UUID updated in %s for %s. Backup may not boot correctly"
+MSG_DE[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Es konnte keine UUID in %s für %s erneuert werden. Das Backup könnte nicht starten"
+MSG_FI[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: %s ei päivittänyt UUID-tunnusta kohteelle %s. Varmuuskopio ei välttämättä käynnisty oikein"
+MSG_FR[$MSG_NO_UUID_SYNCHRONIZED]="RBK0208W: Un UUID dans %s pour %s n'a pas pu être renouvelé. La sauvegarde n'a pas pu démarrer"
 #MSG_UUIDS_NOT_UNIQUE=209
 #MSG_EN[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs are not unique on devices and/or partitions and may cause issues. In case of error messages check them with 'sudo blkid' and make them unique"
 #MSG_DE[$MSG_UUIDS_NOT_UNIQUE]="RBK0209W: UUIDs sind nicht eindeutig auf den Geräten und/oder Partitionen und kann Probleme bereiten. Falls Fehlermeldungen auftreten sollten sie mit 'sudo blkid' überprüft und dann eindeutig gemacht werden"
@@ -1614,11 +1573,11 @@ MSG_EN[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Mo
 MSG_DE[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Es existieren mehr als zwei Partitionen. Nur die ersten beiden Partitionen werden gesichert"
 MSG_FI[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Havaittu enemmän kuin kaksi osiota. Vain kaksi ensimmäistä osiota tallennetaan"
 MSG_FR[$MSG_MULTIPLE_PARTITIONS_FOUND_BUT_2_PARTITIONS_SAVED_ONLY]="RBK0210W: Il y a plus de deux partitions. Seules les deux premières partitions sont sauvegardées"
-#MSG_EXTERNAL_PARTITION_NOT_SAVED=211
-#MSG_EN[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: External partition %s mounted on %s will not be saved with option -P"
-#MSG_DE[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Externe Partition %s die an %s gemounted ist wird mit Option -P nicht gesichert"
-#MSG_FI[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Ulkoinsta osiota %s, joka on otettu käyttöön kohteessa %s, ei tallenneta valinnalla -P"
-#MSG_FR[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E:La partition externe %s montée sur %s n'est pas sauvegardée avec l'option -P"
+MSG_EXTERNAL_PARTITION_NOT_SAVED=211
+MSG_EN[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: External partition %s mounted on %s will not be saved with option -P"
+MSG_DE[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Externe Partition %s die an %s gemounted ist wird mit Option -P nicht gesichert"
+MSG_FI[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E: Ulkoinsta osiota %s, joka on otettu käyttöön kohteessa %s, ei tallenneta valinnalla -P"
+MSG_FR[$MSG_EXTERNAL_PARTITION_NOT_SAVED]="RBK0211E:La partition externe %s montée sur %s n'est pas sauvegardée avec l'option -P"
 MSG_BACKUP_WARNING=212
 MSG_EN[$MSG_BACKUP_WARNING]="RBK0212W: Backup finished with warnings. Check previous warning messages for details"
 MSG_DE[$MSG_BACKUP_WARNING]="RBK0212W: Backup endete mit Warnungen. Siehe vorhergehende Warnmeldungen"
@@ -1844,11 +1803,11 @@ MSG_EN[$MSG_RESTORE_WARNING]="RBK0256W: Restore finished with warnings. Check pr
 MSG_DE[$MSG_RESTORE_WARNING]="RBK0256W: Restore endete mit Warnungen. Siehe vorhergehende Warnmeldungen"
 MSG_FI[$MSG_RESTORE_WARNING]="RBK0256W: Palautus onnistui sisältäen vaoituksia. Katso lisätiedot edellisistä varoitusviesteistä"
 MSG_FR[$MSG_RESTORE_WARNING]="RBK0256W: Restauration terminée avec des avertissements. Consultez les messages pour plus de détails"
-#MSG_DEPRECATED_OPTION=257
-#MSG_EN[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s is deprecated and will be removed in a future release"
-#MSG_DE[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s ist veraltet und wird in einer zukünftigen Release entfernt werden"
-#MSG_FI[$MSG_DEPRECATED_OPTION]="RBK0257W: Valintaa %s ei enää tueta ja se poistetaan kokonaan tulevissa julkaisuissa"
-#MSG_FR[$MSG_DEPRECATED_OPTION]="RBK0257W: L'option %s est obsolète et sera supprimée dans une prochaine version"
+MSG_DEPRECATED_OPTION=257
+MSG_EN[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s is deprecated and will be removed in a future release"
+MSG_DE[$MSG_DEPRECATED_OPTION]="RBK0257W: Option %s ist veraltet und wird in einer zukünftigen Release entfernt werden"
+MSG_FI[$MSG_DEPRECATED_OPTION]="RBK0257W: Valintaa %s ei enää tueta ja se poistetaan kokonaan tulevissa julkaisuissa"
+MSG_FR[$MSG_DEPRECATED_OPTION]="RBK0257W: L'option %s est obsolète et sera supprimée dans une prochaine version"
 MSG_DYNAMIC_MOUNT_FAILED=258
 MSG_EN[$MSG_DYNAMIC_MOUNT_FAILED]="RBK0258E: Dynamic mount of %s failed with rc %s"
 MSG_DE[$MSG_DYNAMIC_MOUNT_FAILED]="RBK0258E: Dynamischer mount von %s bekommt Fehler %s"
@@ -1937,9 +1896,9 @@ MSG_DE[$MSG_RESTORE_DEVICE_NOT_VALID]="RBK0275E: Das Restoregerät %s ist kein g
 MSG_INVALID_BOOT_DEVICE=276
 MSG_EN[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Boot device %s is not supported"
 MSG_DE[$MSG_INVALID_BOOT_DEVICE]="RBK0276E: Das Bootgerät %s ist nicht unterstützt"
-#MSG_USBMOUNT_INSTALLED=277
-#MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when %s is active"
-#MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn %s active ist"
+MSG_USBMOUNT_INSTALLED=277
+MSG_EN[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore not possible when 'usbmount' is installed"
+MSG_DE[$MSG_USBMOUNT_INSTALLED]="RBK0277E: Restore ist nicht möglich wenn 'usbmount' installiert ist"
 MSG_BACKUP_CLEANUP_FAILED=278
 MSG_EN[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Cleanup of backupdirectories failed. Manual deletion of the last backup directory is strongly recommended !"
 MSG_DE[$MSG_BACKUP_CLEANUP_FAILED]="RBK0278E: Fehler bei den Aufräumarbeiten am Backupverzeichnis. Das letzte Backupverzeichnis sollte dringend manuell gelöscht werden !"
@@ -1991,9 +1950,9 @@ MSG_DE[$MSG_NO_PARTUUID_SYNCHRONIZED]="RBK0293W: Es konnte keine PARTUUID in %s 
 MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED=294
 MSG_EN[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Current configuration version %s has to be be updated to %s"
 MSG_DE[$MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED]="RBK0294I: Aktuelle Konfigurationsversion %s muss auf Version %s upgraded werden"
-MSG_SYNC=295
-MSG_EN[$MSG_SYNC]="RBK0295I: Synchronizing %s"
-MSG_DE[$MSG_SYNC]="RBK0295I: %s wird synchronisiert"
+MSG_SYNC_CMDLINE_FSTAB=295
+MSG_EN[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: Synchronizing %s and %s"
+MSG_DE[$MSG_SYNC_CMDLINE_FSTAB]="RBK0295I: %s und %s werden synchronisiert"
 OVERLAY_FILESYSTEM_NOT_SUPPORTED=296
 MSG_EN[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlay filesystem is not supported"
 MSG_DE[$OVERLAY_FILESYSTEM_NOT_SUPPORTED]="RBK0296E: Overlayfilesystem wird nicht unterstützt"
@@ -2022,8 +1981,8 @@ MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE=304
 MSG_EN[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Not all OS partitions were restored. System may not boot"
 MSG_DE[$MSG_PARTITION_RESTORE_NO_BOOT_POSSIBLE]="RBK0304W: Nicht alle OS Partitionen wurden zurückgespielt. Das System könnte nicht booten"
 MSG_RESTORING_PARTITIONS=305
-MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305I: Restoring partitions %s to %s"
-MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305I: Partitionen %s werden auf %s zurüchgespielt"
+MSG_EN[$MSG_RESTORING_PARTITIONS]="RBK0305W: Restoring partitions %s to %s"
+MSG_DE[$MSG_RESTORING_PARTITIONS]="RBK0305W: Partitionen %s werden auf %s zurüchgespielt"
 #MSG_ANSWER_ALL=306
 #MSG_EN[$MSG_ANSWER_ALL]="all"
 #MSG_DE[$MSG_ANSWER_ALL]="Alle"
@@ -2037,8 +1996,8 @@ MSG_DE[$MSG_REMOVING_BACKUP_NO_FILE]="RBK0320I: Unvollständiges Backup wird gel
 #MSG_EN[$MSG_SAVING_LOG]="RBK0321I: Saving logfile"
 #MSG_DE[$MSG_SAVING_LOG]="RBK0321I: Logdatei wird gesichert"
 MSG_ADJUSTING_WARNING_P=322
-MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322I: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small"
-MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322I: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird"
+MSG_EN[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Target %s with %s is smaller than backup source with %s. Last partition will be truncated accordingly. NOTE: Restore may fail if the root partition will become too small"
+MSG_DE[$MSG_ADJUSTING_WARNING_P]="RBK0322W: Ziel %s mit %s ist kleiner als die Backupquelle mit %s. Die letzte Partition wird entsprechend verkleinert. HINWEIS: Der Restore kann fehlschlagen wenn sie zu klein wird"
 MSG_ADJUSTING_WARNING_P2=323
 MSG_EN[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Target %s with %s is larger than backup source with %s. Last partition will be expanded accordingly to use the whole available space"
 MSG_DE[$MSG_ADJUSTING_WARNING_P2]="RBK0323I: Ziel %s mit %s ist größer als die Backupquelle mit %s. Die letzte Partition wird entsprechend vergrößert um den ganzen verfügbaren Speicherplatz zu benutzen"
@@ -2049,8 +2008,8 @@ MSG_DE[$MSG_NOT_ALL_OS_PARTITIONS_SAVED]="RBK0324W: Es werden nicht alle OS Part
 #MSG_EN[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Device %s will be updated"
 #MSG_DE[$MSG_WARN_RESTORE_PARTITION_DEVICE_UPDATED]="RBK0325W: Gerät %s wird aktualisiert"
 MSG_SKIP_FORMATING=326
-MSG_EN[$MSG_SKIP_FORMATING]="RBK0326I: Partitions will not be formatted"
-MSG_DE[$MSG_SKIP_FORMATING]="RBK0326I: Partitionen werden nicht formatiert"
+MSG_EN[$MSG_SKIP_FORMATING]="RBK0326W: Partitions will not be formatted"
+MSG_DE[$MSG_SKIP_FORMATING]="RBK0326W: Partitionen werden nicht formatiert"
 MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED=327
 MSG_EN[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Not all partitions which were saved in the previous backup are included in option -T. Missing \"%s\""
 MSG_DE[$MSG_NOT_ALL_PREVIOUS_PARTITIONS_SAVED]="RBK0327E: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden mit der Option -T gesichert. Es fehlen \"%s\""
@@ -2064,8 +2023,8 @@ MSG_MISSING_PARTITIONS_NOT_SAVED=330
 MSG_EN[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Not all partitions which were saved in the previous backup are included. Missing \"%s\""
 MSG_DE[$MSG_MISSING_PARTITIONS_NOT_SAVED]="RBK0330W: Nicht alle Partitionen die im vorhergehenden Backup gesichert wurden werden gesichert. Es fehlen \"%s\""
 MSG_NO_SKIP_FORMAT_POSSIBLE=331
-MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 is only available for backuptype rsync"
-MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 ist nur mit dem Backuptyp rsync möglich"
+MSG_EN[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 is only available with rsync backuptype and a partition oriented backup"
+MSG_DE[$MSG_NO_SKIP_FORMAT_POSSIBLE]="RBK0331E: Option -00 ist nur mit dem rsync Backuptyp und einem partitionsorientierten Backup möglich"
 MSG_GENERIC_WARNING=332
 MSG_EN[$MSG_GENERIC_WARNING]="RBK0332W: %s"
 MSG_DE[$MSG_GENERIC_WARNING]="RBK0332W: %s"
@@ -2109,7 +2068,7 @@ MSG_BACKUPDIR_MOVED=345
 MSG_EN[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporary backup directory %s moved to %s"
 MSG_DE[$MSG_BACKUPDIR_MOVED]="RBK0345I: Temporäres Backupverzeichnis %s wird in %s verschoben"
 MSG_SYNCING_PARTITIONFILE=346
-MSG_EN[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Syncronizing partition %s"
+MSG_EN[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Syncing partition %s"
 MSG_DE[$MSG_SYNCING_PARTITIONFILE]="RBK0346I: Synchronisiere Partition %s"
 MSG_PARTITIONS_BACKUP_STARTED=347
 MSG_EN[$MSG_PARTITIONS_BACKUP_STARTED]="RBK0347I: Partition oriented backup of type %s started for partitions %s"
@@ -2119,53 +2078,9 @@ MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Umounting all mounted partitio
 MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS]="RBK0348W: Sollen alle gemounteten Partitionen von %s umounted werden"
 MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED=349
 MSG_EN[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umounting mounted partitions of %s failed"
-MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
-MSG_UNSUPPORTED_TAR_COMPRESS_TOOL=350
-MSG_EN[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Unsupported tar compression tool %si. Supported tools are bzip2,gzip,lzip,lzma,lzop,xz, zstd and lz4"
-MSG_DE[$MSG_UNSUPPORTED_TAR_COMPRESS_TOOL]="RBK0350E: Nicht unterstütztes tar Kompressionstool %s. Unterstützte Tools sind bzip2,gzip,lzip,lzma,lzop,xz, zstd und lz4"
-MSG_TAR_COMPRESS_TOOL_USED=351
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Using custom tar compression tool %s"
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_USED]="RBK0351I: Konfigurierbares tar Kompressionstool %s wird genutzt"
-MSG_TAR_COMPRESS_TOOL_NOT_FOUND=352
-MSG_EN[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Custom tar compression tool %s not installed"
-MSG_DE[$MSG_TAR_COMPRESS_TOOL_NOT_FOUND]="RBK0352E: Konfigurierbares tar Kompressionstool %s nicht installiert"
-MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED=353
-MSG_EN[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Custom tar compression not possible for backuptype %s"
-MSG_DE[$MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED]="RBK0353E: Konfigurierbare tar Kompression nicht für Backuptyp %s möglich"
-MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED=354
-MSG_EN[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: External root partition not supported with option \"-P\""
-MSG_DE[$MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED]="RBK0354E: Externe Rootpartition ist mit Option -P nicht unterstützt"
-MSG_OPTION_ACLS_DISABLED=355
-MSG_EN[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs are not copied"
-MSG_DE[$MSG_OPTION_ACLS_DISABLED]="RBK0355I: ACLs werden nicht kopiert"
-MSG_SYNCING_SECOND_PARTITION=356
-MSG_EN[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Synchronizing second partition (root partition) on %s"
-MSG_DE[$MSG_SYNCING_SECOND_PARTITION]="RBK0356I: Zweite Partition (Rootpartition) auf %s wird synchronisiert"
-MSG_CLONE_IMPOSSIBLE=357
-MSG_EN[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Partitioning of clonedevice %s doesn't match systemdevice %s. Initial restore to %s is required"
-MSG_DE[$MSG_CLONE_IMPOSSIBLE]="RBK0357E: Paritionierung des Clonegerätes %s stimmt nicht mit dem Systemgerät %s überein. Ein initialer Restore auf %s ist notwendig"
-MSG_CLONE_SCHEDULED=358
-MSG_EN[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone of backup to clonedevice %s scheduled"
-MSG_DE[$MSG_CLONE_SCHEDULED]="RBK0358I: Clone des Backups auf Clonegerät %s ist vorgemerkt"
-MSG_CLONE_FAILED=359
-MSG_EN[$MSG_CLONE_FAILED]="RBK0359E: Failed to start clone of backup to %s"
-MSG_DE[$MSG_CLONE_FAILED]="RBK0359E: Start des Clones des Backups auf Clonegerät %s fehlerhaft beendet"
-MSG_CLONE_STARTING=360
-MSG_EN[$MSG_CLONE_STARTING]="RBK0360I: Starting clone of backup to %s"
-MSG_DE[$MSG_CLONE_STARTING]="RBK0360I: Start des Clones des Backups auf Clonegerät %s beginnt"
-MSG_CLONE_STARTED=361
-MSG_EN[$MSG_CLONE_STARTED]="RBK0361I: Started clone of backup to %s"
-MSG_DE[$MSG_CLONE_STARTED]="RBK0361I: StartClones des Backups auf Clonegerät %s gestartet"
-MSG_DD_NOT_SUPPORTED_FOR_CLONE=362
-MSG_EN[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0362E: Backuptype dd and ddz are not supported for a clone"
-MSG_DE[$MSG_DD_NOT_SUPPORTED_FOR_CLONE]="RBK0362E: Backuptyp dd und ddz sind nicht für clone unterstützt"
-MSG_CLONE_NO_PARTUUID_DEFINED=363
-MSG_EN[$MSG_CLONE_NO_PARTUUID_DEFINED]="RBK0363E: No DEFAULT_CLONE_PARTUUID for %s configured"
-MSG_DE[$MSG_CLONE_NO_PARTUUID_DEFINED]="RBK0363E: Keine DEFAULT_CLONE_PARTUUID für %s konfiguriert"
-MSG_CLONE_NO_PARTUUID_MATCH=364
-MSG_EN[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0364E: Configured PARTUUID %s does not match any PARTUUID of %s"
+# MSG_DE appears unused. Verify use (or export if used externally).
 #shellcheck disable=SC2034
-MSG_DE[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0364E: Konfigurierte PARTUUID %s stimmt mit keiner PARTUUID von %s überein"
+MSG_DE[$MSG_UMOUNT_MOUNTED_PARTITIONS_FAILED]="RBK0349E: Umount von gemounteten Paritionen von %s nicht möglich"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2283,7 +2198,6 @@ function logSystem() {
 	[[ -f /etc/os-release ]] &&	logCommand "cat /etc/os-release"
 	[[ -f /etc/debian_version ]] &&	logCommand "cat /etc/debian_version"
 	[[ -f /etc/fstab ]] &&	logCommand "cat /etc/fstab"
-	[[ -f /proc/cpuinfo ]] && logCommand "grep ^Model /proc/cpuinfo"
 	logCommand "locale"
 	logExit
 }
@@ -2343,7 +2257,6 @@ function logEnable() {
 
 	LOG_FILE="$TEMP_LOG_FILE"
 	MSG_FILE="$TEMP_MSG_FILE"
-
 	rm -f "$LOG_FILE" &>/dev/null
 	rm -f "$MSG_FILE" &>/dev/null
 
@@ -2403,7 +2316,7 @@ function logFinish() {
 					fi
 				fi
 				DEST_LOGFILE="$LOG_BASE/$HOSTNAME$LOGFILE_EXT"
-				DEST_MSGFILE="$LOG_BASE/$HOSTNAME$MSGFILE_EXT"
+				cat "$LOG_FILE" &>> "$DEST_LOGFILE"		# don't move, just append
 				;;
 			"$LOG_OUTPUT_HOME")
 				DEST_LOGFILE="$CALLING_HOME/${MYNAME}$LOGFILE_EXT"
@@ -2422,28 +2335,16 @@ function logFinish() {
 		logItem "DEST_MSGFILE: $DEST_MSGFILE"
 
 		if [[ "$LOG_FILE" != "$DEST_LOGFILE" ]]; then
-			if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_VARLOG" ]]; then
-				logItem "Appending Logfile: $LOG_FILE to $DEST_LOGFILE"
-				cat "$LOG_FILE" 1>> "$DEST_LOGFILE" 2>>"$FINISH_LOG_FILE"
-				rm "$LOG_FILE" &>>"$FINISH_LOG_FILE"
-			else
-				logItem "Moving Logfile: $LOG_FILE to $DEST_LOGFILE"
-				mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
-			fi
+			logItem "Moving Logfile: $LOG_FILE"
+			mv "$LOG_FILE" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE"
 			LOG_FILE="$DEST_LOGFILE"		# now final log location was established. log anything else in final log file
-			logItem "Logfile used: $LOG_FILE"
+			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 		if [[ "$MSG_FILE" != "$DEST_MSGFILE" ]]; then
-			if [[ "$LOG_OUTPUT" == "$LOG_OUTPUT_VARLOG" ]]; then
-				logItem "Appending Msgfile: $MSG_FILE to $DEST_MSGFILE"
-				cat "$MSG_FILE" 1>> "$DEST_MSGFILE" 2>>"$FINISH_LOG_FILE"
-				rm "$MSG_FILE" &>>"$FINISH_LOG_FILE"
-			else
-				logItem "Moving Msgfile: $MSG_FILE to $DEST_MSGFILE"
-				mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
-			fi
+			logItem "Moving Msgfile: $MSG_FILE"
+			mv "$MSG_FILE" "$DEST_MSGFILE" &>>"$FINISH_LOG_FILE"
 			MSG_FILE="$DEST_MSGFILE"		# now final msg location was established. log anything else in final log file
-			logItem "Msgfile used: $MSG_FILE"
+			logItem "Logfiles used: $LOG_FILE and $MSG_FILE"
 		fi
 
 		chown "$CALLING_USER:$CALLING_USER" "$DEST_LOGFILE" &>>"$FINISH_LOG_FILE" # make sure logfile is owned by caller
@@ -2608,14 +2509,9 @@ function writeToConsole() {  # msglevel messagenumber message
 	if [[ $msgSev == "W" ]]; then
 		WARNING_MESSAGE_WRITTEN=1
 		NEWS_AVAILABLE=1
-		FORCE_MESSAGE=1
 	fi
 
-	if [[ $msgSev == "E" ]]; then
-		ERROR_MESSAGE_WRITTEN=1
-	fi
-
-	if (( $level <= $MSG_LEVEL )) || [[ $msgSev == "E" ]] ; then # make sure all errors are reported
+	if (( $level <= $MSG_LEVEL )); then
 
 # --- RBK0105I: Deleting new backup directory /backup/obelix/obelix-rsync-backup-20180912-215541.
 # ??? RBK0005E: Backup failed. Check previous error messages for details.
@@ -2643,8 +2539,6 @@ function writeToConsole() {  # msglevel messagenumber message
 		if (( "$LOG_LEVEL" != "$LOG_NONE" )); then
 			echo $noNL -e "$timestamp$msg" >> "$MSG_FILE"
 		fi
-	else
-		echo $noNL -e "$msg" >>$LOG_FILE	# write all non error messages into debug log
 	fi
 
 	if (( ! $INTERACTIVE || $RESTORE )); then # don't write message twice into log for backup but once for restore
@@ -2814,7 +2708,7 @@ function exitError() { # {rc}
 	if [[ -n "$1" ]]; then
 		rc="$1"
 	else
-		assertionFailed $LINENO "Unkown exit error $rc"
+		assertionFailed $LINENO "Unkown exit error"
 	fi
 
 	logExit "$rc"
@@ -2928,7 +2822,7 @@ function compareVersions() { # v1 v2
 
 function repeat() { # char num
 	local s
-	s=$( yes 2>/dev/null "$1" | head -"$2" | tr -d "\n" )
+	s=$( yes "$1" | head -"$2" | tr -d "\n" )
 	echo $s
 }
 
@@ -2953,13 +2847,13 @@ function logOptions() { # option state
 
 	logItem "Options: $INVOCATIONPARMS"
 	logItem "AFTER_STARTSERVICES=$AFTER_STARTSERVICES"
+	logItem "APPEND_LOG=$APPEND_LOG"
+	logItem "APPEND_LOG_OPTION=$APPEND_LOG_OPTION"
 	logItem "BACKUPPATH=$BACKUPPATH"
 	logItem "BACKUPTYPE=$BACKUPTYPE"
 	logItem "BEFORE_STOPSERVICES=$BEFORE_STOPSERVICES"
 	logItem "BOOT_DEVICE=$BOOT_DEVICE"
 	logItem "CHECK_FOR_BAD_BLOCKS=$CHECK_FOR_BAD_BLOCKS"
-	logItem "$CLONE_DEVICE"
-	logItem "$CLONE_PARTUUID"
 	logItem "COLOR_CODES=${COLOR_CODES[*]}"
  	logItem "COLORING=$COLORING"
  	logItem "CONFIG_FILE=$CONFIG_FILE"
@@ -2976,7 +2870,6 @@ function logOptions() { # option state
 	logItem "EXTENSIONS=$EXTENSIONS"
 	logItem "FAKE=$FAKE"
 	logItem "FINAL_COMMAND=$FINAL_COMMAND"
-	logItem "FORCE_EMAIL=$FORCE_EMAIL"
 	logItem "HANDLE_DEPRECATED=$HANDLE_DEPRECATED"
 	logItem "IGNORE_ADDITIONAL_PARTITIONS=$IGNORE_ADDITIONAL_PARTITIONS"
 	logItem "IGNORE_MISSING_PARTITIONS=$IGNORE_MISSING_PARTITIONS"
@@ -3015,7 +2908,6 @@ function logOptions() { # option state
 	logItem "RESTORE_REMINDER_REPEAT=$RESTORE_REMINDER_REPEAT"
 	logItem "ROOT_PARTITION=$ROOT_PARTITION"
 	logItem "RSYNC_BACKUP_ADDITIONAL_OPTIONS=$RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-	logItem "RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"="$RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	logItem "RSYNC_BACKUP_OPTIONS=$RSYNC_BACKUP_OPTIONS"
 	logItem "RSYNC_IGNORE_ERRORS=$RSYNC_IGNORE_ERRORS"
 	logItem "SENDER_EMAIL=$SENDER_EMAIL"
@@ -3032,13 +2924,10 @@ function logOptions() { # option state
 	logItem "TAR_BACKUP_ADDITIONAL_OPTIONS=$TAR_BACKUP_ADDITIONAL_OPTIONS"
 	logItem "TAR_BACKUP_OPTIONS=$TAR_BACKUP_OPTIONS"
 	logItem "TAR_BOOT_PARTITION_ENABLED=$TAR_BOOT_PARTITION_ENABLED"
-	logItem "TAR_COMPRESSION_TOOL=$TAR_COMPRESSION_TOOL"
-	logItem "TAR_COMPRESSION_TOOL_OPTIONS=$TAR_COMPRESSION_TOOL_OPTIONS"
 	logItem "TAR_IGNORE_ERRORS=$TAR_IGNORE_ERRORS"
 	logItem "TAR_RESTORE_ADDITIONAL_OPTIONS=$TAR_RESTORE_ADDITIONAL_OPTIONS"
 	logItem "TELEGRAM_TOKEN=$TELEGRAM_TOKEN"
 	logItem "TELEGRAM_CHATID=$TELEGRAM_CHATID"
-	logItem "TELEGRAM_THREADID=$TELEGRAM_THREADID"
 	logItem "TELEGRAM_NOTIFICATIONS=$TELEGRAM_NOTIFICATIONS"
 	logItem "TIMESTAMPS=$TIMESTAMPS"
 	logItem "UPDATE_UUIDS=$UPDATE_UUIDS"
@@ -3060,10 +2949,6 @@ function initializeDefaultConfigVariables() {
 
 	# path to store the backupfile
 	DEFAULT_BACKUPPATH="/backup"
-	# Update clone at end of backup creation to clone device
-	DEFAULT_CLONE_DEVICE=""
-	# Partuuid of a clone partition
-	DEFAULT_CLONE_PARTUUID=""
 	# how many backups to keep of all backup types
 	DEFAULT_KEEPBACKUPS=3
 	# how many backups to keep of the specific backup type. If zero DEFAULT_KEEPBACKUPS is used
@@ -3106,6 +2991,10 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_MAIL_PROGRAM="mail"
 	# restore device
 	DEFAULT_RESTORE_DEVICE=""
+	# default append log (0 = false, 1 = true)
+	DEFAULT_APPEND_LOG=0
+	# option used by mail program to append log (for example -a or -A)
+	DEFAULT_APPEND_LOG_OPTION="-a"
 	# default verbose log (0 = false, 1 = true)
 	DEFAULT_VERBOSE=0
 	# skip check for remote mount of backup path (0 = false, 1 = true)
@@ -3138,16 +3027,11 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_LINK_BOOTPARTITIONFILES=0
 	# save boot partition with tar
 	DEFAULT_TAR_BOOT_PARTITION_ENABLED=0
-	# Compression tool to use for tar. Supported: bzip2 gzip lzip lzma lzop xz zstd
-	DEFAULT_TAR_COMPRESSION_TOOL=""
-	# Options to be passed to compression tool
-	DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS=""
 	# reboot system at end of backup
 	DEFAULT_REBOOT_SYSTEM=0
 	# Change these options only if you know what you are doing !!!
 	DEFAULT_RSYNC_BACKUP_OPTIONS="-aHAx --delete --force --sparse" 						# -a <=> -rlptgoD, H = preserve hardlinks, x = one filesystem, A = preserver ACLs
 	DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS=""
-	DEFAULT_RSYNC_BACKUP_OPTION_EXCLUDE_ACLS=0
 	DEFAULT_RSYNC_IGNORE_ERRORS="" 														# See https://bugzilla.samba.org/show_bug.cgi?id=3653
 	DEFAULT_TAR_BACKUP_OPTIONS="-cpi --one-file-system"
 	DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS=""
@@ -3187,8 +3071,6 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_TELEGRAM_TOKEN=""
 	# Telegram target chatid
 	DEFAULT_TELEGRAM_CHATID=""
-	# Telegram thread ID for the target chat (optional)
-	DEFAULT_TELEGRAM_THREADID=""
 	# Telegram notifications to send. S(uccess), F(ailure), M(messages as file), m(essages as text)
 	DEFAULT_TELEGRAM_NOTIFICATIONS="F"
 	# Pushover additional options
@@ -3222,15 +3104,13 @@ function initializeDefaultConfigVariables() {
 	DEFAULT_BOOT_DEVICE=""
 	# How often inform about possible old-named backups
 	DEFAULT_OLD_REMINDER_REPEAT="5"
-	# Sent notifications and eMails also when script is invoked in the foreground on the console
-	DEFAULT_FORCE_EMAIL=1
 	############# End default config section #############
 }
 
 function copyDefaultConfigVariables() {
 
-	CLONE_DEVICE="$DEFAULT_CLONE_DEVICE"
-	CLONE_PARTUUID="$DEFAULT_CLONE_PARTUUID"
+	APPEND_LOG="$DEFAULT_APPEND_LOG"
+	APPEND_LOG_OPTION="$DEFAULT_APPEND_LOG_OPTION"
 	BACKUPPATH="$DEFAULT_BACKUPPATH"
 	BACKUPTYPE="$DEFAULT_BACKUPTYPE"
 	BOOT_DEVICE="$DEFAULT_BOOT_DEVICE"
@@ -3251,7 +3131,6 @@ function copyDefaultConfigVariables() {
 	EXCLUDE_LIST="$DEFAULT_EXCLUDE_LIST"
 	EXTENSIONS="$DEFAULT_EXTENSIONS"
 	FINAL_COMMAND="$DEFAULT_FINAL_COMMAND"
-	FORCE_EMAIL="$DEFAULT_FORCE_EMAIL"
 	IGNORE_ADDITIONAL_PARTITIONS="$DEFAULT_IGNORE_ADDITIONAL_PARTITIONS"
 	IGNORE_MISSING_PARTITIONS="$DEFAULT_IGNORE_MISSING_PARTITIONS"
 	KEEPBACKUPS="$DEFAULT_KEEPBACKUPS"
@@ -3286,7 +3165,6 @@ function copyDefaultConfigVariables() {
 	RESTORE_REMINDER_INTERVAL="$DEFAULT_RESTORE_REMINDER_INTERVAL"
 	RESTORE_REMINDER_REPEAT="$DEFAULT_RESTORE_REMINDER_REPEAT"
 	RSYNC_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_RSYNC_BACKUP_ADDITIONAL_OPTIONS"
-	RSYNC_BACKUP_OPTION_EXCLUDE_ACLS="$DEFAULT_RSYNC_BACKUP_OPTION_EXCLUDE_ACLS"
 	RSYNC_IGNORE_ERRORS="$DEFAULT_RSYNC_IGNORE_ERRORS"
 	RSYNC_BACKUP_OPTIONS="$DEFAULT_RSYNC_BACKUP_OPTIONS"
 	SENDER_EMAIL="$DEFAULT_SENDER_EMAIL"
@@ -3303,12 +3181,9 @@ function copyDefaultConfigVariables() {
 	TAR_BACKUP_ADDITIONAL_OPTIONS="$DEFAULT_TAR_BACKUP_ADDITIONAL_OPTIONS"
 	TAR_BACKUP_OPTIONS="$DEFAULT_TAR_BACKUP_OPTIONS"
 	TAR_BOOT_PARTITION_ENABLED="$DEFAULT_TAR_BOOT_PARTITION_ENABLED"
-	TAR_COMPRESSION_TOOL="$DEFAULT_TAR_COMPRESSION_TOOL"
-	TAR_COMPRESSION_TOOL_OPTIONS="$DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS"
 	TAR_RESTORE_ADDITIONAL_OPTIONS="$DEFAULT_TAR_RESTORE_ADDITIONAL_OPTIONS"
 	TAR_IGNORE_ERRORS="$DEFAULT_TAR_IGNORE_ERRORS"
 	TELEGRAM_CHATID="$DEFAULT_TELEGRAM_CHATID"
-	TELEGRAM_THREADID="$DEFAULT_TELEGRAM_THREADID"
 	TELEGRAM_NOTIFICATIONS="$DEFAULT_TELEGRAM_NOTIFICATIONS"
 	TELEGRAM_TOKEN="$DEFAULT_TELEGRAM_TOKEN"
 	TIMESTAMPS="$DEFAULT_TIMESTAMPS"
@@ -3391,7 +3266,7 @@ function getPartitionNumber() { # deviceName
 
 	logEntry "$1"
 	local id
-	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/((s|v)d[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
+	if [[ $1 =~ ^/dev/(mmcblk|loop)[0-9]+p([0-9]+) || $1 =~ ^/dev/(sd[a-z])([0-9]+) || $1 =~ ^/dev/(nvme)[0-9]+n[0-9]+p([0-9]+) ]]; then
 		id=${BASH_REMATCH[2]}
 	else
 		assertionFailed $LINENO "Unable to retrieve partition number from deviceName $1"
@@ -3437,7 +3312,6 @@ function dynamic_mount() { # mountpoint
 	logEntry "$1"
 
 	local rc=0
-
 	if ! isMounted $1; then
 		mount "$1" &>> $LOG_FILE
 		rc=$?
@@ -3449,11 +3323,10 @@ function dynamic_mount() { # mountpoint
 			writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_MOUNT_OK "$1"
 		fi
 	else
-		if [[ -n $CLONE_DEVICE && -n $RESTORE_DEVICE ]]; then # clone restore should execute umount for dynamic mount executed for backup
-			DYNAMIC_MOUNT_EXECUTED=1
-		fi
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DYNAMIC_MOUNT_NOT_REQUIRED "$1"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_MOUNT_NOT_REQUIRED "$1"
 	fi
+
+	logCommand "mount"
 
 	logExit
 
@@ -3469,18 +3342,15 @@ function isUpdatePossible() {
 	#shellcheck disable=SC2207
 	versions=( $(isNewVersionAvailable) )
 	version_rc=$?
-	if [[ $version_rc == 0 ]]; then			# new version available
-		if updateUpdateReminder; then		# update message counter still not zero
-			NEWS_AVAILABLE=1
-			UPDATE_POSSIBLE=1
-			FORCE_MESSAGE=1
-			latestVersion="${versions[0]}"
-			newVersion="${versions[1]}"
-			oldVersion="${versions[2]}"
+	if [[ $version_rc == 0 ]]; then
+		NEWS_AVAILABLE=1
+		UPDATE_POSSIBLE=1
+		latestVersion="${versions[0]}"
+		newVersion="${versions[1]}"
+		oldVersion="${versions[2]}"
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
-		fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 	fi
 
 	logExit
@@ -3493,23 +3363,15 @@ function downloadPropertiesFile() { # FORCE
 
 	NEW_PROPERTIES_FILE=0
 
-	if (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't report any usage otherwise
+	if shouldRenewDownloadPropertiesFile "$1"  && (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't execute any update checks
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_NEW_VERSION
-	
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHECKING_FOR_NEW_VERSION
+
 		if (( $SEND_STATS )); then
 			local mode="N"; (( $PARTITIONBASED_BACKUP )) && mode="P"
 			local type=$BACKUPTYPE
 			local keep=$KEEPBACKUPS
-			local func="B"; 
-			if (( $RESTORE )); then
-				if (( $CLONEPATH )); then
-					func="C"
-				else
-					func="R"
-				fi
-			fi
-
+			local func="B"; (( $RESTORE )) && func="R"
 			local srOptions
 			srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
@@ -3584,6 +3446,33 @@ function isVersionDeprecated() { # versionNumber
 	if containsElement "$1" "${skip[@]}"; then
 		rc=1
 		logItem "Version $1 is deprecated but message is disabled"
+	fi
+
+	logExit "$rc"
+	return $rc
+}
+
+function shouldRenewDownloadPropertiesFile() { # FORCE
+
+	logEntry
+
+	local rc currentTime lastCheckTime
+
+	if [[ -e $LATEST_TEMP_PROPERTY_FILE ]]; then
+		lastCheckTime=$(stat -c %y $LATEST_TEMP_PROPERTY_FILE | cut -d ' ' -f 1 | sed 's/-//g')
+	else
+		lastCheckTime="00000000"
+	fi
+
+	currentTime=$(date +%Y%m%d)
+
+	logItem "$currentTime : $lastCheckTime"
+
+	if [[ $currentTime == "$lastCheckTime" && "$1" != "FORCE" ]]; then
+		logItem "Skip download"
+		rc=1		#  download already done today
+	else
+		rc=0
 	fi
 
 	logExit "$rc"
@@ -3675,30 +3564,30 @@ function askYesNo() { # message message_parms
 
 	local answer
 
-	if (( ! $NO_YES_QUESTION )); then
-		if (( $addtlMsg )); then
-			noNL=1
-			#Expanding an array without an index only gives the element in the index 0.
-			#shellcheck disable=SC2128
-			writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
-		fi
-		yes=$(getMessage $MSG_ANSWER_CHARS_YES)
+	if (( $addtlMsg )); then
+		noNL=1
+		#Expanding an array without an index only gives the element in the index 0.
+		#shellcheck disable=SC2128
+		writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
+	fi
+
+	if (( $NO_YES_QUESTION )); then
+		answer=$(getMessage $MSG_ANSWER_CHARS_YES)
+	else
 		read answer
+	fi
 
-		answer=${answer:0:1}	# first char only
-		answer=${answer:-"n"}	# set default no
+	answer=${answer:0:1}	# first char only
+	answer=${answer:-"n"}	# set default no
 
-		if [[ ! $yes =~ $answer ]]; then
-			return 1
-		else
-			return 0
-		fi
+	yes=$(getMessage $MSG_ANSWER_CHARS_YES)
+	if [[ ! $yes =~ $answer ]]; then
+		return 1
 	else
 		return 0
 	fi
-
 }
 
 function isNewVersionAvailable() {
@@ -3762,15 +3651,15 @@ function stopServices() {
 		if [[ "$STOPSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STOPPING_SERVICES
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPING_SERVICES "$STOPSERVICES"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_STOPPING_SERVICES "$STOPSERVICES"
 			logItem "$STOPSERVICES"
-			STOPPED_SERVICES=1
 			executeShellCommand "$STOPSERVICES"
 			local rc=$?
 			if [[ $rc != 0 ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOP_SERVICES_FAILED "$rc"
 				exitError $RC_STOP_SERVICES_ERROR
 			fi
+			STOPPED_SERVICES=1
 		fi
 	fi
 	logSystemServices
@@ -3822,7 +3711,7 @@ function startServices() {
 			elif [[ "$STARTSERVICES" =~ $NOOP_AO_ARG_REGEX ]]; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_STARTING_SERVICES
 			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTING_SERVICES "$STARTSERVICES"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_STARTING_SERVICES "$STARTSERVICES"
 				logItem "$STARTSERVICES"
 				executeShellCommand "$STARTSERVICES"
 				local rc=$?
@@ -3937,7 +3826,7 @@ function updateScript() {
 			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${tmpFile}")"
 			dlRC=$?
 			if (( $dlRC != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DOWNLOAD_URL" "$dlHttpCode" $dlRC
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$$DOWNLOAD_URL" "$dlHttpCode" $dlRC
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
 				exitError $RC_DOWNLOAD_FAILED
 			fi
@@ -3970,19 +3859,6 @@ function updateScript() {
 
 	return $updateNow
 
-}
-
-function hasDefaultACLs() { # directory
-	local rc=2	# getfacl not found
-	logEntry "$1"
-	if hash "getfacl" 2>/dev/null; then
-		getfacl -p $1 | grep -q -E "^default" &>>$LOG_FILE
-		rc=$?
-	else
-		logItem "getfacl not found"
-	fi
-	logExit "$rc"
-	return $rc
 }
 
 # 0 = yes, no otherwise
@@ -4019,9 +3895,10 @@ function supportsFileAttributes() {	# directory
 			# SC2034: x appears unused. Verify it or export it.
 			# shellcheck disable=SC2034
 			read -r attrsT x ownerT groupT r <<< "$(ls -la "/$1/$MYNAME.fileattributes")"
-
+			# attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present for extended security attributes
+			# Don't delete ACL mark. Target backup directory should not have any ACLs. Otherwise all files in the backup dircetory will inherit ACLs
+			# and a restored backup will populate these ACLs on the restored system which is wrong!
 			logItem "Remote: $attrsT # $ownerT # $groupT"
-			attrsT="$(sed 's/+$//' <<< $attrsT)" # delete + sign present if there are any extended attributes
 
 			# check fileattributes and ownerships are identical
 			if [[ "$attrs" == "$attrsT" && "$owner" == "$ownerT" && "$group" == "$groupT" ]]; then
@@ -4038,13 +3915,6 @@ function supportsFileAttributes() {	# directory
 	logExit $result
 
 	return $result
-}
-
-function disableACLsIfRequested() {
-	if (( $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
-		RSYNC_BACKUP_OPTIONS="$(sed 's/A//' <<< "$RSYNC_BACKUP_OPTIONS")"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_ACLS_DISABLED
-	fi
 }
 
 # 0 = yes, no otherwise
@@ -4337,13 +4207,12 @@ function setupEnvironment() {
 	logEntry
 
 	if (( ! $RESTORE )); then
+		ZIP_BACKUP_TYPE_INVALID=0		# logging not enabled right now, invalid backuptype will be handled later
 		if (( $ZIP_BACKUP )); then
-			TAR_COMPRESSION_TOOL=""			# zip has higher prio than tarcompressiontool
 			if [[ $BACKUPTYPE == "$BACKUPTYPE_DD" || $BACKUPTYPE == "$BACKUPTYPE_TAR" ]]; then
 				BACKUPTYPE=${Z_TYPE_MAPPING[${BACKUPTYPE}]}	# tar-> tgz and dd -> ddz
 			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP $BACKUPTYPE
-				exitError $RC_PARAMETER_ERROR
+				ZIP_BACKUP_TYPE_INVALID=1
 			fi
 		fi
 
@@ -4373,36 +4242,14 @@ function setupEnvironment() {
 		BACKUPTARGET_TEMP_DIR="$BACKUP_TEMP_ROOT_DIR/$BACKUPFILE"			# temporary backup directory for current backup
 		BACKUPTARGET_DIR="$BACKUPTARGET_TEMP_DIR"							# use temporary backup directory, will be renamend to BACKUPTARGET_FINAL_DIR if backup succeeded
 
-		local targetExtension="${FILE_EXTENSION[$BACKUPTYPE]}"
-
-		if [[ -n $TAR_COMPRESSION_TOOL ]] || (( $ZIP_BACKUP )); then
-			TAR_COMPRESSION_EXTENSION="${FILE_EXTENSION[$BACKUPTYPE]}"			# assume for now -z option is used
-			if [[ -n $TAR_COMPRESSION_TOOL ]]; then
-				local i
-				i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
-				if (( ! $? )); then
-					TAR_COMPRESSION_EXTENSION=".tar${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[$i]}"
-				else
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_TAR_COMPRESS_TOOL "$TAR_COMPRESSION_TOOL"
-					exitError $RC_PARAMETER_ERROR
-				fi
-			fi
-
-			logItem "Use tar extension $TAR_COMPRESSION_EXTENSION"
-			targetExtension="$TAR_COMPRESSION_EXTENSION"
-		fi
-
-		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${targetExtension}"
-		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${targetExtension}"
-
-		logItem "BACKUPTARGET_FILE=$BACKUPTARGET_FILE"
-		logItem "BACKUPTARGET_FINAL_FILE=$BACKUPTARGET_FINAL_FILE"
+		BACKUPTARGET_FILE="$BACKUPTARGET_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
+		BACKUPTARGET_FINAL_FILE="$BACKUPTARGET_FINAL_DIR/$BACKUPFILE${FILE_EXTENSION[$BACKUPTYPE]}"
 
 		if [[ ! -d "${BACKUPTARGET_DIR}" ]]; then
 			if (( $FAKE || ( $SMART_RECYCLE && $SMART_RECYCLE_DRYRUN ) )); then
 				: # don't create backupdirectory
 			else
-				if ! mkdir -p "${BACKUPTARGET_DIR}" &>>"$LOG_FILE"; then
+				if ! mkdir -p "${BACKUPTARGET_DIR}"; then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${BACKUPTARGET_DIR}"
 					exitError $RC_CREATE_ERROR
 				fi
@@ -4427,12 +4274,7 @@ function setupEnvironment() {
 			LOG_OUTPUT=$LOG_OUTPUT_HOME
 			logItem "LOG_OUTPUT=$LOG_OUTPUT"
 		fi
-	else # restore
-		if [[ -n "$DYNAMIC_MOUNT" && -n $CLONE_DEVICE && -n $RESTORE_DEVICE ]]; then
-			dynamic_mount "$DYNAMIC_MOUNT"
-		fi
-
-	fi # not restore
+	fi
 
 	logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 	logItem "BACKUPTARGET_FINAL_DIR: $BACKUPTARGET_FINAL_DIR"
@@ -4763,21 +4605,8 @@ function sendTelegramDocument() { # filename
 
 		local rsp curlRC error_code error_description
 
-		local curl_params=(
-			"-F" "chat_id=$TELEGRAM_CHATID"
-			"-F" "document=@$MSG_FILE"
-		)
-
-		if [[ -n "$TELEGRAM_THREADID" ]]; then
-			curl_params+=("-F" "message_thread_id=$TELEGRAM_THREADID")
-		fi
-
-		# Build log message
-		local log_cmd="curl -s -X GET '$TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument' ${curl_params[*]}"
-		logItem "Telegram curl call: $log_cmd"
-
-		# Execute the curl command
-		rsp="$(curl -s -X GET "$TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument" "${curl_params[@]}")"
+		logItem "Telegram curl call: curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE"
+		rsp="$(curl -s -X GET $TELEGRAM_URL$TELEGRAM_TOKEN/sendDocument -F chat_id=$TELEGRAM_CHATID -F document=@$MSG_FILE)"
 		curlRC=$?
 
 		if (( $curlRC )); then
@@ -4806,25 +4635,13 @@ function sendTelegramMessage() { # message html(yes/no)
 
 		local rsp error_code error_description
 
-		local curl_params=(
-			"--data-urlencode" "chat_id=$TELEGRAM_CHATID"
-			"--data-urlencode" "text=$1"
-		)
-
-		if [[ -n "$TELEGRAM_THREADID" ]]; then
-			curl_params+=("--data-urlencode" "message_thread_id=$TELEGRAM_THREADID")
+		if [[ -z $2 ]]; then
+			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1""
+			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1")"
+		else
+			logItem "Telegram curl call: curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
+			rsp="$(curl -s -X POST $TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage --data-urlencode "chat_id=$TELEGRAM_CHATID" --data-urlencode "text=$1" -d parse_mode=html)"
 		fi
-
-		if [[ -n $2 ]]; then
-			curl_params+=("--data" "parse_mode=html")
-		fi
-
-		# Build log message
-		local log_cmd="curl -s -X POST '$TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage' ${curl_params[*]}"
-		logItem "Telegram curl call: $log_cmd"
-
-		# Execute the curl command
-		rsp="$(curl -s -X POST "$TELEGRAM_URL$TELEGRAM_TOKEN/sendMessage" "${curl_params[@]}")"
 		local curlRC=$?
 
 		if (( $curlRC )); then
@@ -5095,8 +4912,9 @@ function sendEMail() { # content subject
 	logEntry
 
 	if [[ -n "$EMAIL" && rc != "$RC_CTRLC" ]]; then
-		local content subject
+		local attach content subject
 
+		local attach=""
 		local subject="$2"
 		local coloringOption=""
 		local contentType=""
@@ -5138,9 +4956,14 @@ function sendEMail() { # content subject
 			fi
 		fi
 
-		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $FORCE_MESSAGE ) ) ) )); then
+		if (( ! $MAIL_ON_ERROR_ONLY || ( $MAIL_ON_ERROR_ONLY && ( rc != 0 || ( $NEWS_AVAILABLE ) ) ) )); then
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SENDING_EMAIL
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_SENDING_EMAIL
+
+			if (( $APPEND_LOG )); then
+				attach="$DEFAULT_APPEND_LOG_OPTION $LOG_FILE"
+				logItem "Appendlog $attach"
+			fi
 
 			IFS=" "
 			content="$NL$(<"$MSG_FILE")$NL$1$NL"
@@ -5162,14 +4985,14 @@ function sendEMail() { # content subject
 			local rc
 			case $EMAIL_PROGRAM in
 				"$EMAIL_MAILX_PROGRAM")
-					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $EMAIL <<< "\"$content\""
-					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" "$EMAIL" <<< "$content"
+					logItem "$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "\"$subject\"" $attach $EMAIL <<< "\"$content\""
+					"$EMAIL_PROGRAM" "${coloringOption[@]}" $EMAIL_PARMS -s "$subject" $attach "$EMAIL" <<< "$content"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
 				"$EMAIL_SENDEMAIL_PROGRAM")
-					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject -t $EMAIL"
-					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" -t "$EMAIL"
+					logItem "echo $content | $EMAIL_PROGRAM $EMAIL_PARMS -u $subject $attach -t $EMAIL"
+					echo "$content" | "$EMAIL_PROGRAM" $EMAIL_PARMS -u "$subject" $attach -t "$EMAIL"
 					rc=$?
 					logItem "$EMAIL_PROGRAM: RC: $rc"
 					;;
@@ -5178,15 +5001,24 @@ function sendEMail() { # content subject
 					if [[ $EMAIL_PROGRAM == "$EMAIL_MSMTP_PROGRAM" ]]; then
 						msmtp_default="-a default"
 					fi
-					local sender=${SENDER_EMAIL:-root@$(hostname -f)}
-					logItem "Sendig email with s/msmtp"
-					logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
-					echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
-					rc=$?
-					logItem "$EMAIL_PROGRAM: RC: $rc"
+					if (( $APPEND_LOG )); then
+						logItem "Sending email with mpack"
+						echo "$content" > /tmp/$$
+						mpack -s "$subject" -d /tmp/$$ "$LOG_FILE" "$EMAIL"
+						rm /tmp/$$ &>/dev/null
+					else
+						local sender=${SENDER_EMAIL:-root@$(hostname -f)}
+						logItem "Sendig email with s/msmtp"
+						logItem "echo -e To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content | $EMAIL_PROGRAM $msmtp_default $EMAIL"
+						echo -e "To: $EMAIL${NL}From: $sender${NL}Subject: $subject${NL}${NL}$content" | "$EMAIL_PROGRAM" $msmtp_default "$EMAIL"
+						rc=$?
+						logItem "$EMAIL_PROGRAM: RC: $rc"
+					fi
 					;;
 				"$EMAIL_EXTENSION_PROGRAM")
-					args=( "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" )
+					local append=""
+					(( $APPEND_LOG )) && append="$LOG_FILE"
+					args=( "$EMAIL" "$subject" "$content" "$EMAIL_PARMS" "$append" )
 					callExtensions $EMAIL_EXTENSION "${args[@]}"
 					rc=$?
 					;;
@@ -5215,12 +5047,15 @@ function cleanupBackupDirectory() {
 			rm -rfd $BACKUP_TEMP_ROOT_DIR &>> "$LOG_FILE"# delete temp backupdir with all incomplete contents
 			local rmrc=$?
 			if (( $rmrc != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUP_TEMP_ROOT_DIR" "$rmrc"
+				if [[ $MSG_LEVEL == "$MSG_LEVEL_DETAILED" ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_FAILED "$BACKUP_TEMP_ROOT_DIR" "$rmrc"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_REMOVING_BACKUP_NO_FILE
+				fi
 			fi
-		else
-			logItem "Removing $BACKUP_TEMP_ROOT_DIR"
-			rmdir "$BACKUP_TEMP_ROOT_DIR" &>>$LOG_FILE
 		fi
+		logItem "Deleting $BACKUP_TEMP_ROOT_DIR"
+		rmdir $BACKUP_TEMP_ROOT_DIR &>>$LOG_FILE
 	fi
 
 	logExit
@@ -5252,7 +5087,7 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 16 )); then
-		m="$(yes 2>/dev/null ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -5334,7 +5169,7 @@ function masqueradeSensitiveInfoInLog() {
 		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
-	# telegram token, chatid and threadid
+	# telegram token and chatid
 
 	if [[ -n "$TELEGRAM_TOKEN" ]]; then
 		logItem "Masquerading telegram token"
@@ -5347,13 +5182,6 @@ function masqueradeSensitiveInfoInLog() {
 		logItem "Masquerading telegram chatid"
 		m="$(masquerade $TELEGRAM_CHATID)"
 		e="$(escapeSlashes "$TELEGRAM_CHATID")"
-		sed -i -E "s/${e}/${m}/g" $LOG_FILE
-	fi
-
-	if [[ -n "$TELEGRAM_THREADID" ]]; then
-		logItem "Masquerading telegram threadid"
-		m="$(masquerade $TELEGRAM_THREADID)"
-		e="$(escapeSlashes "$TELEGRAM_THREADID")"
 		sed -i -E "s/${e}/${m}/g" $LOG_FILE
 	fi
 
@@ -5376,7 +5204,7 @@ function masqueradeSensitiveInfoInLog() {
 	# In home directories usually first names are used
 
 	logItem "Masquerading home directory name"
-	sed -i -E -e 's|/home/[^/]+/([^/]+)|/home/@USER@/\1|g' -e 's|/home/[^/]+|/home/@USER@|g' $LOG_FILE
+	sed -i -E "s/\/home\/([^\\/])+\/(.)/\/home\/@USER@\/\2/g" $LOG_FILE
 
 	# hostname may expose domain names
 
@@ -5465,7 +5293,7 @@ function cleanupStartup() { # trap
 	logExit
 
 	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
+		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
 		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
 	fi
 
@@ -5501,42 +5329,33 @@ function cleanup() { # trap
 
 	logSystemServices
 
+	CLEANUP_RC=$rc
+
 	if (( $RESTORE )); then
 		cleanupRestore $1
-
 	else
-
-		if [[ $rc -eq 0 ]]; then # move new backup into backup directory
+		if [[ $rc -eq 0 ]]; then # don't apply BS if SR dryrun a second time, BS was done already previously
 			logItem "BACKUPTARGET_DIR: $BACKUPTARGET_DIR"
 			if [[ -d "${BACKUPTARGET_DIR}" ]]; then   # does not exists if raspiBackup7412Test runs
-				local mv_rc
+				local rc
 				mv "${BACKUPTARGET_DIR}" "${BACKUPTARGET_FINAL_DIR}"
-				mv_rc=$?
-				if (( $mv_rc )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $mv_rc
-					rc=$RC_TEMPMOVE_FAILED
+				rc=$?
+				if (( $rc )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_TEMPMOVE_FAILED $rc
+					CLEANUP_RC=$RC_TEMPMOVE_FAILED
 				else
 					if [[ $MSG_LEVEL == "$MSG_LEVEL_MINIMAL" ]]; then
 						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_CREATED "$BACKUPTARGET_FINAL_DIR"
 					else
-						writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUPDIR_MOVED "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
+						writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUPDIR_MOVED "$BACKUPTARGET_DIR" "$BACKUPTARGET_FINAL_DIR"
 					fi
 					BACKUPTARGET_FILE="$BACKUPTARGET_FINAL_FILE"
 				fi
 			else
 				logItem "??? BACKUPTARGET_DIR: $BACKUPTARGET_DIR not found"
 			fi
-		fi
 
-		if (( $PRE_BACKUP_EXTENSION_CALLED )); then
-			callExtensions $POST_BACKUP_EXTENSION $rc
-		fi
-
-		startServices "noexit"
-		executeAfterStartServices "noexit"
-
-		if [[ $rc -eq 0 ]]; then
-			if (( ! $IS_SNAPSHOT )); then # smartrecycle only if backup OK and mv succeeded and no snapshot was created
+			if (( ! $CLEANUP_RC )); then # smartrecycle only if mv succeeded
 				BACKUPTARGET_DIR="$BACKUPTARGET_FINAL_DIR"
 				if (( \
 					( $SMART_RECYCLE && ! $SMART_RECYCLE_DRYRUN ) \
@@ -5550,16 +5369,17 @@ function cleanup() { # trap
 		fi
 	fi
 
-	cleanupBackup
+	cleanupBackup $1
+
 	cleanupTempFiles
 
-	finalCommand "$rc"
+	finalCommand "$CLEANUP_RC"
 
-	logItem "Terminate now with rc $rc"
+	logItem "Terminate now with rc $CLEANUP_RC"
 
 	if (( $rc != 0 )); then
 		if (( ! $MAIL_ON_ERROR_ONLY )); then
-			if (( $WARNING_MESSAGE_WRITTEN && ! $ERROR_MESSAGE_WRITTEN )); then
+			if (( $WARNING_MESSAGE_WRITTEN )); then
 				if (( $RESTORE )); then
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_WARNING
 				else
@@ -5568,11 +5388,9 @@ function cleanup() { # trap
 			fi
 		fi
 
-		task="Backup"
 		if (( $rc != $RC_CTRLC )); then
 			if (( $RESTORE )); then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_FAILED
-				task="Restore"
 			else
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_FAILED
 			fi
@@ -5580,39 +5398,37 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-			if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
+			if (( ! $RESTORE )); then
 				if (( $rc != $RC_EMAILPROG_ERROR )); then
-					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
+					msgTitle=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					sendEMail "$msg" "$msgTitle"
 				fi
 				if [[ -n "$TELEGRAM_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_FAILURE ]]; then
 						sendTelegramm "${EMOJI_FAILED} <b><u> $msg </u></b>"		# add warning icon to message
 						sendTelegrammLogMessages
 					fi
 				fi
 				if [[ -n "$PUSHOVER_TOKEN" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendPushover "${EMOJI_FAILED} $msg" 1		# add warning icon to message
 					fi
 				fi
 				if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
-					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME $task)
+					msg=$(getMessage $MSG_TITLE_ERROR $HOSTNAME)
 					if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_FAILURE_NOTIFY_FAILURE ]]; then
 						sendSlack "$msg" 1		# add warning icon to message
 					fi
 				fi
-			fi
+			fi #  ! RESTORE
 		fi
 
 	else 	# success
 
-		local task="Backup"
 		if (( $RESTORE )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_OK
-			task="Restore"
 		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
@@ -5620,30 +5436,31 @@ function cleanup() { # trap
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
-		if (( ! $INTERACTIVE || $FAKE | $FORCE_EMAIL )); then
+		if (( ! $RESTORE )); then
 			if [[ -n "$TELEGRAM_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$TELEGRAM_NOTIFICATIONS" =~ $TELEGRAM_NOTIFY_SUCCESS ]]; then
 					sendTelegramm "${EMOJI_OK} $msg"
 					sendTelegrammLogMessages
 				fi
 			fi
 			if [[ -n "$PUSHOVER_TOKEN"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$PUSHOVER_NOTIFICATIONS" =~ $PUSHOVER_NOTIFY_SUCCESS ]]; then
 					sendPushover "${EMOJI_OK} $msg" 0
 				fi
 			fi
 			if [[ -n "$SLACK_WEBHOOK_URL"  ]]; then
-				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
+				msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 				if [[ "$SLACK_NOTIFICATIONS" =~ $SLACK_NOTIFY_SUCCESS ]]; then
 					sendSlack "${EMOJI_OK} $msg" 0
 				fi
 			fi
 
-			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME $task)
+			msg=$(getMessage $MSG_TITLE_OK $HOSTNAME)
 			sendEMail "" "$msg"
-		fi
+
+		fi # ! $RESTORE
 	fi
 
 	if (( $LOG_LEVEL == $LOG_DEBUG )); then
@@ -5660,27 +5477,13 @@ function cleanup() { # trap
 
 	unLockMe
 
-	# don't umount if clone and backup run                                no clone                      clone restore
-	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )) && [[ -z $CLONE_DEVICE || ( -n $CLONE_DEVICE && -n $RESTORE_DEVICE ) ]]; then
+	if [[ -n "$DYNAMIC_MOUNT" ]] && (( $DYNAMIC_MOUNT_EXECUTED )); then
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_DYNAMIC_UMOUNT_SCHEDULED "$DYNAMIC_MOUNT"
 		umount -l $DYNAMIC_MOUNT &>>$LOG_FILE
 	fi
 
 	if (( ! $RESTORE && $REBOOT_SYSTEM )); then
-		shutdown -r +3													# wait some time to allow eMail to be sent
-	fi
-
-	if (( $rc == 0 )) && [[ -n "$CLONE_DEVICE" && -z $RESTORE_DEVICE ]]; then
-
-	    source /tmp/raspiBackup.vars 									# BACKUP_TARGETDIR now refers to the backupdirectory just created
-		logItem "Starting Clone restore: ${CLONE_RESTORE_OPTIONS[*]} -Y $BACKUP_TARGETDIR"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTING "$CLONE_DEVICE"
-		shopt -s execfail
-		# shellcheck disable=SC2093
-		#  SC2093 (warning): Remove "exec " if script should continue after this command.
-		exec $RASPIBACKUP_ABS_LOCATION "${CLONE_RESTORE_OPTIONS[@]}" -Y $BACKUP_TARGETDIR		# no return
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_FAILED "$CLONE_DEVICE"
-		exitError $RC_CLONE_FAILED
+		shutdown -r +3						# wait some time to allow eMail to be sent
 	fi
 
 	exit $rc
@@ -5705,20 +5508,13 @@ function cleanupRestore() { # trap
 		umountPartition "$MNT_POINT"
 
 		logItem "Deleting dir $MNT_POINT"
-		rmdir "$MNT_POINT" &>>"$LOG_FILE"
-	fi
-
-	if [[ -d $TEMPORARY_MOUNTPOINT_ROOT ]]; then
-		logItem "Deleting dir $TEMPORARY_MOUNTPOINT_ROOT"
-		rmdir "$TEMPORARY_MOUNTPOINT_ROOT" &>>"$LOG_FILE"
+		rmdir $MNT_POINT &>>"$LOG_FILE"
 	fi
 
 	if (( ! $PARTITIONBASED_BACKUP )); then
 		umountPartition "$BOOT_PARTITION"
 		umountPartition "$ROOT_PARTITION"
 	fi
-
-	cleanupTempFiles
 
 	logExit "$rc"
 
@@ -5819,16 +5615,25 @@ function isBetaAvailable() {
 
 }
 
-function cleanupBackup() {
+function cleanupBackup() { # trap
 
 	logEntry
+
+	logItem "Got trap $1"
+	logItem "rc: $rc"
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		umountPartitions "$TEMPORARY_MOUNTPOINT_ROOT"
 	fi
 
+	if (( $PRE_BACKUP_EXTENSION_CALLED )); then
+		callExtensions $POST_BACKUP_EXTENSION $rc
+	fi
+
+	startServices "noexit"
+	executeAfterStartServices "noexit"
+
 	cleanupBackupDirectory
-	cleanupTempFiles
 
 	logExit
 
@@ -5841,11 +5646,6 @@ function cleanupTempFiles() {
 	if [[ -f $MYSELF~ ]]; then
 		logItem "Removing new version $MYSELF~"
 		rm -f $MYSELF~ &>/dev/null
-	fi
-
-	if [[ -d "$TEMPORARY_MOUNTPOINT_ROOT" ]]; then
-		logItem "Removing $TEMPORARY_MOUNTPOINT_ROOT"
-		rmdir -p "$TEMPORARY_MOUNTPOINT_ROOT" &>/dev/null
 	fi
 
 	logExit
@@ -6236,25 +6036,19 @@ function backupDD() {
 
 function backupTar() {
 
-	local verbose="" zip="" cmd partition source target devroot sourceDir journalExclude="" extension
+	local verbose zip cmd partition source target devroot sourceDir journalExclude=""
 
 	logEntry
 
-	(( $VERBOSE )) && verbose="-v"
-	if [[ -n "$TAR_COMPRESSION_TOOL" ]]; then
-			zip="-I\"${TAR_COMPRESSION_TOOL} $TAR_COMPRESSION_TOOL_OPTIONS\""
-			extension="$TAR_COMPRESSION_EXTENSION"
-	else
-		extension="${FILE_EXTENSION[$BACKUPTYPE]}"
-		[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z"
-	fi
+	(( $VERBOSE )) && verbose="-v" || verbose=""
+	[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 
 	if (( $PARTITIONBASED_BACKUP )); then
 		partition="${BOOT_PARTITION_PREFIX}$1"
 		source="."
 		devroot="."
 		sourceDir="$TEMPORARY_MOUNTPOINT_ROOT/$partition"
-		target="${BACKUPTARGET_DIR}/${partition}${extension}"
+		target="${BACKUPTARGET_DIR}/$partition${FILE_EXTENSION[$BACKUPTYPE]}"
 
 	else
 		bootPartitionBackup
@@ -6265,7 +6059,7 @@ function backupTar() {
 
 	if [[ -e /$PERSISTENT_JOURNAL ]]; then
 		logItem "Excluding /$PERSISTENT_JOURNAL"
-		journalExclude="--exclude=$devroot/${PERSISTENT_JOURNAL}"
+		journalExclude="--exclude $devroot/${PERSISTENT_JOURNAL}/*"
 	fi
 
 	writeToConsole $MSG_LEVEL_DETAILED $MSG_MAIN_BACKUP_PROGRESSING $BACKUPTYPE "${target//\\/}"
@@ -6305,10 +6099,6 @@ function backupTar() {
 	fi
 
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_STARTED "$BACKUPTYPE"
-
-	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_TAR_COMPRESS_TOOL_USED "$TAR_COMPRESSION_TOOL"
-	fi
 
 	if (( ! $FAKE )); then
 		executeTar "${cmd}" "$TAR_IGNORE_ERRORS"
@@ -6445,7 +6235,7 @@ function backupRsync() { # partition number (for partition based backup)
 
 	if [[ -e "/$PERSISTENT_JOURNAL" ]]; then
 		logItem "Excluding /$PERSISTENT_JOURNAL"
-		journalExclude="--exclude=/${PERSISTENT_JOURNAL}"
+		journalExclude="--exclude ${PERSISTENT_JOURNAL}/"
 	fi
 
 	logCommand "ls $BACKUPTARGET_ROOT"
@@ -6598,9 +6388,20 @@ function partitionRestoredeviceIfRequested() {
 	logEntry
 
 	if (( $SKIP_SFDISK )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
 
-		if [[ -z $CLONE_DEVICE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_CREATING_PARTITIONS
+		if ! askYesNo; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+			exitError $RC_RESTORE_FAILED
+		fi
+
+		if (( $NO_YES_QUESTION )); then
+			echo "Y"
+		fi
+
+		if (( $SKIP_FORMAT )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
+
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -6608,20 +6409,6 @@ function partitionRestoredeviceIfRequested() {
 
 			if (( $NO_YES_QUESTION )); then
 				echo "Y"
-			fi
-		fi
-
-		if (( $SKIP_FORMAT )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SKIP_FORMATING
-			if [[ -z $CLONE_DEVICE ]]; then
-				if ! askYesNo; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-					exitError $RC_RESTORE_FAILED
-				fi
-
-				if (( $NO_YES_QUESTION )); then
-					echo "Y"
-				fi
 			fi
 		else
 
@@ -6635,23 +6422,6 @@ function partitionRestoredeviceIfRequested() {
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_FORMATED "\"$PARTITIONS_TO_RESTORE\""
 			fi
 
-			if [[ -z $CLONE_DEVICE ]]; then
-				if ! askYesNo; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-					exitError $RC_RESTORE_FAILED
-				fi
-
-				if (( $NO_YES_QUESTION )); then
-					echo "Y"
-				fi
-			fi
-		fi
-
-	elif [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
-
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_PARTITIONS $RESTORE_DEVICE
-
-		if [[ -z $CLONE_DEVICE ]]; then
 			if ! askYesNo; then
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
 				exitError $RC_RESTORE_FAILED
@@ -6662,18 +6432,31 @@ function partitionRestoredeviceIfRequested() {
 			fi
 		fi
 
+	elif [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
+
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CREATING_PARTITIONS $RESTORE_DEVICE
+
+		if ! askYesNo; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+			exitError $RC_RESTORE_FAILED
+		fi
+
+		if (( $NO_YES_QUESTION )); then
+			echo "Y"
+		fi
+
 		if (( $FORCE_SFDISK )); then
 			local tmpSF
 
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCING_CREATING_PARTITIONS
-			sfdisk --wipe always -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
+			sfdisk -f "$RESTORE_DEVICE" < "$SF_FILE" &>>"$LOG_FILE"
 			rc=$?
 			if (( $rc )); then
 				if (( $rc == 1 )); then
 					tmpSF="$(basename $SF_FILE)"
 					cp "$SF_FILE" "/tmp/$tmpSF"
 					sed -i 's/sector-size/d' "/tmp/$tmpSF"
-					sfdisk --wipe always -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
+					sfdisk -f "$RESTORE_DEVICE" < "/tmp/$tmpSF" &>>"$LOG_FILE"
 					rc=$?
 					rm "/tmp/$tmpSF"
 				fi
@@ -6772,14 +6555,14 @@ function partitionRestoredeviceIfRequested() {
 				cp "$SF_FILE" "$MODIFIED_SFDISK" # just use unmodified sfdisk when option -R is used for a hybrid system
 			fi
 
-			sfdisk --wipe always -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+			sfdisk -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
 			rc=$?
 			if (( $rc )); then
 				logItem "sfdisk first attempt fails with rc $rc"
 				if (( $rc == 1 )); then								# sector-size is new in bullseye and breaks restore with older OS
 					sed -i '/sector-size/d' "$MODIFIED_SFDISK"		# remove sector-size
 					logCommand "cat $MODIFIED_SFDISK"
-					sfdisk --wipe always -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
+					sfdisk -f "$RESTORE_DEVICE" < "$MODIFIED_SFDISK" &>>"$LOG_FILE"
 					rc=$?
 				fi
 			fi
@@ -6824,7 +6607,7 @@ function collectAvailableBackupPartitions() { # lastBackupDir
 
 	logItem "Directories: $directories"
 
-	directories="$(grep -Po "(((s|v)d[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
+	directories="$(grep -Po "((sd[a-z]|(mmcblk|loop)[0-9]p)|nvme[0-9]n[0-9]p)[0-9]+$" <<< $directories )" # extract valid backup partitions
 
 	partitionNo="$(grep -Eo "[0-9]+$" <<< $directories )"
 
@@ -6847,7 +6630,7 @@ function restoreNormalBackupType() {
 
 	(( $VERBOSE )) && verbose="-v" || verbose=""
 
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_RESTORING_FILE "$RESTOREFILE"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_FILE "$RESTOREFILE"
 	logCommand "ls -la $RESTOREFILE"
 
 	START_TIME=$(date +%s)
@@ -6885,11 +6668,7 @@ function restoreNormalBackupType() {
 			umountPartition "$MNT_POINT"
 
 			logItem "Creating mountpoint $MNT_POINT"
-
-			if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${MNT_POINT}"
-					exitError $RC_CREATE_ERROR
-			fi
+			mkdir -p "$MNT_POINT"
 
 			partitionRestoredeviceIfRequested
 
@@ -6937,30 +6716,25 @@ function restoreNormalBackupType() {
 
 			executeFilesystemCheck "$BOOT_PARTITION"
 
-			if (( ! SKIP_FORMAT )) || [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
-				local check=""
-				(( $REGRESSION_TEST )) && check="-F "
-				if (( $CHECK_FOR_BAD_BLOCKS )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_DETAILED_ROOT_CHECKING "$ROOT_PARTITION"
-					check="-c"
-					mkfs.ext4 $check "$ROOT_PARTITION"
-				else
-					mkfs.ext4 $check "$ROOT_PARTITION" &>>"$LOG_FILE"
-				fi
-				rc=$?
-				if (( $rc != 0 )); then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
-					exitError $RC_NATIVE_RESTORE_FAILED
-				fi
-
-				waitForPartitionDefsChanged
-
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_FORMATTING_SECOND_PARTITION "$ROOT_PARTITION"
+			local check=""
+			(( $REGRESSION_TEST )) && check="-F "
+			if (( $CHECK_FOR_BAD_BLOCKS )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DETAILED_ROOT_CHECKING "$ROOT_PARTITION"
+				check="-c"
+				mkfs.ext4 $check "$ROOT_PARTITION"
 			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNCING_SECOND_PARTITION "$ROOT_PARTITION"
+				mkfs.ext4 $check "$ROOT_PARTITION" &>>"$LOG_FILE"
+			fi
+			rc=$?
+			if (( $rc != 0 )); then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_IMG_ROOT_CREATE_PARTITION_FAILED "$rc"
+				exitError $RC_NATIVE_RESTORE_FAILED
 			fi
 
+			waitForPartitionDefsChanged
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_SECOND_PARTITION "$ROOT_PARTITION"
 			mountAndCheck $ROOT_PARTITION "$MNT_POINT"
 
 			case $BACKUPTYPE in
@@ -6968,17 +6742,14 @@ function restoreNormalBackupType() {
 				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
 					local archiveFlags="--same-owner --same-permissions --numeric-owner ${TAR_RESTORE_ADDITIONAL_OPTIONS}"
 
-					local compressionTool; compressionTool="$(getCompressionTool "$ROOT_RESTOREFILE")"
-
 					if ! pushd "$MNT_POINT" &>>"$LOG_FILE"; then
 						assertionFailed $LINENO "push to $MNT_POINT failed"
 					fi
-
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="-z" || zip=""
 					if (( $PROGRESS && $INTERACTIVE )); then
-						local cmd="pv -f $ROOT_RESTOREFILE | tar ${compressionTool} ${archiveFlags} -x ${verbose} ${zip} -f -"
+						local cmd="pv -f $ROOT_RESTOREFILE | tar ${archiveFlags} -x ${verbose} ${zip} -f -"
 					else
-						local cmd="tar ${compressionTool} ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
+						local cmd="tar ${archiveFlags} -x ${verbose} ${zip} -f \"$ROOT_RESTOREFILE\""
 					fi
 					executeTar "$cmd"
 					rc=$?
@@ -7012,10 +6783,8 @@ function restoreNormalBackupType() {
 
 			mountAndCheck "$ROOT_PARTITION" "$MNT_POINT"
 
-			# date -u +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
-			# make sure raspiBackup is not started during initial boot of restored image
-			date --date='now + 5 minutes' +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
-			logItem "Updated hw clock to $(<$MNT_POINT/etc/fake-hwclock.data)"
+			logItem "Updating hw clock"
+			date -u +"%Y-%m-%d %T" > "$MNT_POINT/etc/fake-hwclock.data"
 
 			#logItem "Force fsck on reboot"
 			#touch $MNT_POINT/forcefsck
@@ -7208,99 +6977,85 @@ function applyBackupStrategy() {
 
 function reportOldBackups() {
 
-	logEntry
+	logEntry "$BACKUP_TARGETDIR"
 
 	local dir_to_list
+
+	if (( $SMART_RECYCLE )); then
+
+		local keptBackups
+		keptBackups="$(SR_listUniqueBackups "$BACKUPTARGET_ROOT")"
+		local numKeptBackups
+		numKeptBackups="$(countLines "$keptBackups")"
+		logItem "Keptbackups $numKeptBackups: $keptBackups"
+
+	else
+
+		local bt="${BACKUPTYPE^^}"
+		local v="KEEPBACKUPS_${bt}"
+		local keepOverwrite="${!v}"
+		local keepBackups=$KEEPBACKUPS
+		(( $keepOverwrite != 0 )) && keepBackups=$keepOverwrite
+	fi
 
 	if ! pushd "$BACKUPPATH" &>>"$LOG_FILE"; then
 		assertionFailed $LINENO "push to $BACKUPPATH failed"
 	fi
 
-	if ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* &>/dev/null; then
+	# Double quote to prevent globbing and word splitting.
+	# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
+	#shellcheck disable=SC2010,SC2086
+	tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE")
 
-		# Double quote to prevent globbing and word splitting.
-		# Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
-		#shellcheck disable=SC2010,SC2086
-		tobeListedOldBackups=$(ls -d ${HOSTNAME}-${BACKUPTYPE}-backup-* 2>>"$LOG_FILE")
+	if [[ -n $tobeListedOldBackups ]]; then
 
-		if [[ -n $tobeListedOldBackups ]]; then
+		local report_counter_file="$VAR_LIB_DIRECTORY/$REPORT_COUNTER_FILE"
 
-			local report_counter_file="$VAR_LIB_DIRECTORY/$REPORT_COUNTER_FILE"
-
-			# create directory to save counter
-			if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-				if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "${VAR_LIB_DIRECTORY}"
-					exitError $RC_CREATE_ERROR
-				fi
-			fi
-
-			# initialize counter
-			if [[ ! -e "$report_counter_file" ]]; then
-				echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
-			fi
-
-			# retrieve counter
-			local rf
-			rf=$(<$report_counter_file)
-			if [[ -z "${rf}" ]]; then				# counter file exists but is empty
-				echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
-				return
-			fi
-			rf=$(<$report_counter_file)
-
-			# only print report if counter says so
-			if (( $rf > 0 )); then
-
-				# update counter, but only if not in FAKE mode
-				local rfn=$(( ${rf} - 1 ))
-				if (( ! $FAKE )); then
-					echo "${rfn}" > "$report_counter_file"
-				fi
-
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
-				echo "$tobeListedOldBackups" | while read -r dir_to_list; do
-					[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
-				done
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
-
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-
-				# only print report if counter says so
-				if (( $rf > 0 )); then
-
-					# update counter, but only if not in FAKE mode
-					local rfn=$(( ${rf} - 1 ))
-					if (( ! $FAKE )); then
-						echo "${rfn}" > "$report_counter_file"
-					fi
-
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7"
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
-					echo "$tobeListedOldBackups" | while read -r dir_to_list; do
-						[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
-					done
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
-
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-
-				fi
-			fi
+		# create directory to save counter
+		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
+			mkdir -p "$VAR_LIB_DIRECTORY"
 		fi
-	else
-		logItem "No old backups found"
+
+		# initialize counter
+		if [[ ! -e "$report_counter_file" ]]; then
+			echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
+		fi
+
+		# retrieve counter
+		local rf
+		rf=$(<$report_counter_file)
+		if [[ -z "${rf}" ]]; then				# counter file exists but is empty
+			echo "$OLD_REMINDER_REPEAT" > "$report_counter_file"
+			return
+		fi
+		rf=$(<$report_counter_file)
+
+		# only print report if counter says so
+		if (( $rf > 0 )); then
+
+			# update counter, but only if not in FAKE mode
+			local rfn=$(( ${rf} - 1 ))
+			if (( ! $FAKE )); then
+				echo "${rfn}" > "$report_counter_file"
+			fi
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_NAMING_CHANGE "0.7"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_FOUND
+			echo "$tobeListedOldBackups" | while read -r dir_to_list; do
+				[[ -n $dir_to_list ]] && writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "  - $BACKUPTARGET_ROOT/${dir_to_list}"
+			done
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_HANDLING_INFO
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OLD_NAME_BACKUPS_COUNTER_INFO "${rfn}"
+
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_GENERIC_WARNING "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+		fi
 	fi
 
 	if ! popd &>>"$LOG_FILE"; then
 		assertionFailed $LINENO "pop failed"
 	fi
-
-	logExit
 }
 
 function backup() {
@@ -7319,9 +7074,9 @@ function backup() {
 	fi
 
 	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || (( $PARTITIONBASED_BACKUP )) ]]; then
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FINAL_DIR"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FINAL_DIR"
 	else
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_TARGET "$BACKUPTYPE" "$BACKUPTARGET_FILE"
 	fi
 
 	logItem "Storing backup in backuppath $BACKUPPATH"
@@ -7399,10 +7154,7 @@ function mountPartitions() { # sourcePath
 		for partition in ${PARTITIONS_TO_BACKUP[@]}; do
 			partitionName="$BOOT_PARTITION_PREFIX$partition"
 			logItem "mkdir $1/$partitionName"
-			if ! mkdir -p "$1/$partitionName" &>>"$LOG_FILE"; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$1/$partitionName"
-				exitError $RC_CREATE_ERROR
-			fi
+			mkdir -p "$1/$partitionName" &>>"$LOG_FILE"
 			logItem "mount /dev/$partitionName to $1/$partitionName"
 			mountAndCheck "/dev/$partitionName" "$1/$partitionName"
 		done
@@ -7560,13 +7312,11 @@ function doit() {
 	fi
 
 	if (( $RESTORE )); then
-		logger -t "$MYNAME" "Started restore"
 		doitRestore
 	else
 		if (( $FAKE )); then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FAKE_MODE_ON
 		fi
-		logger -t "$MYNAME" "Started backup"
 		doitBackup
 	fi
 
@@ -7606,6 +7356,29 @@ function getPartitionName() { # /etc/fstab first col
 
 	logExit "$result"
 
+}
+
+# check there is no external root partition used if it's a standard raspbian
+
+# /etc/fstab
+# PARTUUID=d888a167-02  /           vfat    defaults          0       2
+
+function extractBootAndRootPartitionNames() {
+
+	logEntry
+
+	local pre
+	pre="$(grep -E "^[^#]+\s(/|/boot)\s.*" /etc/fstab | xargs -I {} bash -c "echo {} | cut -f 1 -d ' '")"
+	logItem "$pre"
+	local p part
+	local result
+	for p in "${pre[@]}"; do
+		part="$(getPartitionName "$p")"
+		result="$result $p $part"
+	done
+	echo "$result"
+
+	logExit "$result"
 }
 
 function collectPartitions() {
@@ -7762,22 +7535,26 @@ function checksForPartitionBasedBackup() {
 		fi
 	done
 
-	if hasExternalRootpartition; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_ROOTPARTITION_UNSUPPORTED "$r"
+	if (( ! $REGRESSION_TEST )); then # skip test in regressiontest because in qemu /dev/mmcblk0 is a symlink to /dev/sda
+		local pn=( "$(extractBootAndRootPartitionNames)" )
+		local i p d ip1
+		for ((i=0; i<${#pn[@]}; i+=2)); do
+			p=${pn[i]}
+			(( ip1 = i+1 ))
+			d=${pn[$ip1]}
+			if [[ "$d" =~ /dev/sd && ! "$BOOT_DEVICENAME" =~ /dev/sd  ]]; then # allow -P for USB boot (all partitions are external but write error of SD card is used
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_EXTERNAL_PARTITION_NOT_SAVED "$p" "$d"
+				error=1
+			fi
+		done
+	fi
+
+	if (( $error )); then
 		exitError $RC_PARAMETER_ERROR
 	fi
 
 	logExit
 
-}
-
-function hasExternalRootpartition() {
-
-	local b r
-	b="$(grep -E "^[^#]+\s/boot(/firmware)?\s.*" /etc/fstab | cut -f 1 -d ' ')"
-	r="$(grep -E "^[^#]+\s/\s.*" /etc/fstab | cut -f 1 -d ' ')"
-
-	[[ "$r" = "$b"  ]]
 }
 
 function commonChecks() {
@@ -7798,6 +7575,12 @@ function commonChecks() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_MAILPROGRAM_NOT_INSTALLED "$EMAIL_PROGRAM"
 			exitError "$RC_EMAILPROG_ERROR"
 		fi
+		if [[ "$EMAIL_PROGRAM" == "$EMAIL_SSMTP_PROGRAM" || "$EMAIL_PROGRAM" == "$EMAIL_MSMTP_PROGRAM" ]] && (( $APPEND_LOG )); then
+			if ! which mpack &>/dev/null; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_MPACK_NOT_INSTALLED
+				APPEND_LOG=0
+			fi
+		fi
 	fi
 
 	local co
@@ -7808,6 +7591,25 @@ function commonChecks() {
 	fi
 
 	logExit
+
+}
+
+function getRootPartition() {
+
+	logEntry
+#	cat /proc/cmdline
+#	dma.dmachans=0x7f35 bcm2708_fb.fbwidth=656 bcm2708_fb.fbheight=416 bcm2708.boardrev=0xf bcm2708.serial=0x3f3c9490 smsc95xx.macaddr=B8:27:EB:3C:94:90 bcm2708_fb.fbswap=1 sdhci-bcm2708.emmc_clock_freq=250000000 vc_mem.mem_base=0x1fa00000 vc_mem.mem_size=0x20000000  dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait
+
+	local cmdline
+	cmdline=$(cat /proc/cmdline)
+	logCommand "cat /proc/cmdline"
+	if [[ $cmdline =~ .*(imgpart|root|datadev)=([^ ]+) ]]; then # berryboot and volumio
+		ROOT_PARTITION=${BASH_REMATCH[2]}
+		logItem "RootPartition: $ROOT_PARTITION"
+	else
+		assertionFailed $LINENO "Unable to find root mountpoint in /proc/cmdline"
+	fi
+	logExit "$ROOT_PARTITION"
 
 }
 
@@ -7825,7 +7627,7 @@ function deviceInfo() { # device, e.g. /dev/mmcblk1p2 or /dev/sda3 or /dev/nvme0
 	if [[ $1 =~ ^/dev/([^0-9]+)([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+)p([0-9]+)$ || $1 =~ ^/dev/([^0-9]+[0-9]+n[0-9])+p([0-9]+)$ ]]; then
 		r="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
 	else
-		assertionFailed $LINENO "Unable to extract device info from $1"
+		assertionFailed $LINENO "Unable to extract device info"
 	fi
 
 	echo "$r"
@@ -7857,7 +7659,6 @@ function inspect4Backup() {
 		BOOT_DEVICE="$updatedBootdeviceName"
 		logItem "Using configured bootdevice $BOOT_DEVICE"
 	elif (( $REGRESSION_TEST )); then
-		[[ -e /dev/vda ]] && BOOT_DEVICE="vda"
 		[[ -e /dev/sda ]] && BOOT_DEVICE="sda"
 		[[ -e /dev/mmcblk0 ]] && BOOT_DEVICE="mmcblk0"
 		[[ -e /dev/nvme0n1 ]] && BOOT_DEVICE="nvme0n1"
@@ -7943,7 +7744,7 @@ function inspect4Backup() {
 		fi
 	fi
 
-	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^(s|v)d[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
+	if [[ ! "$BOOT_DEVICE" =~ ^mmcblk[0-9]+$|^sd[a-z]$|^loop[0-9]+|^nvme[0-9]+n[0-9]+$ ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INVALID_BOOT_DEVICE "$BOOT_DEVICE"
 		exitError $RC_INVALID_BOOTDEVICE
 	fi
@@ -8077,40 +7878,6 @@ function reportNews() {
 
 }
 
-function checkSourceAndTargetPartitioning() { # src target
-
-	logEntry "$1" "$2"
-	local src tgt rc srcDevice tgtDevice
-
-	srcDevice="$1"
-	tgtDevice="$2"
-
-	src=$(sfdisk -d $srcDevice | grep -E -v "^label-id|^device" | sed -E s'|.+, ||')
-	tgt=$(sfdisk -d $tgtDevice | grep -E -v "^label-id|^device"| sed -E s'|.+, ||')
-	rc=$?
-	logItem "First comp: $rc"
-
-	logItem "SRC partitioning: <$src>"
-	logItem "TGT partitioning: <$tgt>"
-
-	logCommand "lsblk -o FSTYPE $srcDevice"
-	logCommand "lsblk -o FSTYPE $tgtDevice"
-
-	# diff &>/dev/null <<< "$srcLsblk" <<< "$tgtLsblk" # different number of partitions or fstype
-	diff &>/dev/null <(lsblk -o FSTYPE $srcDevice 2>/dev/null) <(lsblk -o FSTYPE $tgtDevice 2>/dev/null) # different number of partitions or fstype
-	(( rc=rc | $? ))
-	logItem "Second comp: $rc"
-
-	if (( $rc )); then	# no partitions or different partitioning or filesystem
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_IMPOSSIBLE "$tgtDevice" "$srcDevice" "$tgtDevice"
-		exitError $RC_CLONE_FAILED
-	fi
-
-	logExit $rc
-
-	return $rc
-}
-
 function doitBackup() {
 
 	logEntry "$PARTITIONBASED_BACKUP"
@@ -8119,11 +7886,9 @@ function doitBackup() {
 
 	inspect4Backup
 
-	if (( $SHARED_BOOT_DIRECTORY )); then
-		if ! checkSfdiskOK "$BOOT_DEVICENAME"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
-			exit $RC_COLLECT_PARTITIONS_FAILED
-		fi
+	if ! checkSfdiskOK "$BOOT_DEVICENAME"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PARTITIONS_EXTEND_DISK_SIZE
+		exit $RC_COLLECT_PARTITIONS_FAILED
 	fi
 
 	commonChecks
@@ -8211,34 +7976,16 @@ function doitBackup() {
 		fi
 	fi
 
-	logItem "Backuptype selected: $BACKUPTYPE"
-
-	if [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
-			mentionHelp
-			exitError $RC_PARAMETER_ERROR
+	if (( $ZIP_BACKUP_TYPE_INVALID )); then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP "$BACKUPTYPE"
+		mentionHelp
+		exitError $RC_PARAMETER_ERROR
 	fi
 
-	if [[ -n $TAR_COMPRESSION_TOOL ]]; then
-
-		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_TAR" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_TAR_COMPRESS_TOOL_NOT_SUPPORTED "$BACKUPTYPE"
-			mentionHelp
-			exitError $RC_PARAMETER_ERROR
-		fi
-
-		local i
-		i=$(getIndexInArray "$TAR_COMPRESSION_TOOL" "${TAR_COMPRESSION_TOOLS_SUPPORTED[@]}")
-		if (( $? )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNSUPPORTED_TAR_COMPRESS_TOOL "$TAR_COMPRESSION_TOOL"
-			exitError $RC_PARAMETER_ERROR
-		else
-			logItem "tar compression of $TAR_COMPRESSION_TOOL is supported. Using extension $TAR_COMPRESSION_EXTENSION ($i)"
-		fi
-		if ! which "$TAR_COMPRESSION_TOOL" &>/dev/null; then
-			writeToConsole $MSG_LEVEL_MINIMAL "$MSG_TAR_COMPRESS_TOOL_NOT_FOUND" "$TAR_COMPRESSION_TOOL"
-			exitError $RC_MISSING_COMMANDS
-		fi
+	if [[ ! $BACKUPTYPE =~ ^(${POSSIBLE_TYPES})$ ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNKNOWN_BACKUPTYPE "$BACKUPTYPE"
+		mentionHelp
+		exitError $RC_PARAMETER_ERROR
 	fi
 
 	if [[ -n "$TELEGRAM_CHATID" && -z "$TELEGRAM_TOKEN" ]] || [[ -z "$TELEGRAM_CHATID" && -n "$TELEGRAM_TOKEN" ]]; then
@@ -8296,39 +8043,26 @@ function doitBackup() {
 			exitError $RC_MISSING_COMMANDS
 		fi
 
-		disableACLsIfRequested
-
 		if ! supportsHardlinks "$BACKUPPATH"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_HARDLINK_ERROR "$BACKUPPATH" "$RC_MISC_ERROR"
 			exitError $RC_MISC_ERROR
-		fi
-
-		local fs
-		fs="$(getFsType "$BACKUPPATH")"
-		logItem "Filesystem: $fs"
-		if ! supportsFileAttributes "$BACKUPPATH"; then
-			if [[ $fs =~ ^nfs* ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTE_RIGHTS "$(findMountPath "$BACKUPPATH")" "$fs"
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$fs" "$(findMountPath "$BACKUPPATH")"
+		else
+			local fs
+			fs="$(getFsType "$BACKUPPATH")"
+			logItem "Filesystem: $fs"
+			if ! supportsFileAttributes "$BACKUPPATH"; then
+				if [[ $fs =~ ^nfs* ]]; then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTE_RIGHTS "$(findMountPath "$BACKUPPATH")" "$fs"
+				else
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_FILEATTRIBUTESUPPORT "$fs" "$(findMountPath "$BACKUPPATH")"
+				fi
+				exitError $RC_MISC_ERROR
 			fi
-			exitError $RC_MISC_ERROR
 		fi
-
 		if ! supportsSymlinks "$BACKUPPATH"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$(findMountPath "$BACKUPPATH")" "softlinks"
-			exitError $RC_MISC_ERROR
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILESYSTEM_INCORRECT "$BACKUPPATH" "softlinks"
+			exitError $RC_PARAMETER_ERROR
 		fi
-
-		if hasDefaultACLs "$BACKUPPATH"; then
-			logItem "DEFAULT ACLs detected on $BACKUPPATH"
-		fi
-#		if (( ! $RSYNC_BACKUP_OPTION_EXCLUDE_ACLS )); then
-#			if hasDefaultACLs "$BACKUPPATH"; then
-#				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_DIRECTORY_HAS_DEFAULT_ACLS "$(findMountPath "$BACKUPPATH")"
-#				exitError $RC_MISC_ERROR
-#			fi
-#		fi
 
 		local rsyncVersion
 		rsyncVersion=$(rsync --version | head -n 1 | awk '{ print $3 }')
@@ -8398,7 +8132,7 @@ function doitBackup() {
 		exitError "$RC_MISSING_COMMANDS"
 	fi
 
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_USING_BACKUPPATH "$BACKUPPATH" "$(getFsType "$BACKUPPATH")"
 
 	if (( ! $SKIPLOCALCHECK )); then
 		if ! isPathMounted "$BACKUPPATH"; then
@@ -8421,21 +8155,12 @@ function doitBackup() {
 		fi
 	fi
 
-	if [[ -n "$CLONE_DEVICE" && ( "$BACKUPTYPE" == "$BACKUPTYPE_DD" || "$BACKUPTYPE" == "$BACKUPTYPE_DDZ" ) ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DD_NOT_SUPPORTED_FOR_CLONE
-		exitError $RC_PARAMETER_ERROR
-	fi
-
-	if [[ -n "$CLONE_DEVICE" && ( "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" || "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" )]]; then
-		checkSourceAndTargetPartitioning $BOOT_DEVICENAME $CLONE_DEVICE
-	fi
-
 # all tests succeeded
 
 	BACKUPPATH_PARAMETER="$BACKUPPATH"
 	BACKUPPATH="$BACKUPPATH/$HOSTNAME"
 	if [[ ! -d "$BACKUPPATH" ]]; then
-		if ! mkdir -p "${BACKUPPATH}" &>>"$LOG_FILE"; then
+		if ! mkdir -p "${BACKUPPATH}"; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$BACKUPPATH"
 			exitError "$RC_CREATE_ERROR"
 		fi
@@ -8481,7 +8206,7 @@ function doitBackup() {
 		rc=0
 	else
 		if (( $SMART_RECYCLE && !$SMART_RECYCLE_DRYRUN )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SMART_RECYCLE_WILL_BE_APPLIED
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_SMART_RECYCLE_WILL_BE_APPLIED
 		fi
 		backup
 	fi
@@ -8660,16 +8385,14 @@ function restoreNonPartitionBasedBackup() {
 	fi
 
 	if (( ! $ROOT_PARTITION_DEFINED )); then
-		if [[ -z $CLONE_DEVICE ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
-			current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
-			if [[ -n "$current_partition_table" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
-				logItem "$current_partition_table"
-				echo "$current_partition_table"
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
-			fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_WARN_RESTORE_DEVICE_OVERWRITTEN "$RESTORE_DEVICE"
+		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
+		if [[ -n "$current_partition_table" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+			logItem "$current_partition_table"
+			echo "$current_partition_table"
+		else
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$RESTORE_DEVICE"
 		fi
 	else
 		if isSpecialBlockDevice "$ROOT_DEVICE"; then
@@ -8679,18 +8402,16 @@ function restoreNonPartitionBasedBackup() {
 		fi
 
 		if [[ $ROOT_DEVICE != "$RESTORE_DEVICE" ]]; then
-			if [[ -z $CLONE_DEVICE ]]; then
-				current_partition_table="$(listDeviceInfo "$ROOT_DEVICE")"
-				if [[ -n "$current_partition_table" ]]; then
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE"
-					logItem "$current_partition_table"
-					echo "$current_partition_table"
-				else
-					writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$ROOT_DEVICE"
-					if (( $SKIP_SFDISK )); then
-						writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITION "$ROOT_DEVICE"
-						exitError $RC_MISSING_PARTITION
-					fi
+			current_partition_table="$(listDeviceInfo "$ROOT_DEVICE")"
+			if [[ -n "$current_partition_table" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$ROOT_DEVICE"
+				logItem "$current_partition_table"
+				echo "$current_partition_table"
+			else
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTITION_TABLE_DEFINED "$ROOT_DEVICE"
+				if (( $SKIP_SFDISK )); then
+					writeToConsole $MSG_LEVEL_MINIMAL $MSG_MISSING_PARTITION "$ROOT_DEVICE"
+					exitError $RC_MISSING_PARTITION
 				fi
 			fi
 		fi
@@ -8704,11 +8425,9 @@ function restoreNonPartitionBasedBackup() {
 		fi
 	fi
 
-	if [[ -z $CLONE_DEVICE ]]; then
-		if ! askYesNo; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-			exitError $RC_RESTORE_FAILED
-		fi
+	if ! askYesNo; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+		exitError $RC_RESTORE_FAILED
 	fi
 
 	restoreNormalBackupType
@@ -8735,31 +8454,27 @@ function restorePartitionBasedBackup() {
 		logItem "$(mount | grep "$RESTORE_DEVICE")"
 	fi
 
-	if [[ -z $CLONE_DEVICE ]]; then
-		current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
-		logItem "$current_partition_table"
-		echo "$current_partition_table"
+	current_partition_table="$(listDeviceInfo "$RESTORE_DEVICE")"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_PARTITION_TABLE "$RESTORE_DEVICE"
+	logItem "$current_partition_table"
+	echo "$current_partition_table"
+
+	if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
+		local partitions
+		partitions=( "$(collectAvailableBackupPartitions "$RESTOREFILE" )" )
+		local partitionsString="${partitions[*]}"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
 	fi
 
-	if [[ -z $CLONE_DEVICE ]]; then
-		if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]]; then
-			local partitions
-			partitions=( "$(collectAvailableBackupPartitions "$RESTOREFILE" )" )
-			local partitionsString="${partitions[*]}"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$partitionsString\"" "$RESTORE_DEVICE"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PARTITIONS "\"$PARTITIONS_TO_RESTORE\"" "$RESTORE_DEVICE"
-		fi
+	if ! askYesNo; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
+		exitError "$RC_RESTORE_FAILED"
+	fi
 
-		if ! askYesNo; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_ABORTED
-			exitError "$RC_RESTORE_FAILED"
-		fi
-
-		if (( $NO_YES_QUESTION )); then
-			echo "Y"
-		fi
+	if (( $NO_YES_QUESTION )); then
+		echo "Y"
 	fi
 
 	initRestoreVariables
@@ -8776,11 +8491,7 @@ function restorePartitionBasedBackup() {
 	START_TIME="$(date +%s)"
 
 	logItem "Creating mountpoint $MNT_POINT"
-
-	if ! mkdir -p "$MNT_POINT" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$MNT_POINT"
-		exitError "$RC_CREATE_ERROR"
-	fi
+	mkdir -p "$MNT_POINT"
 
 	# handle partitions
 
@@ -8819,11 +8530,8 @@ function restorePartitionBasedBackup() {
 		for partitionBackupFile in "${RESTOREFILE}${BACKUP_BOOT_PARTITION_PREFIX}"*; do
 			logItem "partitionBackupFile: $partitionBackupFile"
 			local partitionNo
-			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ|$TAR_COMPRESSION_EXTENSIONS_SUPPORTED_GREP))?$" <<< "$partitionBackupFile" | sed -E 's/(\.tar)?\..+$//' )"  # delete trailing extension and optional .tar
+			partitionNo="$(grep -Eo "[0-9]+(\.($BACKUPTYPE_TAR|$BACKUPTYPE_TGZ))?$" <<< "$partitionBackupFile" | sed -E 's/\..+//' )"  # delete trailing .tar or .tgz
 			logItem "Found partition no: $partitionNo"
-			if [[ -z "$partitionNo" ]]; then
-				assertionFailed $LINENO "Unable to retrieve partition number from $partitionBackupFile"
-			fi
 			if [[ "${PARTITIONS_TO_RESTORE}" == "$PARTITIONS_TO_BACKUP_ALL" ]] ||  containsElement "$partitionNo" "${partitionsToRestore[@]}"; then
 				restorePartitionBasedPartition "$partitionBackupFile"
 				partitionsRestored+=("$partitionNo")
@@ -8923,7 +8631,7 @@ function getBackupPartitionFilesystemUsed() { # partition
 
 	logEntry "$1"
 
-	mount "$1" /mnt
+	mount $1 /mnt
 	local used
 	used=$(df "$1" -B 1 | tail -1 | awk '{ printf "%.0f\n", $3 }')
 	umount /mnt
@@ -9112,27 +8820,6 @@ function makeFilesystemAndLabel() { # partition filesystem label
 
 }
 
-function getCompressionTool() { # backupfilename
-
-	logEntry "$1"
-	local extension=".${1##*.}"		# extension has to have a leading period
-	local compressionTool=""
-	local i; i=$(getIndexInArray "$extension" "${TAR_COMPRESSION_EXTENSIONS_SUPPORTED[@]}")
-	if (( ! $? )); then
-		compressionTool="-I ${TAR_COMPRESSION_TOOLS_SUPPORTED[$i]}"
-		logItem "Compressiontool $compressionTool used"
-	else
-		if [[ "$extension" == ".tar" || "$extension" == ".tgz" ]]; then
-			compressionTool=""
-			logItem "No compressiontool used. Default tar used"
-		else
-			assertionFailed $LINENO "Incorrect compressiontool $compressionTool"
-		fi
-	fi
-	echo "$compressionTool"
-	logExit "- $compressionTool -"
-	}
-
 function restorePartitionBasedPartition() { # restorefile
 
 	logEntry "$1"
@@ -9143,12 +8830,13 @@ function restorePartitionBasedPartition() { # restorefile
 	restoreFile="$1"
 	restorePartition="$(basename "$restoreFile")"
 
-	restorePartition="$(sed -E 's%(\.tar)?\..+$%%' <<< ${restorePartition})"		# remove backup extension and optional .tar
-	logItem "RestorePartition: $restorePartition"
-
+	logItem "restorePartition: $restorePartition"
 	local partitionNumber
-	partitionNumber="$(sed -E 's%.+([0-9]+)$%\1%' <<< "$restorePartition")"			# extract partition number
+	partitionNumber=$(sed -e "s%${BACKUP_BOOT_PARTITION_PREFIX}%%" -e "s%\..*$%%" <<< "$restorePartition")
 	logItem "Partitionnumber: $partitionNumber"
+
+	restorePartition="${restorePartition%.*}"
+	logItem "RestorePartition: $restorePartition"
 
 	partitionLabel=$(getBackupPartitionLabel "$restorePartition")
 	partitionFilesystem=$(getBackupPartitionFilesystem "$restorePartition")
@@ -9196,9 +8884,6 @@ function restorePartitionBasedPartition() { # restorefile
 			case $BACKUPTYPE in
 
 				"$BACKUPTYPE_TAR"|"$BACKUPTYPE_TGZ")
-
-					local compressionTool; compressionTool="$(getCompressionTool "$restoreFile")"
-
 					local archiveFlags=""
 
 					if [[ -n $fatSize  ]]; then
@@ -9211,9 +8896,9 @@ function restorePartitionBasedPartition() { # restorefile
 					[[ "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" ]] && zip="z" || zip=""
 
 					if (( $PROGRESS && $INTERACTIVE )); then
-						cmd="pv -f $restoreFile | tar ${compressionTool} ${archiveFlags} -x${verbose}${zip}f -"
+						cmd="pv -f $restoreFile | tar ${archiveFlags} -x${verbose}${zip}f -"
 					else
-						cmd="tar ${compressionTool} ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
+						cmd="tar ${archiveFlags} -x${verbose}${zip}f \"$restoreFile\""
 					fi
 					executeTar "$cmd"
 					rc=$?
@@ -9281,24 +8966,6 @@ function executeFilesystemCheck { # partition
 	logExit
 }
 
-function checkRestoreDeviceOK() { # restoreDevice
-
-	logEntry
-
-	if [[ ! -b "$1" ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$1"
-		exitError $RC_RESTORE_IMPOSSIBLE
-	fi
-
-	if isMounted "$1"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$1"
-		exitError $RC_MISC_ERROR
-	fi
-
-	logExit
-
-}
-
 function doitRestore() {
 
 	logEntry
@@ -9309,8 +8976,6 @@ function doitRestore() {
 
 	commonChecks
 
-	checkRestoreDeviceOK "$RESTORE_DEVICE"
-
 	if hasSpaces "$RESTOREFILE"; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_CONTAINS_SPACES "$RESTOREFILE"
 		exitError $RC_MISC_ERROR
@@ -9319,6 +8984,11 @@ function doitRestore() {
 	if [[ ! -d "$RESTOREFILE" ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_NO_DIRECTORY "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
+	fi
+
+	if [[ ! -b "$RESTORE_DEVICE" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_NOT_VALID "$RESTORE_DEVICE"
+		exitError $RC_RESTORE_IMPOSSIBLE
 	fi
 
 	logItem "ls $RESTOREFILE$NL$(ls "$RESTOREFILE")"
@@ -9334,6 +9004,11 @@ function doitRestore() {
 	if [[ ! $(basename "$RESTOREFILE") =~ $regex ]]; then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DIRECTORY_INVALID "$RESTOREFILE"
 		exitError $RC_MISSING_FILES
+	fi
+
+	if isMounted "$RESTORE_DEVICE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORE_DEVICE_MOUNTED "$RESTORE_DEVICE"
+		exitError $RC_MISC_ERROR
 	fi
 
 	logItem "Checking for partitionbasedbackup in $RESTOREFILE/*"
@@ -9396,7 +9071,7 @@ function doitRestore() {
 			exitError $RC_DEVICES_NOTFOUND
 		fi
 
-		local rd rr
+		local rc rr
 		rd=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$RESTORE_DEVICE")
 		rr=$(sed -E 's#/dev/([a-z]+)(.+)?#\1#' <<< "$ROOT_PARTITION")
 
@@ -9425,6 +9100,13 @@ function doitRestore() {
 		fi
 	fi
 
+	local usbMount
+	usbMount="$(LC_ALL=C dpkg-query -W --showformat='${Status}\n' usbmount 2>&1)"
+	if grep -q "install ok installed" <<< "$usbMount" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_USBMOUNT_INSTALLED
+		exitError $RC_ENVIRONMENT_ERROR
+	fi
+
 	BASE_DIR=$(dirname "$RESTOREFILE")
 	logItem "Basedir: $BASE_DIR"
 	# Note: Handle old (without) and new (with OS release info) backup directory names
@@ -9437,7 +9119,12 @@ function doitRestore() {
 	logItem "Date: $DATE"
 
 	if (( $SKIP_FORMAT )); then
-		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
+		if (( $PARTITIONBASED_BACKUP )); then
+			if [[ "$BACKUPTYPE" != "$BACKUPTYPE_RSYNC" ]]; then
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
+				exitError $RC_PARAMETER_ERROR
+			fi
+		else
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_SKIP_FORMAT_POSSIBLE
 			exitError $RC_PARAMETER_ERROR
 		fi
@@ -9464,8 +9151,6 @@ function doitRestore() {
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_RSYNC_DOES_NOT_SUPPORT_PROGRESS "$rsyncVersion"
 			exitError $RC_PARAMETER_ERROR
 		fi
-
-		disableACLsIfRequested
 	fi
 
 	if ! which dosfslabel &>/dev/null; then
@@ -9506,10 +9191,6 @@ function doitRestore() {
 
 	rc=0
 
-	if [[ -n $CLONE_DEVICE ]] && (( $CLONEPATH )); then
-		checkCloneDevice
-	fi
-
 	if ! (( $PARTITIONBASED_BACKUP )); then
 		restoreNonPartitionBasedBackup
 		if [[ "$BACKUPTYPE" != "$BACKUPTYPE_DD" && "$BACKUPTYPE" != "$BACKUPTYPE_DDZ" ]]; then
@@ -9526,26 +9207,6 @@ function doitRestore() {
 
 	logExit
 
-}
-
-function checkCloneDevice() {
-
-	logEntry
-	
-	if [[ -z $CLONE_PARTUUID ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_DEFINED "$CLONE_DEVICE"
-		exitError $RC_CLONE_FAILED
-	else
-		local partuuids
-		partuuids="$(blkid | grep -E "^$CLONE_DEVICE" | sed -E 's|^(.+)PARTUUID="(.+)"|\2|')"
-		logItem "PARTUUIDs: $partuuids - defined PARTUUID: $CLONE_PARTUUID"		
-		if [[ ! "$partuuids" =~ $CLONE_PARTUUID ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_NO_PARTUUID_MATCH "$CLONE_PARTUUID" "$CLONE_DEVICE"
-			exitError $RC_CLONE_FAILED
-		fi
-	fi
-	
-	logExit
 }
 
 # calculate diff in months of two dates (yyyymm)
@@ -9574,10 +9235,7 @@ function updateRestoreReminder() {
 
 		# create directory to save state
 		if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-			if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
-				exitError "$RC_CREATE_ERROR"
-			fi
+			mkdir -p "$VAR_LIB_DIRECTORY"
 		fi
 
 		# initialize reminder state
@@ -9627,69 +9285,6 @@ function updateRestoreReminder() {
 
 }
 
-function updateUpdateReminder() {
-
-	logEntry
-
-	local update_file="$VAR_LIB_DIRECTORY/$UPDATE_REMINDER_FILE"
-
-	# create directory to save state
-	if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-		if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
-			exitError "$RC_CREATE_ERROR"
-		fi
-	fi
-
-	local version="$VERSION"
-	if [[ "$version" =~ ^([^-]*)(-(.*))?$ ]]; then
-		version=${BASH_REMATCH[1]}
-	fi
-
-	# initialize update version
-	if [[ ! -e "$update_file" ]]; then
-		echo "$version 0" > "$update_file"
-	fi
-
-	# retrieve update version
-	local rf
-	# Double quote to prevent globbing and word splitting.
-	#shellcheck disable=SC2086
-	rf="$(<$update_file)"
-	if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
-		echo "$version 0" > "$update_file"
-	fi
-
-	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	#shellcheck disable=SC2207
-	rf=( $(<$update_file) )
-
-	logItem "Vers: ${rf[0]} - cnt: ${rf[1]}"
-
-	local rc=0
-	# check if reminder should be send
-	if (( $(compareVersions $version $VERSION_PROPERTY) < 0 || $IS_BETA )); then		# is version older than available version?
-		if (( $(compareVersions "${rf[0]}" $VERSION_PROPERTY) < 0 )); then		# if reminder version older than available version ?
-			local left=$(( $UPDATE_REMINDER_MAX - ${rf[1]} ))
-			if (( $left == 0 )); then
-				echo "$VERSION_PROPERTY 0" > "$update_file"
-			else
-				local nr=$(( ${rf[1]} + 1 ))
-				logItem "Updated counter $version $nr"
-				echo "$version $nr" > "$update_file"
-			fi
-			rc=$(( $left <= 0 ))
-			logItem "rc=$rc"
-		fi
-	else
-		rc=1
-	fi
-
-	logExit $rc
-	return $rc
-
-}
-
 function mountAndCheck() { # device mountpoint
 
 	logEntry "$1 - $2"
@@ -9719,10 +9314,7 @@ function remount() { # device mountpoint
 	fi
 
 	logItem "Creating mountpoint $2"
-	if ! mkdir -p "$2" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$2"
-		exitError "$RC_CREATE_ERROR"
-	fi
+	mkdir -p "$2"
 	mountAndCheck "$1" "$2" &>>"$LOG_FILE"
 	logExit $rc
 
@@ -9857,7 +9449,7 @@ function updateConfig() {
 				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
 			else
 				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
-				echo "$line" >> "$MERGED_CONFIG"						# add new option
+				echo "$line" >> $MERGED_CONFIG						# add new option
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
 				(( merged ++ ))
 			fi
@@ -9954,23 +9546,13 @@ function synchronizeCmdlineAndfstab() {
 	remount "$BOOT_PARTITION" "$BOOT_MP"
 	remount "$ROOT_PARTITION" "$ROOT_MP"
 
-	# ubuntu uses /boot/firmware/current, RaspberryOS uses starting from bookworm /boot/firmware and /boot in earlier OS releases
-	# Note: boot parition is mounted on /boot/firmware or /boot all the time
-	CMDLINE="$(find "$BOOT_MP" -name "cmdline.txt" 2>/dev/null | sort | head -1 )" # for ubuntu "current" comes before "old"
-
-	logItem "CMDLINE found: $CMDLINE"
-
-	if [[ -z "$CMDLINE" ]]; then
-		assertionFailed $LINENO "No cmdline.txt found"
-	fi
-
+	CMDLINE="$BOOT_MP/cmdline.txt" 	# absolute path in mount, don't use firmware subdir for Ubuntu, boot partition is mounted there at ubuntu startup
 	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
 
-	local cmdline4Message # path for message
-	cmdline4Message="$BOOT_PARTITION$(sed "s|$BOOT_MP||" <<< "$CMDLINE")"
+	local cmdline # path for message
+	[[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware ]] && cmdline="/boot/firmware/cmdline.txt"  || cmdline="/boot/cmdline.txt"
 
-	local fstab4Message
-	fstab4Message="$ROOT_PARTITION/etc/fstab" # path for message
+	local fstab="/etc/fstab" # path for message
 
 	logEntry "CMDLINE: $CMDLINE - FSTAB: $FSTAB"
 
@@ -9981,38 +9563,9 @@ function synchronizeCmdlineAndfstab() {
 
 	local rootLabelCreated=0
 
-	# on Ubuntu starting with 25.04 there exist two cmdlines, one in /boot/firmware/current and /boot/firmware/new, use current
-	# on pre 25.04 Ubuntu the file is located in /boot
-	# on RaspbianOS the file is located in /boot until Bullseye and later on in /boot/firmware with a dummy file in /boot
-	# For both OS either /boot or /boot/firmware is mounted where cmdline.txt exists
-	writeToConsole $MSG_LEVEL_DETAILED $MSG_SYNC "$cmdline4Message" "$fstab4Message"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SYNC_CMDLINE_FSTAB "$cmdline" "$fstab"
 
-	local usedCmdline
-
-	CMDLINE=""
-	for usedCmdline in current/cmdline.txt cmdline.txt; do
-		if [[ -f "$BOOT_MP/$usedCmdline" ]]; then
-			CMDLINE="$BOOT_MP/$usedCmdline"
-			break
-		fi
-	done
-
-	if [[ -z "$CMDLINE" ]]; then
-		assertionFailed $LINENO "Unable to find cmdline.txt"
-	fi
-
-	local cmdlineMsg="/boot/cmdline.txt" # path for message
-	if [[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware/current ]]; then
-		cmdlineMsg="/boot/firmware/current/cmdline.txt"
-	elif [[ -d $TEMPORARY_MOUNTPOINT_ROOT/root/boot/firmware ]]; then
-		cmdlineMsg="/boot/firmware/cmdline.txt"
-    else
-		cmdlineMsg="/boot/cmdline.txt"
-	fi
-
-	if [[ -n "$CMDLINE" ]]; then
-
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_SYNC "$cmdlineMsg"
+	if [[ -f "$CMDLINE" ]]; then
 
 		logItem "Org $CMDLINE"
 		logCommand "cat $CMDLINE"
@@ -10023,10 +9576,9 @@ function synchronizeCmdlineAndfstab() {
 			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "CMDLINE - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline4Message" "root="
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline4Message"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$cmdline"
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=UUID=([a-z0-9\-]+) ]]; then
@@ -10036,38 +9588,33 @@ function synchronizeCmdlineAndfstab() {
 			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "CMDLINE - newUUID: $newUUID, oldUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline4Message" "root="
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline4Message"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "UUID" "$oldUUID" "$newUUID" "$cmdline"
 				sed -i "s/$oldUUID/$newUUID/" "$(realpath "$CMDLINE")" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$CMDLINE") =~ root=LABEL=([a-z0-9\-]+) ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
 			e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 			local rc=$?
 			if (( $rc )); then
 				local cmd="e2label $ROOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-				exitError "$RC_LABEL_ERROR"
 			else
 				rootLabelCreated=1
 			fi
 		elif grep "root=/dev/" "$CMDLINE"; then
 			logItem "/dev detected in $CMDLINE"
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline4Message" "root="
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$cmdline" "root="
 		fi
 	else
 		logCommand "ls -la $BOOT_MP"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline4Message"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$cmdline"
 		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
-
-	FSTAB="$ROOT_MP/etc/fstab" 		# absolute path in mount
-	local fstabMsg="/etc/fstab" # path for message
 
 	if [[ -f "$FSTAB" ]]; then
 		logItem "Org $FSTAB"
@@ -10075,22 +9622,19 @@ function synchronizeCmdlineAndfstab() {
 		#shellcheck disable=SC2086
 		logItem "$(cat $FSTAB)"
 
-		writeToConsole $MSG_LEVEL_DETAILED $MSG_SYNC "$fstabMsg"
-
 		if [[ $(cat "$FSTAB") =~ PARTUUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			local oldPartUUID=${BASH_REMATCH[1]}
 			local newPartUUID
 			newPartUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootPartUUID: $newPartUUID, oldRootPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab4Message" "/"
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PARTUUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
 				local oldpartuuidID
 				oldpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$oldPartUUID")"
 				local newpartuuidID
 				newpartuuidID="$(sed -E 's/-[0-9]+//' <<< "$newPartUUID")"
-				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab4Message"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldpartuuidID/$newpartuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
@@ -10099,27 +9643,25 @@ function synchronizeCmdlineAndfstab() {
 			newUUID=$(blkid -o udev "$ROOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB root - newRootUUID: $newUUID, oldRootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/"
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
 				local olduuidID
 				olduuidID="$(sed -E 's/-[0-9]+//' <<< "$oldUUID")"
 				local newuuidID
 				newuuidID="$(sed -E 's/-[0-9]+//' <<< "$newUUID")"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab4Message"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$olduuidID" "$newuuidID" "$fstab"
 				sed -i "s/$olduuidID/$newuuidID/g" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/[[:space:]] ]]; then
 			if (( ! $rootLabelCreated )) ; then
 				local oldLABEL=${BASH_REMATCH[1]}
 				logItem "Writing label $oldLABEL on $ROOT_PARTITION"
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$ROOT_PARTITION" "$oldLABEL"
 				e2label "$ROOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 				local rc=$?
 				if (( $rc )); then
 					local cmd="e2label $ROOT_PARTITION $oldLABEL"
 					writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-					exitError "$RC_LABEL_ERROR"
 				else
 					rootLabelCreated=1
 				fi
@@ -10127,11 +9669,11 @@ function synchronizeCmdlineAndfstab() {
 		elif grep "^/dev/" "$FSTAB"; then
 			logItem "/dev detected in $FSTAB"
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/"
 		fi
 	else
 		logCommand "ls -la $ROOT_MP"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab4Message"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$fstab"
 		exitError $RC_UUID_UPDATE_IMPOSSIBLE
 	fi
 
@@ -10145,10 +9687,9 @@ function synchronizeCmdlineAndfstab() {
 			newPartUUID=$(blkid -o udev "$BOOT_PARTITION" | grep ID_FS_PARTUUID= | cut -d= -f2)
 			logItem "FSTAB boot - newPartUUID: $newPartUUID, oldPartUUID: $oldPartUUID"
 			if [[ -z $newPartUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/boot"
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 			elif [[ "$oldPartUUID" != "$newPartUUID" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab4Message"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldPartUUID" "$newPartUUID" "$fstab"
 				sed -i "s/$oldPartUUID/$newPartUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ UUID=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
@@ -10157,30 +9698,28 @@ function synchronizeCmdlineAndfstab() {
 			newUUID=$(blkid -o udev "$BOOT_PARTITION" | grep ID_FS_UUID= | cut -d= -f2)
 			logItem "FSTAB boot - newBootUUID: $newUUID, oldBootUUID: $oldUUID"
 			if [[ -z $newUUID ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message	" "/boot"
-				exitError $RC_UUID_UPDATE_IMPOSSIBLE
+				writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 			elif [[ "$oldUUID" != "$newUUID" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab4Message"
+				writeToConsole $MSG_LEVEL_DETAILED $MSG_UPDATING_UUID "PARTUUID" "$oldUUID" "$newUUID" "$fstab"
 				sed -i "s/$oldUUID/$newUUID/" "$FSTAB" &>> "$LOG_FILE"
 			fi
 		elif [[ $(cat "$FSTAB") =~ LABEL=([a-z0-9\-]+)[[:space:]]+/boot ]]; then
 			local oldLABEL=${BASH_REMATCH[1]}
 			logItem "Writing label $oldLABEL on $BOOT_PARTITION"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
+			writeToConsole $MSG_LEVEL_DETAILED $MSG_LABELING "$BOOT_PARTITION" "$oldLABEL"
 			dosfslabel "$BOOT_PARTITION" "$oldLABEL" &>> "$LOG_FILE"
 			local rc=$?
 			if (( $rc )); then
 				local cmd="dosfslabel $BOOT_PARTITION $oldLABEL"
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_LABELING_FAILED "$cmd" "$rc"
-				exitError "$RC_LABEL_ERROR"
 			fi
 		elif grep "^/dev/" "$FSTAB"; then
 			logItem "/dev detected in $FSTAB"
 		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/boot"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 		fi
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab4Message" "/boot"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_UUID_SYNCHRONIZED "$fstab" "/boot"
 	fi
 
 	if [[ -f "$CMDLINE" ]]; then
@@ -10195,9 +9734,6 @@ function synchronizeCmdlineAndfstab() {
 
 	umount "$BOOT_MP" &>>"$LOG_FILE"
 	umount "$ROOT_MP" &>>"$LOG_FILE"
-
-	rmdir "$BOOT_MP" &>>"$LOG_FILE"
-	rmdir "$ROOT_MP" &>>"$LOG_FILE"
 
 	logExit
 }
@@ -10465,8 +10001,6 @@ function usageEN() {
 	echo "-P use partitionoriented backup mode to backup the first two partitions (Default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo "-t {backupType} ($ALLOWED_TYPES) (Default: $DEFAULT_BACKUPTYPE)"
 	echo "-T {List of partitions to backup in partition oriented mode} (Partition numbers, e.g. \"1 2 3\" or \"*\" for all) (Default: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo "--tarCompressionTool {tar Comressiontool} ($TAR_COMPRESSION_TOOLS_SUPPORTED_LIST)"
-	echo "--tarCompressionToolOptions {Options for tar compressiontool}"
 	echo "-z compress DD and TAR backup file with gzip (Default: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Restore options-"
@@ -10478,7 +10012,7 @@ function usageEN() {
 	echo "-d {restoreDevice} (Default: $DEFAULT_RESTORE_DEVICE) (Example: /dev/sda)"
 	echo "-R {rootPartition} (Default: restoreDevice) (Example: /dev/sdb1)"
 	echo "-T {List of partitions to restore from a partition oriented backup} (Partition numbers, e.g. \"1 2 3\" or \"*\" for all) (Default: ${DEFAULT_PARTITIONS_TO_RESTORE})"
-	echo "--resizeRootFS|resizeLastPartitionFS (Default: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
+	echo "--resizeRootFS (Default: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
 function usageDE() {
@@ -10522,8 +10056,6 @@ function usageDE() {
 	echo "-P Nutzung des partitionsorientierten Backupmode"
 	echo "-t {Backuptyp} ($ALLOWED_TYPES) (Standard: $DEFAULT_BACKUPTYPE)"
 	echo "-T Liste der Partitionen die im partitionsorientierten Mode zu sichern sind} (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo "--tarCompressionTool {tar Kompressionstool} ($TAR_COMPRESSION_TOOLS_SUPPORTED_LIST)"
-	echo "--tarCompressionToolOptions {Optionen für das tar Kompressionstool}"
 	echo "-z DD und TAR Backup verkleinern mit gzip (Standard: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Restore Optionen-"
@@ -10535,7 +10067,7 @@ function usageDE() {
 	echo "-d {restoreGerät} (Standard: $DEFAULT_RESTORE_DEVICE) (Beispiel: /dev/sda)"
 	echo "-R {rootPartition} (Standard: restoreDevice) (Beispiel: /dev/sdb1)"
 	echo "-T {Liste der Partitionen die vom partitionsorientierten Backup zu restoren sind} (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo "--resizeRootFS|resizeLastPartitionFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
+	echo "--resizeRootFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
 function usageFI() {
@@ -10583,7 +10115,7 @@ function usageFI() {
 	echo "-C Tarkistetaan palautettavien osioiden epäkelvot lohkot (oletus: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
 	echo "-d {palautuslaite} (oletus: $DEFAULT_RESTORE_DEVICE) (Esimerkki: /dev/sda)"
 	echo "-R {juuriosio} (oletus: restoreDevice) (Esimerkki: /dev/sdb1)"
-	echo "--resizeRootFS|resizeLastPartitionFS (oletus: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
+	echo "--resizeRootFS (oletus: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
 function mentionHelp() {
@@ -10635,61 +10167,11 @@ function getEnableDisableOption() { # option
 	esac
 }
 
-function cloneSetBackupParms() {
-
-	logEntry
-
-	local opt
-
-	checkRestoreDeviceOK "$CLONE_DEVICE"
-
-	CLONE_RESTORE_OPTIONS=( )
-
-	CLONE_RESTORE_OPTIONS+=("-d")					# add clone device with -d for restore to clone
-	CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			# restore device
-
-	for opt in "${ARG_BAK[@]}"; do
-		if [[ "$opt" != "$BACKUPPATH" ]]; then # remove backuppath
-			CLONE_RESTORE_OPTIONS+=("$opt")
-		fi
-	done
-
-	if ! containsElement "--clone" "${CLONE_RESTORE_OPTIONS[@]}"; then
-		CLONE_RESTORE_OPTIONS+=("--clone")
-		CLONE_RESTORE_OPTIONS+=("$CLONE_DEVICE")			
-	fi
-
-	if [[ "$BACKUPTYPE" == "$BACKUPTYPE_RSYNC" ]] && ! containsElement "-00" "${CLONE_RESTORE_OPTIONS[@]}"; then
-		CLONE_RESTORE_OPTIONS+=("-00")
-	fi
-
-	if [[ ( "$BACKUPTYPE" == "$BACKUPTYPE_TAR" || "$BACKUPTYPE" == "$BACKUPTYPE_TGZ" )  ]] && ! containsElement "-0" "${CLONE_RESTORE_OPTIONS[@]}"; then
-		CLONE_RESTORE_OPTIONS+=("-0")
-	fi
-
-	if [[ -n $DYNAMIC_MOUNT ]]; then						# pass dynamic mount option to clone
-		CLONE_RESTORE_OPTIONS+=("--dynamicMount")
-		CLONE_RESTORE_OPTIONS+=("$BACKUPPATH")
-	fi
-
-	CLONE_RESTORE_OPTIONS+=("--updateUUIDs-")				# don't update UUIDs in clone
-	CLONE_RESTORE_OPTIONS+=("--clonePath")					# tag we're on the clone restore path
-
-	logItem "CLONEOPTIONS:${CLONE_RESTORE_OPTIONS[*]}"
-
-	checkCloneDevice
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_SCHEDULED "$CLONE_DEVICE"
-
-	logExit
-}
-
 # misc other vars
 
 BACKUP_DIRECTORY_NAME=""
 BACKUPFILE=""
 CUSTOM_CONFIG_FILE_INCLUDED=0
-CLONEPATH=0
 DEPLOY=0
 DYNAMIC_MOUNT_EXECUTED=0
 EXCLUDE_DD=0
@@ -10698,7 +10180,6 @@ FORCE_SFDISK=0
 FORCE_UPDATE=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
-IS_SNAPSHOT=0
 IS_UBUNTU=0
 NO_YES_QUESTION=0
 OPTION_T_USED=0
@@ -10716,7 +10197,7 @@ UPDATE_MYSELF=0
 UPDATE_POSSIBLE=0
 VERSION_DEPRECATED=0
 WARNING_MESSAGE_WRITTEN=0
-ERROR_MESSAGE_WRITTEN=0
+CLEANUP_RC=0
 UPDATE_CONFIG=0
 UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
 rc=0
@@ -10831,6 +10312,11 @@ while (( "$#" )); do
 	  STARTSERVICES="$o"; shift 2
 	  ;;
 
+	-A|-A[-+])
+	  APPEND_LOG=$(getEnableDisableOption "$1"); shift 1
+	  writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPRECATED_OPTION "-A"
+	  ;;
+
 	-b)
 	  if ! o=$(checkOptionParameter "$1" "$2"); then
 		exitError $RC_PARAMETER_ERROR
@@ -10857,17 +10343,6 @@ while (( "$#" )); do
 	  CHECK_FOR_BAD_BLOCKS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
-	--clone)
-	  if ! o=$(checkOptionParameter "$1" "$2"); then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  CLONE_DEVICE="$o"; shift 2
-	  ;;
-
-	--clonePath)
-	  CLONEPATH=1; shift 2
-	  ;;
-
 	--coloring)
 	  if ! o=$(checkOptionParameter "$1" "$2"); then
 		exitError $RC_PARAMETER_ERROR
@@ -10880,7 +10355,6 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  RESTORE_DEVICE="$o"; RESTORE=1; shift 2
-	  CLONE_DEVICE=""
 	  ;;
 
 	-D)
@@ -10923,10 +10397,6 @@ while (( "$#" )); do
 
 	-F|-F[-+])
 	  FAKE=$(getEnableDisableOption "$1"); shift 1
-	  ;;
-
-	--forceEmail|--forceEmail[+-])
-	  FORCE_EMAIL=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
 	-g|-g[-+])
@@ -11030,7 +10500,6 @@ while (( "$#" )); do
 	  BACKUP_DIRECTORY_NAME="$o"; shift 2
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[ \/\\\:\.\-]/_}
   	  BACKUP_DIRECTORY_NAME=${BACKUP_DIRECTORY_NAME//[\"]/}
-  	  IS_SNAPSHOT=1
   	  ;;
 
 	-N)
@@ -11080,14 +10549,14 @@ while (( "$#" )); do
 	  ;;
 
 	-R)
-	  if ! o=$(checkOptionParameter "$1" "$2"); then
+	  if o=$(checkOptionParameter "$1" "$2"); then
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  ROOT_PARTITION="$o"; shift 2
 	  ROOT_PARTITION_DEFINED=1
   	  ;;
 
-	--resizeRootFS|--resizeRootFS[+-]|--resizeLastPartitionFS|--resizeLastPartitionFS[+-])
+	--resizeRootFS|--resizeRootFS[+-])
 	  RESIZE_ROOTFS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
@@ -11132,7 +10601,7 @@ while (( "$#" )); do
 	  BACKUPTYPE="$o"; shift 2
 	  ;;
 
-	--timestamps|--timestamps[+-]|--ts|--ts[+-])
+	--timestamps|--timestamps[+-])
 	  TIMESTAMPS=$(getEnableDisableOption "$1"); shift 1
 	  ;;
 
@@ -11150,20 +10619,6 @@ while (( "$#" )); do
 	  OPTION_T_USED=1
 	  ;;
 
-	--tarCompressionTool|--tct)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  TAR_COMPRESSION_TOOL="$o"; shift 2
-	  ;;
-
-	--tarCompressionToolOptions|--tcto)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  TAR_COMPRESSION_TOOL_OPTIONS="$o"; shift 2
-	  ;;
-
 	--telegramToken)
 	  if ! o="$(checkOptionParameter "$1" "$2")"; then
 		exitError $RC_PARAMETER_ERROR
@@ -11176,13 +10631,6 @@ while (( "$#" )); do
 		exitError $RC_PARAMETER_ERROR
 	  fi
 	  TELEGRAM_CHATID="$o"; shift 2
-	  ;;
-
-	--telegramThreadID)
-	  if ! o="$(checkOptionParameter "$1" "$2")"; then
-		exitError $RC_PARAMETER_ERROR
-	  fi
-	  TELEGRAM_THREADID="$o"; shift 2
 	  ;;
 
 	--telegramNotifications)
@@ -11261,13 +10709,6 @@ while (( "$#" )); do
   esac
 done
 
-if (( ! $INTERACTIVE && ( $REGRESSION_TEST == 0 ) )); then
-	if (( $(cut -d' ' -f1 /proc/uptime | cut -d'.' -f1) < 180 )); then
-		# exit immediately if script is called when the system is up for less than 3 minutes to get rid of a race condition
-		exit
-	fi
-fi
-
 if (( ! $INCLUDE_ONLY )); then
 
 # set positional arguments in argument list $@
@@ -11344,7 +10785,7 @@ if (( $UPDATE_MYSELF )); then
 	exitNormal
 fi
 
-if (( $RESTORE && $NO_YES_QUESTION )) && [[ -z $CLONE_DEVICE ]] ; then				# WARNING: dangerous option !!!
+if (( $RESTORE && $NO_YES_QUESTION )); then				# WARNING: dangerous option !!!
 	if [[ ! $RESTORE_DEVICE =~ $YES_NO_RESTORE_DEVICE ]]; then	# make sure we're not killing a disk by accident
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_YES_NO_DEVICE_MISMATCH "$RESTORE_DEVICE" "$YES_NO_RESTORE_DEVICE"
 		exitError $RC_MISC_ERROR
@@ -11393,7 +10834,7 @@ logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 setupEnvironment
 
 if (( $NOTIFY_START )); then
-	if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
+	if (( ! $RESTORE )); then
 		msg="$(getMessage $MSG_TITLE_STARTED "$HOSTNAME")"
 		if [[ -n "$EMAIL"  ]]; then
 			sendEMail "" "$msg"
@@ -11413,16 +10854,17 @@ if (( $NOTIFY_START )); then
 	fi
 fi
 
+
 if (( $ETC_CONFIG_FILE_INCLUDED )); then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$ETC_CONFIG_FILE" # "$ETC_CONFIG_FILE_VERSION"
 	logItem "Read config ${ETC_CONFIG_FILE} : ${ETC_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$ETC_CONFIG_FILE")"
 fi
 if (( $HOME_CONFIG_FILE_INCLUDED )); then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE" # "$HOME_CONFIG_FILE_VERSION"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$HOME_CONFIG_FILE" # "$HOME_CONFIG_FILE_VERSION"
 	logItem "Read config ${HOME_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$HOME_CONFIG_FILE")"
 fi
 if (( $CURRENTDIR_CONFIG_FILE_INCLUDED )); then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE" # "$CURRENTDIR_CONFIG_FILE_VERSION"
+	writeToConsole $MSG_LEVEL_DETAILED $MSG_INCLUDED_CONFIG "$CURRENTDIR_CONFIG_FILE" # "$CURRENTDIR_CONFIG_FILE_VERSION"
 	logItem "Read ${CURRENTDIR_CONFIG_FILE} : ${CURRENTDIR_CONFIG_FILE_VERSION}$NL$(grep -E -v '^\s*$|^#' "$CURRENTDIR_CONFIG_FILE")"
 fi
 
@@ -11440,21 +10882,12 @@ updateRestoreReminder
 
 reportNews
 
-if [[ -n "$CLONE_DEVICE" ]]; then
-	if (( $CLONEPATH )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CLONE_STARTED "$CLONE_DEVICE"
-	else
-		cloneSetBackupParms
-	fi
-fi
-
 if isVersionDeprecated "$VERSION"; then
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
 	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
 	VERSION_DEPRECATED=1
 	NEWS_AVAILABLE=1
-	FORCE_MESSAGE=1
 fi
 
 doit # no return
