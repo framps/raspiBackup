@@ -152,14 +152,14 @@ function main() {
 
 			if [[ -f $file ]]; then
 
-				# retrieve sha and date for current file
-				sha="$(git -C "$GITSRC" rev-parse --short HEAD)"
-				date="$(git -C "$GITSRC" log -1 --format='%ci' HEAD)"
+				file_sha="$(git log -1 --format='%h' -- "$file")"
+				file_date="$(git log -1 --format='%ci' -- "$file")"
 
 				sed \
-					-e "s/\\\$Sha1\\\$/$sha/g" \
-					-e "s/\\\$Date\\\$/$date/g" \
+					-e "s/\\\$Sha1\\\$/$file_sha/g" \
+					-e "s/\\\$Date\\\$/$file_date/g" \
 					"$file" >"$destination"
+
 			else
 				echo "??? Missing $file" >&2
 				exit 1
