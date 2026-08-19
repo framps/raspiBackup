@@ -141,6 +141,10 @@ function main() {
 
 	printf 'Publishing %s into %s\n' "$publish_branch" "${PUBLISH_DIR#"$REPO_DIR"/}"
 
+	# retrieve sha and date for release
+	release_sha="$(git -C "$GITSRC" rev-parse --short HEAD)"
+	release_date="$(git -C "$GITSRC" log -1 --format='%ci' HEAD)"
+
 	(
 		cd "$GITSRC"
 		for file in "${FILES[@]}"; do
@@ -152,14 +156,10 @@ function main() {
 
 			if [[ -f $file ]]; then
 
-				file_sha="$(git log -1 --format='%h' -- "$file")"
-				file_date="$(git log -1 --format='%ci' -- "$file")"
-
 				sed \
-					-e "s/\\\$Sha1\\\$/$file_sha/g" \
-					-e "s/\\\$Date\\\$/$file_date/g" \
+					-e "s/\\\$Sha1\\\$/$release_sha/g" \
+					-e "s/\\\$Date\\\$/$release_date/g" \
 					"$file" >"$destination"
-
 			else
 				echo "??? Missing $file" >&2
 				exit 1
@@ -179,12 +179,9 @@ function main() {
 
 			tgtFile="${file##*/}"
 
-			file_sha="$(git log -1 --format='%h' -- "$file")"
-			file_date="$(git log -1 --format='%ci' -- "$file")"
-
 			sed \
-				-e "s/\\\$Sha1\\\$/$file_sha/g" \
-				-e "s/\\\$Date\\\$/$file_date/g" \
+				-e "s/\\\$Sha1\\\$/$release_sha/g" \
+				-e "s/\\\$Date\\\$/$release_date/g" \
 				"$file" >"$extensions_tmp/$tgtFile"
 		done
 
