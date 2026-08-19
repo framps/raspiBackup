@@ -9,7 +9,7 @@
 # Credits to following people for their translation work
 #	  FI - teemue
 #	  ZH - GoogleBeEvil
-#	  FR - mgrafr 
+#	  FR - mgrafr
 #
 #######################################################################################################################
 #
@@ -108,11 +108,11 @@ MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBack
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="$Date: 2026-08-13 20:36:29 +0200$"
+GIT_DATE="2026-08-19 22:54:13 +0200"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="$Sha1: 394eba0$"
+GIT_COMMIT="8ea56b5"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"

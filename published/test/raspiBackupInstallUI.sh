@@ -13,7 +13,7 @@
 #
 #######################################################################################################################
 #
-#    Copyright (c) 2015-2025 framp at linux-tips-and-tricks dot de
+#    Copyright (c) 2015-2026 framp at linux-tips-and-tricks dot de
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -45,15 +45,22 @@ declare -r PS4='|${LINENO}> \011${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use linked script name if the link is used
 MYNAME=${MYSELF%.*}
-VERSION="0.4.8.3"				 	# -beta, -hotfix or -dev suffixes possible
+VERSION="0.5"			 	# -beta, -hotfix or -dev suffixes possible
 
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
 	exit 1
 fi
 
+if [[ -n $URLTARGET ]]; then
+	echo "===> URLTARGET: $URLTARGET"
+	URLTARGET="/$URLTARGET"
+	sleep 1s
+fi
+
 # Commands used by raspiBackup and which have to be available
 # [command]=package
+#
 declare -A REQUIRED_COMMANDS=( \
 		["parted"]="parted" \
 		["fsck.vfat"]="dosfstools" \
@@ -64,6 +71,7 @@ declare -A REQUIRED_COMMANDS=( \
 		["fdisk"]="fdisk" \
 		["blkid"]="util-linux" \
 		["sfdisk"]="fdisk" \
+		["curl"]="curl" \
 		)
 
 requiredCmds=()
@@ -95,16 +103,16 @@ if (( ${#requiredCmds[@]} > 0 )); then
 	fi
 fi
 
-MYHOMEDOMAIN="www.linux-tips-and-tricks.de"
-MYHOMEURL="https://$MYHOMEDOMAIN"
+GITHUB_URL="https://github.com"
+MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="2025-06-11 19:31:12 +0200"
+GIT_DATE="2026-08-19 22:38:19 +0200"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="cd37c5f"
+GIT_COMMIT="8c16bd7"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -124,12 +132,12 @@ MASQUERADE_STRING="@@@@"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 
-PROPERTY_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackup.properties"
-BETA_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/beta/raspiBackup.sh"
+PROPERTY_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
+BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL/raspiBackup${URLTARGET}/raspiBackupInstallUI.sh"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupInstallUI.sh"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
@@ -149,7 +157,11 @@ Description=Creation of a Raspberry backup with raspiBackup
 
 [Service]
 Type=simple
+# delay start for 3 minutes
+ExecStartPre=/bin/sleep 180
 ExecStart=/usr/local/bin/raspiBackup.sh
+# increase default timeout which is 90s
+TimeoutStartSec=200
 # For Use with Wrapper Script: ExecStart=/usr/local/bin/raspiBackupWrapper.sh
 [Install]
 WantedBy=multi-user.target
@@ -281,6 +293,8 @@ CONFIG_LANGUAGE=$LANG_SYSTEM
 # CONFIG_LANGUAGE= will become the configured language later on
 
 CONFIG_MSG_LEVEL="0"
+CONFIG_CLONE_DEVICE=""
+CONFIG_CLONE_PARTUUID=""
 CONFIG_BACKUPTYPE="rsync"
 CONFIG_KEEPBACKUPS="3"
 DEFAULT_CONFIG_SMART_RECYCLE="0"
@@ -293,6 +307,7 @@ CONFIG_BACKUPPATH="/backup"
 CONFIG_PARTITIONBASED_BACKUP="0"
 DEFAULT_CONFIG_PARTITIONS_TO_BACKUP="1 2"
 CONFIG_PARTITIONS_TO_BACKUP="$DEFAULT_CONFIG_PARTITIONS_TO_BACKUP"
+CONFIG_TAR_COMPRESSION_TOOL=""
 CONFIG_ZIP_BACKUP="0"
 CONFIG_CRON_HOUR="5"
 CONFIG_CRON_MINUTE="0"
@@ -769,36 +784,27 @@ MSG_DE[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd Konfiguration fehlerhaft mit RC %1."
 DESCRIPTION_INSTALLATION=$((SCNT++))
 MSG_EN[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME allows to plug in custom extensions which are called before and after the backup process. \
 There exist sample extensions which report the memory usage, CPU temperature and disk usage of the backup partition. \
-For details see${NL}https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+For details see${NL}https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_DE[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME erlaubt selbstgeschriebene Erweiterungen vor und nach dem Backupprozess aufzurufen. \
 Es gibt Beispielerweiterungen die die Speicherauslastung, die CPU Temperatur sowie die Speicherplatzbenutzung der Backuppartition anzeigen. \
-Für weitere Details siehe${NL}https://www.linux-tips-and-tricks.de/de/13-raspberry/442-raspibackup-erweiterungen."
+Für weitere Details siehe${NL}https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_FI[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME tukee lisäosia, joiden toimintoja voidaan suorittaa ennen ja jälkeen varmuuskopioinnin. \
 Mukana tulevat näytelisäosat esittävät prosessorin lämpötilan sekä tietoja muistin ja varmuuskopiointilevyn käytöstä. \
-${NL}Lue lisätietoja osoitteesta https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+${NL}Lue lisätietoja osoitteesta https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_FR[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME vous permet d'appeler des extensions auto-écrites avant et après le processus de sauvegarde. \
 Il existe des exemples d'extensions qui montrent l'utilisation de la mémoire, la température du processeur et l'utilisation de l'espace de stockage de la partition de sauvegarde. \
-${NL}Pour plus de détails voir https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+${NL}Pour plus de détails voir https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 MSG_ZH[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME 允许插入自定义扩展，备份前后均可插入. \
 已有示例扩展报告内存占用,CPU温度和备份硬盘占用. \
-${NL}详情请 https://www.linux-tips-and-tricks.de/en/raspibackupcategoryy/443-raspibackup-extensions."
+${NL}详情请 https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 
 DESCRIPTION_COMPRESS=$((SCNT++))
-MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup. Please note this will increase backup time and will heaten the CPU. \
-Please note an option of $FILE_TO_INSTALL which will reduce the size of a dd backup also. \
-For details see https://www.linux-tips-and-tricks.de/en/faq#a16."
-MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups kompressen um die Backupgröße zu reduzieren. Das bedeutet aber dass die Backupzeit steigt und die CPU erwärmen wird. \
-$FILE_TO_INSTALL bietet auch eine Option an mit der ein dd Backup verkleinert werden kann. Siehe dazu \
-https://www.linux-tips-and-tricks.de/de/faq#a16."
-MSG_FI[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME voi pakata dd- ja tar-varmuuskopiot, jotta ne veisivät vähemmän tilaa. Huomioithan, että tämä pidentää varmuuskopioinnin aikaa ja nostaa CPU:n lämpötilaa. \
-Huomioi myös vaihtoehto $FILE_TO_INSTALL, joka vähentää dd-varmuuskopioiden käyttämää tilaa. \
-Lisätietoja löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a16."
-MSG_FR[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME peut compresser les sauvegardes dd et tar pour réduire leurs tailles . Cependant, cela signifie que le temps de sauvegarde augmentera et que le cpu se réchauffera. \
-$FILE_TO_INSTALL, offre également une option avec laquelle une sauvegarde dd peut être réduite. Voir. \
-https://www.linux-tips-and-tricks.de/en/faq#a16."
-MSG_ZH[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME 可以压缩 dd和tar备份文件. 但是这会在备份期间增加备份时间和使CPU升温. \
-勾选 $FILE_TO_INSTALL, 开启压缩. \
-详情见 https://www.linux-tips-and-tricks.de/en/faq#a16."
+MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup but this will increase backup time. \
+dd uses gzip and tar can use zstd, gzip, zip2, lzip, lzma, lzop or xz. \
+${NL}Note: There exists a configuration option DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS to add additional invocation options."
+MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups verkleinern um die Backupgröße zu reduzieren aber dadurch steigt die Backupzeit. \
+dd nutzt gzip und tar kann zstd, gzip, zip2, lzip, lzma, lzop oder nutzen. \
+${NL}Hinweis: Es gibt eine Konfigurationsoption DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS mit der weitere Aufrufoptionen mitgegeben werden können."
 
 DESCRIPTION_CRON=$((SCNT++))
 MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
@@ -820,15 +826,15 @@ Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Int
 
 DESCRIPTION_SMARTMODE=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMARTMODE]="${NL}There exist two different ways to define the number of backups. Just by defining the maximum number of backups to keep or \
-by using the smart backup strategy. See https://www.linux-tips-and-tricks.de/en/smart-recycle/ for details about the strategy."
+by using the smart backup strategy. See https://framps.github.io/raspiBackupDoc/smart-recycle for details about the strategy."
 MSG_DE[$DESCRIPTION_SMARTMODE]="${NL}Es gibt grundsätzlich zwei Methoden, die Anzahl der vorzuhaltenden Backups festzulegen. Dies erfolgt entweder durch die Definition der maximalen Anzahl oder durch Verwendung der intelligenten Backupstrategie. \
-Eine Detailbeschreibung der Strategie befindet sich auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/."
+Eine Detailbeschreibung der Strategie befindet sich auf https://framps.github.io/raspiBackupDoc/smart-recycle."
 MSG_FI[$DESCRIPTION_SMARTMODE]="${NL}Voit määrittää säilytettävien varmuuskopioiden lukumäärän joko määrittämällä säilytettävien varmuuskopioiden maksimimäärän tai \
-käyttämällä älykästä varmuuskopiointia.${NL}Katso lisätietoa osoitteesta https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+käyttämällä älykästä varmuuskopiointia.${NL}Katso lisätietoa osoitteesta https://framps.github.io/raspiBackupDoc/smart-recycle."
 MSG_FR[$DESCRIPTION_SMARTMODE]="${NL}Il existe deux méthodes pour définir le nombre de sauvegardes à conserver : SIMPLE ou INTELLIGENTE. Cela se fait soit en définissant un nombre maximum, soit en utilisant la stratégie de sauvegarde intelligente. \
-Une description détaillée de la stratégie est disponible sur https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+Une description détaillée de la stratégie est disponible sur https://framps.github.io/raspiBackupDoc/smart-recycle."
 MSG_ZH[$DESCRIPTION_SMARTMODE]="${NL}当前有两种方法定义备份数量:定义最大备份数或者用只能备份策略,策略详情: \
-${NL} https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+${NL} https://framps.github.io/raspiBackupDoc/smart-recycle."
 
 DESCRIPTION_MESSAGEDETAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME can either be very verbose or just write important messages. \
@@ -844,32 +850,32 @@ MSG_ZH[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME 可以非常详细或
 
 DESCRIPTION_STARTSTOP=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP]="${NL}Before and after creating a backup important services should be stopped and started. Add the required services separated by a space which should be stopped in the correct order. \
-The services will be started in reverse order when backup finished. For further details see https://www.linux-tips-and-tricks.de/en/faq#a18."
+The services will be started in reverse order when backup finished. For further details see https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_DE[$DESCRIPTION_STARTSTOP]="${NL}Vor und nach einem Backup sollten immer alle wichtigen Services gestoppt und gestartet werden. Dazu müssen die notwendigen Services die gestoppt werden sollen getrennt durch Leerzeichen in der richtigen Reihenfolge eingegeben werden. \
-In umgekehrter Reihenfolge werden die Services nach dem Backup wieder gestartet. Weitere Details finden sich auf https://www.linux-tips-and-tricks.de/de/faq#a18."
+In umgekehrter Reihenfolge werden die Services nach dem Backup wieder gestartet. Weitere Details finden sich auf https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FI[$DESCRIPTION_STARTSTOP]="${NL}Tärkeät palvelut tulisi pysäyttää varmuuskopioinnin ajaksi. Lisää pysäytettävät palvelut välilyönnillä erotettuna pysäytysjärjestyksessä. \
-Palvelut käynnistetään käänteisessä järjestyksessä varmuuskopioinnin päättyessä. Lisätietoa löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a18."
+Palvelut käynnistetään käänteisessä järjestyksessä varmuuskopioinnin päättyessä. Lisätietoa löydät osoitteesta https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FR[$DESCRIPTION_STARTSTOP]="${NL}Avant et après une sauvegarde, tous les services importants doivent toujours être arrêtés et démarrés. Pour ce faire, les services nécessaires qui doivent être arrêtés doivent être saisis dans le bon ordre, séparés par des espaces. \
-Les services sont redémarrés dans l'ordre inverse après la sauvegarde. Vous trouverez plus de détails sur https://www.linux-tips-and-tricks.de/de/faq#a18."
+Les services sont redémarrés dans l'ordre inverse après la sauvegarde. Vous trouverez plus de détails sur https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_ZH[$DESCRIPTION_STARTSTOP]="${NL}备份前，重要服务会被停止，备份后自动重启服务.按顺序添加需要停止的服务，多个服务用空格分割 \
-服务会在备份完成后按反序重启，详情见 https://www.linux-tips-and-tricks.de/en/faq#a18."
+服务会在备份完成后按反序重启，详情见 https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 
 DESCRIPTION_STARTSTOP_SEQUENCE=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Select step by step every service which should be stopped first, second, third and so on and confirm every single service with <Ok> until there is no service any more. \
 Actual sequence is displayed top down. \
-For further details see https://www.linux-tips-and-tricks.de/en/faq#a18."
+For further details see https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_DE[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Wähle der Reihe nach die Services aus wie sie vor dem Backup gestoppt werden sollen und bestätige jeden einzelnen Service mit <Bestätigen> bis keine Services mehr angezeigt werden. \
 Die aktuelle Reihenfolge wird von oben nach unten angezeigt. \
-Weitere Details finden sich auf https://www.linux-tips-and-tricks.de/de/faq#a18."
+Weitere Details finden sich auf https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FI[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Valitse pysäytettävät palvelut yksi kerrallaan painaen <OK>, kunnes listalla ei ole palveluita. \
 Toteutuva järjestys näytetään ylhäältä alas. \
-${NL}Lisätietoja näet osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a18."
+${NL}Lisätietoja näet osoitteesta https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_FR[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Sélectionnez les services les uns après les autres car ils doivent être arrêtés avant la sauvegarde et confirmez chaque service individuel avec <Confirmer> jusqu'à ce qu'aucun autre service ne s'affiche. \
 L'ordre en cours est affiché de haut en bas. \
-Vous trouverez plus de détails sur https://www.linux-tips-and-tricks.de/de/faq#a18."
+Vous trouverez plus de détails sur https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_ZH[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}一个一个的选择需要停止的服务,按<Ok>确定. \
 停止顺序自上而下. \
-${NL}详情见 https://www.linux-tips-and-tricks.de/en/faq#a18."
+${NL}详情见 https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 
 DESCRIPTION_STARTSTOP_SERVICES=$((SCNT++))
 MSG_EN[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Select all services in sequence how they should be stopped before the backup starts. \
@@ -920,15 +926,15 @@ MSG_ZH[$DESCRIPTION_KEEP]="${NL}输入保存的备份数,在1和52之间."
 
 DESCRIPTION_SMART=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMART]="${NL}Enter four numbers separated by spaces to define the smart recycle backup strategy parameters. The numbers define how many daily, weekly, monthly and yearly backups are kept. \
-For details about the backup strategy see https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+For details about the backup strategy see https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 MSG_DE[$DESCRIPTION_SMART]="${NL}Gib mit vier durch Leerzeichen getrennten Zahlen die Parameter für die intelligente Rotationsstrategie ein. Die Zahlen definieren wie viele tägliche, wöchentliche, monatliche und jährliche Backups vorgehalten werden. \
-Details zur Backupstrategie können auf https://www.linux-tips-and-tricks.de/de/rotationsstrategie/ nachgelesen werden."
+Details zur Backupstrategie können auf https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options nachgelesen werden."
 MSG_FI[$DESCRIPTION_SMART]="${NL}Syötä neljä välilyönnein erotettua numeroa määrittääksesi älykkään varmuuskopioinnin parametrit. Numerot määrittävät kuinka monta päivittäistä, viikoittaista, kuukausittaista ja vuosittaista varmuuskopiota säilytetään. \
-Lisätietoa löydät osoitteesta https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+Lisätietoa löydät osoitteesta https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 MSG_FR[$DESCRIPTION_SMART]="${NL}Saisissez les paramètres de la stratégie intelligente avec quatre nombres séparés par des espaces. Les nombres définissent combien de sauvegardes quotidiennes, hebdomadaires, mensuelles et annuelles sont conservées. \
-Des détails sur la stratégie de sauvegarde sont disponibles sur https://www.linux-tips-and-tricks.de/de/rotationsstrategy/."
+Des détails sur la stratégie de sauvegarde sont disponibles sur https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 MSG_ZH[$DESCRIPTION_SMART]="${NL}输入四个数字定义备份策略. 这决定备份周期. \
-详情见 https://www.linux-tips-and-tricks.de/en/smart-recycle/."
+详情见 https://framps.github.io/raspiBackupDoc/backup-options#smartrecycleoptions-smartrecycle-options."
 
 DESCRIPTION_ERROR=$((SCNT++))
 MSG_EN[$DESCRIPTION_ERROR]="Unrecoverable error occurred. Check logfile $LOG_FILE."
@@ -936,6 +942,18 @@ MSG_DE[$DESCRIPTION_ERROR]="Ein nicht behebbarer Fehler ist aufgetreten. Siehe L
 MSG_FI[$DESCRIPTION_ERROR]="Tapahtui peruuttamaton virhe. Tarkista lokitiedosto $LOG_FILE."
 MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le fichier journal $LOG_FILE."
 MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
+
+DESCRIPTION_CLONE_DEVICE=$((SCNT++))
+MSG_EN[$DESCRIPTION_CLONE_DEVICE]="${NL}Define a clone device and one PARTUUID. \
+${NL}${NL}Examples: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_DE[$DESCRIPTION_CLONE_DEVICE]="${NL}Definiere ein Clonegerät und eine PARTUUID. \
+${NL}${NL}Beispiele: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -966,31 +984,34 @@ MSG_EN[$DESCRIPTION_BACKUPTYPE]="${NL}rsync is the suggested backuptype because 
 tar should be used if the backup filesystem is no EXT3/4, e.g a remote mounted samba share. Don't use a FAT32 filesystem because the maximum filesize is 4GB. \
 dd should be used if you want to restore the backup on a Windows OS. \
 dd and tar backups can be compressed. \
-For further details about backup type see${NL}https://www.linux-tips-and-tricks.de/en/backup#butypes. \
-For further details about the option for dd see${NL}https://www.linux-tips-and-tricks.de/en/faq#a16"
+For further details about backup type see${NL}https://framps.github.io/raspiBackupDoc/backup-types."
 MSG_DE[$DESCRIPTION_BACKUPTYPE]="${NL}rsync ist der empfohlene Backuptyp da durch Hardlinks vom ETX3/4 Dateisystem der Backup schnell ist da nur neue oder geänderte Dateien gesichert werden. \
 tar sollte man benutzen wenn das Backupdateisystem kein EXT3/4 ist, z.B. ein remotes Samba Laufwerk. Ein FAT32 Dateisystem ist ungeeignet da die maximale Dateigröße nur 4GB ist. \
 dd ist die richtige Wahl wenn man den Backup auf einem Windows OS wiederherstellen will. \
 dd und tar Backups können noch zusätzlich komprimiert werden. \
-Weiter Details zum Backuptyp finden sich${NL}https://www.linux-tips-and-tricks.de/de/raspibackup#vornach. \
-Weitere Details zu der Option für dd siehe${NL}https://www.linux-tips-and-tricks.de/de/faq#a16"
+Weiter Details zum Backuptyp finden sich${NL}https://framps.github.io/raspiBackupDoc/backup-types"
 MSG_FI[$DESCRIPTION_BACKUPTYPE]="${NL}EXT3/4-tiedostojärjetelmässä on suositeltavaa valita rsync, sillä hardlinkit nopeuttavat varmuuskopiointia: vain uudet ja muuttuneet tiedostot kopioidaan. \
 Valitse tar, jos varmuuskopioitava tiedostojärjestelmä ei ole EXT3/4 tai se on esim. etänä käyttöönotettu samba-jako. Älä käytä FAT32-tiedostojärjestelmää, koska sen maksimitiedostokoko on 4Gt. \
 Valitse dd, jos haluat palauttaa varmuuskopion Windows-järjestelmässä. dd- ja tar-varmuuskopiot voidaan pakata tilan säästämiseksi. \
-${NL}${NL}Lisätietoja varmuuskopiotyypeistä löydät osoitteestahttps://www.linux-tips-and-tricks.de/en/backup#butypes. \
-${NL}Lisätietoja dd:n valinnoista löydät osoitteesta https://www.linux-tips-and-tricks.de/en/faq#a16"
+${NL}${NL}Lisätietoja varmuuskopiotyypeistä löydät osoitteesta https://framps.github.io/raspiBackupDoc/backup-types."
 MSG_FR[$DESCRIPTION_BACKUPTYPE]="${NL}rsync est le type de sauvegarde recommandé car le système de fichiers ETX3/4 rend la sauvegarde rapide, seuls les fichiers nouveaux ou modifiés sont enregistrés. \
 tar doit être utilisé si le système de fichiers de sauvegarde n'est pas un EXT3/4, par exemple un lecteur Samba distant. Un système de fichiers FAT32 ne convient pas car la taille maximale du fichier n'est que de 4 Go. \
 dd est le bon choix si vous souhaitez restaurer la sauvegarde sur un système d'exploitation Windows. \
 les sauvegardes dd et tar peuvent également être compressées. \
-Vous trouverez plus de détails sur le type de sauvegarde sur${NL}https://www.linux-tips-and-tricks.de/de/raspibackup#vornach. \
-Pour dd voir : ${NL}https://www.linux-tips-and-tricks.de/de/faq#a16 "
+Vous trouverez plus de détails sur le type de sauvegarde sur${NL}https://framps.github.io/raspiBackupDoc/backup-types."
 MSG_ZH[$DESCRIPTION_BACKUPTYPE]="${NL}rsync是建议的备份方法.因为ETX3/4文件系统的硬链接只有在改变时才会被保存\
 建议tar在非EXT3/4文件系统上使用，比如云端samba设备 \
 建议dd模式在有在windows系统上恢复备份需求时使用. \
 dd和tar模式下生成的备份可以被压缩. \
-${NL}${NL}更多备份模式类型见:https://www.linux-tips-and-tricks.de/en/backup#butypes. \
-${NL}更多dd模式详情见 https://www.linux-tips-and-tricks.de/en/faq#a16"
+${NL}${NL}更多备份模式类型见:https://framps.github.io/raspiBackupDoc/backup-types."
+
+DESCRIPTION_TAR_COMPRESSION_TOOL=$((SCNT++))
+MSG_EN[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}There are various compression tools available to compress a tar backup. \
+${NL}The default compression tool of tar is gzip. \
+${NL}zstd is suggested to use because it has a much better compression rate and faster decompression speed."
+MSG_DE[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Es gibt verschiedene Kompressionstools um ein tar Backup zu verkleinern. \
+${NL}Das Standardtool von tar ist gzip. \
+${NL}zstd ist empfohlen da es hat eine wesentlich bessere Kompressionsrate und schnellere Dekompressionsgeschwindigkeit hat."
 
 DESCRIPTION_MAIL_PROGRAM=$((SCNT++))
 MSG_EN[$DESCRIPTION_MAIL_PROGRAM]="Select the mail program to use to send notification eMails."
@@ -1055,6 +1076,47 @@ MSG_FI[$TITLE_CONFIRM]="Ole hyvä ja varmista"
 MSG_FR[$TITLE_CONFIRM]="SVP Confirmez"
 MSG_ZH[$TITLE_CONFIRM]="请确认"
 
+MSG_INVALID_CLONE_DEVICE=$((SCNT++))
+MSG_EN[$MSG_INVALID_CLONE_DEVICE]="Clone device %1 not found. \
+${NL}${NL}Examples: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
+MSG_DE[$MSG_INVALID_CLONE_DEVICE]="Clonegerät %1 nicht gefunden. \
+${NL}${NL}Beispiele: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
+
+MSG_MISSING_PARTUUID=$((SCNT++))
+MSG_EN[$MSG_MISSING_PARTUUID]="Missing a PARTUUID of the clone device. \
+${NL}${NL}Examples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Note: Separate clone device and PARTUUID by a space"
+MSG_DE[$MSG_MISSING_PARTUUID]="Es fehlt eine PARTUUID des Clonegeräts. \
+${NL}${NL}Beispiele: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+
+MSG_INVALID_PARTUUID=$((SCNT++))
+MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1 \
+${NL}${NL}Examples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Note: Separate clone device and PARTUUID by spaces"
+
+MSG_DE[$MSG_INVALID_PARTUUID]="Ungültige PARTUUID %1 \
+${NL}${NL}Beispiele: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+
+MSG_PARTUUID_NOT_FOUND=$((SCNT++))
+MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
+MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2"
+
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
 MSG_DE[$MSG_INVALID_BACKUPPATH]="Sicherungsverzeichnis %1 existiert nicht"
@@ -1117,28 +1179,23 @@ MSG_ABOUT=$((SCNT++))
 MSG_EN[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 This tool provides a straight-forward way of doing installation,${NL} updating and configuration of $RASPIBACKUP_NAME.${NL}${NL}\
-Visit https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}for details about all configuration options of $RASPIBACKUP_NAME.${NL}${NL}\
-Visit https://www.linux-tips-and-tricks.de/en/raspibackup${NL}for details about $RASPIBACKUP_NAME."
+Visit https://framps.github.io/raspiBackupDoc/introduction${NL}for details about $RASPIBACKUP_NAME."
 MSG_DE[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Dieses Tool ermöglicht es möglichst einfach $RASPIBACKUP_NAME zu installieren,${NL} zu updaten und die Konfiguration anzupassen.${NL}${NL}\
-Besuche https://www.linux-tips-and-tricks.de/de/raspibackup#parameter${NL}um alle Konfigurationsoptionen von $RASPIBACKUP_NAME kennenzulernen.${NL}${NL}\
-Besuche https://www.linux-tips-and-tricks.de/de/raspibackup${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
+Besuche https://framps.github.io/raspiBackupDoc/introduction${NL}um Weiteres zu $RASPIBACKUP_NAME zu erfahren."
 MSG_FI[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Tämä työkalu tarjoaa $RASPIBACKUP_NAME:n suoraviivaisen asennuksen,${NL} päivittämisen ja asetusten määrittämisen.${NL}${NL}\
-Kaikista $RASPIBACKUP_NAME:n asetuksista löydät tietoa osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
-Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://www.linux-tips-and-tricks.de/en/raspibackup"
+Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://framps.github.io/raspiBackupDoc/introduction"
 MSG_FR[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 Cet outil facilite au maximum la mise en place de $RASPIBACKUP_NAME ,la mise à jour ,${NL} et la configuration.${NL}${NL}\
-Visitez https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}pour plus de détails sur toutes les options de configuration de $RASPIBACKUP_NAME.${NL}${NL}\
-Visitez https://www.linux-tips-and-tricks.de/en/raspibackup${NL}pour plus de détails sur $RASPIBACKUP_NAME."
+Visitez https://framps.github.io/raspiBackupDoc/introduction${NL}pour plus de détails sur $RASPIBACKUP_NAME."
 MSG_ZH[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
 此界面提供一个$RASPIBACKUP_NAME的安装引导,${NL}更新和设置页面.${NL}${NL}\
-$RASPIBACKUP_NAME的的详情设置请访问${NL}https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}${NL}\
-获取$RASPIBACKUP_NAME详情请访问:{NL}https://www.linux-tips-and-tricks.de/en/raspibackup "
+获取$RASPIBACKUP_NAME详情请访问:{NL}https://framps.github.io/raspiBackupDoc/introduction"
 
 MSG_FIRST_STEPS=$((SCNT++))
 MSG_EN[$MSG_FIRST_STEPS]="Congratulations! $RASPIBACKUP_NAME installed successfully.${NL}${NL}\
@@ -1146,80 +1203,80 @@ Next steps:${NL}
 1) Start $RASPIBACKUP_NAME in the commandline and create a backup${NL}\
 2) Start $RASPIBACKUP_NAME to restore the backup on a different SD card${NL}\
 3) Verify the restored backup works fine.${NL}\
-4) Read the FAQ page https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) Read the FAQ page https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Visit the options page and fine tune $RASPIBACKUP_NAME${NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Enable regular backup with the installer${NL}\
-7) Visit https://www.linux-tips-and-tricks.de/en/backup for a lot more information about $RASPIBACKUP_NAME"
+7) Visit https://framps.github.io/raspiBackupDoc/introduction for a lot more information about $RASPIBACKUP_NAME"
 MSG_DE[$MSG_FIRST_STEPS]="Herzlichen Glückwunsch! $RASPIBACKUP_NAME wurde erfolgreich installiert.${NL}${NL}\
 Nächsten Schritte:${NL}
 1) Starte $RASPIBACKUP_NAME in der Befehlszeile und erzeuge ein Backup${NL}\
 2) Starte $RASPIBACKUP_NAME um das erzeugte Backup auf einer andere SD Karte wiederherzustellen.${NL}\
 3) Verifiziere dass das System ohne Probleme läuft.${NL}\
-4) Lies die FAQ Seite https://www.linux-tips-and-tricks.de/de/faq${NL}\
+4) Lies die FAQ Seite https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Besuche die Optionsseite und konfiguriere $RASPIBACKUP_NAME genau nach Deinen Vorstellungen${NL}\
-   https://www.linux-tips-and-tricks.de/de/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Schalte den regelmäßigen Backup mit dem Installer ein${NL}\
-7) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten"
+7) Besuche https://framps.github.io/raspiBackupDoc/introduction um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten"
 MSG_FI[$MSG_FIRST_STEPS]="Onnittelut! $RASPIBACKUP_NAME on asennettu onnistuneesti.${NL}${NL}\
 Seuraavat vaiheet:${NL}
 1) Käynnistä $RASPIBACKUP_NAME komentoriviltä ja luo varmuuskopio${NL}\
 2) Käynnistä $RASPIBACKUP_NAME palauttaaksesi varmuuskopion toiselle SD-kortille${NL}\
 3) Varmista, että palautettu varmuuskopio toimii oikein.${NL}\
-4) Lue FAQ-sivu osoitteessa https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) Lue FAQ-sivu osoitteessa https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Käy valintasivulla ja tee $RASPIBACKUP_NAME$-hienosäädöt{NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Ota käyttöön säännölliset varmuuskopiot asennusohjelmalla${NL}\
-7) Käy osoitteessa https://www.linux-tips-and-tricks.de/en/backup ja lue paljon lisää $RASPIBACKUP_NAME-tietoa"
+7) Käy osoitteessa https://framps.github.io/raspiBackupDoc/introduction ja lue paljon lisää $RASPIBACKUP_NAME-tietoa"
 MSG_FR[$MSG_FIRST_STEPS]="Toutes nos félicitations! $RASPIBACKUP_NAME est installé avec succès.${NL}${NL}\
 Prochaines étapes :${NL}
 1) Démarrez $RASPIBACKUP_NAME dans la ligne de commande et créez une sauvegarde${NL}\
 2) Démarrez $RASPIBACKUP_NAME pour restaurer la sauvegarde sur une autre carte SD${NL}\
 3) Vérifiez que la sauvegarde restaurée fonctionne correctement.${NL}\
-4) Lisez la page FAQ https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) Lisez la page FAQ https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Visitez la page des options et améliorez $RASPIBACKUP_NAME${NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Activez la sauvegarde régulière avec le programme raspiBackupInstallUI.sh${NL}\
-7) Visitez https://www.linux-tips-and-tricks.de/en/backup pour avoir des informations sur $RASPIBACKUP_NAME"
+7) Visitez https://framps.github.io/raspiBackupDoc/introduction pour avoir des informations sur $RASPIBACKUP_NAME"
 MSG_ZH[$MSG_FIRST_STEPS]="恭喜! $RASPIBACKUP_NAME 安装成功.${NL}${NL}\
 接下来你可以:${NL}
 1) 在终端输入 $RASPIBACKUP_NAME开始备份 ${NL}\
 2) 在终端输入 $RASPIBACKUP_NAME 还原备份到SD卡${NL}\
 3) 校验备份文件.${NL}\
-4) 参考FAQ页面 https://www.linux-tips-and-tricks.de/en/faq${NL}\
+4) 参考FAQ页面 https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) 进行设置和微调项 $RASPIBACKUP_NAME${NL}\
-   https://www.linux-tips-and-tricks.de/en/raspibackup#parameters${NL}\
+   https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) 开启定期备份${NL}\
-7) 访问https://www.linux-tips-and-tricks.de/en/backup 获取更多$RASPIBACKUP_NAME信息"
+7) 访问https://framps.github.io/raspiBackupDoc/introduction 获取更多$RASPIBACKUP_NAME信息"
 
 MSG_HELP=$((SCNT++))
 MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAME just use one of the following paths to get help${NL}
-1) Read the FAQ page https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) Visit https://www.linux-tips-and-tricks.de/en/backup for a lot more information about $RASPIBACKUP_NAME${NL}\
+1) Read the FAQ page https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Visit https://framps.github.io/raspiBackupDoc/introduction for a lot more information about $RASPIBACKUP_NAME${NL}\
 3) Create an issue on github https://github.com/framps/raspiBackup/issues. That's my preference${NL}\
 4) Add comments on any webpage dealing with $RASPIBACKUP_NAME on $MYHOMEDOMAIN${NL}\
 5) Visit $RASPIBACKUP_NAME on Facebook"
 MSG_DE[$MSG_HELP]="Falls es irgendwelche Fragen oder Probleme zu $RASPIBACKUP_NAME gibt bestehen folgende Möglichkeiten Hilfe zu bekommen${NL}
-1) Lies die FAQ Seite https://www.linux-tips-and-tricks.de/de/faq${NL}\
-2) Besuche https://www.linux-tips-and-tricks.de/en/backup um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten${NL}\
+1) Lies die FAQ Seite https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Besuche https://framps.github.io/raspiBackupDoc/introduction um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten${NL}\
 3) Erstelle einen Fehlerbericht auf github https://github.com/framps/raspiBackup/issues. Gerne auch in Deutsch. Das ist meine Präferenz.${NL} \
 4) Erstelle einen Kommentar auf jeder Webseite zu $RASPIBACKUP_NAME auf $MYHOMEDOMAIN${NL}\
 5) Besuche $RASPIBACKUP_NAME auf Facebook"
 MSG_FI[$MSG_HELP]="Jos sinulla on kysymyksiä tai ongelmia $RASPIBACKUP_NAME:n kanssa, käytä jotain seuraavista tavoista saadaksesi apua${NL}
-1) Lue FAQ-sivu osoitteessa https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) Käy osoitteessa https://www.linux-tips-and-tricks.de/en/backup ja lue paljon lisää $RASPIBACKUP_NAME-tietoa${NL}\
+1) Lue FAQ-sivu osoitteessa https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Käy osoitteessa https://framps.github.io/raspiBackupDoc/introduction ja lue paljon lisää $RASPIBACKUP_NAME-tietoa${NL}\
 3) Luo issue githubissa https://github.com/framps/raspiBackup/issues. Tätä suosin.${NL}\
 4) Lisää kommentti $RASPIBACKUP_NAME-verkkosivuilla osoitteessa $MYHOMEDOMAIN${NL}\
 5) Käy $RASPIBACKUP_NAME:n Facebook-sivulla"
 MSG_FR[$MSG_HELP]="Si vous avez un problème ou une question concernant $RASPIBACKUP_NAME, utilisez simplement un des liens suivants pour obtenir une aide :${NL}
-1) Lisez la page FAQ https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) Visitez https://www.linux-tips-and-tricks.de/en/backup pour plus d'informations sur $RASPIBACKUP_NAME${NL}\
+1) Lisez la page FAQ https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) Visitez https://framps.github.io/raspiBackupDoc/introduction pour plus d'informations sur $RASPIBACKUP_NAME${NL}\
 3) Exposez le problème sur github https://github.com/framps/raspiBackup/issues. C'est ma préférence${NL}\
 4) Ajoutez des commentaires sur toute page Web traitant de $RASPIBACKUP_NAME sur $MYHOMEDOMAIN${NL}\
 5) Visitez $RASPIBACKUP_NAME sur Facebook"
 MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用以下方式联系${NL}
-1) 参考FAQ页面 https://www.linux-tips-and-tricks.de/en/faq${NL}\
-2) 访问 https://www.linux-tips-and-tricks.de/en/backup 获取更多$RASPIBACKUP_NAME$信息{NL}\
+1) 参考FAQ页面 https://framps.github.io/raspiBackupDoc/faq${NL}\
+2) 访问 https://framps.github.io/raspiBackupDoc/introduction 获取更多$RASPIBACKUP_NAME$信息{NL}\
 3) 在github上创建issues https://github.com/framps/raspiBackup/issues. 通常选这项!${NL}\
 4) 在 $MYHOMEDOMAIN$上关于$RASPIBACKUP_NAME的页面留言评论{NL}\
 5) 访问$RASPIBACKUP_NAME 的Facebook页面"
@@ -1391,6 +1448,10 @@ MENU_FI[$MENU_CONFIG_TYPE]='"C4" "Varmuuskopiontien tyyppi"'
 MENU_FR[$MENU_CONFIG_TYPE]='"C4" "Type de sauvegarde"'
 MENU_ZH[$MENU_CONFIG_TYPE]='"C4" "备份类型"'
 
+MENU_CONFIG_TAR_COMPRESSION_TOOL=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR compression tool"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR Kompressiontool"'
+
 MENU_CONFIG_MODE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE]='"C5" "Backup mode"'
 MENU_DE[$MENU_CONFIG_MODE]='"C5" "Backup Modus"'
@@ -1426,12 +1487,13 @@ MENU_FI[$MENU_CONFIG_REGULAR]='"C9" "Säännöllinen varmuuskopiointi"'
 MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
 MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 
+MENU_CONFIG_CLONE=$((MCNT++))
+MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Backup clone"'
+MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Backup Clone"'
+
 MENU_CONFIG_ZIP=$((MCNT++))
-MENU_EN[$MENU_CONFIG_ZIP]='"C10" "Compression"'
-MENU_DE[$MENU_CONFIG_ZIP]='"C10" "Komprimierung"'
-MENU_FI[$MENU_CONFIG_ZIP]='"C10" "Pakkaaminen"'
-MENU_FR[$MENU_CONFIG_ZIP]='"C10" "Compression"'
-MENU_ZH[$MENU_CONFIG_ZIP]='"C10" "压缩"'
+MENU_EN[$MENU_CONFIG_ZIP]='"C11" "Compression with $CONFIG_BACKUPTYPE"'
+MENU_DE[$MENU_CONFIG_ZIP]='"C11" "Komprimierung bei $CONFIG_BACKUPTYPE"'
 
 MENU_CONFIG_ZIP_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP_NA]='" " " "'
@@ -1503,9 +1565,41 @@ MENU_FI[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 MENU_FR[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 MENU_ZH[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 
+MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (suggested)"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (empfohlen)"'
+
+MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
+
+MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP]='"lzop" "LZOP"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP]='"lzop" "LZOP"'
+
+MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA]='"lzma" "LZMA"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA]='"lzma" "LZMA"'
+
+MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
+
+MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar default)"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar Standard)"'
+
+MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2'
+
+MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4=$((MCNT++))
+MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+
 MENU_CONFIG_TYPE_DD=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and restore on Windows"'
-MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und stelle unter Windows wieder her"'
+MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and a restore on Windows is also possible"'
+MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und eine Wiederherstellung unter Windows ist auch möglich"'
 MENU_FI[$MENU_CONFIG_TYPE_DD]='"dd" "dd-varmuuskopio, mahdollistaa palautuksen Windowsissa"'
 MENU_FR[$MENU_CONFIG_TYPE_DD]='"dd" "Sauvegarder avec dd et restaurer sous Windows"'
 MENU_ZH[$MENU_CONFIG_TYPE_DD]='"dd" "使用dd备份并且在Windows上恢复"'
@@ -1518,11 +1612,8 @@ MENU_FR[$MENU_CONFIG_TYPE_TAR]='"tar" "Sauvegarde avec tar"'
 MENU_ZH[$MENU_CONFIG_TYPE_TAR]='"tar" "使用tar备份"'
 
 MENU_CONFIG_TYPE_RSYNC=$((MCNT++))
-MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks if possible"'
-MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks wenn möglich"'
-MENU_FI[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "rsync-varmuuskopio ja hardlinkkien käyttö"'
-MENU_FR[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sécuriser avec rsync en utilisant si possible des liens physiques"'
-MENU_ZH[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "使用rsync备份,如果可能,使用硬链接"'
+MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks"'
+MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks"'
 
 MENU_UNINSTALL_UNINSTALL=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL_UNINSTALL]='"U1" "Uninstall $RASPIBACKUP_NAME"'
@@ -1546,18 +1637,12 @@ MENU_FR[$MENU_CONFIG_TYPE_DD_NA]='"" "Un enregistrement avec dd ne peut se faire
 MENU_ZH[$MENU_CONFIG_TYPE_DD_NA]='"" "此模式不可使用dd备份"'
 
 MENU_CONFIG_COMPRESS_OFF=$((MCNT++))
-MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No backup compression"'
-MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Backup Komprimierung"'
-MENU_FI[$MENU_CONFIG_COMPRESS_OFF]='"off" "Ei varmuuskopion pakkausta"'
-MENU_FR[$MENU_CONFIG_COMPRESS_OFF]='"off" "Pas de compression de sauvegarde"'
-MENU_ZH[$MENU_CONFIG_COMPRESS_OFF]='"off" "不压缩"'
+MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Komprimierung"'
 
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
-MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "Compress $CONFIG_BACKUPTYPE backup"'
-MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "Komprimiere den $CONFIG_BACKUPTYPE Backup"'
-MENU_FI[$MENU_CONFIG_COMPRESS_ON]='"on" "Pakkaa $CONFIG_BACKUPTYPE -varmuuskopio"'
-MENU_FR[$MENU_CONFIG_COMPRESS_ON]='"on" "Compresser la sauvegarde $CONFIG_BACKUPTYPE"'
-MENU_ZH[$MENU_CONFIG_COMPRESS_ON]='"on" "压缩 $CONFIG_BACKUPTYPE 备份"'
+MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "$COMPRESSION_TYPE compression"'
+MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "$COMPRESSION_TYPE Kompression"'
 
 MENU_DAYS_SHORT=$((MCNT++))
 MENU_EN[$MENU_DAYS_SHORT]='"Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
@@ -1722,7 +1807,7 @@ function logItem() { # message
 
 function downloadURL() { # fileName
 	logEntry "$1"
-	local u="$MYHOMEURL/raspiBackup$URLTARGET/$1"
+	local u="$MYHOMEURL$URLTARGET/$1"
 	echo "$u"
 	logExit "$u"
 }
@@ -1742,7 +1827,7 @@ function isInternetAvailable() {
 
 	logEntry
 
-	wget -q --spider -t 1 -T 3 $MYHOMEDOMAIN
+	wget -q --spider -t 1 -T 3 $GITHUB_URL
     local rc=$?
 	logExit $rc
     return $rc
@@ -2218,7 +2303,7 @@ function getActiveServices() {
 	local as=""
 	while 	IFS=" " read s r; do
 		if [[ $s == *".service" ]]; then
-			as+=" $(sed 's/.service//' <<< "$s")"
+			as+=" $(sed 's/\.service$//' <<< "$s")"
 		fi
 	done < <(systemctl list-units --type=service --state=active | grep "active running" | grep -v "$EXCLUDE_SERVICES_REGEX" | awk '{print $1}' )
 	echo "$as"
@@ -2282,8 +2367,8 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 
 	for s in "${startServices[@]}"; do
 		logItem "Processing $s"
-		pc="$pc $and systemctl stop $s"
-		sc="systemctl start $s $and $sc"
+		pc="$pc $and systemctl stop \'"$s"\'"
+		sc="systemctl start \'"$s"\' $and $sc"
 		[[ -z $and ]] && and="&&"
 	done
 
@@ -2303,28 +2388,32 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 }
 
 function parseConfig() {
-	logEntry
+	logEntry $CONFIG_PARSED
 
-	matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS)=" "$CONFIG_ABS_FILE")
-	while IFS="=" read key value; do
-		key=${key//\"/}
-		key=${key/DEFAULT/CONFIG}
-		value=${value//\"/}
-		if [[ $key =~ .*SERVICES.* ]]; then
-			if [[ "$value" == "$IGNORE_START_STOP_CHAR" ]]; then
-				value=""
-			else
-				value=$(sed -e 's/start//g' -e 's/stop//g' -e 's/systemctl//g' -e 's/\&\&//g' -e 's/ \+/ /g' <<< "$value"  | xargs )
+	if (( ! $CONFIG_PARSED )); then
+
+		matches=$(grep -E "DEFAULT_(MSG_LEVEL|KEEPBACKUPS|BACKUPPATH|BACKUPTYPE|ZIP_BACKUP|PARTITIONBASED_BACKUP|PARTITIONS_TO_BACKUP|LANGUAGE|STARTSERVICES|STOPSERVICES|EMAIL|MAIL_PROGRAM|SMART_RECYCLE|SMART_RECYCLE_DRYRUN|SMART_RECYCLE_OPTIONS|RESIZE_FS|TAR_COMPRESSION_TOOL)=" "$CONFIG_ABS_FILE")
+		while IFS="=" read key value; do
+			key=${key//\"/}
+			key=${key/DEFAULT/CONFIG}
+			value=${value//\"/}
+			if [[ $key =~ .*SERVICES.* ]]; then
+				if [[ "$value" == "$IGNORE_START_STOP_CHAR" ]]; then
+					value=""
+				else
+					value=$(sed -e 's/start//g' -e 's/stop//g' -e 's/systemctl//g' -e 's/\&\&//g' -e 's/ \+/ /g' <<< "$value"  | xargs )
+				fi
 			fi
-		fi
-		logItem "$key=$value"
-		eval "$key=\"$value\""
-		if [[ $key == "CONFIG_LANGUAGE" ]]; then
-			[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
-		fi
+			logItem "$key=$value"
+			eval "$key=\"$value\""
+			if [[ $key == "CONFIG_LANGUAGE" ]]; then
+				[[ -z "$value"  ]] && CONFIG_LANGUAGE="${LANG_SYSTEM^^}"
+			fi
 
-	done <<< "$matches"
-	logExit
+		done <<< "$matches"
+		CONFIG_PARSED=1
+	fi
+	logExit $CONFIG_PARSED
 }
 
 function config_update_execute() {
@@ -2338,11 +2427,14 @@ function config_update_execute() {
 	logItem "Partitions: $CONFIG_PARTITIONS_TO_BACKUP"
 	logItem "Type: $CONFIG_BACKUPTYPE"
 	logItem "Zip: $CONFIG_ZIP_BACKUP"
+	logItem "Tar compression tool: $CONFIG_TAR_COMPRESSION_TOOL"
 	logItem "Keep: $CONFIG_KEEPBACKUPS"
 	logItem "Recycle: $CONFIG_SMART_RECYCLE"
 	logItem "Recycleoptions: $CONFIG_SMART_RECYCLE_OPTIONS"
 	logItem "Dryrun: $CONFIG_SMART_RECYCLE_DRYRUN"
 	logItem "Msglevel: $CONFIG_MSG_LEVEL"
+	logItem "CloneDevice: $CONFIG_CLONE_DEVICE"
+	logItem "ClonePartuuid: $CONFIG_CLONE_PARTUUID"
 	logItem "Backuppath: $CONFIG_BACKUPPATH"
 	logItem "Stop: $CONFIG_STOPSERVICES"
 	logItem "Start: $CONFIG_STARTSERVICES"
@@ -2355,6 +2447,7 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONS_TO_BACKUP=.*\$/DEFAULT_PARTITIONS_TO_BACKUP=\"$CONFIG_PARTITIONS_TO_BACKUP\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPTYPE=.*\$/DEFAULT_BACKUPTYPE=\"$CONFIG_BACKUPTYPE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_ZIP_BACKUP=.*\$/DEFAULT_ZIP_BACKUP=\"$CONFIG_ZIP_BACKUP\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_TAR_COMPRESSION_TOOL=.*\$/DEFAULT_TAR_COMPRESSION_TOOL=\"$CONFIG_TAR_COMPRESSION_TOOL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_KEEPBACKUPS=.*$/DEFAULT_KEEPBACKUPS=\"$CONFIG_KEEPBACKUPS\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_SMART_RECYCLE=.*$/DEFAULT_SMART_RECYCLE=\"$CONFIG_SMART_RECYCLE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_SMART_RECYCLE_OPTIONS=.*$/DEFAULT_SMART_RECYCLE_OPTIONS=\"$CONFIG_SMART_RECYCLE_OPTIONS\"/" "$CONFIG_ABS_FILE"
@@ -2362,6 +2455,9 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_MSG_LEVEL=.*$/DEFAULT_MSG_LEVEL=\"$CONFIG_MSG_LEVEL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_PARTUUID=.*$/DEFAULT_CLONE_PARTUUID=\"$CONFIG_CLONE_PARTUUID\"/" "$CONFIG_ABS_FILE"
+	local c=$(sed 's_/_\\/_g' <<< "$CONFIG_CLONE_DEVICE")
+	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$/DEFAULT_CLONE_DEVICE=\"$c\"/" "$CONFIG_ABS_FILE"
 	local f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
 	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPPATH=.*$/DEFAULT_BACKUPPATH=\"$f\"/" "$CONFIG_ABS_FILE"
 
@@ -2832,7 +2928,7 @@ function do_finish() {
 				first_steps
 			fi
 
-			help
+			#help
 		fi
 
 		reset
@@ -2997,6 +3093,7 @@ function config_menu() {
 		local s7="${m7[0]}"
 		local s8="${m8[0]}"
 		local s9="${m9[0]}"
+		local s10="${m10[0]}"
 
 		local mx=( 	\
 			"${m1[@]}" \
@@ -3009,6 +3106,14 @@ function config_menu() {
 			"${m8[@]}" \
 			"${m9[@]}" \
 			)
+
+		if [[ $CONFIG_BACKUPTYPE != "dd" ]]; then
+			getMenuText $MENU_CONFIG_CLONE mcc
+			local scc="${mcc[0]}"
+			mx+=("${mcc[@]}")
+		else
+			local scc=""
+		fi
 
 		if [[ $CONFIG_BACKUPTYPE == "dd" || $CONFIG_BACKUPTYPE == "tar" ]]; then
 			getMenuText $MENU_CONFIG_ZIP mcp
@@ -3068,6 +3173,7 @@ function config_menu() {
 				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				$s9) config_timer_menu; TIMER_UPDATED=$? ;;
+				$scc) config_clone_menu; CONFIG_UPDATED=$? ;;
 				$scp) config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
@@ -3268,8 +3374,10 @@ function config_backuppath_do() {
 			elif ! isPathMounted "$ANSWER"; then
 				local m="$(getMessageText $MSG_LOCAL_BACKUPPATH "$ANSWER")"
 				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+				local ttm="$(getMessageText $TITLE_WARNING)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				CONFIG_BACKUPPATH="$ANSWER"
+				break				
 			else
 				CONFIG_BACKUPPATH="$ANSWER"
 				break
@@ -3534,10 +3642,18 @@ function config_backuptype_do() {
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-			$s3) CONFIG_BACKUPTYPE="dd" ;;
-			$s2) CONFIG_BACKUPTYPE="tar" ;;
+			$s3) CONFIG_BACKUPTYPE="dd"
+				 CONFIG_TAR_COMPRESSION_TOOL=""
+  			     CONFIG_ZIP_BACKUP=0
+				 ;;
+			$s2) CONFIG_BACKUPTYPE="tar"
+  			     CONFIG_ZIP_BACKUP=0
+				 CONFIG_TAR_COMPRESSION_TOOL=""
+				 ;;
 			$s1) CONFIG_BACKUPTYPE="rsync"
-				 CONFIG_ZIP_BACKUP=0 ;;
+				 CONFIG_ZIP_BACKUP=0
+				 CONFIG_TAR_COMPRESSION_TOOL=""
+				 ;;
 			"") : ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
@@ -3548,6 +3664,98 @@ function config_backuptype_do() {
 	[[ "$old" == "$CONFIG_BACKUPTYPE" ]]
 	local rc=$?
 	logExit "$rc - $CONFIG_BACKUPTYPE"
+	return $rc
+}
+
+function config_tar_compressiontool_do() {
+
+	logEntry "$old"
+
+	local bzip2=off
+	local gzip=off
+	local lzip=off
+	local lzma=off
+	local lzop=off
+	local xz=off
+	local zstd=off
+
+	local old="$CONFIG_TAR_COMPRESSION_TOOL"
+
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD m1
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP m2
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2 m3
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP m4
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA m5
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP m6
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4 m7
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ m8
+	
+	local s1="${m1[0]}"
+	local s2="${m2[0]}"
+	local s3="${m3[0]}"
+	local s4="${m4[0]}"
+	local s5="${m5[0]}"
+	local s6="${m6[0]}"
+	local s7="${m7[0]}"
+	local s8="${m8[0]}"
+
+	local o1="$(getMessageText $BUTTON_OK)"
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+
+	case "$CONFIG_TAR_COMPRESSION_TOOL" in
+		zstd) zstd_=on ;;
+		gzip) gzip_=on ;;
+		bzip2) bzip2_=on ;;
+		lzip) lzip_=on ;;
+		lzma) lzma_=on ;;
+		lzop) lzop_=on ;;
+		lz4) lz4_=on ;;
+		xz) xz_=on ;;
+		*) if (( CONFIG_ZIP_BACKUP )); then
+		      gzip=on
+		   else
+			  zstd_=on
+		   fi
+		   ;;
+	esac
+
+	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL tt
+
+	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1="$(getMessageText $BUTTON_OK)"
+	local d="$(getMessageText $DESCRIPTION_TAR_COMPRESSION_TOOL)"
+
+	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $WT_WIDTH 7 \
+		"${m1[@]}" "$zstd_" \
+		"${m2[@]}" "$gzip_" \
+		"${m3[@]}" "$bzip2_" \
+		"${m4[@]}" "$lzip_" \
+		"${m5[@]}" "$lzma_" \
+		"${m6[@]}" "$lzop_" \
+		"${m7[@]}" "$lz4" \
+		"${m8[@]}" "$xz_" \
+		3>&1 1>&2 2>&3)
+	if [ $? -eq 0 ]; then
+		logItem "Answer: $ANSWER"
+		case "$ANSWER" in
+			$s1) CONFIG_TAR_COMPRESSION_TOOL="zstd" ;;
+			$s2) CONFIG_TAR_COMPRESSION_TOOL="gzip" ;;
+			$s3) CONFIG_TAR_COMPRESSION_TOOL="bzip2" ;;
+			$s4) CONFIG_TAR_COMPRESSION_TOOL="lzip" ;;
+			$s5) CONFIG_TAR_COMPRESSION_TOOL="lzma" ;;
+			$s6) CONFIG_TAR_COMPRESSION_TOOL="lzop" ;;
+			$s7) CONFIG_TAR_COMPRESSION_TOOL="lz4" ;;
+			$s8) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
+			"") : ;;
+			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
+				logExit
+				return 1 ;;
+		esac
+	fi
+
+	[[ "$old" == "$CONFIG_TAR_COMPRESSION_TOOL" ]]
+	local rc=$?
+	logExit "$rc - $CONFIG_TAR_COMPRESSION_TOOL"
 	return $rc
 }
 
@@ -3916,28 +4124,47 @@ function config_systemday_do() {
 function config_compress_do() {
 
 	logEntry "$CONFIG_ZIP_BACKUP"
-	local old="$CONFIG_ZIP_BACKUP"
+
+	local oldZip="$CONFIG_ZIP_BACKUP"
+	local oldTar="$CONFIG_TAR_COMPRESSION_TOOL"
 
 	if [ $CONFIG_BACKUPTYPE == "rsync" ]; then
 		local t=$(center $WINDOW_COLS "rsync backups cannot be compressed.")
 		local tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MENU $WINDOW_COLS 2
 	else
+
 		local yes_=off
-		local no_=off
+		local no_=on
 
-		case "$CONFIG_ZIP_BACKUP" in
-			"1") yes_=on ;;
-			"0") no_=on ;;
-			*) whiptail --msgbox "Programm error, unrecognized compress mode $CONFIG_ZIP_BACKUP" $ROWS_MENU $WINDOW_COLS 2
-				logExit
-				return 1
-				;;
-		esac
-
+		if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
+			if [[ "$CONFIG_ZIP_BACKUP" == "1" ]]; then
+				yes_=on
+				no_=off
+			fi
+		else
+			if [[ -n "$CONFIG_TAR_COMPRESSION_TOOL" ]]; then
+				yes_=on
+				no_=off
+			elif (( CONFIG_ZIP_BACKUP )); then
+				CONFIG_TAR_COMPRESSION_TOOL="gzip"
+				yes_=on
+				no_=off
+			fi
+		fi		
+		
 		local o1="$(getMessageText $BUTTON_OK)"
 		local c1="$(getMessageText $BUTTON_CANCEL)"
 
+		if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
+			COMPRESSION_TYPE="dd (gzip)"
+		else
+			COMPRESSION_TYPE="tar"
+			if [[ -n "$CONFIG_TAR_COMPRESSION_TOOL" ]]; then
+				COMPRESSION_TYPE="$COMPRESSION_TYPE ($CONFIG_TAR_COMPRESSION_TOOL)"
+			fi
+		fi
+		
 		getMenuText $MENU_CONFIG_COMPRESS_ON m1
 		getMenuText $MENU_CONFIG_COMPRESS_OFF m2
 		local s1="${m1[0]}"
@@ -3946,26 +4173,48 @@ function config_compress_do() {
 		local d="$(getMessageText $DESCRIPTION_COMPRESS)"
 		getMenuText $MENU_CONFIG_ZIP tt
 
-		ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button  "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 2 \
+		ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button  "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 3 \
 			"${m1[@]}" "$yes_" \
 			"${m2[@]}" "$no_" \
 			3>&1 1>&2 2>&3)
+		
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			case "$ANSWER" in
-			$s1) CONFIG_ZIP_BACKUP="1" ;;
-			$s2) CONFIG_ZIP_BACKUP="0" ;;
-			*) whiptail --msgbox "Programm error, unrecognized compress mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
-				logExit
-				return 1
-				;;
+				$s1) if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
+						CONFIG_ZIP_BACKUP="1"
+						CONFIG_TAR_COMPRESSION_TOOL=""
+					 else
+						config_tar_compressiontool_do;
+						if [[ "$CONFIG_TAR_COMPRESSION_TOOL" == "gzip" ]]; then
+							CONFIG_ZIP_BACKUP="1"
+							CONFIG_TAR_COMPRESSION_TOOL=""
+						else												
+							CONFIG_ZIP_BACKUP="0"
+						fi
+					 fi
+					 ;;
+				$s2) CONFIG_ZIP_BACKUP="0"
+					 CONFIG_TAR_COMPRESSION_TOOL=""
+					 ;;
+				*) whiptail --msgbox "Programm error, unrecognized compress mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
+					logExit
+					return 1
+					;;
 			esac
 		fi
 	fi
-
-	[[ "$old" == "$CONFIG_ZIP_BACKUP" ]]
+	if [[ "$CONFIG_BACKUPTYPE" == "tar" ]]; then
+		[[ "$oldTar" == "$CONFIG_TAR_COMPRESSION_TOOL" ]]
+	else
+		[[ "$oldZip" == "$CONFIG_ZIP_BACKUP" ]]
+	fi
 	local rc=$?
-	logExit "$rc - $CONFIG_ZIP_BACKUP"
+	if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
+		logExit "$rc - dd: $CONFIG_ZIP_BACKUP"
+	else
+		logExit "$rc - tar: $CONFIG_TAR_COMPRESSION_TOOL"
+	fi
 	return $rc
 
 }
@@ -4073,6 +4322,7 @@ function isUpdatePossible() {
 		(( UPDATE_POSSIBLE != -1 )) && return
 		logEntry
 		logItem "script: c:$VERSION_CURRENT p:$VERSION_PROPERTY"
+
 		if isNewerVersion "$VERSION_CURRENT" "$VERSION_PROPERTY"; then
 			UPDATE_POSSIBLE=0
 			logExit 0
@@ -4102,7 +4352,7 @@ function uninstall_do() {
 		return
 	fi
 
-	help
+	#help
 
 	local m="$(getMessageText $MSG_QUESTION_UNINSTALL)"
 	local t=$(center $WINDOW_COLS "$m")
@@ -4667,6 +4917,86 @@ function config_message_detail_do() {
 
 }
 
+function config_clone_menu() {
+
+	logEntry
+
+	local current_device=$CONFIG_CLONE_DEVICE
+	local current_partuuid=$CONFIG_CLONE_PARTUUID
+	
+	local current="$CONFIG_CLONE_DEVICE"
+	if [[ -n "$CONFIG_CLONE_PARTUUID" ]]; then
+		current="$current $CONFIG_CLONE_PARTUUID"
+	fi
+	
+	local current_device="$CONFIG_CLONE_DEVICE"
+	local old_device="$current_device"
+	local current_partuuid="$CONFIG_CLONE_PARTUUID"
+	local old_partuuid="$current_partuuid"
+
+	while :; do
+
+		getMenuText $MENU_CONFIG_CLONE tt
+		local c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1="$(getMessageText $BUTTON_OK)"
+		local d="$(getMessageText $DESCRIPTION_CLONE_DEVICE)"
+
+		ANSWER=$(whiptail --inputbox "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS "$current" --ok-button "$o1" --cancel-button "$c1" 3>&1 1>&2 2>&3)
+		if [ $? -eq 0 ]; then
+			logItem "Answer: $ANSWER"
+			current="$ANSWER"
+			if [[ -n "$ANSWER" ]]; then
+				local device partuuid
+				read -r device partuuid <<< "$ANSWER"
+				if [[ ! -b "$device" ]]; then
+					local m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$device")"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				elif [[ -z "$partuuid" ]]; then
+					local m="$(getMessageText $MSG_MISSING_PARTUUID "$partuuid")"
+					local t=$(center $WINDOW_COLS "$m")
+					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+				else
+					if [[ ! "$partuuid" =~ ^[0-9a-f\-]+$ ]]; then
+						local m="$(getMessageText $MSG_INVALID_PARTUUID "$partuuid")"
+						local t=$(center $WINDOW_COLS "$m")
+						local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+						whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2 
+					else
+						local partuuidList
+						partuuidList=( $(blkid | grep -E "^$device" | sed -E 's|^(.+)PARTUUID="(.+)"|\2|') )
+						logItem "PARTUUIDs: ${partuuidList[*]} - defined PARTUUID: $partuuid"
+						if ! containsElement "$partuuid" "${partuuidList[@]}"; then
+							local m="$(getMessageText $MSG_PARTUUID_NOT_FOUND "$partuuid" "$device")"
+							local t=$(center $WINDOW_COLS "$m")
+							local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+							whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
+						else
+							CONFIG_CLONE_DEVICE="$device"
+							CONFIG_CLONE_PARTUUID="$partuuid"
+							break
+						fi
+					fi
+				fi
+			else # empty answer
+				CONFIG_CLONE_DEVICE=""
+				CONFIG_CLONE_PARTUUID=""
+				break
+			fi # no answer
+		else
+			break
+		fi
+	done
+
+	[[ "$old_device" == "$CONFIG_CLONE_DEVICE" && "$old_partuuid" == "$CONFIG_CLONE_PARTUUID" ]]
+	local rc=$?
+	logExit "$rc -$CONFIG_CLONE_DEVICE - $CONFIG_CLONE_PARTUUID"
+	return $rc
+
+}
+
 function config_language_do() {
 
 	local old="$CONFIG_LANGUAGE"
@@ -4727,6 +5057,39 @@ function logStack() {
 	done
 }
 
+# return 0 for ==, -1 for <, and 1 for >
+# version format 0.1.2.3-ext, -ext will be discarded
+function compareVersions() { # v1 v2
+
+	logEntry "$1 $2"
+	local v1 v2
+	v1="$(sed 's/-.*$//' <<< "$1")"
+	v2="$(sed 's/-.*$//' <<< "$2")"
+
+	local v1e v2e IFS rc
+	#Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+	#shellcheck disable=SC2206
+	IFS="." v1e=( $v1 0 0 0 0 )
+	#Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.
+	#shellcheck disable=SC2206
+	IFS="." v2e=( $v2 0 0 0 0 )
+
+	local rc=0
+	for (( i=0; i<=3; i++ )); do
+		if (( ${v1e[$i]} < ${v2e[$i]} )); then
+			rc=-1
+			break
+		fi
+		if (( ${v1e[$i]} > ${v2e[$i]} )); then
+			rc=1
+			break
+		fi
+	done
+	echo $rc
+	logExit $rc
+	return
+}
+
 # 0 -> yes (current is older than actual)
 # 1 -> no (current is actual)
 # 2 -> no (current is newer)
@@ -4758,9 +5121,9 @@ function isNewerVersion() { # current actual
 	grep -iq hotfix <<< "$version"
 	local IS_HOTFIX=$((! $? ))
 
-	if [[ $version < $newVersion ]]; then
+	if (( $(compareVersions "$version" "$newVersion") < 0 )); then
 		rc=0	# new version available
-	elif [[ $version > $newVersion ]]; then
+	elif (( $(compareVersions "$version" "$newVersion") > 0 )); then
 		rc=2	# current version is a newer version
 	else	    # versions are identical
 		if [[ -z $suffix ]]; then
@@ -4777,7 +5140,7 @@ function isNewerVersion() { # current actual
 	fi
 
 	logExit "isNewVersion $1 <-> $2 - RC: $rc"
-
+	
 	return $rc
 
 }
@@ -5233,6 +5596,8 @@ MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 
 UPDATE_POSSIBLE=-1 # -1 -> check whether update possible, 0 -> no, 1 -> yes
+
+CONFIG_PARSED=0
 
 if isCrontabConfigInstalled; then # use cron if already installed
 	USE_SYSTEMD=0
