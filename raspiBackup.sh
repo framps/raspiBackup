@@ -3515,6 +3515,7 @@ function downloadPropertiesFile() { # FORCE
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
 			local os="rsp"; (( $IS_UBUNTU )) && os="ubu"
 			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
+			local statsURL="https://www.linux-tips-and-tricks.de/raspiBackup/raspiBackup.properties?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
 		else
 			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
 		fi
@@ -3527,12 +3528,17 @@ function downloadPropertiesFile() { # FORCE
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
 				exitError $RC_DOWNLOAD_FAILED
 			else
-				: # silently ignore download error or property file
+				: # silently ignore download error of property file
 			fi
 		else
 			NEW_PROPERTIES_FILE=1
 			parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
 		fi
+
+		if [[ -n $statsURL ]]; then
+			curl -sSL -m $DOWNLOAD_TIMEOUT -L "$statsURL" > /dev/null
+		fi
+
 	fi
 
 	logExit "$NEW_PROPERTIES_FILE"
