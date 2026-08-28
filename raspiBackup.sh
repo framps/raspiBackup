@@ -104,7 +104,7 @@ function findUser() {
 }
 
 # some general constants
-local BRANCH="${URLBRANCH:-master}"
+BRANCH="${URLBRANCH:-master}"
 
 readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
 DATE=$(date +%Y%m%d-%H%M%S)
