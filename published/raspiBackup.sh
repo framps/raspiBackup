@@ -78,13 +78,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='2026-08-19 22:54:13 +0200'
+GIT_DATE='2026-08-28 21:10:23 +0200'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='8ea56b5'
+GIT_COMMIT='2ad9e77'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -104,8 +104,9 @@ function findUser() {
 }
 
 # some general constants
+BRANCH="${URLBRANCH:-master}"
 
-readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
+readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
@@ -127,6 +128,10 @@ SMILEY_VERSION_DEPRECATED=":-("
 if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
+fi
+
+if [[ -n $URLBRANCH ]]; then
+	echo "===> URLBRANCH: $URLBRANCH"
 fi
 
 DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.sh"
@@ -3515,6 +3520,7 @@ function downloadPropertiesFile() { # FORCE
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
 			local os="rsp"; (( $IS_UBUNTU )) && os="ubu"
 			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
+			local statsURL="https://www.linux-tips-and-tricks.de/raspiBackup/raspiBackup.properties?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
 		else
 			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
 		fi
@@ -3527,12 +3533,17 @@ function downloadPropertiesFile() { # FORCE
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
 				exitError $RC_DOWNLOAD_FAILED
 			else
-				: # silently ignore download error or property file
+				: # silently ignore download error of property file
 			fi
 		else
 			NEW_PROPERTIES_FILE=1
 			parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
 		fi
+
+		if [[ -n $statsURL ]]; then
+			curl -sSL -m $DOWNLOAD_TIMEOUT -L "$statsURL" &> /dev/null
+		fi
+
 	fi
 
 	logExit "$NEW_PROPERTIES_FILE"
