@@ -3541,7 +3541,7 @@ function downloadPropertiesFile() { # FORCE
 		fi
 
 		if [[ -n $statsURL ]]; then
-			curl -sSL -m $DOWNLOAD_TIMEOUT -L "$statsURL" > /dev/null
+			curl -sSL -m $DOWNLOAD_TIMEOUT -L "$statsURL" &> /dev/null
 		fi
 
 	fi
