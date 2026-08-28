@@ -104,8 +104,9 @@ function findUser() {
 }
 
 # some general constants
+local BRANCH="${URLBRANCH:-master}"
 
-readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
+readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
@@ -127,6 +128,10 @@ SMILEY_VERSION_DEPRECATED=":-("
 if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
+fi
+
+if [[ -n $URLBRANCH ]]; then
+	echo "===> URLBRANCH: $URLBRANCH"
 fi
 
 DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.sh"
