@@ -56,13 +56,15 @@ BRANCH="${URLBRANCH:-master}"
 # standard download location
 MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
 
+if [[ -n $URLBRANCH ]]; then
+	echo "===> URLBRANCH: $URLBRANCH"
+fi
+
 if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
 	# don't pollute github with test data
 	MYHOMEURL="https://www.linux-tips-and-tricks.de/raspiBackup"
-else [[ -n $URLBRANCH ]]; then
-	echo "===> URLBRANCH: $URLBRANCH"
 fi
 
 [ "$(kill -l | grep -c SIG)" -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
