@@ -57,22 +57,17 @@ function analyze() { # fileName url
 	wget "$2" -q --tries="$DOWNLOAD_RETRIES" --timeout="$DOWNLOAD_TIMEOUT" -O "$tmp"
 
 	# GIT_COMMIT='527812d'
-
 	local pattern="GIT_COMMIT=['\"]([^\"]+)['\"]"
 	sha="$(grep "GIT_COMMIT=" "$tmp")"
 	if [[ "$sha" =~ $pattern ]]; then
 		sha=${BASH_REMATCH[1]}
-	else
-		sha="ukn"
 	fi
-	
+
 	# VERSION="0.6.5-beta"	# -beta, -hotfix or -dev suffixes possible
 	local pattern="(VERSION|VERSION_CONFIG)=['\"]([^ ]+)['\"]"
 	version="$(grep -E "(VERSION|VERSION_CONFIG)=" "$tmp")"
 	if [[ "$version" =~ $pattern ]]; then
 		version="${BASH_REMATCH[2]}"
-	else 
-		version="ukn"
 	fi
 
 	# GIT_DATE="2026-08-29 12:59:01 +0200"
@@ -80,8 +75,6 @@ function analyze() { # fileName url
 	date="$(grep -e "GIT_DATE=" "$tmp")"
 	if [[ "$date" =~ $pattern ]]; then
 		date="${BASH_REMATCH[1]}"
-	else 
-		date="ukn"
 	fi
 
 	[[ -z "$version" ]] && version="N/A"
