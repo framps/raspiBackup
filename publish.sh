@@ -37,10 +37,10 @@ Usage:
 
 Arguments:
 
-    branch          branch to publish 
+    branch          branch to publish
 					default: current branch
 					'local' will use current local code
-					
+
     subdirectory    subdirectory below published/
 
 Options:

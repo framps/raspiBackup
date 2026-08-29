@@ -38,11 +38,11 @@ CURRENT_DIR=$(pwd)
 TO_BE_INSTALLED="raspiBackup.sh"
 LOG_FILE="$CURRENT_DIR/$MYSELF.log"
 
-GIT_DATE="2026-08-28 21:10:23 +0200"
+GIT_DATE="2026-08-29 12:59:01 +0200"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< $GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< $GIT_DATE)
-GIT_COMMIT="2ad9e77"
+GIT_COMMIT="f4dcbe6"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< $GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -68,7 +68,7 @@ trap cleanup SIGINT SIGTERM EXIT
 cd ~
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." > "$LOG_FILE"
-curl -L "$INSTALLER_DOWNLOAD_URL" -o $INSTALLER &>> "$LOG_FILE"
+curl -L "$INSTALLER_DOWNLOAD_URL" -o /tmp/$INSTALLER &>> "$LOG_FILE"
 rc=$?
 
 if (( $rc )); then
@@ -77,13 +77,18 @@ if (( $rc )); then
 	exit 1
 fi
 
-echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
-sudo -E bash "./$INSTALLER" "$1"
+chmod +x /tmp/$INSTALLER
+
+echo "Starting /tmp/$INSTALLER ..." >> "$LOG_FILE"
+reset
+/tmp/$INSTALLER "$1"
 rc=$?
 if (( $rc )); then
-	echo "??? $INSTALLER failed. RC: $rc" >> "$LOG_FILE"
+	echo "??? /tmp/$INSTALLER failed. RC: $rc" >> "$LOG_FILE"
 	cat "$LOG_FILE"
 	exit 1
 else
 	rm "$LOG_FILE"
 fi
+
+rm /tmp/$INSTALLER &> /dev/null

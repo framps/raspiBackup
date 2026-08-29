@@ -68,7 +68,7 @@ trap cleanup SIGINT SIGTERM EXIT
 cd ~
 # download and invoke installer
 echo "Downloading $INSTALLER_DOWNLOAD_URL ..." > "$LOG_FILE"
-curl -L "$INSTALLER_DOWNLOAD_URL" -o $INSTALLER &>> "$LOG_FILE"
+curl -L "$INSTALLER_DOWNLOAD_URL" -o /tmp/$INSTALLER &>> "$LOG_FILE"
 rc=$?
 
 if (( $rc )); then
@@ -77,13 +77,18 @@ if (( $rc )); then
 	exit 1
 fi
 
-echo "Starting ./$INSTALLER ..." >> "$LOG_FILE"
-sudo -E bash "./$INSTALLER" "$1"
+chmod +x /tmp/$INSTALLER
+
+echo "Starting /tmp/$INSTALLER ..." >> "$LOG_FILE"
+reset
+/tmp/$INSTALLER "$1"
 rc=$?
 if (( $rc )); then
-	echo "??? $INSTALLER failed. RC: $rc" >> "$LOG_FILE"
+	echo "??? /tmp/$INSTALLER failed. RC: $rc" >> "$LOG_FILE"
 	cat "$LOG_FILE"
 	exit 1
 else
 	rm "$LOG_FILE"
 fi
+
+rm /tmp/$INSTALLER &> /dev/null
