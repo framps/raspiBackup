@@ -51,6 +51,20 @@ VERSION_SCRIPT_CONFIG="0.1.11"           					# required config version for scri
 VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
+BRANCH="${URLBRANCH:-master}"
+
+# standard download location
+MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
+
+if [[ -n $URLTARGET ]]; then
+	echo "===> URLTARGET: $URLTARGET"
+	URLTARGET="/$URLTARGET"
+	# don't pollute github with test data
+	MYHOMEURL="https://www.linux-tips-and-tricks.de/raspiBackup"
+else [[ -n $URLBRANCH ]]; then
+	echo "===> URLBRANCH: $URLBRANCH"
+fi
+
 [ "$(kill -l | grep -c SIG)" -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
 [ -z "${BASH_VERSINFO[0]}" ] && printf "\n\033[1;35m Make sure you're using \"bash\"! \033[m\n\n" >&2 && exit 255
 [ "${BASH_VERSINFO[0]}" -lt 3 ] && printf "\n\033[1;35m Minimum requirement is bash 3.2. You have %s \033[m\n\n" "$BASH_VERSION"  >&2 && exit 255
@@ -103,10 +117,6 @@ function findUser() {
 
 }
 
-# some general constants
-BRANCH="${URLBRANCH:-master}"
-
-readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
 DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
@@ -122,17 +132,6 @@ SMILEY_RESTORETEST_REQUIRED="8-)"
 SMILEY_VERSION_DEPRECATED=":-("
 
 # URLs and temp filenames used
-
-# URLTARGET allows to use deployment of new code versions, example: use "beta" to test beta code as if it was published just before it's published
-
-if [[ -n $URLTARGET ]]; then
-	echo "===> URLTARGET: $URLTARGET"
-	URLTARGET="/$URLTARGET"
-fi
-
-if [[ -n $URLBRANCH ]]; then
-	echo "===> URLBRANCH: $URLBRANCH"
-fi
 
 DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.sh"
 CONFIG_URL="$MYHOMEURL${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
@@ -3498,6 +3497,9 @@ function downloadPropertiesFile() { # FORCE
 
 	NEW_PROPERTIES_FILE=0
 
+	local downloadURL="$PROPERTIES_DOWNLOAD_URL"
+	local MYSTATSURL="https://www.linux-tips-and-tricks.de/raspiBackup"
+
 	if (( ! $REGRESSION_TEST && ! $IS_DEV )); then # don't report any usage otherwise
 
 		writeToConsole $MSG_LEVEL_DETAILED $MSG_CHECKING_FOR_NEW_VERSION
@@ -3519,10 +3521,7 @@ function downloadPropertiesFile() { # FORCE
 			srOptions="$(urlencode "$SMART_RECYCLE_OPTIONS")"
 			local srs=""; [[ -n $SMART_RECYCLE_DRYRUN ]] && (( ! $SMART_RECYCLE_DRYRUN )) && srs="$srOptions"
 			local os="rsp"; (( $IS_UBUNTU )) && os="ubu"
-			local downloadURL="${PROPERTIES_DOWNLOAD_URL}?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
-			local statsURL="https://www.linux-tips-and-tricks.de/raspiBackup/raspiBackup.properties?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
-		else
-			local downloadURL="$PROPERTIES_DOWNLOAD_URL"
+			local statsURL="$MYSTATSURL/raspiBackup.properties?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
 		fi
 
 		local dlHttpCode dlRC
@@ -3540,6 +3539,7 @@ function downloadPropertiesFile() { # FORCE
 			parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
 		fi
 
+		# send some statistics data
 		if [[ -n $statsURL ]]; then
 			curl -sSL -m $DOWNLOAD_TIMEOUT -L "$statsURL" &> /dev/null
 		fi
