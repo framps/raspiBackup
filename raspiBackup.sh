@@ -96,8 +96,8 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 # shellcheck disable=SC2016
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
-GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
+GIT_DATE_ONLY=$(cut -f 1 -d ' ' <<< "$GIT_DATE")
+GIT_TIME_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
 GIT_COMMIT='$Sha1$'
