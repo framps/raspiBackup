@@ -107,6 +107,8 @@ The installer uses menus, checklists and radiolists similar to raspi-config and 
 
 ![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
+### Installation
+
 Installation of raspiBackup is started with following command:
 
 `curl -o install -L https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh; sudo bash ./install`
@@ -124,13 +126,13 @@ raspiBackup is maintained just by me - framp. If you find raspiBackup useful ple
 
 ## Miscellaneous sample scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
 
+* Convenient helper script to backup and restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupDialog.sh)
+
 * Sample wrapper scripts to add any activities before and after backup [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupWrapper.sh)
 
 * Sample wrapper script which checks whether a nfsserver is online, mounts one exported directory and invokes raspiBackup. If the nfsserver is not online no backup is started. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupNfsWrapper.sh)
 
 * Sample script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
-
-* Convenient helper script to backup and restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupDialog.sh)
 
 ## Sample extensions
 
