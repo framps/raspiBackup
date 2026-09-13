@@ -64,6 +64,27 @@ err() {
     exit 42
 }
 
+ask_yes_no() {
+	# $1 -n  set "no" as default, else it's "yes"
+	# $2.. prompt
+	local default choices
+	default=y
+	choices="Yn"
+	if [[ "$1" == -n ]] ; then
+		shift
+		default=n
+		choices="yN"
+	fi
+
+	read -r -n 1 -p "$* [${choices}] " answer
+
+	if [[ "${answer}" =~ [yYjJ] ]] || [[ "${answer}${default}" == "y" ]]; then
+		true
+	else
+		false
+	fi
+}
+
 cleanup() {
 	# Delete all(?) raspibackup package files
 	# rm -f ${PACKAGE_NAME}*.deb
@@ -81,7 +102,8 @@ check_required_tools() {
 		# TODO: Check for 'gpg' too?
 		echo ""
 		echo "Problem: Required command 'curl' is not installed!"
-		echo "--- Trying to install 'curl' now..."
+		ask_yes_no -n "Should 'curl' being installed now (otherwise you have to do it manually)?" || exit 42
+		echo "--- Installing 'curl'"
 		sudo apt install curl
 	fi
 }
@@ -95,12 +117,7 @@ get_gpg_key() {
 		curl -fsSLO https://github.com/${REPO_OWNER}.gpg
 		gpg --show-keys ${REPO_OWNER}.gpg
 		echo ""
-		read -rp "Is that key (or one of them) okay to be imported to your local keyring [yN]? " inp
-		case "${inp}" in
-			j|J|y|Y ) ;;
-			*) exit 42  # TODO: What to do better here?
-			;;
-		esac
+		ask_yes_no -n "Is that key / are those keys okay to be imported to your local keyring" || exit 42  # TODO: What to do better here?
 		echo ""
 		echo "--- Importing ${REPO_OWNER} key"
 		gpg --import  ${REPO_OWNER}.gpg
@@ -112,7 +129,7 @@ download_package_files() {
 	echo ""
 	VERSION_FILES=$(curl -fsS "$GITHUB_URL_VERSION/VERSION")
 	if [[ -z "${VERSION_FILES}" ]] ; then
-		echo "Error: Die repository/branch doesn't have the required file '$GITHUB_URL_VERSION/VERSION' (yet)!"
+		echo "Error: The repository/branch doesn't have the required file '$GITHUB_URL_VERSION/VERSION' (yet)!"
 		exit 42
 	fi
 	echo "--- Downloading ${PACKAGE_NAME}${VERSION_FILES} Debian package from github.com/${REPO_OWNER}"
@@ -121,26 +138,6 @@ download_package_files() {
 	# Create unversioned links for some easier handling  TODO: not yet foolproof!
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
-}
-
-
-get_user_confirmation() {
-	version=$(dpkg -I ${PACKAGE_NAME}.deb | grep "^ Version" | cut -f 3 -d ' ')
-
-	echo
-	echo -n "--- Installing ${RASPIBACKUP} $version. Are you sure? (y|N) "
-
-	read -r -n 1 answer
-
-	# demo: strip leading/trailing whitespace
-	# if [[ -n "${str//[[:space:]]/}" ]]; then
-	# 	echo
-	# fi
-
-	if [[ ! $answer =~ [yYjJ] ]]; then
-		echo "!!! Installation of ${RASPIBACKUP} $version aborted"
-		exit 0
-	fi
 }
 
 
@@ -209,7 +206,14 @@ fi
 #           gpg: binary signature, digest algorithm SHA512, key algorithm ed25519
 
 
-get_user_confirmation
+version=$(dpkg -I ${PACKAGE_NAME}.deb | grep "^ Version" | cut -f 3 -d ' ')
+
+echo ""
+if ! ask_yes_no  -n "--- Installing ${RASPIBACKUP} $version. Are you sure?" ; then
+	echo ""
+	echo "!!! Installation of ${RASPIBACKUP} $version cancelled by user."
+	exit 0
+fi
 
 echo ""
 echo "--- Installing ${RASPIBACKUP} package and all dependencies"
