@@ -67,6 +67,7 @@ ask_yes_no() {
 
 	read -r -n 1 -p "$* [${choices}] " answer
 
+	# TODO: Handle a single 'Enter' keystroke with its newline compared to the missing newline otherwise
 	if [[ "${answer}" =~ [yYjJ] ]] || [[ "${answer}${default}" == "y" ]]; then
 		true
 	else
@@ -87,15 +88,19 @@ cleanup() {
 }
 
 check_required_tools() {
-	if ! command -v curl > /dev/null ; then
-		echo ""
-		echo "Problem: Required command 'curl' is not installed!"
-		ask_yes_no -n "Should 'curl' being installed now (otherwise you have to do it manually)?" || exit 42
-		echo "--- Installing 'curl'"
-		sudo apt install curl
-	fi
-	# TODO: Check for 'gpg' too?
-	# TODO: And what about 'apt'? If this script is running on a non-apt system like Fedora...
+	for req_cmd in  curl@curl  gpg@gnupg ; do
+		cmd="${req_cmd%@*}"
+		pkg="${req_cmd#*@}"
+		if ! command -v "${cmd}" > /dev/null ; then
+			echo ""
+			echo "Problem: Required command '${cmd}' is not installed!"
+			ask_yes_no -n "Should '${cmd}' from package '${pkg}' being installed now (otherwise you have to do it manually)?" || exit 42
+			echo ""
+			echo "--- Installing '${pkg}'"
+			sudo apt-get install "${pkg}"
+	    fi
+	done
+	# TODO: And what about 'apt/apt-get'? If this script is running on a non-apt system like Fedora...
 }
 
 get_gpg_key() {
@@ -209,7 +214,7 @@ fi
 
 echo ""
 echo "--- Installing ${RASPIBACKUP} package and all dependencies"
-if sudo apt install --allow-downgrades -y "./${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
+if sudo apt-get install --allow-downgrades -y "./${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
 ## TODO: !!! interferes with dpkg's interactive dialogs: | tee -a "$LOG_FILE" 2>&1
 	dpkg --list | grep ${PACKAGE_NAME} | awk '{ print "--- ${PACKAGE_NAME}", $3, "installed successfully"; }'
 fi
