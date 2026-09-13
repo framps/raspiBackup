@@ -24,6 +24,8 @@
 #
 #######################################################################################################################
 
+set -eo pipefail
+
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 
@@ -88,21 +90,35 @@ get_gpg_key() {
 	# retrieve and import ${REPO_OWNER} gpg key from github if it doesn't exist already in keyring
 	if ! gpg --list-keys ${REPO_OWNER_GPG_FINGERPRINT} > /dev/null; then
 		echo ""
-		echo "--- Retrieving ${REPO_OWNER} key from github"
-		curl https://github.com/${REPO_OWNER}.gpg | gpg --yes --dearmor -o ${REPO_OWNER}.gpg.asc
+		echo "--- Retrieving ${REPO_OWNER}'s GPG key from github"
+		echo ""
+		curl -fsSLO https://github.com/${REPO_OWNER}.gpg
+		gpg --show-keys ${REPO_OWNER}.gpg
+		echo ""
+		read -rp "Is that key (or one of them) okay to be imported to your local keyring [yN]? " inp
+		case "${inp}" in
+			j|J|y|Y ) ;;
+			*) exit 42  # TODO: What to do better here?
+			;;
+		esac
+		echo ""
 		echo "--- Importing ${REPO_OWNER} key"
-		gpg --import  ${REPO_OWNER}.gpg.asc
-		rm -f ${REPO_OWNER}.gpg.asc
+		gpg --import  ${REPO_OWNER}.gpg
+		rm -f ${REPO_OWNER}.gpg
 	fi
 }
 
 download_package_files() {
 	echo ""
-	echo "--- Downloading ${PACKAGE_NAME} Debian package from github.com/${REPO_OWNER}"
 	VERSION_FILES=$(curl -fsS "$GITHUB_URL_VERSION/VERSION")
-	curl -fsSLO "$GITHUB_URL_DEB/${PACKAGE_NAME}${VERSION_FILES}.deb"
-	curl -fsSLO "$GITHUB_URL_DEB/${PACKAGE_NAME}${VERSION_FILES}.deb.sig"
-	# Create unversioned links for easier handling in the "then" part above...
+	if [[ -z "${VERSION_FILES}" ]] ; then
+		echo "Error: Die repository/branch doesn't have the required file '$GITHUB_URL_VERSION/VERSION' (yet)!"
+		exit 42
+	fi
+	echo "--- Downloading ${PACKAGE_NAME}${VERSION_FILES} Debian package from github.com/${REPO_OWNER}"
+	curl -fsSLO "$GITHUB_URL_DEB/${PACKAGE_NAME}${VERSION_FILES}.deb" || exit 42
+	curl -fsSLO "$GITHUB_URL_DEB/${PACKAGE_NAME}${VERSION_FILES}.deb.sig" || exit 42
+	# Create unversioned links for some easier handling  TODO: not yet foolproof!
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
 }
@@ -116,9 +132,10 @@ get_user_confirmation() {
 
 	read -r -n 1 answer
 
-	if [[ -n "${str//[[:space:]]/}" ]]; then
-		echo
-	fi
+	# demo: strip leading/trailing whitespace
+	# if [[ -n "${str//[[:space:]]/}" ]]; then
+	# 	echo
+	# fi
 
 	if [[ ! $answer =~ [yYjJ] ]]; then
 		echo "!!! Installation of ${RASPIBACKUP} $version aborted"
@@ -141,7 +158,7 @@ check_required_tools
 
 get_gpg_key
 
-if [[ -n $1 && -d "$1" ]]; then
+if [[ -n "$1" && -d "$1" ]]; then
 	cd "$1" || exit
 	if [[ ! -f "${PACKAGE_NAME}.deb" ]]; then
 		echo "??? $1/${PACKAGE_NAME}.deb not found"
@@ -164,6 +181,33 @@ if ! gpg --verbose --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE
     echo "Error: Verification failed. TODO: What to do now?"
     exit 42
 fi
+
+# TODO: The signature verification needs to be improved!
+#       The above test is okay, but only if this script here is authentic...
+#       Ideally the user checks the output of the above command manually against
+#       another source, e.g. the homepage of framps (...) where his correct GPG key
+#       could be displayed.
+#
+#       Here are two example outputs of the above command (in German and English)
+#       with the important parts marked with '^':
+#
+#           gpg: Signatur vom Do 10 Sep 2026 21:08:26 CEST
+#           gpg:                mittels EDDSA-Schlüssel 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
+#                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#           gpg: verwende Vertrauensmodell pgp
+#           gpg: Korrekte Signatur von "Name <mail@someserver.com>" [ultimativ]
+#                ^^^^^^^^^^^^^^^^^      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+#           gpg: Binäre Signatur, Hashmethode SHA512, Schlüsselverfahren ed25519
+#
+#
+#           gpg: Signature made Thu Sep 10 21:08:26 2026 CEST
+#           gpg:                using EDDSA key 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
+#                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#           gpg: using pgp trust model
+#           gpg: Good signature from "Name <mail@someserver.com>" [ultimate]
+#                ^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+#           gpg: binary signature, digest algorithm SHA512, key algorithm ed25519
+
 
 get_user_confirmation
 
