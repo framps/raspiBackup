@@ -29,23 +29,15 @@ set -eo pipefail
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 
-REPO_OWNER="${REPO_OWNER:-framps}"
-REPO_OWNER_GPG_FINGERPRINT="${REPO_OWNER_GPG_FINGERPRINT:-4B9E02DBACA4DD24}"
-BRANCH="${BRANCH:-master}"
+readonly REPO_OWNER="${REPO_OWNER:-framps}"
+readonly REPO_OWNER_GPG_FINGERPRINT="${REPO_OWNER_GPG_FINGERPRINT:-4B9E02DBACA4DD24}"
+readonly BRANCH="${BRANCH:-master}"
 
-readonly REPO_OWNER
-readonly REPO_OWNER_GPG_FINGERPRINT
-readonly BRANCH
+readonly RASPIBACKUP=raspiBackup
+readonly PACKAGE_NAME=raspibackup
 
-RASPIBACKUP=raspiBackup
-PACKAGE_NAME=raspibackup
-readonly RASPIBACKUP
-readonly PACKAGE_NAME
-
-GITHUB_URL_VERSION="https://raw.githubusercontent.com/${REPO_OWNER}/${RASPIBACKUP}/refs/heads/${BRANCH}/build/deb"
-GITHUB_URL_DEB="https://github.com/${REPO_OWNER}/${RASPIBACKUP}/raw/refs/heads/${BRANCH}/build/deb"
-readonly GITHUB_URL_VERSION
-readonly GITHUB_URL_DEB
+readonly GITHUB_URL_VERSION="https://raw.githubusercontent.com/${REPO_OWNER}/${RASPIBACKUP}/refs/heads/${BRANCH}/build/deb"
+readonly GITHUB_URL_DEB="https://github.com/${REPO_OWNER}/${RASPIBACKUP}/raw/refs/heads/${BRANCH}/build/deb"
 
 
 err() {
