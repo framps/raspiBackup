@@ -32,6 +32,7 @@ readonly LOG_FILE
 # REPO_OWNER=framps
 # REPO_OWNER_GPG_FINGERPRINT=4B9E02DBACA4DD24
 # BRANCH=master
+# ... and during simonz's experiments:
 REPO_OWNER=rpi-simonz
 REPO_OWNER_GPG_FINGERPRINT=367CB21160F2403E
 BRANCH=m_972
@@ -99,44 +100,45 @@ cleanup() {
 
 check_required_tools() {
 	if ! command -v curl > /dev/null ; then
-		# TODO: Check for 'gpg' too?
 		echo ""
 		echo "Problem: Required command 'curl' is not installed!"
 		ask_yes_no -n "Should 'curl' being installed now (otherwise you have to do it manually)?" || exit 42
 		echo "--- Installing 'curl'"
 		sudo apt install curl
 	fi
+	# TODO: Check for 'gpg' too?
+	# TODO: And what about 'apt'? If this script is running on a non-apt system like Fedora...
 }
 
 get_gpg_key() {
 	# retrieve and import ${REPO_OWNER} gpg key from github if it doesn't exist already in keyring
-	if ! gpg --list-keys ${REPO_OWNER_GPG_FINGERPRINT} > /dev/null; then
+	if ! gpg --list-keys "${REPO_OWNER_GPG_FINGERPRINT}" > /dev/null; then
 		echo ""
 		echo "--- Retrieving ${REPO_OWNER}'s GPG key from github"
 		echo ""
-		curl -fsSLO https://github.com/${REPO_OWNER}.gpg
-		gpg --show-keys ${REPO_OWNER}.gpg
+		curl -fsSLO https://github.com/"${REPO_OWNER}".gpg
+		gpg --show-keys "${REPO_OWNER}".gpg
 		echo ""
 		ask_yes_no -n "Is that key / are those keys okay to be imported to your local keyring" || exit 42  # TODO: What to do better here?
 		echo ""
 		echo "--- Importing ${REPO_OWNER} key"
-		gpg --import  ${REPO_OWNER}.gpg
+		gpg --import  "${REPO_OWNER}".gpg
 		if ask_yes_no "Should the downloaded and already imported key file '${REPO_OWNER}.gpg' be deleted now?" ; then
-			rm -f ${REPO_OWNER}.gpg
+			rm -f "${REPO_OWNER}".gpg
 		fi
 	fi
 }
 
 download_package_files() {
 	echo ""
-	VERSION_FILES=$(curl -fsS "$GITHUB_URL_VERSION/VERSION")
+	VERSION_FILES=$(curl -fsS "${GITHUB_URL_VERSION}/VERSION")
 	if [[ -z "${VERSION_FILES}" ]] ; then
-		echo "Error: The repository/branch doesn't have the required file '$GITHUB_URL_VERSION/VERSION' (yet)!"
+		echo "Error: The repository/branch doesn't have the required file '${GITHUB_URL_VERSION}/VERSION' (yet)!"
 		exit 42
 	fi
 	echo "--- Downloading ${PACKAGE_NAME}${VERSION_FILES} Debian package from github.com/${REPO_OWNER}"
-	curl -fsSLO "$GITHUB_URL_DEB/${PACKAGE_NAME}${VERSION_FILES}.deb" || exit 42
-	curl -fsSLO "$GITHUB_URL_DEB/${PACKAGE_NAME}${VERSION_FILES}.deb.sig" || exit 42
+	curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb" || exit 42
+	curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb.sig" || exit 42
 	# Create unversioned links for some easier handling  TODO: not yet foolproof!
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
@@ -211,9 +213,9 @@ fi
 version=$(dpkg -I ${PACKAGE_NAME}.deb | grep "^ Version" | cut -f 3 -d ' ')
 
 echo ""
-if ! ask_yes_no  -n "--- Installing ${RASPIBACKUP} $version. Are you sure?" ; then
+if ! ask_yes_no  -n "--- Installing ${RASPIBACKUP} ${version}. Are you sure?" ; then
 	echo ""
-	echo "!!! Installation of ${RASPIBACKUP} $version cancelled by user."
+	echo "!!! Installation of ${RASPIBACKUP} ${version} cancelled by user."
 	exit 0
 fi
 
@@ -223,4 +225,3 @@ if sudo apt install --allow-downgrades -y "./${PACKAGE_NAME}${VERSION_FILES}.deb
 ## TODO: !!! interferes with dpkg's interactive dialogs: | tee -a "$LOG_FILE" 2>&1
 	dpkg --list | grep ${PACKAGE_NAME} | awk '{ print "--- ${PACKAGE_NAME}", $3, "installed successfully"; }'
 fi
-
