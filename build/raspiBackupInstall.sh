@@ -52,16 +52,16 @@ readonly GITHUB_URL_DEB
 
 
 err() {
-    local rc="$1"
-    echo ""
-    echo "??? Unexpected error occured with RC $rc"
-    local i=0
-    local FRAMES=${#BASH_LINENO[@]}
-    for ((i = FRAMES - 2; i >= 0; i--)); do
-        echo '  File' \""${BASH_SOURCE[i + 1]}"\", line ${BASH_LINENO[i]}, in "${FUNCNAME[i + 1]}"
-        sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
-    done
-    exit 42
+	local rc="$1"
+	echo ""
+	echo "??? Unexpected error occured with RC $rc"
+	local i=0
+	local FRAMES=${#BASH_LINENO[@]}
+	for ((i = FRAMES - 2; i >= 0; i--)); do
+		echo '  File' \""${BASH_SOURCE[i + 1]}"\", line ${BASH_LINENO[i]}, in "${FUNCNAME[i + 1]}"
+		sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i + 1]}"
+	done
+	exit 42
 }
 
 ask_yes_no() {
@@ -177,8 +177,8 @@ trap '' ERR
 echo ""
 echo "--- Verifying Debian package was created by repo owner (usually framp, or simonz during development)"
 if ! gpg --verbose --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
-    echo "Error: Verification failed. TODO: What to do now?"
-    exit 42
+	echo "Error: Verification failed. TODO: What to do now?"
+	exit 42
 fi
 
 # TODO: The signature verification needs to be improved!
@@ -221,6 +221,6 @@ echo ""
 echo "--- Installing ${RASPIBACKUP} package and all dependencies"
 if sudo apt install --allow-downgrades -y "./${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
 ## TODO: !!! interferes with dpkg's interactive dialogs: | tee -a "$LOG_FILE" 2>&1
-    dpkg --list | grep ${PACKAGE_NAME} | awk '{ print "--- ${PACKAGE_NAME}", $3, "installed successfully"; }'
+	dpkg --list | grep ${PACKAGE_NAME} | awk '{ print "--- ${PACKAGE_NAME}", $3, "installed successfully"; }'
 fi
 
