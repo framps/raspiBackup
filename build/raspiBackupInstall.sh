@@ -121,7 +121,9 @@ get_gpg_key() {
 		echo ""
 		echo "--- Importing ${REPO_OWNER} key"
 		gpg --import  ${REPO_OWNER}.gpg
-		rm -f ${REPO_OWNER}.gpg
+		if ask_yes_no "Should the downloaded and already imported key file '${REPO_OWNER}.gpg' be deleted now?" ; then
+			rm -f ${REPO_OWNER}.gpg
+		fi
 	fi
 }
 
