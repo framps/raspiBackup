@@ -29,13 +29,9 @@ set -eo pipefail
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 
-# REPO_OWNER=framps
-# REPO_OWNER_GPG_FINGERPRINT=4B9E02DBACA4DD24
-# BRANCH=master
-# ... and during simonz's experiments:
-REPO_OWNER=rpi-simonz
-REPO_OWNER_GPG_FINGERPRINT=367CB21160F2403E
-BRANCH=m_972
+REPO_OWNER="${REPO_OWNER:-framps}"
+REPO_OWNER_GPG_FINGERPRINT="${REPO_OWNER_GPG_FINGERPRINT:-4B9E02DBACA4DD24}"
+BRANCH="${BRANCH:-master}"
 
 readonly REPO_OWNER
 readonly REPO_OWNER_GPG_FINGERPRINT
