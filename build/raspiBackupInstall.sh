@@ -39,6 +39,32 @@ readonly PACKAGE_NAME=raspibackup
 readonly GITHUB_URL_VERSION="https://raw.githubusercontent.com/${REPO_OWNER}/${RASPIBACKUP}/refs/heads/${BRANCH}/build/deb"
 readonly GITHUB_URL_DEB="https://github.com/${REPO_OWNER}/${RASPIBACKUP}/raw/refs/heads/${BRANCH}/build/deb"
 
+MYSELF=$(basename "$0")
+
+
+usage() {
+	cat <<-EOF_USAGE
+Installation script for raspiBackup
+
+Usage:
+
+    ${MYSELF} [<directory>]
+
+The optional parameter <directory> specifies an existing directory
+with the already downloaded Debian package and its signature file.
+Use '.' for the current directory.
+
+Additionally the download source can be modified by setting the environment:
+
+    Variable                     | Default value
+    -----------------------------|------------------
+    REPO_OWNER                   | framps
+    REPO_OWNER_GPG_FINGERPRINT   | 4B9E02DBACA4DD24
+    BRANCH                       | master
+
+EOF_USAGE
+}
+
 
 err() {
 	local rc="$1"
@@ -156,6 +182,11 @@ trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
 exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
+if [[ "$1" =~ ^-h$|^--help$ ]]; then
+	usage
+	exit 0
+fi
+
 rm -f "$LOG_FILE"
 
 check_required_tools
@@ -180,7 +211,7 @@ fi
 trap '' ERR
 
 echo ""
-echo "--- Verifying Debian package was created by repo owner (usually framp, or simonz during development)"
+echo "--- Verifying Debian package was created by the repo owner"
 if ! gpg --verbose --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
 	echo "Error: Verification failed. TODO: What to do now?"
 	exit 42
