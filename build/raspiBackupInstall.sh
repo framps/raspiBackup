@@ -44,7 +44,16 @@ MYSELF=$(basename "$0")
 
 usage() {
 	cat <<-EOF_USAGE
-Installation script for raspiBackup
+Installation script for ${RASPIBACKUP}
+
+It executes the following steps (could be done manually as well, of course):
+
+    - download the ${RASPIBACKUP} Debian package named '${PACKAGE_NAME}'
+      and its signature file from the appropriate GitHub repo
+    - download and import the package maintainer's public GPG key
+    - verify the package against the signature/key
+    - install the package via
+          'sudo apt-get install --allow-downgrades ${PACKAGE_NAME}'
 
 Usage:
 
@@ -61,6 +70,15 @@ Additionally the download source can be modified by setting the environment:
     REPO_OWNER                   | framps
     REPO_OWNER_GPG_FINGERPRINT   | 4B9E02DBACA4DD24
     BRANCH                       | master
+
+
+Note:
+
+    The former script 'raspiBackupInstallUI' no longer exists as such
+    and has been replaced by 'raspiBackupConfig'.
+
+    'raspiBackupConfig' can be used after installation
+    to configure ${RASPIBACKUP} for individual needs.
 
 EOF_USAGE
 }
@@ -91,9 +109,12 @@ ask_yes_no() {
 		choices="yN"
 	fi
 
-	read -r -n 1 -p "$* [${choices}] " answer
+	read -r -s -n 1 -p "$* [${choices}] " answer
 
-	# TODO: Handle a single 'Enter' keystroke with its newline compared to the missing newline otherwise
+	# The -s above and the following echo "..." handle
+	#   - a single 'Enter' keystroke with its newline
+	#   - compared to the missing newline otherwise
+	echo "${answer}"
 	if [[ "${answer}" =~ [yYjJ] ]] || [[ "${answer}${default}" == "y" ]]; then
 		true
 	else
@@ -122,8 +143,7 @@ check_required_tools() {
 		if ! command -v "${cmd}" > /dev/null ; then
 			echo ""
 			echo "Problem: Required command '${cmd}' is not installed!"
-			ask_yes_no -n "Should '${cmd}' from package '${pkg}' being installed now (otherwise you have to do it manually)?" || exit 42
-			echo ""
+			ask_yes_no -n "Should '${cmd}' from package '${pkg}' being installed now (otherwise you have to do it manually)?" || return 42
 			echo "--- Installing '${pkg}'"
 			sudo apt-get install "${pkg}"
 	    fi
@@ -135,7 +155,7 @@ check_required_tools() {
 	grep -e "^ID=" -e "^ID_LIKE=" /etc/os-release | grep "debian" > /dev/null || is_debian=n
 	if [[ "$is_debian" != y ]] ; then
 		echo "Doesn't seem to be a Debian system. This script won't work!"
-		exit 42
+		return 42
 	fi
 }
 
@@ -148,8 +168,7 @@ get_gpg_key() {
 		curl -fsSLO https://github.com/"${REPO_OWNER}".gpg
 		gpg --show-keys "${REPO_OWNER}".gpg
 		echo ""
-		ask_yes_no -n "Is that key / are those keys okay to be imported to your local keyring" || exit 42  # TODO: What to do better here?
-		echo ""
+		ask_yes_no -n "Is that key / are those keys okay to be imported to your local keyring" || return 42  # TODO: What to do better here?
 		echo "--- Importing ${REPO_OWNER} key"
 		gpg --import  "${REPO_OWNER}".gpg
 		if ask_yes_no "Should the downloaded and already imported key file '${REPO_OWNER}.gpg' be deleted now?" ; then
@@ -163,18 +182,89 @@ download_package_files() {
 	VERSION_FILES=$(curl -fsS "${GITHUB_URL_VERSION}/VERSION")
 	if [[ -z "${VERSION_FILES}" ]] ; then
 		echo "Error: The repository/branch doesn't have the required file '${GITHUB_URL_VERSION}/VERSION' (yet)!"
-		exit 42
+		return 42
 	fi
 	echo "--- Downloading ${PACKAGE_NAME}${VERSION_FILES} Debian package from github.com/${REPO_OWNER}"
-	curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb" || exit 42
-	curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb.sig" || exit 42
+	curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb" || return 42
+	curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb.sig" || return 42
 	# Create unversioned links for some easier handling  TODO: not yet foolproof!
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
 	ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
 }
 
+use_provided_or_download_packages() {
+	if [[ -n "$1" && -d "$1" ]]; then
+		cd "$1" || return 42
+		if [[ ! -f "${PACKAGE_NAME}.deb" ]]; then
+			echo "??? $1/${PACKAGE_NAME}.deb not found"
+			return 42
+		fi
+		if [[ ! -f "${PACKAGE_NAME}.deb.sig" ]]; then
+			echo "??? $1/${PACKAGE_NAME}.deb.sig not found"
+			return 42
+		fi
+	else
+		download_package_files || return $?
+	fi
+}
 
-# TODO: Really trap ERR in this script?
+verify_package() {
+	echo ""
+	echo "--- Verifying Debian package was created by the package maintainer '${REPO_OWNER}'"
+	if ! gpg --verbose --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
+		echo "Error: Verification failed. TODO: What to do now?"
+		return 42
+	fi
+
+	# TODO: The signature verification needs to be improved!
+	#       The above test is okay, but only if this script here is authentic...
+	#       Ideally the user checks the output of the above command manually against
+	#       another source, e.g. the homepage of framps (...) where his correct GPG key
+	#       could be displayed.
+	#
+	#       Here are two example outputs of the above command (in German and English)
+	#       with the important parts marked with '^':
+	#
+	#           gpg: Signatur vom Do 10 Sep 2026 21:08:26 CEST
+	#           gpg:                mittels EDDSA-Schlüssel 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
+	#                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	#           gpg: verwende Vertrauensmodell pgp
+	#           gpg: Korrekte Signatur von "Name <mail@someserver.com>" [ultimativ]
+	#                ^^^^^^^^^^^^^^^^^      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+	#           gpg: Binäre Signatur, Hashmethode SHA512, Schlüsselverfahren ed25519
+	#
+	#
+	#           gpg: Signature made Thu Sep 10 21:08:26 2026 CEST
+	#           gpg:                using EDDSA key 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
+	#                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	#           gpg: using pgp trust model
+	#           gpg: Good signature from "Name <mail@someserver.com>" [ultimate]
+	#                ^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+	#           gpg: binary signature, digest algorithm SHA512, key algorithm ed25519
+}
+
+install_package() {
+	local version
+	version=$(dpkg -I ${PACKAGE_NAME}.deb | grep "^ Version" | cut -f 3 -d ' ')
+
+	echo ""
+	if ! ask_yes_no  -n "--- Installing ${RASPIBACKUP} ${version}. Are you sure?" ; then
+		echo "!!! Installation of ${RASPIBACKUP} ${version} cancelled by user."
+		return 42
+	fi
+
+	echo ""
+	echo "--- Installing ${RASPIBACKUP} package and all dependencies"
+	if ! sudo apt-get install --allow-downgrades -y "./${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
+	## TODO: !!! interferes with dpkg's interactive dialogs: | tee -a "$LOG_FILE" 2>&1
+		return $?
+	fi
+
+	dpkg --list | grep ${PACKAGE_NAME} | awk '{ print "--- ${PACKAGE_NAME}", $3, "installed successfully"; }'
+}
+
+
+# TODO: Really trap ERR in this script at all?
 trap 'err $?' ERR
 trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
 
@@ -189,73 +279,21 @@ fi
 
 rm -f "$LOG_FILE"
 
-check_required_tools
+check_required_tools || exit $?
 
-get_gpg_key
-
-if [[ -n "$1" && -d "$1" ]]; then
-	cd "$1" || exit
-	if [[ ! -f "${PACKAGE_NAME}.deb" ]]; then
-		echo "??? $1/${PACKAGE_NAME}.deb not found"
-		exit 42
-	fi
-	if [[ ! -f "${PACKAGE_NAME}.deb.sig" ]]; then
-		echo "??? $1/${PACKAGE_NAME}.deb.sig not found"
-		exit 42
-	fi
-else
-	download_package_files
-fi
+get_gpg_key || exit $?
+use_provided_or_download_packages "$@" || exit $?
 
 # Handle errors manually from here on. Seems to be better (for the user...) TODO: Checkup
 trap '' ERR
 
-echo ""
-echo "--- Verifying Debian package was created by the repo owner"
-if ! gpg --verbose --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
-	echo "Error: Verification failed. TODO: What to do now?"
-	exit 42
-fi
-
-# TODO: The signature verification needs to be improved!
-#       The above test is okay, but only if this script here is authentic...
-#       Ideally the user checks the output of the above command manually against
-#       another source, e.g. the homepage of framps (...) where his correct GPG key
-#       could be displayed.
-#
-#       Here are two example outputs of the above command (in German and English)
-#       with the important parts marked with '^':
-#
-#           gpg: Signatur vom Do 10 Sep 2026 21:08:26 CEST
-#           gpg:                mittels EDDSA-Schlüssel 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-#                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#           gpg: verwende Vertrauensmodell pgp
-#           gpg: Korrekte Signatur von "Name <mail@someserver.com>" [ultimativ]
-#                ^^^^^^^^^^^^^^^^^      ^^^^^^^^^^^^^^^^^^^^^^^^^^
-#           gpg: Binäre Signatur, Hashmethode SHA512, Schlüsselverfahren ed25519
-#
-#
-#           gpg: Signature made Thu Sep 10 21:08:26 2026 CEST
-#           gpg:                using EDDSA key 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-#                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#           gpg: using pgp trust model
-#           gpg: Good signature from "Name <mail@someserver.com>" [ultimate]
-#                ^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^^^^^^^^^^^^
-#           gpg: binary signature, digest algorithm SHA512, key algorithm ed25519
+verify_package || exit $?
+install_package || exit $?
 
 
-version=$(dpkg -I ${PACKAGE_NAME}.deb | grep "^ Version" | cut -f 3 -d ' ')
+cat <<EOF_RBC
 
-echo ""
-if ! ask_yes_no  -n "--- Installing ${RASPIBACKUP} ${version}. Are you sure?" ; then
-	echo ""
-	echo "!!! Installation of ${RASPIBACKUP} ${version} cancelled by user."
-	exit 0
-fi
+To configure ${RASPIBACKUP} for individual needs there will be a tool
+named "raspiBackupConfig"...
+EOF_RBC
 
-echo ""
-echo "--- Installing ${RASPIBACKUP} package and all dependencies"
-if sudo apt-get install --allow-downgrades -y "./${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
-## TODO: !!! interferes with dpkg's interactive dialogs: | tee -a "$LOG_FILE" 2>&1
-	dpkg --list | grep ${PACKAGE_NAME} | awk '{ print "--- ${PACKAGE_NAME}", $3, "installed successfully"; }'
-fi
