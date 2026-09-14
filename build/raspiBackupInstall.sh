@@ -56,7 +56,7 @@ err() {
 ask_yes_no() {
 	# $1 -n  set "no" as default, else it's "yes"
 	# $2.. prompt
-	local default choices
+	local default choices answer
 	default=y
 	choices="Yn"
 	if [[ "$1" == -n ]] ; then
@@ -88,6 +88,8 @@ cleanup() {
 }
 
 check_required_tools() {
+	local req_cmd cmd pkg is_debian
+
 	for req_cmd in  curl@curl  gpg@gnupg ; do
 		cmd="${req_cmd%@*}"
 		pkg="${req_cmd#*@}"
@@ -102,7 +104,7 @@ check_required_tools() {
 	done
 
 	# And what about 'apt/apt-get'? Is this a Debian system?
-	local is_debian=y
+	is_debian=y
 	command -v apt-get > /dev/null || is_debian=n
 	grep -e "^ID=" -e "^ID_LIKE=" /etc/os-release | grep "debian" > /dev/null || is_debian=n
 	if [[ "$is_debian" != y ]] ; then
