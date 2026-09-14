@@ -100,7 +100,15 @@ check_required_tools() {
 			sudo apt-get install "${pkg}"
 	    fi
 	done
-	# TODO: And what about 'apt/apt-get'? If this script is running on a non-apt system like Fedora...
+
+	# And what about 'apt/apt-get'? Is this a Debian system?
+	local is_debian=y
+	command -v apt-get > /dev/null || is_debian=n
+	grep -e "^ID=" -e "^ID_LIKE=" /etc/os-release | grep "debian" > /dev/null || is_debian=n
+	if [[ "$is_debian" != y ]] ; then
+		echo "Doesn't seem to be a Debian system. This script won't work!"
+		exit 42
+	fi
 }
 
 get_gpg_key() {
