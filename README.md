@@ -36,8 +36,8 @@
   * Number of backup versions to keep configurable either for sum of backups or on individual backup types
   * Smart recycle backup strategy available (e.g. save backups of last 7 days, last 4 weeks, last 12 months and last n years) - also known as grandfather, father and son backup rotation principle. The smart recycle strategy algorithm was inspired by Manuel Dewalds great article [Automating backups on a Raspberry Pi NAS](https://opensource.com/article/18/8/automate-backups-raspberry-pi)
   * Manual backups allow to create a kind of snapshot (so called raspiBackup snapshots) of the system just before major updates are done on
-* Possible to always keep one device up to date with the latest backup
-  * A script *raspiBackupAndClone* can be used to synchronize the last backup with any device. The device can be used immediately in the  event of an unexpected system failure.
+* Possible to synchronize a clone device with latest backup
+  * If it's important to get the system up and running again immediately without any manual backup restore, raspiBackup can synchronize at the end of the backup run the just created backup with any device. The device then can be used immediately in the event of an unexpected system failure to boot up the system again.
 * Linux backup tools used
   * Standard Linux backup tools dd, tar and rsync can be used to create a backup.
   * dd and tar are full backups. rsync uses hardlinks for incremental backups.
@@ -107,6 +107,8 @@ The installer uses menus, checklists and radiolists similar to raspi-config and 
 
 ![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
+### Installation
+
 Installation of raspiBackup is started with following command:
 
 `curl -o install -L https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh; sudo bash ./install`
@@ -124,13 +126,13 @@ raspiBackup is maintained just by me - framp. If you find raspiBackup useful ple
 
 ## Miscellaneous sample scripts [(Code)](https://github.com/framps/raspiBackup/tree/master/helper)
 
+* Convenient helper script to backup and restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupDialog.sh)
+
 * Sample wrapper scripts to add any activities before and after backup [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupWrapper.sh)
 
 * Sample wrapper script which checks whether a nfsserver is online, mounts one exported directory and invokes raspiBackup. If the nfsserver is not online no backup is started. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupNfsWrapper.sh)
 
 * Sample script which restores an existing tar or rsync backup created by raspiBackup into an image file and then shrinks the image with [pishrink](https://github.com/Drewsif/PiShrink). Result is the smallest possible dd image backup. When this image is restored via dd or windisk32imager it's expanding the root partition to the maximum possible size. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupRestore2Image.sh)
-
-* Convenient helper script to backup and restore a backup. [(Code)](https://github.com/framps/raspiBackup/blob/master/helper/raspiBackupDialog.sh)
 
 ## Sample extensions
 
