@@ -18,4 +18,5 @@ jobs:
             extensions_userprovided
             docker
             published
+            raspiBackup.sh
           severity: warning
