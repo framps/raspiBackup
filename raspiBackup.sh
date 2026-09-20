@@ -11,9 +11,10 @@
 # Smart recycle backup strategy inspired by https://opensource.com/article/18/8/automate-backups-raspberry-pi and
 # enhanced to support multiple backups in a given timeframe of days, weeks, months and years
 #
-# Credits to following people for their translation work
+# Credits to following people for their translation work (github name)
 #	  FI - teemue
 #	  FR - mgrafr
+#	  ES - majegarza
 #
 #######################################################################################################################
 #
