@@ -18,5 +18,4 @@ jobs:
             extensions_userprovided
             docker
             published
-            *.sh
           severity: warning
