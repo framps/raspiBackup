@@ -10,6 +10,7 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           ignore_paths: >-
+            ! *.sh
             helper
             test
             scripts
