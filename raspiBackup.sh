@@ -520,7 +520,7 @@ function getIndexInArray() { # element ${array[@]}
 # NLS: Either use system language if language is supported and use fallback language English otherwise
 #
 
-SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR")
+SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ES")
 FALLBACK_LANGUAGE="EN"
 
 # use LANG variable to determine language
@@ -543,7 +543,7 @@ fi
 # 5) Note: If a message definition or help function (MSG_LL or usageLL) is missing in a supported language the fallback language English will be selected by the code (MSG_EN or usageEN)
 #
 
-declare -A MSG_EN MSG_DE MSG_FI MSG_FR
+declare -A MSG_EN MSG_DE MSG_FI MSG_FR MSG_ES
 
 LANGUAGE="${LANG_SYSTEM^^*}"    # that's the language until it's overwritten with an option or config entry
 
@@ -562,6 +562,7 @@ MSG_EN[$MSG_RUNASROOT]="RBK0002E: $MYSELF has to be started as root. Try 'sudo %
 MSG_DE[$MSG_RUNASROOT]="RBK0002E: $MYSELF muss als root gestartet werden. Benutze 'sudo %s%s'"
 MSG_FI[$MSG_RUNASROOT]="RBK0002E: $MYSELF tulee käynnistää root-oikeuksin. Suorita 'sudo %s%s'"
 MSG_FR[$MSG_RUNASROOT]="RBK0002E: $MYSELF doit être démarré en tant que root.Essayez 'sudo %s%s'"
+MSG_ES[$MSG_RUNASROOT]="RBK0002E: $MYSELF this is the first message which will xlated to ES'"
 MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY=3
 MSG_EN[$MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY]="RBK0003I: Backup size will be truncated from %s to %s"
 MSG_DE[$MSG_TRUNCATING_TO_USED_PARTITIONS_ONLY]="RBK0003I: Backupgröße wird von %s auf %s reduziert"
