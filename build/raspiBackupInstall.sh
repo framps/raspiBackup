@@ -168,14 +168,7 @@ check_required_tools() {
 
 get_gpg_key() {
     # Retrieve and import ${REPO_OWNER} gpg key from github if it doesn't exist already in keyring
-    # The initial list-keys function might print messages like these:
-    #     gpg: directory '/home/username/.gnupg' created
-    #     gpg: keybox '/home/username/.gnupg/pubring.kbx' created
-    #     gpg: /home/username/.gnupg/trustdb.gpg: trustdb created
-    #     gpg: error reading key: No public key
-    # Those *could* be suppressed by 2>/dev/null but that would suppress other
-    # important error messages as well... So we don't do that.
-    if ! gpg --list-keys "${REPO_OWNER_GPG_FINGERPRINT}" > /dev/null; then
+    if ! gpg --no-options --list-keys "${REPO_OWNER_GPG_FINGERPRINT}" > /dev/null; then
         echo ""
         if (( VERBOSE )) ; then
             echo "    > The repo owners GPG key isn't in the local keyring, checked via command:"
@@ -207,9 +200,15 @@ get_gpg_key() {
         ask_yes_no -n "Is that key / are those keys okay to be imported into your local keyring" || return 42  # TODO: What to do better here?
         echo ""
         echo "--- Importing ${REPO_OWNER} GPG key (showing the shortened fingerprint only)"
+        # The import could print the following messages if there is no .gnupg directory existing yet:
+        #     gpg: keyblock resource '/home/username/.gnupg/pubring.kbx': No such file or directory
+        #     gpg: Fatal: /home/username/.gnupg: directory does not exist!
+        #     gpg: directory '/home/username/.gnupg' created
+        #     gpg: keybox '/home/username/.gnupg/pubring.kbx' created
+        #     gpg: /home/username/.gnupg/trustdb.gpg: trustdb created
         gpg --import  "${REPO_OWNER}".gpg
         echo ""
-        echo "The downloaded and already imported key file '${REPO_OWNER}.gpg' is no loanger needed."
+        echo "The downloaded and already imported key file '${REPO_OWNER}.gpg' is no longer needed."
         ask_yes_no "Should it be deleted now?" && rm -f "${REPO_OWNER}".gpg
     fi
 }
