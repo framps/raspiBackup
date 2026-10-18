@@ -94,13 +94,13 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_DATE='2026-09-06 21:23:17 +0200'
+GIT_DATE='2026-10-18 15:24:33 +0200'
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 1 -d ' ' <<< "$GIT_DATE")
 GIT_TIME_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
-GIT_COMMIT='771ac2c'
+GIT_COMMIT='b446771'
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_COMMIT" | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
