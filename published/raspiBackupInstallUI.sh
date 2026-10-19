@@ -47,7 +47,7 @@ MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use l
 MYNAME=${MYSELF%.*}
 VERSION="0.5"			 	# -beta, -hotfix or -dev suffixes possible
 
-if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
+if (( BASH_VERSINFO[0] < 4 || ( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3 ) )); then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
 	exit 1
 fi
@@ -75,14 +75,14 @@ declare -A REQUIRED_COMMANDS=( \
 		)
 
 requiredCmds=()
-for cmd in ${!REQUIRED_COMMANDS[@]}; do
+for cmd in "${!REQUIRED_COMMANDS[@]}"; do
 	if ! hash $cmd 2>/dev/null; then
 		requiredCmds+=($cmd)
 	fi
 done
 
 if (( ${#requiredCmds[@]} > 0 )); then
-	for cmd in ${requiredCmds[@]}; do
+	for cmd in "${requiredCmds[@]}"; do
 			echo "$MYSELF depends on $cmd which is available in ${REQUIRED_COMMANDS[$cmd]}"
 	done
 
@@ -96,7 +96,7 @@ if (( ${#requiredCmds[@]} > 0 )); then
 		exit 1
 	fi
 
-	apt -y install ${requiredCmds[@]}
+	apt -y install "${requiredCmds[@]}"
 	if (( $? )); then
 		echo "Installation of missing package(s) failed. Please install them manually and then invoke ./$MYSELF again."
 		exit 1
@@ -108,11 +108,11 @@ MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBack
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-GIT_DATE="2026-10-18 15:24:33 +0200"
+GIT_DATE="2026-10-19 21:17:45 +0200"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
-GIT_COMMIT="b446771"
+GIT_COMMIT="3241939"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
 GIT_CODEVERSION="$MYSELF $VERSION, $GIT_DATE_ONLY/$GIT_TIME_ONLY - $GIT_COMMIT_ONLY"
@@ -1728,7 +1728,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	msgVar="MSG_${CONFIG_LANGUAGE}"
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
-		msgVar="$msgVar[$1]"
+		msgVar="${msgVar}[$1]"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
 			msg="${MSG_EN[$1]}" # fallback into english
@@ -1771,7 +1771,7 @@ function getMenuText() { # menutextnumber varname
 	declare -n varname=$2
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
-		menuVar="$menuVar[$1]"
+		menuVar="${menuVar}[$1]"
 		menu="${!menuVar}"
 		if [[ -z $menu ]]; then # no translation found
 			menu="${MENU_EN[$1]}" # fallback into english
@@ -1780,7 +1780,7 @@ function getMenuText() { # menutextnumber varname
 		menu="${MENU_EN[$1]}" # fallback into english
 	fi
 
-   eval "varname=( ${menu[@]} )"
+   eval "varname=( ${menu} )"
 
 }
 
@@ -1834,13 +1834,13 @@ function isInternetAvailable() {
 }
 
 function logEntry() {
-	log "-> ${FUNCNAME[1]} $@"
+	log "-> ${FUNCNAME[1]} $*"
 	(( LOG_INDENT+=3 ))
 }
 
 function logExit() {
 	(( LOG_INDENT-=3 ))
-	log "<- ${FUNCNAME[1]} $@"
+	log "<- ${FUNCNAME[1]} $*"
 }
 
 function finished() {
@@ -1924,7 +1924,7 @@ function isConfigInstalled() {
 }
 
 function isExtensionInstalled() {
-	ls $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh 2>/dev/null &>>"$LOG_FILE"
+	ls $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"
 	return
 }
 
@@ -1975,7 +1975,8 @@ function code_download_execute() {
 		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
 	fi
 
-	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
+	local httpCode
+	httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
 		logExit
@@ -2052,7 +2053,8 @@ function update_script_execute() {
 		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
 	fi
 
-	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")"  "/tmp/$FILE_TO_INSTALL" )"
+	local httpCode
+	httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")"  "/tmp/$FILE_TO_INSTALL" )"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
 		logExit
@@ -2082,19 +2084,20 @@ function downloadFile() { # url, targetFileName
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
-		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		local httpCode
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
 		local rc=$?
 		logItem "httpCode: $httpCode RC: $rc"
 		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
 			rm $f &>>$LOG_FILE
 			logExit $httpCode
-			return $httpCode
+			return 1
 		fi
 
 		if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
 			rm $f &>>$LOG_FILE
 			logExit 404
-			return 404
+			return 1
 		fi
 		mv $f $file &>>$LOG_FILE
 		logExit 0
@@ -2107,7 +2110,8 @@ function update_installer_execute() {
 
 	local newName
 
-	local httpCode="$(downloadFile "$(downloadURL "$MYSELF")" "/tmp/$MYSELF")"
+	local httpCode
+	httpCode="$(downloadFile "$(downloadURL "$MYSELF")" "/tmp/$MYSELF")"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$MYSELF")" "$httpCode"
 		return
@@ -2216,7 +2220,8 @@ function extensions_install_execute() {
 
 	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
 
-	local httpCode="$(downloadFile "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$SAMPLEEXTENSION_TAR_FILE")"
+	local httpCode
+	httpCode="$(downloadFile "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$SAMPLEEXTENSION_TAR_FILE")"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$httpCode"
 		return
@@ -2797,7 +2802,7 @@ function unrecoverableError() { # messagenumber messageparms
 	logEntry "$@"
 
 	if (( $PROGRESSBAR_DO )); then
-		logItem "Progressbar error occured $@"
+		logItem "Progressbar error occured $*"
 		echo "$@"
 		return
 	fi
@@ -2813,15 +2818,15 @@ function unrecoverableError() { # messagenumber messageparms
 	shift
 
 	logItem "Id: $id"
-	logItem "Msg: $@"
+	logItem "Msg: $*"
 
 	if (( $MODE_UNATTENDED )); then
 		echo
-		d="$(getMessageText $id $@ )${NL}${NL}$d"
+		d="$(getMessageText "$id" "$@")${NL}${NL}$d"
 		logItem "$d"
 		echo "$d"
 	else
-		local m="$(getMessageText $id $@ )${NL}${NL}$d"
+		local m="$(getMessageText "$id" "$@")${NL}${NL}$d"
 		logItem "$m"
 		local t=$(center $(($WINDOW_COLS * 2)) "$m")
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $(($WINDOW_COLS * 2)) 1
@@ -2859,7 +2864,7 @@ function testIfServicesExist() { # list of services
 	local services
 	IFS=" " services=( $1 )
 	local fails=""
-	for s in ${services[@]}; do
+	for s in "${services[@]}"; do
 		if ! systemd-analyze verify $s.service &>/dev/null; then
 			[[ -n "$fails" ]] && fails+=","
 			fails+="$s"
@@ -3279,7 +3284,7 @@ function config_keep_do() { # smartRecycle
 			local n
 
 			if (( $srNumberCount == 4 || $srNumberCount == 1 )); then
-				for n in ${srNumbers[@]}; do
+				for n in "${srNumbers[@]}"; do
 					if [[ ! "$n" =~ ^[0-9]+$ ]]; then
 						local m
 						if (( $isSmartRecycle )); then
@@ -3776,12 +3781,12 @@ function config_services_do() {
 
 	getMenuText $MENU_CONFIG_SERVICES tt
 
-	logItem "INCLUDE_SERVICES_REGEX: "${INCLUDE_SERVICES_REGEX[@]}""
+	logItem "INCLUDE_SERVICES_REGEX: $INCLUDE_SERVICES_REGEX"
 	local ci=() 					# list of included servcices
 	local cu=()						# unselected services
 	local css=( ${CONFIG_STOPSERVICES[*]} )										# already configured services
 	local srvc
-	for srvc in ${as[@]}; do
+	for srvc in "${as[@]}"; do
 		if grep -q -i "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then			# service should be included
 			ci+=( "$srvc" )
 		elif containsElement "$srvc" "${css[@]}"; then
@@ -3800,7 +3805,7 @@ function config_services_do() {
 	# now build whiptail list, selected services first followed by unselected services
 
 	local c=()
-	for s in ${ci[@]}; do
+	for s in "${ci[@]}"; do
 		if containsElement "$s" "${cu[@]}"; then
 			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 				c+=("$s" "" "off")
@@ -3858,7 +3863,7 @@ function config_service_sequence_do() {
 
 			local sl=()
 
-			for s in ${src[@]}; do
+			for s in "${src[@]}"; do
 				if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 					sl+=("$s" "" "")
 				else
@@ -3909,7 +3914,7 @@ function config_service_sequence_do() {
 
 		local tl=()
 		local i=1
-		for t in ${tgt[@]}; do
+		for t in "${tgt[@]}"; do
 			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 				tl+=("$i: $t" "" on)
 			else
@@ -3988,7 +3993,7 @@ function config_partitions_do() {
 
 		local cl=()
 		# add all partitions in list
-		for s in ${pn[@]}; do
+		for s in "${pn[@]}"; do
 			if containsElement "$s" "${c[@]}"; then
 				state=on
 			else
@@ -4241,7 +4246,7 @@ function progressbar_do() { # <name of description array> <menu title> <funcs to
 	(
 		while
 			:
-			eval "desc=\${$descArrayName[\$idx]}"
+			eval "desc=\${${descArrayName}[\$idx]}"
 		do
 			desc=$(center $WINDOW_COLS "$desc")
 
@@ -5204,7 +5209,8 @@ function downloadPropertiesFile_execute() {
 
 	if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING_PROPERTYFILE
-		local httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
+		local httpCode
+		httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
 		if (( ! $? )); then
 			NEW_PROPERTIES_FILE=1
 		else
@@ -5541,7 +5547,7 @@ function askYesNo() { # message message_parms
 	local yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
 	local addtlMsg=0
 
-	if [[ $# > 1 ]]; then
+	if (( $# > 1 )); then
 		local m="$1"
 		shift
 		addtlMsg=1
