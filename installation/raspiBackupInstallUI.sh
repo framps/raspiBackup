@@ -278,7 +278,7 @@ function containsElement () {
 # NLS: Either use system language if language is supported and use English otherwise
 #
 
-SUPPORTED_LANGUAGES=("DE" "EN" "FI" "ZH" "FR" "ES" "IT")
+SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ZH" "ES" "IT")
 
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
 LANG_EXT="${LANG^^*}"
