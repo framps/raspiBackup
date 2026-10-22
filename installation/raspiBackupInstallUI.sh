@@ -868,15 +868,6 @@ MSG_FR[$MSG_INVALID_KEEP]="Nombre non valide %1 saisi. Il doit être compris ent
 MSG_ES[$MSG_INVALID_KEEP]="Se ha introducido un número no válido %1. El número debe estar entre 1 y 52."
 MSG_IT[$MSG_INVALID_KEEP]="Numero %1 non valido. Il numero deve essere compreso tra 1 e 52."
 
-MSG_INVALID_KEEP_NUMBER_COUNT=$((SCNT++))
-MSG_DE[$MSG_INVALID_KEEP_NUMBER_COUNT]="Nur eine Zahl eingeben."
-MSG_EN[$MSG_INVALID_KEEP_NUMBER_COUNT]="Insert one number only."
-MSG_FI[$MSG_INVALID_KEEP_NUMBER_COUNT]="Syötä vain yksi numero."
-MSG_ZH[$MSG_INVALID_KEEP_NUMBER_COUNT]="请仅插入一个数字."
-MSG_FR[$MSG_INVALID_KEEP_NUMBER_COUNT]="Entrez un seul numéro."
-MSG_ES[$MSG_INVALID_KEEP_NUMBER_COUNT]="Introduzca un solo número."
-MSG_IT[$MSG_INVALID_KEEP_NUMBER_COUNT]="Inserire un solo numero."
-
 MSG_INVALID_SMART=$((SCNT++))
 MSG_DE[$MSG_INVALID_SMART]="Ungültige Zahl %1 eingegeben. Sie muss >= 0 sein."
 MSG_EN[$MSG_INVALID_SMART]="Invalid number %1 entered. Number has to be >= 0."
