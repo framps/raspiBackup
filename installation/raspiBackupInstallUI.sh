@@ -545,30 +545,35 @@ MSG_EN[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Creating systemd file
 MSG_DE[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Systemddatei %1 wird erstellt."
 MSG_FI[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Luodaan systemd-tiedosto %1."
 MSG_FR[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Création du fichier systemd %1."
+MSG_ZH[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: 创建systemd文件 %1."
 
 MSG_UNINSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Deleting systemd file %1."
 MSG_DE[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Systemddatei %1 wird gelöscht."
 MSG_FI[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Poistetaan systemd-tiedosto %1."
 MSG_FR[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Suppression du fichier systemd %1."
+MSG_ZH[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: 删除systemd文件 %1."
 
 MSG_UPDATING_SYSTEMD=$((SCNT++))
 MSG_EN[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Updating systemd configuration in %1."
 MSG_DE[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Systemd Konfigurationsdatei %1 wird angepasst."
 MSG_FI[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Päivitetään systemd-asetukset kohteessa %1."
 MSG_FR[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Mise à jour de la configuration systemd dans %1."
+MSG_ZH[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: 更新systemd配置 %1."
 
 MSG_SYSTEMD_ENABLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd enabled."
 MSG_DE[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd eingeschaltet."
 MSG_FI[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd otettu käyttöön."
 MSG_FR[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd activé."
+MSG_ZH[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: systemd已启用."
 
 MSG_SYSTEMD_DISABLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer disabled."
 MSG_DE[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer ausgeschaltet."
 MSG_FI[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd-ajastin poistettu käytöstä."
 MSG_FR[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: Timer systemd de $RASPIBACKUP_NAME désactivé."
+MSG_ZH[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd定时器已禁用."
 
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
@@ -645,6 +650,7 @@ MSG_EN[$MSG_QUESTION_UPDATE_SYSTEMD]="Do you want to save the updated systemd se
 MSG_DE[$MSG_QUESTION_UPDATE_SYSTEMD]="Soll die geänderte systemd Konfiguration für $RASPIBACKUP_NAME jetzt gespeichert werden?"
 MSG_FI[$MSG_QUESTION_UPDATE_SYSTEMD]="Haluatko tallentaa päivitetyt systemd-asetukset kohteelle $RASPIBACKUP_NAME nyt?"
 MSG_FR[$MSG_QUESTION_UPDATE_SYSTEMD]="Voulez-vous enregistrer les paramètres systemd mis à jour pour $RASPIBACKUP_NAME maintenant ?"
+MSG_ZH[$MSG_QUESTION_UPDATE_SYSTEMD]="是否保存$RASPIBACKUP_NAME 更新的systemd设置?"
 
 MSG_SEQUENCE_OK=$((SCNT++))
 MSG_EN[$MSG_SEQUENCE_OK]="Stopcommands for services will be executed in following sequence. Startcommands will be executed in reverse sequence. Sequence OK?"
@@ -728,6 +734,7 @@ MSG_EN[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME already installed.${NL}
 MSG_DE[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME ist bereits installiert.${NL}Soll die bestehende Installation überschrieben werden ?"
 MSG_FI[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME on jo asennettu.${NL} Haluatko uudelleenasentaa kohteen $RASPIBACKUP_NAME ?"
 MSG_FR[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME est déjà installé.${NL}Voulez-vous écraser l'installation existante ?"
+MSG_ZH[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME 已安装.${NL}是否重新安装$RASPIBACKUP_NAME ?"
 
 MSG_DOWNLOADING_PROPERTYFILE=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING_PROPERTYFILE]="Downloading version information."
@@ -790,12 +797,14 @@ MSG_EN[$MSG_SYSTEMD_NOT_INSTALLED]="No systemd configuration found."
 MSG_DE[$MSG_SYSTEMD_NOT_INSTALLED]="Keine systemd Konfiguration gefunden."
 MSG_FI[$MSG_SYSTEMD_NOT_INSTALLED]="Systemd-asetuksia ei löytynyt."
 MSG_FR[$MSG_SYSTEMD_NOT_INSTALLED]="Aucune configuration systemd trouvée."
+MSG_ZH[$MSG_SYSTEMD_NOT_INSTALLED]="未找到systemd配置."
 
 MSG_SYSTEMD_CONFIG_ERROR=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd configuration failed with RC %1."
 MSG_DE[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd Konfiguration fehlerhaft mit RC %1."
 MSG_FI[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd-asetusten määritys epäonnistui, RC %1."
 MSG_FR[$MSG_SYSTEMD_CONFIG_ERROR]="La configuration systemd a échoué avec le RC %1."
+MSG_ZH[$MSG_SYSTEMD_CONFIG_ERROR]="systemd配置失败, RC %1."
 
 DESCRIPTION_INSTALLATION=$((SCNT++))
 MSG_EN[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME allows to plug in custom extensions which are called before and after the backup process. \
@@ -827,6 +836,9 @@ ${NL}Huom: Asetuksella DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS voi lisätä muita k
 MSG_FR[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME peut compresser les sauvegardes dd et tar pour réduire leur taille, mais cela augmente la durée de la sauvegarde. \
 dd utilise gzip et tar peut utiliser zstd, gzip, zip2, lzip, lzma, lzop ou xz. \
 ${NL}Remarque : l'option de configuration DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS permet d'ajouter des options d'appel supplémentaires."
+MSG_ZH[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME 可以压缩dd和tar备份以减小备份大小，但会增加备份时间. \
+dd使用gzip，tar可以使用zstd, gzip, zip2, lzip, lzma, lzop或xz. \
+${NL}提示: 配置选项DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS可用于添加额外的调用参数."
 
 DESCRIPTION_CRON=$((SCNT++))
 MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
@@ -849,6 +861,8 @@ MSG_FI[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME tulisi käynnistää sään
 Määritä varmuuskopio luotavaksi päivittäin tai viikoittain. Muita varmuuskopiointivälejä varten tiedostoa /etc/systemd/system/raspiBackup.timer on muokattava manuaalisesti."
 MSG_FR[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME doit être démarré régulièrement lorsque les premiers tests de configuration, de sauvegarde et de restauration sont terminés. \
 Configurez la sauvegarde à exécuter quotidiennement ou hebdomadairement. Pour d'autres intervalles de sauvegardes vous devez modifier manuellement le fichier /etc/systemd/system/raspiBackup.timer ."
+MSG_ZH[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME 会在完成初始配置以及备份和恢复测试后定期启动. \
+配置每天或每周创建备份。对于其他备份间隔，您必须手动修改/etc/systemd/system/raspiBackup.timer."
 
 DESCRIPTION_SMARTMODE=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMARTMODE]="${NL}There exist two different ways to define the number of backups. Just by defining the maximum number of backups to keep or \
@@ -990,6 +1004,11 @@ ${NL}${NL}Exemples : \
 ${NL}/dev/sdb ef429bca-01 \
 ${NL}/dev/mmcblk1 ef429bca-02 \
 ${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_ZH[$DESCRIPTION_CLONE_DEVICE]="${NL}定义一个克隆设备和一个PARTUUID. \
+${NL}${NL}示例: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -1054,6 +1073,9 @@ ${NL}zstd:n käyttöä suositellaan, koska sen pakkaussuhde on paljon parempi ja
 MSG_FR[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Différents outils de compression sont disponibles pour compresser une sauvegarde tar. \
 ${NL}L'outil de compression par défaut de tar est gzip. \
 ${NL}zstd est recommandé car il offre un bien meilleur taux de compression et une décompression plus rapide."
+MSG_ZH[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}有多种压缩工具可用于压缩tar备份. \
+${NL}tar的默认压缩工具是gzip. \
+${NL}建议使用zstd，因为它的压缩率更高，解压速度更快."
 
 DESCRIPTION_MAIL_PROGRAM=$((SCNT++))
 MSG_EN[$DESCRIPTION_MAIL_PROGRAM]="Select the mail program to use to send notification eMails."
@@ -1067,7 +1089,7 @@ MSG_EN[$DESCRIPTION_EMAIL]="Enter the eMail address to send notifications to. En
 MSG_DE[$DESCRIPTION_EMAIL]="Gibt die eMail Adresse ein die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus.\n\nHINWEIS: eMails werden nur gesendet wenn ein lokaler MTA erfolgreich konfiguriert wurde."
 MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta.\n\nHUOM: Sähköposteja lähetetään vain, jos paikallinen MTA on määritetty oikein."
 MSG_FR[$DESCRIPTION_EMAIL]="Saisissez l'adresse e-mail à laquelle envoyer les notifications. Ne saisissez aucune adresse e-mail pour désactiver les notifications.\n\nREMARQUE : les e-mails ne seront envoyés que si un MTA local a été correctement configuré."
-#MSG_ZH[$DESCRIPTION_EMAIL]="输入邮件地址，留空则禁用邮件通知."
+MSG_ZH[$DESCRIPTION_EMAIL]="输入接收通知的邮件地址，留空则禁用邮件通知.\n\n注意: 只有正确配置了本地MTA后才会发送邮件."
 
 TITLE_ERROR=$((SCNT++))
 MSG_EN[$TITLE_ERROR]="Error"
@@ -1139,6 +1161,11 @@ ${NL}${NL}Exemples : \
 ${NL}/dev/sda \
 ${NL}/dev/mmcblk1p \
 ${NL}/dev/nvme1n1"
+MSG_ZH[$MSG_INVALID_CLONE_DEVICE]="未找到克隆设备 %1. \
+${NL}${NL}示例: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
 
 MSG_MISSING_PARTUUID=$((SCNT++))
 MSG_EN[$MSG_MISSING_PARTUUID]="Missing a PARTUUID of the clone device. \
@@ -1161,6 +1188,11 @@ ${NL}${NL}Exemples : \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
 ${NL}${NL}Remarque : séparez le périphérique de clonage et la PARTUUID par un espace"
+MSG_ZH[$MSG_MISSING_PARTUUID]="缺少克隆设备的PARTUUID. \
+${NL}${NL}示例: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}提示: 克隆设备和PARTUUID之间用一个空格分隔"
 
 MSG_INVALID_PARTUUID=$((SCNT++))
 MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1 \
@@ -1168,6 +1200,11 @@ ${NL}${NL}Examples: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
 ${NL}${NL}Note: Separate clone device and PARTUUID by spaces"
+MSG_ZH[$MSG_INVALID_PARTUUID]="无效的PARTUUID %1 \
+${NL}${NL}示例: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}提示: 克隆设备和PARTUUID之间用空格分隔"
 
 MSG_DE[$MSG_INVALID_PARTUUID]="Ungültige PARTUUID %1 \
 ${NL}${NL}Beispiele: \
@@ -1190,6 +1227,7 @@ MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
 MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2"
 MSG_FI[$MSG_PARTUUID_NOT_FOUND]="PARTUUID:ta %1 ei löytynyt kloonauslaitteelta %2."
 MSG_FR[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 introuvable sur le périphérique de clonage %2."
+MSG_ZH[$MSG_PARTUUID_NOT_FOUND]="在克隆设备 %2 上未找到PARTUUID %1."
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
@@ -1360,12 +1398,14 @@ MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions ha
 MSG_DE[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Wenigstens die beiden ersten Partitionen müssen ausgewählt sein."
 MSG_FI[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Vähintään kaksi ensimmäistä osiota on valittava."
 MSG_FR[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Au moins les deux premières partitions doivent être sélectionnées."
+MSG_ZH[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="至少必须选择前两个分区."
 
 MSG_SENSITIVE_WARNING=$((SCNT++))
 MSG_EN[$MSG_SENSITIVE_WARNING]="| ===> A lot of sensitive information is masqueraded in this log file. Nevertheless please check the log carefully before you distribute it <=== |"
 MSG_DE[$MSG_SENSITIVE_WARNING]="| ===>  Viele sensitive Informationen werden in dieser Logdatei maskiert. Vor dem Verteilen des Logs sollte es trotzdem ueberprueft werden  <=== |"
 MSG_FI[$MSG_SENSITIVE_WARNING]="| ===>            Sensitiivisiä tietoja on piilotettu tästä lokitiedostosta. Tarkista lisäksi loki huolellisesti ennen sen jakoa            <=== |"
 MSG_FR[$MSG_SENSITIVE_WARNING]="| ===>De nombreuses informations sensibles sont masquées dans ce fichier journal. Avant de distribuer le log, il faut quand même le vérifier<=== |"
+MSG_ZH[$MSG_SENSITIVE_WARNING]="|                                 ===> 此日志文件中的大量敏感信息已被屏蔽。但在分发日志之前，请仍然仔细检查 <===                                 |"
 
 MSG_SENSITIVE_SEPARATOR=$((SCNT++))
 MSG_EN[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
