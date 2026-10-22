@@ -543,26 +543,31 @@ MSG_ZH[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: 更新 %1 到最新版本."
 MSG_INSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Creating systemd file %1."
 MSG_DE[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Systemddatei %1 wird erstellt."
+MSG_FI[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Luodaan systemd-tiedosto %1."
 MSG_FR[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Création du fichier systemd %1."
 
 MSG_UNINSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Deleting systemd file %1."
 MSG_DE[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Systemddatei %1 wird gelöscht."
+MSG_FI[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Poistetaan systemd-tiedosto %1."
 MSG_FR[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Suppression du fichier systemd %1."
 
 MSG_UPDATING_SYSTEMD=$((SCNT++))
 MSG_EN[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Updating systemd configuration in %1."
 MSG_DE[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Systemd Konfigurationsdatei %1 wird angepasst."
+MSG_FI[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Päivitetään systemd-asetukset kohteessa %1."
 MSG_FR[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Mise à jour de la configuration systemd dans %1."
 
 MSG_SYSTEMD_ENABLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd enabled."
 MSG_DE[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd eingeschaltet."
+MSG_FI[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd otettu käyttöön."
 MSG_FR[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd activé."
 
 MSG_SYSTEMD_DISABLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer disabled."
 MSG_DE[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer ausgeschaltet."
+MSG_FI[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd-ajastin poistettu käytöstä."
 MSG_FR[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: Timer systemd de $RASPIBACKUP_NAME désactivé."
 
 MSG_TITLE=$((SCNT++))
@@ -638,6 +643,7 @@ MSG_ZH[$MSG_QUESTION_UPDATE_CRON]="是否保存$RASPIBACKUP_NAME 更新的cron�
 MSG_QUESTION_UPDATE_SYSTEMD=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UPDATE_SYSTEMD]="Do you want to save the updated systemd settings for $RASPIBACKUP_NAME now?"
 MSG_DE[$MSG_QUESTION_UPDATE_SYSTEMD]="Soll die geänderte systemd Konfiguration für $RASPIBACKUP_NAME jetzt gespeichert werden?"
+MSG_FI[$MSG_QUESTION_UPDATE_SYSTEMD]="Haluatko tallentaa päivitetyt systemd-asetukset kohteelle $RASPIBACKUP_NAME nyt?"
 MSG_FR[$MSG_QUESTION_UPDATE_SYSTEMD]="Voulez-vous enregistrer les paramètres systemd mis à jour pour $RASPIBACKUP_NAME maintenant ?"
 
 MSG_SEQUENCE_OK=$((SCNT++))
@@ -782,11 +788,13 @@ MSG_ZH[$MSG_RUNASROOT]="$MYSELF 必须以root身份开启. 请尝试 'sudo %1%2'
 MSG_SYSTEMD_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_NOT_INSTALLED]="No systemd configuration found."
 MSG_DE[$MSG_SYSTEMD_NOT_INSTALLED]="Keine systemd Konfiguration gefunden."
+MSG_FI[$MSG_SYSTEMD_NOT_INSTALLED]="Systemd-asetuksia ei löytynyt."
 MSG_FR[$MSG_SYSTEMD_NOT_INSTALLED]="Aucune configuration systemd trouvée."
 
 MSG_SYSTEMD_CONFIG_ERROR=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd configuration failed with RC %1."
 MSG_DE[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd Konfiguration fehlerhaft mit RC %1."
+MSG_FI[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd-asetusten määritys epäonnistui, RC %1."
 MSG_FR[$MSG_SYSTEMD_CONFIG_ERROR]="La configuration systemd a échoué avec le RC %1."
 
 DESCRIPTION_INSTALLATION=$((SCNT++))
@@ -813,6 +821,9 @@ ${NL}Note: There exists a configuration option DEFAULT_TAR_COMPRESSION_TOOL_OPTI
 MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups verkleinern um die Backupgröße zu reduzieren aber dadurch steigt die Backupzeit. \
 dd nutzt gzip und tar kann zstd, gzip, zip2, lzip, lzma, lzop oder nutzen. \
 ${NL}Hinweis: Es gibt eine Konfigurationsoption DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS mit der weitere Aufrufoptionen mitgegeben werden können."
+MSG_FI[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME voi pakata dd- ja tar-varmuuskopiot pienentääkseen varmuuskopion kokoa, mutta tämä pidentää varmuuskopiointiaikaa. \
+dd käyttää gzipiä ja tar voi käyttää zstd:tä, gzipiä, zip2:ta, lzipiä, lzmaa, lzopia tai xz:aa. \
+${NL}Huom: Asetuksella DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS voi lisätä muita käynnistysvalintoja."
 MSG_FR[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME peut compresser les sauvegardes dd et tar pour réduire leur taille, mais cela augmente la durée de la sauvegarde. \
 dd utilise gzip et tar peut utiliser zstd, gzip, zip2, lzip, lzma, lzop ou xz. \
 ${NL}Remarque : l'option de configuration DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS permet d'ajouter des options d'appel supplémentaires."
@@ -834,6 +845,8 @@ MSG_EN[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME should be started on a regu
 Configure the backup to be created daily or weekly. For other backup intervals you have to modify /etc/systemd/system/raspiBackup.timer manually."
 MSG_DE[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME sollte regelmäßig gestartet werden wenn die initiale Konfiguration sowie Backup und Restore Tests beendet sind. \
 Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Intervalle muss die Datei /etc/systemd/system/raspiBackup.timer manuell geändert werden."
+MSG_FI[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME tulisi käynnistää säännöllisesti, kun alkuasetukset sekä varmuuskopioinnin ja palautuksen testaus on tehty. \
+Määritä varmuuskopio luotavaksi päivittäin tai viikoittain. Muita varmuuskopiointivälejä varten tiedostoa /etc/systemd/system/raspiBackup.timer on muokattava manuaalisesti."
 MSG_FR[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME doit être démarré régulièrement lorsque les premiers tests de configuration, de sauvegarde et de restauration sont terminés. \
 Configurez la sauvegarde à exécuter quotidiennement ou hebdomadairement. Pour d'autres intervalles de sauvegardes vous devez modifier manuellement le fichier /etc/systemd/system/raspiBackup.timer ."
 
@@ -967,6 +980,11 @@ ${NL}${NL}Beispiele: \
 ${NL}/dev/sdb ef429bca-01 \
 ${NL}/dev/mmcblk1 ef429bca-02 \
 ${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_FI[$DESCRIPTION_CLONE_DEVICE]="${NL}Määritä kloonauslaite ja yksi PARTUUID. \
+${NL}${NL}Esimerkkejä: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
 MSG_FR[$DESCRIPTION_CLONE_DEVICE]="${NL}Définissez un périphérique de clonage et une PARTUUID. \
 ${NL}${NL}Exemples : \
 ${NL}/dev/sdb ef429bca-01 \
@@ -1030,6 +1048,9 @@ ${NL}zstd is suggested to use because it has a much better compression rate and 
 MSG_DE[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Es gibt verschiedene Kompressionstools um ein tar Backup zu verkleinern. \
 ${NL}Das Standardtool von tar ist gzip. \
 ${NL}zstd ist empfohlen da es hat eine wesentlich bessere Kompressionsrate und schnellere Dekompressionsgeschwindigkeit hat."
+MSG_FI[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Tar-varmuuskopion pakkaamiseen on saatavilla useita pakkaustyökaluja. \
+${NL}Tarin oletuspakkaustyökalu on gzip. \
+${NL}zstd:n käyttöä suositellaan, koska sen pakkaussuhde on paljon parempi ja purkunopeus suurempi."
 MSG_FR[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Différents outils de compression sont disponibles pour compresser une sauvegarde tar. \
 ${NL}L'outil de compression par défaut de tar est gzip. \
 ${NL}zstd est recommandé car il offre un bien meilleur taux de compression et une décompression plus rapide."
@@ -1044,7 +1065,7 @@ MSG_ZH[$DESCRIPTION_MAIL_PROGRAM]="选择发送邮件的程序."
 DESCRIPTION_EMAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_EMAIL]="Enter the eMail address to send notifications to. Enter no eMail address to disable notifications.\n\nNOTE: eMails will be sent only if a local MTA has been configured correctly."
 MSG_DE[$DESCRIPTION_EMAIL]="Gibt die eMail Adresse ein die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus.\n\nHINWEIS: eMails werden nur gesendet wenn ein lokaler MTA erfolgreich konfiguriert wurde."
-#MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta."
+MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta.\n\nHUOM: Sähköposteja lähetetään vain, jos paikallinen MTA on määritetty oikein."
 MSG_FR[$DESCRIPTION_EMAIL]="Saisissez l'adresse e-mail à laquelle envoyer les notifications. Ne saisissez aucune adresse e-mail pour désactiver les notifications.\n\nREMARQUE : les e-mails ne seront envoyés que si un MTA local a été correctement configuré."
 #MSG_ZH[$DESCRIPTION_EMAIL]="输入邮件地址，留空则禁用邮件通知."
 
@@ -1108,6 +1129,11 @@ ${NL}${NL}Beispiele: \
 ${NL}/dev/sda \
 ${NL}/dev/mmcblk1p \
 ${NL}/dev/nvme1n1"
+MSG_FI[$MSG_INVALID_CLONE_DEVICE]="Kloonauslaitetta %1 ei löytynyt. \
+${NL}${NL}Esimerkkejä: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
 MSG_FR[$MSG_INVALID_CLONE_DEVICE]="Périphérique de clonage %1 introuvable. \
 ${NL}${NL}Exemples : \
 ${NL}/dev/sda \
@@ -1125,6 +1151,11 @@ ${NL}${NL}Beispiele: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
 ${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+MSG_FI[$MSG_MISSING_PARTUUID]="Kloonauslaitteen PARTUUID puuttuu. \
+${NL}${NL}Esimerkkejä: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Huom: Erota kloonauslaite ja PARTUUID välilyönnillä"
 MSG_FR[$MSG_MISSING_PARTUUID]="Il manque une PARTUUID du périphérique de clonage. \
 ${NL}${NL}Exemples : \
 ${NL}ef429bca-01 \
@@ -1143,6 +1174,11 @@ ${NL}${NL}Beispiele: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
 ${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+MSG_FI[$MSG_INVALID_PARTUUID]="Epäkelpo PARTUUID %1 \
+${NL}${NL}Esimerkkejä: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Huom: Erota kloonauslaite ja PARTUUID välilyönneillä"
 MSG_FR[$MSG_INVALID_PARTUUID]="PARTUUID %1 invalide \
 ${NL}${NL}Exemples : \
 ${NL}ef429bca-01 \
@@ -1152,6 +1188,7 @@ ${NL}${NL}Remarque : séparez le périphérique de clonage et la PARTUUID par un
 MSG_PARTUUID_NOT_FOUND=$((SCNT++))
 MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
 MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2"
+MSG_FI[$MSG_PARTUUID_NOT_FOUND]="PARTUUID:ta %1 ei löytynyt kloonauslaitteelta %2."
 MSG_FR[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 introuvable sur le périphérique de clonage %2."
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
@@ -1321,6 +1358,7 @@ MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用
 MSG_FIRST_PARTITIONS_NOT_SELECTED=$((SCNT++))
 MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions have to be selected."
 MSG_DE[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Wenigstens die beiden ersten Partitionen müssen ausgewählt sein."
+MSG_FI[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Vähintään kaksi ensimmäistä osiota on valittava."
 MSG_FR[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Au moins les deux premières partitions doivent être sélectionnées."
 
 MSG_SENSITIVE_WARNING=$((SCNT++))
