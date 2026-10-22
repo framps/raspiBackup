@@ -520,7 +520,7 @@ function getIndexInArray() { # element ${array[@]}
 # NLS: Either use system language if language is supported and use fallback language English otherwise
 #
 
-SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ES" "IT")
+SUPPORTED_LANGUAGES=("DE" "EN" "FI" "FR" "ES" "IT")
 FALLBACK_LANGUAGE="EN"
 
 # use LANG variable to determine language
