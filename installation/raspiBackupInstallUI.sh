@@ -359,7 +359,7 @@ MSG_DOWNLOADING=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Downloading %1..."
 MSG_DE[$MSG_DOWNLOADING]="${MSG_PRF}0002I: %1 wird aus dem Netz geladen..."
 MSG_FI[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Ladataan %1..."
-MSG_FR[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Téléchargement %1..."
+MSG_FR[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Téléchargement de %1..."
 MSG_ZH[$MSG_DOWNLOADING]="${MSG_PRF}0002I: 下载中 %1..."
 MSG_ES[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Descargando %1..."
 MSG_IT[$MSG_DOWNLOADING]="${MSG_PRF}0002I: Download di %1..."
@@ -404,7 +404,7 @@ MSG_MOVE_FAILED=$((SCNT++))
 MSG_EN[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv of %1 failed."
 MSG_DE[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv von %1 nicht möglich."
 MSG_FI[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv %1 epäonnistui."
-MSG_FR[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: Impossible de faire mv à partir de %1."
+MSG_FR[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv de %1 a échoué."
 MSG_ZH[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv %1 失败."
 MSG_ES[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv de %1 ha fallado."
 MSG_IT[$MSG_MOVE_FAILED]="${MSG_PRF}0007E: mv di %1 non riuscito."
@@ -413,7 +413,7 @@ MSG_CLEANUP=$((SCNT++))
 MSG_EN[$MSG_CLEANUP]="${MSG_PRF}0008I: Cleaning up..."
 MSG_DE[$MSG_CLEANUP]="${MSG_PRF}0008I: Räume auf..."
 MSG_FI[$MSG_CLEANUP]="${MSG_PRF}0008I: Puhdistetaan..."
-MSG_FR[$MSG_CLEANUP]="${MSG_PRF}0008I: Nettoyer..."
+MSG_FR[$MSG_CLEANUP]="${MSG_PRF}0008I: Nettoyage..."
 MSG_ZH[$MSG_CLEANUP]="${MSG_PRF}0008I: 正在清理..."
 MSG_ES[$MSG_CLEANUP]="${MSG_PRF}0008I: Limpiando..."
 MSG_IT[$MSG_CLEANUP]="${MSG_PRF}0008I: Pulizia in corso..."
@@ -548,7 +548,7 @@ MSG_SAMPLEEXTENSION_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Sample extension uninstall failed. %1"
 MSG_DE[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Beispielserweiterungsdeinstallation fehlgeschlagen. %1"
 MSG_FI[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Näytelisäosien asennuksen poisto epäonnistui. %1"
-MSG_FR[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Échec de la désinstallation de l'extension de l'exemple. %1"
+MSG_FR[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Échec de la désinstallation des exemples d'extensions. %1"
 MSG_ZH[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: 扩展卸载失败. %1"
 MSG_ES[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: La desinstalación de las extensiones de ejemplo ha fallado. %1"
 MSG_IT[$MSG_SAMPLEEXTENSION_UNINSTALL_FAILED]="${MSG_PRF}0023E: Disinstallazione delle estensioni di esempio non riuscita. %1"
@@ -575,7 +575,7 @@ MSG_UPDATING_CRON=$((SCNT++))
 MSG_EN[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Updating cron configuration in %1."
 MSG_DE[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Cron Konfigurationsdatei %1 wird angepasst."
 MSG_FI[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Päivitetään cron-asetukset kohteessa %1."
-MSG_FR[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Le fichier de configuration Cron %1 a été mis à jour."
+MSG_FR[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Mise à jour de la configuration cron dans %1."
 MSG_ZH[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: 更新cron文件 %1."
 MSG_ES[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Actualizando la configuración de cron en %1."
 MSG_IT[$MSG_UPDATING_CRON]="${MSG_PRF}0026I: Aggiornamento della configurazione cron in %1."
@@ -593,7 +593,7 @@ MSG_CODE_UPDATED=$((SCNT++))
 MSG_EN[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: Updated %1 with latest available release."
 MSG_DE[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 wurde mit dem letzen aktuellen Release erneuert."
 MSG_FI[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 päivitetty viimeisimpään julkaisuun."
-MSG_FR[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 a été remplacé par la version la plus récente."
+MSG_FR[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 a été mis à jour avec la dernière version disponible."
 MSG_ZH[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: 更新 %1 到最新版本."
 MSG_ES[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 actualizado a la última versión disponible."
 MSG_IT[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 aggiornato all'ultima versione disponibile."
@@ -710,7 +710,7 @@ MSG_QUESTION_UPDATE_CONFIG=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UPDATE_CONFIG]="Do you want to save the updated $RASPIBACKUP_NAME configuration now?"
 MSG_DE[$MSG_QUESTION_UPDATE_CONFIG]="Soll die geänderte Konfiguration von $RASPIBACKUP_NAME jetzt gespeichert werden?"
 MSG_FI[$MSG_QUESTION_UPDATE_CONFIG]="Haluatko tallentaa päivitetyt $RASPIBACKUP_NAME-asetukset nyt?"
-MSG_FR[$MSG_QUESTION_UPDATE_CONFIG]="La configuration de $RASPIBACKUP_NAME a été modifiée, Enregistrer maintenant?"
+MSG_FR[$MSG_QUESTION_UPDATE_CONFIG]="Voulez-vous enregistrer maintenant la configuration mise à jour de $RASPIBACKUP_NAME ?"
 MSG_ZH[$MSG_QUESTION_UPDATE_CONFIG]="是否立刻更新 $RASPIBACKUP_NAME 设置?"
 MSG_ES[$MSG_QUESTION_UPDATE_CONFIG]="¿Desea guardar ahora la configuración actualizada de $RASPIBACKUP_NAME?"
 MSG_IT[$MSG_QUESTION_UPDATE_CONFIG]="Salvare ora la configurazione aggiornata di $RASPIBACKUP_NAME?"
@@ -719,7 +719,7 @@ MSG_QUESTION_IGNORE_MISSING_STARTSTOP=$((SCNT++))
 MSG_EN[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="There are no services stopped before starting the backup.${NL}WARNING${NL}Inconsistent backups may be created with $RASPIBACKUP_NAME.${NL}Are you sure?"
 MSG_DE[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="Es werden keine Services vor dem Start des Backups gestoppt.${NL}WARNUNG${NL}Dadurch können inkonsistente Backups mit $RASPIBACKUP_NAME entstehen.${NL}Ist das beabsichtigt?"
 MSG_FI[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="Palveluita ei ole valittu pysäytettäväksi ennen varmuuskopiointia.${NL}VAROITUS${NL}Tämä voi johtaa $RASPIBACKUP_NAME-varmuuskopioiden epäyhtenäisyyteen.${NL}Oletko varma?"
-MSG_FR[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="Aucun service ne sera arrêté avant le démarrage de la sauvegarde.${NL}VAROITUS${NL}Cela peut entraîner des incohérences avec $RASPIBACKUP_NAME.${NL}Etes-vous sûre?"
+MSG_FR[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="Aucun service ne sera arrêté avant le démarrage de la sauvegarde.${NL}ATTENTION${NL}Cela peut entraîner des sauvegardes incohérentes avec $RASPIBACKUP_NAME.${NL}Êtes-vous sûr ?"
 MSG_ZH[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="备份前没有停止任何服务.${NL}警告${NL}可能会创建一个与$RASPIBACKUP_NAME名称不一致的备份.${NL}是否继续?"
 MSG_ES[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="No se detiene ningún servicio antes de iniciar la copia de seguridad.${NL}ATENCIÓN${NL}$RASPIBACKUP_NAME puede crear copias de seguridad inconsistentes.${NL}¿Está seguro?"
 MSG_IT[$MSG_QUESTION_IGNORE_MISSING_STARTSTOP]="Non viene arrestato nessun servizio prima di avviare il backup.${NL}ATTENZIONE${NL}$RASPIBACKUP_NAME potrebbe creare backup incoerenti.${NL}Si è sicuri?"
@@ -746,7 +746,7 @@ MSG_SEQUENCE_OK=$((SCNT++))
 MSG_EN[$MSG_SEQUENCE_OK]="Stopcommands for services will be executed in following sequence. Startcommands will be executed in reverse sequence. Sequence OK?"
 MSG_DE[$MSG_SEQUENCE_OK]="Stopbefehle für die Services werden in folgender Reihenfolge ausgeführt. Startbefehle werden umgekehrt ausgeführt. Ist die Reihenfolge richtig?"
 MSG_FI[$MSG_SEQUENCE_OK]="Palvelut pysäytetään seuraavassa järjestyksessä ja ne käynnistetään uudelleen käänteisessä järjestyksessä. Onko järjestys OK?"
-MSG_FR[$MSG_SEQUENCE_OK]="Les commandes d'arrêt pour les services seront exécutées dans l'ordre suivant. Les commandes de démarrage seront exécutées dans l'ordre inverse. d'accord?"
+MSG_FR[$MSG_SEQUENCE_OK]="Les commandes d'arrêt pour les services seront exécutées dans l'ordre suivant. Les commandes de démarrage seront exécutées dans l'ordre inverse. L'ordre est-il correct ?"
 MSG_ZH[$MSG_SEQUENCE_OK]="停止服务命令将按以下顺序停止，启动服务命令按反序执行 OK?"
 MSG_ES[$MSG_SEQUENCE_OK]="Los comandos de parada de los servicios se ejecutarán en el siguiente orden. Los comandos de arranque se ejecutarán en orden inverso. ¿Es correcto el orden?"
 MSG_IT[$MSG_SEQUENCE_OK]="I comandi di arresto dei servizi verranno eseguiti nella sequenza seguente. I comandi di avvio verranno eseguiti in sequenza inversa. Sequenza corretta?"
@@ -809,7 +809,7 @@ MSG_CRON_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_CRON_NOT_INSTALLED]="No cron configuration found."
 MSG_DE[$MSG_CRON_NOT_INSTALLED]="Keine cron Konfiguration gefunden."
 MSG_FI[$MSG_CRON_NOT_INSTALLED]="Cron-asetuksia ei löytynyt."
-MSG_FR[$MSG_CRON_NOT_INSTALLED]="Aucune configuration cron trouvée.."
+MSG_FR[$MSG_CRON_NOT_INSTALLED]="Aucune configuration cron trouvée."
 MSG_ZH[$MSG_CRON_NOT_INSTALLED]="Cron未找到."
 MSG_ES[$MSG_CRON_NOT_INSTALLED]="No se ha encontrado ninguna configuración de cron."
 MSG_IT[$MSG_CRON_NOT_INSTALLED]="Nessuna configurazione cron trovata."
@@ -818,7 +818,7 @@ MSG_NO_UPDATE_AVAILABLE=$((SCNT++))
 MSG_EN[$MSG_NO_UPDATE_AVAILABLE]="(No update available)"
 MSG_DE[$MSG_NO_UPDATE_AVAILABLE]="(Kein Update verfügbar)"
 MSG_FI[$MSG_NO_UPDATE_AVAILABLE]="(Päivitystä ei ole saatavilla)"
-MSG_FR[$MSG_NO_UPDATE_AVAILABLE]="(Pas de mise a jour disponible)"
+MSG_FR[$MSG_NO_UPDATE_AVAILABLE]="(Pas de mise à jour disponible)"
 MSG_ZH[$MSG_NO_UPDATE_AVAILABLE]="(没有可用更新)"
 MSG_ES[$MSG_NO_UPDATE_AVAILABLE]="(No hay ninguna actualización disponible)"
 MSG_IT[$MSG_NO_UPDATE_AVAILABLE]="(Nessun aggiornamento disponibile)"
@@ -854,7 +854,7 @@ MSG_DOWNLOADING_PROPERTYFILE=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING_PROPERTYFILE]="Downloading version information."
 MSG_DE[$MSG_DOWNLOADING_PROPERTYFILE]="Versionsinformationen werden runtergeladen."
 MSG_FI[$MSG_DOWNLOADING_PROPERTYFILE]="Ladataan version tietoja."
-MSG_FR[$MSG_DOWNLOADING_PROPERTYFILE]="Les informations de version seront téléchargées."
+MSG_FR[$MSG_DOWNLOADING_PROPERTYFILE]="Téléchargement des informations de version."
 MSG_ZH[$MSG_DOWNLOADING_PROPERTYFILE]="下载版本信息."
 MSG_ES[$MSG_DOWNLOADING_PROPERTYFILE]="Descargando la información de versión."
 MSG_IT[$MSG_DOWNLOADING_PROPERTYFILE]="Download delle informazioni sulla versione."
@@ -890,7 +890,7 @@ MSG_INVALID_KEEP_NUMBER_COUNT=$((SCNT++))
 MSG_EN[$MSG_INVALID_KEEP_NUMBER_COUNT]="Enter one single number only."
 MSG_DE[$MSG_INVALID_KEEP_NUMBER_COUNT]="Nur eine einzige Zahl eingeben."
 MSG_FI[$MSG_INVALID_KEEP_NUMBER_COUNT]="Syötä vain yksi numero."
-MSG_FR[$MSG_INVALID_KEEP_NUMBER_COUNT]="Entrez un seul numéro."
+MSG_FR[$MSG_INVALID_KEEP_NUMBER_COUNT]="Entrez un seul nombre."
 MSG_ZH[$MSG_INVALID_KEEP_NUMBER_COUNT]="请仅输入一个数字."
 MSG_ES[$MSG_INVALID_KEEP_NUMBER_COUNT]="Introduzca un único número."
 MSG_IT[$MSG_INVALID_KEEP_NUMBER_COUNT]="Inserire un unico numero."
@@ -984,7 +984,7 @@ MSG_DE[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME sollte regelmäßig gestartet 
 Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Intervalle muss die Datei /etc/cron.d/raspiBackup manuell geändert werden."
 MSG_FI[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME tulisi ajaa säännöllisesti, kun alkuasetukset sekä varmuuskopioinnin ja palautuksen testaus on tehty. \
 Ajasta varmuuskopiointi päivittäiseksi tai viikoittaiseksi. Muita varmuuskopioinnin aikavälejä varten tulee muokata tiedostoa /etc/cron.d/raspiBackup manuaalisesti."
-MSG_FR[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME doit être démarré régulièrement lorsque les premiers tests de configuration ,de sauvegarde et de restauration sont terminés. \
+MSG_FR[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME doit être démarré régulièrement lorsque les premiers tests de configuration, de sauvegarde et de restauration sont terminés. \
 Configurez la sauvegarde à exécuter quotidiennement ou hebdomadairement. Pour d'autres intervalles de sauvegardes vous devez modifier manuellement le fichier /etc/cron.d/raspiBackup ."
 MSG_ZH[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME 会在完成初始配置以及备份和恢复测试后定期启动. \
 配置每天或每周创建备份。对于其他备份间隔，您必须手动修改/etc/cron.d/raspiBackup."
@@ -1033,7 +1033,7 @@ Es macht Sinn alle beim ersten Installieren von $RASPIBACKUP_NAME anzuschalten. 
 MSG_FI[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME voi joko kirjoittaa yksityiskohtaiset tai vain tärkeät viestit. \
 Yleensä ensimmäisen $RASPIBACKUP_NAME-asennuksen jälkeen yksityiskohtaiset viestit on hyvä näyttää. Voit myöhemmin valita kirjoitettavaksi vain tärkeät viestit."
 MSG_FR[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME peut écrire de nombreux messages ou seulement les plus importants. \
-Il est logique de les activer tous lors de la première installation de $RASPIBACKUP_NAME Plus tard, ils peuvent être réduits aux plus importants."
+Il est logique de les activer tous lors de la première installation de $RASPIBACKUP_NAME. Plus tard, ils peuvent être réduits aux plus importants."
 MSG_ZH[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME 可以非常详细或者只显示重要信息. \
 通常第一次安装$RASPIBACKUP_NAME后打开所有选项是有意义的，随后你可切换至只写入重要信息."
 MSG_ES[$DESCRIPTION_MESSAGEDETAIL]="${NL}$RASPIBACKUP_NAME puede mostrar muchos mensajes o solo los importantes. \
@@ -1067,7 +1067,7 @@ Weitere Details finden sich auf https://framps.github.io/raspiBackupDoc/faq#18-w
 MSG_FI[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Valitse pysäytettävät palvelut yksi kerrallaan painaen <OK>, kunnes listalla ei ole palveluita. \
 Toteutuva järjestys näytetään ylhäältä alas. \
 ${NL}Lisätietoja näet osoitteesta https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
-MSG_FR[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Sélectionnez les services les uns après les autres car ils doivent être arrêtés avant la sauvegarde et confirmez chaque service individuel avec <Confirmer> jusqu'à ce qu'aucun autre service ne s'affiche. \
+MSG_FR[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}Sélectionnez les services les uns après les autres dans l'ordre dans lequel ils doivent être arrêtés avant la sauvegarde et confirmez chaque service individuel avec <Confirmer> jusqu'à ce qu'aucun autre service ne s'affiche. \
 L'ordre en cours est affiché de haut en bas. \
 Vous trouverez plus de détails sur https://framps.github.io/raspiBackupDoc/faq#18-which-services-must-be-stopped-before-the-backup-and-then-restarted."
 MSG_ZH[$DESCRIPTION_STARTSTOP_SEQUENCE]="${NL}一个一个的选择需要停止的服务,按<Ok>确定. \
@@ -1089,7 +1089,7 @@ Sie werden wieder in umgekehrter Reihenfolge gestartet wenn der Backup beendet w
 MSG_FI[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Palvelut pysäytetään ennen varmuuskopiointia siinä järjestyksessä, jossa valitset ne. \
 Listalla näytetään nykyinen järjestys. \
 Palvelut käynnistetään käänteisessä järjestyksessä varmuuskopioinnin päättyessä."
-MSG_FR[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Sélectionnez tous les services importants qui doivent être arrêtés avant la sauvegarde. \
+MSG_FR[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}Sélectionnez tous les services dans l'ordre dans lequel ils doivent être arrêtés avant la sauvegarde. \
 La séquence en cours est affichée. \
 Ils sont redémarrés dans l'ordre inverse lorsque la sauvegarde est terminée."
 MSG_ZH[$DESCRIPTION_STARTSTOP_SERVICES]="${NL}按顺序选择备份开始前应停止的所有服务. \
@@ -1125,7 +1125,7 @@ MSG_DE[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME und dieser Installer unter
 ${NL}${NL}Jede Hilfe eine weitere Sprache dazuzubringen ist herzlich willkommen."
 MSG_FI[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME ja tämä asennustyökalu tukevat tällä hetkellä ${NL}alla lueteltuja kieliä. Oletuksena on järjestelmän kieli.\
 ${NL}${NL}Apu muiden kielien lisäämiseen on tervetullut."
-MSG_FR[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME et ce programme d'installation prend actuellement en charge les langues suivantes. La langue du système est la langue standard.\
+MSG_FR[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME et ce programme d'installation prennent actuellement en charge les langues suivantes. La langue par défaut est la langue du système.\
 ${NL}${NL}Toute aide pour ajouter une autre langue est la bienvenue."
 MSG_ZH[$DESCRIPTION_LANGUAGE]="${NL}$RASPIBACKUP_NAME 目前支持下列语言，默认使用系统语言.\
 ${NL}${NL}欢迎翻译其他语言！."
@@ -1212,8 +1212,8 @@ MSG_DE[$DESCRIPTION_BACKUPPATH]="${NL}Am Backuppfad muss eine Partition gemounte
 Das kann eine lokale Partition oder eine remote gemountete Partition."
 MSG_FI[$DESCRIPTION_BACKUPPATH]="${NL}Sijainti, johon $FILE_TO_INSTALL:n varmuuskopiot tallennetaan, tulee olla otettuna käyttöön. \
 Sijainti voi olla otettu käyttöön joko paikallisesti tai etänä."
-MSG_FR[$DESCRIPTION_BACKUPPATH]="${NL}Vous devez indiquer le chemin de sauvegarde: la partition utilisée $FILE_TO_INSTALL doit être montée. \
-Cela peut être une partition locale ou une partition distante(ex:samba)."
+MSG_FR[$DESCRIPTION_BACKUPPATH]="${NL}Sur le chemin de sauvegarde, une partition doit être montée, que $FILE_TO_INSTALL utilise pour stocker les sauvegardes. \
+Cela peut être une partition locale ou une partition distante montée (ex : samba)."
 MSG_ZH[$DESCRIPTION_BACKUPPATH]="${NL}在备份路径必须挂载一个分区，用来为$FILE_TO_INSTALL存储备份文件. \
 可以是本地磁盘或者云端磁盘."
 MSG_ES[$DESCRIPTION_BACKUPPATH]="${NL}En la ruta de copia de seguridad debe estar montada una partición que $FILE_TO_INSTALL usa para guardar las copias de seguridad. \
@@ -1229,7 +1229,7 @@ Den normalen Modus muss man aber wählen wenn man ein dd Backup haben möchte. S
 MSG_FI[$DESCRIPTION_BACKUPMODE]="${NL}Oletuksena on suositeltu normaali varmuuskopiointitila, jolloin kaksi ensimmäistä osiota varmuuskopioidaan. Jos haluat varmuuskopioida useamman kuin kaksi osiota käyttäen tar:ia tai rsync:iä, käytä jälkimmäistä, osio-orientoitua tilaa. \
 Käytä normaalia tilaa ja dd-varmuuskopiointia, jos haluat dd-varmuuskopion. Lisäosioita on kuitenkin mahdollista lisätä."
 MSG_FR[$DESCRIPTION_BACKUPMODE]="${NL}Le mode recommandé est le mode de sauvegarde normal. Cependant, si plus de deux partitions doivent être sauvegardées avec tar ou rsync, le mode orienté partition doit être sélectionné. \
-Vous devez choisir le mode normal si vous souhaitez une sauvegarde dd. La norme est de ne sauvegarder que les deux premières partitions, mais toute partition supplémentaire peut être ajoutée."
+Vous devez choisir le mode normal si vous souhaitez une sauvegarde dd. Par défaut, seules les deux premières partitions sont sauvegardées, mais toute partition supplémentaire peut être ajoutée."
 MSG_ZH[$DESCRIPTION_BACKUPMODE]="${NL}预设的是常规备份模式, 若想用tar 或rsync备份2个以上分区，请选择分区导向模式. \
 默认只备份前两个分区，但是其他分区也可以自定义."
 MSG_ES[$DESCRIPTION_BACKUPMODE]="${NL}El modo preferido es el modo normal. Si necesita guardar más de dos particiones con tar o rsync use el modo orientado a particiones. \
@@ -1252,10 +1252,10 @@ MSG_FI[$DESCRIPTION_BACKUPTYPE]="${NL}EXT3/4-tiedostojärjestelmässä on suosit
 Valitse tar, jos varmuuskopioiden tallennuskohteen tiedostojärjestelmä ei ole EXT3/4, esim. etänä käyttöönotettu samba-jako. Älä käytä FAT32-tiedostojärjestelmää, koska sen maksimitiedostokoko on 4Gt. \
 Valitse dd, jos haluat palauttaa varmuuskopion Windows-järjestelmässä. dd- ja tar-varmuuskopiot voidaan pakata tilan säästämiseksi. \
 ${NL}${NL}Lisätietoja varmuuskopiotyypeistä löydät osoitteesta https://framps.github.io/raspiBackupDoc/backup-types."
-MSG_FR[$DESCRIPTION_BACKUPTYPE]="${NL}rsync est le type de sauvegarde recommandé car le système de fichiers ETX3/4 rend la sauvegarde rapide, seuls les fichiers nouveaux ou modifiés sont enregistrés. \
+MSG_FR[$DESCRIPTION_BACKUPTYPE]="${NL}rsync est le type de sauvegarde recommandé car, avec les liens physiques d'un système de fichiers EXT3/4, la sauvegarde est rapide : seuls les fichiers nouveaux ou modifiés sont enregistrés. \
 tar doit être utilisé si le système de fichiers de sauvegarde n'est pas un EXT3/4, par exemple un lecteur Samba distant. Un système de fichiers FAT32 ne convient pas car la taille maximale du fichier n'est que de 4 Go. \
 dd est le bon choix si vous souhaitez restaurer la sauvegarde sur un système d'exploitation Windows. \
-les sauvegardes dd et tar peuvent également être compressées. \
+Les sauvegardes dd et tar peuvent également être compressées. \
 Vous trouverez plus de détails sur le type de sauvegarde sur${NL}https://framps.github.io/raspiBackupDoc/backup-types."
 MSG_ZH[$DESCRIPTION_BACKUPTYPE]="${NL}rsync是建议的备份方法.因为ETX3/4文件系统的硬链接只有在改变时才会被保存\
 建议tar在非EXT3/4文件系统上使用，比如云端samba设备 \
@@ -1327,7 +1327,7 @@ TITLE_FIRST_STEPS=$((SCNT++))
 MSG_EN[$TITLE_FIRST_STEPS]="First steps"
 MSG_DE[$TITLE_FIRST_STEPS]="Erste Schritte"
 MSG_FI[$TITLE_FIRST_STEPS]="Ensiaskeleet"
-MSG_FR[$TITLE_FIRST_STEPS]="En premier"
+MSG_FR[$TITLE_FIRST_STEPS]="Premiers pas"
 MSG_ZH[$TITLE_FIRST_STEPS]="第一步"
 MSG_ES[$TITLE_FIRST_STEPS]="Primeros pasos"
 MSG_IT[$TITLE_FIRST_STEPS]="Primi passi"
@@ -1372,7 +1372,7 @@ TITLE_CONFIRM=$((SCNT++))
 MSG_EN[$TITLE_CONFIRM]="Please confirm"
 MSG_DE[$TITLE_CONFIRM]="Bitte bestätigen"
 MSG_FI[$TITLE_CONFIRM]="Ole hyvä ja varmista"
-MSG_FR[$TITLE_CONFIRM]="SVP Confirmez"
+MSG_FR[$TITLE_CONFIRM]="Veuillez confirmer"
 MSG_ZH[$TITLE_CONFIRM]="请确认"
 MSG_ES[$TITLE_CONFIRM]="Confirme, por favor"
 MSG_IT[$TITLE_CONFIRM]="Confermare"
@@ -1520,7 +1520,7 @@ MSG_LOCAL_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_LOCAL_BACKUPPATH]="Backup would be stored on SD card"
 MSG_DE[$MSG_LOCAL_BACKUPPATH]="Backup würde auf der SD Karte gespeichert werden"
 MSG_FI[$MSG_LOCAL_BACKUPPATH]="Varmuuskopio tallennettaisiin SD-kortille"
-MSG_FR[$MSG_LOCAL_BACKUPPATH]="La sauvegarde sera enregistrée sur la carte SD"
+MSG_FR[$MSG_LOCAL_BACKUPPATH]="La sauvegarde serait enregistrée sur la carte SD"
 MSG_ZH[$MSG_LOCAL_BACKUPPATH]="备份文件将被存储在SD卡"
 MSG_ES[$MSG_LOCAL_BACKUPPATH]="La copia de seguridad se guardaría en la tarjeta SD"
 MSG_IT[$MSG_LOCAL_BACKUPPATH]="Il backup verrebbe memorizzato sulla scheda SD"
@@ -1547,12 +1547,13 @@ ${NL}\
 Cursor keys: Move cursor to next menu or list item${NL}\
 Space key: Select/unselect items in a selection list${NL}\
 Tab key: Jump to buttons at the bottom"
-MSG_FR[$MSG_NAVIGATION]="Les flèches du clavier, déplacent le curseur du menu, des listes ou du bouton de sélection ${NL}\
-Barre d'espace : pour sélectionner/désélectionner des entrées dans une liste ${NL}\
-Touche de tabulation : pour accéder aux boutons de sélection du bas ${NL}\
+MSG_FR[$MSG_NAVIGATION]="Touches fléchées : déplacent le curseur vers l'élément suivant du menu, de la liste ou vers le bouton${NL}\
+Barre d'espace : sélectionner/désélectionner des éléments dans une liste${NL}\
+Touche de tabulation : accéder aux boutons du bas${NL}\
 ${NL}\
-Curseur : déplacez le curseur vers le menu ou un élément d'une liste ${NL}\
-Touche d'espace : pour sélectionner/désélectionner des éléments dans une liste"
+Cursor keys: Move cursor to next menu item, list item or button${NL}\
+Space key: Select/unselect items in a selection list${NL}\
+Tab key: Jump to buttons at the bottom"
 MSG_ZH[$MSG_NAVIGATION]="箭头方向键:上下移动菜单选项、列表选项或者按钮${NL}\
 空格键: 选中或取消勾选${NL}\
 Tab: 跳至菜单底部按钮${NL}\
@@ -1591,7 +1592,7 @@ Tämä työkalu tarjoaa $RASPIBACKUP_NAME:n suoraviivaisen asennuksen,${NL} päi
 Löydät lisätietoa $RASPIBACKUP_NAME:sta osoitteesta${NL}https://framps.github.io/raspiBackupDoc/introduction"
 MSG_FR[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
-Cet outil facilite au maximum la mise en place de $RASPIBACKUP_NAME ,la mise à jour ,${NL} et la configuration.${NL}${NL}\
+Cet outil facilite au maximum l'installation,${NL} la mise à jour et la configuration de $RASPIBACKUP_NAME.${NL}${NL}\
 Visitez https://framps.github.io/raspiBackupDoc/introduction${NL}pour plus de détails sur $RASPIBACKUP_NAME."
 MSG_ZH[$MSG_ABOUT]="$GIT_CODEVERSION${NL}\
 %1${NL}${NL}\
@@ -1643,10 +1644,10 @@ Prochaines étapes :${NL}
 2) Démarrez $RASPIBACKUP_NAME pour restaurer la sauvegarde sur une autre carte SD${NL}\
 3) Vérifiez que la sauvegarde restaurée fonctionne correctement.${NL}\
 4) Lisez la page FAQ https://framps.github.io/raspiBackupDoc/faq${NL}\
-5) Visitez la page des options et améliorez $RASPIBACKUP_NAME${NL}\
+5) Visitez la page des options et affinez la configuration de $RASPIBACKUP_NAME${NL}\
    https://framps.github.io/raspiBackupDoc/backup${NL}\
 6) Activez la sauvegarde régulière avec le programme raspiBackupInstallUI.sh${NL}\
-7) Visitez https://framps.github.io/raspiBackupDoc/introduction pour avoir des informations sur $RASPIBACKUP_NAME"
+7) Visitez https://framps.github.io/raspiBackupDoc/introduction pour beaucoup plus d'informations sur $RASPIBACKUP_NAME"
 MSG_ZH[$MSG_FIRST_STEPS]="恭喜! $RASPIBACKUP_NAME 安装成功.${NL}${NL}\
 接下来你可以:${NL}
 1) 在终端输入 $RASPIBACKUP_NAME开始备份 ${NL}\
@@ -1812,7 +1813,7 @@ MENU_ABOUT=$((MCNT++))
 MENU_EN[$MENU_ABOUT]='"M9" "About and useful links"'
 MENU_DE[$MENU_ABOUT]='"M9" "About und hilfreiche Links"'
 MENU_FI[$MENU_ABOUT]='"M9" "Tietoja ja hyödyllisiä linkkejä"'
-MENU_FR[$MENU_ABOUT]='"M9" "A propos et liens utiles"'
+MENU_FR[$MENU_ABOUT]='"M9" "À propos et liens utiles"'
 MENU_ZH[$MENU_ABOUT]='"M9" "关于&链接"'
 MENU_ES[$MENU_ABOUT]='"M9" "Acerca de y enlaces útiles"'
 MENU_IT[$MENU_ABOUT]='"M9" "Informazioni e link utili"'
@@ -1848,7 +1849,7 @@ MENU_CONFIG_TIME=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TIME]='"R3" "Time of regular backup"'
 MENU_DE[$MENU_CONFIG_TIME]='"R3" "Zeit des regelmäßigen Backups"'
 MENU_FI[$MENU_CONFIG_TIME]='"R3" "Säännöllisen varmuuskopioinnin kellonaika"'
-MENU_FR[$MENU_CONFIG_TIME]='"R3" "Choisir une heure pour la sauvegarde "'
+MENU_FR[$MENU_CONFIG_TIME]='"R3" "Choisir une heure pour la sauvegarde"'
 MENU_ZH[$MENU_CONFIG_TIME]='"R3" "定期备份间隔"'
 MENU_ES[$MENU_CONFIG_TIME]='"R3" "Hora de la copia periódica"'
 MENU_IT[$MENU_CONFIG_TIME]='"R3" "Ora del backup periodico"'
@@ -1875,7 +1876,7 @@ MENU_CONFIG_LANGUAGE_FI=$((MCNT++))
 MENU_EN[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finnish"'
 MENU_DE[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finnisch"'
 MENU_FI[$MENU_CONFIG_LANGUAGE_FI]='"FI" "suomi"'
-MENU_FR[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finlandais"'
+MENU_FR[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finnois"'
 MENU_ZH[$MENU_CONFIG_LANGUAGE_FI]='"FI" "芬兰语"'
 MENU_ES[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finés"'
 MENU_IT[$MENU_CONFIG_LANGUAGE_FI]='"FI" "Finlandese"'
@@ -1983,7 +1984,7 @@ MENU_CONFIG_SERVICES=$((MCNT++))
 MENU_EN[$MENU_CONFIG_SERVICES]='"C6" "Services to stop and start"'
 MENU_DE[$MENU_CONFIG_SERVICES]='"C6" "Zu stoppende und startende Services"'
 MENU_FI[$MENU_CONFIG_SERVICES]='"C6" "Palveluiden pysäyttäminen ja uudelleenkäynnistäminen"'
-MENU_FR[$MENU_CONFIG_SERVICES]='"C6" "Services à arrêter ou à démarrer"'
+MENU_FR[$MENU_CONFIG_SERVICES]='"C6" "Services à arrêter et à démarrer"'
 MENU_ZH[$MENU_CONFIG_SERVICES]='"C6" "需要处理的系统服务"'
 MENU_ES[$MENU_CONFIG_SERVICES]='"C6" "Servicios a detener e iniciar"'
 MENU_IT[$MENU_CONFIG_SERVICES]='"C6" "Servizi da arrestare e avviare"'
@@ -2010,7 +2011,7 @@ MENU_CONFIG_REGULAR=$((MCNT++))
 MENU_EN[$MENU_CONFIG_REGULAR]='"C9" "Regular backup"'
 MENU_DE[$MENU_CONFIG_REGULAR]='"C9" "Regelmäßiges Backup"'
 MENU_FI[$MENU_CONFIG_REGULAR]='"C9" "Säännöllinen varmuuskopiointi"'
-MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes Régulières"'
+MENU_FR[$MENU_CONFIG_REGULAR]='"C9" "Sauvegardes régulières"'
 MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 MENU_ES[$MENU_CONFIG_REGULAR]='"C9" "Copia de seguridad periódica"'
 MENU_IT[$MENU_CONFIG_REGULAR]='"C9" "Backup periodico"'
@@ -2055,7 +2056,7 @@ MENU_CONFIG_MODE_SMART=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE_SMART]='"Smart" "Smart backup strategy"'
 MENU_DE[$MENU_CONFIG_MODE_SMART]='"Intelligent" "Intelligente Backupstrategie "'
 MENU_FI[$MENU_CONFIG_MODE_SMART]='"Älykäs" "Älykäs varmuuskopiointistrategia"'
-MENU_FR[$MENU_CONFIG_MODE_SMART]='"Intelligente" "Avec la stratégie ntelligente"'
+MENU_FR[$MENU_CONFIG_MODE_SMART]='"Intelligente" "Avec la stratégie intelligente"'
 MENU_ZH[$MENU_CONFIG_MODE_SMART]='"智能" "智能备份策略"'
 MENU_ES[$MENU_CONFIG_MODE_SMART]='"Inteligente" "Estrategia inteligente de copias de seguridad"'
 MENU_IT[$MENU_CONFIG_MODE_SMART]='"Intelligente" "Strategia di backup intelligente"'
@@ -2073,7 +2074,7 @@ MENU_CONFIG_MODE_PARTITION=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE_PARTITION]='"Extended" "Backup more than two partitions"'
 MENU_DE[$MENU_CONFIG_MODE_PARTITION]='"Erweitert" "Sichere mehr als zwei Partitionen"'
 MENU_FI[$MENU_CONFIG_MODE_PARTITION]='"Laajennettu" "Varmuuskopioi enemmän kuin kaksi osiota"'
-MENU_FR[$MENU_CONFIG_MODE_PARTITION]='"Elargi" "Sauvegarde de plus de deux partitions"'
+MENU_FR[$MENU_CONFIG_MODE_PARTITION]='"Étendu" "Sauvegarde de plus de deux partitions"'
 MENU_ZH[$MENU_CONFIG_MODE_PARTITION]='"扩展" "备份多于2个分区"'
 MENU_ES[$MENU_CONFIG_MODE_PARTITION]='"Ampliado" "Copia de seguridad de más de dos particiones"'
 MENU_IT[$MENU_CONFIG_MODE_PARTITION]='"Esteso" "Backup di più di due partizioni"'
@@ -2199,7 +2200,7 @@ MENU_CONFIG_TYPE_DD=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and a restore on Windows is also possible"'
 MENU_DE[$MENU_CONFIG_TYPE_DD]='"dd" "Sichere mit dd und eine Wiederherstellung unter Windows ist auch möglich"'
 MENU_FI[$MENU_CONFIG_TYPE_DD]='"dd" "dd-varmuuskopio, mahdollistaa palautuksen Windowsissa"'
-MENU_FR[$MENU_CONFIG_TYPE_DD]='"dd" "Sauvegarder avec dd et restaurer sous Windows"'
+MENU_FR[$MENU_CONFIG_TYPE_DD]='"dd" "Sauvegarde avec dd, restauration sous Windows également possible"'
 MENU_ZH[$MENU_CONFIG_TYPE_DD]='"dd" "使用dd备份并且在Windows上恢复"'
 MENU_ES[$MENU_CONFIG_TYPE_DD]='"dd" "Copia de seguridad con dd; también se puede restaurar en Windows"'
 MENU_IT[$MENU_CONFIG_TYPE_DD]='"dd" "Backup con dd; è possibile anche un ripristino su Windows"'
@@ -2226,7 +2227,7 @@ MENU_UNINSTALL_UNINSTALL=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL_UNINSTALL]='"U1" "Uninstall $RASPIBACKUP_NAME"'
 MENU_DE[$MENU_UNINSTALL_UNINSTALL]='"U1" "Lösche $RASPIBACKUP_NAME"'
 MENU_FI[$MENU_UNINSTALL_UNINSTALL]='"U1" "Poista $RASPIBACKUP_NAME -asennus"'
-MENU_FR[$MENU_UNINSTALL_UNINSTALL]='"U1" "Supprimer $RASPIBACKUP_NAME -asennus"'
+MENU_FR[$MENU_UNINSTALL_UNINSTALL]='"U1" "Désinstaller $RASPIBACKUP_NAME"'
 MENU_ZH[$MENU_UNINSTALL_UNINSTALL]='"U1" "卸载 $RASPIBACKUP_NAME"'
 MENU_ES[$MENU_UNINSTALL_UNINSTALL]='"U1" "Desinstalar $RASPIBACKUP_NAME"'
 MENU_IT[$MENU_UNINSTALL_UNINSTALL]='"U1" "Disinstalla $RASPIBACKUP_NAME"'
@@ -2235,7 +2236,7 @@ MENU_UNINSTALL_EXTENSION=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL_EXTENSION]='"U2" "Uninstall and disable sample extensions"'
 MENU_DE[$MENU_UNINSTALL_EXTENSION]='"U2" "Lösche Extensions"'
 MENU_FI[$MENU_UNINSTALL_EXTENSION]='"U2" "Poista käytöstä ja pura näytelisäosien asennukset"'
-MENU_FR[$MENU_UNINSTALL_EXTENSION]='"U2" "Supprimer les Extensions"'
+MENU_FR[$MENU_UNINSTALL_EXTENSION]='"U2" "Désinstaller et désactiver les exemples d'\''extensions"'
 MENU_ZH[$MENU_UNINSTALL_EXTENSION]='"U2" "卸载并禁用示例扩展"'
 MENU_ES[$MENU_UNINSTALL_EXTENSION]='"U2" "Desinstalar y desactivar las extensiones de ejemplo"'
 MENU_IT[$MENU_UNINSTALL_EXTENSION]='"U2" "Disinstalla e disattiva le estensioni di esempio"'
