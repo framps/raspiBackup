@@ -1140,7 +1140,7 @@ MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Backups die vorzuhalten sind.
 MSG_FI[$DESCRIPTION_KEEP]="${NL}Syötä säilytettävien varmuuskopioiden lukumäärä. Numeron tulee olla 1:n ja 52:n väliltä."
 MSG_FR[$DESCRIPTION_KEEP]="${NL}Entrez le nombre de sauvegardes à conserver. Le nombre doit être compris entre 1 et 52."
 MSG_ZH[$DESCRIPTION_KEEP]="${NL}输入要保留的备份数. 数字必须在1和52之间."
-MSG_ES[$DESCRIPTION_KEEP]="${NL}Introduzca el número de copias de seguridad que se conservan. El número debe estar entre 1 y 52."
+MSG_ES[$DESCRIPTION_KEEP]="${NL}Introduzca el número de copias de seguridad que desea conservar. El número debe estar entre 1 y 52."
 MSG_IT[$DESCRIPTION_KEEP]="${NL}Inserire il numero di backup da conservare. Il numero deve essere compreso tra 1 e 52."
 
 DESCRIPTION_SMART=$((SCNT++))
