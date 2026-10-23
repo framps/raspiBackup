@@ -1496,7 +1496,7 @@ MSG_FI[$MSG_PARTUUID_NOT_FOUND]="PARTUUID:ta %1 ei löytynyt kloonauslaitteelta 
 MSG_FR[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 introuvable sur le périphérique de clonage %2."
 MSG_ZH[$MSG_PARTUUID_NOT_FOUND]="在克隆设备 %2 上未找到PARTUUID %1."
 MSG_ES[$MSG_PARTUUID_NOT_FOUND]="No se ha encontrado la PARTUUID %1 en el dispositivo de clonación %2."
-MSG_IT[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 non trovata sul dispositivo di clonazione %2."
+MSG_IT[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 non trovato sul dispositivo di clonazione %2."
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
