@@ -14,6 +14,7 @@
 # Credits to following people for their translation work
 #	  FI - teemue
 #	  FR - mgrafr
+#	  ES - majegarza
 #
 #######################################################################################################################
 #
