@@ -2,7 +2,7 @@
 # vim: set ts=4 sts=4 expandtab:
 #######################################################################################################################
 #
-# Script to download and install the raspiBackup package
+# Script to install raspiBackup from its signed apt repository
 #
 # Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
@@ -31,14 +31,18 @@ LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
 
 readonly REPO_OWNER="${REPO_OWNER:-framps}"
+# The trust anchor: Only a repository signed with this key is accepted
 readonly REPO_OWNER_GPG_FINGERPRINT="${REPO_OWNER_GPG_FINGERPRINT:-23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24}"
-readonly BRANCH="${BRANCH:-master}"
 
 readonly RASPIBACKUP=raspiBackup
 readonly PACKAGE_NAME=raspibackup
 
-readonly GITHUB_URL_VERSION="https://raw.githubusercontent.com/${REPO_OWNER}/${RASPIBACKUP}/refs/heads/${BRANCH}/build/deb"
-readonly GITHUB_URL_DEB="https://github.com/${REPO_OWNER}/${RASPIBACKUP}/raw/refs/heads/${BRANCH}/build/deb"
+readonly REPO_URL="${REPO_URL:-https://${REPO_OWNER}.github.io/${RASPIBACKUP}}"
+readonly REPO_SUITE="${REPO_SUITE:-stable}"
+readonly REPO_COMPONENT="${REPO_COMPONENT:-main}"
+
+readonly KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
+readonly SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
 
 MYSELF=$(basename "$0")
 
@@ -49,25 +53,29 @@ Installation script for ${RASPIBACKUP}
 
 It executes the following steps (could be done manually as well, of course):
 
-    - download the ${RASPIBACKUP} Debian package named '${PACKAGE_NAME}'
-      and its signature file from the appropriate GitHub repo
-    - download and import the package maintainer's public GPG key
-    - verify the package against the signature/key
-    - install the package via
-          'sudo apt-get install --allow-downgrades ${PACKAGE_NAME}'
+    - download the package maintainer's public GPG key and accept it only
+      if its fingerprint is ${REPO_OWNER_GPG_FINGERPRINT}
+    - store the key in ${KEYRING}
+    - add the ${RASPIBACKUP} apt repository in ${SOURCES},
+      trusting only this key for this repository (Signed-By)
+    - install the package via 'sudo apt-get install ${PACKAGE_NAME}'
+
+apt verifies the repository signature and the package checksums then.
+Later updates are installed with 'sudo apt-get update && sudo apt-get upgrade'.
 
 Usage:
 
-    ${MYSELF} [-v|--verbose] [<directory>]
-
+    ${MYSELF} [-v|--verbose] [-y|--yes] [<file.deb>]
 
 The option '-v|--verbose' lets the script print more details
 about the steps taken. In case the user would like to learn a bit or
 to check the results manually...
 
-The optional argument <directory> specifies an existing directory
-with the already downloaded Debian package and its signature file.
-Use '.' for the current directory.
+The option '-y|--yes' doesn't ask for confirmation.
+
+The optional argument <file.deb> installs an already downloaded package
+without adding the repository. Its signature is expected in <file.deb>.sig
+and is verified against the key above. Updates have to be installed manually then.
 
 Additionally the download source can be modified by setting the environment:
 
@@ -75,16 +83,14 @@ Additionally the download source can be modified by setting the environment:
     -----------------------------|-----------------------------------------
     REPO_OWNER                   | framps
     REPO_OWNER_GPG_FINGERPRINT   | 23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24
-    BRANCH                       | master
+    REPO_URL                     | https://<REPO_OWNER>.github.io/${RASPIBACKUP}
+    REPO_SUITE                   | stable
+    REPO_COMPONENT               | main
 
+To uninstall ${RASPIBACKUP} and remove the repository:
 
-Note:
-
-    The former script 'raspiBackupInstallUI' no longer exists as such
-    and has been (will be) replaced by 'raspiBackupConfig'.
-
-    'raspiBackupConfig' can be used after installation
-    to configure ${RASPIBACKUP} for individual needs.
+    sudo apt-get purge ${PACKAGE_NAME}
+    sudo rm ${SOURCES} ${KEYRING}
 
 EOF_USAGE
 }
@@ -115,7 +121,13 @@ ask_yes_no() {
         choices="yN"
     fi
 
-    read -r -s -n 1 -p "$* [${choices}] " answer
+    if (( ASSUME_YES )) ; then
+        echo "$* [${choices}] y"
+        return 0
+    fi
+
+    # read from terminal, stdin might be the script itself (curl ... | bash)
+    read -r -s -n 1 -p "$* [${choices}] " answer < /dev/tty
 
     # The -s above and the following echo "..." handle
     #   - a single 'Enter' keystroke with its newline
@@ -129,9 +141,7 @@ ask_yes_no() {
 }
 
 cleanup() {
-    # Delete all(?) raspibackup package files
-    # rm -f ${PACKAGE_NAME}*.deb
-    # rm -f ${PACKAGE_NAME}*.deb.sig
+    rm -rf "${TMP_DIR}"
     if (( $1 == 0 )); then
         : rm -f "$LOG_FILE"
     else
@@ -144,18 +154,6 @@ cleanup() {
 check_required_tools() {
     local req_cmd cmd pkg is_debian
 
-    for req_cmd in  curl@curl  gpg@gnupg ; do
-        cmd="${req_cmd%@*}"
-        pkg="${req_cmd#*@}"
-        if ! command -v "${cmd}" > /dev/null ; then
-            echo ""
-            echo "Problem: Required command '${cmd}' is not installed!"
-            ask_yes_no -n "Should '${cmd}' from package '${pkg}' being installed now (otherwise you have to do it manually)?" || return 42
-            echo "--- Installing '${pkg}'"
-            sudo apt-get install "${pkg}"
-        fi
-    done
-
     # And what about 'apt/apt-get'? Is this a Debian system?
     is_debian=y
     command -v apt-get > /dev/null || is_debian=n
@@ -164,207 +162,103 @@ check_required_tools() {
         echo "Doesn't seem to be a Debian system. This script won't work!"
         return 42
     fi
+
+    for req_cmd in  curl@curl  gpg@gnupg ; do
+        cmd="${req_cmd%@*}"
+        pkg="${req_cmd#*@}"
+        if ! command -v "${cmd}" > /dev/null ; then
+            echo ""
+            echo "Problem: Required command '${cmd}' is not installed!"
+            ask_yes_no -n "Should '${cmd}' from package '${pkg}' being installed now (otherwise you have to do it manually)?" || return 42
+            echo "--- Installing '${pkg}'"
+            $SUDO apt-get install -y "${pkg}"
+        fi
+    done
 }
 
 get_gpg_key() {
-    # Retrieve and import ${REPO_OWNER} gpg key from github if it doesn't exist already in keyring
-    if ! gpg --no-options --list-keys "${REPO_OWNER_GPG_FINGERPRINT}" > /dev/null; then
-        echo ""
-        if (( VERBOSE )) ; then
-            echo "    > The repo owners GPG key isn't in the local keyring, checked via command:"
-            echo "    >     gpg --list-keys ${REPO_OWNER_GPG_FINGERPRINT}"
-            echo ""
-        fi
+    # Download the key and keep only the key with the expected fingerprint.
+    # Uses a temporary GPG home, the user's keyring isn't touched.
+    local keyfile="${TMP_DIR}/${PACKAGE_NAME}-archive-keyring.gpg"
+    local validity
 
-        echo "--- Retrieving ${REPO_OWNER}'s GPG key from https://github.com/${REPO_OWNER}.gpg"
-
-        if (( VERBOSE )) ; then
-            echo ""
-            echo "    > That's not optimal because it's the same source as the complete package."
-            echo "    > If that source is untrusted/hacked the verification against this key might be too."
-            echo "    >"
-            echo "    > It would be better to download ${REPO_OWNER}'s GPG key from elsewhere and check it carefully manually."
-            echo "    > For example from ${REPO_OWNER}'s web site (might be not yet available there!)."
-            echo "    > Check the fingerprint at least!"  # TODO: What else should/can be recommended?
-            echo "    >"
-            echo "    > Then you could import the key into your local keyring using the command:"
-            echo "    >     gpg --import <downloaded-keyfile.gpg>"
-        fi
-
-        echo ""
-        curl -fsSLO https://github.com/"${REPO_OWNER}".gpg
-        gpg --show-keys "${REPO_OWNER}".gpg
-        echo ""
-        echo "Please check the fingerprint(s) above against ${REPO_OWNER_GPG_FINGERPRINT}"
-        echo ""
-        ask_yes_no -n "Is that key / are those keys okay to be imported into your local keyring" || return 42  # TODO: What to do better here?
-        echo ""
-        echo "--- Importing ${REPO_OWNER} GPG key (showing the shortened fingerprint only)"
-        # The import could print the following messages if there is no .gnupg directory existing yet:
-        #     gpg: keyblock resource '/home/username/.gnupg/pubring.kbx': No such file or directory
-        #     gpg: Fatal: /home/username/.gnupg: directory does not exist!
-        #     gpg: directory '/home/username/.gnupg' created
-        #     gpg: keybox '/home/username/.gnupg/pubring.kbx' created
-        #     gpg: /home/username/.gnupg/trustdb.gpg: trustdb created
-        gpg --import  "${REPO_OWNER}".gpg
-        echo ""
-        echo "The downloaded and already imported key file '${REPO_OWNER}.gpg' is no longer needed."
-        ask_yes_no "Should it be deleted now?" && rm -f "${REPO_OWNER}".gpg
-    fi
-}
-
-download_package_files() {
     echo ""
-    VERSION_FILES=$(curl -fsS "${GITHUB_URL_VERSION}/VERSION")
-    if [[ -z "${VERSION_FILES}" ]] ; then
-        echo "Error: The repository/branch doesn't have the required file '${GITHUB_URL_VERSION}/VERSION' (yet)!"
-        return 42
-    fi
-    echo "--- Downloading ${PACKAGE_NAME}${VERSION_FILES} Debian package from github.com/${REPO_OWNER}"
-    if (( VERBOSE )) ; then
-        echo "    > Found VERSION file at ${GITHUB_URL_VERSION}/VERSION"
-        echo "    >     with contents: ${VERSION_FILES}"
-        echo "    > Downloading using the commands:"
-        echo "    >     curl -fsSLO ${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb"
-        echo "    >     curl -fsSLO ${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb.sig"
-    fi
-    curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb" || return 42
-    curl -fsSLO "${GITHUB_URL_DEB}/${PACKAGE_NAME}${VERSION_FILES}.deb.sig" || return 42
-    # Create unversioned links for some easier handling  TODO: not yet foolproof!
-    ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
-    ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
-}
-
-use_provided_or_download_packages() {
-    if [[ -n "$1" && -d "$1" ]]; then
-        cd "$1" || return 42
-        if [[ ! -f "${PACKAGE_NAME}.deb" ]]; then
-            echo "??? $1/${PACKAGE_NAME}.deb not found"
-            return 42
-        fi
-        if [[ ! -f "${PACKAGE_NAME}.deb.sig" ]]; then
-            echo "??? $1/${PACKAGE_NAME}.deb.sig not found"
-            return 42
-        fi
-    else
-        download_package_files || return $?
-    fi
-}
-
-verify_package() {
-    echo ""
-    echo "--- Verifying Debian package was created by the package maintainer '${REPO_OWNER}'"
-
-    # Note: If the key to be verified isn't in the local keyring at all, the verfication would fail like shown below.
-    #       But that shouldn't happen here, because the key has been imported earlier in this script.
-    #       (What about a faked/wrong and therefore not imported signature???)
-    #
-    #     gpg: Signatur vom Di 15 Sep 2026 21:58:04 CEST
-    #     gpg:                mittels RSA-Schlüssel 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-    #     gpg: Signatur kann nicht geprüft werden: Kein öffentlicher Schlüssel
-    #
-    #     gpg: Signature made Tue Sep 15 21:58:04 2026 CEST
-    #     gpg:                using RSA key 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-    #     gpg: Can't check signature: No public key
-    #
-    #     [GNUPG:] NEWSIG
-    #     [GNUPG:] ERRSIG OPQRSTUVWXYZ1234  1 10 00 1789502284 9 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-    #     [GNUPG:] NO_PUBKEY OPQRSTUVWXYZ1234
-    #     [GNUPG:] FAILURE gpg-exit 33554433
-
+    echo "--- Retrieving ${REPO_OWNER}'s GPG key from ${REPO_URL}"
     if (( VERBOSE )) ; then
         echo "    > using command:"
-        echo "    >     gpg --batch --verify ${PACKAGE_NAME}${VERSION_FILES}.deb.sig  ${PACKAGE_NAME}${VERSION_FILES}.deb"
-        echo "    >"
-        if ! gpg --batch --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb" 2>&1 | sed -e 's/^/    > /' ; then
-            echo "ERROR!"
-        fi
+        echo "    >     curl -fsSL ${REPO_URL}/${PACKAGE_NAME}-archive-keyring.gpg"
+    fi
+    curl -fsSL "${REPO_URL}/${PACKAGE_NAME}-archive-keyring.gpg" -o "${keyfile}" || return 42
+
+    export GNUPGHOME="${TMP_DIR}/gnupg"
+    mkdir -m 700 "${GNUPGHOME}"
+    gpg --batch --quiet --import "${keyfile}" 2>/dev/null || true
+
+    if ! gpg --batch --with-colons --list-keys "${REPO_OWNER_GPG_FINGERPRINT}" 2>/dev/null \
+            | grep -q "^fpr:::::::::${REPO_OWNER_GPG_FINGERPRINT}:" ; then
+        echo ""
+        echo "??? The downloaded key doesn't have the expected fingerprint ${REPO_OWNER_GPG_FINGERPRINT}"
+        echo "??? Somebody might have tampered with the key. Installation aborted!"
+        echo ""
+        gpg --show-keys "${keyfile}" || true
+        return 42
     fi
 
-    gpgresult=$(gpg --batch --status-fd 1 --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb"  2>/dev/null)
-
-    if grep "^\[GNUPG:\] GOODSIG " <(echo "${gpgresult}") >/dev/null ; then
-        # echo "GOOD SIGNATURE"
-        if ! grep "^\[GNUPG:\] VALIDSIG " <(echo "${gpgresult}") >/dev/null ; then
-            # echo "SIGNATURE IS VALID"
-        # else
-            echo ""
-            echo "OOPS, SIGNATURE IS NOT VALID?????"
-            if ! (( VERBOSE )) ; then
-                echo ""
-                gpg --batch --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb"
-            fi
-            exit 42
-        fi
-        if (( VERBOSE )) ; then
-            if grep "^\[GNUPG:\] TRUST_UNDEFINED " <(echo "${gpgresult}") >/dev/null ; then
-                echo ""
-                echo "The signature is good and valid but as GPG's warning above indicates:"
-                echo ""
-                echo "The key has not been checked(?!) and then *signed with trust state* in the local keyring by yourself."
-                echo "That is no problem, it's recommended to do that but it is optional."
-                echo "TODO: Describe procedure here!?"
-
-                # Since the installation and the signature check will happen
-                # on random Raspberry Pis that will be the usual situation
-                # and is therefore acceptable.
-                # Ideally the user checks the output of the above command manually
-                # against another source, e.g. the homepage of framp (...)
-                # where his correct GPG key could be displayed.
-            fi
-        fi
-    else
-        echo "OOPS, SIGNATURE IS NOT GOOD!!!???"
-        if ! (( VERBOSE )) ; then
-            echo ""
-            gpg --batch --verify "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}${VERSION_FILES}.deb"
-        fi
-        exit 42
+    validity="$(gpg --batch --with-colons --list-keys "${REPO_OWNER_GPG_FINGERPRINT}" | awk -F: '$1 == "pub" { print $2 }')"
+    if [[ "${validity}" =~ [rei] ]] ; then
+        echo "??? The key ${REPO_OWNER_GPG_FINGERPRINT} is revoked, expired or invalid. Installation aborted!"
+        return 42
     fi
 
-    # Here are two example outputs of the above commands (in German and English)
-    # with the important parts marked with '^':
-    #
-    # gpg --batch --verify package.deb.sig" package.deb"
-    #
-    #     gpg: Signatur vom Do 10 Sep 2026 21:08:26 CEST
-    #     gpg:                mittels EDDSA-Schlüssel 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-    #                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    #     gpg: Korrekte Signatur von "Name <mail@someserver.com>" [unbekannt]
-    #          ^^^^^^^^^^^^^^^^^      ^^^^^^^^^^^^^^^^^^^^^^^^^^
-    #     gpg: WARNUNG: Dieser Schlüssel trägt keine vertrauenswürdige Signatur!
-    #     gpg:          Es gibt keinen Hinweis, daß die Signatur wirklich dem vorgeblichen Besitzer gehört.
-    #     Haupt-Fingerabdruck  = 1234 5678 90AB CDEF GHIJ  KLMN OPQR STUV WXYZ 1234
-    #
-    #
-    #
-    #     gpg: Signature made Tue Sep 15 21:58:04 2026 CEST
-    #     gpg:                using RSA key 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-    #                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    #     gpg: Good signature from "Name <mail@someserver.com>" [unknown]
-    #          ^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^^^^^^^^^^^^
-    #     gpg: WARNING: This key is not certified with a trusted signature!
-    #     gpg:          There is no indication that the signature belongs to the owner.
-    #     Primary key fingerprint: 1234 5678 90AB CDEF GHIJ  KLMN OPQR STUV WXYZ 1234
-    #
-    # Or in machine readable format:
-    #
-    # gpg --batch --status-fd 1 --verify package.deb.sig" package.deb"  2>/dev/null
-    #
-    #     [GNUPG:] NEWSIG
-    #     [GNUPG:] KEY_CONSIDERED 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234 0
-    #     [GNUPG:] SIG_ID xxxxyyyghtqqgssnn87aj111889 2026-09-15 1789502284
-    #     [GNUPG:] GOODSIG OPQRSTUVWXYZ1234 name <mail@someserver.com>
-    #     [GNUPG:] VALIDSIG 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234 2026-09-15 1789502284 0 4 0 1 10 00 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
-    #     [GNUPG:] TRUST_UNDEFINED 0 pgp
+    # export just this key, anything else contained in the download is dropped
+    gpg --batch --export "${REPO_OWNER_GPG_FINGERPRINT}" > "${TMP_DIR}/keyring.gpg"
+
+    echo "--- Key accepted:"
+    gpg --batch --list-keys --keyid-format long "${REPO_OWNER_GPG_FINGERPRINT}" | sed -e 's/^/    /'
 }
 
-install_package() {
-    local version
-    version=$(dpkg -I ${PACKAGE_NAME}.deb | grep "^ Version" | cut -f 3 -d ' ')
+add_repository() {
+    echo "--- Installing key in ${KEYRING}"
+    $SUDO install -m 644 -D "${TMP_DIR}/keyring.gpg" "${KEYRING}"
+
+    echo "--- Adding repository ${REPO_URL} in ${SOURCES}"
+    $SUDO tee "${SOURCES}" > /dev/null <<-EOF_SOURCES
+Types: deb
+URIs: ${REPO_URL}
+Suites: ${REPO_SUITE}
+Components: ${REPO_COMPONENT}
+Signed-By: ${KEYRING}
+EOF_SOURCES
+    $SUDO chmod 644 "${SOURCES}"
+    if (( VERBOSE )) ; then
+        sed -e 's/^/    > /' "${SOURCES}"
+        echo "    > Signed-By: apt accepts this repository only if it's signed with the key in ${KEYRING}"
+        echo "    >            and that key isn't trusted for any other repository."
+    fi
 
     echo ""
-    if ! ask_yes_no  -n "--- Installing ${RASPIBACKUP} ${version}. Are you sure?" ; then
+    echo "--- Updating package lists (verifies the repository signature)"
+    # Only refresh the raspiBackup repository, the system ones don't matter here
+    mkdir -p "${TMP_DIR}/empty"
+    if ! $SUDO apt-get update \
+            -o Dir::Etc::sourcelist="${SOURCES}" \
+            -o Dir::Etc::sourceparts="${TMP_DIR}/empty" \
+            -o APT::Get::List-Cleanup="0" ; then
+        echo "??? The repository couldn't be read or its signature isn't valid"
+        return 42
+    fi
+}
+
+install_from_repository() {
+    local version
+    version="$(apt-cache policy "${PACKAGE_NAME}" | awk '$1 == "Candidate:" { print $2 }')"
+    if [[ -z "${version}" || "${version}" == "(none)" ]] ; then
+        echo "??? Package ${PACKAGE_NAME} not found in repository ${REPO_URL}"
+        return 42
+    fi
+
+    echo ""
+    if ! ask_yes_no -n "--- Installing ${RASPIBACKUP} ${version}. Are you sure?" ; then
         echo "!!! Installation of ${RASPIBACKUP} ${version} cancelled by user."
         return 42
     fi
@@ -373,15 +267,67 @@ install_package() {
     echo "--- Installing ${RASPIBACKUP} package and all dependencies"
     if (( VERBOSE )) ; then
         echo "    > using command:"
-        echo "    >     sudo apt-get install --allow-downgrades -y ./${PACKAGE_NAME}${VERSION_FILES}.deb"
+        echo "    >     sudo apt-get install -y ${PACKAGE_NAME}"
     fi
-    if ! sudo apt-get install --allow-downgrades -y "./${PACKAGE_NAME}${VERSION_FILES}.deb" ; then
-    ## TODO: !!! interferes with dpkg's interactive dialogs: | tee -a "$LOG_FILE" 2>&1
-    ## TODO: --allow-downgrades might be dangerous. See 'man apt-get'
-        return $?
+    # dependencies come from the system repositories which might be outdated
+    $SUDO apt-get update > /dev/null || true
+    $SUDO apt-get install -y "${PACKAGE_NAME}" || return 42
+}
+
+verify_local_package() {
+    # $1 deb file, signature in $1.sig
+    local deb="$1" signer
+    echo ""
+    echo "--- Verifying $(basename "${deb}") was created by the package maintainer '${REPO_OWNER}'"
+
+    if [[ ! -f "${deb}.sig" ]] ; then
+        echo "??? Signature file ${deb}.sig not found"
+        return 42
     fi
 
-    dpkg --list | grep ${PACKAGE_NAME} | awk '{ print "--- ${PACKAGE_NAME}", $3, "installed successfully"; }'
+    if (( VERBOSE )) ; then
+        echo "    > using command:"
+        echo "    >     gpg --verify ${deb}.sig ${deb}"
+        gpg --batch --verify "${deb}.sig" "${deb}" 2>&1 | sed -e 's/^/    > /' || true
+    fi
+
+    # VALIDSIG <signing key fpr> ... <primary key fpr>, only the downloaded key is in GNUPGHOME
+    signer="$(gpg --batch --status-fd 1 --verify "${deb}.sig" "${deb}" 2>/dev/null \
+        | awk '$1 == "[GNUPG:]" && $2 == "VALIDSIG" { print $NF }')" || true
+
+    if [[ "${signer}" != "${REPO_OWNER_GPG_FINGERPRINT}" ]] ; then
+        echo "??? SIGNATURE IS NOT VALID. The package wasn't created by ${REPO_OWNER} or was modified!"
+        if ! (( VERBOSE )) ; then
+            gpg --batch --verify "${deb}.sig" "${deb}" || true
+        fi
+        return 42
+    fi
+    echo "--- Signature is valid"
+}
+
+install_local_package() {
+    local deb version
+    deb="$(realpath "$1")"
+    version="$(dpkg-deb -f "${deb}" Version)"
+
+    echo ""
+    if ! ask_yes_no -n "--- Installing ${RASPIBACKUP} ${version}. Are you sure?" ; then
+        echo "!!! Installation of ${RASPIBACKUP} ${version} cancelled by user."
+        return 42
+    fi
+
+    echo ""
+    echo "--- Installing ${RASPIBACKUP} package and all dependencies"
+    if (( VERBOSE )) ; then
+        echo "    > using command:"
+        echo "    >     sudo apt-get install --allow-downgrades -y ${deb}"
+    fi
+    $SUDO apt-get update > /dev/null || true
+    $SUDO apt-get install --allow-downgrades -y "${deb}" || return 42
+}
+
+finish() {
+    dpkg-query -W -f '--- ${Package} ${Version} installed successfully\n' "${PACKAGE_NAME}"
 
     # Due to systemd components in the installed debian package there is the following warning shown by apt-get:
     #
@@ -389,26 +335,25 @@ install_package() {
     #            Run 'systemctl daemon-reload' to reload units.
     #
     # So doing as advised now:
-    echo "--- Reload systemd units"
-    sudo systemctl daemon-reload
+    if command -v systemctl > /dev/null ; then
+        echo "--- Reload systemd units"
+        $SUDO systemctl daemon-reload || true
+    fi
 }
 
 
-# TODO: Really trap ERR in this script at all?
-trap 'err $?' ERR
-trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
-
-# enable logging
-exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
-exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
-
 VERBOSE=0
-while true ; do
+ASSUME_YES=0
+while (( $# > 0 )) ; do
     case "$1" in
            -h|--help) usage
                       exit 0
                       ;;
         -v|--verbose) VERBOSE=1
+                      shift
+                      continue
+                      ;;
+            -y|--yes) ASSUME_YES=1
                       shift
                       continue
                       ;;
@@ -422,23 +367,44 @@ while true ; do
     break
 done
 
+LOCAL_DEB="$1"
+if [[ -n "${LOCAL_DEB}" && ! -f "${LOCAL_DEB}" ]] ; then
+    echo "Error: Package file '${LOCAL_DEB}' not found!"
+    exit 42
+fi
+
+SUDO=""
+if (( EUID != 0 )) ; then
+    SUDO="sudo"
+fi
+
+TMP_DIR="$(mktemp -d)"
+
+trap 'err $?' ERR
+trap 'cleanup $?' SIGINT SIGTERM SIGHUP EXIT
+
+# enable logging
 rm -f "$LOG_FILE"
+exec 1> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE")
+exec 2> >(stdbuf -i0 -o0 -e0 tee -ia "$LOG_FILE" >&2)
 
 check_required_tools || exit $?
-
 get_gpg_key || exit $?
-use_provided_or_download_packages "$@" || exit $?
 
-# Handle errors manually from here on. Seems to be better (for the user...) TODO: Checkup
+# Handle errors manually from here on. Seems to be better (for the user...)
 trap '' ERR
 
-verify_package || exit $?
-install_package || exit $?
-
+if [[ -n "${LOCAL_DEB}" ]] ; then
+    verify_local_package "${LOCAL_DEB}" || exit $?
+    install_local_package "${LOCAL_DEB}" || exit $?
+else
+    add_repository || exit $?
+    install_from_repository || exit $?
+fi
+finish
 
 cat <<EOF_RBC
 
 To configure ${RASPIBACKUP} for individual needs there will be a tool
 named "raspiBackupConfig"...
 EOF_RBC
-

@@ -32,12 +32,14 @@ Usage:
         build.sh [options]
 
 That simple call builds a Debian package from raspiBackup.
-Finally it runs `lintian` to check the package for compliance.
+Then it runs `lintian` to check the package for compliance.
 That is a reduced check to fit this package not being a "real" Debian package.
+Finally the package is added to the signed apt repository in 'repo' (see buildRepo.sh).
 
 Options:
 
     --no-check     don't check anything with `lintian`
+    --no-repo      don't add the package to the apt repository
     -h | --help    display this short help
 
 In file 'build.conf' you can configure some aspects of the build process.
@@ -91,8 +93,15 @@ LINTIAN_OPTIONS="--verbose --info --color always --fail-on error"
 VERBOSITY=normal
 
 # GPG_KEYID
-# The GPG key ID used for signing the built package. Required!
+# The full GPG key fingerprint used for signing the built package and the repository. Required!
 GPG_KEYID=
+
+# REPO_SUITE, REPO_COMPONENT, REPO_ARCHITECTURES
+# Layout of the signed apt repository created by buildRepo.sh.
+# raspiBackupInstall.sh has to use the same suite.
+REPO_SUITE=stable
+REPO_COMPONENT=main
+REPO_ARCHITECTURES="armhf arm64 amd64 i386"
 EOF_CONF
 
     exit 1
@@ -128,7 +137,8 @@ fi
 # fi
 
 
-if (( $# > 0 )); then
+UPDATE_REPO=1
+while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
                    exit
@@ -136,8 +146,13 @@ if (( $# > 0 )); then
         --no-check) LINTIAN_CHECK=""
                     shift
                     ;;
+        --no-repo) UPDATE_REPO=0
+                   shift
+                   ;;
+        *) break
+           ;;
     esac
-fi
+done
 
 LOG_FILE=$(cut -d'.' -f1 <<< "$(basename "$0")").log
 readonly LOG_FILE
@@ -157,21 +172,19 @@ trap 'err $?' ERR
 GITSRC=$(mktemp --tmpdir -d raspiBackup_gitsrc4deb.XXXXXX)
 # shellcheck disable=2034
 readonly GITSRC
+trap 'git worktree remove --force "$GITSRC" 2>/dev/null || true' EXIT
 
 CURRENT_BRANCH=$(git branch --show-current)
 
 BRANCH_TO_DEB="${BRANCH_TO_DEB:-${CURRENT_BRANCH}}"
 show "Using branch '$BRANCH_TO_DEB' as source for the build"
 
-if [[ "$CURRENT_BRANCH" == "$BRANCH_TO_DEB" ]] ; then
-    git worktree add --detach "$GITSRC"
-else
-    git worktree add "$GITSRC" "$BRANCH_TO_DEB"
-fi
+# detached because a branch can't be checked out in two worktrees
+git worktree add --detach "$GITSRC" "$BRANCH_TO_DEB"
 
 export VERSION
 # extract version number from raspiBackup script
-version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null) | cut -f 2 -d "=" )"
+version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null)"
 REGEX='.*="([^"]*)"'
 if [[ $version =~ $REGEX ]]; then
     VERSION=${BASH_REMATCH[1]}
@@ -341,3 +354,7 @@ fi
 
 show "The final package in $DEB_TGT"
 ls -l "$DEB_TGT"
+
+if (( UPDATE_REPO )) ; then
+    ./buildRepo.sh "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+fi

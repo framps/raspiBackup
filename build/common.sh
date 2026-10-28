@@ -32,6 +32,10 @@ readonly TGT
 DEB_TGT="$BUILD_HOME/deb"
 # shellcheck disable=2034
 readonly DEB_TGT
+# signed apt repository, publish the whole directory as it is
+REPO="$BUILD_HOME/repo"
+# shellcheck disable=2034
+readonly REPO
 
 function show() {
 	local l=${#1}

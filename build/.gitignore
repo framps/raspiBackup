@@ -3,3 +3,10 @@
 build.conf
 ## deb/*
 package/src
+# published on branch gh-pages by publishRepo.sh
+repo/
+# build output, packages are distributed via the apt repository on gh-pages only
+deb/
+*.deb
+*.deb.sig
+gitsrc/

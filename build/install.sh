@@ -66,11 +66,13 @@ if [[ $cmd =~ ^-c ]]; then
 	fi
 fi
 
+DEB="$(realpath "$DEB_TGT/raspibackup$(cat "$DEB_TGT/VERSION").deb")"
+
 show "Package verification"
-gpg --verbose --verify "$DEB_TGT"/raspibackup.deb.sig "$DEB_TGT"/raspibackup.deb
+gpg --verbose --verify "$DEB".sig "$DEB"
 
 show "Install package and all dependencies"
-sudo apt-get install --allow-downgrades -y "$DEB_TGT"/raspibackup.deb
+sudo apt-get install --allow-downgrades -y "$DEB"
 
 show "Show installation result"
 apt-cache policy raspibackup
