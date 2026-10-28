@@ -95,7 +95,18 @@ curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
 bash raspiBackupInstall.sh
 ```
 
-The script adds the repository and installs `raspibackup`. Updates afterwards:
+The script adds the repository and installs `raspibackup`. Then configure raspiBackup
+(backup path, backup type, timer, extensions, ...) with
+
+```
+sudo raspiBackupInstallUI
+```
+
+`raspiBackupInstallUI` detects the package installation. It offers the configuration
+and the sample extensions only. Installing, updating and uninstalling raspiBackup is done
+with apt, the options `-i`, `-U` and `-u` aren't available.
+
+Updates afterwards:
 
 ```
 sudo apt-get update && sudo apt-get upgrade
@@ -104,9 +115,27 @@ sudo apt-get update && sudo apt-get upgrade
 Uninstall:
 
 ```
-sudo apt-get purge raspibackup
+sudo apt-get remove raspibackup        # keeps the configuration
+sudo apt-get purge raspibackup         # also deletes configuration and backup timer
 sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibackup-archive-keyring.gpg
 ```
+
+### Files installed
+
+| File | |
+|------|-|
+| `/usr/local/bin/raspiBackup`, `raspiBackup.sh` | raspiBackup, `raspiBackup.sh` is a link for former installations |
+| `/usr/local/bin/raspiBackupInstallUI` | configuration |
+| `/usr/local/etc/raspiBackup.conf` | configuration, created on first installation from a template |
+| `/usr/local/share/raspibackup/` | configuration templates and sample extensions |
+| `/usr/local/lib/systemd/system/raspiBackup.{service,timer}` | default systemd units |
+| `/etc/systemd/system/raspiBackup.{service,timer}` | units configured by `raspiBackupInstallUI`, take precedence |
+
+The configuration isn't managed by dpkg (no conffile). Installation, update and downgrade
+never change it, so there are no questions about it during `apt-get upgrade`.
+A configuration of a former installation with the curl script is used as it is.
+Before every installation the configuration is saved as `raspiBackup.conf~`.
+New configuration options are added with `sudo raspiBackup --updateConfig`.
 
 ---
 
@@ -132,7 +161,7 @@ sudo apt-mark unhold raspibackup
 sudo apt-get update && sudo apt-get upgrade
 ```
 
-The configuration `/usr/local/etc/raspibackup/raspiBackup.conf` is kept on downgrade.
+The configuration `/usr/local/etc/raspiBackup.conf` isn't changed by a downgrade.
 Before every installation the previous configuration is saved as `raspiBackup.conf~` in
 the same directory.
 
@@ -215,11 +244,11 @@ It verifies `<file.deb>.sig` against the same built-in fingerprint.
 ├── package                                                                   $PACKAGE                              |
 │   │                                                                                                               |
 │   ├── DEBIAN          # DEBIAN package source                                                             --.     |
-│   │   ├── conffiles   # definition of config files                                                          |     |
 │   │   ├── control     # package control file                                                                v     |
 │   │   ├── copyright                                                                                         |     |
-│   │   ├── postinst    # script executed after package installation                                          |     |
-│   │   └── postrm      # script executed after apt remove  (not existing yet)                                |     ^
+│   │   ├── postinst    # after installation: create config from template if missing                          |     |
+│   │   ├── prerm       # before apt remove: disable backup timer                                             |     |
+│   │   └── postrm      # after apt remove/purge: remove extension links, on purge config and timers          |     ^
 │   │                                                                                                         |     |
 │   └── src             # deb package build directory (not committed)         $TGT                         <--´   --´
 │       ├── DEBIAN

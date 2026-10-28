@@ -215,16 +215,15 @@ mv raspiBackup.sh raspiBackup
 mv raspiBackupInstallUI.sh raspiBackupInstallUI
 popd > /dev/null
 
-# copy config files - Note: They may contain credentials - therefore change to 600 during installation
-install -m644 -D -t "$TGT/$DIR_ETC/${PACKAGE_NAME}" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
-# make the english version the default
-mv "$TGT/$DIR_ETC/${PACKAGE_NAME}/raspiBackup_en.conf" "$TGT/$DIR_ETC/${PACKAGE_NAME}/raspiBackup.conf"
+# copy config templates - postinst creates $DIR_ETC/raspiBackup.conf from them if it doesn't exist.
+# The config isn't a conffile, so dpkg never touches the users config on update.
+install -m644 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}" "$GITSRC/config/raspiBackup_de.conf" "$GITSRC/config/raspiBackup_en.conf"
 
 # copy systemd files
 install -m644 -D -t "$TGT/$DIR_LIB/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
-# copy extension files
-for file in "$GITSRC"/extensions/raspiBackup_*; do
+# copy extension files - raspiBackupInstallUI links them into $DIR_BIN
+for file in "$GITSRC"/extensions/raspiBackup_*.sh; do
     install -m755 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}" "$file"
 done
 
@@ -240,6 +239,10 @@ git worktree remove "$GITSRC"
 # Insert commit date and sha1 into the scripts
 sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*
 
+# keep the old name for raspiBackupInstallUI, crontabs and systemd units of former installations
+# (created after sed -i, which would replace the link by a file)
+ln -s raspiBackup "$TGT/$DIR_BIN/raspiBackup.sh"
+
 # copy doc files (copyright in this case)
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
 # The above locations isn't accepted by lintian, the one below is okay:
@@ -249,10 +252,13 @@ install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyr
 mkdir -p "$TGT/DEBIAN"
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control"   > "$TGT/DEBIAN/control"
-envsubst < "$PACKAGE/DEBIAN/conffiles" > "$TGT/DEBIAN/conffiles"
-envsubst < "$PACKAGE/DEBIAN/postinst"  > "$TGT/DEBIAN/postinst"
-chmod 644 "$TGT/DEBIAN/conffiles" "$TGT/DEBIAN/control"
-chmod 755 "$TGT/DEBIAN/postinst"
+chmod 644 "$TGT/DEBIAN/control"
+# substitute only the build variables, the maintainer scripts use shell variables too
+for script in postinst prerm postrm; do
+    # shellcheck disable=2016
+    envsubst '${DIR_BIN} ${DIR_ETC} ${DIR_LIB} ${DIR_SHARE} ${PACKAGE_NAME}' < "$PACKAGE/DEBIAN/$script" > "$TGT/DEBIAN/$script"
+    chmod 755 "$TGT/DEBIAN/$script"
+done
 
 show "Build (and sign) package"
 LC_ALL=C dpkg-deb --root-owner-group --build "$TGT" "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"

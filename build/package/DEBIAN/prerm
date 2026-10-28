@@ -1,0 +1,17 @@
+#!/bin/bash
+# vim: set expandtab:
+#
+# prerm of ${PACKAGE_NAME}
+
+set -euo pipefail
+
+case "${1:-}" in
+    remove)
+        # no more backups without raspiBackup, the timer would fail
+        if [[ -d /run/systemd/system ]]; then
+            systemctl disable --now raspiBackup.timer > /dev/null 2>&1 || true
+        fi
+        ;;
+esac
+
+exit 0

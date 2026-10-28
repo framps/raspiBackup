@@ -262,6 +262,9 @@ SYSTEMD_TIMER_ABS_FILE="$SYSTEMD_DIR/$SYSTEMD_TIMER_FILE_NAME"
 
 INSTALLER_ABS_PATH="$BIN_DIR"
 INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
+
+PACKAGE_NAME="raspibackup"								# Debian package, if installed apt manages the code
+PACKAGE_SHARE_DIR="/usr/local/share/$PACKAGE_NAME"		# extensions provided by the package
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 
 PROPERTY_REGEX='.*="([^"]*)"'
@@ -1294,6 +1297,14 @@ MSG_FR[$MSG_SENSITIVE_WARNING]="| ===>De nombreuses informations sensibles sont 
 MSG_SENSITIVE_SEPARATOR=$((SCNT++))
 MSG_EN[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
 
+MSG_PACKAGE_UPDATE=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME is installed as Debian package. Install and update it with 'sudo apt-get update' and 'sudo apt-get upgrade'."
+MSG_DE[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME ist als Debian Paket installiert. Installiere und aktualisiere es mit 'sudo apt-get update' und 'sudo apt-get upgrade'."
+
+MSG_PACKAGE_UNINSTALL=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_UNINSTALL]="$RASPIBACKUP_NAME is installed as Debian package. Uninstall it with 'sudo apt-get purge $PACKAGE_NAME'."
+MSG_DE[$MSG_PACKAGE_UNINSTALL]="$RASPIBACKUP_NAME ist als Debian Paket installiert. Deinstalliere es mit 'sudo apt-get purge $PACKAGE_NAME'."
+
 declare -A MENU_EN
 declare -A MENU_DE
 declare -A MENU_FI
@@ -1929,8 +1940,19 @@ function isExtensionInstalled() {
 }
 
 function isRaspiBackupInstalled() {
-	[[ -f $FILE_TO_INSTALL_ABS_FILE ]]
+	(( PACKAGE_MODE )) || [[ -f $FILE_TO_INSTALL_ABS_FILE ]]
 	return
+}
+
+function isPackageInstalled() { # apt manages code, config template, extensions and uninstall
+	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" == "install ok installed" ]]
+	return
+}
+
+function packageManagedMsgbox() { # messagenumber
+	local m="$(getMessageText $1)"
+	local tt="$(getMessageText $TITLE_INFORMATION)"
+	whiptail --msgbox "$m" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 }
 
 function isStartStopDefined() {
@@ -2214,32 +2236,43 @@ function extensions_install_execute() {
 
 	local extensions="mem temp disk"
 
-	writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
+	if (( PACKAGE_MODE )); then
+		# link the extensions of the package, so they are updated with the package
+		local e
+		for e in $extensions; do
+			if ! ln -sf "$PACKAGE_SHARE_DIR/${RASPIBACKUP_NAME}_${e}_pre.sh" "$PACKAGE_SHARE_DIR/${RASPIBACKUP_NAME}_${e}_post.sh" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
+				unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "ln -s"
+				return
+			fi
+		done
+	else
+		writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
 
-	local httpCode="$(downloadFile "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$SAMPLEEXTENSION_TAR_FILE")"
-	if (( $? )); then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$httpCode"
-		return
-	fi
+		local httpCode="$(downloadFile "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$SAMPLEEXTENSION_TAR_FILE")"
+		if (( $? )); then
+			unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$httpCode"
+			return
+		fi
 
-	if ! tar -xzf "$SAMPLEEXTENSION_TAR_FILE" -C "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "tar -x"
-		return
-	fi
+		if ! tar -xzf "$SAMPLEEXTENSION_TAR_FILE" -C "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "tar -x"
+			return
+		fi
 
-	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
-		return
-	fi
+		if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
+			return
+		fi
 
-	if ! chown root.root $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
-		return
-	fi
+		if ! chown root.root $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
+			return
+		fi
 
-	if ! rm -f "$SAMPLEEXTENSION_TAR_FILE" 2>>"$LOG_FILE"; then
-		unrecoverableError $MSG_UNINSTALL_FAILED "$SAMPLEEXTENSION_TAR_FILE"
-		return
+		if ! rm -f "$SAMPLEEXTENSION_TAR_FILE" 2>>"$LOG_FILE"; then
+			unrecoverableError $MSG_UNINSTALL_FAILED "$SAMPLEEXTENSION_TAR_FILE"
+			return
+		fi
 	fi
 
 	sed -i -E "s/^(#?\s?)?DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_ABS_FILE
@@ -4320,6 +4353,7 @@ function uninstall_menu() {
 
 function isUpdatePossible() {
 		(( UPDATE_POSSIBLE != -1 )) && return
+		(( PACKAGE_MODE )) && UPDATE_POSSIBLE=1 && return 1		# apt updates
 		logEntry
 		logItem "script: c:$VERSION_CURRENT p:$VERSION_PROPERTY"
 
@@ -4342,6 +4376,12 @@ function isUpdatePossible() {
 function uninstall_do() {
 
 	logEntry
+
+	if (( PACKAGE_MODE )); then
+		packageManagedMsgbox $MSG_PACKAGE_UNINSTALL
+		logExit
+		return
+	fi
 
 	if ! isRaspiBackupInstalled; then
 		local m="$(getMessageText $MSG_SCRIPT_NOT_INSTALLED)"
@@ -4539,8 +4579,12 @@ function install_menu() {
 
 	logEntry
 
-	isInternetAvailable
-	local rc=$?
+	if (( PACKAGE_MODE )); then		# extensions are available locally
+		local rc=0
+	else
+		isInternetAvailable
+		local rc=$?
+	fi
 	if (( $rc )); then
 		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
 		whiptail --msgbox "$a" --title "Error" $ROWS_MSGBOX $WINDOW_COLS 2
@@ -4682,6 +4726,12 @@ function update_installer_do() {
 function install_do() {
 
 	logEntry
+
+	if (( PACKAGE_MODE )); then
+		packageManagedMsgbox $MSG_PACKAGE_UPDATE
+		logExit
+		return
+	fi
 
 	if isRaspiBackupInstalled; then
 		local m="$(getMessageText $MSG_SCRIPT_ALREADY_INSTALLED)"
@@ -5395,7 +5445,7 @@ function uiInstall() {
 		configFound=1
 	fi
 
-	if isInternetAvailable; then
+	if (( ! PACKAGE_MODE )) && isInternetAvailable; then	# version properties are used for updates only
 		if existsLocalPropertiesFile; then
 			parsePropertiesFile "$LOCAL_PROPERTY_FILE"
 		else
@@ -5484,6 +5534,16 @@ function unattendedInstall() {
 
 	logEntry
 
+	if (( PACKAGE_MODE )); then
+		if (( MODE_INSTALL || MODE_UPDATE )); then
+			echo "$(getMessageText $MSG_PACKAGE_UPDATE)"
+			exit 1
+		elif (( MODE_UNINSTALL )); then
+			echo "$(getMessageText $MSG_PACKAGE_UNINSTALL)"
+			exit 1
+		fi
+	fi
+
 	if (( MODE_INSTALL )); then
 		check4InternetAvailable
 		code_download_execute
@@ -5534,6 +5594,8 @@ function show_help() {
 	echo "-U: unattended update of $MYSELF"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
 	echo "-t: use either crond or systemd for backup timer"
+	echo "Note: If $RASPIBACKUP_NAME is installed as Debian package $PACKAGE_NAME"
+	echo "      -i, -U and -u aren't available. Use apt instead."
 }
 
 function askYesNo() { # message message_parms
@@ -5598,6 +5660,11 @@ USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 UPDATE_POSSIBLE=-1 # -1 -> check whether update possible, 0 -> no, 1 -> yes
 
 CONFIG_PARSED=0
+
+PACKAGE_MODE=0
+if isPackageInstalled; then
+	PACKAGE_MODE=1
+fi
 
 if isCrontabConfigInstalled; then # use cron if already installed
 	USE_SYSTEMD=0

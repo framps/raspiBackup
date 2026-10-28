@@ -1,31 +1,40 @@
 #!/bin/bash
+# vim: set expandtab:
+#
+# postinst of ${PACKAGE_NAME}
+#
+# The configuration ${DIR_ETC}/raspiBackup.conf is created from a template on first installation only.
+# It's no conffile, so dpkg never touches it. raspiBackupInstallUI and 'raspiBackup --updateConfig' update it.
 
 set -euo pipefail
 
-# save existing config
-if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup.conf ]]; then
-	echo "Saving existing config file ..."
-	cp -a "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf~ || true
-fi
+CONFIG="${DIR_ETC}/raspiBackup.conf"
+TEMPLATES="${DIR_SHARE}/${PACKAGE_NAME}"
 
+case "${1:-}" in
+    configure)
+        if [[ -f "$CONFIG" ]]; then
+            echo "Keeping existing configuration $CONFIG, saved as $CONFIG~"
+            cp -a "$CONFIG" "$CONFIG~"
+        else
+            # use German config file, English is default
+            lang="${LANG:-}"
+            template="$TEMPLATES/raspiBackup_en.conf"
+            if [[ "${lang:0:2}" == "de" ]]; then
+                template="$TEMPLATES/raspiBackup_de.conf"
+            fi
+            echo "Creating configuration $CONFIG from $template"
+            install -m 600 "$template" "$CONFIG"
+        fi
+        # config may contain sensitive information like pwds, keys et al
+        chmod 600 "$CONFIG"
 
-# use German config file, English is default
-lang="${LANG:0:2}"
-if [[ "$lang" == "de" ]]; then
-	if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf ]]; then
-		echo "Installing de ..."
-		mv "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_de.conf "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf || true
-	else
-	    echo "??? Installation raspiBackup.conf (de) failed! Using default (en)."
-	fi
-else
-	if [[ -f ${DIR_ETC}/${PACKAGE_NAME}/raspiBackup_de.conf ]]; then
-		rm "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup_de.conf || true
-	fi
-fi
+        if [[ -d /run/systemd/system ]]; then
+            systemctl daemon-reload || true
+        fi
 
-# config may contain sensitive information like pwds, keys et al
-chmod 600 "${DIR_ETC}/${PACKAGE_NAME}"/raspiBackup.conf || true
+        echo "Configure raspiBackup with: sudo raspiBackupInstallUI"
+        ;;
+esac
 
-echo "DONE: postinst"
-# @TBD - merge new config file with old file
+exit 0

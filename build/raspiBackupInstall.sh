@@ -405,6 +405,7 @@ finish
 
 cat <<EOF_RBC
 
-To configure ${RASPIBACKUP} for individual needs there will be a tool
-named "raspiBackupConfig"...
+To configure ${RASPIBACKUP} for individual needs use
+
+    sudo raspiBackupInstallUI
 EOF_RBC
