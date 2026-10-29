@@ -127,7 +127,8 @@ sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibac
 | `/usr/local/bin/raspiBackup`, `raspiBackup.sh` | raspiBackup, `raspiBackup.sh` is a link for former installations |
 | `/usr/local/bin/raspiBackupInstallUI` | configuration |
 | `/usr/local/etc/raspiBackup.conf` | configuration, created on first installation from a template |
-| `/usr/local/share/raspibackup/` | configuration templates and sample extensions |
+| `/usr/local/share/raspibackup/` | configuration templates |
+| `/usr/local/share/raspibackup/extensions/` | sample extensions and their README |
 | `/usr/local/lib/systemd/system/raspiBackup.{service,timer}` | default systemd units |
 | `/etc/systemd/system/raspiBackup.{service,timer}` | units configured by `raspiBackupInstallUI`, take precedence |
 
@@ -237,7 +238,6 @@ It verifies `<file.deb>.sig` against the same built-in fingerprint.
 │   ├── raspibackup_<version>.deb.sig                                                                               |
 │   └── VERSION                                                                                                     |
 │                                                                                                                   |
-├── gpg.conf            # gpg key id used to sign the packages (obsolete, see build.conf)                           |
 ├── install.log         # installation log                                                                          |
 ├── install.sh          # install the locally built package (development)                                           |
 │                                                                                                                   |

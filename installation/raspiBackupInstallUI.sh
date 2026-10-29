@@ -264,7 +264,7 @@ INSTALLER_ABS_PATH="$BIN_DIR"
 INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
 
 PACKAGE_NAME="raspibackup"								# Debian package, if installed apt manages the code
-PACKAGE_SHARE_DIR="/usr/local/share/$PACKAGE_NAME"		# extensions provided by the package
+PACKAGE_EXTENSIONS_DIR="/usr/local/share/$PACKAGE_NAME/extensions"	# extensions provided by the package
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 
 PROPERTY_REGEX='.*="([^"]*)"'
@@ -2240,7 +2240,7 @@ function extensions_install_execute() {
 		# link the extensions of the package, so they are updated with the package
 		local e
 		for e in $extensions; do
-			if ! ln -sf "$PACKAGE_SHARE_DIR/${RASPIBACKUP_NAME}_${e}_pre.sh" "$PACKAGE_SHARE_DIR/${RASPIBACKUP_NAME}_${e}_post.sh" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
+			if ! ln -sf "$PACKAGE_EXTENSIONS_DIR/${RASPIBACKUP_NAME}_${e}_pre.sh" "$PACKAGE_EXTENSIONS_DIR/${RASPIBACKUP_NAME}_${e}_post.sh" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
 				unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "ln -s"
 				return
 			fi

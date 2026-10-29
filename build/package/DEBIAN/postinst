@@ -10,6 +10,7 @@ set -euo pipefail
 
 CONFIG="${DIR_ETC}/raspiBackup.conf"
 TEMPLATES="${DIR_SHARE}/${PACKAGE_NAME}"
+EXTENSIONS="${DIR_SHARE}/${PACKAGE_NAME}/extensions"
 
 case "${1:-}" in
     configure)
@@ -28,6 +29,15 @@ case "${1:-}" in
         fi
         # config may contain sensitive information like pwds, keys et al
         chmod 600 "$CONFIG"
+
+        # extensions moved into a subdirectory, repoint links of former package versions
+        for link in "${DIR_BIN}"/raspiBackup_*.sh; do
+            [[ -L "$link" ]] || continue
+            target="$(readlink "$link")"
+            if [[ "$target" == "$TEMPLATES/raspiBackup_"*.sh && -f "$EXTENSIONS/${target##*/}" ]]; then
+                ln -sf "$EXTENSIONS/${target##*/}" "$link"
+            fi
+        done
 
         if [[ -d /run/systemd/system ]]; then
             systemctl daemon-reload || true

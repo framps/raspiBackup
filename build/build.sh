@@ -222,10 +222,9 @@ install -m644 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}" "$GITSRC/config/raspiBacku
 # copy systemd files
 install -m644 -D -t "$TGT/$DIR_LIB/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
-# copy extension files - raspiBackupInstallUI links them into $DIR_BIN
-for file in "$GITSRC"/extensions/raspiBackup_*.sh; do
-    install -m755 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}" "$file"
-done
+# copy sample extensions and their README - raspiBackupInstallUI links them into $DIR_BIN
+install -m755 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}/extensions" "$GITSRC"/extensions/raspiBackup_*.sh
+install -m644 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}/extensions" "$GITSRC/extensions/README.md"
 
 # get current commit sha and date into code
 pushd "$GITSRC" > /dev/null
@@ -237,7 +236,7 @@ popd > /dev/null
 git worktree remove "$GITSRC"
 
 # Insert commit date and sha1 into the scripts
-sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*
+sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*.conf "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/extensions/*
 
 # keep the old name for raspiBackupInstallUI, crontabs and systemd units of former installations
 # (created after sed -i, which would replace the link by a file)
@@ -309,15 +308,6 @@ fi
 
 ## End of special debug block ##
 
-:<<"SKIP"
-# create links
-pushd "$DEB_TGT" > /dev/null
-ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb" "${PACKAGE_NAME}.deb"
-if [[ -n "$GPG_KEYID" ]] ; then
-    ln -sf "${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "${PACKAGE_NAME}.deb.sig"
-fi
-popd > /dev/null
-SKIP
 
 if [[ -n "$LINTIAN_CHECK" ]] ; then
     show "Check package with lintian "
