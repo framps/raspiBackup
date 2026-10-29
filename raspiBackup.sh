@@ -96,8 +96,8 @@ IS_HOTFIX=$(( ! $(grep -iqE "hotfix|-m_" <<< "$VERSION"; echo $?) ))
 # shellcheck disable=SC2016
 GIT_DATE='$Date$'
 GIT_DATE_ONLY=${GIT_DATE/: /}
-GIT_DATE_ONLY=$(cut -f 1 -d ' ' <<< "$GIT_DATE")
-GIT_TIME_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE" | sed 's/\$//')
+GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<< "$GIT_DATE")
+GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<< "$GIT_DATE")
 # Expressions don't expand in single quotes, use double quotes for that.
 # shellcheck disable=SC2016
 GIT_COMMIT='$Sha1$'
@@ -5590,7 +5590,7 @@ function cleanup() { # trap
 				writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_FAILED
 			fi
 
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY $GIT_TIME_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 			logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 			if (( ! $INTERACTIVE || $FAKE || $FORCE_EMAIL )); then
@@ -5630,7 +5630,7 @@ function cleanup() { # trap
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BACKUP_OK
 		fi
 
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_STOPPED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY $GIT_TIME_ONLY" "$GIT_COMMIT_ONLY" "$(date)" "$rc"
 		logger -t $MYNAME "Stopped $VERSION ($GIT_COMMIT_ONLY). rc $rc"
 
 		if (( ! $INTERACTIVE || $FAKE | $FORCE_EMAIL )); then
@@ -11396,7 +11396,7 @@ logItem "Enabling trap handler"
 trapWithArg cleanup SIGINT SIGTERM EXIT
 lockMe
 
-writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY" "$GIT_COMMIT_ONLY" "$(date)"
+writeToConsole $MSG_LEVEL_MINIMAL $MSG_STARTED "$HOSTNAME" "$MYSELF" "$VERSION" "$GIT_DATE_ONLY $GIT_TIME_ONLY" "$GIT_COMMIT_ONLY" "$(date)"
 logger -t "$MYSELF" "Started $VERSION ($GIT_COMMIT_ONLY)"
 
 (( $IS_BETA )) && writeToConsole $MSG_LEVEL_MINIMAL $MSG_INTRO_BETA_MESSAGE
