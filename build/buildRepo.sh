@@ -38,6 +38,17 @@ only the index files are recreated and signed again.
 Packages already in the pool are kept, so older versions stay installable
 (e.g. 'apt-get install raspibackup=0.7.3' to downgrade).
 
+All packages share one pool but are listed in two suites:
+
+    <REPO_SUITE>       (stable) all versions without '~', e.g. 0.7.4, 0.7.4-m972
+    <REPO_BETA_SUITE>  (beta)   all versions with '~', e.g. 0.7.5~beta1, 0.7.5~rc1
+
+The beta suite is marked 'NotAutomatic' and 'ButAutomaticUpgrades'. So apt never
+installs a beta by itself, but updates an installed beta to newer betas:
+
+    apt-get install -t beta raspibackup     # install the latest beta
+    apt-get install raspibackup/stable      # revert to the stable version
+
 Chain of trust which is checked by apt on the user's system:
 
     InRelease (signed with GPG_KEYID)
@@ -57,6 +68,7 @@ source ./common.sh
 source ./build.conf
 
 REPO_SUITE="${REPO_SUITE:-stable}"
+REPO_BETA_SUITE="${REPO_BETA_SUITE:-beta}"
 REPO_COMPONENT="${REPO_COMPONENT:-main}"
 REPO_ARCHITECTURES="${REPO_ARCHITECTURES:-armhf arm64 amd64 i386}"
 
@@ -76,7 +88,6 @@ fi
 trap 'err $?' ERR
 
 POOL="pool/$REPO_COMPONENT/${PACKAGE_NAME:0:1}/$PACKAGE_NAME"
-DIST="dists/$REPO_SUITE"
 
 mkdir -p "$REPO/$POOL"
 
@@ -103,38 +114,58 @@ if ! compgen -G "$REPO/$POOL/*.deb" > /dev/null ; then
     exit 1
 fi
 
-show "Create package indices"
+create_suite() {
+    # $1 suite, $2 "beta" to list only versions with '~', otherwise only the ones without
+    local suite="$1" beta="$2" dist="dists/$1" arch release filter
+    local -a options=()
 
-# Don't delete dists, older by-hash files are still needed by clients with an outdated InRelease
-for arch in $REPO_ARCHITECTURES; do
-    mkdir -p "$REPO/$DIST/$REPO_COMPONENT/binary-$arch"
-    # 'Filename:' entries have to be relative to the repository root
-    (cd "$REPO" && apt-ftparchive --arch "$arch" packages "$POOL") > "$REPO/$DIST/$REPO_COMPONENT/binary-$arch/Packages"
-    gzip -9nc "$REPO/$DIST/$REPO_COMPONENT/binary-$arch/Packages" > "$REPO/$DIST/$REPO_COMPONENT/binary-$arch/Packages.gz"
-done
-grep -E "^(Package|Version|Filename):" "$REPO/$DIST/$REPO_COMPONENT/binary-${REPO_ARCHITECTURES%% *}/Packages"
+    if [[ "$beta" == beta ]] ; then
+        filter='/(^|\n)Version: [^\n]*~/'
+        # apt installs from this suite only on request (-t beta), but keeps an installed beta updated
+        options=(-o APT::FTPArchive::Release::NotAutomatic=yes -o APT::FTPArchive::Release::ButAutomaticUpgrades=yes)
+    else
+        filter='!/(^|\n)Version: [^\n]*~/'
+    fi
 
-show "Create and sign Release file"
+    show "Create package indices of suite $suite"
 
-# Acquire-By-Hash avoids hash mismatches while CDN caches (e.g. GitHub) are partially outdated
-release="$(mktemp)"
-apt-ftparchive \
-    -o APT::FTPArchive::Release::Origin="raspiBackup" \
-    -o APT::FTPArchive::Release::Label="raspiBackup" \
-    -o APT::FTPArchive::Release::Suite="$REPO_SUITE" \
-    -o APT::FTPArchive::Release::Codename="$REPO_SUITE" \
-    -o APT::FTPArchive::Release::Architectures="$REPO_ARCHITECTURES" \
-    -o APT::FTPArchive::Release::Components="$REPO_COMPONENT" \
-    -o APT::FTPArchive::Release::Description="raspiBackup - Backup your Raspberry Pi systems" \
-    -o APT::FTPArchive::DoByHash=true \
-    release "$REPO/$DIST" > "$release"
-install -m644 "$release" "$REPO/$DIST/Release"
-rm -f "$release"
+    # Don't delete dists, older by-hash files are still needed by clients with an outdated InRelease
+    for arch in $REPO_ARCHITECTURES; do
+        mkdir -p "$REPO/$dist/$REPO_COMPONENT/binary-$arch"
+        # 'Filename:' entries have to be relative to the repository root
+        (cd "$REPO" && apt-ftparchive --arch "$arch" packages "$POOL") \
+            | awk 'BEGIN { RS = ""; ORS = "\n\n" } '"$filter" > "$REPO/$dist/$REPO_COMPONENT/binary-$arch/Packages"
+        gzip -9nc "$REPO/$dist/$REPO_COMPONENT/binary-$arch/Packages" > "$REPO/$dist/$REPO_COMPONENT/binary-$arch/Packages.gz"
+    done
+    grep -E "^(Package|Version|Filename):" "$REPO/$dist/$REPO_COMPONENT/binary-${REPO_ARCHITECTURES%% *}/Packages" || echo "No packages"
 
-gpg --yes --local-user "$GPG_KEYID" --digest-algo SHA512 --clearsign \
-    --output "$REPO/$DIST/InRelease" "$REPO/$DIST/Release"
-gpg --yes --local-user "$GPG_KEYID" --digest-algo SHA512 --armor --detach-sign \
-    --output "$REPO/$DIST/Release.gpg" "$REPO/$DIST/Release"
+    show "Create and sign Release file of suite $suite"
+
+    # Acquire-By-Hash avoids hash mismatches while CDN caches (e.g. GitHub) are partially outdated
+    release="$(mktemp)"
+    apt-ftparchive \
+        -o APT::FTPArchive::Release::Origin="raspiBackup" \
+        -o APT::FTPArchive::Release::Label="raspiBackup" \
+        -o APT::FTPArchive::Release::Suite="$suite" \
+        -o APT::FTPArchive::Release::Codename="$suite" \
+        -o APT::FTPArchive::Release::Architectures="$REPO_ARCHITECTURES" \
+        -o APT::FTPArchive::Release::Components="$REPO_COMPONENT" \
+        -o APT::FTPArchive::Release::Description="raspiBackup - Backup your Raspberry Pi systems" \
+        -o APT::FTPArchive::DoByHash=true \
+        "${options[@]}" \
+        release "$REPO/$dist" > "$release"
+    install -m644 "$release" "$REPO/$dist/Release"
+    rm -f "$release"
+
+    gpg --yes --local-user "$GPG_KEYID" --digest-algo SHA512 --clearsign \
+        --output "$REPO/$dist/InRelease" "$REPO/$dist/Release"
+    gpg --yes --local-user "$GPG_KEYID" --digest-algo SHA512 --armor --detach-sign \
+        --output "$REPO/$dist/Release.gpg" "$REPO/$dist/Release"
+}
+
+# both suites always exist, raspiBackupInstall.sh adds both to the sources
+create_suite "$REPO_SUITE" stable
+create_suite "$REPO_BETA_SUITE" beta
 
 show "Export public key"
 
@@ -143,17 +174,20 @@ gpg --export --export-options export-minimal "$GPG_KEYID" > "$REPO/${PACKAGE_NAM
 gpg --armor --export --export-options export-minimal "$GPG_KEYID" > "$REPO/${PACKAGE_NAME}-archive-keyring.asc"
 chmod 644 "$REPO/${PACKAGE_NAME}-archive-keyring".*
 
-show "Verify repository signature"
+show "Verify repository signatures"
 
 keyring="$(realpath "$REPO/${PACKAGE_NAME}-archive-keyring.gpg")"
-signer="$(gpgv --status-fd 1 --keyring "$keyring" "$REPO/$DIST/InRelease" 2>/dev/null \
-    | awk '$2 == "VALIDSIG" { print $NF }')"
-if [[ "$signer" != "${GPG_KEYID^^}" ]] ; then
-    echo "Error: InRelease isn't signed by $GPG_KEYID (got '${signer}')"
-    exit 1
-fi
-gpgv --keyring "$keyring" "$REPO/$DIST/Release.gpg" "$REPO/$DIST/Release"
-echo "o.k."
+for suite in "$REPO_SUITE" "$REPO_BETA_SUITE"; do
+    dist="dists/$suite"
+    signer="$(gpgv --status-fd 1 --keyring "$keyring" "$REPO/$dist/InRelease" 2>/dev/null \
+        | awk '$2 == "VALIDSIG" { print $NF }')"
+    if [[ "$signer" != "${GPG_KEYID^^}" ]] ; then
+        echo "Error: $dist/InRelease isn't signed by $GPG_KEYID (got '${signer}')"
+        exit 1
+    fi
+    gpgv --keyring "$keyring" "$REPO/$dist/Release.gpg" "$REPO/$dist/Release"
+    echo "$suite o.k."
+done
 
 show "Repository in $REPO - publish this directory as it is"
 find "$REPO" -path '*/by-hash' -prune -o -type f -print | sort

@@ -39,6 +39,7 @@ readonly PACKAGE_NAME=raspibackup
 
 readonly REPO_URL="${REPO_URL:-https://${REPO_OWNER}.github.io/${RASPIBACKUP}}"
 readonly REPO_SUITE="${REPO_SUITE:-stable}"
+readonly REPO_BETA_SUITE="${REPO_BETA_SUITE:-beta}"
 readonly REPO_COMPONENT="${REPO_COMPONENT:-main}"
 
 readonly KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
@@ -63,15 +64,23 @@ It executes the following steps (could be done manually as well, of course):
 apt verifies the repository signature and the package checksums then.
 Later updates are installed with 'sudo apt-get update && sudo apt-get upgrade'.
 
+The repository has the suites '${REPO_SUITE}' and '${REPO_BETA_SUITE}'. Betas are installed
+only on request and kept updated to newer betas and finally to the next release:
+
+    sudo apt-get install -t ${REPO_BETA_SUITE} ${PACKAGE_NAME}       # install the latest beta
+    sudo apt-get install ${PACKAGE_NAME}/${REPO_SUITE}      # revert to the current version
+
 Usage:
 
-    ${MYSELF} [-v|--verbose] [-y|--yes] [<file.deb>]
+    ${MYSELF} [-v|--verbose] [-y|--yes] [-b|--beta] [<file.deb>]
 
 The option '-v|--verbose' lets the script print more details
 about the steps taken. In case the user would like to learn a bit or
 to check the results manually...
 
 The option '-y|--yes' doesn't ask for confirmation.
+
+The option '-b|--beta' installs the latest beta instead of the current version.
 
 The optional argument <file.deb> installs an already downloaded package
 without adding the repository. Its signature is expected in <file.deb>.sig
@@ -85,6 +94,7 @@ Additionally the download source can be modified by setting the environment:
     REPO_OWNER_GPG_FINGERPRINT   | 23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24
     REPO_URL                     | https://<REPO_OWNER>.github.io/${RASPIBACKUP}
     REPO_SUITE                   | stable
+    REPO_BETA_SUITE              | beta
     REPO_COMPONENT               | main
 
 To uninstall ${RASPIBACKUP} and remove the repository:
@@ -225,7 +235,7 @@ add_repository() {
     $SUDO tee "${SOURCES}" > /dev/null <<-EOF_SOURCES
 Types: deb
 URIs: ${REPO_URL}
-Suites: ${REPO_SUITE}
+Suites: ${REPO_SUITE} ${REPO_BETA_SUITE}
 Components: ${REPO_COMPONENT}
 Signed-By: ${KEYRING}
 EOF_SOURCES
@@ -251,7 +261,12 @@ EOF_SOURCES
 
 install_from_repository() {
     local version
-    version="$(apt-cache policy "${PACKAGE_NAME}" | awk '$1 == "Candidate:" { print $2 }')"
+    local -a target=()
+    if (( BETA )) ; then
+        # without a beta in the repository apt falls back to the current version
+        target=(-t "${REPO_BETA_SUITE}")
+    fi
+    version="$(apt-cache "${target[@]}" policy "${PACKAGE_NAME}" | awk '$1 == "Candidate:" { print $2 }')"
     if [[ -z "${version}" || "${version}" == "(none)" ]] ; then
         echo "??? Package ${PACKAGE_NAME} not found in repository ${REPO_URL}"
         return 42
@@ -267,11 +282,11 @@ install_from_repository() {
     echo "--- Installing ${RASPIBACKUP} package and all dependencies"
     if (( VERBOSE )) ; then
         echo "    > using command:"
-        echo "    >     sudo apt-get install -y ${PACKAGE_NAME}"
+        echo "    >     sudo apt-get install -y ${target[*]}${target:+ }${PACKAGE_NAME}"
     fi
     # dependencies come from the system repositories which might be outdated
     $SUDO apt-get update > /dev/null || true
-    $SUDO apt-get install -y "${PACKAGE_NAME}" || return 42
+    $SUDO apt-get install -y "${target[@]}" "${PACKAGE_NAME}" || return 42
 }
 
 verify_local_package() {
@@ -344,6 +359,7 @@ finish() {
 
 VERBOSE=0
 ASSUME_YES=0
+BETA=0
 while (( $# > 0 )) ; do
     case "$1" in
            -h|--help) usage
@@ -354,6 +370,10 @@ while (( $# > 0 )) ; do
                       continue
                       ;;
             -y|--yes) ASSUME_YES=1
+                      shift
+                      continue
+                      ;;
+           -b|--beta) BETA=1
                       shift
                       continue
                       ;;

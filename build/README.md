@@ -11,9 +11,10 @@ Contents of this file:
 
 1. [Publish a new release](#1-publish-a-new-release) (maintainer)
 2. [Install and update](#2-install-and-update) (users)
-3. [Revert to a previous release](#3-revert-to-a-previous-release) (users and maintainer)
-4. [How the package is verified](#4-how-the-package-is-verified)
-5. [Files in this directory](#5-files-in-this-directory)
+3. [Beta versions](#3-beta-versions) (maintainer and users)
+4. [Revert to a previous release](#4-revert-to-a-previous-release) (users and maintainer)
+5. [How the package is verified](#5-how-the-package-is-verified)
+6. [Files in this directory](#6-files-in-this-directory)
 
 ---
 
@@ -37,6 +38,7 @@ Check these settings:
 | `BRANCH_TO_DEB` | branch the package is built from, empty = current branch             |
 | `GPG_KEYID`     | full fingerprint of the signing key                                  |
 | `REPO_SUITE`    | `stable`, has to match `REPO_SUITE` in `raspiBackupInstall.sh`       |
+| `REPO_BETA_SUITE` | `beta`, has to match `REPO_BETA_SUITE` in `raspiBackupInstall.sh`  |
 
 GitHub Pages is already enabled (repository settings -> Pages -> Deploy from a branch ->
 `gh-pages`, `/ (root)`). Nothing else has to be done on GitHub.
@@ -78,6 +80,11 @@ Notes:
 - Neither `build/deb/` nor `build/repo/` are committed to `master`. The packages exist on
   `gh-pages` only.
 
+### Beta versions
+
+Betas are built and published like a release but with a version like `0.7.5-beta1`,
+see [section 3](#3-beta-versions).
+
 Useful commands:
 
 ```
@@ -112,6 +119,8 @@ Updates afterwards:
 sudo apt-get update && sudo apt-get upgrade
 ```
 
+To test beta versions see [section 3](#3-beta-versions).
+
 Uninstall:
 
 ```
@@ -140,7 +149,128 @@ New configuration options are added with `sudo raspiBackup --updateConfig`.
 
 ---
 
-## 3. Revert to a previous release
+## 3. Beta versions
+
+### How it works
+
+The repository has two suites. Both share the packages in `pool/`:
+
+| Suite    | Contains                                    | Installed by apt                          |
+|----------|---------------------------------------------|-------------------------------------------|
+| `stable` | releases and hotfixes, e.g. `0.7.4`, `0.7.4-m972` | always, the default                 |
+| `beta`   | all versions containing `~`, e.g. `0.7.5~beta1`, `0.7.5~rc1` | only on request          |
+
+`buildRepo.sh` sorts the packages into the suites by their version. The `Release` file of
+`beta` is marked `NotAutomatic: yes` and `ButAutomaticUpgrades: yes`. So apt
+
+- never installs a beta by itself, not even with `apt-get upgrade`,
+- installs a beta only with `apt-get install -t beta raspibackup`,
+- keeps an installed beta updated to newer betas and finally to the release.
+
+`build.sh` converts the suffixes `-alpha`, `-beta` and `-rc` of `VERSION` in `raspiBackup.sh`
+to `~alpha`, `~beta` and `~rc`, e.g. `0.7.5-beta1` to `0.7.5~beta1`. A `~` sorts before
+everything, even before the end of the version:
+
+```
+0.7.4 < 0.7.4-m972 < 0.7.5~beta1 < 0.7.5~beta2 < 0.7.5~rc1 < 0.7.5 < 0.7.5-m1
+```
+
+Without `~` a beta `0.7.5-beta1` would be newer than the release `0.7.5` and the release
+would never be installed on systems running the beta.
+
+### Publish a beta (maintainer)
+
+```
+# 1. Set the beta version in raspiBackup.sh and commit it. Only committed changes are packaged!
+#    VERSION="0.7.5-beta1"
+git commit -am "Beta 0.7.5-beta1"
+git push
+
+# 2. Build, sign and add the package to the local repository. It goes into the suite beta.
+cd build
+./build.sh
+
+# 3. Publish the repository on GitHub Pages
+./publishRepo.sh
+
+# 4. Check after one or two minutes that the beta is online
+curl -fsS https://framps.github.io/raspiBackup/dists/beta/main/binary-armhf/Packages | grep ^Version
+```
+
+Next steps:
+
+| Step                         | `VERSION` in raspiBackup.sh | Result for beta testers on their next `apt-get upgrade` |
+|------------------------------|-----------------------------|---------------------------------------------------------|
+| fix bugs in the beta         | `0.7.5-beta2`, `0.7.5-beta3`, ... | get the new beta                                  |
+| release candidate (optional) | `0.7.5-rc1`                 | get the release candidate                               |
+| final release, see section 1 | `0.7.5`                     | get the release and are back on `stable`                |
+
+Notes:
+
+- **Every beta build needs a new, higher version** (`beta1`, `beta2`, ...). A rebuild with
+  the same version won't reach beta testers.
+- Nothing has to be removed from `beta` after the release. Old betas stay in the repository
+  but are never installed again, because the release is newer.
+- To give up a beta, publish the release or a new beta which contains the good code.
+  Beta testers can also revert themselves, see below.
+
+### Install a beta (users)
+
+New installation:
+
+```
+curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
+bash raspiBackupInstall.sh --beta
+```
+
+Existing installation:
+
+```
+sudo apt-get update
+sudo apt-get install -t beta raspibackup
+```
+
+If there is no beta in the repository, apt installs the current release instead.
+
+Installations made before the beta suite existed have only `Suites: stable` in
+`/etc/apt/sources.list.d/raspibackup.sources`. Change it to `Suites: stable beta`
+or run `raspiBackupInstall.sh` again. Otherwise apt doesn't know any beta.
+
+Check which version is installed and which ones are available:
+
+```
+apt-cache policy raspibackup
+```
+
+### Upgrade a beta (users)
+
+```
+sudo apt-get update && sudo apt-get upgrade
+```
+
+A beta tester gets every new beta and finally the release, e.g.
+`0.7.5~beta1 -> 0.7.5~beta2 -> 0.7.5`. After the release apt stays on `stable` again.
+To test the next beta install it again with `apt-get install -t beta raspibackup`.
+
+### Revert a beta to the current release (users)
+
+```
+sudo apt-get update
+sudo apt-get install raspibackup/stable
+```
+
+apt asks to confirm the downgrade. Afterwards `apt-get upgrade` doesn't install betas any
+more until a beta is installed again with `-t beta`.
+
+The configuration `/usr/local/etc/raspiBackup.conf` isn't reverted. If the beta updated
+it (`raspiBackup --updateConfig`), the newer configuration is used by the release:
+new options are ignored and deleted options get their built-in default. Only a changed
+value of an option deleted by the beta is lost, the release uses its default then.
+The configuration before the last installation is saved as `raspiBackup.conf~`.
+
+---
+
+## 4. Revert to a previous release
 
 ### Users
 
@@ -194,7 +324,7 @@ it restores packages deleted only locally.
 
 ---
 
-## 4. How the package is verified
+## 5. How the package is verified
 
 ```
 fingerprint built into raspiBackupInstall.sh  (REPO_OWNER_GPG_FINGERPRINT)
@@ -219,7 +349,7 @@ It verifies `<file.deb>.sig` against the same built-in fingerprint.
 
 ---
 
-## 5. Files in this directory
+## 6. Files in this directory
 
 ```
                                                                               set in       set in        in

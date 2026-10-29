@@ -96,10 +96,12 @@ VERBOSITY=normal
 # The full GPG key fingerprint used for signing the built package and the repository. Required!
 GPG_KEYID=
 
-# REPO_SUITE, REPO_COMPONENT, REPO_ARCHITECTURES
+# REPO_SUITE, REPO_BETA_SUITE, REPO_COMPONENT, REPO_ARCHITECTURES
 # Layout of the signed apt repository created by buildRepo.sh.
-# raspiBackupInstall.sh has to use the same suite.
+# Versions with '~' (e.g. 0.7.5~beta1) go into REPO_BETA_SUITE, all others into REPO_SUITE.
+# raspiBackupInstall.sh has to use the same suites.
 REPO_SUITE=stable
+REPO_BETA_SUITE=beta
 REPO_COMPONENT=main
 REPO_ARCHITECTURES="armhf arm64 amd64 i386"
 EOF_CONF
@@ -198,6 +200,9 @@ fi
 # underscores are not allowed in Debian version numbers
 # change m_972 to m-972
 VERSION="$(sed -E 's/_/-/g' <<< "$VERSION")"
+# pre-releases have to sort before the release and go into the beta suite
+# change 0.7.5-beta1 to 0.7.5~beta1
+VERSION="$(sed -E 's/-(alpha|beta|rc)/~\L\1/I' <<< "$VERSION")"
 VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
 show "Building deb package '${PACKAGE_NAME}' for raspiBackup $VERSION"
