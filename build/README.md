@@ -116,7 +116,7 @@ Uninstall:
 
 ```
 sudo apt-get remove raspibackup        # keeps the configuration
-sudo apt-get purge raspibackup         # also deletes configuration and backup timer
+sudo apt-get purge raspibackup         # also deletes configuration
 sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibackup-archive-keyring.gpg
 ```
 
@@ -248,7 +248,7 @@ It verifies `<file.deb>.sig` against the same built-in fingerprint.
 │   │   ├── copyright                                                                                         |     |
 │   │   ├── postinst    # after installation: create config from template if missing                          |     |
 │   │   ├── prerm       # before apt remove: disable backup timer                                             |     |
-│   │   └── postrm      # after apt remove/purge: remove extension links, on purge config and timers          |     ^
+│   │   └── postrm      # after apt remove/purge: remove extension links, timers, on purge config            |     ^
 │   │                                                                                                         |     |
 │   └── src             # deb package build directory (not committed)         $TGT                         <--´   --´
 │       ├── DEBIAN

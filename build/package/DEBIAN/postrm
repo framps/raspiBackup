@@ -9,17 +9,19 @@ case "${1:-}" in
     remove|purge)
         # extensions linked by raspiBackupInstallUI into ${DIR_BIN}
         find "${DIR_BIN}" -maxdepth 1 -lname "${DIR_SHARE}/${PACKAGE_NAME}/*" -delete 2> /dev/null || true
+        # timers created by raspiBackupInstallUI, useless without raspiBackup
+        rm -f /etc/systemd/system/raspiBackup.service /etc/systemd/system/raspiBackup.timer /etc/cron.d/raspiBackup
+        if [[ -d /run/systemd/system ]]; then
+            systemctl daemon-reload || true
+            systemctl reset-failed raspiBackup.service raspiBackup.timer > /dev/null 2>&1 || true
+        fi
         ;;
 esac
 
 case "${1:-}" in
     purge)
-        # configuration and timers created by postinst and raspiBackupInstallUI
+        # configuration created by postinst and raspiBackupInstallUI
         rm -f "${DIR_ETC}/raspiBackup.conf" "${DIR_ETC}/raspiBackup.conf~"
-        rm -f /etc/systemd/system/raspiBackup.service /etc/systemd/system/raspiBackup.timer /etc/cron.d/raspiBackup
-        if [[ -d /run/systemd/system ]]; then
-            systemctl daemon-reload || true
-        fi
         ;;
 esac
 
