@@ -456,6 +456,11 @@ EOF_RBC
 else
     echo ""
     echo "--- Starting raspiBackupConfig to configure ${RASPIBACKUP} for individual needs"
-    # use the terminal directly, stdout and stderr are piped into the log
-    $SUDO raspiBackupConfig < /dev/tty > /dev/tty 2> /dev/tty || true
+    # use the terminal directly, stdout and stderr are piped into the log.
+    # Use the real terminal device and not /dev/tty: sudo with use_pty doesn't
+    # detect /dev/tty as the user's terminal and doesn't switch it into raw mode,
+    # so whiptail doesn't receive any keystrokes
+    tty_dev="/dev/$(ps -o tty= -p $$ | tr -d ' ')"
+    [[ -c "${tty_dev}" ]] || tty_dev=/dev/tty
+    $SUDO raspiBackupConfig < "${tty_dev}" > "${tty_dev}" 2> "${tty_dev}" || true
 fi
