@@ -1281,6 +1281,26 @@ MSG_PACKAGE_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: Uninstall of package %1 with apt-get failed."
 MSG_DE[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: Deinstallation des Pakets %1 mit apt-get fehlgeschlagen."
 
+MSG_PACKAGE_INDEX_UPDATE_FAILED=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: Update of the package index with apt-get update failed."
+MSG_DE[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: Aktualisierung des Paketindex mit apt-get update fehlgeschlagen."
+
+MSG_PACKAGE_HOLD_FAILED=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold of package %1 failed."
+MSG_DE[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold des Pakets %1 fehlgeschlagen."
+
+MSG_PACKAGE_NOT_AVAILABLE=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_NOT_AVAILABLE]="(Not available)"
+MSG_DE[$MSG_PACKAGE_NOT_AVAILABLE]="(Nicht verfügbar)"
+
+MSG_PACKAGE_CONFIRM_VERSION=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_CONFIRM_VERSION]="Replace $RASPIBACKUP_NAME %1 with %2?"
+MSG_DE[$MSG_PACKAGE_CONFIRM_VERSION]="Soll $RASPIBACKUP_NAME %1 durch %2 ersetzt werden?"
+
+MSG_PACKAGE_CONFIRM_PREVIOUS=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Revert $RASPIBACKUP_NAME %1 to %2?${NL}${NL}%2 is held. apt doesn't upgrade it until 'Update current release' is selected.${NL}The configuration isn't reverted."
+MSG_DE[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Soll $RASPIBACKUP_NAME %1 auf %2 zurückgesetzt werden?${NL}${NL}%2 wird festgehalten. apt aktualisiert es erst wieder, wenn 'Aktualisiere aktuelles Release' ausgewählt wird.${NL}Die Konfiguration wird nicht zurückgesetzt."
+
 
 declare -A MENU_EN
 declare -A MENU_DE
@@ -1635,6 +1655,22 @@ MENU_DE[$MENU_UPDATE_INSTALLER]='"P2" "Aktualisiere $MYSELF"'
 MENU_FI[$MENU_UPDATE_INSTALLER]='"P2" "Päivitä $MYSELF"'
 MENU_FR[$MENU_UPDATE_INSTALLER]='"P2" "Mettre à jour $MYSELF"'
 MENU_ZH[$MENU_UPDATE_INSTALLER]='"P2" "更新 $MYSELF"'
+
+MENU_PACKAGE_UPDATE=$((MCNT++))
+MENU_EN[$MENU_PACKAGE_UPDATE]='"P1" "Update current release"'
+MENU_DE[$MENU_PACKAGE_UPDATE]='"P1" "Aktualisiere aktuelles Release"'
+
+MENU_PACKAGE_PREVIOUS=$((MCNT++))
+MENU_EN[$MENU_PACKAGE_PREVIOUS]='"P2" "Revert to previous release"'
+MENU_DE[$MENU_PACKAGE_PREVIOUS]='"P2" "Zurück zum vorherigen Release"'
+
+MENU_PACKAGE_BETA=$((MCNT++))
+MENU_EN[$MENU_PACKAGE_BETA]='"P3" "Install available beta"'
+MENU_DE[$MENU_PACKAGE_BETA]='"P3" "Installiere verfügbare Beta"'
+
+MENU_PACKAGE_REVERT_BETA=$((MCNT++))
+MENU_EN[$MENU_PACKAGE_REVERT_BETA]='"P4" "Revert from beta to current release"'
+MENU_DE[$MENU_PACKAGE_REVERT_BETA]='"P4" "Von Beta zurück zum aktuellen Release"'
 
 declare -A MSG_HEADER=(['I']="---" ['W']="!!!" ['E']="???")
 
@@ -2056,6 +2092,85 @@ function package_uninstall_execute() { # apt deletes code, installer, config, ex
 			return
 		fi
 	fi
+
+	logExit
+
+}
+
+function package_index_update_execute() { # apt-get update to get the versions available in the repository
+
+	logEntry
+
+	# installations made before the beta suite existed don't know any beta
+	if [[ -f "$REPO_SOURCES" ]] && ! grep -Eq "^Suites:.* $REPO_BETA_SUITE( |$)" "$REPO_SOURCES"; then
+		logItem "Adding suite $REPO_BETA_SUITE to $REPO_SOURCES"
+		sed -i -E "s/^(Suites:.*)$/\1 $REPO_BETA_SUITE/" "$REPO_SOURCES" &>>"$LOG_FILE"
+	fi
+
+	if ! apt-get update &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_PACKAGE_INDEX_UPDATE_FAILED
+		logExit
+		return
+	fi
+
+	logExit
+
+}
+
+function package_version_execute() { # installs PACKAGE_TARGET_VERSION, holds it if PACKAGE_TARGET_HOLD is set
+
+	logEntry "$PACKAGE_TARGET_VERSION hold: $PACKAGE_TARGET_HOLD"
+
+	# a held package can't be changed
+	apt-mark unhold "$PACKAGE_NAME" &>>"$LOG_FILE"
+
+	if ! DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-downgrades "$PACKAGE_NAME=$PACKAGE_TARGET_VERSION" &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME=$PACKAGE_TARGET_VERSION"
+		logExit
+		return
+	fi
+
+	if (( PACKAGE_TARGET_HOLD )) && ! apt-mark hold "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_PACKAGE_HOLD_FAILED "$PACKAGE_NAME"
+		logExit
+		return
+	fi
+
+	writeToConsole $MSG_CODE_INSTALLED "$PACKAGE_NAME $PACKAGE_TARGET_VERSION"
+
+	logExit
+
+}
+
+function packageVersions() { # suite - versions of the package available in the suite
+	apt-cache madison "$PACKAGE_NAME" 2>>"$LOG_FILE" \
+		| awk -F'|' -v suite="$1" '{ gsub(/ /, "", $2); split($3, a, " "); split(a[2], s, "/"); if (s[1] == suite) print $2 }'
+}
+
+function highestVersion() { # [lowerThan] - highest version read from stdin, optionally only versions lower than lowerThan
+	local v max=""
+	while read -r v; do
+		[[ -n "$1" ]] && ! dpkg --compare-versions "$v" lt "$1" && continue
+		if [[ -z "$max" ]] || dpkg --compare-versions "$v" gt "$max"; then
+			max="$v"
+		fi
+	done
+	echo "$max"
+}
+
+function parsePackageVersions() { # sets the installed version and the versions the update menu offers
+
+	logEntry
+
+	PACKAGE_VERSION_INSTALLED="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	PACKAGE_VERSION_STABLE="$(packageVersions "$REPO_SUITE" | highestVersion)"
+	PACKAGE_VERSION_BETA="$(packageVersions "$REPO_BETA_SUITE" | highestVersion)"
+	PACKAGE_VERSION_PREVIOUS=""
+	if [[ "$PACKAGE_VERSION_INSTALLED" != *"~"* ]]; then	# for a beta the previous release is the current release
+		PACKAGE_VERSION_PREVIOUS="$(packageVersions "$REPO_SUITE" | highestVersion "$PACKAGE_VERSION_INSTALLED")"
+	fi
+
+	logItem "installed: $PACKAGE_VERSION_INSTALLED stable: $PACKAGE_VERSION_STABLE previous: $PACKAGE_VERSION_PREVIOUS beta: $PACKAGE_VERSION_BETA"
 
 	logExit
 
@@ -4162,8 +4277,8 @@ EOF
 }
 
 function isUpdatePossible() {
-		(( UPDATE_POSSIBLE != -1 )) && return
-		(( PACKAGE_MODE )) && UPDATE_POSSIBLE=1 && return 1		# apt updates
+		(( UPDATE_POSSIBLE != -1 )) && return $UPDATE_POSSIBLE
+		(( PACKAGE_MODE )) && UPDATE_POSSIBLE=0 && return 0		# apt versions are checked in update menu
 		logEntry
 		logItem "script: c:$VERSION_CURRENT p:$VERSION_PROPERTY"
 
@@ -4393,7 +4508,13 @@ function update_menu() {
 		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
 		whiptail --msgbox "$a" --title "$TITLE_ERROR" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
-		retrun 0
+		return 0
+	fi
+
+	if (( PACKAGE_MODE )); then
+		package_update_menu
+		logExit
+		return 0
 	fi
 
 	while :; do
@@ -4440,6 +4561,107 @@ function update_menu() {
 		fi
 	done
 	logExit
+
+}
+
+function package_update_menu() { # update, revert, install or revert a beta with apt
+
+	logEntry
+
+	INDEX_DESCRIPTION=("Updating $PACKAGE_NAME package index ...")
+	progressbar_do "INDEX_DESCRIPTION" "Updating package index" package_index_update_execute
+	parsePackageVersions
+
+	local i="$PACKAGE_VERSION_INSTALLED"
+	local stable="" previous="$PACKAGE_VERSION_PREVIOUS" beta="" revertBeta=""
+
+	if [[ -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" gt "$i"; then
+		stable="$PACKAGE_VERSION_STABLE"
+	fi
+	if [[ -n "$PACKAGE_VERSION_BETA" ]] && dpkg --compare-versions "$PACKAGE_VERSION_BETA" gt "$i"; then
+		beta="$PACKAGE_VERSION_BETA"
+	fi
+	if [[ "$i" == *"~"* && -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" lt "$i"; then
+		revertBeta="$PACKAGE_VERSION_STABLE"
+	fi
+
+	local b1=$(getMessageText $BUTTON_BACK)
+	local o1=$(getMessageText $BUTTON_SELECT)
+
+	getMenuText $MENU_PACKAGE_UPDATE m1
+	getMenuText $MENU_PACKAGE_PREVIOUS m2
+	getMenuText $MENU_PACKAGE_BETA m3
+	getMenuText $MENU_PACKAGE_REVERT_BETA m4
+	getMenuText $MENU_UPDATE tt
+
+	local s1="${m1[0]}"
+	local s2="${m2[0]}"
+	local s3="${m3[0]}"
+	local s4="${m4[0]}"
+
+	packageMenuItem m1 "$stable"
+	packageMenuItem m2 "$previous"
+	packageMenuItem m3 "$beta"
+	packageMenuItem m4 "$revertBeta"
+
+	FUN=$(whiptail --title "${tt[1]}" --menu "" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button "$b1" --ok-button "$o1" \
+		"${m1[@]}" \
+		"${m2[@]}" \
+		"${m3[@]}" \
+		"${m4[@]}" \
+		3>&1 1>&2 2>&3)
+	RET=$?
+	if [ $RET -eq 0 ]; then
+		logItem "$FUN"
+		case "$FUN" in
+			$s1) [[ -n "$stable" ]] && package_version_do "$stable" 0 ;;
+			$s2) [[ -n "$previous" ]] && package_version_do "$previous" 1 ;;
+			$s3) [[ -n "$beta" ]] && package_version_do "$beta" 0 ;;
+			$s4) [[ -n "$revertBeta" ]] && package_version_do "$revertBeta" 0 ;;
+			*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
+		esac
+	fi
+
+	logExit
+
+}
+
+function packageMenuItem() { # menuVarName version - add the version change or not available to the menu text
+	local -n item=$1
+	if [[ -n "$2" ]]; then
+		item[1]="${item[1]} ($PACKAGE_VERSION_INSTALLED -> $2)"
+	else
+		item[1]="${item[1]} $(getMessageText $MSG_PACKAGE_NOT_AVAILABLE)"
+	fi
+}
+
+function package_version_do() { # version hold
+
+	logEntry "$@"
+
+	local m
+	if (( $2 )); then
+		m="$(getMessageText $MSG_PACKAGE_CONFIRM_PREVIOUS "$PACKAGE_VERSION_INSTALLED" "$1")"
+	else
+		m="$(getMessageText $MSG_PACKAGE_CONFIRM_VERSION "$PACKAGE_VERSION_INSTALLED" "$1")"
+	fi
+	local y="$(getMessageText $BUTTON_YES)"
+	local n="$(getMessageText $BUTTON_NO)"
+	local tt="$(getMessageText $TITLE_CONFIRM)"
+
+	if ! whiptail --yesno "$m" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 2; then
+		logExit
+		return
+	fi
+
+	PACKAGE_TARGET_VERSION="$1"
+	PACKAGE_TARGET_HOLD="$2"
+	INSTALL_DESCRIPTION=("Installing $PACKAGE_NAME $1 with apt ...")
+	progressbar_do "INSTALL_DESCRIPTION" "Installing $PACKAGE_NAME $1" package_version_execute
+
+	logExit
+	[[ -x "$INSTALLER_ABS_FILE" ]] && exec "$INSTALLER_ABS_FILE" # restart with the installed version, no return
+	exit 0
 
 }
 

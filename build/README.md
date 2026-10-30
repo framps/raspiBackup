@@ -113,6 +113,18 @@ sudo raspiBackupConfig
 and the sample extensions only. Installing, updating and uninstalling raspiBackup is done
 with apt, the options `-i`, `-U` and `-u` aren't available.
 
+The menu `M5 Update components` of `raspiBackupConfig` runs `apt-get update` and offers
+the apt commands described below:
+
+| Option | apt command | Available if |
+|--------|-------------|--------------|
+| `P1` Update current release | `apt-get install raspibackup=<latest stable>` | a newer release exists |
+| `P2` Revert to previous release | `apt-get install --allow-downgrades raspibackup=<previous>` and `apt-mark hold` | a release is installed and an older one exists |
+| `P3` Install available beta | `apt-get install raspibackup=<latest beta>` | a newer beta exists |
+| `P4` Revert from beta to current release | `apt-get install --allow-downgrades raspibackup=<latest stable>` | a beta is installed |
+
+Every option removes a hold first. Afterwards `raspiBackupConfig` restarts with the installed version.
+
 Updates afterwards:
 
 ```
