@@ -39,6 +39,8 @@ Check these settings:
 | `GPG_KEYID`     | full fingerprint of the signing key                                  |
 | `REPO_SUITE`    | `stable`, has to match `REPO_SUITE` in `raspiBackupInstall.sh`       |
 | `REPO_BETA_SUITE` | `beta`, has to match `REPO_BETA_SUITE` in `raspiBackupInstall.sh`  |
+| `VERSION_RASPIBACKUP` | version inserted into `raspiBackup` and used for the package, empty = `VERSION` of `raspiBackup.sh` |
+| `VERSION_RASPIBACKUPCONFIG` | version inserted into `raspiBackupConfig`, empty = `VERSION` of `raspiBackupConfig.sh` |
 
 GitHub Pages is already enabled (repository settings -> Pages -> Deploy from a branch ->
 `gh-pages`, `/ (root)`). Nothing else has to be done on GitHub.
@@ -47,6 +49,7 @@ GitHub Pages is already enabled (repository settings -> Pages -> Deploy from a b
 
 ```
 # 1. Set a new, higher version in raspiBackup.sh, e.g. VERSION="0.7.5"
+#    (or VERSION_RASPIBACKUP="0.7.5" in build.conf)
 #    and commit and push it. Only committed changes are packaged!
 git commit -am "Release 0.7.5"
 git push
@@ -74,6 +77,9 @@ Notes:
 - Version numbers are compared by `dpkg --compare-versions`, see `compareVersions.sh`:
   `0.7.5~beta1 < 0.7.5~rc1 < 0.7.5 < 0.7.5-m1 < 0.7.6`.
   An underscore in `VERSION` (e.g. `0.7.4-m_972`) is converted to `-` (`0.7.4-m-972`).
+- `VERSION_RASPIBACKUP` and `VERSION_RASPIBACKUPCONFIG` in `build.conf` override `VERSION` of
+  `raspiBackup.sh` and `raspiBackupConfig.sh`. They are inserted into the packaged scripts,
+  the committed sources stay unchanged.
 - All published versions stay in the repository, so users can always go back.
   `publishRepo.sh` copies packages published earlier but missing locally back into `repo/`,
   so you can publish from any system.

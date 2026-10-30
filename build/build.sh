@@ -64,6 +64,14 @@ if [[ ! -f ./build.conf ]] ; then
 # BRANCH_TO_DEB="m_972"
 BRANCH_TO_DEB=""
 
+# VERSION_RASPIBACKUP, VERSION_RASPIBACKUPCONFIG
+# Versions inserted into raspiBackup and raspiBackupConfig of the package (VERSION="...").
+# VERSION_RASPIBACKUP is also the version of the Debian package.
+# If empty then the version of the script in the git branch is used.
+# -alpha, -beta, -rc, -hotfix or -dev suffixes possible, e.g. "0.7.5-beta1"
+VERSION_RASPIBACKUP=""
+VERSION_RASPIBACKUPCONFIG=""
+
 # Note: Some of the following variables need to be exported
 #       because they are used in/with envsubst.
 
@@ -184,13 +192,21 @@ show "Using branch '$BRANCH_TO_DEB' as source for the build"
 # detached because a branch can't be checked out in two worktrees
 git worktree add --detach "$GITSRC" "$BRANCH_TO_DEB"
 
-export VERSION
-# extract version number from raspiBackup script
-version="$(grep "^VERSION=" "$GITSRC/raspiBackup.sh" 2>/dev/null)"
-REGEX='.*="([^"]*)"'
-if [[ $version =~ $REGEX ]]; then
-    VERSION=${BASH_REMATCH[1]}
-fi
+# extract version number from a script
+extractVersion() { # file
+    local version REGEX='.*="([^"]*)"'
+    version="$(grep "^VERSION=" "$1" 2>/dev/null)"
+    if [[ $version =~ $REGEX ]]; then
+        echo "${BASH_REMATCH[1]}"
+    fi
+}
+
+# versions from build.conf, if empty the versions of the scripts
+VERSION_RASPIBACKUP="${VERSION_RASPIBACKUP:-$(extractVersion "$GITSRC/raspiBackup.sh")}"
+VERSION_RASPIBACKUPCONFIG="${VERSION_RASPIBACKUPCONFIG:-$(extractVersion "$GITSRC/installation/raspiBackupConfig.sh")}"
+show "raspiBackup version: $VERSION_RASPIBACKUP, raspiBackupConfig version: $VERSION_RASPIBACKUPCONFIG"
+
+export VERSION="$VERSION_RASPIBACKUP"
 
 # allow to pass another version number for upgrade/downgrade tests
 if (( $# > 0 )); then
@@ -246,6 +262,10 @@ popd > /dev/null
 
 # the gitsrc worktree is no longer needed here
 git worktree remove "$GITSRC"
+
+# Insert versions into the scripts
+sed -i -E "s/^VERSION=\"[^\"]*\"/VERSION=\"$VERSION_RASPIBACKUP\"/" "$TGT/$DIR_BIN/raspiBackup"
+sed -i -E "s/^VERSION=\"[^\"]*\"/VERSION=\"$VERSION_RASPIBACKUPCONFIG\"/" "$TGT/$DIR_BIN/raspiBackupConfig"
 
 # Insert commit date and sha1 into the scripts
 sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*.conf "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/extensions/*
