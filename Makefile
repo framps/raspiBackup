@@ -26,12 +26,12 @@
 CURRENT_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 MAKEFILE := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 
-PACKAGE_FILES = installation/install.sh installation/raspiBackupInstallUI.sh raspiBackup.sh extensions/raspiBackupSampleExtensions.tgz properties/raspiBackup.properties
+PACKAGE_FILES = installation/install.sh installation/raspiBackupConfig.sh raspiBackup.sh extensions/raspiBackupSampleExtensions.tgz properties/raspiBackup.properties
 PACKAGE_FILE_COLLECTIONS = config/*
 PACKAGE_EXTENSION_DIRECTORY = extensions
 PACKAGE_EXTENSION_FILES_PREFIX = raspiBackup_*
 PACKAGE_EXTENSION_FILES = $(PACKAGE_EXTENSION_DIRECTORY)/$(PACKAGE_EXTENSION_FILES_PREFIX)
-FILES_TO_SIGN = raspiBackup.sh raspiBackupInstallUI.sh
+FILES_TO_SIGN = raspiBackup.sh raspiBackupConfig.sh
 
 include $(CURRENT_DIR)/$(MAKEFILE).env
 # Has to define following environment constants:

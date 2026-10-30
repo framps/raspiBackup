@@ -2,7 +2,7 @@
 
 #######################################################################################################################
 #
-# 	Check if there are unused or undefined messaged messages in raspiBackupInstallUI
+# 	Check if there are unused or undefined messaged messages in raspiBackupConfig
 #
 #######################################################################################################################
 #
@@ -27,7 +27,7 @@ echo "Searching for message constants not used..."
 
 messages=0
 
-grep -E '^.*=\$\(\(SCNT\+\+\)\)' ../installation/raspiBackupInstallUI.sh > messages.dat
+grep -E '^.*=\$\(\(SCNT\+\+\)\)' ../installation/raspiBackupConfig.sh > messages.dat
 echo "" > msg.dat
 
 while read line; do
@@ -39,7 +39,7 @@ while read line; do
 done < messages.dat
 
 while read line; do
-   cnt=$(grep -c "[^\[]\$$line" ../installation/raspiBackupInstallUI.sh)
+   cnt=$(grep -c "[^\[]\$$line" ../installation/raspiBackupConfig.sh)
    if [[ $cnt == 0 ]]; then
    	echo "$line: $cnt"
    fi

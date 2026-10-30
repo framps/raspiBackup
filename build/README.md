@@ -106,10 +106,10 @@ The script adds the repository and installs `raspibackup`. Then configure raspiB
 (backup path, backup type, timer, extensions, ...) with
 
 ```
-sudo raspiBackupInstallUI
+sudo raspiBackupConfig
 ```
 
-`raspiBackupInstallUI` detects the package installation. It offers the configuration
+`raspiBackupConfig` detects the package installation. It offers the configuration
 and the sample extensions only. Installing, updating and uninstalling raspiBackup is done
 with apt, the options `-i`, `-U` and `-u` aren't available.
 
@@ -134,12 +134,12 @@ sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibac
 | File | |
 |------|-|
 | `/usr/local/bin/raspiBackup`, `raspiBackup.sh` | raspiBackup, `raspiBackup.sh` is a link for former installations |
-| `/usr/local/bin/raspiBackupInstallUI` | configuration |
+| `/usr/local/bin/raspiBackupConfig` | configuration |
 | `/usr/local/etc/raspiBackup.conf` | configuration, created on first installation from a template |
 | `/usr/local/share/raspibackup/` | configuration templates |
 | `/usr/local/share/raspibackup/extensions/` | sample extensions and their README |
 | `/usr/local/lib/systemd/system/raspiBackup.{service,timer}` | default systemd units |
-| `/etc/systemd/system/raspiBackup.{service,timer}` | units configured by `raspiBackupInstallUI`, take precedence |
+| `/etc/systemd/system/raspiBackup.{service,timer}` | units configured by `raspiBackupConfig`, take precedence |
 
 The configuration isn't managed by dpkg (no conffile). Installation, update and downgrade
 never change it, so there are no questions about it during `apt-get upgrade`.

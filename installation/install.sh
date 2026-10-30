@@ -30,7 +30,7 @@ VERSION="0.1.5"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 URL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
-INSTALLER="raspiBackupInstallUI.sh"
+INSTALLER="raspiBackupConfig.sh"
 INSTALLER_DOWNLOAD_URL="$URL/${URLTARGET}/$INSTALLER"
 
 CURRENT_DIR=$(pwd)

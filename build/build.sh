@@ -212,12 +212,12 @@ rm -rf "$DEB_TGT"
 mkdir -p "$DEB_TGT"
 
 # copy source files
-install -m755 -D -t "$TGT/$DIR_BIN" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupInstallUI.sh"
+install -m755 -D -t "$TGT/$DIR_BIN" "$GITSRC/raspiBackup.sh" "$GITSRC/installation/raspiBackupConfig.sh"
 
 # and get rid of .sh extension
 pushd "$TGT/$DIR_BIN" > /dev/null
 mv raspiBackup.sh raspiBackup
-mv raspiBackupInstallUI.sh raspiBackupInstallUI
+mv raspiBackupConfig.sh raspiBackupConfig
 popd > /dev/null
 
 # copy config templates - postinst creates $DIR_ETC/raspiBackup.conf from them if it doesn't exist.
@@ -227,12 +227,12 @@ install -m644 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}" "$GITSRC/config/raspiBacku
 # copy systemd files
 install -m644 -D -t "$TGT/$DIR_LIB/systemd/system" "$GITSRC/installation/raspiBackup.service" "$GITSRC/installation/raspiBackup.timer"
 
-# copy sample extensions and their README - raspiBackupInstallUI links them into $DIR_BIN
+# copy sample extensions and their README - raspiBackupConfig links them into $DIR_BIN
 install -m755 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}/extensions" "$GITSRC"/extensions/raspiBackup_*.sh
 install -m644 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}/extensions" "$GITSRC/extensions/README.md"
 
 # copy man pages - version and date are inserted and the pages compressed below
-install -m644 -D -t "$TGT/$DIR_SHARE/man/man1" "$GITSRC/man/raspiBackup.1" "$GITSRC/man/raspiBackupInstallUI.1"
+install -m644 -D -t "$TGT/$DIR_SHARE/man/man1" "$GITSRC/man/raspiBackup.1" "$GITSRC/man/raspiBackupConfig.1"
 install -m644 -D -t "$TGT/$DIR_SHARE/man/man5" "$GITSRC/man/raspiBackup.conf.5"
 
 # copy full license text (GPLv3) next to the copyright file installed below
@@ -254,9 +254,11 @@ sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha
 sed -i -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/${last_date%% *}/g" "$TGT/$DIR_SHARE"/man/man?/*
 gzip -9n "$TGT/$DIR_SHARE"/man/man?/*
 
-# keep the old name for raspiBackupInstallUI, crontabs and systemd units of former installations
+# keep the old name for raspiBackupConfig, crontabs and systemd units of former installations
 # (created after sed -i, which would replace the link by a file)
 ln -s raspiBackup "$TGT/$DIR_BIN/raspiBackup.sh"
+# keep the old name of raspiBackupConfig for users used to it
+ln -s raspiBackupConfig "$TGT/$DIR_BIN/raspiBackupInstallUI"
 
 # copy doc files (copyright in this case)
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"

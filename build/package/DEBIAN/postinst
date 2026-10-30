@@ -4,7 +4,7 @@
 # postinst of ${PACKAGE_NAME}
 #
 # The configuration ${DIR_ETC}/raspiBackup.conf is created from a template on first installation only.
-# It's no conffile, so dpkg never touches it. raspiBackupInstallUI and 'raspiBackup --updateConfig' update it.
+# It's no conffile, so dpkg never touches it. raspiBackupConfig and 'raspiBackup --updateConfig' update it.
 
 set -euo pipefail
 
@@ -43,7 +43,7 @@ case "${1:-}" in
             systemctl daemon-reload || true
         fi
 
-        echo "Configure raspiBackup with: sudo raspiBackupInstallUI"
+        echo "Configure raspiBackup with: sudo raspiBackupConfig"
         ;;
 esac
 

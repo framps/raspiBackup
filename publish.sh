@@ -51,7 +51,7 @@ EOF_USAGE
 
 FILES=(
 	"raspiBackup.sh"
-	"installation/raspiBackupInstallUI.sh"
+	"installation/raspiBackupConfig.sh"
 	"installation/install.sh"
 	"config/raspiBackup_de.conf"
 	"config/raspiBackup_en.conf"

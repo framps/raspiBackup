@@ -72,6 +72,7 @@ declare -A REQUIRED_COMMANDS=( \
 		["blkid"]="util-linux" \
 		["sfdisk"]="fdisk" \
 		["curl"]="curl" \
+		["gpg"]="gnupg" \
 		)
 
 requiredCmds=()
@@ -126,7 +127,6 @@ NL=$'\n'
 IGNORE_START_STOP_CHAR=":"
 declare -A CONFIG_DOWNLOAD_FILE=(['DE']="raspiBackup_de.conf" ['EN']="raspiBackup_en.conf")
 CONFIG_FILE="raspiBackup.conf"
-SAMPLEEXTENSION_TAR_FILE="raspiBackupSampleExtensions.tgz"
 DEFAULT_IFS="$IFS"
 MASQUERADE_STRING="@@@@"
 
@@ -137,7 +137,7 @@ BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupInstallUI.sh"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupConfig.sh"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
@@ -263,8 +263,17 @@ SYSTEMD_TIMER_ABS_FILE="$SYSTEMD_DIR/$SYSTEMD_TIMER_FILE_NAME"
 INSTALLER_ABS_PATH="$BIN_DIR"
 INSTALLER_ABS_FILE="$INSTALLER_ABS_PATH/$MYSELF"
 
-PACKAGE_NAME="raspibackup"								# Debian package, if installed apt manages the code
-PACKAGE_EXTENSIONS_DIR="/usr/local/share/$PACKAGE_NAME/extensions"	# extensions provided by the package
+PACKAGE_NAME="raspibackup"								# Debian package, apt installs, updates and uninstalls the code
+PACKAGE_TEMPLATES_DIR="/usr/local/share/$PACKAGE_NAME"	# config templates provided by the package
+
+# apt repository, has to match raspiBackupInstall.sh
+REPO_OWNER_GPG_FINGERPRINT="23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24"	# only a repository signed with this key is accepted
+REPO_URL="https://framps.github.io/raspiBackup"
+REPO_SUITE="stable"
+REPO_BETA_SUITE="beta"
+REPO_COMPONENT="main"
+REPO_KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
+REPO_SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 
 PROPERTY_REGEX='.*="([^"]*)"'
@@ -466,19 +475,7 @@ MSG_FI[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown %1 epäonnistui."
 MSG_FR[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: Impossible d'exécuter chown %1."
 MSG_ZH[$MSG_CHOWN_FAILED]="${MSG_PRF}0017E: chown of %1 失败."
 
-MSG_SAMPLEEXTENSION_INSTALL_FAILED=$((SCNT++))
-MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Sample extension installation failed. %1"
-MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Beispielserweiterungsinstallation fehlgeschlagen. %1"
-MSG_FI[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: Näytelisäosien asennus epäonnistui. %1"
-MSG_FR[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: L'installation de l'exemple d'extension a échoué. %1"
-MSG_ZH[$MSG_SAMPLEEXTENSION_INSTALL_FAILED]="${MSG_PRF}0018E: 扩展安装失败. %1"
 
-MSG_SAMPLEEXTENSION_INSTALL_SUCCESS=$((SCNT++))
-MSG_EN[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Sample extensions successfully installed and enabled."
-MSG_DE[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Beispielserweiterungen erfolgreich installiert und eingeschaltet."
-MSG_FI[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Näytelisäosat asennettu ja otettu käyttöön onnistuneesti."
-MSG_FR[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: Les exemples d'extensions ont été installés et activés avec succès."
-MSG_ZH[$MSG_SAMPLEEXTENSION_INSTALL_SUCCESS]="${MSG_PRF}0019I: 扩展安装成功并激活."
 
 MSG_INSTALLING_CRON_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: Creating cron file %1."
@@ -700,19 +697,7 @@ MSG_FI[$MSG_NO_UPDATE_AVAILABLE]="(Päivitystä ei ole saatavilla)"
 MSG_FR[$MSG_NO_UPDATE_AVAILABLE]="(Pas de mise a jour disponible)"
 MSG_ZH[$MSG_NO_UPDATE_AVAILABLE]="(没有可用更新)"
 
-MSG_NO_EXTENSIONS_FOUND=$((SCNT++))
-MSG_EN[$MSG_NO_EXTENSIONS_FOUND]="No extensions installed."
-MSG_DE[$MSG_NO_EXTENSIONS_FOUND]="Keine Erweiterungen installiert."
-MSG_FI[$MSG_NO_EXTENSIONS_FOUND]="Lisäosia ei ole asennettu."
-MSG_FR[$MSG_NO_EXTENSIONS_FOUND]="Aucune extension installée."
-MSG_ZH[$MSG_NO_EXTENSIONS_FOUND]="尚未安装扩展."
 
-MSG_EXTENSIONS_ALREADY_INSTALLED=$((SCNT++))
-MSG_EN[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Extensions already installed."
-MSG_DE[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Extensions sind bereits installiert."
-MSG_FI[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Lisäosat ovat jo asennettuna."
-MSG_FR[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Les extensions sont déjà installées."
-MSG_ZH[$MSG_EXTENSIONS_ALREADY_INSTALLED]="扩展已安装."
 
 MSG_SCRIPT_ALREADY_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME already installed.${NL}Do you want to reinstall $RASPIBACKUP_NAME ?"
@@ -783,23 +768,6 @@ MSG_DE[$MSG_SYSTEMD_NOT_INSTALLED]="Keine systemd Konfiguration gefunden."
 MSG_SYSTEMD_CONFIG_ERROR=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd configuration failed with RC %1."
 MSG_DE[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd Konfiguration fehlerhaft mit RC %1."
-
-DESCRIPTION_INSTALLATION=$((SCNT++))
-MSG_EN[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME allows to plug in custom extensions which are called before and after the backup process. \
-There exist sample extensions which report the memory usage, CPU temperature and disk usage of the backup partition. \
-For details see${NL}https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
-MSG_DE[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME erlaubt selbstgeschriebene Erweiterungen vor und nach dem Backupprozess aufzurufen. \
-Es gibt Beispielerweiterungen die die Speicherauslastung, die CPU Temperatur sowie die Speicherplatzbenutzung der Backuppartition anzeigen. \
-Für weitere Details siehe${NL}https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
-MSG_FI[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME tukee lisäosia, joiden toimintoja voidaan suorittaa ennen ja jälkeen varmuuskopioinnin. \
-Mukana tulevat näytelisäosat esittävät prosessorin lämpötilan sekä tietoja muistin ja varmuuskopiointilevyn käytöstä. \
-${NL}Lue lisätietoja osoitteesta https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
-MSG_FR[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME vous permet d'appeler des extensions auto-écrites avant et après le processus de sauvegarde. \
-Il existe des exemples d'extensions qui montrent l'utilisation de la mémoire, la température du processeur et l'utilisation de l'espace de stockage de la partition de sauvegarde. \
-${NL}Pour plus de détails voir https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
-MSG_ZH[$DESCRIPTION_INSTALLATION]="${NL}$RASPIBACKUP_NAME 允许插入自定义扩展，备份前后均可插入. \
-已有示例扩展报告内存占用,CPU温度和备份硬盘占用. \
-${NL}详情请 https://framps.github.io/raspiBackupDoc/hooks-for-own-scripts."
 
 DESCRIPTION_COMPRESS=$((SCNT++))
 MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup but this will increase backup time. \
@@ -1239,7 +1207,7 @@ Prochaines étapes :${NL}
 4) Lisez la page FAQ https://framps.github.io/raspiBackupDoc/faq${NL}\
 5) Visitez la page des options et améliorez $RASPIBACKUP_NAME${NL}\
    https://framps.github.io/raspiBackupDoc/backup${NL}\
-6) Activez la sauvegarde régulière avec le programme raspiBackupInstallUI.sh${NL}\
+6) Activez la sauvegarde régulière avec le programme raspiBackupConfig.sh${NL}\
 7) Visitez https://framps.github.io/raspiBackupDoc/introduction pour avoir des informations sur $RASPIBACKUP_NAME"
 MSG_ZH[$MSG_FIRST_STEPS]="恭喜! $RASPIBACKUP_NAME 安装成功.${NL}${NL}\
 接下来你可以:${NL}
@@ -1301,9 +1269,18 @@ MSG_PACKAGE_UPDATE=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME is installed as Debian package. Install and update it with 'sudo apt-get update' and 'sudo apt-get upgrade'."
 MSG_DE[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME ist als Debian Paket installiert. Installiere und aktualisiere es mit 'sudo apt-get update' und 'sudo apt-get upgrade'."
 
-MSG_PACKAGE_UNINSTALL=$((SCNT++))
-MSG_EN[$MSG_PACKAGE_UNINSTALL]="$RASPIBACKUP_NAME is installed as Debian package. Uninstall it with 'sudo apt-get purge $PACKAGE_NAME'."
-MSG_DE[$MSG_PACKAGE_UNINSTALL]="$RASPIBACKUP_NAME ist als Debian Paket installiert. Deinstalliere es mit 'sudo apt-get purge $PACKAGE_NAME'."
+MSG_REPOSITORY_ADD_FAILED=$((SCNT++))
+MSG_EN[$MSG_REPOSITORY_ADD_FAILED]="${MSG_PRF}0034E: Adding apt repository %1 failed. Key not found or invalid."
+MSG_DE[$MSG_REPOSITORY_ADD_FAILED]="${MSG_PRF}0034E: Hinzufügen des apt Repositories %1 fehlgeschlagen. Schlüssel nicht gefunden oder ungültig."
+
+MSG_PACKAGE_INSTALL_FAILED=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_INSTALL_FAILED]="${MSG_PRF}0035E: Installation of package %1 with apt-get failed."
+MSG_DE[$MSG_PACKAGE_INSTALL_FAILED]="${MSG_PRF}0035E: Installation des Pakets %1 mit apt-get fehlgeschlagen."
+
+MSG_PACKAGE_UNINSTALL_FAILED=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: Uninstall of package %1 with apt-get failed."
+MSG_DE[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: Deinstallation des Pakets %1 mit apt-get fehlgeschlagen."
+
 
 declare -A MENU_EN
 declare -A MENU_DE
@@ -1327,11 +1304,11 @@ MENU_FR[$MENU_LANGUAGE]='"M1" "Choisir la langue"'
 MENU_ZH[$MENU_LANGUAGE]='"M1" "语言"'
 
 MENU_INSTALL=$((MCNT++))
-MENU_EN[$MENU_INSTALL]='"M2" "Install components"'
-MENU_DE[$MENU_INSTALL]='"M2" "Installiere Komponenten"'
-MENU_FI[$MENU_INSTALL]='"M2" "Asenna komponentteja"'
-MENU_FR[$MENU_INSTALL]='"M2" "Installation des composants"'
-MENU_ZH[$MENU_INSTALL]='"M2" "安装组件"'
+MENU_EN[$MENU_INSTALL]='"M2" "Install $RASPIBACKUP_NAME using a default configuration"'
+MENU_DE[$MENU_INSTALL]='"M2" "Installiere $RASPIBACKUP_NAME mit einer Standardkonfiguration"'
+MENU_FI[$MENU_INSTALL]='"M2" "Asenna $RASPIBACKUP_NAME oletusasetuksilla"'
+MENU_FR[$MENU_INSTALL]='"M2" "Installer $RASPIBACKUP_NAME en utilisant une configuration par défaut"'
+MENU_ZH[$MENU_INSTALL]='"M2" "使用默认设置安装 $RASPIBACKUP_NAME "'
 
 MENU_CONFIGURE=$((MCNT++))
 MENU_EN[$MENU_CONFIGURE]='"M3" "Configure major options"'
@@ -1341,11 +1318,11 @@ MENU_FR[$MENU_CONFIGURE]='"M3" "Configurer les options importantes"'
 MENU_ZH[$MENU_CONFIGURE]='"M3" "设置主要选项"'
 
 MENU_UNINSTALL=$((MCNT++))
-MENU_EN[$MENU_UNINSTALL]='"M4" "Delete components"'
-MENU_DE[$MENU_UNINSTALL]='"M4" "Lösche Komponenten"'
-MENU_FI[$MENU_UNINSTALL]='"M4" "Poista komponentteja"'
-MENU_FR[$MENU_UNINSTALL]='"M4" "Supprimer des composants"'
-MENU_ZH[$MENU_UNINSTALL]='"M4" "删除组件"'
+MENU_EN[$MENU_UNINSTALL]='"M4" "Uninstall $RASPIBACKUP_NAME"'
+MENU_DE[$MENU_UNINSTALL]='"M4" "Lösche $RASPIBACKUP_NAME"'
+MENU_FI[$MENU_UNINSTALL]='"M4" "Poista $RASPIBACKUP_NAME -asennus"'
+MENU_FR[$MENU_UNINSTALL]='"M4" "Supprimer $RASPIBACKUP_NAME"'
+MENU_ZH[$MENU_UNINSTALL]='"M4" "卸载 $RASPIBACKUP_NAME"'
 
 MENU_UPDATE=$((MCNT++))
 MENU_EN[$MENU_UPDATE]='"M5" "Update components"'
@@ -1541,19 +1518,7 @@ MENU_FI[$MENU_CONFIG_MODE_PARTITION]='"Laajennettu" "Varmuuskopioi enemmän kuin
 MENU_FR[$MENU_CONFIG_MODE_PARTITION]='"Elargi" "Sauvegarde de plus de deux partitions"'
 MENU_ZH[$MENU_CONFIG_MODE_PARTITION]='"扩展" "备份多于2个分区"'
 
-MENU_INSTALL_INSTALL=$((MCNT++))
-MENU_EN[$MENU_INSTALL_INSTALL]='"I1" "Install $RASPIBACKUP_NAME using a default configuration"'
-MENU_DE[$MENU_INSTALL_INSTALL]='"I1" "Installiere $RASPIBACKUP_NAME mit einer Standardkonfiguration"'
-MENU_FI[$MENU_INSTALL_INSTALL]='"I1" "Asenna $RASPIBACKUP_NAME oletusasetuksilla"'
-MENU_FR[$MENU_INSTALL_INSTALL]='"I1" "Installer $RASPIBACKUP_NAME en utilisant une configuration par défaut"'
-MENU_ZH[$MENU_INSTALL_INSTALL]='"I1" "使用默认设置安装 $RASPIBACKUP_NAME "'
 
-MENU_INSTALL_EXTENSIONS=$((MCNT++))
-MENU_EN[$MENU_INSTALL_EXTENSIONS]='"I2" "Install and enable sample extension"'
-MENU_DE[$MENU_INSTALL_EXTENSIONS]='"I2" "Installiere Beispielerweiterungen"'
-MENU_FI[$MENU_INSTALL_EXTENSIONS]='"I2" "Asenna ja ota käyttöön näytelisäosat"'
-MENU_FR[$MENU_INSTALL_EXTENSIONS]='"I2" "Installer et activer l'\''exemple d'\''extension"'
-MENU_ZH[$MENU_INSTALL_EXTENSIONS]='"I2" "安装并开启示例扩展"'
 
 MENU_CONFIG_MAIL_MAIL=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MAIL_MAIL]='"mail" ""'
@@ -1626,19 +1591,7 @@ MENU_CONFIG_TYPE_RSYNC=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks"'
 MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks"'
 
-MENU_UNINSTALL_UNINSTALL=$((MCNT++))
-MENU_EN[$MENU_UNINSTALL_UNINSTALL]='"U1" "Uninstall $RASPIBACKUP_NAME"'
-MENU_DE[$MENU_UNINSTALL_UNINSTALL]='"U1" "Lösche $RASPIBACKUP_NAME"'
-MENU_FI[$MENU_UNINSTALL_UNINSTALL]='"U1" "Poista $RASPIBACKUP_NAME -asennus"'
-MENU_FR[$MENU_UNINSTALL_UNINSTALL]='"U1" "Supprimer $RASPIBACKUP_NAME -asennus"'
-MENU_ZH[$MENU_UNINSTALL_UNINSTALL]='"U1" "卸载 $RASPIBACKUP_NAME"'
 
-MENU_UNINSTALL_EXTENSION=$((MCNT++))
-MENU_EN[$MENU_UNINSTALL_EXTENSION]='"U2" "Uninstall and disable sample extensions"'
-MENU_DE[$MENU_UNINSTALL_EXTENSION]='"U2" "Lösche Extensions"'
-MENU_FI[$MENU_UNINSTALL_EXTENSION]='"U2" "Poista käytöstä ja pura näytelisäosien asennukset"'
-MENU_FR[$MENU_UNINSTALL_EXTENSION]='"U2" "Supprimer les Extensions"'
-MENU_ZH[$MENU_UNINSTALL_EXTENSION]='"U2" "卸载并禁用示例扩展"'
 
 MENU_CONFIG_TYPE_DD_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_DD_NA]='"" "Backup with dd not possible with this mode"'
@@ -1689,7 +1642,6 @@ INSTALLATION_SUCCESSFULL=0
 INSTALLATION_STARTED=0
 CONFIG_INSTALLED=0
 SCRIPT_INSTALLED=0
-EXTENSIONS_INSTALLED=0
 CRON_INSTALLED=0
 SYSTEMD_INSTALLED=0
 PROGRESSBAR_DO=0
@@ -1976,85 +1928,133 @@ function deleteSymLink() { # delete link from /usr/local/bin/<filename> to /usr/
 	rm -f $linkName &>/dev/null
 }
 
-function code_download_execute() {
+function repository_add_execute() { # add the signed raspiBackup apt repository, same as raspiBackupInstall.sh
 
 	logEntry
 
-	local newName
-
-	if [[ -f "$FILE_TO_INSTALL_ABS_FILE" ]]; then
-		oldVersion=$(grep -o -E "^VERSION=\".+\"" "$FILE_TO_INSTALL_ABS_FILE" | sed -e "s/VERSION=//" -e "s/\"//g")
-		newName="$FILE_TO_INSTALL_ABS_FILE.$oldVersion.sh"
-		writeToConsole $MSG_SAVING_FILE "$FILE_TO_INSTALL" "$newName"
-		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
-	fi
-
-	if (($BETA_INSTALL)); then
-		FILE_TO_INSTALL_URL="$BETA_CODE_URL"
-		writeToConsole $MSG_DOWNLOADING_BETA "$FILE_TO_INSTALL"
-	else
-		FILE_TO_INSTALL_URL="$STABLE_CODE_URL"
-		writeToConsole $MSG_DOWNLOADING "$FILE_TO_INSTALL"
-	fi
-
-	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")" "/tmp/$FILE_TO_INSTALL")"
-	if (( $? )); then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
+	if [[ -f "$REPO_SOURCES" && -f "$REPO_KEYRING" ]]; then
+		logItem "Repository already defined in $REPO_SOURCES"
 		logExit
 		return
 	fi
 
-	if ! mv "/tmp/$FILE_TO_INSTALL" "$FILE_TO_INSTALL_ABS_FILE" &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_FILE"
+	local keyName="${REPO_KEYRING##*/}"
+	local gnupgHome="$(mktemp -d)"
+
+	writeToConsole $MSG_DOWNLOADING "$keyName"
+
+	downloadFile "$REPO_URL/$keyName" "$gnupgHome/$keyName"
+	local rc=$?
+	if (( rc )); then
+		rm -rf "$gnupgHome" &>>"$LOG_FILE"
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$REPO_URL/$keyName" "$rc"
+		logExit
+		return
+	fi
+
+	# accept the key only if it has the expected fingerprint and is valid, the keyring of root isn't touched
+	gpg --homedir "$gnupgHome" --batch --quiet --import "$gnupgHome/$keyName" &>>"$LOG_FILE"
+	local validity="$(gpg --homedir "$gnupgHome" --batch --with-colons --list-keys "$REPO_OWNER_GPG_FINGERPRINT" 2>>"$LOG_FILE" \
+		| awk -F: -v fpr="$REPO_OWNER_GPG_FINGERPRINT" '$1 == "pub" { v = $2 } $1 == "fpr" && $10 == fpr { print v; exit }')"
+	logItem "Key validity: $validity"
+	if [[ -z "$validity" || "$validity" =~ [rei] ]] \
+		|| ! gpg --homedir "$gnupgHome" --batch --export "$REPO_OWNER_GPG_FINGERPRINT" > "$gnupgHome/keyring.gpg" 2>>"$LOG_FILE" \
+		|| ! install -m 644 -D "$gnupgHome/keyring.gpg" "$REPO_KEYRING" &>>"$LOG_FILE"; then
+		gpgconf --homedir "$gnupgHome" --kill all &>>"$LOG_FILE"
+		rm -rf "$gnupgHome" &>>"$LOG_FILE"
+		unrecoverableError $MSG_REPOSITORY_ADD_FAILED "$REPO_URL"
+		logExit
+		return
+	fi
+	gpgconf --homedir "$gnupgHome" --kill all &>>"$LOG_FILE"
+	rm -rf "$gnupgHome" &>>"$LOG_FILE"
+
+	writeToConsole $MSG_CODE_INSTALLED "$REPO_KEYRING"
+
+	cat > "$REPO_SOURCES" <<EOF
+Types: deb
+URIs: $REPO_URL
+Suites: $REPO_SUITE $REPO_BETA_SUITE
+Components: $REPO_COMPONENT
+Signed-By: $REPO_KEYRING
+EOF
+	chmod 644 "$REPO_SOURCES" &>>"$LOG_FILE"
+
+	writeToConsole $MSG_CODE_INSTALLED "$REPO_SOURCES"
+
+	logExit
+
+}
+
+function repository_remove_execute() {
+
+	logEntry
+
+	local f
+	for f in "$REPO_SOURCES" "$REPO_KEYRING"; do
+		if [[ -e "$f" ]]; then
+			writeToConsole $MSG_DELETE_FILE "$f"
+			if ! rm -f "$f" &>>"$LOG_FILE"; then
+				unrecoverableError $MSG_UNINSTALL_FAILED "$f"
+				logExit
+				return
+			fi
+		fi
+	done
+
+	logExit
+
+}
+
+function package_install_execute() { # apt installs code, installer, config template and sample extensions
+
+	logEntry
+
+	local configExists=0
+	[[ -f "$CONFIG_ABS_FILE" ]] && configExists=1
+
+	writeToConsole $MSG_DOWNLOADING "$PACKAGE_NAME"
+
+	# dependencies come from the system repositories which might be outdated
+	apt-get update &>>"$LOG_FILE"
+	if ! DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME"
 		logExit
 		return
 	fi
 
 	SCRIPT_INSTALLED=1
 
-	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_FILE"
+	writeToConsole $MSG_CODE_INSTALLED "$(dpkg-query -W -f '${Package} ${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
 
-	if ! chmod 755 $FILE_TO_INSTALL_ABS_FILE &>>$LOG_FILE; then
-		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_FILE"
-		logExit
-		return
-	fi
-
-	if ! createSymLink "$FILE_TO_INSTALL_ABS_FILE"; then
-		logExit
-		return
-	fi
-
-	if [[ -e "$MYDIR/$MYSELF" && "$MYDIR/$MYSELF" != "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" ]]; then
-		if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
-			if ! mv -f "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
-				unrecoverableError $MSG_MOVE_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-				logExit
-				return
-			fi
-		else
-			cp "$MYDIR/$MYSELF" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"
+	# postinst creates the config according to LANG, use the template of the selected language instead
+	if (( ! configExists )); then
+		local template="$PACKAGE_TEMPLATES_DIR/${CONFIG_DOWNLOAD_FILE["EN"]}"
+		[[ $CONFIG_LANGUAGE == "DE" ]] && template="$PACKAGE_TEMPLATES_DIR/${CONFIG_DOWNLOAD_FILE["DE"]}"
+		if ! install -m 600 "$template" "$CONFIG_ABS_FILE" &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_MOVE_FAILED "$CONFIG_ABS_FILE"
+			logExit
+			return
 		fi
+		CONFIG_INSTALLED=1
+		writeToConsole $MSG_CODE_INSTALLED "$CONFIG_ABS_FILE"
 	fi
 
-	writeToConsole $MSG_CODE_INSTALLED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
+	logExit
 
-	if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/$MYSELF &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_CHMOD_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		logExit
-		return
-	fi
+}
 
-	local chownArgs=$(stat -c "%U:%G" $FILE_TO_INSTALL_ABS_PATH | sed 's/\n//')
-	if ! chown $chownArgs "$FILE_TO_INSTALL_ABS_PATH/$MYSELF" &>>"$LOG_FILE"; then
-		unrecoverableError $MSG_CHOWN_FAILED "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"
-		logExit
-		return
-	fi
+function package_uninstall_execute() { # apt deletes code, installer, config, extension links and timers
 
-	if ! createSymLink "$FILE_TO_INSTALL_ABS_PATH/$MYSELF"; then
-		logExit
-		return
+	logEntry
+
+	if isPackageInstalled; then
+		writeToConsole $MSG_DELETE_FILE "$PACKAGE_NAME"
+		if ! DEBIAN_FRONTEND=noninteractive apt-get purge -y "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+			unrecoverableError $MSG_PACKAGE_UNINSTALL_FAILED "$PACKAGE_NAME"
+			logExit
+			return
+		fi
 	fi
 
 	logExit
@@ -2157,154 +2157,6 @@ function update_installer_execute() {
 
 }
 
-function config_download_execute() {
-
-	logEntry
-
-	local newName http_code
-
-	if [[ -f "$CONFIG_ABS_FILE" && -f "$FILE_TO_INSTALL_ABS_FILE" ]]; then
-		oldVersion=$(grep -o -E "^VERSION=\".+\"" "$FILE_TO_INSTALL_ABS_FILE" | sed -e "s/VERSION=//" -e "s/\"//g")
-		local m=${CONFIG_ABS_FILE##*/}
-		n=${m%.*}
-		newName="$n.$oldVersion.conf"
-		writeToConsole $MSG_SAVING_FILE "$CONFIG_FILE" "$CONFIG_FILE_ABS_PATH/$newName"
-		[[ "$FILE_TO_INSTALL_ABS_FILE" != "$newName" ]] && mv "$CONFIG_ABS_FILE" "$CONFIG_FILE_ABS_PATH/$newName" &>>"$LOG_FILE"
-	fi
-
-	writeToConsole $MSG_DOWNLOADING "$CONFIG_FILE"
-	CONFIG_INSTALLED=1
-
-	case $CONFIG_LANGUAGE in
-	DE)
-		local confFile=${CONFIG_DOWNLOAD_FILE["DE"]}
-		;;
-	*)
-		local confFile=${CONFIG_DOWNLOAD_FILE["EN"]}
-		;;
-	esac
-
-	httpCode="$(downloadFile "$(downloadURL "$confFile")" "$CONFIG_ABS_FILE")"
-	if (( $? )); then
-		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$confFile")" "$httpCode"
-		return
-	fi
-
-	if ! chmod 600 $CONFIG_ABS_FILE &>>$LOG_FILE; then
-		unrecoverableError $MSG_CHMOD_FAILED "$CONFIG_ABS_FILE"
-		return
-	fi
-
-	writeToConsole $MSG_CODE_INSTALLED "$CONFIG_ABS_FILE"
-
-	logExit
-
-}
-
-function extensions_install_do() {
-
-	logEntry
-
-	if ! isRaspiBackupInstalled; then
-		local m="$(getMessageText $MSG_SCRIPT_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
-		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
-		logExit
-		return
-	fi
-
-	if isExtensionInstalled; then
-		local m="$(getMessageText $MSG_EXTENSIONS_ALREADY_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
-		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
-		logExit
-		return
-	fi
-
-	INSTALL_DESCRIPTION=("Installing extensions ...")
-	progressbar_do "INSTALL_DESCRIPTION" "Installing extensions" extensions_install_execute
-
-	logExit
-
-}
-
-function extensions_install_execute() {
-
-	logEntry
-
-	local extensions="mem temp disk"
-
-	if (( PACKAGE_MODE )); then
-		# link the extensions of the package, so they are updated with the package
-		local e
-		for e in $extensions; do
-			if ! ln -sf "$PACKAGE_EXTENSIONS_DIR/${RASPIBACKUP_NAME}_${e}_pre.sh" "$PACKAGE_EXTENSIONS_DIR/${RASPIBACKUP_NAME}_${e}_post.sh" "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
-				unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "ln -s"
-				return
-			fi
-		done
-	else
-		writeToConsole $MSG_DOWNLOADING "${SAMPLEEXTENSION_TAR_FILE%.*}"
-
-		local httpCode="$(downloadFile "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$SAMPLEEXTENSION_TAR_FILE")"
-		if (( $? )); then
-			unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$SAMPLEEXTENSION_TAR_FILE")" "$httpCode"
-			return
-		fi
-
-		if ! tar -xzf "$SAMPLEEXTENSION_TAR_FILE" -C "$FILE_TO_INSTALL_ABS_PATH" &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "tar -x"
-			return
-		fi
-
-		if ! chmod 755 $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
-			return
-		fi
-
-		if ! chown root.root $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
-			unrecoverableError $MSG_SAMPLEEXTENSION_INSTALL_FAILED "chmod extensions"
-			return
-		fi
-
-		if ! rm -f "$SAMPLEEXTENSION_TAR_FILE" 2>>"$LOG_FILE"; then
-			unrecoverableError $MSG_UNINSTALL_FAILED "$SAMPLEEXTENSION_TAR_FILE"
-			return
-		fi
-	fi
-
-	sed -i -E "s/^(#?\s?)?DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"$extensions\"/" $CONFIG_ABS_FILE
-
-	EXTENSIONS_INSTALLED=1
-
-	writeToConsole $MSG_SAMPLEEXTENSION_INSTALL_SUCCESS
-
-	logExit
-
-}
-
-function extensions_uninstall_do() {
-
-	logEntry
-
-	if ! isExtensionInstalled; then
-		local a="$(getMessageText $MSG_NO_EXTENSIONS_FOUND)"
-		local t=$(center $WINDOW_COLS "$a")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
-		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
-		logExit
-		return
-	fi
-
-	UNINSTALL_DESCRIPTION=("Uninstalling extensions ...")
-	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling extensions" extensions_uninstall_execute
-
-	logExit
-
-}
-
 function extensions_uninstall_execute() {
 
 	logEntry
@@ -2322,8 +2174,6 @@ function extensions_uninstall_execute() {
 	if [[ -f CONFIG_ABS_FILE ]]; then
 		sed -i -E "s/DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"\"/" $CONFIG_ABS_FILE
 	fi
-
-	EXTENSIONS_INSTALLED=0
 
 	logExit
 
@@ -3012,11 +2862,8 @@ function cleanup() {
 				rm $SYSTEMD_SERVICE_ABS_FILE &>>"$LOG_FILE" || true
 				rm $SYSTEMD_TIMER_ABS_FILE &>>"$LOG_FILE" || true
 			fi
-			(($EXTENSIONS_INSTALLED)) && rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE" || true
 		fi
 	fi
-
-	(($EXTENSIONS_INSTALLED)) && rm $SAMPLEEXTENSION_TAR_FILE &>>$LOG_FILE || true
 
 	masqueradeSensitiveInfoInLog # and masquerade sensitive details in log file
 
@@ -4314,43 +4161,6 @@ EOF
 	fi
 }
 
-function uninstall_menu() {
-
-	logEntry
-
-	while :; do
-
-		getMenuText $MENU_UNINSTALL_UNINSTALL m1
-		getMenuText $MENU_UNINSTALL_EXTENSION m2
-
-		local b1="$(getMessageText $BUTTON_BACK)"
-		local o1="$(getMessageText $BUTTON_SELECT)"
-		getMenuText $MENU_UNINSTALL tt
-
-		local s1="${m1[0]}"
-		local s2="${m2[0]}"
-
-		FUN=$(whiptail --title "${tt[1]}" --menu "" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button "$b1" --ok-button "$o1" \
-			"${m1[@]}" \
-			"${m2[@]}" \
-			3>&1 1>&2 2>&3)
-		RET=$?
-		if [ $RET -eq 1 ]; then
-			logExit
-			return 0
-		elif [ $RET -eq 0 ]; then
-			logItem "$FUN"
-			case "$FUN" in
-				$s1) uninstall_do ;;
-				$s2) extensions_uninstall_do ;;
-			*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
-			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
-		fi
-	done
-	logExit
-
-}
-
 function isUpdatePossible() {
 		(( UPDATE_POSSIBLE != -1 )) && return
 		(( PACKAGE_MODE )) && UPDATE_POSSIBLE=1 && return 1		# apt updates
@@ -4377,12 +4187,6 @@ function uninstall_do() {
 
 	logEntry
 
-	if (( PACKAGE_MODE )); then
-		packageManagedMsgbox $MSG_PACKAGE_UNINSTALL
-		logExit
-		return
-	fi
-
 	if ! isRaspiBackupInstalled; then
 		local m="$(getMessageText $MSG_SCRIPT_NOT_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
@@ -4405,8 +4209,12 @@ function uninstall_do() {
 		return
 	fi
 
-	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME timer configuration ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ...")
-	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute timer_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute
+	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME timer configuration ..." "Uninstalling $PACKAGE_NAME package ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ..." "Deleting $RASPIBACKUP_NAME apt repository ...")
+	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute timer_uninstall_execute package_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute repository_remove_execute
+
+	PACKAGE_MODE=0
+	isPackageInstalled && PACKAGE_MODE=1
+	UPDATE_POSSIBLE=-1
 
 	logExit
 
@@ -4575,57 +4383,6 @@ function systemd_timer_menu() {
 
 }
 
-function install_menu() {
-
-	logEntry
-
-	if (( PACKAGE_MODE )); then		# extensions are available locally
-		local rc=0
-	else
-		isInternetAvailable
-		local rc=$?
-	fi
-	if (( $rc )); then
-		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
-		whiptail --msgbox "$a" --title "Error" $ROWS_MSGBOX $WINDOW_COLS 2
-		logExit
-		return 0
-	fi
-
-	while :; do
-
-		local b1="$(getMessageText $BUTTON_BACK)"
-		local o1="$(getMessageText $BUTTON_SELECT)"
-
-		local d="$(getMessageText $DESCRIPTION_INSTALLATION)"
-
-		getMenuText $MENU_INSTALL_INSTALL m1
-		getMenuText $MENU_INSTALL_EXTENSIONS m2
-		local s1="${m1[0]}"
-		local s2="${m2[0]}"
-		getMenuText $MENU_INSTALL tt
-
-		FUN=$(whiptail --title "${tt[1]}" --menu "$d" $WT_HEIGHT $WT_WIDTH $((WT_MENU_HEIGHT-5)) --cancel-button "$b1" --ok-button "$o1" \
-			"${m1[@]}" \
-			"${m2[@]}" \
-			3>&1 1>&2 2>&3)
-		RET=$?
-		if [ $RET -eq 1 ]; then
-			logExit
-			return 0
-		elif [ $RET -eq 0 ]; then
-			logItem "$FUN"
-			case "$FUN" in
-				$s1) install_do ;;
-				$s2) extensions_install_do ;;
-				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
-			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
-		fi
-	done
-	logExit
-
-}
-
 function update_menu() {
 
 	logEntry
@@ -4733,7 +4490,16 @@ function install_do() {
 		return
 	fi
 
-	if isRaspiBackupInstalled; then
+	isInternetAvailable
+	local rc=$?
+	if (( $rc )); then
+		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
+		whiptail --msgbox "$a" --title "Error" $ROWS_MSGBOX $WINDOW_COLS 2
+		logExit
+		return 0
+	fi
+
+	if isRaspiBackupInstalled; then # installed without apt
 		local m="$(getMessageText $MSG_SCRIPT_ALREADY_INSTALLED)"
 		local t=$(center $WINDOW_COLS "$m")
 		local y="$(getMessageText $BUTTON_YES)"
@@ -4748,24 +4514,16 @@ function install_do() {
 	INSTALLATION_STARTED=1
 
 	if (( $USE_SYSTEMD )); then
-		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME systemd config ...")
-		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute systemd_install_execute
+		INSTALL_DESCRIPTION=("Adding $RASPIBACKUP_NAME apt repository ..." "Installing $PACKAGE_NAME package with apt ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME systemd config ...")
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" repository_add_execute package_install_execute config_update_execute systemd_install_execute
 	else
-		INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Downloading $RASPIBACKUP_NAME configuration template ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
-		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" code_download_execute config_download_execute config_update_execute cron_install_execute
+		INSTALL_DESCRIPTION=("Adding $RASPIBACKUP_NAME apt repository ..." "Installing $PACKAGE_NAME package with apt ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
+		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" repository_add_execute package_install_execute config_update_execute cron_install_execute
 	fi
 	INSTALLATION_SUCCESSFULL=1
 
-	logExit
-
-}
-
-function config_download_do() {
-
-	logEntry
-
-	DOWNLOAD_DESCRIPTION=("Downloading $RASPIBACKUP_NAME configuration ...")
-	progressbar_do "DOWNLOAD_DESCRIPTION" "Downloading $FILE_TO_INSTALL configuration template" config_download_execute
+	isPackageInstalled && PACKAGE_MODE=1
+	UPDATE_POSSIBLE=-1
 
 	logExit
 
@@ -5514,9 +5272,9 @@ function uiInstall() {
 						fi
 					fi
 					;;
-				$s2) install_menu ;;
+				$s2) install_do ;;
 				$s3) config_menu ;;
-				$s4) uninstall_menu ;;
+				$s4) uninstall_do ;;
 				$s5) update_menu ;;
 				$s9) about_do ;;
 				\ *) : ;;
@@ -5534,43 +5292,35 @@ function unattendedInstall() {
 
 	logEntry
 
-	if (( PACKAGE_MODE )); then
-		if (( MODE_INSTALL || MODE_UPDATE )); then
-			echo "$(getMessageText $MSG_PACKAGE_UPDATE)"
-			exit 1
-		elif (( MODE_UNINSTALL )); then
-			echo "$(getMessageText $MSG_PACKAGE_UNINSTALL)"
-			exit 1
-		fi
+	if (( PACKAGE_MODE )) && (( MODE_INSTALL || MODE_UPDATE )); then
+		echo "$(getMessageText $MSG_PACKAGE_UPDATE)"
+		exit 1
 	fi
 
 	if (( MODE_INSTALL )); then
 		check4InternetAvailable
-		code_download_execute
-		config_download_execute
+		repository_add_execute
+		package_install_execute
 		config_update_execute
 		if (( $USE_SYSTEMD )); then
 			systemd_install_execute
 		else
 			cron_install_execute
 		fi
-		if (( MODE_EXTENSIONS )); then
-			extensions_install_execute
-		fi
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_INSTALLATION_FINISHED $RASPIBACKUP_NAME
 	elif (( MODE_UPDATE )); then
 		check4InternetAvailable
 		update_installer_execute
-	elif (( MODE_EXTENSIONS )); then
-		check4InternetAvailable
-		extensions_install_execute
 	else # uninstall
 		extensions_uninstall_execute
 		systemd_uninstall_execute
 		cron_uninstall_execute
+		package_uninstall_execute
 		config_uninstall_execute
+		misc_uninstall_execute
 		uninstall_script_execute
 		uninstall_execute
+		repository_remove_execute
 	fi
 	logExit
 
@@ -5587,15 +5337,14 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF ( -i [-e]? | -u | -U | -t [crond|systemd] )"
-	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
-	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
+	echo "$MYSELF ( -i | -u | -U | -t [crond|systemd] )"
+	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
 	echo "-U: unattended update of $MYSELF"
-	echo "-u: unattended uninstall of $RASPIBACKUP_NAME"
+	echo "-u: unattended uninstall of $RASPIBACKUP_NAME with apt"
 	echo "-t: use either crond or systemd for backup timer"
 	echo "Note: If $RASPIBACKUP_NAME is installed as Debian package $PACKAGE_NAME"
-	echo "      -i, -U and -u aren't available. Use apt instead."
+	echo "      -i and -U aren't available. Use apt to update."
 }
 
 function askYesNo() { # message message_parms
@@ -5652,7 +5401,6 @@ MODE_UNATTENDED=0
 MODE_UNINSTALL=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
-MODE_EXTENSIONS=0
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
@@ -5675,7 +5423,7 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?usUei" opt; do
+while getopts "t:h?usUi" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -5684,9 +5432,6 @@ while getopts "t:h?usUei" opt; do
     i) MODE_INSTALL=1
 		 MODE_UNATTENDED=1
        ;;
-    e) MODE_EXTENSIONS=1
-		 MODE_UNATTENDED=1
-		 ;;
     U) MODE_UPDATE=1
 		 MODE_UNATTENDED=1
 		 ;;

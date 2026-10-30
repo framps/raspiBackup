@@ -11,8 +11,8 @@
 #  Example to download latest raspiBackupWrapper.sh from master branch:
 #  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- master helper/raspiBackupWrapper.sh
 #
-#  Example to download latest raspiBackupInstallUI.sh from beta branch:
-#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- beta installation/raspiBackupInstallUI.sh
+#  Example to download latest raspiBackupConfig.sh from beta branch:
+#  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- beta installation/raspiBackupConfig.sh
 #
 #  Example to download raspiBackup.sh commited in 609632b1e17e924b9b3c94a6e4d34fe60f4412ed:
 #  curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/scripts/raspiBackupDownloadFromGit.sh | bash -s -- 609632b1e17e924b9b3c94a6e4d34fe60f4412ed
@@ -42,7 +42,7 @@ MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use l
 MYNAME=${MYSELF%.*}
 
 FILE_RASPIBACKUP="raspiBackup.sh"
-FILE_RASPIBACKUP_INSTALLER="raspiBackupInstallUI.sh"
+FILE_RASPIBACKUP_INSTALLER="raspiBackupConfig.sh"
 
 updateGitInfo=1
 

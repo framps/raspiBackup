@@ -4,10 +4,10 @@
 #
 # Tiny script strips VT100/ANSI control sequences from typescript output
 #
-# Useful to debug raspiBackupInstallUI or any other tool which uses whiptail
+# Useful to debug raspiBackupConfig or any other tool which uses whiptail
 #
 # 1) Turn on typescript with "script"
-# 2) Start raspiBackupInstallUI in debug mode with "sudo bash -x"
+# 2) Start raspiBackupConfig in debug mode with "sudo bash -x"
 # 3) Terminate typescript with "exit"
 # 4) Call this script with typescript file. Default is "typescript"
 #

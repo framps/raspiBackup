@@ -8,8 +8,8 @@
 * La partition Root externe pour les systèmes qui ne prennent pas en charge le mode de démarrage USB et les systèmes de démarrage USB sont pris en charge.
 * La migration d’un système basé sur une carte SD est facile: il suffit de restaurer sur un SSD la sauvegarde faite sur la carte SD.
 * Le résultat de l’exécution de la sauvegarde peut être envoyé par e-mail ou par Telegram
-* L'interface graphique raspiBackupInstallUI permet de configurer toutes les principales options pour que raspiBackup soit opérationnel en 5 minutes.
-* Avec cette interface utilisateur raspiBackupInstallUI permet de configurer une sauvegarde grand-père-père-fils (GFS) qui est l'un des schémas de sauvegarde intelligente les plus populaires. Il vous permet d'enregistrer les sauvegardes des 7 derniers jours, des 4 dernières semaines, des 12 derniers mois et des n dernières années).
+* L'interface graphique raspiBackupConfig permet de configurer toutes les principales options pour que raspiBackup soit opérationnel en 5 minutes.
+* Avec cette interface utilisateur raspiBackupConfig permet de configurer une sauvegarde grand-père-père-fils (GFS) qui est l'un des schémas de sauvegarde intelligente les plus populaires. Il vous permet d'enregistrer les sauvegardes des 7 derniers jours, des 4 dernières semaines, des 12 derniers mois et des n dernières années).
 * Messages en anglais, allemand, finnois ,français et chinois
 * Pour connître toutes les fonctionnalités ... voir le document ci-dessous
 

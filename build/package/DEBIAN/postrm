@@ -7,9 +7,9 @@ set -euo pipefail
 
 case "${1:-}" in
     remove|purge)
-        # extensions linked by raspiBackupInstallUI into ${DIR_BIN}
+        # extensions linked by raspiBackupConfig into ${DIR_BIN}
         find "${DIR_BIN}" -maxdepth 1 -lname "${DIR_SHARE}/${PACKAGE_NAME}/*" -delete 2> /dev/null || true
-        # timers created by raspiBackupInstallUI, useless without raspiBackup
+        # timers created by raspiBackupConfig, useless without raspiBackup
         rm -f /etc/systemd/system/raspiBackup.service /etc/systemd/system/raspiBackup.timer /etc/cron.d/raspiBackup
         if [[ -d /run/systemd/system ]]; then
             systemctl daemon-reload || true
@@ -20,7 +20,7 @@ esac
 
 case "${1:-}" in
     purge)
-        # configuration created by postinst and raspiBackupInstallUI
+        # configuration created by postinst and raspiBackupConfig
         rm -f "${DIR_ETC}/raspiBackup.conf" "${DIR_ETC}/raspiBackup.conf~"
         ;;
 esac

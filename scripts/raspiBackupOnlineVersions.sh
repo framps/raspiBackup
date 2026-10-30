@@ -37,8 +37,8 @@ GIT_COMMIT="$Sha1: 527812d$"
 MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
 DOWNLOAD_URL="$MYHOMEURL/raspiBackup.sh"
 BETA_DOWNLOAD_URL="$MYHOMEURL//beta/raspiBackup.sh"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL//raspiBackupInstallUI.sh"
-INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/beta/raspiBackupInstallUI.sh"
+INSTALLER_DOWNLOAD_URL="$MYHOMEURL//raspiBackupConfig.sh"
+INSTALLER_BETA_DOWNLOAD_URL="$MYHOMEURL/beta/raspiBackupConfig.sh"
 PROPERTIES_DOWNLOAD_URL="$MYHOMEURL/raspiBackup.properties"
 CONF_DE_DOWNLOAD_URL="$MYHOMEURL/raspiBackup_de.conf"
 CONF_EN_DOWNLOAD_URL="$MYHOMEURL/raspiBackup_en.conf"
@@ -87,8 +87,8 @@ function analyze() { # fileName url
 
 analyze "raspiBackup" $DOWNLOAD_URL
 analyze "raspiBackup_beta" $BETA_DOWNLOAD_URL
-analyze "raspiBackupInstallUI" $INSTALLER_DOWNLOAD_URL
-analyze "raspiBackupInstallUI_beta" $INSTALLER_BETA_DOWNLOAD_URL
+analyze "raspiBackupConfig" $INSTALLER_DOWNLOAD_URL
+analyze "raspiBackupConfig_beta" $INSTALLER_BETA_DOWNLOAD_URL
 analyze "raspiBackup.properties" $PROPERTIES_DOWNLOAD_URL
 analyze "raspiBackup_de.conf" $CONF_DE_DOWNLOAD_URL
 analyze "raspiBackup_en.conf" $CONF_EN_DOWNLOAD_URL
