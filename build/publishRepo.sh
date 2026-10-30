@@ -114,7 +114,8 @@ touch "$PAGES/.nojekyll"
 git -C "$PAGES" add -A -f
 versions="$(cd "$REPO" && find pool -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -V | tr '\n' ' ')"
 tree="$(git -C "$PAGES" write-tree)"
-commit="$(git -C "$PAGES" commit-tree "$tree" ${parent:+-p "$parent"} -m "Publish raspiBackup apt repository" -m "Versions: $versions")"
+# signed, so users can verify the published raspiBackupInstall.sh (commit-tree ignores commit.gpgsign)
+commit="$(git -C "$PAGES" commit-tree -S"$GPG_KEYID" "$tree" ${parent:+-p "$parent"} -m "Publish raspiBackup apt repository" -m "Versions: $versions")"
 git log --stat -1 "$commit" | tail -n 25
 
 if (( PUSH )) ; then

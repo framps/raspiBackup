@@ -9,7 +9,7 @@
 .\"
 .TH RASPIBACKUPCONFIG 1 "@DATE@" "raspiBackup @VERSION@" "raspiBackup Manual"
 .SH NAME
-raspiBackupConfig \- install and configure raspiBackup
+raspiBackupConfig \- configure, install and uninstall raspiBackup
 .SH SYNOPSIS
 .B raspiBackupConfig
 .br
@@ -25,7 +25,28 @@ raspiBackupConfig \- install and configure raspiBackup
 is a menu driven tool to configure the most important options of
 .BR raspiBackup (1)
 and to set up regular backups.
-It writes the configuration file
+Usually
+.B raspiBackup
+is installed with
+.BR raspiBackupInstall.sh ,
+which starts
+.B raspiBackupConfig
+at the end.
+The menu doesn't offer an installation.
+.PP
+For users not familiar with Linux the options
+.BR \-i ,
+.B \-U
+and
+.B \-u
+install, update and uninstall
+.B raspiBackup
+without the need to know the required
+.BR apt-get (8)
+commands.
+.PP
+.B raspiBackupConfig
+writes the configuration file
 .I /usr/local/etc/raspiBackup.conf
 (see
 .BR raspiBackup.conf (5)).
@@ -34,24 +55,20 @@ Called without options it starts an interactive
 .BR whiptail (1)
 user interface with the following main menu entries:
 .TP
-.B M1 Language
-Select the language of the user interface and of
-.BR raspiBackup .
+.B M1 About and useful links
+Version information and links to the documentation.
 .TP
-.B M2 Install raspiBackup
-Add the signed
-.B raspiBackup
-apt repository and install the Debian package
-.B raspibackup
-with
-.BR apt-get (8)
-using a default configuration.
-.TP
-.B M3 Configure major options
-Configure backup path, backup type, backup mode, number of backups to keep
+.B M2 Configure major options
+Configure the language, backup path, backup type, backup mode, number of backups to keep
 or smart recycle, services to stop and start, partitions to back up,
 compression, message detail, eMail notification, clone device and the
 regular backup (enable or disable it, weekday and time).
+.TP
+.B M3 Update components
+Update
+.B raspiBackup
+or
+.BR raspiBackupConfig .
 .TP
 .B M4 Uninstall raspiBackup
 Uninstall
@@ -59,14 +76,6 @@ Uninstall
 with
 .BR apt-get (8)
 and remove the apt repository.
-.TP
-.B M5 Update components
-Update
-.B raspiBackup
-or the installer.
-.TP
-.B M9 About and useful links
-Version information and links to the documentation.
 .PP
 Regular backups are run either by a
 .BR systemd (1)
@@ -86,9 +95,14 @@ Display a short help text and exit.
 .TP
 .B \-i
 Unattended install of
+.BR raspiBackup :
+add the signed
 .B raspiBackup
+apt repository, install the Debian package
+.B raspibackup
 with
-.BR apt-get (8).
+.BR apt-get (8)
+and create a default configuration.
 .TP
 .BR \-t " crond" | systemd
 Use cron or systemd for regular backups.
@@ -97,11 +111,22 @@ Use cron or systemd for regular backups.
 Unattended uninstall of
 .B raspiBackup
 with
-.BR apt-get (8).
+.BR apt-get (8)
+and removal of the apt repository.
 .TP
 .B \-U
 Unattended update of
-.BR raspiBackupConfig .
+.B raspiBackup
+with
+.BR apt-get (8)
+to the latest version.
+A version kept by reverting to the previous version in the update menu
+isn't updated.
+If
+.B raspiBackup
+isn't installed as Debian package, only
+.B raspiBackupConfig
+is updated.
 .TP
 .B \-\-version
 Display the version and exit.
@@ -110,14 +135,13 @@ If
 .B raspiBackup
 is installed as Debian package
 .BR raspibackup ,
-the options
+the option
 .B \-i
-and
-.B \-U
-are not available.
-Use
-.BR apt (8)
-to update the package instead:
+is not available.
+The package is updated with
+.B raspiBackupConfig \-U
+or with
+.BR apt (8):
 .PP
 .RS
 .nf
@@ -129,6 +153,114 @@ When the package is removed, the systemd units and the cron file created
 by
 .B raspiBackupConfig
 are removed as well.
+.SH APT COMMANDS
+All actions of
+.BR raspiBackupInstall.sh ,
+.BR "raspiBackupConfig \-i" ,
+.BR \-u " and " \-U
+and of the update menu can be done manually with
+.BR apt (8)
+as well.
+.SS Install the package
+Download the signing key and check that its fingerprint is
+.BR 23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24 .
+Don't continue if it differs.
+.PP
+.RS
+.nf
+.B curl \-fsSL \-o /tmp/raspibackup\-archive\-keyring.gpg \e
+.B "    https://framps.github.io/raspiBackup/raspibackup\-archive\-keyring.gpg"
+.B gpg \-\-show\-keys /tmp/raspibackup\-archive\-keyring.gpg
+.fi
+.RE
+.PP
+Install the key, add the repository and install the package:
+.PP
+.RS
+.nf
+.B sudo install \-m 644 \-D /tmp/raspibackup\-archive\-keyring.gpg \e
+.B "    /usr/share/keyrings/raspibackup\-archive\-keyring.gpg"
+.B sudo tee /etc/apt/sources.list.d/raspibackup.sources <<EOF
+.B Types: deb
+.B URIs: https://framps.github.io/raspiBackup
+.B Suites: stable beta
+.B Components: main
+.B Signed\-By: /usr/share/keyrings/raspibackup\-archive\-keyring.gpg
+.B EOF
+.B sudo apt update
+.B sudo apt install raspibackup
+.fi
+.RE
+.SS Upgrade the package
+.RS
+.nf
+.B sudo apt update
+.B sudo apt upgrade
+.fi
+.RE
+.PP
+To upgrade only
+.BR raspiBackup :
+.PP
+.RS
+.nf
+.B sudo apt update
+.B sudo apt install \-\-only\-upgrade raspibackup
+.fi
+.RE
+.SS Install a beta
+Betas are installed only on request. Once a beta is installed, upgrades
+install newer betas and finally the next release.
+.PP
+.RS
+.nf
+.B sudo apt update
+.B sudo apt install \-t beta raspibackup
+.fi
+.RE
+.SS Uninstall a beta
+Revert to the current release:
+.PP
+.RS
+.nf
+.B sudo apt update
+.B sudo apt install raspibackup/stable
+.fi
+.RE
+.SS Revert to a previous release
+If an upgraded release doesn't work, list the available versions,
+install the previous one and hold it.
+Without the hold the next upgrade installs the broken release again.
+.PP
+.RS
+.nf
+.B sudo apt update
+.B apt list \-a raspibackup
+.B sudo apt install \-\-allow\-downgrades raspibackup=\fIversion\fP
+.B sudo apt\-mark hold raspibackup
+.fi
+.RE
+.PP
+When a fixed release is available release the hold and upgrade:
+.PP
+.RS
+.nf
+.B sudo apt\-mark unhold raspibackup
+.B sudo apt update
+.B sudo apt upgrade
+.fi
+.RE
+.SS Delete the package
+Remove the package and its configuration, then the repository and its key:
+.PP
+.RS
+.nf
+.B sudo apt purge raspibackup
+.B sudo rm /etc/apt/sources.list.d/raspibackup.sources \e
+.B "    /usr/share/keyrings/raspibackup\-archive\-keyring.gpg"
+.B sudo apt update
+.fi
+.RE
 .SH FILES
 .TP
 .I /usr/local/etc/raspiBackup.conf

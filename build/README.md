@@ -116,10 +116,11 @@ sudo raspiBackupConfig
 ```
 
 `raspiBackupConfig` detects the package installation. It offers the configuration
-and the sample extensions only. Installing, updating and uninstalling raspiBackup is done
-with apt, the options `-i`, `-U` and `-u` aren't available.
+and the sample extensions. Users not familiar with apt can update and uninstall raspiBackup
+with `sudo raspiBackupConfig -U` and `sudo raspiBackupConfig -u`. `-i` isn't available,
+the package is already installed.
 
-The menu `M5 Update components` of `raspiBackupConfig` runs `apt-get update` and offers
+The menu `M3 Update components` of `raspiBackupConfig` runs `apt-get update` and offers
 the apt commands described below:
 
 | Option | apt command | Available if |
@@ -364,6 +365,61 @@ in the installation script, so publish it on the website too:
 
 `raspiBackupInstall.sh <file.deb>` installs a downloaded package without the repository.
 It verifies `<file.deb>.sig` against the same built-in fingerprint.
+
+### Verify it yourself (experienced users)
+
+All checks compare against the fingerprint `23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24`.
+Take it from at least two places, e.g. this page and the website, and don't continue if they differ.
+Don't trust the green *Verified* badge on GitHub: it is shown for any key added to the
+GitHub account and for commits made in the web interface (signed by GitHub's key).
+
+1. Get the key by its fingerprint from keys.openpgp.org, independent of GitHub:
+
+   ```
+   gpg --keyserver hkps://keys.openpgp.org --recv-keys 23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24
+   ```
+
+2. Verify the installation script. It's published with a signed commit on the branch `gh-pages`.
+   The commit has to be signed (`G` or `U`) with the fingerprint above and the downloaded
+   script has to be identical to the one in the commit:
+
+   ```
+   git clone -q --depth 1 --branch gh-pages https://github.com/framps/raspiBackup.git rbk-pages
+   git -C rbk-pages log -1 --format='%G? %GF'
+   # U 23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24
+   curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
+   cmp raspiBackupInstall.sh rbk-pages/raspiBackupInstall.sh && echo identical
+   ```
+
+   `U` means good signature from a key you haven't certified yourself, that's fine.
+   `N` (no signature) or `B` (bad signature) or any other fingerprint: don't run the script.
+
+3. Verify the repository index. apt does this on every `apt update`, manually:
+
+   ```
+   curl -fsSLO https://framps.github.io/raspiBackup/dists/stable/InRelease
+   gpg --verify InRelease
+   # Good signature from "framps ..."  Primary key fingerprint: 23A2 E977 F377 FC31 ...
+   ```
+
+4. Verify the package. Its SHA256 has to be listed in `Packages`, whose SHA256 is listed in
+   the signed `InRelease`:
+
+   ```
+   arch=$(dpkg --print-architecture)
+   curl -fsSLO https://framps.github.io/raspiBackup/dists/stable/main/binary-$arch/Packages
+   sed -n '/^SHA256:/,/^[A-Z]/p' InRelease | grep "main/binary-$arch/Packages$"
+   sha256sum Packages                     # has to be the same SHA256 as the line above
+
+   apt-get download raspibackup
+   deb=$(ls raspibackup_*.deb)
+   awk -v RS= -v f="/$deb" 'index($0, f "\n")' Packages | grep '^SHA256:'
+   sha256sum "$deb"                       # has to be the same SHA256 as the line above
+   ```
+
+   `apt-get download` needs the repository added already. Without it download the `.deb`
+   listed under `Filename:` in `Packages` from `https://framps.github.io/raspiBackup/`.
+   For a beta use `beta` instead of `stable`.
 
 ---
 

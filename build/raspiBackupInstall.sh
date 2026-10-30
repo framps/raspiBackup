@@ -423,9 +423,16 @@ else
 fi
 finish
 
-cat <<EOF_RBC
+if (( ASSUME_YES )) ; then
+    cat <<EOF_RBC
 
 To configure ${RASPIBACKUP} for individual needs use
 
     sudo raspiBackupConfig
 EOF_RBC
+else
+    echo ""
+    echo "--- Starting raspiBackupConfig to configure ${RASPIBACKUP} for individual needs"
+    # use the terminal directly, stdout and stderr are piped into the log
+    $SUDO raspiBackupConfig < /dev/tty > /dev/tty 2> /dev/tty || true
+fi

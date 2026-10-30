@@ -1289,6 +1289,22 @@ MSG_PACKAGE_HOLD_FAILED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold of package %1 failed."
 MSG_DE[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold des Pakets %1 fehlgeschlagen."
 
+MSG_PACKAGE_ALREADY_INSTALLED=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_ALREADY_INSTALLED]="${MSG_PRF}0039I: $RASPIBACKUP_NAME %1 is already installed. Use option -U to update it."
+MSG_DE[$MSG_PACKAGE_ALREADY_INSTALLED]="${MSG_PRF}0039I: $RASPIBACKUP_NAME %1 ist bereits installiert. Benutze Option -U um es zu aktualisieren."
+
+MSG_PACKAGE_UPGRADED=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_UPGRADED]="${MSG_PRF}0040I: $RASPIBACKUP_NAME updated from %1 to %2."
+MSG_DE[$MSG_PACKAGE_UPGRADED]="${MSG_PRF}0040I: $RASPIBACKUP_NAME von %1 auf %2 aktualisiert."
+
+MSG_PACKAGE_UP_TO_DATE=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 is already the latest version."
+MSG_DE[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 ist bereits die neueste Version."
+
+MSG_PACKAGE_HELD=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME was reverted to %1 and is kept at this version. Use the update menu of $MYSELF to update it."
+MSG_DE[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME wurde auf %1 zurückgesetzt und bleibt auf dieser Version. Benutze das Update Menü von $MYSELF um es zu aktualisieren."
+
 MSG_PACKAGE_NOT_AVAILABLE=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_NOT_AVAILABLE]="(Not available)"
 MSG_DE[$MSG_PACKAGE_NOT_AVAILABLE]="(Nicht verfügbar)"
@@ -1331,11 +1347,11 @@ MENU_FR[$MENU_INSTALL]='"M2" "Installer $RASPIBACKUP_NAME en utilisant une confi
 MENU_ZH[$MENU_INSTALL]='"M2" "使用默认设置安装 $RASPIBACKUP_NAME "'
 
 MENU_CONFIGURE=$((MCNT++))
-MENU_EN[$MENU_CONFIGURE]='"M3" "Configure major options"'
-MENU_DE[$MENU_CONFIGURE]='"M3" "Konfiguriere die wichtigsten Optionen"'
-MENU_FI[$MENU_CONFIGURE]='"M3" "Määritä pääasetukset"'
-MENU_FR[$MENU_CONFIGURE]='"M3" "Configurer les options importantes"'
-MENU_ZH[$MENU_CONFIGURE]='"M3" "设置主要选项"'
+MENU_EN[$MENU_CONFIGURE]='"M2" "Configure major options"'
+MENU_DE[$MENU_CONFIGURE]='"M2" "Konfiguriere die wichtigsten Optionen"'
+MENU_FI[$MENU_CONFIGURE]='"M2" "Määritä pääasetukset"'
+MENU_FR[$MENU_CONFIGURE]='"M2" "Configurer les options importantes"'
+MENU_ZH[$MENU_CONFIGURE]='"M2" "设置主要选项"'
 
 MENU_UNINSTALL=$((MCNT++))
 MENU_EN[$MENU_UNINSTALL]='"M4" "Uninstall $RASPIBACKUP_NAME"'
@@ -1345,18 +1361,18 @@ MENU_FR[$MENU_UNINSTALL]='"M4" "Supprimer $RASPIBACKUP_NAME"'
 MENU_ZH[$MENU_UNINSTALL]='"M4" "卸载 $RASPIBACKUP_NAME"'
 
 MENU_UPDATE=$((MCNT++))
-MENU_EN[$MENU_UPDATE]='"M5" "Update components"'
-MENU_DE[$MENU_UPDATE]='"M5" "Aktualisiere Komponenten"'
-MENU_FI[$MENU_UPDATE]='"M5" "Päivitä komponentteja"'
-MENU_FR[$MENU_UPDATE]='"M5" "Mettre à jour des composants"'
-MENU_ZH[$MENU_UPDATE]='"M5" "更新组件"'
+MENU_EN[$MENU_UPDATE]='"M3" "Update components"'
+MENU_DE[$MENU_UPDATE]='"M3" "Aktualisiere Komponenten"'
+MENU_FI[$MENU_UPDATE]='"M3" "Päivitä komponentteja"'
+MENU_FR[$MENU_UPDATE]='"M3" "Mettre à jour des composants"'
+MENU_ZH[$MENU_UPDATE]='"M3" "更新组件"'
 
 MENU_ABOUT=$((MCNT++))
-MENU_EN[$MENU_ABOUT]='"M9" "About and useful links"'
-MENU_DE[$MENU_ABOUT]='"M9" "About und hilfreiche Links"'
-MENU_FI[$MENU_ABOUT]='"M9" "Tietoja ja hyödyllisiä linkkejä"'
-MENU_FR[$MENU_ABOUT]='"M9" "A propos et liens utiles"'
-MENU_ZH[$MENU_ABOUT]='"M9" "关于&链接"'
+MENU_EN[$MENU_ABOUT]='"M1" "About and useful links"'
+MENU_DE[$MENU_ABOUT]='"M1" "About und hilfreiche Links"'
+MENU_FI[$MENU_ABOUT]='"M1" "Tietoja ja hyödyllisiä linkkejä"'
+MENU_FR[$MENU_ABOUT]='"M1" "A propos et liens utiles"'
+MENU_ZH[$MENU_ABOUT]='"M1" "关于&链接"'
 
 MENU_REGULARBACKUP_ENABLE=$((MCNT++))
 MENU_EN[$MENU_REGULARBACKUP_ENABLE]='"R1" "Enable regular backup"'
@@ -4702,6 +4718,38 @@ function update_installer_do() {
 
 }
 
+function package_upgrade_execute() { # updates the installed package to the latest version of its suite
+
+	logEntry
+
+	local oldVersion newVersion
+	oldVersion="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+
+	if apt-mark showhold "$PACKAGE_NAME" 2>>"$LOG_FILE" | grep -qx "$PACKAGE_NAME"; then
+		writeToConsole $MSG_PACKAGE_HELD "$oldVersion"
+		logExit
+		return
+	fi
+
+	package_index_update_execute
+
+	if ! DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME"
+		logExit
+		return
+	fi
+
+	newVersion="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	if [[ "$oldVersion" == "$newVersion" ]]; then
+		writeToConsole $MSG_PACKAGE_UP_TO_DATE "$newVersion"
+	else
+		writeToConsole $MSG_PACKAGE_UPGRADED "$oldVersion" "$newVersion"
+	fi
+
+	logExit
+
+}
+
 function install_do() {
 
 	logEntry
@@ -5442,37 +5490,32 @@ function uiInstall() {
 
 	while :; do
 
-		getMenuText $MENU_LANGUAGE m1
-		getMenuText $MENU_INSTALL m2
+		getMenuText $MENU_ABOUT m9
 		getMenuText $MENU_CONFIGURE m3
 		getMenuText $MENU_UNINSTALL m4
 		getMenuText $MENU_UPDATE m5
-		getMenuText $MENU_ABOUT m9
 
 		local f1="$(getMessageText $BUTTON_FINISH)"
 		local sel1="$(getMessageText $BUTTON_SELECT)"
 
-		local s1="${m1[0]}"
-		local s2="${m2[0]}"
+		local s9="${m9[0]}"
 		local s3="${m3[0]}"
 		local s4="${m4[0]}"
 		local s5="${m5[0]}"
-		local s9="${m9[0]}"
 
-		local mx=( 	\
-			"${m1[@]}" \
-			"${m2[@]}" \
-			)
+		local mx=( "${m9[@]}" )
 
 		if isRaspiBackupInstalled; then
-			mx+=("${m3[@]}" "${m4[@]}")
+			mx+=("${m3[@]}")
 		fi
 
 		if isUpdatePossible; then
 			mx+=("${m5[@]}")
 		fi
 
-		mx+=("${m9[@]}")
+		if isRaspiBackupInstalled; then
+			mx+=("${m4[@]}")
+		fi
 
 		TITLE="$(getMessageText $MSG_TITLE)"
 		FUN=$(whiptail --title "$TITLE" --menu "" $WT_HEIGHT $WT_WIDTH $((WT_MENU_HEIGHT-3)) --cancel-button "$f1" --ok-button "$sel1"\
@@ -5484,21 +5527,10 @@ function uiInstall() {
 		elif [ $RET -eq 0 ]; then
 			logItem "$FUN"
 			case "$FUN" in
-				$s1) config_language_do
-					local r=$?
-					logItem "rc: $r"
-					if (( $r )); then
-						if isConfigInstalled; then
-							config_update_do
-							parseConfig
-						fi
-					fi
-					;;
-				$s2) install_do ;;
+				$s9) about_do ;;
 				$s3) config_menu ;;
 				$s4) uninstall_do ;;
 				$s5) update_menu ;;
-				$s9) about_do ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
@@ -5514,12 +5546,15 @@ function unattendedInstall() {
 
 	logEntry
 
-	if (( PACKAGE_MODE )) && (( MODE_INSTALL || MODE_UPDATE )); then
-		echo "$(getMessageText $MSG_PACKAGE_UPDATE)"
+	if (( PACKAGE_MODE )) && (( MODE_INSTALL )); then
+		echo "$(getMessageText $MSG_PACKAGE_ALREADY_INSTALLED "$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")")"
 		exit 1
 	fi
 
-	if (( MODE_INSTALL )); then
+	if (( PACKAGE_MODE )) && (( MODE_UPDATE )); then
+		check4InternetAvailable
+		package_upgrade_execute
+	elif (( MODE_INSTALL )); then
 		check4InternetAvailable
 		repository_add_execute
 		package_install_execute
@@ -5562,11 +5597,9 @@ function show_help() {
 	echo "$MYSELF ( -i | -u | -U | -t [crond|systemd] )"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
-	echo "-U: unattended update of $MYSELF"
+	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME with apt"
 	echo "-t: use either crond or systemd for backup timer"
-	echo "Note: If $RASPIBACKUP_NAME is installed as Debian package $PACKAGE_NAME"
-	echo "      -i and -U aren't available. Use apt to update."
 }
 
 function askYesNo() { # message message_parms
