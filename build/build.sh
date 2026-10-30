@@ -231,6 +231,13 @@ install -m644 -D -t "$TGT/$DIR_LIB/systemd/system" "$GITSRC/installation/raspiBa
 install -m755 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}/extensions" "$GITSRC"/extensions/raspiBackup_*.sh
 install -m644 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}/extensions" "$GITSRC/extensions/README.md"
 
+# copy man pages - version and date are inserted and the pages compressed below
+install -m644 -D -t "$TGT/$DIR_SHARE/man/man1" "$GITSRC/man/raspiBackup.1" "$GITSRC/man/raspiBackupInstallUI.1"
+install -m644 -D -t "$TGT/$DIR_SHARE/man/man5" "$GITSRC/man/raspiBackup.conf.5"
+
+# copy full license text (GPLv3) next to the copyright file installed below
+install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$GITSRC/LICENSE"
+
 # get current commit sha and date into code
 pushd "$GITSRC" > /dev/null
 last_date=$(git log --pretty=format:"%ai" -1)
@@ -242,6 +249,10 @@ git worktree remove "$GITSRC"
 
 # Insert commit date and sha1 into the scripts
 sed -i -e "s/\\\$Date\\\$/\\\$Date: $last_date\\\$/g" -e "s/\\\$Sha1\\\$/\\\$Sha1: $sha1\\\$/g" "$TGT/$DIR_BIN"/raspiBackup* "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/*.conf "$TGT/$DIR_SHARE/${PACKAGE_NAME}"/extensions/*
+
+# Insert version and commit date into the man pages and compress them as Debian requires
+sed -i -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/${last_date%% *}/g" "$TGT/$DIR_SHARE"/man/man?/*
+gzip -9n "$TGT/$DIR_SHARE"/man/man?/*
 
 # keep the old name for raspiBackupInstallUI, crontabs and systemd units of former installations
 # (created after sed -i, which would replace the link by a file)
