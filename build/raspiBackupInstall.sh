@@ -259,6 +259,25 @@ EOF_SOURCES
     fi
 }
 
+release_hold() {
+    # apt-get install -y refuses to change a held package
+    if ! apt-mark showhold 2>/dev/null | grep -qx "${PACKAGE_NAME}" ; then
+        return 0
+    fi
+
+    echo ""
+    echo "!!! Package ${PACKAGE_NAME} is on hold (apt-mark hold) and can't be changed"
+    if ! ask_yes_no -n "--- Release the hold of ${PACKAGE_NAME} now?" ; then
+        echo "!!! Installation cancelled. Release the hold with 'sudo apt-mark unhold ${PACKAGE_NAME}' and try again."
+        return 42
+    fi
+    if (( VERBOSE )) ; then
+        echo "    > using command:"
+        echo "    >     sudo apt-mark unhold ${PACKAGE_NAME}"
+    fi
+    $SUDO apt-mark unhold "${PACKAGE_NAME}" || return 42
+}
+
 install_from_repository() {
     local version
     local -a target=()
@@ -277,6 +296,8 @@ install_from_repository() {
         echo "!!! Installation of ${RASPIBACKUP} ${version} cancelled by user."
         return 42
     fi
+
+    release_hold || return $?
 
     echo ""
     echo "--- Installing ${RASPIBACKUP} package and all dependencies"
@@ -330,6 +351,8 @@ install_local_package() {
         echo "!!! Installation of ${RASPIBACKUP} ${version} cancelled by user."
         return 42
     fi
+
+    release_hold || return $?
 
     echo ""
     echo "--- Installing ${RASPIBACKUP} package and all dependencies"
