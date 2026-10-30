@@ -543,22 +543,37 @@ MSG_ZH[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: 更新 %1 到最新版本."
 MSG_INSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Creating systemd file %1."
 MSG_DE[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Systemddatei %1 wird erstellt."
+MSG_FI[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Luodaan systemd-tiedosto %1."
+MSG_FR[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: Création du fichier systemd %1."
+MSG_ZH[$MSG_INSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0029I: 正在创建systemd文件 %1."
 
 MSG_UNINSTALLING_SYSTEMD_TEMPLATE=$((SCNT++))
 MSG_EN[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Deleting systemd file %1."
 MSG_DE[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Systemddatei %1 wird gelöscht."
+MSG_FI[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Poistetaan systemd-tiedosto %1."
+MSG_FR[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: Suppression du fichier systemd %1."
+MSG_ZH[$MSG_UNINSTALLING_SYSTEMD_TEMPLATE]="${MSG_PRF}0030I: 正在删除systemd文件 %1."
 
 MSG_UPDATING_SYSTEMD=$((SCNT++))
 MSG_EN[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Updating systemd configuration in %1."
 MSG_DE[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Systemd Konfigurationsdatei %1 wird angepasst."
+MSG_FI[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Päivitetään systemd-asetukset tiedostossa %1."
+MSG_FR[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: Mise à jour de la configuration systemd dans %1."
+MSG_ZH[$MSG_UPDATING_SYSTEMD]="${MSG_PRF}0031I: 正在更新 %1 中的systemd配置."
 
 MSG_SYSTEMD_ENABLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd enabled."
 MSG_DE[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd eingeschaltet."
+MSG_FI[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd otettu käyttöön."
+MSG_FR[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: Systemd activé."
+MSG_ZH[$MSG_SYSTEMD_ENABLED]="${MSG_PRF}0032I: 已启用systemd."
 
 MSG_SYSTEMD_DISABLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer disabled."
 MSG_DE[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd timer ausgeschaltet."
+MSG_FI[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: $RASPIBACKUP_NAME systemd-ajastin poistettu käytöstä."
+MSG_FR[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: Minuterie systemd de $RASPIBACKUP_NAME désactivée."
+MSG_ZH[$MSG_SYSTEMD_DISABLED]="${MSG_PRF}0033I: 已禁用 $RASPIBACKUP_NAME systemd定时器."
 
 MSG_TITLE=$((SCNT++))
 MSG_EN[$MSG_TITLE]="$RASPIBACKUP_NAME Installation and Configuration Tool V${VERSION}"
@@ -633,6 +648,9 @@ MSG_ZH[$MSG_QUESTION_UPDATE_CRON]="是否保存$RASPIBACKUP_NAME 更新的cron�
 MSG_QUESTION_UPDATE_SYSTEMD=$((SCNT++))
 MSG_EN[$MSG_QUESTION_UPDATE_SYSTEMD]="Do you want to save the updated systemd settings for $RASPIBACKUP_NAME now?"
 MSG_DE[$MSG_QUESTION_UPDATE_SYSTEMD]="Soll die geänderte systemd Konfiguration für $RASPIBACKUP_NAME jetzt gespeichert werden?"
+MSG_FI[$MSG_QUESTION_UPDATE_SYSTEMD]="Haluatko tallentaa päivitetyt systemd-asetukset kohteelle $RASPIBACKUP_NAME nyt?"
+MSG_FR[$MSG_QUESTION_UPDATE_SYSTEMD]="Voulez-vous enregistrer les paramètres systemd mis à jour pour $RASPIBACKUP_NAME maintenant ?"
+MSG_ZH[$MSG_QUESTION_UPDATE_SYSTEMD]="是否保存$RASPIBACKUP_NAME 更新的systemd设置?"
 
 MSG_SEQUENCE_OK=$((SCNT++))
 MSG_EN[$MSG_SEQUENCE_OK]="Stopcommands for services will be executed in following sequence. Startcommands will be executed in reverse sequence. Sequence OK?"
@@ -704,6 +722,7 @@ MSG_EN[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME already installed.${NL}
 MSG_DE[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME ist bereits installiert.${NL}Soll die bestehende Installation überschrieben werden ?"
 MSG_FI[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME on jo asennettu.${NL} Haluatko uudelleenasentaa kohteen $RASPIBACKUP_NAME ?"
 MSG_FR[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME est déjà installé.${NL}Voulez-vous écraser l'installation existante ?"
+MSG_ZH[$MSG_SCRIPT_ALREADY_INSTALLED]="$RASPIBACKUP_NAME 已安装.${NL}是否重新安装 $RASPIBACKUP_NAME ?"
 
 MSG_DOWNLOADING_PROPERTYFILE=$((SCNT++))
 MSG_EN[$MSG_DOWNLOADING_PROPERTYFILE]="Downloading version information."
@@ -764,18 +783,33 @@ MSG_ZH[$MSG_RUNASROOT]="$MYSELF 必须以root身份开启. 请尝试 'sudo %1%2'
 MSG_SYSTEMD_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_NOT_INSTALLED]="No systemd configuration found."
 MSG_DE[$MSG_SYSTEMD_NOT_INSTALLED]="Keine systemd Konfiguration gefunden."
+MSG_FI[$MSG_SYSTEMD_NOT_INSTALLED]="Systemd-asetuksia ei löytynyt."
+MSG_FR[$MSG_SYSTEMD_NOT_INSTALLED]="Aucune configuration systemd trouvée."
+MSG_ZH[$MSG_SYSTEMD_NOT_INSTALLED]="未找到systemd配置."
 
 MSG_SYSTEMD_CONFIG_ERROR=$((SCNT++))
 MSG_EN[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd configuration failed with RC %1."
 MSG_DE[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd Konfiguration fehlerhaft mit RC %1."
+MSG_FI[$MSG_SYSTEMD_CONFIG_ERROR]="Systemd-asetusten määritys epäonnistui, RC %1."
+MSG_FR[$MSG_SYSTEMD_CONFIG_ERROR]="La configuration systemd a échoué avec RC %1."
+MSG_ZH[$MSG_SYSTEMD_CONFIG_ERROR]="systemd配置失败, RC %1."
 
 DESCRIPTION_COMPRESS=$((SCNT++))
 MSG_EN[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME can compress dd and tar backups to reduce the size of the backup but this will increase backup time. \
-dd uses gzip and tar can use zstd, gzip, zip2, lzip, lzma, lzop or xz. \
+dd uses gzip and tar can use zstd, gzip, bzip2, lzip, lzma, lzop, lz4 or xz. \
 ${NL}Note: There exists a configuration option DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS to add additional invocation options."
 MSG_DE[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME kann dd und tar Backups verkleinern um die Backupgröße zu reduzieren aber dadurch steigt die Backupzeit. \
-dd nutzt gzip und tar kann zstd, gzip, zip2, lzip, lzma, lzop oder nutzen. \
+dd nutzt gzip und tar kann zstd, gzip, bzip2, lzip, lzma, lzop, lz4 oder xz nutzen. \
 ${NL}Hinweis: Es gibt eine Konfigurationsoption DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS mit der weitere Aufrufoptionen mitgegeben werden können."
+MSG_FI[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME voi pakata dd- ja tar-varmuuskopiot pienentääkseen niiden kokoa, mutta tämä pidentää varmuuskopiointiaikaa. \
+dd käyttää gzip-pakkausta ja tar voi käyttää zstd-, gzip-, bzip2-, lzip-, lzma-, lzop-, lz4- tai xz-pakkausta. \
+${NL}Huom: Asetuksella DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS voi antaa lisää kutsuparametreja."
+MSG_FR[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME peut compresser les sauvegardes dd et tar pour réduire leur taille, mais cela augmente la durée de la sauvegarde. \
+dd utilise gzip et tar peut utiliser zstd, gzip, bzip2, lzip, lzma, lzop, lz4 ou xz. \
+${NL}Remarque: L'option de configuration DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS permet d'ajouter des options d'appel supplémentaires."
+MSG_ZH[$DESCRIPTION_COMPRESS]="${NL}$RASPIBACKUP_NAME 可以压缩dd和tar备份以减小备份大小, 但会增加备份时间. \
+dd使用gzip, tar可以使用zstd、gzip、bzip2、lzip、lzma、lzop、lz4或xz. \
+${NL}注意: 可以通过配置选项DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS添加额外的调用参数."
 
 DESCRIPTION_CRON=$((SCNT++))
 MSG_EN[$DESCRIPTION_CRON]="${NL}$RASPIBACKUP_NAME should be started on a regular base when the initial configuration and backup and restore testing was done. \
@@ -794,6 +828,12 @@ MSG_EN[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME should be started on a regu
 Configure the backup to be created daily or weekly. For other backup intervals you have to modify /etc/systemd/system/raspiBackup.timer manually."
 MSG_DE[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME sollte regelmäßig gestartet werden wenn die initiale Konfiguration sowie Backup und Restore Tests beendet sind. \
 Konfiguriere den Backup täglich oder wöchentlich zu erstellen. Für andere Intervalle muss die Datei /etc/systemd/system/raspiBackup.timer manuell geändert werden."
+MSG_FI[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME tulisi ajaa säännöllisesti sen jälkeen, kun asetusten määritysten jälkeen ensimmäinen varmuuskopio on suoritettu ja varmuuskopion palautus on testattu. \
+Ajasta varmuuskopiointi päivittäiseksi tai viikottaiseksi. Muita varmuuskopioinnin aikavälejä varten tulee muokata tiedostoa /etc/systemd/system/raspiBackup.timer manuaalisesti."
+MSG_FR[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME doit être démarré régulièrement lorsque les premiers tests de configuration, de sauvegarde et de restauration sont terminés. \
+Configurez la sauvegarde à exécuter quotidiennement ou hebdomadairement. Pour d'autres intervalles de sauvegardes vous devez modifier manuellement le fichier /etc/systemd/system/raspiBackup.timer ."
+MSG_ZH[$DESCRIPTION_SYSTEMD]="${NL}$RASPIBACKUP_NAME 会在完成初始配置以及备份和恢复测试后定期启动. \
+配置每天或每周创建备份。对于其他备份间隔，您必须手动修改/etc/systemd/system/raspiBackup.timer."
 
 DESCRIPTION_SMARTMODE=$((SCNT++))
 MSG_EN[$DESCRIPTION_SMARTMODE]="${NL}There exist two different ways to define the number of backups. Just by defining the maximum number of backups to keep or \
@@ -925,6 +965,21 @@ ${NL}${NL}Beispiele: \
 ${NL}/dev/sdb ef429bca-01 \
 ${NL}/dev/mmcblk1 ef429bca-02 \
 ${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_FI[$DESCRIPTION_CLONE_DEVICE]="${NL}Määritä kloonauslaite ja yksi PARTUUID. \
+${NL}${NL}Esimerkkejä: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_FR[$DESCRIPTION_CLONE_DEVICE]="${NL}Définissez un périphérique de clonage et une PARTUUID. \
+${NL}${NL}Exemples: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
+MSG_ZH[$DESCRIPTION_CLONE_DEVICE]="${NL}定义一个克隆设备和一个PARTUUID. \
+${NL}${NL}示例: \
+${NL}/dev/sdb ef429bca-01 \
+${NL}/dev/mmcblk1 ef429bca-02 \
+${NL}/dev/nvme0n1 8a852566-5f18-416a-9639-bcfd1f674054"
 
 DESCRIPTION_BACKUPPATH=$((SCNT++))
 MSG_EN[$DESCRIPTION_BACKUPPATH]="${NL}On the backup path a partition has to be be mounted which is used by $FILE_TO_INSTALL to store the backups. \
@@ -983,6 +1038,15 @@ ${NL}zstd is suggested to use because it has a much better compression rate and 
 MSG_DE[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Es gibt verschiedene Kompressionstools um ein tar Backup zu verkleinern. \
 ${NL}Das Standardtool von tar ist gzip. \
 ${NL}zstd ist empfohlen da es hat eine wesentlich bessere Kompressionsrate und schnellere Dekompressionsgeschwindigkeit hat."
+MSG_FI[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Tar-varmuuskopion pakkaamiseen on saatavilla useita pakkaustyökaluja. \
+${NL}Tarin oletuspakkaustyökalu on gzip. \
+${NL}zstd on suositeltu, koska sen pakkaussuhde on paljon parempi ja purku nopeampaa."
+MSG_FR[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}Plusieurs outils de compression sont disponibles pour compresser une sauvegarde tar. \
+${NL}L'outil de compression par défaut de tar est gzip. \
+${NL}zstd est recommandé car il offre un bien meilleur taux de compression et une décompression plus rapide."
+MSG_ZH[$DESCRIPTION_TAR_COMPRESSION_TOOL]="${NL}有多种压缩工具可用于压缩tar备份. \
+${NL}tar的默认压缩工具是gzip. \
+${NL}建议使用zstd, 因为它的压缩率更高, 解压速度更快."
 
 DESCRIPTION_MAIL_PROGRAM=$((SCNT++))
 MSG_EN[$DESCRIPTION_MAIL_PROGRAM]="Select the mail program to use to send notification eMails."
@@ -994,9 +1058,9 @@ MSG_ZH[$DESCRIPTION_MAIL_PROGRAM]="选择发送邮件的程序."
 DESCRIPTION_EMAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_EMAIL]="Enter the eMail address to send notifications to. Enter no eMail address to disable notifications.\n\nNOTE: eMails will be sent only if a local MTA has been configured correctly."
 MSG_DE[$DESCRIPTION_EMAIL]="Gibt die eMail Adresse ein die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus.\n\nHINWEIS: eMails werden nur gesendet wenn ein lokaler MTA erfolgreich konfiguriert wurde."
-#MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta."
-#MSG_FR[$DESCRIPTION_EMAIL]="Saisissez l'adresse e-mail pour recevoir les notifications. Aucune adresse e-mail désactive les notifications."
-#MSG_ZH[$DESCRIPTION_EMAIL]="输入邮件地址，留空则禁用邮件通知."
+MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta.\n\nHUOM: Sähköposteja lähetetään vain, jos paikallinen MTA on määritetty oikein."
+MSG_FR[$DESCRIPTION_EMAIL]="Saisissez l'adresse e-mail pour recevoir les notifications. Aucune adresse e-mail désactive les notifications.\n\nREMARQUE: Les e-mails ne sont envoyés que si un MTA local a été configuré correctement."
+MSG_ZH[$DESCRIPTION_EMAIL]="输入邮件地址，留空则禁用邮件通知.\n\n注意: 只有正确配置了本地MTA才会发送邮件."
 
 TITLE_ERROR=$((SCNT++))
 MSG_EN[$TITLE_ERROR]="Error"
@@ -1058,6 +1122,21 @@ ${NL}${NL}Beispiele: \
 ${NL}/dev/sda \
 ${NL}/dev/mmcblk1p \
 ${NL}/dev/nvme1n1"
+MSG_FI[$MSG_INVALID_CLONE_DEVICE]="Kloonauslaitetta %1 ei löytynyt. \
+${NL}${NL}Esimerkkejä: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
+MSG_FR[$MSG_INVALID_CLONE_DEVICE]="Périphérique de clonage %1 introuvable. \
+${NL}${NL}Exemples: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
+MSG_ZH[$MSG_INVALID_CLONE_DEVICE]="未找到克隆设备 %1. \
+${NL}${NL}示例: \
+${NL}/dev/sda \
+${NL}/dev/mmcblk1p \
+${NL}/dev/nvme1n1"
 
 MSG_MISSING_PARTUUID=$((SCNT++))
 MSG_EN[$MSG_MISSING_PARTUUID]="Missing a PARTUUID of the clone device. \
@@ -1070,6 +1149,21 @@ ${NL}${NL}Beispiele: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
 ${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+MSG_FI[$MSG_MISSING_PARTUUID]="Kloonauslaitteen PARTUUID puuttuu. \
+${NL}${NL}Esimerkkejä: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Huom: Erota kloonauslaite ja PARTUUID välilyönnillä"
+MSG_FR[$MSG_MISSING_PARTUUID]="Il manque une PARTUUID du périphérique de clonage. \
+${NL}${NL}Exemples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Remarque: Séparez le périphérique de clonage et la PARTUUID par un espace"
+MSG_ZH[$MSG_MISSING_PARTUUID]="缺少克隆设备的PARTUUID. \
+${NL}${NL}示例: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}注意: 克隆设备和PARTUUID之间用空格分隔"
 
 MSG_INVALID_PARTUUID=$((SCNT++))
 MSG_EN[$MSG_INVALID_PARTUUID]="Invalid PARTUUID %1 \
@@ -1083,10 +1177,28 @@ ${NL}${NL}Beispiele: \
 ${NL}ef429bca-01 \
 ${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
 ${NL}${NL}Hinweis: Trenne Clonegerät und PARTUUID durch ein Leerzeichen"
+MSG_FI[$MSG_INVALID_PARTUUID]="Virheellinen PARTUUID %1 \
+${NL}${NL}Esimerkkejä: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Huom: Erota kloonauslaite ja PARTUUID välilyönnillä"
+MSG_FR[$MSG_INVALID_PARTUUID]="PARTUUID %1 invalide \
+${NL}${NL}Exemples: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}Remarque: Séparez le périphérique de clonage et la PARTUUID par un espace"
+MSG_ZH[$MSG_INVALID_PARTUUID]="无效的PARTUUID %1 \
+${NL}${NL}示例: \
+${NL}ef429bca-01 \
+${NL}8a852566-5f18-416a-9639-bcfd1f674054 \
+${NL}${NL}注意: 克隆设备和PARTUUID之间用空格分隔"
 
 MSG_PARTUUID_NOT_FOUND=$((SCNT++))
 MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
 MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2"
+MSG_FI[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 ei löytynyt kloonauslaitteelta %2."
+MSG_FR[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 introuvable sur le périphérique de clonage %2."
+MSG_ZH[$MSG_PARTUUID_NOT_FOUND]="在克隆设备 %2 上未找到PARTUUID %1."
 
 MSG_INVALID_BACKUPPATH=$((SCNT++))
 MSG_EN[$MSG_INVALID_BACKUPPATH]="Backup path %1 does not exist"
@@ -1255,67 +1367,114 @@ MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用
 MSG_FIRST_PARTITIONS_NOT_SELECTED=$((SCNT++))
 MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions have to be selected."
 MSG_DE[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Wenigstens die beiden ersten Partitionen müssen ausgewählt sein."
+MSG_FI[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Vähintään kaksi ensimmäistä osiota on valittava."
+MSG_FR[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="Au moins les deux premières partitions doivent être sélectionnées."
+MSG_ZH[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="至少需要选择前两个分区."
 
 MSG_SENSITIVE_WARNING=$((SCNT++))
 MSG_EN[$MSG_SENSITIVE_WARNING]="| ===> A lot of sensitive information is masqueraded in this log file. Nevertheless please check the log carefully before you distribute it <=== |"
 MSG_DE[$MSG_SENSITIVE_WARNING]="| ===>  Viele sensitive Informationen werden in dieser Logdatei maskiert. Vor dem Verteilen des Logs sollte es trotzdem ueberprueft werden  <=== |"
 MSG_FI[$MSG_SENSITIVE_WARNING]="| ===>            Sensitiivisiä tietoja on piilotettu tästä lokitiedostosta. Tarkista lisäksi loki huolellisesti ennen sen jakoa            <=== |"
 MSG_FR[$MSG_SENSITIVE_WARNING]="| ===>De nombreuses informations sensibles sont masquées dans ce fichier journal. Avant de distribuer le log, il faut quand même le vérifier<=== |"
+MSG_ZH[$MSG_SENSITIVE_WARNING]="| ===>                                    日志文件中的大量敏感信息已被屏蔽。但在分发日志之前仍请仔细检查                                    <=== |"
 
 MSG_SENSITIVE_SEPARATOR=$((SCNT++))
 MSG_EN[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
+MSG_DE[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
+MSG_FI[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
+MSG_FR[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
+MSG_ZH[$MSG_SENSITIVE_SEPARATOR]="+================================================================================================================================================+"
 
 MSG_PACKAGE_UPDATE=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME is installed as Debian package. Install and update it with 'sudo apt-get update' and 'sudo apt-get upgrade'."
 MSG_DE[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME ist als Debian Paket installiert. Installiere und aktualisiere es mit 'sudo apt-get update' und 'sudo apt-get upgrade'."
+MSG_FI[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME on asennettu Debian-pakettina. Asenna ja päivitä se komennoilla 'sudo apt-get update' ja 'sudo apt-get upgrade'."
+MSG_FR[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME est installé en tant que paquet Debian. Installez-le et mettez-le à jour avec 'sudo apt-get update' et 'sudo apt-get upgrade'."
+MSG_ZH[$MSG_PACKAGE_UPDATE]="$RASPIBACKUP_NAME 已作为Debian软件包安装. 请使用 'sudo apt-get update' 和 'sudo apt-get upgrade' 进行安装和更新."
 
 MSG_REPOSITORY_ADD_FAILED=$((SCNT++))
 MSG_EN[$MSG_REPOSITORY_ADD_FAILED]="${MSG_PRF}0034E: Adding apt repository %1 failed. Key not found or invalid."
 MSG_DE[$MSG_REPOSITORY_ADD_FAILED]="${MSG_PRF}0034E: Hinzufügen des apt Repositories %1 fehlgeschlagen. Schlüssel nicht gefunden oder ungültig."
+MSG_FI[$MSG_REPOSITORY_ADD_FAILED]="${MSG_PRF}0034E: apt-pakettivaraston %1 lisääminen epäonnistui. Avainta ei löytynyt tai se on virheellinen."
+MSG_FR[$MSG_REPOSITORY_ADD_FAILED]="${MSG_PRF}0034E: L'ajout du dépôt apt %1 a échoué. Clé introuvable ou invalide."
+MSG_ZH[$MSG_REPOSITORY_ADD_FAILED]="${MSG_PRF}0034E: 添加apt软件源 %1 失败. 密钥未找到或无效."
 
 MSG_PACKAGE_INSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_INSTALL_FAILED]="${MSG_PRF}0035E: Installation of package %1 with apt-get failed."
 MSG_DE[$MSG_PACKAGE_INSTALL_FAILED]="${MSG_PRF}0035E: Installation des Pakets %1 mit apt-get fehlgeschlagen."
+MSG_FI[$MSG_PACKAGE_INSTALL_FAILED]="${MSG_PRF}0035E: Paketin %1 asennus apt-get-komennolla epäonnistui."
+MSG_FR[$MSG_PACKAGE_INSTALL_FAILED]="${MSG_PRF}0035E: L'installation du paquet %1 avec apt-get a échoué."
+MSG_ZH[$MSG_PACKAGE_INSTALL_FAILED]="${MSG_PRF}0035E: 使用apt-get安装软件包 %1 失败."
 
 MSG_PACKAGE_UNINSTALL_FAILED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: Uninstall of package %1 with apt-get failed."
 MSG_DE[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: Deinstallation des Pakets %1 mit apt-get fehlgeschlagen."
+MSG_FI[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: Paketin %1 poisto apt-get-komennolla epäonnistui."
+MSG_FR[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: La désinstallation du paquet %1 avec apt-get a échoué."
+MSG_ZH[$MSG_PACKAGE_UNINSTALL_FAILED]="${MSG_PRF}0036E: 使用apt-get卸载软件包 %1 失败."
 
 MSG_PACKAGE_INDEX_UPDATE_FAILED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: Update of the package index with apt-get update failed."
 MSG_DE[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: Aktualisierung des Paketindex mit apt-get update fehlgeschlagen."
+MSG_FI[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: Pakettihakemiston päivitys komennolla apt-get update epäonnistui."
+MSG_FR[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: La mise à jour de l'index des paquets avec apt-get update a échoué."
+MSG_ZH[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: 使用apt-get update更新软件包索引失败."
 
 MSG_PACKAGE_HOLD_FAILED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold of package %1 failed."
 MSG_DE[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold des Pakets %1 fehlgeschlagen."
+MSG_FI[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: Paketin %1 apt-mark hold epäonnistui."
+MSG_FR[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold du paquet %1 a échoué."
+MSG_ZH[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: 软件包 %1 的apt-mark hold失败."
 
 MSG_PACKAGE_ALREADY_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_ALREADY_INSTALLED]="${MSG_PRF}0039I: $RASPIBACKUP_NAME %1 is already installed. Use option -U to update it."
 MSG_DE[$MSG_PACKAGE_ALREADY_INSTALLED]="${MSG_PRF}0039I: $RASPIBACKUP_NAME %1 ist bereits installiert. Benutze Option -U um es zu aktualisieren."
+MSG_FI[$MSG_PACKAGE_ALREADY_INSTALLED]="${MSG_PRF}0039I: $RASPIBACKUP_NAME %1 on jo asennettu. Päivitä se valitsimella -U."
+MSG_FR[$MSG_PACKAGE_ALREADY_INSTALLED]="${MSG_PRF}0039I: $RASPIBACKUP_NAME %1 est déjà installé. Utilisez l'option -U pour le mettre à jour."
+MSG_ZH[$MSG_PACKAGE_ALREADY_INSTALLED]="${MSG_PRF}0039I: $RASPIBACKUP_NAME %1 已安装. 请使用选项 -U 进行更新."
 
 MSG_PACKAGE_UPGRADED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_UPGRADED]="${MSG_PRF}0040I: $RASPIBACKUP_NAME updated from %1 to %2."
 MSG_DE[$MSG_PACKAGE_UPGRADED]="${MSG_PRF}0040I: $RASPIBACKUP_NAME von %1 auf %2 aktualisiert."
+MSG_FI[$MSG_PACKAGE_UPGRADED]="${MSG_PRF}0040I: $RASPIBACKUP_NAME päivitetty versiosta %1 versioon %2."
+MSG_FR[$MSG_PACKAGE_UPGRADED]="${MSG_PRF}0040I: $RASPIBACKUP_NAME mis à jour de %1 vers %2."
+MSG_ZH[$MSG_PACKAGE_UPGRADED]="${MSG_PRF}0040I: $RASPIBACKUP_NAME 已从 %1 更新到 %2."
 
 MSG_PACKAGE_UP_TO_DATE=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 is already the latest version."
 MSG_DE[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 ist bereits die neueste Version."
+MSG_FI[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 on jo uusin versio."
+MSG_FR[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 est déjà la version la plus récente."
+MSG_ZH[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 已是最新版本."
 
 MSG_PACKAGE_HELD=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME was reverted to %1 and is kept at this version. Use the update menu of $MYSELF to update it."
 MSG_DE[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME wurde auf %1 zurückgesetzt und bleibt auf dieser Version. Benutze das Update Menü von $MYSELF um es zu aktualisieren."
+MSG_FI[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME palautettiin versioon %1 ja pidetään tässä versiossa. Päivitä se $MYSELF:n versiovalikosta."
+MSG_FR[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME a été ramené à %1 et reste à cette version. Utilisez le menu de version de $MYSELF pour le mettre à jour."
+MSG_ZH[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 请使用 $MYSELF 的版本菜单进行更新."
 
 MSG_PACKAGE_NOT_AVAILABLE=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_NOT_AVAILABLE]="(Not available)"
 MSG_DE[$MSG_PACKAGE_NOT_AVAILABLE]="(Nicht verfügbar)"
+MSG_FI[$MSG_PACKAGE_NOT_AVAILABLE]="(Ei saatavilla)"
+MSG_FR[$MSG_PACKAGE_NOT_AVAILABLE]="(Non disponible)"
+MSG_ZH[$MSG_PACKAGE_NOT_AVAILABLE]="(不可用)"
 
 MSG_PACKAGE_CONFIRM_VERSION=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_CONFIRM_VERSION]="Replace $RASPIBACKUP_NAME %1 with %2?"
 MSG_DE[$MSG_PACKAGE_CONFIRM_VERSION]="Soll $RASPIBACKUP_NAME %1 durch %2 ersetzt werden?"
+MSG_FI[$MSG_PACKAGE_CONFIRM_VERSION]="Korvataanko $RASPIBACKUP_NAME %1 versiolla %2?"
+MSG_FR[$MSG_PACKAGE_CONFIRM_VERSION]="Remplacer $RASPIBACKUP_NAME %1 par %2 ?"
+MSG_ZH[$MSG_PACKAGE_CONFIRM_VERSION]="是否将 $RASPIBACKUP_NAME %1 替换为 %2?"
 
 MSG_PACKAGE_CONFIRM_PREVIOUS=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Revert $RASPIBACKUP_NAME %1 to %2?${NL}${NL}%2 is held. apt doesn't upgrade it until 'Update current release' is selected.${NL}The configuration isn't reverted."
 MSG_DE[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Soll $RASPIBACKUP_NAME %1 auf %2 zurückgesetzt werden?${NL}${NL}%2 wird festgehalten. apt aktualisiert es erst wieder, wenn 'Aktualisiere aktuelles Release' ausgewählt wird.${NL}Die Konfiguration wird nicht zurückgesetzt."
+MSG_FI[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Palautetaanko $RASPIBACKUP_NAME %1 versioon %2?${NL}${NL}%2 lukitaan. apt ei päivitä sitä ennen kuin 'Päivitä nykyinen julkaisu' valitaan.${NL}Asetuksia ei palauteta."
+MSG_FR[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Ramener $RASPIBACKUP_NAME %1 à %2 ?${NL}${NL}%2 est bloqué. apt ne le met pas à jour tant que 'Mettre à jour la version actuelle' n'est pas sélectionné.${NL}La configuration n'est pas restaurée."
+MSG_ZH[$MSG_PACKAGE_CONFIRM_PREVIOUS]="是否将 $RASPIBACKUP_NAME %1 回退到 %2?${NL}${NL}%2 将被锁定. 在选择 '更新当前版本' 之前apt不会升级它.${NL}配置不会被回退."
 
 
 declare -A MENU_EN
@@ -1361,11 +1520,11 @@ MENU_FR[$MENU_UNINSTALL]='"M4" "Supprimer $RASPIBACKUP_NAME"'
 MENU_ZH[$MENU_UNINSTALL]='"M4" "卸载 $RASPIBACKUP_NAME"'
 
 MENU_UPDATE=$((MCNT++))
-MENU_EN[$MENU_UPDATE]='"M3" "Update components"'
-MENU_DE[$MENU_UPDATE]='"M3" "Aktualisiere Komponenten"'
-MENU_FI[$MENU_UPDATE]='"M3" "Päivitä komponentteja"'
-MENU_FR[$MENU_UPDATE]='"M3" "Mettre à jour des composants"'
-MENU_ZH[$MENU_UPDATE]='"M3" "更新组件"'
+MENU_EN[$MENU_UPDATE]='"M3" "Manage $RASPIBACKUP_NAME version"'
+MENU_DE[$MENU_UPDATE]='"M3" "Verwalte $RASPIBACKUP_NAME Version"'
+MENU_FI[$MENU_UPDATE]='"M3" "Hallitse $RASPIBACKUP_NAME -versiota"'
+MENU_FR[$MENU_UPDATE]='"M3" "Gérer la version de $RASPIBACKUP_NAME"'
+MENU_ZH[$MENU_UPDATE]='"M3" "管理 $RASPIBACKUP_NAME 版本"'
 
 MENU_ABOUT=$((MCNT++))
 MENU_EN[$MENU_ABOUT]='"M1" "About and useful links"'
@@ -1475,6 +1634,9 @@ MENU_ZH[$MENU_CONFIG_TYPE]='"C4" "备份类型"'
 MENU_CONFIG_TAR_COMPRESSION_TOOL=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR compression tool"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR Kompressiontool"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR-pakkaustyökalu"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "Outil de compression TAR"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL]='"C4" "TAR压缩工具"'
 
 MENU_CONFIG_MODE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_MODE]='"C5" "Backup mode"'
@@ -1514,10 +1676,16 @@ MENU_ZH[$MENU_CONFIG_REGULAR]='"C9" "定期备份"'
 MENU_CONFIG_CLONE=$((MCNT++))
 MENU_EN[$MENU_CONFIG_CLONE]='"C10" "Backup clone"'
 MENU_DE[$MENU_CONFIG_CLONE]='"C10" "Backup Clone"'
+MENU_FI[$MENU_CONFIG_CLONE]='"C10" "Varmuuskopioklooni"'
+MENU_FR[$MENU_CONFIG_CLONE]='"C10" "Clone de sauvegarde"'
+MENU_ZH[$MENU_CONFIG_CLONE]='"C10" "克隆备份"'
 
 MENU_CONFIG_ZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP]='"C11" "Compression with $CONFIG_BACKUPTYPE"'
 MENU_DE[$MENU_CONFIG_ZIP]='"C11" "Komprimierung bei $CONFIG_BACKUPTYPE"'
+MENU_FI[$MENU_CONFIG_ZIP]='"C11" "Pakkaus $CONFIG_BACKUPTYPE-varmuuskopiossa"'
+MENU_FR[$MENU_CONFIG_ZIP]='"C11" "Compression avec $CONFIG_BACKUPTYPE"'
+MENU_ZH[$MENU_CONFIG_ZIP]='"C11" "$CONFIG_BACKUPTYPE 压缩"'
 
 MENU_CONFIG_ZIP_NA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_ZIP_NA]='" " " "'
@@ -1580,34 +1748,58 @@ MENU_ZH[$MENU_CONFIG_MAIL_MSMTP]='"msmtp" ""'
 MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (suggested)"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (empfohlen)"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (suositeltu)"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (recommandé)"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_ZSTD]='"zstd" "ZSTD (推荐)"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_XZ]='"xz" "XZ"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP]='"lzop" "LZOP"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP]='"lzop" "LZOP"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP]='"lzop" "LZOP"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP]='"lzop" "LZOP"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZOP]='"lzop" "LZOP"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA]='"lzma" "LZMA"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA]='"lzma" "LZMA"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA]='"lzma" "LZMA"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA]='"lzma" "LZMA"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZMA]='"lzma" "LZMA"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZIP]='"lzip" "LZIP"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar default)"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar Standard)"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar-oletus)"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (par défaut de tar)"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_GZIP]='"gzip" "GZIP (tar默认)"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
-MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2'
+MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_BZIP2]='"bzip2" "BZIP2"'
 
 MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
 MENU_DE[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+MENU_FI[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+MENU_FR[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
+MENU_ZH[$MENU_CONFIG_TAR_COMPRESSION_TOOL_LZ4]='"lz4" "LZ4"'
 
 MENU_CONFIG_TYPE_DD=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_DD]='"dd" "Backup with dd and a restore on Windows is also possible"'
@@ -1626,6 +1818,9 @@ MENU_ZH[$MENU_CONFIG_TYPE_TAR]='"tar" "使用tar备份"'
 MENU_CONFIG_TYPE_RSYNC=$((MCNT++))
 MENU_EN[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Backup with rsync and use hardlinks"'
 MENU_DE[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sichere mit rsync und benutze Hardlinks"'
+MENU_FI[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "rsync-varmuuskopio kovilla linkeillä"'
+MENU_FR[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "Sauvegarde avec rsync et liens physiques"'
+MENU_ZH[$MENU_CONFIG_TYPE_RSYNC]='"rsync" "使用rsync备份并使用硬链接"'
 
 
 
@@ -1639,10 +1834,16 @@ MENU_ZH[$MENU_CONFIG_TYPE_DD_NA]='"" "此模式不可使用dd备份"'
 MENU_CONFIG_COMPRESS_OFF=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_OFF]='"off" "No compression"'
 MENU_DE[$MENU_CONFIG_COMPRESS_OFF]='"aus" "Keine Komprimierung"'
+MENU_FI[$MENU_CONFIG_COMPRESS_OFF]='"pois" "Ei pakkausta"'
+MENU_FR[$MENU_CONFIG_COMPRESS_OFF]='"non" "Pas de compression"'
+MENU_ZH[$MENU_CONFIG_COMPRESS_OFF]='"关" "不压缩"'
 
 MENU_CONFIG_COMPRESS_ON=$((MCNT++))
 MENU_EN[$MENU_CONFIG_COMPRESS_ON]='"on" "$COMPRESSION_TYPE compression"'
 MENU_DE[$MENU_CONFIG_COMPRESS_ON]='"an" "$COMPRESSION_TYPE Kompression"'
+MENU_FI[$MENU_CONFIG_COMPRESS_ON]='"päällä" "$COMPRESSION_TYPE-pakkaus"'
+MENU_FR[$MENU_CONFIG_COMPRESS_ON]='"oui" "Compression $COMPRESSION_TYPE"'
+MENU_ZH[$MENU_CONFIG_COMPRESS_ON]='"开" "$COMPRESSION_TYPE 压缩"'
 
 MENU_DAYS_SHORT=$((MCNT++))
 MENU_EN[$MENU_DAYS_SHORT]='"Daily" "Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"'
@@ -1675,18 +1876,30 @@ MENU_ZH[$MENU_UPDATE_INSTALLER]='"P2" "更新 $MYSELF"'
 MENU_PACKAGE_UPDATE=$((MCNT++))
 MENU_EN[$MENU_PACKAGE_UPDATE]='"P1" "Update current release"'
 MENU_DE[$MENU_PACKAGE_UPDATE]='"P1" "Aktualisiere aktuelles Release"'
+MENU_FI[$MENU_PACKAGE_UPDATE]='"P1" "Päivitä nykyinen julkaisu"'
+MENU_FR[$MENU_PACKAGE_UPDATE]='"P1" "Mettre à jour la version actuelle"'
+MENU_ZH[$MENU_PACKAGE_UPDATE]='"P1" "更新当前版本"'
 
 MENU_PACKAGE_PREVIOUS=$((MCNT++))
 MENU_EN[$MENU_PACKAGE_PREVIOUS]='"P2" "Revert to previous release"'
 MENU_DE[$MENU_PACKAGE_PREVIOUS]='"P2" "Zurück zum vorherigen Release"'
+MENU_FI[$MENU_PACKAGE_PREVIOUS]='"P2" "Palaa edelliseen julkaisuun"'
+MENU_FR[$MENU_PACKAGE_PREVIOUS]='"P2" "Revenir à la version précédente"'
+MENU_ZH[$MENU_PACKAGE_PREVIOUS]='"P2" "回退到上一个版本"'
 
 MENU_PACKAGE_BETA=$((MCNT++))
 MENU_EN[$MENU_PACKAGE_BETA]='"P3" "Install available beta"'
 MENU_DE[$MENU_PACKAGE_BETA]='"P3" "Installiere verfügbare Beta"'
+MENU_FI[$MENU_PACKAGE_BETA]='"P3" "Asenna saatavilla oleva beta"'
+MENU_FR[$MENU_PACKAGE_BETA]='"P3" "Installer la bêta disponible"'
+MENU_ZH[$MENU_PACKAGE_BETA]='"P3" "安装可用的测试版"'
 
 MENU_PACKAGE_REVERT_BETA=$((MCNT++))
 MENU_EN[$MENU_PACKAGE_REVERT_BETA]='"P4" "Revert from beta to current release"'
 MENU_DE[$MENU_PACKAGE_REVERT_BETA]='"P4" "Von Beta zurück zum aktuellen Release"'
+MENU_FI[$MENU_PACKAGE_REVERT_BETA]='"P4" "Palaa betasta nykyiseen julkaisuun"'
+MENU_FR[$MENU_PACKAGE_REVERT_BETA]='"P4" "Revenir de la bêta à la version actuelle"'
+MENU_ZH[$MENU_PACKAGE_REVERT_BETA]='"P4" "从测试版回退到当前版本"'
 
 declare -A MSG_HEADER=(['I']="---" ['W']="!!!" ['E']="???")
 
