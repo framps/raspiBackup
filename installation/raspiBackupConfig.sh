@@ -1820,6 +1820,18 @@ function logItem() { # message
 	log "$@"
 }
 
+function executeApt() { # command and arguments - logs command, complete stdout and stderr and rc of apt-get and apt-mark
+	local output rc line
+	log "Executing: $*"
+	output="$(DEBIAN_FRONTEND=noninteractive "$@" 2>&1)"
+	rc=$?
+	while IFS= read -r line; do
+		log "   $line"
+	done <<< "$output"
+	log "RC: $rc"
+	return $rc
+}
+
 function downloadURL() { # fileName
 	logEntry "$1"
 	local u="$MYHOMEURL$URLTARGET/$1"
@@ -2068,8 +2080,8 @@ function package_install_execute() { # apt installs code, installer, config temp
 	writeToConsole $MSG_DOWNLOADING "$PACKAGE_NAME"
 
 	# dependencies come from the system repositories which might be outdated
-	apt-get update &>>"$LOG_FILE"
-	if ! DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+	executeApt apt-get update
+	if ! executeApt apt-get install -y "$PACKAGE_NAME"; then
 		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME"
 		logExit
 		return
@@ -2102,7 +2114,7 @@ function package_uninstall_execute() { # apt deletes code, installer, config, ex
 
 	if isPackageInstalled; then
 		writeToConsole $MSG_DELETE_FILE "$PACKAGE_NAME"
-		if ! DEBIAN_FRONTEND=noninteractive apt-get purge -y "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+		if ! executeApt apt-get purge -y "$PACKAGE_NAME"; then
 			unrecoverableError $MSG_PACKAGE_UNINSTALL_FAILED "$PACKAGE_NAME"
 			logExit
 			return
@@ -2123,7 +2135,7 @@ function package_index_update_execute() { # apt-get update to get the versions a
 		sed -i -E "s/^(Suites:.*)$/\1 $REPO_BETA_SUITE/" "$REPO_SOURCES" &>>"$LOG_FILE"
 	fi
 
-	if ! apt-get update &>>"$LOG_FILE"; then
+	if ! executeApt apt-get update; then
 		unrecoverableError $MSG_PACKAGE_INDEX_UPDATE_FAILED
 		logExit
 		return
@@ -2138,15 +2150,15 @@ function package_version_execute() { # installs PACKAGE_TARGET_VERSION, holds it
 	logEntry "$PACKAGE_TARGET_VERSION hold: $PACKAGE_TARGET_HOLD"
 
 	# a held package can't be changed
-	apt-mark unhold "$PACKAGE_NAME" &>>"$LOG_FILE"
+	executeApt apt-mark unhold "$PACKAGE_NAME"
 
-	if ! DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-downgrades "$PACKAGE_NAME=$PACKAGE_TARGET_VERSION" &>>"$LOG_FILE"; then
+	if ! executeApt apt-get install -y --allow-downgrades "$PACKAGE_NAME=$PACKAGE_TARGET_VERSION"; then
 		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME=$PACKAGE_TARGET_VERSION"
 		logExit
 		return
 	fi
 
-	if (( PACKAGE_TARGET_HOLD )) && ! apt-mark hold "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+	if (( PACKAGE_TARGET_HOLD )) && ! executeApt apt-mark hold "$PACKAGE_NAME"; then
 		unrecoverableError $MSG_PACKAGE_HOLD_FAILED "$PACKAGE_NAME"
 		logExit
 		return
@@ -4733,7 +4745,7 @@ function package_upgrade_execute() { # updates the installed package to the late
 
 	package_index_update_execute
 
-	if ! DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade "$PACKAGE_NAME" &>>"$LOG_FILE"; then
+	if ! executeApt apt-get install -y --only-upgrade "$PACKAGE_NAME"; then
 		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME"
 		logExit
 		return
