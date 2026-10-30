@@ -1,0 +1,499 @@
+.\" Manual page for raspiBackup.conf
+.\"
+.\" Copyright (c) 2013-2026 framp at linux-tips-and-tricks dot de
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.TH RASPIBACKUP.CONF 5 "@DATE@" "raspiBackup @VERSION@" "raspiBackup Manual"
+.SH NAME
+raspiBackup.conf \- configuration file for raspiBackup
+.SH SYNOPSIS
+.I /usr/local/etc/raspiBackup.conf
+.br
+.I ~/.raspiBackup.conf
+.br
+.I ./.raspiBackup.conf
+.SH DESCRIPTION
+.BR raspiBackup (1)
+reads its defaults from up to three configuration files, in this order:
+.IP 1. 4
+.I /usr/local/etc/raspiBackup.conf
+(system wide)
+.IP 2. 4
+.I ~/.raspiBackup.conf
+(home directory of the calling user)
+.IP 3. 4
+.I ./.raspiBackup.conf
+(current directory)
+.PP
+followed by the file passed with
+.BR \-f .
+Settings of a later file override earlier ones, and command line options
+override all of them.
+.PP
+The files are sourced by
+.BR bash (1).
+Each line has the form
+.IP
+.IB NAME = value
+.PP
+without spaces around
+.BR = .
+Values containing spaces have to be quoted.
+Lines starting with
+.B #
+are comments.
+Boolean options use
+.B 0
+for off and
+.B 1
+for on.
+.PP
+When the Debian package is installed and no system wide configuration
+exists, it is created from the template matching the system language in
+.IR /usr/local/share/raspibackup .
+The configuration is never overwritten by a package update; use
+.B raspiBackup \-\-updateConfig
+to merge options of a new release into an existing configuration.
+.BR raspiBackupInstallUI (1)
+edits the most important options interactively.
+.PP
+.B VERSION_CONFIG
+holds the version of the configuration file format and must not be
+changed.
+.PP
+The command line option corresponding to a setting is shown in brackets.
+.SH BACKUP OPTIONS
+.TP
+.B DEFAULT_BACKUPPATH
+Directory where backups are stored.
+A partition (local or remote) should be mounted there.
+Default: /backup.
+.RB [ \-p ]
+.TP
+.B DEFAULT_BACKUPTYPE
+.BR dd ,
+.B tar
+or
+.BR rsync .
+Default: rsync.
+.RB [ \-t ]
+.TP
+.B DEFAULT_ZIP_BACKUP
+Compress dd and tar backups.
+Default: 0.
+.RB [ \-z ]
+.TP
+.B DEFAULT_DD_BACKUP_SAVE_USED_PARTITIONS_ONLY
+dd backups save only the space used by partitions instead of the whole
+device.
+Default: 0.
+.TP
+.B DEFAULT_DD_BLOCKSIZE
+Block size for dd.
+Default: 1M.
+.RB [ \-b ]
+.TP
+.B DEFAULT_DD_PARMS
+Additional dd parameters.
+.RB [ \-D ]
+.TP
+.B DEFAULT_TAR_COMPRESSION_TOOL
+Compression tool for compressed tar backups:
+.BR bzip2 ,
+.BR gzip ,
+.BR lzip ,
+.BR lzma ,
+.BR lzop ,
+.BR xz ,
+.B zstd
+or
+.BR lz4 .
+Ignored if
+.B DEFAULT_ZIP_BACKUP
+is enabled, which compresses with gzip.
+.RB [ \-\-tarCompressionTool ]
+.TP
+.B DEFAULT_TAR_COMPRESSION_TOOL_OPTIONS
+Options passed to the tar compression tool.
+.RB [ \-\-tarCompressionToolOptions ]
+.TP
+.B DEFAULT_TAR_BOOT_PARTITION_ENABLED
+Save the boot partition with tar instead of dd.
+Default: 0.
+.RB [ \-B ]
+.TP
+.B DEFAULT_LINK_BOOTPARTITIONFILES
+Use hardlinks for identical boot partition backup files of consecutive
+backups to save space.
+Default: 0.
+.TP
+.B DEFAULT_EXCLUDE_LIST
+Additional excludes for tar and rsync.
+Each exclude has to be prefixed with
+.BR \-\-exclude ,
+e.g.
+.BR "\(dq\-\-exclude=/home/pi/.ssh \-\-exclude=/root/.ssh\(dq" .
+.RB [ \-u ]
+.TP
+.B DEFAULT_RSYNC_BACKUP_OPTION_EXCLUDE_ACLS
+Don't save ACLs with rsync.
+Default: 0.
+.TP
+.B DEFAULT_SKIPLOCALCHECK
+Skip the check whether the backup path is a mounted partition.
+Default: 0.
+.RB [ \-c ]
+.TP
+.B DEFAULT_DYNAMIC_MOUNT
+Partition (e.g.
+.IR /dev/sda1 )
+or mountpoint defined in
+.I /etc/fstab
+(e.g.
+.IR /backup )
+to mount before and unmount after the backup.
+Empty disables dynamic mount.
+.RB [ \-\-dynamicMount ]
+.TP
+.B DEFAULT_REBOOT_SYSTEM
+Reboot the system at the end of the backup.
+Default: 0.
+.RB [ \-\-rebootSystem ]
+.SH PARTITIONS
+.TP
+.B DEFAULT_PARTITIONBASED_BACKUP
+Use partition oriented mode.
+Default: 0.
+.RB [ \-P ]
+.TP
+.B DEFAULT_PARTITIONS_TO_BACKUP
+Partitions to back up in partition oriented mode, e.g. \(dq1 2 5\(dq or
+\(dq*\(dq for all.
+Default: \(dq1 2\(dq.
+.RB [ \-T ]
+.TP
+.B DEFAULT_PARTITIONS_TO_RESTORE
+Partitions to restore from a partition oriented backup.
+Default: \(dq1 2\(dq.
+.RB [ \-T ]
+.TP
+.B DEFAULT_IGNORE_ADDITIONAL_PARTITIONS
+Ignore partitions with a number greater than 2 in normal mode.
+Default: 0.
+.RB [ \-\-ignoreAdditionalPartitions ]
+.SH BACKUP RETENTION
+.TP
+.B DEFAULT_KEEPBACKUPS
+Number of backups to keep.
+Ignored if smart recycle is enabled.
+Default: 3.
+.RB [ \-k ]
+.TP
+.B DEFAULT_KEEPBACKUPS_DD
+.TQ
+.B DEFAULT_KEEPBACKUPS_DDZ
+.TQ
+.B DEFAULT_KEEPBACKUPS_TAR
+.TQ
+.B DEFAULT_KEEPBACKUPS_TGZ
+.TQ
+.B DEFAULT_KEEPBACKUPS_RSYNC
+Number of backups to keep per backup type.
+0 means
+.B DEFAULT_KEEPBACKUPS
+is used.
+Default: 0.
+.RB [ \-\-keep_dd ", " \-\-keep_ddz ", " \-\-keep_tar ", " \-\-keep_tgz ", " \-\-keep_rsync ]
+.TP
+.B DEFAULT_SMART_RECYCLE
+Use the smart recycle strategy.
+Default: 0.
+.RB [ \-\-smartRecycle ]
+.TP
+.B DEFAULT_SMART_RECYCLE_DRYRUN
+Only report which backups smart recycle would delete.
+Set to 0 to actually delete them.
+Default: 1.
+.RB [ \-\-smartRecycleDryrun ]
+.TP
+.B DEFAULT_SMART_RECYCLE_OPTIONS
+Number of daily, weekly, monthly and yearly backups to keep.
+Default: \(dq7 4 12 1\(dq.
+.RB [ \-\-smartRecycleOptions ]
+.SH SERVICES
+.TP
+.B DEFAULT_STOPSERVICES
+Commands to stop services before the backup, separated by
+.BR && .
+\(dq:\(dq means no service has to be stopped.
+.RB [ \-o ]
+.TP
+.B DEFAULT_STARTSERVICES
+Commands to start services after the backup, separated by
+.BR && .
+\(dq:\(dq means no service has to be started.
+.RB [ \-a ]
+.TP
+.B DEFAULT_BEFORE_STOPSERVICES
+Commands to execute before the services are stopped, separated by
+.BR && .
+.TP
+.B DEFAULT_AFTER_STARTSERVICES
+Commands to execute after the services were started again, separated by
+.BR && .
+.SH RESTORE OPTIONS
+.TP
+.B DEFAULT_RESIZE_ROOTFS
+Resize the root filesystem to the size of the restore device.
+Default: 1.
+.RB [ \-\-resizeRootFS ]
+.TP
+.B DEFAULT_CHECK_FOR_BAD_BLOCKS
+Check for bad blocks when formatting the restore device.
+This takes a long time.
+Default: 0.
+.RB [ \-C ]
+.TP
+.B DEFAULT_RESTORE_REMINDER_INTERVAL
+Remind to test a restore every this many months.
+Default: 6.
+.TP
+.B DEFAULT_RESTORE_REMINDER_REPEAT
+Number of times the restore reminder is repeated.
+Default: 3.
+.SH CLONE
+.TP
+.B DEFAULT_CLONE_DEVICE
+Device to clone the system onto after the backup, e.g.
+.I /dev/sda
+or
+.IR /dev/mmcblk0 .
+.RB [ \-\-clone ]
+.TP
+.B DEFAULT_CLONE_PARTUUID
+PARTUUID of a partition of the clone device.
+.SH EXTENSIONS
+.TP
+.B DEFAULT_EXTENSIONS
+Space separated list of backup extensions to call.
+.RB [ \-N ]
+.TP
+.B DEFAULT_RESTORE_EXTENSIONS
+Space separated list of restore extensions to call.
+.SH MESSAGES AND LOGGING
+.TP
+.B DEFAULT_LANGUAGE
+Message language:
+.BR DE ,
+.BR EN ,
+.B FI
+or
+.BR FR .
+Empty selects the system language.
+.RB [ \-G ]
+.TP
+.B DEFAULT_MSG_LEVEL
+0 = minimal, 1 = detailed.
+Default: 0.
+.RB [ \-m ]
+.TP
+.B DEFAULT_LOG_OUTPUT
+Location of the log file:
+1 =
+.RI /var/log/raspiBackup/ hostname .log ,
+2 = backup directory,
+3 = current directory,
+or an absolute file name.
+Default: 2.
+.RB [ \-L ]
+.TP
+.B DEFAULT_VERBOSE
+Verbose output of the backup tools.
+Default: 0.
+.RB [ \-v ]
+.TP
+.B DEFAULT_TIMESTAMPS
+Prefix messages with timestamps.
+Default: 0.
+.RB [ \-\-timestamps ]
+.TP
+.B DEFAULT_SYSTEMSTATUS
+Write the system status into the debug log.
+Default: 0.
+.RB [ \-\-systemstatus ]
+.TP
+.B DEFAULT_COLORING
+Colorize console output
+.RB ( C )
+and/or eMails
+.RB ( M ).
+Default: CM.
+.RB [ \-\-coloring ]
+.TP
+.B DEFAULT_COLOR_CODES
+HTML and VT100 color codes for warnings and errors.
+Default: (\(dq#FF8000 33\(dq \(dq#FF0000 31\(dq).
+.TP
+.B DEFAULT_SKIP_DEPRECATED
+Comma separated list of versions for which no deprecation message is
+issued.
+.TP
+.B DEFAULT_OLD_REMINDER_REPEAT
+How often to inform about backups with an old naming scheme.
+Default: 5.
+.SH EMAIL NOTIFICATION
+.TP
+.B DEFAULT_EMAIL
+eMail address to send the completion status to.
+Empty disables eMail notifications.
+.RB [ \-e ]
+.TP
+.B DEFAULT_SENDER_EMAIL
+Sender address used with ssmtp and msmtp.
+.TP
+.B DEFAULT_MAIL_PROGRAM
+.BR mail ,
+.BR ssmtp ,
+.BR msmtp ,
+.B sendEmail
+or
+.BR mailext .
+Default: mail.
+.RB [ \-s ]
+.TP
+.B DEFAULT_EMAIL_PARMS
+Additional parameters for the eMail program.
+.RB [ \-E ]
+.TP
+.B DEFAULT_EMAIL_COLORING
+.B SUBJECT
+or
+.BR OPTION .
+Default: SUBJECT.
+.RB [ \-\-eMailColoring ]
+.TP
+.B DEFAULT_MAIL_ON_ERROR_ONLY
+Send eMails only in case of errors.
+Default: 0.
+.TP
+.B DEFAULT_NOTIFY_START
+Also notify when the backup starts (eMail and Telegram).
+Default: 0.
+.RB [ \-\-notifyStart ]
+.SH TELEGRAM NOTIFICATION
+.TP
+.B DEFAULT_TELEGRAM_TOKEN
+Telegram bot token.
+.RB [ \-\-telegramToken ]
+.TP
+.B DEFAULT_TELEGRAM_CHATID
+Target chat id.
+.RB [ \-\-telegramChatID ]
+.TP
+.B DEFAULT_TELEGRAM_THREADID
+Thread id for threaded chats.
+Empty means no thread is used.
+.RB [ \-\-telegramThreadID ]
+.TP
+.B DEFAULT_TELEGRAM_NOTIFICATIONS
+Notifications to send: any combination of
+.B S
+(success),
+.B F
+(failure),
+.B M
+(messages as file) and
+.B m
+(messages as text).
+Default: F.
+.RB [ \-\-telegramNotifications ]
+.SH PUSHOVER NOTIFICATION
+.TP
+.B DEFAULT_PUSHOVER_TOKEN
+Pushover application token.
+.TP
+.B DEFAULT_PUSHOVER_USER
+Pushover user key.
+.TP
+.B DEFAULT_PUSHOVER_DEVICE
+Pushover device.
+.TP
+.B DEFAULT_PUSHOVER_NOTIFICATIONS
+Notifications to send: any combination of
+.B S
+(success),
+.B F
+(failure) and
+.B M
+(messages).
+Default: F.
+.TP
+.B DEFAULT_PUSHOVER_SOUND_SUCCESS
+.TQ
+.B DEFAULT_PUSHOVER_SOUND_FAILURE
+Sound for success and failure notifications.
+.TP
+.B DEFAULT_PUSHOVER_PRIORITY_SUCCESS
+.TQ
+.B DEFAULT_PUSHOVER_PRIORITY_FAILURE
+Priority for success and failure notifications.
+Default: 0 and 1.
+.TP
+.B DEFAULT_PUSHOVER_ADDITIONAL_OPTIONS
+Additional API parameters, each prefixed with
+.BR \-\-form\-string ,
+e.g.
+.BR "\(dq\-\-form\-string ttl=3600 \-\-form\-string priority=0\(dq" .
+.SH SLACK NOTIFICATION
+.TP
+.B DEFAULT_SLACK_WEBHOOK_URL
+Slack webhook URL.
+.TP
+.B DEFAULT_SLACK_NOTIFICATIONS
+Notifications to send: any combination of
+.B S
+(success),
+.B F
+(failure) and
+.B M
+(messages).
+.SH OBSOLETE OPTIONS
+.TP
+.B DEFAULT_DEPLOYMENT_HOSTS
+Hosts which received the updated script with
+.BR "raspiBackup \-y" .
+Not used when raspiBackup is installed as Debian package.
+.SH EXAMPLE
+.nf
+DEFAULT_BACKUPPATH="/backup"
+DEFAULT_BACKUPTYPE="rsync"
+DEFAULT_KEEPBACKUPS=5
+DEFAULT_STOPSERVICES="systemctl stop nginx && systemctl stop mariadb"
+DEFAULT_STARTSERVICES="systemctl start mariadb && systemctl start nginx"
+DEFAULT_EMAIL="admin@example.com"
+DEFAULT_MAIL_PROGRAM="msmtp"
+.fi
+.SH FILES
+.TP
+.I /usr/local/etc/raspiBackup.conf
+System wide configuration.
+.TP
+.I /usr/local/etc/raspiBackup.conf.bak
+Previous configuration, saved by
+.BR \-\-updateConfig .
+.TP
+.I /usr/local/share/raspibackup/raspiBackup_{en,de}.conf
+Configuration templates with all options and their defaults.
+.SH SEE ALSO
+.BR raspiBackup (1),
+.BR raspiBackupInstallUI (1)
+.PP
+Full documentation:
+.UR https://raspibackup.linux-tips-and-tricks.de/en/home/
+.UE
+.SH AUTHOR
+framp at linux-tips-and-tricks dot de

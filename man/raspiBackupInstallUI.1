@@ -1,0 +1,166 @@
+.\" Manual page for raspiBackupInstallUI
+.\"
+.\" Copyright (c) 2015-2026 framp at linux-tips-and-tricks dot de
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.TH RASPIBACKUPINSTALLUI 1 "@DATE@" "raspiBackup @VERSION@" "raspiBackup Manual"
+.SH NAME
+raspiBackupInstallUI \- install and configure raspiBackup
+.SH SYNOPSIS
+.B raspiBackupInstallUI
+.br
+.B raspiBackupInstallUI
+.B \-e
+.RB [ \-t
+.BR crond | systemd ]
+.br
+.B raspiBackupInstallUI
+.BR \-i " [" \-e "] | " \-u " | " \-U
+.RB [ \-t
+.BR crond | systemd ]
+.br
+.B raspiBackupInstallUI
+.BR \-h | \-\-version
+.SH DESCRIPTION
+.B raspiBackupInstallUI
+is a menu driven tool to configure the most important options of
+.BR raspiBackup (1)
+and to set up regular backups.
+It writes the configuration file
+.I /usr/local/etc/raspiBackup.conf
+(see
+.BR raspiBackup.conf (5)).
+.PP
+Called without options it starts an interactive
+.BR whiptail (1)
+user interface with the following main menu entries:
+.TP
+.B M1 Language
+Select the language of the user interface and of
+.BR raspiBackup .
+.TP
+.B M2 Install components
+Install
+.B raspiBackup
+and the sample extensions.
+.TP
+.B M3 Configure major options
+Configure backup path, backup type, backup mode, number of backups to keep
+or smart recycle, services to stop and start, partitions to back up,
+compression, message detail, eMail notification, clone device and the
+regular backup (enable or disable it, weekday and time).
+.TP
+.B M4 Delete components
+Uninstall
+.B raspiBackup
+or the sample extensions.
+.TP
+.B M5 Update components
+Update
+.B raspiBackup
+or the installer.
+.TP
+.B M9 About and useful links
+Version information and links to the documentation.
+.PP
+Regular backups are run either by a
+.BR systemd (1)
+timer or by
+.BR cron (8).
+systemd is used if it is available, unless a cron configuration already
+exists or
+.B \-t
+is given.
+.PP
+.B raspiBackupInstallUI
+has to be run as root.
+.SH OPTIONS
+.TP
+.B \-e
+Unattended (re)install of the sample extensions.
+.TP
+.B \-h
+Display a short help text and exit.
+.TP
+.B \-i
+Unattended (re)install of
+.BR raspiBackup .
+.TP
+.BR \-t " crond" | systemd
+Use cron or systemd for regular backups.
+.TP
+.B \-u
+Unattended uninstall of
+.BR raspiBackup .
+.TP
+.B \-U
+Unattended update of
+.BR raspiBackupInstallUI .
+.TP
+.B \-\-version
+Display the version and exit.
+.SH NOTES
+If
+.B raspiBackup
+is installed as Debian package
+.BR raspibackup ,
+the options
+.BR \-i ,
+.B \-U
+and
+.B \-u
+are not available.
+Use
+.BR apt (8)
+to install, update and remove the package instead:
+.PP
+.RS
+.nf
+.B sudo apt update && sudo apt upgrade
+.B sudo apt remove raspibackup
+.fi
+.RE
+.PP
+When the package is removed, the systemd units and the cron file created
+by
+.B raspiBackupInstallUI
+are removed as well.
+.SH FILES
+.TP
+.I /usr/local/etc/raspiBackup.conf
+Configuration of
+.BR raspiBackup .
+.TP
+.I /usr/local/share/raspibackup/raspiBackup_{en,de}.conf
+Configuration templates.
+.TP
+.I /etc/systemd/system/raspiBackup.{service,timer}
+systemd units for regular backups.
+For other intervals than daily or weekly edit the timer manually.
+.TP
+.I /etc/cron.d/raspiBackup
+cron file for regular backups.
+.TP
+.I /usr/local/share/raspibackup/extensions
+Sample extensions.
+They are linked into
+.I /usr/local/bin
+when installed.
+.TP
+.I ./raspiBackupInstallUI.log
+Log file, written into the current directory.
+.SH SEE ALSO
+.BR raspiBackup (1),
+.BR raspiBackup.conf (5),
+.BR systemd.timer (5),
+.BR crontab (5)
+.PP
+Full documentation:
+.UR https://raspibackup.linux-tips-and-tricks.de/en/home/
+.UE
+.SH AUTHOR
+framp at linux-tips-and-tricks dot de

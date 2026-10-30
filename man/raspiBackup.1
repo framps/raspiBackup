@@ -1,0 +1,504 @@
+.\" Manual page for raspiBackup
+.\"
+.\" Copyright (c) 2013-2026 framp at linux-tips-and-tricks dot de
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.TH RASPIBACKUP 1 "@DATE@" "raspiBackup @VERSION@" "raspiBackup Manual"
+.SH NAME
+raspiBackup \- create and restore backups of a running Raspberry Pi
+.SH SYNOPSIS
+.B raspiBackup
+.RI [ option ]...
+.RI [ backupPath ]
+.br
+.B raspiBackup
+.B \-d
+.I restoreDevice
+.RI [ option ]...
+.I backup
+.br
+.B raspiBackup
+.BR \-h | \-\-help | \-\-version
+.SH DESCRIPTION
+.B raspiBackup
+creates full backups of a running Raspberry Pi system and restores them
+to an SD card, USB disk, NVMe or any other block device.
+Backups are created with
+.BR dd (1),
+.BR tar (1)
+or
+.BR rsync (1).
+rsync backups use hardlinks to the previous backup, so only new and
+changed files consume additional space.
+.PP
+Each backup is stored in a directory
+.IR backupPath / hostname / hostname \- type \-backup\- YYYYmmdd\-HHMMSS
+on the backup path.
+A configurable number of backups is kept; older ones are deleted
+automatically (see
+.B \-k
+and
+.BR \-\-smartRecycle ).
+.PP
+In
+.I normal mode
+the boot and root partition are saved.
+In
+.I partition oriented mode
+.RB ( \-P ,
+.BR \-T )
+any number of partitions can be saved and restored individually.
+.PP
+Services which modify data on disk (databases, web servers and the like)
+should be stopped during the backup; see
+.B \-o
+and
+.BR \-a .
+.PP
+.B raspiBackup
+has to be run as root.
+Defaults for all options are read from the configuration files described in
+.BR raspiBackup.conf (5).
+Command line options override the configuration.
+.PP
+Boolean options can be suffixed with
+.B +
+to enable or
+.B \-
+to disable them, e.g.
+.B \-z\-
+disables compression even when it is enabled in the configuration.
+Without suffix the option is enabled.
+.SH OPTIONS
+.SS General options
+.TP
+.BI \-b " blocksize"
+Block size used by
+.BR dd .
+Default: 1M.
+.TP
+.BI \-D " parameters"
+Additional parameters passed to
+.BR dd .
+.TP
+.BI \-e " address"
+eMail address to send the completion status to.
+.TP
+.BI \-E " parameters"
+Additional parameters passed to the eMail program.
+.TP
+.BI \-\-eMailColoring " mode"
+How warnings and errors are colored in eMails:
+.B SUBJECT
+or
+.BR OPTION .
+.TP
+.BI \-f " file"
+Use
+.I file
+as additional configuration file.
+.TP
+.BR \-\-forceEmail [ +|\- ]
+Always send an eMail, even if
+.B DEFAULT_MAIL_ON_ERROR_ONLY
+is set.
+.TP
+.BR \-g [ +|\- ]
+Display a progress bar.
+.TP
+.BI \-G " language"
+Message language:
+.BR EN ,
+.BR DE ,
+.B FI
+or
+.BR FR .
+Default: system language, falling back to English.
+.TP
+.BR \-h ", " \-\-help
+Display a short help text and exit.
+.TP
+.BI \-l " level"
+Log level:
+.B Off
+or
+.BR Debug .
+Default: Debug.
+.TP
+.BI \-L " target"
+Location of the log file:
+.B Varlog
+.RI ( /var/log/raspiBackup/ hostname .log ),
+.B Backup
+(the backup directory),
+.B Current
+(the current directory)
+or the absolute name of a file.
+Default: Backup.
+.TP
+.BI \-m " level"
+Message level:
+.B Minimal
+or
+.BR Detailed .
+Default: Minimal.
+.TP
+.BI \-M " description"
+Create a snapshot.
+.I description
+is appended to the backup directory name.
+.TP
+.BI \-N " extensions"
+Space separated list of extensions to call before and after the backup.
+See
+.B EXTENSIONS
+below.
+.TP
+.BR \-\-notifyStart [ +|\- ]
+Also send a notification when the backup starts.
+.TP
+.BI \-s " program"
+eMail program:
+.BR mail ,
+.BR ssmtp ,
+.BR msmtp ,
+.B sendEmail
+or
+.B mailext
+(eMail extension).
+Default: mail.
+.TP
+.BR \-\-systemstatus [ +|\- ]
+Write the system status (active services, open files) into the debug log.
+.TP
+.BI \-\-telegramToken " token"
+.TQ
+.BI \-\-telegramChatID " id"
+.TQ
+.BI \-\-telegramThreadID " id"
+.TQ
+.BI \-\-telegramNotifications " flags"
+Telegram notification settings.
+See the corresponding
+.B DEFAULT_TELEGRAM_*
+options in
+.BR raspiBackup.conf (5).
+.TP
+.BR \-\-timestamps [ +|\- "], " \-\-ts [ +|\- ]
+Prefix all messages with a timestamp.
+.TP
+.BI \-u " excludes"
+Additional excludes for tar and rsync backups.
+The value has to be valid for the backup tool used, e.g.
+.BR "\(dq\-\-exclude=/home/pi/.cache \-\-exclude=/var/tmp\(dq" .
+.TP
+.BR \-\-unsupportedEnvironment ", " \-\-use
+Run in an environment which is not supported (not a Raspberry Pi or
+an operating system other than Raspberry Pi OS).
+Use at your own risk.
+.TP
+.BR \-\-updateConfig [ +|\- ]
+Merge new options of the current release into the existing configuration
+file
+.IR /usr/local/etc/raspiBackup.conf .
+The old configuration is saved as
+.IR raspiBackup.conf.bak .
+.TP
+.BR \-v [ +|\- ]
+Verbose output of the backup tools.
+.TP
+.B \-\-version
+Display version, commit and commit date and exit.
+.TP
+.B \-Y
+Answer all questions with yes.
+Use with care!
+.SS Backup options
+.TP
+.BI \-a " commands"
+Commands to start services after the backup, separated by
+.BR && .
+Use
+.B \(dq:\(dq
+if no service has to be started.
+.TP
+.BR \-B [ +|\- ]
+Save the boot partition with
+.B tar
+instead of
+.BR dd .
+.TP
+.BI \-\-bootDevice " device"
+Device of the boot partition, if it cannot be detected automatically.
+.TP
+.BR \-c [ +|\- ]
+Skip the check whether the backup path is a mounted remote or external
+partition.
+.TP
+.BI \-\-clone " device"
+Clone the running system onto
+.I device
+after the backup.
+.TP
+.BR \-F [ +|\- ]
+Simulate the backup.
+No backup is created.
+.TP
+.BI \-\-dynamicMount " partition"
+Mount
+.I partition
+(a device or a mountpoint defined in
+.IR /etc/fstab )
+before the backup and unmount it afterwards.
+.TP
+.BR \-\-ignoreAdditionalPartitions [ +|\- ]
+In normal mode, ignore partitions with a number greater than 2.
+.TP
+.B \-\-ignoreMissingPartitions
+Allow to back up fewer partitions than were saved in the previous
+partition oriented backup.
+.TP
+.BI \-k " number"
+Number of backups to keep.
+Ignored if smart recycle is enabled.
+Default: 3.
+.TP
+.BI \-\-keep_dd " number"
+.TQ
+.BI \-\-keep_ddz " number"
+.TQ
+.BI \-\-keep_tar " number"
+.TQ
+.BI \-\-keep_tgz " number"
+.TQ
+.BI \-\-keep_rsync " number"
+Number of backups to keep for a specific backup type.
+0 means the value of
+.B \-k
+is used.
+.TP
+.BI \-o " commands"
+Commands to stop services before the backup, separated by
+.BR && .
+Use
+.B \(dq:\(dq
+if no service has to be stopped.
+.TP
+.BI \-p " path"
+Backup path.
+Overrides the positional
+.I backupPath
+argument and
+.BR DEFAULT_BACKUPPATH .
+.TP
+.BR \-P [ +|\- ]
+Use partition oriented mode.
+.TP
+.BR \-\-rebootSystem [ +|\- ]
+Reboot the system when the backup has finished.
+.TP
+.BR \-\-smartRecycle [ +|\- ]
+Use the smart recycle strategy to decide which backups are kept.
+.TP
+.BR \-\-smartRecycleDryrun [ +|\- ]
+Only report which backups smart recycle would delete.
+Enabled by default; disable it with
+.B \-\-smartRecycleDryrun\-
+to actually delete backups.
+.TP
+.BI \-\-smartRecycleOptions " \(dqd w m y\(dq"
+Number of daily, weekly, monthly and yearly backups to keep with smart
+recycle.
+Default: \(dq7 4 12 1\(dq.
+.TP
+.BI \-t " type"
+Backup type:
+.BR dd ,
+.B tar
+or
+.BR rsync .
+Default: rsync.
+.TP
+.BI \-T " partitions"
+Partitions to back up in partition oriented mode, e.g.
+.B \(dq1 2 5\(dq
+or
+.B \(dq*\(dq
+for all partitions.
+Implies
+.BR \-P .
+.TP
+.BR \-\-tarCompressionTool ", " \-\-tct " \fItool\fR"
+Compress tar backups with
+.I tool
+instead of gzip:
+.BR bzip2 ,
+.BR gzip ,
+.BR lzip ,
+.BR lzma ,
+.BR lzop ,
+.BR xz ,
+.B zstd
+or
+.BR lz4 .
+Ignored if
+.B \-z
+is used.
+.TP
+.BR \-\-tarCompressionToolOptions ", " \-\-tcto " \fIoptions\fR"
+Options passed to the tar compression tool.
+.TP
+.BR \-x [ +|\- ]
+Don't save the boot partition with
+.B dd
+in rsync and tar backups.
+.TP
+.BR \-z [ +|\- ]
+Compress dd and tar backups.
+.SS Restore options
+.TP
+.BI \-d " device"
+Restore the backup onto
+.IR device ,
+e.g.
+.IR /dev/sda .
+All data on
+.I device
+will be lost.
+.TP
+.BR \-0 [ +|\- ]
+Don't partition the restore device.
+The existing partitions are used.
+.TP
+.BR \-00 [ +|\- ]
+Don't partition and don't format the restore device (rsync backups only).
+.TP
+.BR \-1 [ +|\- ]
+Ignore formatting errors on the restore device.
+.TP
+.BR \-C [ +|\- ]
+Check for bad blocks when formatting the restore device.
+This takes a long time.
+.TP
+.BI \-R " partition"
+Restore the root partition onto
+.I partition
+(e.g.
+.IR /dev/sdb1 )
+and the boot partition onto
+.BR \-d .
+.TP
+.BR \-\-resizeRootFS [ +|\- "], " \-\-resizeLastPartitionFS [ +|\- ]
+Resize the root filesystem (or the last partition in partition oriented
+mode) to the size of the restore device.
+Enabled by default.
+.TP
+.BI \-T " partitions"
+Partitions to restore from a partition oriented backup, e.g.
+.B \(dq1 2\(dq
+or
+.B \(dq*\(dq
+for all partitions.
+.TP
+.BR \-\-updateUUIDs [ +|\- ]
+Assign new UUIDs and PARTUUIDs to the restored partitions, so the
+restored device can be used in parallel to the original one.
+Enabled by default.
+.SH EXTENSIONS
+Extensions are bash scripts which are called at specific points of a backup
+or restore.
+An extension named
+.I name
+consists of the files
+.RI /usr/local/bin/raspiBackup_ name _pre.sh
+and
+.RI /usr/local/bin/raspiBackup_ name _post.sh .
+They are enabled with
+.B \-N
+or
+.B DEFAULT_EXTENSIONS
+(backup) and
+.B DEFAULT_RESTORE_EXTENSIONS
+(restore).
+.PP
+Sample extensions which report memory usage, CPU temperature and disk
+usage are shipped in
+.I /usr/local/share/raspibackup/extensions
+and can be enabled with
+.BR raspiBackupInstallUI (1).
+.SH FILES
+.TP
+.I /usr/local/etc/raspiBackup.conf
+System wide configuration.
+.TP
+.I ~/.raspiBackup.conf
+Configuration of the calling user.
+.TP
+.I ./.raspiBackup.conf
+Configuration in the current directory.
+.TP
+.I /usr/local/share/raspibackup/raspiBackup_{en,de}.conf
+Configuration templates.
+.TP
+.I /usr/local/lib/systemd/system/raspiBackup.{service,timer}
+systemd units to run regular backups.
+.TP
+.IR /var/log/raspiBackup/ hostname .log
+Log file if the log target is
+.BR Varlog .
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 101\-148
+An error occurred.
+The message issued before termination explains the cause, for example
+107 (invalid parameter), 108 (missing files), 116 (restore failed),
+120 (missing commands) or 131 (mount failed).
+.SH EXAMPLES
+Create an rsync backup on
+.I /backup
+and keep the last 5 backups:
+.PP
+.RS
+.B sudo raspiBackup \-t rsync \-k 5 /backup
+.RE
+.PP
+Create a backup and stop and start services around it:
+.PP
+.RS
+.nf
+.B sudo raspiBackup \-o \(dqsystemctl stop nginx && systemctl stop mariadb\(dq \e
+.B \ \ \ \ \-a \(dqsystemctl start mariadb && systemctl start nginx\(dq
+.fi
+.RE
+.PP
+Restore a backup to
+.IR /dev/sda :
+.PP
+.RS
+.B sudo raspiBackup \-d /dev/sda /backup/raspberrypi/raspberrypi\-rsync\-backup\-20261030\-120000
+.RE
+.PP
+Create a snapshot before an upgrade:
+.PP
+.RS
+.B sudo raspiBackup \-M \(dqbefore upgrade\(dq
+.RE
+.SH SEE ALSO
+.BR raspiBackup.conf (5),
+.BR raspiBackupInstallUI (1),
+.BR dd (1),
+.BR tar (1),
+.BR rsync (1)
+.PP
+Full documentation:
+.UR https://raspibackup.linux-tips-and-tricks.de/en/home/
+.UE
+.SH AUTHOR
+framp at linux-tips-and-tricks dot de
