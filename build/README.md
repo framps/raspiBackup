@@ -91,6 +91,61 @@ Notes:
 Betas are built and published like a release but with a version like `0.7.5-beta1`,
 see [section 3](#3-beta-versions).
 
+### Version numbers
+
+| Purpose                           | `VERSION`         | Debian version     | Where                                   |
+|-----------------------------------|-------------------|--------------------|-----------------------------------------|
+| beta, release candidate           | `0.7.6-beta1`     | `0.7.6~beta1`      | suite `beta`, installed only on request |
+| release                           | `0.7.5`           | `0.7.5`            | suite `stable`                          |
+| hotfix for all users              | `0.7.5-m1`        | `0.7.5-m1`         | suite `stable`                          |
+| temporary fix for one user only   | -                 | `0.7.5-m1~u972.1`  | not in the repository, see below        |
+
+They sort in this order, so every version is replaced by the next public one:
+
+```
+0.7.5 < 0.7.5-m1~u972.1 < 0.7.5-m1~u972.2 < 0.7.5-m1 < 0.7.6~beta1 < 0.7.6
+```
+
+- Use `~` only for versions which have to sort **before** the version in front of it:
+  pre-releases (`~alpha`, `~beta`, `~rc`) and fixes for one user.
+  A `~` sorts before everything, even before the end of the version.
+- Behind the `~` the text is compared alphabetically. That's why `alpha < beta < rc` works,
+  but `0.7.6~m972` would sort between `0.7.6~beta1` and `0.7.6~rc1`. Use only `alpha`, `beta`
+  and `rc` for pre-releases.
+- `buildRepo.sh` puts every version containing `~` into the suite `beta`.
+
+### Fix for one user only
+
+Every package in the repository reaches all users of its suite. So a fix for one user isn't
+added to the repository. The user gets the `.deb` file instead.
+
+Name it as pre-release of the next public hotfix plus `u<issue>.<n>`, e.g. `0.7.5-m1~u972.1`
+if `0.7.5` is the current release. Then it
+
+- upgrades the installed release `0.7.5`,
+- is replaced by `0.7.5-m1~u972.2` if the first fix wasn't sufficient,
+- is replaced automatically by the next public hotfix `0.7.5-m1` or release `0.7.6` on the
+  next `apt-get upgrade`, because the user's system still uses the repository.
+
+Don't use `0.7.5+u972`: it sorts after the hotfix `0.7.5-m1`, so the user would never get it.
+
+```
+# Build without adding it to build/repo. The argument is the Debian version.
+cd build
+./build.sh --no-repo 0.7.5-m1~u972.1
+# -> deb/raspibackup_0.7.5-m1~u972.1.deb and .sig, send both to the user
+
+# The user installs it with
+sudo apt install ./raspibackup_0.7.5-m1~u972.1.deb
+
+# and returns to the release before the next version is published with
+sudo apt install raspibackup=0.7.5
+```
+
+The argument of `build.sh` sets only the version of the package. To show it in the
+messages of raspiBackup too, set `VERSION_RASPIBACKUP="0.7.5-m1~u972.1"` in `build.conf`
+for this build and remove it afterwards.
+
 Useful commands:
 
 ```
