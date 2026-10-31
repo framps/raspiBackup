@@ -671,6 +671,7 @@ assertRc 0 "purge" apt-get purge -y "$PACKAGE_NAME"
 noteInstalled "$(installedVersion)"
 [[ -z "$(installedVersion)" ]] && pass "$PACKAGE_NAME removed" || fail "$PACKAGE_NAME still installed: $(installedVersion)"
 [[ ! -e "$CONFIG" ]] && pass "$CONFIG removed" || fail "$CONFIG still exists"
+[[ ! -e /var/lib/raspiBackup ]] && pass "/var/lib/raspiBackup removed" || fail "/var/lib/raspiBackup still exists"
 
 #######################################################################################################################
 # result

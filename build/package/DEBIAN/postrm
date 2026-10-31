@@ -22,6 +22,8 @@ case "${1:-}" in
     purge)
         # configuration created by postinst and raspiBackupConfig
         rm -f "${DIR_ETC}/raspiBackup.conf" "${DIR_ETC}/raspiBackup.conf~"
+        # state of raspiBackup and raspiBackupConfig, e.g. the time of the last apt-get update
+        rm -rf /var/lib/raspiBackup
         ;;
 esac
 
