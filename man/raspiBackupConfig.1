@@ -14,7 +14,7 @@ raspiBackupConfig \- configure, install and uninstall raspiBackup
 .B raspiBackupConfig
 .br
 .B raspiBackupConfig
-.BR \-i " | " \-m " | " \-u " | " \-U
+.BR \-i " | " \-m " | " \-R " | " \-u " | " \-U
 .RB [ \-t
 .BR crond | systemd ]
 .br
@@ -116,6 +116,29 @@ Nothing is done if the configuration is up to date or
 isn't installed as Debian package.
 The package calls this option when it's updated.
 .TP
+.B \-R
+Unattended revert of
+.B raspiBackup
+with
+.BR apt-get (8)
+to the previous release, like the entry
+.B Revert to previous release
+of the update menu.
+The previous release is held, i.e.
+.B apt upgrade
+doesn't update it until it's updated with
+.B \-U
+or the update menu.
+If the installed release is already held because it was reverted,
+.B \-R
+asks whether it should be reverted again.
+The configuration isn't reverted.
+Only available if
+.B raspiBackup
+is installed as Debian package
+.BR raspibackup .
+There is no previous release for a beta.
+.TP
 .BR \-t " crond" | systemd
 Use cron or systemd for regular backups.
 .TP
@@ -132,8 +155,11 @@ Unattended update of
 with
 .BR apt-get (8)
 to the latest version.
-A version kept by reverting to the previous version in the update menu
-isn't updated.
+An installed beta is updated to the latest beta or to the release which follows it.
+If the installed version is held because it was reverted in the update menu or with
+.BR \-R ,
+.B \-U
+asks whether it should be updated anyway.
 Afterwards new options of the configuration template are added to
 .I /usr/local/etc/raspiBackup.conf
 and options which no longer exist are commented out.
@@ -148,6 +174,15 @@ is updated.
 .TP
 .B \-\-version
 Display the version and exit.
+.PP
+The questions of
+.B \-R
+and
+.B \-U
+are answered with no if
+.B raspiBackupConfig
+isn't run in a terminal, e.g. by
+.BR cron (8).
 .SH NOTES
 If
 .B raspiBackup
@@ -181,7 +216,7 @@ are removed as well.
 All actions of
 .BR raspiBackupInstall.sh ,
 .BR "raspiBackupConfig \-i" ,
-.BR \-u " and " \-U
+.BR \-R ", " \-u " and " \-U
 and of the update menu can be done manually with
 .BR apt (8)
 as well.

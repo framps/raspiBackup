@@ -1449,11 +1449,11 @@ MSG_FR[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 est déj�
 MSG_ZH[$MSG_PACKAGE_UP_TO_DATE]="${MSG_PRF}0041I: $RASPIBACKUP_NAME %1 已是最新版本."
 
 MSG_PACKAGE_HELD=$((SCNT++))
-MSG_EN[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME was reverted to %1 and is kept at this version. Use the update menu of $MYSELF to update it."
-MSG_DE[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME wurde auf %1 zurückgesetzt und bleibt auf dieser Version. Benutze das Update Menü von $MYSELF um es zu aktualisieren."
-MSG_FI[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME palautettiin versioon %1 ja pidetään tässä versiossa. Päivitä se $MYSELF:n versiovalikosta."
-MSG_FR[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME a été ramené à %1 et reste à cette version. Utilisez le menu de version de $MYSELF pour le mettre à jour."
-MSG_ZH[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 请使用 $MYSELF 的版本菜单进行更新."
+MSG_EN[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME was reverted to %1 and is kept at this version. Use the update menu or option -U of $MYSELF to update it."
+MSG_DE[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME wurde auf %1 zurückgesetzt und bleibt auf dieser Version. Benutze das Update Menü oder die Option -U von $MYSELF um es zu aktualisieren."
+MSG_FI[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME palautettiin versioon %1 ja pidetään tässä versiossa. Päivitä se $MYSELF:n versiovalikosta tai valitsimella -U."
+MSG_FR[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME a été ramené à %1 et reste à cette version. Utilisez le menu de version ou l'option -U de $MYSELF pour le mettre à jour."
+MSG_ZH[$MSG_PACKAGE_HELD]="${MSG_PRF}0042W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 请使用 $MYSELF 的版本菜单或选项 -U 进行更新."
 
 MSG_PACKAGE_NOT_AVAILABLE=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_NOT_AVAILABLE]="(Not available)"
@@ -1515,6 +1515,49 @@ MSG_FR[$MSG_CONFIG_MERGE_PENDING]="${MSG_PRF}0047I: La configuration %1 est en v
 Mettre à jour la configuration maintenant ? Les nouvelles options sont ajoutées, les options obsolètes sont mises en commentaire et les valeurs existantes sont conservées."
 MSG_ZH[$MSG_CONFIG_MERGE_PENDING]="${MSG_PRF}0047I: 配置 %1 的版本为 %2, 但已安装的配置模板版本为 %3.${NL}${NL}\
 现在更新配置吗? 将添加新选项, 注释掉过时的选项, 并保留现有的值."
+
+
+MSG_PACKAGE_NO_PREVIOUS=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_NO_PREVIOUS]="${MSG_PRF}0048E: No previous release of $RASPIBACKUP_NAME %1 available."
+MSG_DE[$MSG_PACKAGE_NO_PREVIOUS]="${MSG_PRF}0048E: Kein vorheriges Release von $RASPIBACKUP_NAME %1 verfügbar."
+MSG_FI[$MSG_PACKAGE_NO_PREVIOUS]="${MSG_PRF}0048E: $RASPIBACKUP_NAME %1:lle ei ole saatavilla edellistä julkaisua."
+MSG_FR[$MSG_PACKAGE_NO_PREVIOUS]="${MSG_PRF}0048E: Aucune version précédente de $RASPIBACKUP_NAME %1 disponible."
+MSG_ZH[$MSG_PACKAGE_NO_PREVIOUS]="${MSG_PRF}0048E: $RASPIBACKUP_NAME %1 没有可用的上一个版本."
+
+MSG_PACKAGE_REQUIRED=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_REQUIRED]="${MSG_PRF}0049E: Option %1 requires $RASPIBACKUP_NAME to be installed as Debian package $PACKAGE_NAME."
+MSG_DE[$MSG_PACKAGE_REQUIRED]="${MSG_PRF}0049E: Option %1 erfordert, dass $RASPIBACKUP_NAME als Debian Paket $PACKAGE_NAME installiert ist."
+MSG_FI[$MSG_PACKAGE_REQUIRED]="${MSG_PRF}0049E: Valinta %1 edellyttää, että $RASPIBACKUP_NAME on asennettu Debian-pakettina $PACKAGE_NAME."
+MSG_FR[$MSG_PACKAGE_REQUIRED]="${MSG_PRF}0049E: L'option %1 nécessite que $RASPIBACKUP_NAME soit installé en tant que paquet Debian $PACKAGE_NAME."
+MSG_ZH[$MSG_PACKAGE_REQUIRED]="${MSG_PRF}0049E: 选项 %1 要求 $RASPIBACKUP_NAME 以Debian软件包 $PACKAGE_NAME 的形式安装."
+
+MSG_PACKAGE_HELD_UPDATE=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME was reverted to %1 and is kept at this version. Update it to the latest version anyway?"
+MSG_DE[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME wurde auf %1 zurückgesetzt und bleibt auf dieser Version. Soll es trotzdem auf die neueste Version aktualisiert werden?"
+MSG_FI[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME palautettiin versioon %1 ja pidetään tässä versiossa. Päivitetäänkö se silti uusimpaan versioon?"
+MSG_FR[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME a été ramené à %1 et reste à cette version. Le mettre quand même à jour vers la dernière version ?"
+MSG_ZH[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 仍要更新到最新版本吗?"
+
+MSG_PACKAGE_HELD_REVERT=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME was already reverted to %1 and is kept at this version. Revert it to %2 anyway?"
+MSG_DE[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME wurde bereits auf %1 zurückgesetzt und bleibt auf dieser Version. Soll es trotzdem auf %2 zurückgesetzt werden?"
+MSG_FI[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME palautettiin jo versioon %1 ja pidetään tässä versiossa. Palautetaanko se silti versioon %2?"
+MSG_FR[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME a déjà été ramené à %1 et reste à cette version. Le ramener quand même à %2 ?"
+MSG_ZH[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 仍要回退到 %2 吗?"
+
+MSG_QUERY_CHARS_YES_NO=$((SCNT++))
+MSG_EN[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
+MSG_DE[$MSG_QUERY_CHARS_YES_NO]="(j/N)"
+MSG_FI[$MSG_QUERY_CHARS_YES_NO]="(k/E)"
+MSG_FR[$MSG_QUERY_CHARS_YES_NO]="(o/N)"
+MSG_ZH[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
+
+MSG_ANSWER_CHARS_YES=$((SCNT++))
+MSG_EN[$MSG_ANSWER_CHARS_YES]="Yy"
+MSG_DE[$MSG_ANSWER_CHARS_YES]="JjYy"
+MSG_FI[$MSG_ANSWER_CHARS_YES]="KkYy"
+MSG_FR[$MSG_ANSWER_CHARS_YES]="OoYy"
+MSG_ZH[$MSG_ANSWER_CHARS_YES]="Yy"
 
 
 declare -A MENU_EN
@@ -1928,11 +1971,11 @@ MENU_FR[$MENU_PACKAGE_PREVIOUS]='"P2" "Revenir à la version précédente"'
 MENU_ZH[$MENU_PACKAGE_PREVIOUS]='"P2" "回退到上一个版本"'
 
 MENU_PACKAGE_BETA=$((MCNT++))
-MENU_EN[$MENU_PACKAGE_BETA]='"P3" "Install available beta"'
-MENU_DE[$MENU_PACKAGE_BETA]='"P3" "Installiere verfügbare Beta"'
-MENU_FI[$MENU_PACKAGE_BETA]='"P3" "Asenna saatavilla oleva beta"'
-MENU_FR[$MENU_PACKAGE_BETA]='"P3" "Installer la bêta disponible"'
-MENU_ZH[$MENU_PACKAGE_BETA]='"P3" "安装可用的测试版"'
+MENU_EN[$MENU_PACKAGE_BETA]='"P3" "Install or update beta"'
+MENU_DE[$MENU_PACKAGE_BETA]='"P3" "Installiere oder aktualisiere Beta"'
+MENU_FI[$MENU_PACKAGE_BETA]='"P3" "Asenna tai päivitä beta"'
+MENU_FR[$MENU_PACKAGE_BETA]='"P3" "Installer ou mettre à jour la bêta"'
+MENU_ZH[$MENU_PACKAGE_BETA]='"P3" "安装或更新测试版"'
 
 MENU_PACKAGE_REVERT_BETA=$((MCNT++))
 MENU_EN[$MENU_PACKAGE_REVERT_BETA]='"P4" "Revert from beta to current release"'
@@ -2423,6 +2466,38 @@ function package_version_execute() { # installs PACKAGE_TARGET_VERSION, holds it
 
 	logExit
 
+}
+
+function package_revert_execute() { # installs the previous release and holds it, used by option -R
+
+	logEntry
+
+	package_index_update_execute
+	parsePackageVersions
+
+	if [[ -z "$PACKAGE_VERSION_PREVIOUS" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PACKAGE_NO_PREVIOUS "$PACKAGE_VERSION_INSTALLED"
+		logExit
+		exit 1
+	fi
+
+	if isPackageHeld && ! askYesNo $MSG_PACKAGE_HELD_REVERT "$PACKAGE_VERSION_INSTALLED" "$PACKAGE_VERSION_PREVIOUS"; then
+		writeToConsole $MSG_PACKAGE_HELD "$PACKAGE_VERSION_INSTALLED"
+		logExit
+		exit 0
+	fi
+
+	PACKAGE_TARGET_VERSION="$PACKAGE_VERSION_PREVIOUS"
+	PACKAGE_TARGET_HOLD=1
+	package_version_execute
+	writeToConsole $MSG_PACKAGE_HELD "$PACKAGE_TARGET_VERSION"
+
+	logExit
+
+}
+
+function isPackageHeld() {
+	apt-mark showhold "$PACKAGE_NAME" 2>>"$LOG_FILE" | grep -qx "$PACKAGE_NAME"
 }
 
 function packageVersions() { # suite - versions of the package available in the suite
@@ -5179,10 +5254,17 @@ function package_upgrade_execute() { # updates the installed package to the late
 	local oldVersion newVersion
 	oldVersion="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
 
-	if apt-mark showhold "$PACKAGE_NAME" 2>>"$LOG_FILE" | grep -qx "$PACKAGE_NAME"; then
-		writeToConsole $MSG_PACKAGE_HELD "$oldVersion"
-		logExit
-		return
+	if isPackageHeld; then
+		if ! askYesNo $MSG_PACKAGE_HELD_UPDATE "$oldVersion"; then
+			writeToConsole $MSG_PACKAGE_HELD "$oldVersion"
+			logExit
+			return
+		fi
+		if ! executeApt apt-mark unhold "$PACKAGE_NAME"; then
+			unrecoverableError $MSG_PACKAGE_HOLD_FAILED "$PACKAGE_NAME"
+			logExit
+			return
+		fi
 	fi
 
 	package_index_update_execute
@@ -6010,6 +6092,14 @@ function unattendedInstall() {
 		if (( PACKAGE_MODE )); then
 			config_merge_package_execute
 		fi
+	elif (( MODE_REVERT )); then
+		if (( ! PACKAGE_MODE )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PACKAGE_REQUIRED "-R"
+			exit 1
+		fi
+		check4InternetAvailable
+		package_revert_execute
+		config_merge_package_execute
 	elif (( PACKAGE_MODE )) && (( MODE_UPDATE )); then
 		check4InternetAvailable
 		package_upgrade_execute
@@ -6054,51 +6144,31 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF ( -i | -m | -u | -U | -t [crond|systemd] )"
+	echo "$MYSELF ( -i | -m | -R | -u | -U | -t [crond|systemd] )"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
 	echo "-m: add new options of the config template of package $PACKAGE_NAME to the config (called by the package after an update)"
-	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME"
+	echo "-R: unattended revert of $RASPIBACKUP_NAME with apt to the previous release, which is held until it's updated with -U or the update menu. Asks before reverting a held release again"
+	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME. Asks before updating a held release"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME with apt"
 	echo "-t: use either crond or systemd for backup timer"
 }
 
-function askYesNo() { # message message_parms
+function askYesNo() { # messagenumber messageparms - asks on the console, default is no, true if answered with yes
 
-	local yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
-	local addtlMsg=0
+	local q="$(getMessageText "$@") $(getMessageText $MSG_QUERY_CHARS_YES_NO)"
+	local answer=""
 
-	if [[ $# > 1 ]]; then
-		local m="$1"
-		shift
-		addtlMsg=1
-		local args="$@"
-	fi
-
-	local answer
-
-	if (( $addtlMsg )); then
-		noNL=1
-		writeToConsole $MSG_LEVEL_MINIMAL $m "$args" "$yes_no"
+	echo "MSG: $q" >>"$LOG_FILE"
+	if [[ -t 0 ]]; then
+		read -r -p "$q " answer
 	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
+		echo "$q"	# no terminal to ask, e.g. called by cron, so answer no
 	fi
+	logItem "Answer: $answer"
 
-	if (( $NO_YES_QUESTION )); then
-		answer=$(getMessage $MSG_ANSWER_CHARS_YES)
-	else
-		read answer
-	fi
-
-	answer=${answer:0:1}	# first char only
-	answer=${answer:-"n"}	# set default no
-
-	local yes=$(getMessage $MSG_ANSWER_CHARS_YES)
-	if [[ ! $yes =~ $answer ]]; then
-		return 1
-	else
-		return 0
-	fi
+	answer="${answer:0:1}"
+	[[ -n "$answer" && "$(getMessageText $MSG_ANSWER_CHARS_YES)" == *"$answer"* ]]
 }
 
 CALLING_USER="$(findUser)"
@@ -6117,6 +6187,7 @@ MODE_UNATTENDED=0
 MODE_UNINSTALL=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
+MODE_REVERT=0 # revert the package to the previous release and hold it
 MODE_MERGE=0 # merge the config template of the package into the config, called by postinst
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 
@@ -6140,7 +6211,7 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?musUi" opt; do
+while getopts "t:h?musUiR" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -6150,6 +6221,9 @@ while getopts "t:h?musUi" opt; do
 		 MODE_UNATTENDED=1
        ;;
     U) MODE_UPDATE=1
+		 MODE_UNATTENDED=1
+		 ;;
+    R) MODE_REVERT=1
 		 MODE_UNATTENDED=1
 		 ;;
     m) MODE_MERGE=1

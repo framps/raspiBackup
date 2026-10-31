@@ -182,10 +182,19 @@ the apt commands described below:
 |--------|-------------|--------------|
 | `P1` Update current release | `apt-get install raspibackup=<latest stable>` | a newer release exists |
 | `P2` Revert to previous release | `apt-get install --allow-downgrades raspibackup=<previous>` and `apt-mark hold` | a release is installed and an older one exists |
-| `P3` Install available beta | `apt-get install raspibackup=<latest beta>` | a newer beta exists |
+| `P3` Install or update beta | `apt-get install raspibackup=<latest beta>` | a newer beta exists |
 | `P4` Revert from beta to current release | `apt-get install --allow-downgrades raspibackup=<latest stable>` | a beta is installed |
 
 Every option removes a hold first. Afterwards `raspiBackupConfig` restarts with the installed version.
+
+Without the menu:
+
+- `sudo raspiBackupConfig -U` updates the installed release, or an installed beta to the latest
+  beta or the release which follows it, like `P1` and `P3`.
+- `sudo raspiBackupConfig -R` reverts to the previous release and holds it, like `P2`.
+
+If the installed version is held, both options ask before they change it. Without a terminal
+(e.g. cron) the answer is no.
 
 Updates afterwards:
 
