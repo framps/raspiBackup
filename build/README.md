@@ -219,7 +219,10 @@ The configuration isn't managed by dpkg (no conffile). Installation, update and 
 never change it, so there are no questions about it during `apt-get upgrade`.
 A configuration of a former installation with the curl script is used as it is.
 Before every installation the configuration is saved as `raspiBackup.conf~`.
-New configuration options are added with `sudo raspiBackup --updateConfig`.
+After an installation, update or version change `raspiBackupConfig` (menu and `-U`) adds new options
+of the template `/usr/local/share/raspibackup/raspiBackup_{en,de}.conf` to the configuration and
+comments out options which no longer exist. Existing values aren't changed. The configuration
+before the merge is saved as `raspiBackup.conf.v<config version>`. A downgrade doesn't change it.
 
 ---
 
@@ -337,7 +340,7 @@ apt asks to confirm the downgrade. Afterwards `apt-get upgrade` doesn't install 
 more until a beta is installed again with `-t beta`.
 
 The configuration `/usr/local/etc/raspiBackup.conf` isn't reverted. If the beta updated
-it (`raspiBackup --updateConfig`), the newer configuration is used by the release:
+it (`raspiBackupConfig` merges new options), the newer configuration is used by the release:
 new options are ignored and deleted options get their built-in default. Only a changed
 value of an option deleted by the beta is lost, the release uses its default then.
 The configuration before the last installation is saved as `raspiBackup.conf~`.
@@ -370,18 +373,9 @@ The configuration `/usr/local/etc/raspiBackup.conf` isn't changed by a downgrade
 Before every installation the previous configuration is saved as `raspiBackup.conf~` in
 the same directory.
 
-**Don't use `raspiBackup -U` or `raspiBackup -V` with the package.**
-raspiBackup still contains its own update (`-U`) and revert (`-V`) code from the time it was
-installed with the curl script:
-
-- `-U` downloads `raspiBackup.sh` from the website and replaces the script without signature
-  verification. That bypasses apt, and the next `apt-get upgrade` replaces it again.
-- `-V` looks for saved copies `raspiBackup.<version>.sh` next to the script. The package
-  installs `/usr/local/bin/raspiBackup` without `.sh` and doesn't create such copies,
-  so there is nothing to revert to.
-
-Use apt as described above instead. TODO: raspiBackup should detect a package installation
-(`dpkg -S "$0"`) and point to apt for `-U` and `-V`.
+raspiBackup doesn't update itself or its configuration any more. The options `-U`, `-S`, `-V`
+and `--updateConfig` only print a message pointing to `raspiBackupConfig`, which updates, downgrades
+and reverts the package with apt and merges the configuration.
 
 ### Maintainer
 

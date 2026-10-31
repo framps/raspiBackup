@@ -46,9 +46,7 @@ MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use l
 MYNAME=${MYSELF%.*}
 RASPIBACKUP_ABS_LOCATION="$0"								# to invoke myself for clone
 VERSION="0.7.4-m_972"   									# -beta, -hotfix or -dev suffixes possible
-VERSION_SCRIPT_CONFIG="0.1.11"           					# required config version for script
 
-VERSION_VARNAME="VERSION"									# has to match above var names
 VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in config files
 
 BRANCH="${URLBRANCH:-master}"
@@ -123,7 +121,6 @@ DATE=$(date +%Y%m%d-%H%M%S)
 HOSTNAME=$(hostname)
 NL=$'\n'
 CURRENT_DIR=$(pwd)
-SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}")"; pwd | xargs readlink -f)
 
 # Smileys used in eMail subject to notify about news/events
 
@@ -135,10 +132,6 @@ SMILEY_VERSION_DEPRECATED=":-("
 
 # URLs and temp filenames used
 
-DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.sh"
-CONFIG_URL="$MYHOMEURL${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
-BETA_CONFIG_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
 PROPERTIES_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
 VERSION_PAGE="https://github.com/framps/raspiBackup/releases"
 
@@ -387,16 +380,8 @@ SHARED_BOOT_DIRECTORY=0
 BOOT_TAR_EXT="tmg"
 BOOT_DD_EXT="img"
 
-CONFIG_DIR="/usr/local/etc"
-ORIG_CONFIG="$CONFIG_DIR/raspiBackup.conf"
-NEW_CONFIG="$CONFIG_DIR/raspiBackup.conf.new"
-MERGED_CONFIG="$CONFIG_DIR/raspiBackup.conf.merged"
-BACKUP_CONFIG="$CONFIG_DIR/raspiBackup.conf.bak"
-
 PERSISTENT_JOURNAL="var/log/journal"
 
-NEW_OPTION_TRAILER="# >>>>> NEW OPTION added in config version %s <<<<< "
-DELETED_OPTION_TRAILER="# >>>>> OPTION DELETED in config version %s <<<<< "
 
 TWO_TB=$((1024*1024*1024*1024*2))			# disks > 2TB reuquire gpt instead of mbr
 
@@ -2172,6 +2157,10 @@ MSG_CLONE_NO_PARTUUID_MATCH=364
 MSG_EN[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0364E: Configured PARTUUID %s does not match any PARTUUID of %s"
 #shellcheck disable=SC2034
 MSG_DE[$MSG_CLONE_NO_PARTUUID_MATCH]="RBK0364E: Konfigurierte PARTUUID %s stimmt mit keiner PARTUUID von %s überein"
+MSG_OPTION_NO_LONGER_SUPPORTED=365
+MSG_EN[$MSG_OPTION_NO_LONGER_SUPPORTED]="RBK0365E: Option %s is no longer supported. Use 'sudo raspiBackupConfig' to update $MYNAME and its configuration"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_OPTION_NO_LONGER_SUPPORTED]="RBK0365E: Option %s wird nicht mehr unterstützt. Mit 'sudo raspiBackupConfig' werden $MYNAME und seine Konfiguration aktualisiert"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -2720,55 +2709,6 @@ function isSupportedEnvironment() {
 	logExit $rc
 	return $rc
 
-}
-
-# Create a backupfile FILE.bak from FILE. If this file already exists rename this file to FILE.n.bak when n is next backup number
-# return filename created and error if a backup file cannot be created
-function createBackupVersion() { # file
-
-	logEntry
-
-	local file="$1"
-	local rc
-
-	if [[ ! -f "$file" ]]; then
-		logExit 1
-		return 1
-	fi
-
-	if [[ -f "$file.bak" ]]; then												# .bak exists already
-		local versions
-
-		# Double quote to prevent globbing and word splitting.
-		# shellcheck disable=SC2086
-		versions="$(ls $file\.*\.bak -1 2>/dev/null)"
-
-		if [[ -z $versions ]]; then												# no backup version detected
-			versionNumber=1															# start with version 1
-		else
-			local last lastFile lastVersionNumber
-			last="$(tail -n 1 <<< "$versions")" 								# extract highest version number
-			lastFile="$(basename "$last")"
-			lastVersionNumber="$(sed -E 's/.*([0-9]+)\.bak$/\1/' <<< $lastFile )"
-			(( versionNumber = lastVersionNumber+1 ))							# use next version number
-		fi
-
-		local backupFile="$file.${versionNumber}.bak"
-		logItem "Create version $backupFile"
-
-		if ! mv "$file.bak" "$backupFile"; then
-			logExit 1
-			return 1
-		fi
-	fi
-
-	cp -a "$file" "$file.bak"
-	rc=$?
-
-	echo "$file.bak"
-
-	logExit "rc: $rc - $file.bak"
-	return $rc	# return status of cp command
 }
 
 # Borrowed from http://unix.stackexchange.com/questions/44040/a-standard-tool-to-convert-a-byte-count-into-human-kib-mib-etc-like-du-ls1
@@ -3493,9 +3433,9 @@ function isUpdatePossible() {
 
 }
 
-function downloadPropertiesFile() { # FORCE
+function downloadPropertiesFile() {
 
-	logEntry "$1"
+	logEntry
 
 	NEW_PROPERTIES_FILE=0
 
@@ -3530,12 +3470,7 @@ function downloadPropertiesFile() { # FORCE
 		dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
 		dlRC=$?
 		if (( $dlRC != 0 )); then
-			if [[ $1 == "FORCE" ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$(sed "s/\?.*$//" <<< "$downloadURL")" "$dlHttpCode" $dlRC
-				exitError $RC_DOWNLOAD_FAILED
-			else
-				: # silently ignore download error of property file
-			fi
+			logItem "Download of $downloadURL failed: $dlHttpCode $dlRC"	# silently ignore download error of property file
 		else
 			NEW_PROPERTIES_FILE=1
 			parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
@@ -3670,33 +3605,16 @@ function downloadFile() { # url, targetFileName
 		return 0
 }
 
-function askYesNo() { # message message_parms
+function askYesNo() {
 
 	local yes_no yes
 
 	yes_no=$(getMessage $MSG_QUERY_CHARS_YES_NO)
-	local addtlMsg=0
-
-	if (( $# > 1 )); then
-		local m="$1"
-		shift
-		addtlMsg=1
-		# Variable was used as an array but is now assigned a string.
-		#shellcheck disable=SC2178,SC2124
-		local args="$@"
-	fi
 
 	local answer
 
 	if (( ! $NO_YES_QUESTION )); then
-		if (( $addtlMsg )); then
-			noNL=1
-			#Expanding an array without an index only gives the element in the index 0.
-			#shellcheck disable=SC2128
-			writeToConsole $MSG_LEVEL_MINIMAL "$m" "$args" "$yes_no"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
-		fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ARE_YOU_SURE "$yes_no"
 		yes=$(getMessage $MSG_ANSWER_CHARS_YES)
 		read answer
 
@@ -3876,113 +3794,6 @@ function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
 	v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	echo "$v"
 	logExit "$v"
-}
-
-# update script with latest version
-
-function updateScript() {
-
-	logEntry
-
-	local rc versions latestVersion newVersion oldVersion newName betaVersion properties
-	local updateNow=0
-
-	if (( $NEW_PROPERTIES_FILE )) ; then
-
-		# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-		#shellcheck disable=SC2207
-		versions=( $(isNewVersionAvailable) )
-		rc=$?										# need rc so no map usage possible
-
-		latestVersion=${versions[0]}
-		newVersion=${versions[1]}
-		oldVersion=${versions[2]}
-
-		logItem "$rc - $latestVersion - $newVersion - $oldVersion"
-
-		if (( ! $FORCE_UPDATE )) ; then
-			local incompatibleVersions=( "$INCOMPATIBLE_PROPERTY" )
-			if containsElement "$newVersion" "${incompatibleVersions[@]}"; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_INCOMPATIBLE_UPDATE "$newVersion" "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
-				exitNormal
-			fi
-		fi
-
-		betaVersion=$(isBetaAvailable)
-
-		if [[ -n $betaVersion ]]; then
-			if (( ! $FORCE_UPDATE )) && [[ "${betaVersion}-beta" > $oldVersion ]]; then 			# beta version available
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_BETA "$oldVersion" "${betaVersion}-beta"
-				if askYesNo; then
-					DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
-					newVersion="${betaVersion}-beta"
-					updateNow=1
-				fi
-			elif (( $FORCE_UPDATE )) && [[ "${betaVersion}-beta" == "$oldVersion" ]]; then		# refresh current beta with latest version
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_LATEST_BETA "${betaVersion}-beta"
-				if askYesNo; then
-					DOWNLOAD_URL="$BETA_DOWNLOAD_URL"
-					newVersion="${betaVersion}-beta"
-					updateNow=1
-				fi
-			fi
-		fi
-
-		if [[ $rc == 0 ]] && (( ! $updateNow )); then							# new version available
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_TO_VERSION "$oldVersion" "$newVersion"
-			if ! askYesNo; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_UPDATE_ABORTED
-				exitNormal
-			fi
-			updateNow=1
-		elif [[ $rc == 1 || $rc == 2 ]] && (( ! $IS_BETA )) && (( ! $updateNow && $FORCE_UPDATE )); then		# no beta version, same or upper version (maybe development version) but force update
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FORCE_UPDATE "$newVersion"
-			if askYesNo; then
-				updateNow=1
-			fi
-		fi
-
-		if (( $updateNow )); then
-			local tmpFile="/tmp/${MYSELF}~"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$MYSELF" "$MYHOMEURL"
-
-			local dlHttpCode dlRC
-			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${tmpFile}")"
-			dlRC=$?
-			if (( $dlRC != 0 )); then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DOWNLOAD_URL" "$dlHttpCode" $dlRC
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
-				exitError $RC_DOWNLOAD_FAILED
-			fi
-			newName="$SCRIPT_DIR/$MYNAME.$oldVersion.sh"
-			mv $SCRIPT_DIR/$MYSELF $newName
-			mv $tmpFile $SCRIPT_DIR/$MYSELF
-			chown --reference=$newName $SCRIPT_DIR/$MYSELF
-			chmod --reference=$newName $SCRIPT_DIR/$MYSELF
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_OK "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion" "$newName"
-			# refresh version information from updated script
-			properties="$(grep "^VERSION=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
-			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION=${BASH_REMATCH[1]}
-			logItem "Updating VERSION from updated script to $VERSION"
-			properties="$(grep "^VERSION_SCRIPT_CONFIG=" "$SCRIPT_DIR/$MYSELF" 2>/dev/null)"
-			[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_SCRIPT_CONFIG=${BASH_REMATCH[1]}
-			logItem "Updating VERSION_SCRIPT_CONFIG from updated script to $VERSION_SCRIPT_CONFIG"
-		else
-			rm $MYSELF~ &>/dev/null
-			if [[ $rc == 1 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_NEEDED "$SCRIPT_DIR/$MYSELF" "$newVersion"
-			elif [[ $rc == 2 ]]; then
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_NOT_REQUIRED "$SCRIPT_DIR/$MYSELF" "$oldVersion" "$newVersion"
-			else
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_UPDATE_FAILED "$MYSELF"
-			fi
-		fi
-	fi
-
-	logExit $updateNow
-
-	return $updateNow
-
 }
 
 function hasDefaultACLs() { # directory
@@ -5734,85 +5545,6 @@ function cleanupRestore() { # trap
 	cleanupTempFiles
 
 	logExit "$rc"
-
-}
-
-function revertScriptVersion() {
-
-	logEntry
-
-	local currentVersion version sortedVersions existingVersionFiles
-
-	#shellcheck disable=SC2207
-	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	local existingVersionFiles=( $(ls $SCRIPT_DIR/$MYNAME.*sh) )
-
-	if [[ ! -e "$SCRIPT_DIR/$MYSELF" ]]; then
-		assertionFailed $LINENO "$SCRIPT_DIR/$MYSELF not found"
-	fi
-
-	currentVersion="$(extractVersionFromFile "$SCRIPT_DIR/$MYSELF" "$VERSION_VARNAME")"
-	if [[ -z "$currentVersion" ]]; then
-		assertionFailed $LINENO "Current version not found"
-	fi
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_SCRIPT_VERSION "$currentVersion"
-
-	declare -A versionsOfFiles
-
-	local version
-	for versionFile in "${existingVersionFiles[@]}"; do
-		version="$(extractVersionFromFile "$versionFile" "$VERSION_VARNAME" )"
-		if [[ -n "$version" ]]; then
-			if [[ $version != "$currentVersion" ]]; then
-				versionsOfFiles+=([$version]=$versionFile)
-			fi
-		fi
-	done
-
-	for version in "${!versionsOfFiles[@]}"; do
-		logItem "$version: ${versionsOfFiles[$version]}"
-	done
-
-	#shellcheck disable=SC2207
-	# (warning): Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	local sortedVersions=( $(echo -e "${!versionsOfFiles[@]}" | sed -e 's/ /\n/g' | sort) )
-
-	local min=0
-	local max=$(( ${#sortedVersions[@]} - 1))
-
-	if [[ $max == -1 ]]; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_PREVIOUS_VERSIONS_AVAILABLE
-		return
-	fi
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_AVAILABLE_VERSIONS_HEADER
-	for version in "${!sortedVersions[@]}"; do
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_AVAILABLE_VERSIONS "$version" "${sortedVersions[$version]}"
-	done
-
-	local selection
-	local valid=0
-	while (( ! $valid )); do
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SELECT_VERSION "$min" "$max"
-		read selection
-		if (( "$selection" < $min || "$selection" > $max )); then
-			continue
-		fi
-
-		version=${sortedVersions[$selection]}
-		valid=1
-	done
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_ACTUAL_VERSION "$currentVersion" "$MYNAME.$currentVersion.sh"
-	logItem "mv $SCRIPT_DIR/$MYNAME.sh $SCRIPT_DIR/$MYNAME.$currentVersion.sh"
-	mv "$SCRIPT_DIR/$MYNAME.sh" "$SCRIPT_DIR/$MYNAME.$currentVersion.sh"
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_RESTORING_PREVIOUS_VERSION "$version" "$MYNAME.sh"
-	logItem "cp -a ${versionsOfFiles[$version]} $SCRIPT_DIR/$MYNAME.sh"
-	cp -a "${versionsOfFiles[$version]}" "$SCRIPT_DIR/$MYNAME.sh"
-
-	logExit
 
 }
 
@@ -9741,210 +9473,6 @@ function remount() { # device mountpoint
 
 }
 
-function updateConfig() {
-
-	logEntry "$CUSTOM_CONFIG_FILE"
-
-	local customFile="$CUSTOM_CONFIG_FILE"
-	local etcConfigFileVersion="$ETC_CONFIG_FILE_VERSION"
-
-	# use fileparameter as new config file
-	if [[ -n $customFile ]]; then
-		if [[ -f $customFile ]]; then
-			logItem "Using config file $customFile"
-			# See if you can use ${variable//search/replace} instead
-			#shellcheck disable=SC2001
-			NEW_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$NEW_CONFIG")"
-			# See if you can use ${variable//search/replace} instead
-			#shellcheck disable=SC2001
-			MERGED_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$MERGED_CONFIG")"
-			# See if you can use ${variable//search/replace} instead
-			#shellcheck disable=SC2001
-			BACKUP_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$BACKUP_CONFIG")"
-			etcConfigFileVersion="$CUSTOM_CONFIG_FILE_VERSION"
-			# See if you can use ${variable//search/replace} instead
-			#shellcheck disable=SC2001
-			ORIG_CONFIG="$(sed -e "s@$ORIG_CONFIG@$customFile@" <<< "$ORIG_CONFIG")"
-		else
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_FILE_NOT_FOUND "$NEW_CONFIG"
-			exitError $RC_MISSING_FILES
-		fi
-	fi
-
-	if [[ ! -e $ORIG_CONFIG ]]; then
-		logItem "$ORIG_CONFIG does not exist"
-		logExit
-		return
-	fi
-
-	logItem "Current config version: $etcConfigFileVersion - Required config version: $VERSION_SCRIPT_CONFIG"		# VERSION_SCRIPT_CONFIG is from updated script
-
-	if (( $(compareVersions "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG") >= 0 )) ; then 						# ETC_CONFIG >= SCRIPT_CONFIG
-		logExit "Config version ok"
-		if (( $UPDATE_CONFIG )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
-		fi
-		logExit
-		return
-	fi
-
-	# lang appears unused. Verify use (or export if used externally). ... lang used in following eval for late binding of config files to use the correct language !!!
-	# shellcheck disable=SC2034
-	local lang=${LANGUAGE,,}
-
-	if grep -iqE "alpha|beta" <<< "$VERSION"; then
-		eval "DL_URL=$BETA_CONFIG_URL"
-	else
-		eval "DL_URL=$CONFIG_URL"
-	fi
-
-	# download new config file
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$NEW_CONFIG" "$DL_URL"
-
-	local dlHttpCode dlRC
-	dlHttpCode="$(downloadFile "$DL_URL" "$NEW_CONFIG")"
-	dlRC=$?
-	if (( $dlRC != 0 )); then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOAD_FAILED "$DL_URL" "$dlHttpCode" $dlRC
-		exitError $RC_DOWNLOAD_FAILED
-	fi
-
-	# make sure new config file is readable by owner only
-	if ! chmod 600 "$NEW_CONFIG" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$NEW_CONFIG"
-		exitError $RC_FILE_OPERATION_ERROR
-	fi
-
-	local newConfigVersion
-	newConfigVersion="$(extractVersionFromFile "$NEW_CONFIG" "$VERSION_CONFIG_VARNAME")"
-
-	logItem "New config version of downloaded file: $newConfigVersion"
-
-	# Should not occure but make sure config is not downgraded for some reasons
-	if (( $(compareVersions "$newConfigVersion" "$VERSION_SCRIPT_CONFIG") < 0 )); then					# newConfigVersion < SCRIPT_CONFIG
-		if (( $UPDATE_CONFIG )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NO_CONFIGUPDATE_REQUIRED "$VERSION_SCRIPT_CONFIG"
-			logExit
-			return
-		fi
-	fi
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_CURRENT_CONFIGURATION_UPDATE_REQUIRED "$etcConfigFileVersion" "$VERSION_SCRIPT_CONFIG"
-
-	rm -f "$MERGED_CONFIG" &>/dev/null
-
-	# process NEW CONFIG FILE
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGING_VERSION  "v$etcConfigFileVersion" "v$VERSION_SCRIPT_CONFIG" "$MERGED_CONFIG"
-	local merged=0
-	local deleted=0
-
-	# make sure config file is readable by owner only
-	if ! chmod 600 "$ORIG_CONFIG" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$ORIG_CONFIG"
-		exitError $RC_FILE_OPERATION_ERROR
-	fi
-
-	# process new config file and merge old options
-
-	logItem "Merging $NEW_CONFIG and $ORIG_CONFIG"
-	while read -r line; do
-		if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then			# skip comment or empty lines
-			local KW VAL CONFIG_VERSION
-			KW="$(cut -d= -f1 <<< "$line")"					# retrieve keyword
-			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
-
-			logItem "KW: $KW - VAL: $VAL"
-			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# add new version number
-				echo "$line" >> "$MERGED_CONFIG"
-				CONFIG_VERSION="$VAL"
-				continue
-			fi
-
-			local OC_line r
-			OC_line="$(grep "^$KW=" "$ORIG_CONFIG")"					# retrieve old option line
-			r=$?
-			logItem "grep old file rc:$s - contents: $OC_line"
-			if (( ! $r )); then											# new option found
-				local OW
-				OW="$(cut -d= -f2- <<< "$OC_line" )"				# retrieve old option value
-				echo "$KW=$OW" >> "$MERGED_CONFIG"						# use old option value
-			else
-				printf "$NEW_OPTION_TRAILER\n" "$CONFIG_VERSION" >> $MERGED_CONFIG
-				echo "$line" >> "$MERGED_CONFIG"						# add new option
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_ADDED_CONFIG_OPTION "$KW" "$VAL"
-				(( merged ++ ))
-			fi
-		else
-			echo "$line" >> "$MERGED_CONFIG"							# copy comment  or empty line
-		fi
-	done < "$NEW_CONFIG"
-
-	# check in old config file which options were deleted in new config file
-
-	logItem "Checking for deleted options"
-	while read -r line; do
-		if [[ -n "$line" && ! "$line" =~ ^.*# ]]; then			# skip comment or empty lines
-			local KW VAL
-			KW="$(cut -d= -f1 <<< "$line")"							# retrieve keyword
-			VAL="$(cut -d= -f2 <<< "$line" )"	# retrieve value
-
-			if [[ "$KW" =~ VERSION_.*CONF ]]; then					# skip version number
-				continue
-			fi
-
-			local r
-			grep -q "^$KW=" "$NEW_CONFIG"					# check if it's still the new config file
-			r=$?
-			logItem "grep old file for deleted $KW rc:$r - contents: $OC_line"
-			if (( $r )) && [[ $KW != "UUID" ]]; then				# option not found, it was deleted
-				{
-					echo ""
-					printf "$DELETED_OPTION_TRAILER\n" "$CONFIG_VERSION"
-					echo "# $line" 										# insert deleted config line as comment
-				}  >> "$MERGED_CONFIG"
-				(( deleted ++ ))
-				writeToConsole $MSG_LEVEL_MINIMAL $MSG_DELETED_CONFIG_OPTION "$KW" "$VAL"
-			fi
-		fi
-	done < "$ORIG_CONFIG"
-
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_MERGE_SUCCESSFULL
-
-	if ! chmod 600 "$MERGED_CONFIG" &>>"$LOG_FILE"; then
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$MERGED_CONFIG"
-		exitError $RC_FILE_OPERATION_ERROR
-	fi
-
-	logItem "Merged: $merged - deleted: $deleted"
-
-	rm -f "$NEW_CONFIG" &>/dev/null
-
-	if askYesNo "$MSG_UPDATE_CONFIG" "$BACKUP_CONFIG"; then
-		local new_file
-		# save old config
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SAVING_CURRENT_CONFIGURATION  "$ORIG_CONFIG" "$BACKUP_CONFIG"
-		new_file=$(createBackupVersion "$ORIG_CONFIG")
-		local r=$?
-		if (( $rc )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CONFIG_BACKUP_FAILED "$ORIG_CONFIG"
-			exitError $RC_FILE_OPERATION_ERROR
-		fi
-
-		if ! chmod 600 "$new_file" &>>"$LOG_FILE"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_CHMOD_FAILED "$new_file"
-			exitError $RC_FILE_OPERATION_ERROR
-		fi
-
-		mv "$MERGED_CONFIG" "$ORIG_CONFIG"
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_COPIED_FILE "$MERGED_CONFIG" "$ORIG_CONFIG"
-	else
-		writeToConsole $MSG_LEVEL_MINIMAL $MSG_ACTIVATE_CONFIG "$MERGED_CONFIG" "$ORIG_CONFIG"
-	fi
-
-	logExit
-
-}
-
 function synchronizeCmdlineAndfstab() {
 
 	logEntry
@@ -10461,9 +9989,7 @@ function usageEN() {
 	echo "-s {email program to use} ($SUPPORTED_MAIL_PROGRAMS) (Default: $DEFAULT_MAIL_PROGRAM)"
 	echo "--timestamps Prefix messages with timestamps (Default: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
 	echo "-u {excludeList} List of directories to exclude from tar and rsync backup"
-	echo "-U current script version will be replaced by the most recent version. Current version will be saved and can be restored with parameter -V"
 	echo "-v verbose output of backup tools (Default: ${NO_YES[$DEFAULT_VERBOSE]})"
-	echo "-V restore a previous version"
 	echo ""
 	echo "-Backup options-"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="no"
@@ -10518,9 +10044,7 @@ function usageDE() {
 	echo "-s {Benutztes eMail Program} ($SUPPORTED_MAIL_PROGRAMS) (Standard: $DEFAULT_MAIL_PROGRAM)"
 	echo "--timestamps Meldungen werden mit einen Zeitstempel ausgegeben (Standard: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
 	echo "-u {excludeList} Liste von Verzeichnissen, die vom tar und rsync Backup auszunehmen sind"
-	echo "-U Scriptversion wird durch die aktuelle Version ersetzt. Die momentane Version wird gesichert und kann mit dem Parameter -V wiederhergestellt werden"
 	echo "-v Detailierte Ausgaben der Backup Tools (Standard: ${NO_YES[$DEFAULT_VERBOSE]})"
-	echo "-V Aktivierung einer älteren Skriptversion"
 	echo ""
 	echo "-Backup Optionen-"
 	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="keine"
@@ -10573,9 +10097,7 @@ function usageFI() {
 	echo "-s {käytettävä sähköpostiohjelma} ($SUPPORTED_MAIL_PROGRAMS) (oletus: $DEFAULT_MAIL_PROGRAM)"
 	echo "--timestamps Lisää aikaleima viestien alkuun (oletus: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
 	echo "-u {excludeList} Lista hakemistoista, jotka ohitetaan tar- ja rsync-varmuuskopioissa"
-	echo "-U Nykyinen skriptin versio korvataan uusimmalla versiolla. Nykyinen versio varmuuskopioidaan ja sen voi palauttaa parametrillä -V"
 	echo "-v Sanallista varmuuskopiotyökalujen tilatiedot (oletus: ${NO_YES[$DEFAULT_VERBOSE]})"
-	echo "-V Palauta skriptin edellinen versio"
 	echo "-z Pakkaa varmuuskopiotiedosto käyttäen gzip:iä (oletus: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
 	echo ""
 	echo "-Varmuuskopioinnin valinnat-"
@@ -10708,7 +10230,6 @@ DYNAMIC_MOUNT_EXECUTED=0
 EXCLUDE_DD=0
 FAKE=0
 FORCE_SFDISK=0
-FORCE_UPDATE=0
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?
 IS_SNAPSHOT=0
@@ -10720,17 +10241,15 @@ REGRESSION_TEST=0
 RESTORE=0
 RESTOREFILE=""
 RESTORETEST_REQUIRED=0
-REVERT=0
 ROOT_PARTITION_DEFINED=0
 SHARED_BOOT_DIRECTORY=0
 SKIP_SFDISK=0
 SKIP_FORMAT=0
-UPDATE_MYSELF=0
+UNSUPPORTED_OPTION=""
 UPDATE_POSSIBLE=0
 VERSION_DEPRECATED=0
 WARNING_MESSAGE_WRITTEN=0
 ERROR_MESSAGE_WRITTEN=0
-UPDATE_CONFIG=0
 UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
 rc=0
 
@@ -11116,7 +10635,7 @@ while (( "$#" )); do
 	  ;;
 
 	-S|-S[-+])
-	  FORCE_UPDATE=$(getEnableDisableOption "$1"); shift 1
+	  UNSUPPORTED_OPTION="-S"; shift 1
 	  ;;
 
 	--smartRecycle|--smartRecycle[+-])
@@ -11213,7 +10732,7 @@ while (( "$#" )); do
 	  ;;
 
 	-U)
-	  UPDATE_MYSELF=1; shift 1
+	  UNSUPPORTED_OPTION="-U"; shift 1
 	  ;;
 
 	--unsupportedEnvironment|--use)
@@ -11221,7 +10740,7 @@ while (( "$#" )); do
 	  ;;
 
 	--updateConfig|--updateConfig[+-])
-	  UPDATE_CONFIG=$(getEnableDisableOption "$1"); shift 1
+	  UNSUPPORTED_OPTION="--updateConfig"; shift 1
 	  ;;
 
 	--updateUUIDs|--updateUUIDs[+-])
@@ -11233,7 +10752,7 @@ while (( "$#" )); do
 	  ;;
 
 	-V)
-	  REVERT=1; shift 1
+	  UNSUPPORTED_OPTION="-V"; shift 1
 	  ;;
 
 	-x|-x[-+])
@@ -11343,18 +10862,9 @@ if (( $DEPLOY )); then
 	exitNormal
 fi
 
-if (( $REVERT )); then
-	revertScriptVersion
-	exitNormal
-fi
-
-if (( $UPDATE_MYSELF )); then
-	downloadPropertiesFile FORCE
-	updateScript
-	if (( $? )); then
-		updateConfig
-	fi
-	exitNormal
+if [[ -n $UNSUPPORTED_OPTION ]]; then								# updates are done by raspiBackupConfig
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_NO_LONGER_SUPPORTED "$UNSUPPORTED_OPTION"
+	exitError $RC_PARAMETER_ERROR
 fi
 
 if (( $RESTORE && $NO_YES_QUESTION )) && [[ -z $CLONE_DEVICE ]] ; then				# WARNING: dangerous option !!!
@@ -11365,11 +10875,6 @@ if (( $RESTORE && $NO_YES_QUESTION )) && [[ -z $CLONE_DEVICE ]] ; then				# WARN
 fi
 
 check4RequiredCommands
-
-if (( $UPDATE_CONFIG )); then
-	updateConfig
-	exitNormal
-fi
 
 logItem "RESTORE: $RESTORE - fileParameter: $fileParameter"
 if [[ -n $fileParameter ]]; then

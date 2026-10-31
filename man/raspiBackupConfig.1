@@ -122,6 +122,12 @@ with
 to the latest version.
 A version kept by reverting to the previous version in the update menu
 isn't updated.
+Afterwards new options of the configuration template are added to
+.I /usr/local/etc/raspiBackup.conf
+and options which no longer exist are commented out.
+Existing values are kept.
+The previous configuration is saved as
+.IR raspiBackup.conf.v<version> .
 If
 .B raspiBackup
 isn't installed as Debian package, only

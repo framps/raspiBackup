@@ -55,9 +55,10 @@ for on.
 When the Debian package is installed and no system wide configuration
 exists, it is created from the template matching the system language in
 .IR /usr/local/share/raspibackup .
-The configuration is never overwritten by a package update; use
-.B raspiBackup \-\-updateConfig
-to merge options of a new release into an existing configuration.
+The configuration is never overwritten by a package update.
+.BR raspiBackupConfig (1)
+adds new options of a new release to the existing configuration and
+comments out options which no longer exist after an update.
 .BR raspiBackupConfig (1)
 edits the most important options interactively.
 .PP
@@ -482,9 +483,10 @@ DEFAULT_MAIL_PROGRAM="msmtp"
 .I /usr/local/etc/raspiBackup.conf
 System wide configuration.
 .TP
-.I /usr/local/etc/raspiBackup.conf.bak
-Previous configuration, saved by
-.BR \-\-updateConfig .
+.I /usr/local/etc/raspiBackup.conf.v<version>
+Previous configuration with config version <version>, saved by
+.BR raspiBackupConfig (1)
+before new options are added.
 .TP
 .I /usr/local/share/raspibackup/raspiBackup_{en,de}.conf
 Configuration templates with all options and their defaults.

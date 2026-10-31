@@ -4,7 +4,7 @@
 # postinst of ${PACKAGE_NAME}
 #
 # The configuration ${DIR_ETC}/raspiBackup.conf is created from a template on first installation only.
-# It's no conffile, so dpkg never touches it. raspiBackupConfig and 'raspiBackup --updateConfig' update it.
+# It's no conffile, so dpkg never touches it. raspiBackupConfig adds new options of the template after an update.
 
 set -euo pipefail
 

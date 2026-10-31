@@ -1476,6 +1476,34 @@ MSG_FI[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Palautetaanko $RASPIBACKUP_NAME %1 versio
 MSG_FR[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Ramener $RASPIBACKUP_NAME %1 à %2 ?${NL}${NL}%2 est bloqué. apt ne le met pas à jour tant que 'Mettre à jour la version actuelle' n'est pas sélectionné.${NL}La configuration n'est pas restaurée."
 MSG_ZH[$MSG_PACKAGE_CONFIRM_PREVIOUS]="是否将 $RASPIBACKUP_NAME %1 回退到 %2?${NL}${NL}%2 将被锁定. 在选择 '更新当前版本' 之前apt不会升级它.${NL}配置不会被回退."
 
+MSG_CONFIG_MERGED=$((SCNT++))
+MSG_EN[$MSG_CONFIG_MERGED]="${MSG_PRF}0043I: Configuration %1 updated from version %2 to %3. Previous configuration saved in %4."
+MSG_DE[$MSG_CONFIG_MERGED]="${MSG_PRF}0043I: Konfiguration %1 von Version %2 auf %3 aktualisiert. Vorherige Konfiguration in %4 gesichert."
+MSG_FI[$MSG_CONFIG_MERGED]="${MSG_PRF}0043I: Asetukset %1 päivitetty versiosta %2 versioon %3. Edelliset asetukset tallennettu kohteeseen %4."
+MSG_FR[$MSG_CONFIG_MERGED]="${MSG_PRF}0043I: Configuration %1 mise à jour de la version %2 vers %3. Configuration précédente sauvegardée dans %4."
+MSG_ZH[$MSG_CONFIG_MERGED]="${MSG_PRF}0043I: 配置 %1 已从版本 %2 更新到 %3. 先前的配置已保存到 %4."
+
+MSG_CONFIG_OPTION_ADDED=$((SCNT++))
+MSG_EN[$MSG_CONFIG_OPTION_ADDED]="${MSG_PRF}0044I: New option %1 added to the configuration."
+MSG_DE[$MSG_CONFIG_OPTION_ADDED]="${MSG_PRF}0044I: Neue Option %1 zur Konfiguration hinzugefügt."
+MSG_FI[$MSG_CONFIG_OPTION_ADDED]="${MSG_PRF}0044I: Uusi valinta %1 lisätty asetuksiin."
+MSG_FR[$MSG_CONFIG_OPTION_ADDED]="${MSG_PRF}0044I: Nouvelle option %1 ajoutée à la configuration."
+MSG_ZH[$MSG_CONFIG_OPTION_ADDED]="${MSG_PRF}0044I: 新选项 %1 已添加到配置中."
+
+MSG_CONFIG_OPTION_DELETED=$((SCNT++))
+MSG_EN[$MSG_CONFIG_OPTION_DELETED]="${MSG_PRF}0045I: Option %1 is obsolete and was commented out in the configuration."
+MSG_DE[$MSG_CONFIG_OPTION_DELETED]="${MSG_PRF}0045I: Option %1 ist veraltet und wurde in der Konfiguration auskommentiert."
+MSG_FI[$MSG_CONFIG_OPTION_DELETED]="${MSG_PRF}0045I: Valinta %1 on vanhentunut ja se kommentoitiin pois asetuksista."
+MSG_FR[$MSG_CONFIG_OPTION_DELETED]="${MSG_PRF}0045I: L'option %1 est obsolète et a été mise en commentaire dans la configuration."
+MSG_ZH[$MSG_CONFIG_OPTION_DELETED]="${MSG_PRF}0045I: 选项 %1 已过时, 已在配置中注释掉."
+
+MSG_CONFIG_MERGE_FAILED=$((SCNT++))
+MSG_EN[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: Configuration %1 could not be updated with %2."
+MSG_DE[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: Konfiguration %1 konnte nicht mit %2 aktualisiert werden."
+MSG_FI[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: Asetuksia %1 ei voitu päivittää tiedostolla %2."
+MSG_FR[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: La configuration %1 n'a pas pu être mise à jour avec %2."
+MSG_ZH[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: 无法使用 %2 更新配置 %1."
+
 
 declare -A MENU_EN
 declare -A MENU_DE
@@ -2315,6 +2343,8 @@ function package_install_execute() { # apt installs code, installer, config temp
 		fi
 		CONFIG_INSTALLED=1
 		writeToConsole $MSG_CODE_INSTALLED "$CONFIG_ABS_FILE"
+	else
+		config_merge_package_execute	# config of a former installation may miss new options
 	fi
 
 	logExit
@@ -2715,6 +2745,141 @@ function config_update_execute() {
 
 	sed -i -E "s/^(#?\s?)?DEFAULT_STOPSERVICES=.*$/DEFAULT_STOPSERVICES=\"$pline\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_STARTSERVICES=.*$/DEFAULT_STARTSERVICES=\"$sline\"/" "$CONFIG_ABS_FILE"
+
+	logExit
+
+}
+
+CONFIG_VERSION_VARNAME="VERSION_.*CONF.*"						# used to lookup VERSION_CONFIG in config files
+
+function configTemplateName() { # - name of the config template matching the language of the current config
+	local lang
+	lang="$(grep -E "^DEFAULT_LANGUAGE=" "$CONFIG_ABS_FILE" 2>/dev/null | cut -d= -f2 | sed -e 's/[[:space:]]*#.*$//' -e 's/"//g')"
+	[[ -z "$lang" ]] && lang="$LANG_SYSTEM"
+	if [[ "${lang^^}" == "DE" ]]; then
+		echo "${CONFIG_DOWNLOAD_FILE["DE"]}"
+	else
+		echo "${CONFIG_DOWNLOAD_FILE["EN"]}"
+	fi
+}
+
+function config_merge_execute() { # template - adds new options of the template to the config and comments out deleted options
+
+	logEntry "$1"
+
+	local template="$1"
+	local merged="$CONFIG_ABS_FILE.merged"
+
+	if [[ ! -f "$CONFIG_ABS_FILE" || ! -f "$template" ]]; then
+		logExit "Config or template missing"
+		return
+	fi
+
+	local oldVersion newVersion
+	oldVersion="$(extractVersionFromFile "$CONFIG_ABS_FILE" "$CONFIG_VERSION_VARNAME")"
+	newVersion="$(extractVersionFromFile "$template" "$CONFIG_VERSION_VARNAME")"
+	logItem "Config version: $oldVersion - template version: $newVersion"
+
+	if (( $(compareVersions "$oldVersion" "$newVersion") >= 0 )); then	# a downgrade keeps the newer config
+		logExit "Config is up to date"
+		return
+	fi
+
+	local line kw oldLine added=0 deleted=0
+	rm -f "$merged" &>>"$LOG_FILE"
+
+	# stdout goes to the merged config, messages to the console with fd 3
+	{
+		# options of the template, existing options keep their current value
+		while IFS= read -r line; do
+			if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
+				echo "$line"
+				continue
+			fi
+			kw="${line%%=*}"
+			if [[ "$kw" =~ $CONFIG_VERSION_VARNAME ]]; then
+				echo "$line"
+				continue
+			fi
+			if oldLine="$(grep -m 1 "^$kw=" "$CONFIG_ABS_FILE")"; then
+				echo "$oldLine"
+			else
+				printf "# >>>>> NEW OPTION added in config version %s <<<<< \n" "$newVersion"
+				echo "$line"
+				writeToConsole $MSG_CONFIG_OPTION_ADDED "$kw" >&3
+				(( added++ ))
+			fi
+		done < "$template"
+
+		# options which no longer exist are kept as comment
+		while IFS= read -r line; do
+			if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
+				continue
+			fi
+			kw="${line%%=*}"
+			if [[ "$kw" =~ $CONFIG_VERSION_VARNAME || "$kw" == "UUID" ]]; then
+				continue
+			fi
+			if ! grep -q "^$kw=" "$template"; then
+				echo ""
+				printf "# >>>>> OPTION DELETED in config version %s <<<<< \n" "$newVersion"
+				echo "# $line"
+				writeToConsole $MSG_CONFIG_OPTION_DELETED "$kw" >&3
+				(( deleted++ ))
+			fi
+		done < "$CONFIG_ABS_FILE"
+	} 3>&1 > "$merged" 2>>"$LOG_FILE"
+
+	logItem "Added: $added - deleted: $deleted"
+
+	# config may contain pwds, keys et al
+	local saved="$CONFIG_ABS_FILE.v$oldVersion"
+	if ! cp -a "$CONFIG_ABS_FILE" "$saved" &>>"$LOG_FILE" \
+		|| ! chmod 600 "$merged" &>>"$LOG_FILE" \
+		|| ! mv "$merged" "$CONFIG_ABS_FILE" &>>"$LOG_FILE"; then
+		rm -f "$merged" &>>"$LOG_FILE"
+		unrecoverableError $MSG_CONFIG_MERGE_FAILED "$CONFIG_ABS_FILE" "$template"
+		logExit
+		return
+	fi
+
+	CONFIG_PARSED=0
+	writeToConsole $MSG_CONFIG_MERGED "$CONFIG_ABS_FILE" "$oldVersion" "$newVersion" "$saved"
+
+	logExit
+
+}
+
+function config_merge_package_execute() { # merges the config template installed by the package into the config
+
+	logEntry
+
+	config_merge_execute "$PACKAGE_TEMPLATES_DIR/$(configTemplateName)"
+
+	logExit
+
+}
+
+function config_merge_download_execute() { # downloads the config template and merges it into the config
+
+	logEntry
+
+	if [[ ! -f "$CONFIG_ABS_FILE" ]]; then
+		logExit "No config"
+		return
+	fi
+
+	local name template httpCode
+	name="$(configTemplateName)"
+	template="/tmp/$name"
+	if ! httpCode="$(downloadFile "$(downloadURL "$name")" "$template")"; then
+		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$name")" "$httpCode"
+		logExit
+		return
+	fi
+
+	config_merge_execute "$template"
+	rm -f "$template" &>>"$LOG_FILE"
 
 	logExit
 
@@ -4897,8 +5062,8 @@ function package_version_do() { # version hold
 
 	PACKAGE_TARGET_VERSION="$1"
 	PACKAGE_TARGET_HOLD="$2"
-	INSTALL_DESCRIPTION=("Installing $PACKAGE_NAME $1 with apt ...")
-	progressbar_do "INSTALL_DESCRIPTION" "Installing $PACKAGE_NAME $1" package_version_execute
+	INSTALL_DESCRIPTION=("Installing $PACKAGE_NAME $1 with apt ..." "Updating $RASPIBACKUP_NAME configuration ...")
+	progressbar_do "INSTALL_DESCRIPTION" "Installing $PACKAGE_NAME $1" package_version_execute config_merge_package_execute
 
 	logExit
 	[[ -x "$INSTALLER_ABS_FILE" ]] && exec "$INSTALLER_ABS_FILE" # restart with the installed version, no return
@@ -4923,8 +5088,8 @@ function update_script_do() {
 		fi
 	fi
 
-	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ...")
-	progressbar_do "INSTALL_DESCRIPTION" "Updating $FILE_TO_INSTALL" update_script_execute
+	INSTALL_DESCRIPTION=("Downloading $FILE_TO_INSTALL ..." "Updating $RASPIBACKUP_NAME configuration ...")
+	progressbar_do "INSTALL_DESCRIPTION" "Updating $FILE_TO_INSTALL" update_script_execute config_merge_download_execute
 
 	logExit
 
@@ -5779,6 +5944,7 @@ function unattendedInstall() {
 	if (( PACKAGE_MODE )) && (( MODE_UPDATE )); then
 		check4InternetAvailable
 		package_upgrade_execute
+		config_merge_package_execute
 	elif (( MODE_INSTALL )); then
 		check4InternetAvailable
 		repository_add_execute
