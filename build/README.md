@@ -80,6 +80,13 @@ Notes:
 - `VERSION_RASPIBACKUP` and `VERSION_RASPIBACKUPCONFIG` in `build.conf` override `VERSION` of
   `raspiBackup.sh` and `raspiBackupConfig.sh`. They are inserted into the packaged scripts,
   the committed sources stay unchanged.
+- raspiBackup detects new releases, hotfixes and betas in the repository itself (once a day
+  `apt-get update` of the raspiBackup repository only) and reports them after the backup.
+  `raspiBackup.properties` isn't needed for that. Its `DEPRECATED` (versions separated by blanks or
+  commas, e.g. `DEPRECATED="0.7.5 0.7.6-beta1"`) is still used: these versions are never reported
+  as update or beta, and users running one of them get a warning. If `apt upgrade` would install a
+  deprecated version, raspiBackup tells the user the `apt-get install raspibackup=<version>` command
+  for the newest version which isn't deprecated.
 - All published versions stay in the repository, so users can always go back.
   `publishRepo.sh` copies packages published earlier but missing locally back into `repo/`,
   so you can publish from any system.
@@ -494,6 +501,7 @@ GitHub account and for commits made in the web interface (signed by GitHub's key
 ├── publishRepo.sh      # publishes repo/ and raspiBackupInstall.sh on GitHub Pages (branch gh-pages)
 ├── common.sh           # common definitions for build and install
 ├── compareVersions.sh  # to test version up- and downgrade recognition
+├── testPackageUpdates.sh # tests updates and reversals (release, beta, hotfix, individual fix) on a test system
 │
 ├── deb                 # built deb packages (not committed)                  $DEB_TGT                           <--.
 │   ├── raspibackup_<version>.deb                                                                                   |

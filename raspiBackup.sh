@@ -149,6 +149,13 @@ RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
 UPDATE_REMINDER_FILE="update.reminder"
 UPDATE_REMINDER_MAX=3
+PACKAGE_UPDATE_REMINDER_FILE="package.reminder"			# version and count of the last reported package update
+PACKAGE_INDEX_TIMESTAMP_FILE="package.index"				# time of the last refresh of the package index
+PACKAGE_INDEX_MAX_AGE=$(( 24*60*60 ))						# refresh the package index once a day
+PACKAGE_NAME="raspibackup"									# Debian package, updates are detected with apt if it's installed
+PACKAGE_SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
+PACKAGE_SUITE="stable"
+PACKAGE_BETA_SUITE="beta"
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
 
@@ -2161,6 +2168,10 @@ MSG_OPTION_NO_LONGER_SUPPORTED=365
 MSG_EN[$MSG_OPTION_NO_LONGER_SUPPORTED]="RBK0365E: Option %s is no longer supported. Use 'sudo raspiBackupConfig' to update $MYNAME and its configuration"
 #shellcheck disable=SC2034
 MSG_DE[$MSG_OPTION_NO_LONGER_SUPPORTED]="RBK0365E: Option %s wird nicht mehr unterstützt. Mit 'sudo raspiBackupConfig' werden $MYNAME und seine Konfiguration aktualisiert"
+MSG_NEW_PACKAGE_VERSION_INSTALL=366
+MSG_EN[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE There is a new version %s of $MYNAME available. You are running version %s which isn't updated by 'apt upgrade'. Install the new version with 'sudo apt-mark unhold $PACKAGE_NAME && sudo apt-get update && sudo apt-get install $PACKAGE_NAME=%s'"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE Es gibt eine neue Version %s von $MYNAME. Die momentan benutzte Version %s wird von 'apt upgrade' nicht aktualisiert. Die neue Version kann mit 'sudo apt-mark unhold $PACKAGE_NAME && sudo apt-get update && sudo apt-get install $PACKAGE_NAME=%s' installiert werden"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -3522,14 +3533,12 @@ function isVersionDeprecated() { # versionNumber
 
 	local rc=1	# no/failure
 
-	local deprecatedVersions=( "$DEPRECATED_PROPERTY" )
-	if containsElement "$1" "${deprecatedVersions[@]}"; then
+	if isVersionInList "$1" "$DEPRECATED_PROPERTY"; then
 		rc=0
 		logItem "Version $1 is deprecated"
 	fi
 
-	local skip=( "$SKIP_DEPRECATED" )
-	if containsElement "$1" "${skip[@]}"; then
+	if isVersionInList "$1" "$SKIP_DEPRECATED"; then
 		rc=1
 		logItem "Version $1 is deprecated but message is disabled"
 	fi
@@ -5561,6 +5570,175 @@ function isBetaAvailable() {
 	echo $betaVersion
 
 	logExit "$betaVersion"
+
+}
+
+function debianVersion() { # version - the version as used by the Debian package, see build/build.sh: 0.7.5-beta1 -> 0.7.5~beta1
+	sed -E -e 's/_/-/g' -e 's/-(alpha|beta|rc)/~\L\1/I' <<< "$1"
+}
+
+function isVersionInList() { # version list - true if version is in the list separated by blanks or commas, e.g. DEPRECATED
+	local version entry
+	version="$(debianVersion "$1")"
+	for entry in ${2//,/ }; do
+		entry="${entry//\"/}"
+		[[ -n "$entry" && "$(debianVersion "$entry")" == "$version" ]] && return 0
+	done
+	return 1
+}
+
+function isPackageInstalled() {
+	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" == "install ok installed" ]]
+}
+
+function isPackageHeld() {
+	apt-mark showhold "$PACKAGE_NAME" 2>/dev/null | grep -qx "$PACKAGE_NAME"
+}
+
+function refreshPackageIndex() { # updates the package index of the raspiBackup repository once a day, errors are ignored
+
+	logEntry
+
+	local stamp="$VAR_LIB_DIRECTORY/$PACKAGE_INDEX_TIMESTAMP_FILE" age emptyDir
+
+	if [[ -f "$stamp" ]]; then
+		age=$(( $(date +%s) - $(stat -c %Y "$stamp") ))
+		if (( age >= 0 && age < PACKAGE_INDEX_MAX_AGE )); then
+			logItem "Package index refreshed ${age}s ago"
+			logExit
+			return
+		fi
+	fi
+
+	if [[ ! -f "$PACKAGE_SOURCES" ]]; then
+		logItem "$PACKAGE_SOURCES not found"
+		logExit
+		return
+	fi
+
+	# refresh the raspiBackup repository only, it's small and fast
+	emptyDir="$(mktemp -d)"
+	if timeout 120 apt-get update -o Dir::Etc::sourcelist="$PACKAGE_SOURCES" -o Dir::Etc::sourceparts="$emptyDir" -o APT::Get::List-Cleanup=0 &>>"$LOG_FILE"; then
+		mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE" && touch "$stamp" &>>"$LOG_FILE"
+	else
+		logItem "apt-get update of $PACKAGE_SOURCES failed"	# no internet, apt locked, ... - use the index as it is
+	fi
+	rmdir "$emptyDir" &>/dev/null
+
+	logExit
+
+}
+
+function packageSuiteVersions() { # suite - versions of the package available in the suite
+	apt-cache madison "$PACKAGE_NAME" 2>>"$LOG_FILE" \
+		| awk -F'|' -v suite="$1" '{ gsub(/ /, "", $2); split($3, a, " "); split(a[2], s, "/"); if (s[1] == suite) print $2 }'
+}
+
+function highestVersion() { # [lowerLimit] - highest version read from stdin, optionally only versions higher than lowerLimit
+	local version highest=""
+	while read -r version; do
+		[[ -z "$version" ]] && continue
+		[[ -n "${1:-}" ]] && ! dpkg --compare-versions "$version" gt "$1" && continue
+		if [[ -z "$highest" ]] || dpkg --compare-versions "$version" gt "$highest"; then
+			highest="$version"
+		fi
+	done
+	echo "$highest"
+}
+
+function withoutDeprecatedVersions() { # versions read from stdin which aren't listed in DEPRECATED of the properties file
+	local version
+	while read -r version; do
+		[[ -z "$version" ]] && continue
+		if isVersionInList "$version" "$DEPRECATED_PROPERTY"; then
+			logItem "Ignoring deprecated version $version"
+			continue
+		fi
+		echo "$version"
+	done
+}
+
+function updatePackageReminder() { # version - true if the update to version should be reported, at most UPDATE_REMINDER_MAX times
+
+	logEntry "$1"
+
+	local reminderFile="$VAR_LIB_DIRECTORY/$PACKAGE_UPDATE_REMINDER_FILE" count=0 rc=1
+	local -a reminder=()
+
+	if [[ ! -d "$VAR_LIB_DIRECTORY" ]] && ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
+		exitError "$RC_CREATE_ERROR"
+	fi
+
+	[[ -f "$reminderFile" ]] && read -r -a reminder < "$reminderFile"
+	if [[ "${reminder[0]:-}" == "$1" && "${reminder[1]:-}" =~ ^[0-9]+$ ]]; then	# a new version resets the counter
+		count="${reminder[1]}"
+	fi
+
+	if (( count < UPDATE_REMINDER_MAX )); then
+		echo "$1 $(( count + 1 ))" > "$reminderFile"
+		rc=0
+	fi
+	logItem "Reminder: $1 count: $count"
+
+	logExit "$rc"
+	return $rc
+
+}
+
+# Reports new versions in the apt repository, used if raspiBackup is installed as Debian package.
+# Versions listed in DEPRECATED of the properties file are never reported.
+#   - releases and hotfixes in suite stable for all users, also for users of an individual fix
+#   - newer betas and the following release for beta testers (installed version is in suite beta)
+#   - a beta newer than the latest release for all others
+function reportPackageNews() {
+
+	logEntry
+
+	(( ! REGRESSION_TEST )) && refreshPackageIndex
+
+	local installed candidate stableVersions betaVersions update latestRelease beta isBetaTester=0
+
+	installed="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
+	stableVersions="$(packageSuiteVersions "$PACKAGE_SUITE")"
+	betaVersions="$(packageSuiteVersions "$PACKAGE_BETA_SUITE")"
+
+	if grep -qxF -- "$installed" <<< "$betaVersions"; then
+		isBetaTester=1
+		update="$(printf '%s\n%s\n' "$stableVersions" "$betaVersions" | withoutDeprecatedVersions | highestVersion "$installed")"
+	else
+		update="$(withoutDeprecatedVersions <<< "$stableVersions" | highestVersion "$installed")"
+	fi
+
+	logItem "installed: $installed candidate: $candidate betaTester: $isBetaTester update: $update"
+
+	if [[ -n "$update" ]] && updatePackageReminder "$update"; then
+		NEWS_AVAILABLE=1
+		UPDATE_POSSIBLE=1
+		FORCE_MESSAGE=1
+		if [[ "$update" == "$candidate" ]] && ! isPackageHeld; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$update" "$installed"
+		else	# apt upgrade doesn't install it: package is held or apt would install a deprecated version
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_PACKAGE_VERSION_INSTALL "$update" "$installed" "$update"
+		fi
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
+	fi
+
+	if (( ! isBetaTester )); then
+		# betas older than the latest release, even a deprecated one, are outdated
+		latestRelease="$(printf '%s\n%s\n' "$installed" "$stableVersions" | highestVersion)"
+		beta="$(withoutDeprecatedVersions <<< "$betaVersions" | highestVersion "$latestRelease")"
+		logItem "latest release: $latestRelease beta: $beta"
+		if [[ -n "$beta" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$beta"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
+			NEWS_AVAILABLE=1
+			BETA_AVAILABLE=1
+		fi
+	fi
+
+	logExit
 
 }
 
@@ -7804,6 +7982,12 @@ function inspect4Restore() {
 function reportNews() {
 
 	logEntry
+
+	if isPackageInstalled; then	# the apt repository knows all versions, the properties file only DEPRECATED
+		reportPackageNews
+		logExit
+		return
+	fi
 
 	isUpdatePossible
 
