@@ -5588,7 +5588,8 @@ function isVersionInList() { # version list - true if version is in the list sep
 }
 
 function isPackageInstalled() {
-	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" == "install ok installed" ]]
+	# a held package has the status "hold ok installed"
+	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" =~ ^(install|hold)\ ok\ installed$ ]]
 }
 
 function isPackageHeld() {

@@ -2259,7 +2259,8 @@ function isRaspiBackupInstalled() {
 }
 
 function isPackageInstalled() { # apt manages code, config template, extensions and uninstall
-	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" == "install ok installed" ]]
+	# a held package has the status "hold ok installed"
+	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" =~ ^(install|hold)\ ok\ installed$ ]]
 	return
 }
 
@@ -2530,6 +2531,10 @@ function package_revert_execute() { # installs the previous release and holds it
 
 }
 
+function isBetaVersion() { # debianVersion - 0.7.5~beta1 is a beta, an individual fix like 0.7.5-m2~u972.1 isn't
+	[[ "$1" == *"~beta"* ]]
+}
+
 function isPackageHeld() {
 	apt-mark showhold "$PACKAGE_NAME" 2>>"$LOG_FILE" | grep -qx "$PACKAGE_NAME"
 }
@@ -2558,7 +2563,7 @@ function parsePackageVersions() { # sets the installed version and the versions 
 	PACKAGE_VERSION_STABLE="$(packageVersions "$REPO_SUITE" | highestVersion)"
 	PACKAGE_VERSION_BETA="$(packageVersions "$REPO_BETA_SUITE" | highestVersion)"
 	PACKAGE_VERSION_PREVIOUS=""
-	if [[ "$PACKAGE_VERSION_INSTALLED" != *"~"* ]]; then	# for a beta the previous release is the current release
+	if ! isBetaVersion "$PACKAGE_VERSION_INSTALLED"; then	# for a beta the previous release is the current release
 		PACKAGE_VERSION_PREVIOUS="$(packageVersions "$REPO_SUITE" | highestVersion "$PACKAGE_VERSION_INSTALLED")"
 	fi
 
@@ -3535,11 +3540,11 @@ function trapWithArg() { # function trap1 trap2 ... trapn
 
 function cleanup() {
 
+	local rc=$?	# has to be the first command, otherwise the exit code is lost
+
 	logEntry
 
 	trap '' SIGINT SIGTERM EXIT
-
-	local rc=$?
 
 	local signal="$1"
 
@@ -5162,7 +5167,7 @@ function package_update_menu() { # update, revert, install or revert a beta with
 	if [[ -n "$PACKAGE_VERSION_BETA" ]] && dpkg --compare-versions "$PACKAGE_VERSION_BETA" gt "$i"; then
 		beta="$PACKAGE_VERSION_BETA"
 	fi
-	if [[ "$i" == *"~"* && -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" lt "$i"; then
+	if isBetaVersion "$i" && [[ -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" lt "$i"; then
 		revertBeta="$PACKAGE_VERSION_STABLE"
 	fi
 
