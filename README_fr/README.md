@@ -38,7 +38,22 @@ Le programme d’installation utilise des menus, des listes et des boutons radio
 
 ![Demo](https://www.linux-tips-and-tricks.de/images/raspiBackupInstall_en.gif)
 
-L’installation démarre avec la commande suivante :
+raspiBackup est installé comme paquet Debian depuis son dépôt apt signé avec les commandes suivantes :
+
+```
+curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
+bash raspiBackupInstall.sh
+```
+
+Le script ajoute le dépôt et installe le paquet `raspibackup`. `bash raspiBackupInstall.sh --help` affiche toutes les options, par exemple `--beta` pour installer la dernière version bêta. Ensuite raspiBackup est configuré avec
+
+```
+sudo raspiBackupConfig
+```
+
+Les mises à jour sont installées avec `sudo apt-get update && sudo apt-get upgrade`.
+
+L’ancienne installation sans apt reste disponible avec la commande suivante :
 
 `curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
 
