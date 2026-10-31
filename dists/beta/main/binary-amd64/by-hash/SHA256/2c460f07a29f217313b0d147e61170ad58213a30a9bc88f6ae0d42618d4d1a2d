@@ -1,0 +1,17 @@
+Package: raspibackup
+Architecture: all
+Version: 0.8.1~beta
+Priority: optional
+Section: utils
+Maintainer: framp <framp@linux-tips-and-tricks.de>
+Depends: bash (>= 5),parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux (>= 2),fdisk,curl
+Filename: pool/main/r/raspibackup/raspibackup_0.8.1~beta_all.deb
+Size: 162230
+MD5sum: 07524c9dac5b96174c1e7f4552b93768
+SHA1: 430dd39ec58f735bca8803a4c1fbae8b626cb5ab
+SHA256: ce33c37ae13e2c37b4ca15ada1c022d4456eec5da6fbc2f6ff3bccefdd6abf41
+SHA512: f1c29e4fc144d6a3119b9db75fe78f674438bb33023f57ae6b1baa3b7d3bc8045b8b884b4423cf9d0effe7ae0e04b7a2ba8910fe2c2d26b7c741e75848b26f67
+Description: Backup your Raspberry Pi systems
+ Create and keep multiple backup versions of your running Raspberries
+ with dd, tar or rsync.
+
