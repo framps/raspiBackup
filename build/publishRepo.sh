@@ -39,6 +39,7 @@ Steps:
     - fetch the Pages branch from GitHub (created on first use)
     - copy packages already published there but missing in 'repo' back into 'repo',
       so no published version gets lost when building on another system
+    - delete the packages of the versions given with --remove from 'repo'
     - recreate and sign the repository index (buildRepo.sh)
     - replace the contents of the Pages branch by 'repo' and push it
 
@@ -47,8 +48,11 @@ Repository settings -> Pages -> Deploy from a branch -> gh-pages, / (root)
 
 Options:
 
-    --no-push      create the commit but don't push it
-    -h | --help    display this short help
+    --no-push            create the commit but don't push it
+    --remove <version>   unpublish this version, can be used multiple times
+                         e.g. --remove 0.8.2-beta or --remove 0.8.2~beta
+                         Systems which installed it keep it. Publish a higher version to replace it.
+    -h | --help          display this short help
 
 EOF_USAGE
 }
@@ -62,6 +66,7 @@ PAGES_REMOTE="${PAGES_REMOTE:-origin}"
 PAGES_BRANCH="${PAGES_BRANCH:-gh-pages}"
 
 PUSH=1
+REMOVE=()
 while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
@@ -70,6 +75,14 @@ while (( $# > 0 )); do
         --no-push) PUSH=0
                    shift
                    ;;
+        --remove) if (( $# < 2 )) || [[ -z "$2" ]] ; then
+                      echo "Error: Missing version for --remove!"
+                      exit 1
+                  fi
+                  # same conversion as build.sh: 0.7.5-beta1 -> 0.7.5~beta1, 0.7.4-m_972 -> 0.7.4-m-972
+                  REMOVE+=("$(sed -E 's/-(alpha|beta|rc)/~\L\1/I; s/_/-/g' <<< "$2")")
+                  shift 2
+                  ;;
         *) echo "Error: Unknown option '$1'!"
            exit 1
            ;;
@@ -100,6 +113,21 @@ else
     git worktree add --detach "$PAGES"
 fi
 
+removed=""
+if (( ${#REMOVE[@]} > 0 )) ; then
+    show "Remove versions ${REMOVE[*]}"
+    for version in "${REMOVE[@]}"; do
+        mapfile -t debs < <(find "$REPO/pool" -name "${PACKAGE_NAME}_${version}_*.deb")
+        if (( ${#debs[@]} == 0 )) ; then
+            echo "Error: Version $version isn't in the repository. Published versions:"
+            find "$REPO/pool" -name '*.deb' -printf '%f\n' | sort -V
+            exit 1
+        fi
+        rm -v "${debs[@]}"
+    done
+    removed="${REMOVE[*]}"
+fi
+
 ./buildRepo.sh
 
 show "Create commit for $PAGES_BRANCH"
@@ -115,7 +143,7 @@ git -C "$PAGES" add -A -f
 versions="$(cd "$REPO" && find pool -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -V | tr '\n' ' ')"
 tree="$(git -C "$PAGES" write-tree)"
 # signed, so users can verify the published raspiBackupInstall.sh (commit-tree ignores commit.gpgsign)
-commit="$(git -C "$PAGES" commit-tree -S"$GPG_KEYID" "$tree" ${parent:+-p "$parent"} -m "Publish raspiBackup apt repository" -m "Versions: $versions")"
+commit="$(git -C "$PAGES" commit-tree -S"$GPG_KEYID" "$tree" ${parent:+-p "$parent"} -m "Publish raspiBackup apt repository" -m "Versions: $versions" ${removed:+-m "Removed: $removed"})"
 git log --stat -1 "$commit" | tail -n 25
 
 if (( PUSH )) ; then

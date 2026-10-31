@@ -87,7 +87,8 @@ Notes:
   as update or beta, and users running one of them get a warning. If `apt upgrade` would install a
   deprecated version, raspiBackup tells the user the `apt-get install raspibackup=<version>` command
   for the newest version which isn't deprecated.
-- All published versions stay in the repository, so users can always go back.
+- All published versions stay in the repository (unless removed with `--remove`, see section 4),
+  so users can always go back.
   `publishRepo.sh` copies packages published earlier but missing locally back into `repo/`,
   so you can publish from any system.
 - Neither `build/deb/` nor `build/repo/` are committed to `master`. The packages exist on
@@ -402,9 +403,16 @@ Users with the faulty version only get rid of it with a new, **higher** version:
   number, e.g. the code of `0.7.4` as `0.7.5-m1`, and publish it. Users get the good code
   back with their next `apt-get upgrade`.
 
-Deleting the faulty package from the repository doesn't help: apt never downgrades
-installed packages by itself. Also `publishRepo.sh` doesn't support removing packages yet,
-it restores packages deleted only locally.
+Deleting the faulty package from the repository doesn't help those users: apt never downgrades
+installed packages by itself. It only stops new installations and upgrades to that version:
+
+```
+./publishRepo.sh --remove 0.7.5             # or --remove 0.7.5-beta1, can be repeated
+```
+
+The packages are removed and the indices re-signed in the same commit on `gh-pages`, so the
+published index never lists a missing package. Deleting a package only in `build/repo/` doesn't
+work, `publishRepo.sh` restores it from `gh-pages`.
 
 ---
 
