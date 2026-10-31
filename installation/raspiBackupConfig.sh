@@ -3325,6 +3325,8 @@ function uninstall_execute() {
 		rm /${FILE_TO_INSTALL_ABS_PATH}/${RASPIBACKUP_NAME}*.* 2>>$LOG_FILE
 
 		writeToConsole $MSG_UNINSTALL_FINISHED "$RASPIBACKUP_NAME"
+	elif (( PACKAGE_MODE )); then # apt purge already deleted the installer
+		writeToConsole $MSG_UNINSTALL_FINISHED "$RASPIBACKUP_NAME"
 	else
 		writeToConsole $MSG_NOT_INSTALLED "$RASPIBACKUP_NAME"
 	fi
