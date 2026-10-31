@@ -90,6 +90,15 @@ is given.
 has to be run as root.
 .SH OPTIONS
 .TP
+.B \-f
+Update the package index with
+.B apt-get update
+even if it was updated less than a day ago.
+Otherwise the package index is updated at most once a day, or when the
+.B raspiBackup
+apt repository was changed since the last update.
+Can be combined with all other options and the menu.
+.TP
 .B \-h
 Display a short help text and exit.
 .TP

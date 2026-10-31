@@ -204,6 +204,10 @@ Without the menu:
 If the installed version is held, both options ask before they change it. Without a terminal
 (e.g. cron) the answer is no.
 
+The menu and both options update the package index with `apt-get update` at most once a day,
+or when the apt repository was changed. Add `-f` to update it anyway, e.g. right after a new
+version was published: `sudo raspiBackupConfig -f -U`.
+
 Updates afterwards:
 
 ```

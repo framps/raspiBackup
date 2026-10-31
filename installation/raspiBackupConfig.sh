@@ -275,6 +275,8 @@ REPO_COMPONENT="main"
 REPO_KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
 REPO_SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
+PACKAGE_INDEX_STAMP="$VAR_LIB_DIRECTORY/packageIndexUpdated" # time of the last apt-get update
+PACKAGE_INDEX_MAX_AGE=$((24*60*60)) # apt-get update at most once a day
 
 PROPERTY_REGEX='.*="([^"]*)"'
 
@@ -1532,11 +1534,11 @@ MSG_FR[$MSG_PACKAGE_REQUIRED]="${MSG_PRF}0049E: L'option %1 nécessite que $RASP
 MSG_ZH[$MSG_PACKAGE_REQUIRED]="${MSG_PRF}0049E: 选项 %1 要求 $RASPIBACKUP_NAME 以Debian软件包 $PACKAGE_NAME 的形式安装."
 
 MSG_PACKAGE_HELD_UPDATE=$((SCNT++))
-MSG_EN[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME was reverted to %1 and is kept at this version. Update it to the latest version anyway?"
-MSG_DE[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME wurde auf %1 zurückgesetzt und bleibt auf dieser Version. Soll es trotzdem auf die neueste Version aktualisiert werden?"
-MSG_FI[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME palautettiin versioon %1 ja pidetään tässä versiossa. Päivitetäänkö se silti uusimpaan versioon?"
-MSG_FR[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME a été ramené à %1 et reste à cette version. Le mettre quand même à jour vers la dernière version ?"
-MSG_ZH[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 仍要更新到最新版本吗?"
+MSG_EN[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME was reverted to %1 and is kept at this version. Update it to %2 anyway?"
+MSG_DE[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME wurde auf %1 zurückgesetzt und bleibt auf dieser Version. Soll es trotzdem auf %2 aktualisiert werden?"
+MSG_FI[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME palautettiin versioon %1 ja pidetään tässä versiossa. Päivitetäänkö se silti versioon %2?"
+MSG_FR[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME a été ramené à %1 et reste à cette version. Le mettre quand même à jour vers %2 ?"
+MSG_ZH[$MSG_PACKAGE_HELD_UPDATE]="${MSG_PRF}0050W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 仍要更新到 %2 吗?"
 
 MSG_PACKAGE_HELD_REVERT=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME was already reverted to %1 and is kept at this version. Revert it to %2 anyway?"
@@ -2376,7 +2378,7 @@ function package_install_execute() { # apt installs code, installer, config temp
 	writeToConsole $MSG_DOWNLOADING "$PACKAGE_NAME"
 
 	# dependencies come from the system repositories which might be outdated
-	executeApt apt-get update
+	package_index_refresh
 	if ! executeApt apt-get install -y "$PACKAGE_NAME"; then
 		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME"
 		logExit
@@ -2433,13 +2435,45 @@ function package_index_update_execute() { # apt-get update to get the versions a
 		sed -i -E "s/^(Suites:.*)$/\1 $REPO_BETA_SUITE/" "$REPO_SOURCES" &>>"$LOG_FILE"
 	fi
 
-	if ! executeApt apt-get update; then
+	if ! package_index_refresh; then
 		unrecoverableError $MSG_PACKAGE_INDEX_UPDATE_FAILED
 		logExit
 		return
 	fi
 
 	logExit
+
+}
+
+function isPackageIndexCurrent() { # true if apt-get update was done less than a day ago, isn't forced and the repository didn't change since
+	(( FORCE_INDEX_UPDATE )) && return 1
+	[[ -f "$PACKAGE_INDEX_STAMP" ]] || return 1
+	[[ -f "$REPO_SOURCES" && "$REPO_SOURCES" -nt "$PACKAGE_INDEX_STAMP" ]] && return 1
+	local age=$(( $(date +%s) - $(stat -c %Y "$PACKAGE_INDEX_STAMP" 2>>"$LOG_FILE" || echo 0) ))
+	(( age >= 0 && age < PACKAGE_INDEX_MAX_AGE ))
+}
+
+function package_index_refresh() { # apt-get update, but only once a day unless forced with -f
+
+	logEntry
+
+	if isPackageIndexCurrent; then
+		logItem "Package index updated less than $((PACKAGE_INDEX_MAX_AGE / 3600)) hours ago"
+		logExit
+		return 0
+	fi
+
+	if ! executeApt apt-get update; then
+		logExit 1
+		return 1
+	fi
+
+	mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"
+	touch "$PACKAGE_INDEX_STAMP" &>>"$LOG_FILE"
+	FORCE_INDEX_UPDATE=0 # once per invocation is enough
+
+	logExit
+	return 0
 
 }
 
@@ -5253,11 +5287,20 @@ function package_upgrade_execute() { # updates the installed package to the late
 
 	logEntry
 
-	local oldVersion newVersion
+	local oldVersion newVersion candidate
 	oldVersion="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
 
+	package_index_update_execute
+
 	if isPackageHeld; then
-		if ! askYesNo $MSG_PACKAGE_HELD_UPDATE "$oldVersion"; then
+		# a hold doesn't change the candidate, it's the version apt-get installs
+		candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
+		if [[ -z "$candidate" || "$candidate" == "$oldVersion" ]]; then
+			writeToConsole $MSG_PACKAGE_UP_TO_DATE "$oldVersion"
+			logExit
+			return
+		fi
+		if ! askYesNo $MSG_PACKAGE_HELD_UPDATE "$oldVersion" "$candidate"; then
 			writeToConsole $MSG_PACKAGE_HELD "$oldVersion"
 			logExit
 			return
@@ -5268,8 +5311,6 @@ function package_upgrade_execute() { # updates the installed package to the late
 			return
 		fi
 	fi
-
-	package_index_update_execute
 
 	if ! executeApt apt-get install -y --only-upgrade "$PACKAGE_NAME"; then
 		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME"
@@ -6146,7 +6187,8 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF ( -i | -m | -R | -u | -U | -t [crond|systemd] )"
+	echo "$MYSELF [-f] ( -i | -m | -R | -u | -U | -t [crond|systemd] )"
+	echo "-f: update the package index with apt-get update even if it was updated less than a day ago"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
 	echo "-m: add new options of the config template of package $PACKAGE_NAME to the config (called by the package after an update)"
@@ -6192,6 +6234,7 @@ MODE_UPDATE=0 # force install
 MODE_REVERT=0 # revert the package to the previous release and hold it
 MODE_MERGE=0 # merge the config template of the package into the config, called by postinst
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
+FORCE_INDEX_UPDATE=0 # apt-get update even if it was done less than a day ago
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 
@@ -6213,11 +6256,13 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?musUiR" opt; do
+while getopts "t:h?fmusUiR" opt; do
     case "$opt" in
 	 h|\?)
        show_help
        exit 0
+       ;;
+    f) FORCE_INDEX_UPDATE=1
        ;;
     i) MODE_INSTALL=1
 		 MODE_UNATTENDED=1

@@ -449,13 +449,14 @@ aptUpgrade() { # what 'apt-get upgrade' does to raspibackup, other packages aren
 
 rbc() { # options - raspiBackupConfig without terminal, so held packages aren't changed
     step "raspiBackupConfig $*"
-    RASPIBACKUP_INSTALL_DEBUG=1 run "$RASPIBACKUPCONFIG" "$@" < /dev/null
+    # -f: versions are published between the calls, so the package index has to be updated every time
+    RASPIBACKUP_INSTALL_DEBUG=1 run "$RASPIBACKUPCONFIG" -f "$@" < /dev/null
 }
 
 rbcYes() { # options - raspiBackupConfig with a terminal answering yes
     step "raspiBackupConfig $* (answer yes)"
-    log "\$ printf 'y\\n' | script -qec '$RASPIBACKUPCONFIG $*' /dev/null"
-    printf 'y\n' | RASPIBACKUP_INSTALL_DEBUG=1 timeout 600 script -qec "$RASPIBACKUPCONFIG $*" /dev/null >> "$LOG" 2>&1
+    log "\$ printf 'y\\n' | script -qec '$RASPIBACKUPCONFIG -f $*' /dev/null"
+    printf 'y\n' | RASPIBACKUP_INSTALL_DEBUG=1 timeout 600 script -qec "$RASPIBACKUPCONFIG -f $*" /dev/null >> "$LOG" 2>&1
     local rc=$?
     log "rc=$rc"
     return $rc
