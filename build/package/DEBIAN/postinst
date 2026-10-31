@@ -4,7 +4,7 @@
 # postinst of ${PACKAGE_NAME}
 #
 # The configuration ${DIR_ETC}/raspiBackup.conf is created from a template on first installation only.
-# It's no conffile, so dpkg never touches it. raspiBackupConfig adds new options of the template after an update.
+# It's no conffile, so dpkg never touches it. After an update raspiBackupConfig -m adds new options of the template.
 
 set -euo pipefail
 
@@ -17,6 +17,11 @@ case "${1:-}" in
         if [[ -f "$CONFIG" ]]; then
             echo "Keeping existing configuration $CONFIG, saved as $CONFIG~"
             cp -a "$CONFIG" "$CONFIG~"
+            # add new options of the template, comment out obsolete ones, existing values are kept.
+            # A failed merge doesn't fail the package, raspiBackupConfig offers the merge again when it's started.
+            if [[ -x "${DIR_BIN}/raspiBackupConfig" ]]; then
+                "${DIR_BIN}/raspiBackupConfig" -m || echo "Configuration $CONFIG not updated. Update it with: sudo raspiBackupConfig"
+            fi
         else
             # use German config file, English is default
             lang="${LANG:-}"

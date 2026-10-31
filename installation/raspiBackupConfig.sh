@@ -1504,6 +1504,18 @@ MSG_FI[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: Asetuksia %1 ei voitu päivit
 MSG_FR[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: La configuration %1 n'a pas pu être mise à jour avec %2."
 MSG_ZH[$MSG_CONFIG_MERGE_FAILED]="${MSG_PRF}0046E: 无法使用 %2 更新配置 %1."
 
+MSG_CONFIG_MERGE_PENDING=$((SCNT++))
+MSG_EN[$MSG_CONFIG_MERGE_PENDING]="${MSG_PRF}0047I: Configuration %1 has version %2 but the installed configuration template has version %3.${NL}${NL}\
+Update the configuration now? New options are added, obsolete options are commented out and existing values are kept."
+MSG_DE[$MSG_CONFIG_MERGE_PENDING]="${MSG_PRF}0047I: Konfiguration %1 hat Version %2, die installierte Konfigurationsvorlage aber Version %3.${NL}${NL}\
+Soll die Konfiguration jetzt aktualisiert werden? Neue Optionen werden hinzugefügt, veraltete Optionen auskommentiert und bestehende Werte bleiben erhalten."
+MSG_FI[$MSG_CONFIG_MERGE_PENDING]="${MSG_PRF}0047I: Asetusten %1 versio on %2, mutta asennetun asetuspohjan versio on %3.${NL}${NL}\
+Päivitetäänkö asetukset nyt? Uudet valinnat lisätään, vanhentuneet valinnat kommentoidaan pois ja nykyiset arvot säilytetään."
+MSG_FR[$MSG_CONFIG_MERGE_PENDING]="${MSG_PRF}0047I: La configuration %1 est en version %2 mais le modèle de configuration installé est en version %3.${NL}${NL}\
+Mettre à jour la configuration maintenant ? Les nouvelles options sont ajoutées, les options obsolètes sont mises en commentaire et les valeurs existantes sont conservées."
+MSG_ZH[$MSG_CONFIG_MERGE_PENDING]="${MSG_PRF}0047I: 配置 %1 的版本为 %2, 但已安装的配置模板版本为 %3.${NL}${NL}\
+现在更新配置吗? 将添加新选项, 注释掉过时的选项, 并保留现有的值."
+
 
 declare -A MENU_EN
 declare -A MENU_DE
@@ -2763,6 +2775,23 @@ function configTemplateName() { # - name of the config template matching the lan
 	fi
 }
 
+function isConfigTemplateNewer() { # template - true if the template has a newer config version than the config, a downgrade keeps the newer config
+
+	logEntry "$1"
+
+	local oldVersion newVersion rc=1
+	if [[ -f "$CONFIG_ABS_FILE" && -f "$1" ]]; then
+		oldVersion="$(extractVersionFromFile "$CONFIG_ABS_FILE" "$CONFIG_VERSION_VARNAME")"
+		newVersion="$(extractVersionFromFile "$1" "$CONFIG_VERSION_VARNAME")"
+		logItem "Config version: $oldVersion - template version: $newVersion"
+		(( $(compareVersions "$oldVersion" "$newVersion") < 0 )) && rc=0
+	fi
+
+	logExit $rc
+	return $rc
+
+}
+
 function config_merge_execute() { # template - adds new options of the template to the config and comments out deleted options
 
 	logEntry "$1"
@@ -2778,9 +2807,8 @@ function config_merge_execute() { # template - adds new options of the template 
 	local oldVersion newVersion
 	oldVersion="$(extractVersionFromFile "$CONFIG_ABS_FILE" "$CONFIG_VERSION_VARNAME")"
 	newVersion="$(extractVersionFromFile "$template" "$CONFIG_VERSION_VARNAME")"
-	logItem "Config version: $oldVersion - template version: $newVersion"
 
-	if (( $(compareVersions "$oldVersion" "$newVersion") >= 0 )); then	# a downgrade keeps the newer config
+	if ! isConfigTemplateNewer "$template"; then
 		logExit "Config is up to date"
 		return
 	fi
@@ -2855,6 +2883,42 @@ function config_merge_package_execute() { # merges the config template installed
 	logEntry
 
 	config_merge_execute "$PACKAGE_TEMPLATES_DIR/$(configTemplateName)"
+
+	logExit
+
+}
+
+function config_merge_check_do() { # offers to merge the config template of the package if it is newer than the config, e.g. after apt upgrade
+
+	logEntry
+
+	local template="$PACKAGE_TEMPLATES_DIR/$(configTemplateName)"
+
+	if (( ! PACKAGE_MODE )) || ! isConfigTemplateNewer "$template"; then
+		logExit
+		return
+	fi
+
+	local oldVersion newVersion
+	oldVersion="$(extractVersionFromFile "$CONFIG_ABS_FILE" "$CONFIG_VERSION_VARNAME")"
+	newVersion="$(extractVersionFromFile "$template" "$CONFIG_VERSION_VARNAME")"
+
+	local m="$(getMessageText $MSG_CONFIG_MERGE_PENDING "$CONFIG_ABS_FILE" "$oldVersion" "$newVersion")"
+	local y="$(getMessageText $BUTTON_YES)"
+	local n="$(getMessageText $BUTTON_NO)"
+	local tt="$(getMessageText $TITLE_CONFIRM)"
+
+	if ! whiptail --yesno "$m" --title "$tt" --yes-button "$y" --no-button "$n" $ROWS_MSGBOX $WINDOW_COLS 2; then
+		logExit
+		return
+	fi
+
+	config_merge_execute "$template"	# exits on error
+	parseConfig
+
+	m="$(getMessageText $MSG_CONFIG_MERGED "$CONFIG_ABS_FILE" "$oldVersion" "$newVersion" "$CONFIG_ABS_FILE.v$oldVersion")"
+	tt="$(getMessageText $TITLE_INFORMATION)"
+	whiptail --msgbox "$m" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 1
 
 	logExit
 
@@ -5861,6 +5925,7 @@ function uiInstall() {
 	if isConfigInstalled; then
 		parseConfig
 		configFound=1
+		config_merge_check_do	# package may have been upgraded with apt without merging the config
 	fi
 
 	if (( ! PACKAGE_MODE )) && isInternetAvailable; then	# version properties are used for updates only
@@ -5941,7 +6006,11 @@ function unattendedInstall() {
 		exit 1
 	fi
 
-	if (( PACKAGE_MODE )) && (( MODE_UPDATE )); then
+	if (( MODE_MERGE )); then
+		if (( PACKAGE_MODE )); then
+			config_merge_package_execute
+		fi
+	elif (( PACKAGE_MODE )) && (( MODE_UPDATE )); then
 		check4InternetAvailable
 		package_upgrade_execute
 		config_merge_package_execute
@@ -5985,9 +6054,10 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF ( -i | -u | -U | -t [crond|systemd] )"
+	echo "$MYSELF ( -i | -m | -u | -U | -t [crond|systemd] )"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
+	echo "-m: add new options of the config template of package $PACKAGE_NAME to the config (called by the package after an update)"
 	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME with apt"
 	echo "-t: use either crond or systemd for backup timer"
@@ -6047,6 +6117,7 @@ MODE_UNATTENDED=0
 MODE_UNINSTALL=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
+MODE_MERGE=0 # merge the config template of the package into the config, called by postinst
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
@@ -6069,7 +6140,7 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?usUi" opt; do
+while getopts "t:h?musUi" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -6079,6 +6150,9 @@ while getopts "t:h?usUi" opt; do
 		 MODE_UNATTENDED=1
        ;;
     U) MODE_UPDATE=1
+		 MODE_UNATTENDED=1
+		 ;;
+    m) MODE_MERGE=1
 		 MODE_UNATTENDED=1
 		 ;;
     u) MODE_UNINSTALL=1
@@ -6118,6 +6192,9 @@ fi
 trapWithArg cleanup SIGINT SIGTERM EXIT
 
 writeToConsole $MSG_VERSION "$GIT_CODEVERSION"
+
+# merge is called by postinst, maybe while raspiBackupConfig runs apt, so don't delete the log of that instance
+(( MODE_MERGE )) && LOG_FILE="/tmp/${MYNAME}_merge.log"
 
 rm $LOG_FILE &>/dev/null
 logItem "$GIT_CODEVERSION"

@@ -14,7 +14,7 @@ raspiBackupConfig \- configure, install and uninstall raspiBackup
 .B raspiBackupConfig
 .br
 .B raspiBackupConfig
-.BR \-i " | " \-u " | " \-U
+.BR \-i " | " \-m " | " \-u " | " \-U
 .RB [ \-t
 .BR crond | systemd ]
 .br
@@ -104,6 +104,18 @@ with
 .BR apt-get (8)
 and create a default configuration.
 .TP
+.B \-m
+Add new options of the configuration template installed by the Debian package
+.B raspibackup
+to
+.I /usr/local/etc/raspiBackup.conf
+and comment out options which no longer exist, as described for
+.BR \-U .
+Nothing is done if the configuration is up to date or
+.B raspiBackup
+isn't installed as Debian package.
+The package calls this option when it's updated.
+.TP
 .BR \-t " crond" | systemd
 Use cron or systemd for regular backups.
 .TP
@@ -154,6 +166,12 @@ or with
 .B sudo apt update && sudo apt upgrade
 .fi
 .RE
+.PP
+In both cases the package updates the configuration with
+.BR "raspiBackupConfig \-m" .
+If the configuration is still older than the installed configuration template,
+.B raspiBackupConfig
+offers to update it when it's started.
 .PP
 When the package is removed, the systemd units and the cron file created
 by
