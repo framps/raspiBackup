@@ -1,0 +1,34 @@
+Package: raspibackup
+Architecture: all
+Version: 0.8.1-m1
+Priority: optional
+Section: utils
+Maintainer: framp <framp@linux-tips-and-tricks.de>
+Depends: bash (>= 5),parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux (>= 2),fdisk,curl
+Filename: pool/main/r/raspibackup/raspibackup_0.8.1-m1_all.deb
+Size: 159582
+MD5sum: d6989062831c514b04e73a63b3bd78f0
+SHA1: 85eb1124ebfec6c585aa92013ff3485b3ed1c966
+SHA256: 13082407557a87f458f04e911a70401261b032e242fa8a3a77ef02fe387b9c94
+SHA512: 2879fa3f29be735a412a9cb9016834a309b698fa5374588ab1fd6b0d08679345f35e601be462f93cedeb1b7f5600a0182e654f633f0b7ceed0f27509a8e563dc
+Description: Backup your Raspberry Pi systems
+ Create and keep multiple backup versions of your running Raspberries
+ with dd, tar or rsync.
+
+Package: raspibackup
+Architecture: all
+Version: 0.8.1
+Priority: optional
+Section: utils
+Maintainer: framp <framp@linux-tips-and-tricks.de>
+Depends: bash (>= 5),parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux (>= 2),fdisk,curl
+Filename: pool/main/r/raspibackup/raspibackup_0.8.1_all.deb
+Size: 159574
+MD5sum: 5b3ca05a9e6d0f3bb31eb0ab07a47fe1
+SHA1: 9a277b958aae4ab75fb00226beaf327c352b21ec
+SHA256: 60e615a7dcd1e967f1a48f0adfab811621353fa31276eb3f50eeba600cb08d61
+SHA512: 7397ead9bb280799a3f3a24f84e895407cf406df0b86457c7fb9112839e26bcaa2c8e18f03a4df8048fa0cf1d42cea1dcbb8d561343991cc95136a63278b4bac
+Description: Backup your Raspberry Pi systems
+ Create and keep multiple backup versions of your running Raspberries
+ with dd, tar or rsync.
+
