@@ -9,7 +9,7 @@ Recommends: bash-completion
 Suggests: pv, jq, lsof, btrfs-progs, f2fs-tools, mailutils, default-mta | msmtp-mta | mail-transport-agent
 Maintainer: framp <framp@linux-tips-and-tricks.de>
 Homepage: https://raspibackup.linux-tips-and-tricks.de
-Description: Backup and restore tool for Raspberry Pi systems
+Description: Backup and restore tool raspiBackup for Raspberry Pi systems
  raspiBackup creates full backups (images) of a running Raspberry Pi
  with dd, tar or rsync, including incremental rsync backups with hardlinks.
  Backups can be stored on a USB disk, NAS (NFS, SMB/CIFS) or any mounted

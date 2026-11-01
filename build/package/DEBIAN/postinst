@@ -48,7 +48,12 @@ case "${1:-}" in
             systemctl daemon-reload || true
         fi
 
-        echo "Configure raspiBackup with: sudo raspiBackupConfig"
+        # $2 is the previously configured version, empty on first installation
+        if [[ -z "${2:-}" ]]; then
+            echo "raspiBackup installed. Configure it with: sudo raspiBackupConfig"
+        else
+            echo "raspiBackup updated. Change the configuration with: sudo raspiBackupConfig"
+        fi
         ;;
 esac
 
