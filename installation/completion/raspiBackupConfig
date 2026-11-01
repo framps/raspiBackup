@@ -1,0 +1,41 @@
+# bash completion for raspiBackupConfig                    -*- shell-script -*-
+# vim: set expandtab ft=sh:
+#
+# Installed into /usr/local/share/bash-completion/completions, loaded on demand by bash-completion
+#
+#    Copyright (c) 2026 framp at linux-tips-and-tricks dot de
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+_raspiBackupConfig() {
+    # shellcheck disable=SC2034 # words and cword are set by _init_completion
+    local cur prev words cword
+    if declare -F _init_completion > /dev/null; then
+        _init_completion || return
+    else
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+    fi
+
+    if [[ "$prev" == "-t" ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "crond systemd" -- "$cur")
+        return
+    fi
+
+    if [[ "$cur" == -* || -z "$cur" ]]; then
+        local options="-f -h -s -t --version" w
+        # the modes exclude each other, offer them only if none was given yet
+        local modes="-i -m -R -u -U"
+        for w in "${COMP_WORDS[@]:1:COMP_CWORD-1}"; do
+            case "$w" in
+                -*[imRuU]*) [[ "$w" != --* ]] && modes="" ;;
+            esac
+        done
+        mapfile -t COMPREPLY < <(compgen -W "$options $modes" -- "$cur")
+    fi
+}
+
+complete -F _raspiBackupConfig raspiBackupConfig raspiBackupConfig.sh raspiBackupInstallUI

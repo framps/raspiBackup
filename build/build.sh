@@ -251,6 +251,9 @@ install -m644 -D -t "$TGT/$DIR_SHARE/${PACKAGE_NAME}/extensions" "$GITSRC/extens
 install -m644 -D -t "$TGT/$DIR_SHARE/man/man1" "$GITSRC/man/raspiBackup.1" "$GITSRC/man/raspiBackupConfig.1"
 install -m644 -D -t "$TGT/$DIR_SHARE/man/man5" "$GITSRC/man/raspiBackup.conf.5"
 
+# copy bash completions, bash-completion loads them on demand from $DIR_SHARE/bash-completion/completions
+install -m644 -D -t "$TGT/$DIR_SHARE/bash-completion/completions" "$GITSRC/installation/completion/raspiBackup" "$GITSRC/installation/completion/raspiBackupConfig"
+
 # copy full license text (GPLv3) next to the copyright file installed below
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$GITSRC/LICENSE"
 
@@ -279,6 +282,10 @@ gzip -9n "$TGT/$DIR_SHARE"/man/man?/*
 ln -s raspiBackup "$TGT/$DIR_BIN/raspiBackup.sh"
 # keep the old name of raspiBackupConfig for users used to it
 ln -s raspiBackupConfig "$TGT/$DIR_BIN/raspiBackupInstallUI"
+
+# completions are looked up by the name of the command, so the old names need links too
+ln -s raspiBackup "$TGT/$DIR_SHARE/bash-completion/completions/raspiBackup.sh"
+ln -s raspiBackupConfig "$TGT/$DIR_SHARE/bash-completion/completions/raspiBackupInstallUI"
 
 # copy doc files (copyright in this case)
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"

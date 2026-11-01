@@ -1,0 +1,107 @@
+# bash completion for raspiBackup                          -*- shell-script -*-
+# vim: set expandtab ft=sh:
+#
+# Installed into /usr/local/share/bash-completion/completions, loaded on demand by bash-completion
+#
+#    Copyright (c) 2026 framp at linux-tips-and-tricks dot de
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+# whole disks, e.g. /dev/sda, /dev/mmcblk0, /dev/nvme0n1
+_raspiBackup_disks() {
+    lsblk -dpno NAME,TYPE 2>/dev/null | awk '$2 == "disk" { print $1 }'
+}
+
+# partitions, e.g. /dev/sda2, /dev/mmcblk0p2
+_raspiBackup_partitions() {
+    lsblk -lpno NAME,TYPE 2>/dev/null | awk '$2 == "part" { print $1 }'
+}
+
+_raspiBackup() {
+    # shellcheck disable=SC2034 # words and cword are set by _init_completion
+    local cur prev words cword
+    if declare -F _init_completion > /dev/null; then
+        _init_completion || return
+    else
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+    fi
+
+    case "$prev" in
+        -t)
+            mapfile -t COMPREPLY < <(compgen -W "dd ddz tar tgz rsync" -- "$cur")
+            return ;;
+        -l)
+            mapfile -t COMPREPLY < <(compgen -W "off debug" -- "$cur")
+            return ;;
+        -L)
+            mapfile -t COMPREPLY < <(compgen -W "varlog backup current" -- "$cur")
+            return ;;
+        -m)
+            mapfile -t COMPREPLY < <(compgen -W "minimal detailed" -- "$cur")
+            return ;;
+        -G)
+            mapfile -t COMPREPLY < <(compgen -W "EN DE FI FR" -- "$cur")
+            return ;;
+        -s)
+            mapfile -t COMPREPLY < <(compgen -W "mail ssmtp msmtp sendEmail mailext" -- "$cur")
+            return ;;
+        --coloring)
+            mapfile -t COMPREPLY < <(compgen -W "C M CM" -- "$cur")
+            return ;;
+        --eMailColoring)
+            mapfile -t COMPREPLY < <(compgen -W "SUBJECT OPTION" -- "$cur")
+            return ;;
+        --tarCompressionTool|--tct)
+            mapfile -t COMPREPLY < <(compgen -W "bzip2 gzip lzip lzma lzop xz zstd lz4" -- "$cur")
+            return ;;
+        -f)     # config file
+            mapfile -t COMPREPLY < <(compgen -f -- "$cur")
+            compopt -o filenames 2>/dev/null
+            return ;;
+        -p|-r)  # backup path, backup directory to restore
+            mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+            compopt -o filenames 2>/dev/null
+            return ;;
+        -d|--clone|--bootDevice)
+            mapfile -t COMPREPLY < <(compgen -W "$(_raspiBackup_disks)" -- "$cur")
+            return ;;
+        -R)
+            mapfile -t COMPREPLY < <(compgen -W "$(_raspiBackup_partitions)" -- "$cur")
+            return ;;
+        --dynamicMount) # partition or mountpoint defined in /etc/fstab
+            mapfile -t COMPREPLY < <(compgen -W "$(_raspiBackup_partitions) $(awk '!/^[[:space:]]*#/ && $2 ~ /^\// { print $2 }' /etc/fstab 2>/dev/null)" -- "$cur")
+            return ;;
+        -a|-b|-D|-e|-E|-k|-M|-N|-o|-T|-u|--clonePath|--keep_dd|--keep_ddz|--keep_tar|--keep_tgz|--keep_rsync|\
+        --smartRecycleOptions|--tarCompressionToolOptions|--tcto|--telegramToken|--telegramChatID|--telegramThreadID|--telegramNotifications)
+            return ;; # free text, nothing to complete
+    esac
+
+    # options which can be enabled with [+] and disabled with -
+    local toggles="-0 -00 -1 -B -c -C -F -g -P -S -v -x -y -z
+        --forceEmail --ignoreAdditionalPartitions --notifyStart --rebootSystem --resizeRootFS
+        --resizeLastPartitionFS --smartRecycle --smartRecycleDryrun --systemstatus --timestamps
+        --updateUUIDs --unsupportedEnvironment --ts"
+    local options="-a -b -d -D -e -E -f -G -h -k -l -L -m -M -N -o -p -r -R -s -t -T -u -U -V -Y
+        --bootDevice --clone --clonePath --coloring --dynamicMount --eMailColoring --help
+        --ignoreMissingPartitions --keep_dd --keep_ddz --keep_tar --keep_tgz --keep_rsync
+        --smartRecycleOptions --tarCompressionTool --tct --tarCompressionToolOptions --tcto
+        --telegramToken --telegramChatID --telegramThreadID --telegramNotifications --version"
+
+    if [[ "$cur" == -* ]]; then
+        local t
+        for t in $toggles; do
+            # offer + and - only when the toggle was typed completely
+            if [[ "$cur" == "$t" ]]; then
+                mapfile -t COMPREPLY < <(compgen -W "$t $t+ $t-" -- "$cur")
+                return
+            fi
+        done
+        mapfile -t COMPREPLY < <(compgen -W "$options $toggles" -- "$cur")
+    fi
+}
+
+complete -F _raspiBackup raspiBackup raspiBackup.sh
