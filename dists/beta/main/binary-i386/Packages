@@ -19,16 +19,30 @@ Package: raspibackup
 Architecture: all
 Version: 0.8.2~beta
 Priority: optional
-Section: utils
+Section: admin
 Maintainer: framp <framp@linux-tips-and-tricks.de>
-Depends: bash (>= 5),parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux (>= 2),fdisk,curl
+Installed-Size: 752
+Depends: bash (>= 5), parted, e2fsprogs, rsync, whiptail, dosfstools, fdisk, curl
+Recommends: bash-completion
+Suggests: pv, jq, lsof, btrfs-progs, f2fs-tools, mailutils, default-mta | msmtp-mta | mail-transport-agent
 Filename: pool/main/r/raspibackup/raspibackup_0.8.2~beta_all.deb
-Size: 162222
-MD5sum: 56464f85a1961dfa16ebf1a0a503d985
-SHA1: ed779076db740e4429da48c86ca5d4f092250693
-SHA256: bea49834fa8660332e74e9487988817c90bdeac09661ff2aef9a5e82bf2bd37e
-SHA512: 032861fd896482db9741c48b24eb25a6b2ea8fbddfe18b4b79b1196d2d4294f119d3a2b21270a0b6166f49a077bc21bd4b503368d1772fddaf5869e11ac020f0
-Description: Backup your Raspberry Pi systems
- Create and keep multiple backup versions of your running Raspberries
- with dd, tar or rsync.
+Size: 170240
+MD5sum: 44baf0111c9bbb4e8074186cbd0ecb21
+SHA1: 264cfa0ed629004739ace430ff6d299821982bd7
+SHA256: 999eae8971032e3a443479b937419dceb00606b5a6f6acf7b9f0852e5fa6d2e1
+SHA512: 3e4cfe109918f3422819a908dd90dba9a6137d5745a6a11d2d4b69e1f4685b87e29f12c60b5984d6b5b101a38366122677fd1a21a757e76668949730844f86fc
+Homepage: https://raspibackup.linux-tips-and-tricks.de
+Description: Backup and restore tool for Raspberry Pi systems
+ raspiBackup creates full backups (images) of a running Raspberry Pi
+ with dd, tar or rsync, including incremental rsync backups with hardlinks.
+ Backups can be stored on a USB disk, NAS (NFS, SMB/CIFS) or any mounted
+ device, and are restored to an SD card, USB disk, SSD or NVMe with
+ raspiBackup itself. Supports Raspberry Pi OS (Raspbian) and Ubuntu.
+ .
+ Old backup versions are deleted automatically: either a fixed number
+ of backups is kept, or smart recycle applies a more sophisticated
+ strategy. Backups are scheduled with a systemd timer, email and other
+ notifications report the result. raspiBackupConfig configures all of
+ it in a menu. Sample extensions run your own code before and after a
+ backup at different extension points.
 
