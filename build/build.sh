@@ -388,6 +388,8 @@ if [[ -n "$LINTIAN_CHECK" ]] ; then
 
     if ! command -v lintian > /dev/null ; then
         echo "Error: Can't check package because 'lintian' isn't installed!"
+        echo "       Install it or skip the check with option --no-check."
+        exit 1
     else
         # Note: The default behaviour for lintian exiting with rc=2 is:
         #         `--fail-on error`
@@ -411,6 +413,8 @@ if [[ -n "$LINTIAN_CHECK" ]] ; then
                   SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
                   # the read is in revertMigration.sh created by preinst, not run by dpkg
                   SUPPRESS_TAGS="$SUPPRESS_TAGS,read-in-maintainer-script"
+                  # no debhelper and Raspberry Pi OS always runs systemd
+                  SUPPRESS_TAGS="$SUPPRESS_TAGS,maintainer-script-calls-systemctl"
                   ;;
         esac
 
