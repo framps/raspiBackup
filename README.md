@@ -122,7 +122,70 @@ The script adds the repository and installs the package `raspibackup`. `bash ras
 sudo raspiBackupConfig
 ```
 
-Updates are installed with `sudo apt-get update && sudo apt-get upgrade`.
+Updates are installed with `sudo apt-get update && sudo apt-get upgrade`. Every update adds new options to the configuration and keeps the existing values. `sudo raspiBackupConfig -U` updates as well.
+
+#### Manual installation
+
+Instead of `raspiBackupInstall.sh` the repository can be added manually. Accept the key only if its fingerprint is `23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24`:
+
+```
+curl -fsSLO https://framps.github.io/raspiBackup/raspibackup-archive-keyring.gpg
+gpg --show-keys raspibackup-archive-keyring.gpg
+sudo install -m 644 raspibackup-archive-keyring.gpg /usr/share/keyrings/raspibackup-archive-keyring.gpg
+sudo tee /etc/apt/sources.list.d/raspibackup.sources > /dev/null <<EOF
+Types: deb
+URIs: https://framps.github.io/raspiBackup
+Suites: stable beta
+Components: main
+Signed-By: /usr/share/keyrings/raspibackup-archive-keyring.gpg
+EOF
+sudo apt-get update
+sudo apt-get install raspibackup
+```
+
+#### Betas
+
+The repository has the suites `stable` and `beta`. Betas are installed only on request. Once a beta is installed, upgrades install newer betas and finally the next release.
+
+```
+sudo apt-get update
+sudo apt-get install -t beta raspibackup       # install the latest beta
+sudo apt-get install raspibackup/stable        # back to the current release
+```
+
+#### Revert to a previous release
+
+If an upgraded release doesn't work, `sudo raspiBackupConfig -R` (or the update menu of `raspiBackupConfig`) installs the previous release and holds it, so `apt-get upgrade` doesn't install the broken release again. The configuration isn't reverted. Manually:
+
+```
+apt list -a raspibackup
+sudo apt-get install --allow-downgrades raspibackup=<version>
+sudo apt-mark hold raspibackup
+```
+
+raspiBackup reports a newer release after the backup. Once a fixed release is available, release the hold with `sudo apt-mark unhold raspibackup` and upgrade, or use `sudo raspiBackupConfig -U`.
+
+#### Uninstall
+
+`sudo raspiBackupConfig -u` purges the package and removes the apt repository. Manually:
+
+| Command | Removes |
+|---------|---------|
+| `sudo apt-get remove raspibackup` | code, backup timer and links of the extensions. The configuration is kept |
+| `sudo apt-get purge raspibackup` | additionally the configuration, `/var/lib/raspiBackup` and `/var/log/raspiBackup` |
+
+The repository is removed with `sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibackup-archive-keyring.gpg && sudo apt-get update`. Backups are never deleted.
+
+#### Files
+
+| File | Content |
+|------|---------|
+| `/usr/local/bin/raspiBackup`, `/usr/local/bin/raspiBackupConfig` | commands, `raspiBackup.sh`, `raspiBackupInstallUI` and `raspiBackupInstallUI.sh` are links to them |
+| `/usr/local/etc/raspiBackup.conf` | configuration |
+| `/usr/local/share/raspibackup` | configuration templates |
+| `/usr/local/share/raspibackup/extensions` | sample extensions, `raspiBackupConfig` links the selected ones into `/usr/local/bin` |
+| `/etc/systemd/system/raspiBackup.{service,timer}` | backup timer created by `raspiBackupConfig` |
+| `man raspiBackup`, `man raspiBackupConfig`, `man raspiBackup.conf` | manual pages |
 
 ### Migration of an installation without apt
 
