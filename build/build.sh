@@ -72,6 +72,14 @@ BRANCH_TO_DEB=""
 VERSION_RASPIBACKUP=""
 VERSION_RASPIBACKUPCONFIG=""
 
+# DEB_REVISION
+# Debian revision appended to the package version, e.g. "1" -> 0.7.5-1.
+# Use it for a minor fix (small code fix, packaging, maintainer scripts, ...) without changing
+# VERSION of raspiBackup: increase it for every rebuild and empty it again for the next release.
+# raspiBackup doesn't report a minor fix to users of the same version, apt upgrade installs it.
+# Not used if a version is passed as argument to build.sh.
+DEB_REVISION=""
+
 # Note: Some of the following variables need to be exported
 #       because they are used in/with envsubst.
 
@@ -211,6 +219,7 @@ export VERSION="$VERSION_RASPIBACKUP"
 # allow to pass another version number for upgrade/downgrade tests
 if (( $# > 0 )); then
     VERSION="$1"
+    DEB_REVISION=""
 fi
 
 # underscores are not allowed in Debian version numbers
@@ -219,6 +228,14 @@ VERSION="$(sed -E 's/_/-/g' <<< "$VERSION")"
 # pre-releases have to sort before the release and go into the beta suite
 # change 0.7.5-beta1 to 0.7.5~beta1
 VERSION="$(sed -E 's/-(alpha|beta|rc)/~\L\1/I' <<< "$VERSION")"
+# package only fix: 0.7.5 -> 0.7.5-1, 0.7.5 < 0.7.5-1 < 0.7.5-2 < 0.7.5-m1 < 0.7.6
+if [[ -n "${DEB_REVISION:-}" ]]; then
+    if [[ ! "$DEB_REVISION" =~ ^[0-9]+$ ]]; then
+        echo "DEB_REVISION has to be a number: '$DEB_REVISION'" >&2
+        exit 1
+    fi
+    VERSION="$VERSION-$DEB_REVISION"
+fi
 VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
 show "Building deb package '${PACKAGE_NAME}' for raspiBackup $VERSION"

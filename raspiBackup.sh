@@ -5658,6 +5658,10 @@ function highestVersion() { # [lowerLimit] - highest version read from stdin, op
 	echo "$highest"
 }
 
+function withoutDebianRevision() { # version - version without the Debian revision of a package only fix: 0.7.5-1 -> 0.7.5, 0.7.5-m1-2 -> 0.7.5-m1
+	sed -E 's/-[0-9]+$//' <<< "$1"
+}
+
 function withoutDeprecatedVersions() { # versions read from stdin which aren't listed in DEPRECATED of the properties file
 	local version
 	while read -r version; do
@@ -5700,6 +5704,7 @@ function updatePackageReminder() { # version - true if the update to version sho
 
 # Reports new versions in the apt repository, used if raspiBackup is installed as Debian package.
 # Versions listed in DEPRECATED of the properties file are never reported.
+# Minor fixes of the installed version (0.7.5 -> 0.7.5-1) aren't reported, apt upgrade installs them.
 #   - releases and hotfixes in suite stable for all users, also for users of an individual fix
 #   - newer betas and the following release for beta testers (installed version is in suite beta)
 #   - a beta newer than the latest release for all others
@@ -5724,6 +5729,14 @@ function reportPackageNews() {
 	fi
 
 	logItem "installed: $installed candidate: $candidate betaTester: $isBetaTester update: $update"
+
+	# a minor fix of the installed version (DEB_REVISION of build.sh, e.g. 0.7.5 -> 0.7.5-1) isn't reported,
+	# apt upgrade installs it anyway. It's reported if the installed version is deprecated.
+	if [[ -n "$update" && "$(withoutDebianRevision "$update")" == "$(withoutDebianRevision "$installed")" ]] \
+		&& ! isVersionInList "$installed" "$DEPRECATED_PROPERTY"; then
+		logItem "Ignoring minor fix $update"
+		update=""
+	fi
 
 	if [[ -n "$update" ]] && updatePackageReminder "$update"; then
 		NEWS_AVAILABLE=1

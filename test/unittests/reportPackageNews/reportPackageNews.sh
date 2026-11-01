@@ -114,6 +114,30 @@ DEPRECATED_PROPERTY=""
 INSTALLED="0.7.6~beta2"; STABLE="0.7.5 0.7.6"; CANDIDATE="0.7.6"
 check "beta tester gets release" "$U 0.7.6 0.7.6~beta2"
 
+# --- minor fixes (DEB_REVISION) of the installed version aren't reported
+
+INSTALLED="0.8.2"; STABLE="0.8.2 0.8.2-1"; BETA=""; CANDIDATE="0.8.2-1"; DEPRECATED_PROPERTY=""
+check "minor fix not reported"
+
+INSTALLED="0.8.2-1"; STABLE="0.8.2 0.8.2-1 0.8.2-2"; CANDIDATE="0.8.2-2"
+check "next minor fix not reported"
+
+INSTALLED="0.8.2-m1"; STABLE="0.8.2 0.8.2-m1 0.8.2-m1-1"; CANDIDATE="0.8.2-m1-1"
+check "minor fix of hotfix not reported"
+
+INSTALLED="0.8.1"; STABLE="0.8.1 0.8.2 0.8.2-1"; CANDIDATE="0.8.2-1"
+check "older release gets latest minor fix" "$U 0.8.2-1 0.8.1"
+
+INSTALLED="0.8.2-1"; STABLE="0.8.2 0.8.2-1 0.8.2-m1"; CANDIDATE="0.8.2-m1"
+check "hotfix after minor fix reported" "$U 0.8.2-m1 0.8.2-1"
+
+INSTALLED="0.8.2"; STABLE="0.8.2 0.8.2-1"; CANDIDATE="0.8.2-1"; DEPRECATED_PROPERTY="0.8.2"
+check "minor fix reported if installed version deprecated" "$U 0.8.2-1 0.8.2"
+DEPRECATED_PROPERTY=""
+
+INSTALLED="0.8.3~beta1"; STABLE="0.8.2"; BETA="0.8.3~beta1 0.8.3~beta1-1"; CANDIDATE="0.8.2"
+check "beta tester: minor fix of beta not reported"
+
 # --- reminder: reported UPDATE_REMINDER_MAX times per version
 
 INSTALLED="0.7.5"; STABLE="0.7.5 0.7.6"; BETA=""; CANDIDATE="0.7.6"

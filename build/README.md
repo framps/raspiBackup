@@ -41,6 +41,7 @@ Check these settings:
 | `REPO_BETA_SUITE` | `beta`, has to match `REPO_BETA_SUITE` in `raspiBackupInstall.sh`  |
 | `VERSION_RASPIBACKUP` | version inserted into `raspiBackup` and used for the package, empty = `VERSION` of `raspiBackup.sh` |
 | `VERSION_RASPIBACKUPCONFIG` | version inserted into `raspiBackupConfig`, empty = `VERSION` of `raspiBackupConfig.sh` |
+| `DEB_REVISION` | Debian revision appended to the package version for a minor fix, e.g. `1` -> `0.7.5-1`, empty = none |
 
 GitHub Pages is already enabled (repository settings -> Pages -> Deploy from a branch ->
 `gh-pages`, `/ (root)`). Nothing else has to be done on GitHub.
@@ -133,14 +134,23 @@ see [section 3](#3-beta-versions).
 |-----------------------------------|-------------------|--------------------|-----------------------------------------|
 | beta, release candidate           | `0.7.6-beta1`     | `0.7.6~beta1`      | suite `beta`, installed only on request |
 | release                           | `0.7.5`           | `0.7.5`            | suite `stable`                          |
+| minor fix, not reported          | `0.7.5`           | `0.7.5-1`          | suite `stable`, `DEB_REVISION="1"`      |
 | hotfix for all users              | `0.7.5-m1`        | `0.7.5-m1`         | suite `stable`                          |
 | temporary fix for one user only   | -                 | `0.7.5-m1~u972.1`  | not in the repository, see below        |
 
 They sort in this order, so every version is replaced by the next public one:
 
 ```
-0.7.5 < 0.7.5-m1~u972.1 < 0.7.5-m1~u972.2 < 0.7.5-m1 < 0.7.6~beta1 < 0.7.6
+0.7.5 < 0.7.5-1 < 0.7.5-2 < 0.7.5-m1~u972.1 < 0.7.5-m1~u972.2 < 0.7.5-m1 < 0.7.6~beta1 < 0.7.6
 ```
+
+- A minor fix (small code fix, packaging, maintainer scripts, ...) keeps `VERSION` of raspiBackup
+  and sets `DEB_REVISION` in `build.conf`: `"1"` for the first rebuild, `"2"` for the next one,
+  and so on. Empty it again for the next release. New installations get the fix, existing
+  installations get it with `apt upgrade`, but raspiBackup doesn't tell users of the same version
+  about it (`0.7.5` -> `0.7.5-1`). Users of an older version are told about the latest one
+  (`0.7.4` -> `0.7.5-1`). To have a minor fix reported anyway, add the version it fixes to
+  `DEPRECATED` in `raspiBackup.properties`.
 
 - Use `~` only for versions which have to sort **before** the version in front of it:
   pre-releases (`~alpha`, `~beta`, `~rc`) and fixes for one user.
