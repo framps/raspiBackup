@@ -410,7 +410,7 @@ declare -A REQUIRED_COMMANDS=( \
 		)
 
 declare -A REQUIRED_COMMANDS_BTRFS=( \
-	["btrfs"]="btrfs-tools"
+	["btrfs"]="btrfs-progs"
 )
 
 declare -A REQUIRED_COMMANDS_F2FS=( \

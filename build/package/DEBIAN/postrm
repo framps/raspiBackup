@@ -24,6 +24,8 @@ case "${1:-}" in
         rm -f "${DIR_ETC}/raspiBackup.conf" "${DIR_ETC}/raspiBackup.conf~"
         # state of raspiBackup and raspiBackupConfig, e.g. the time of the last apt-get update
         rm -rf /var/lib/raspiBackup
+        # logs written with the log option /var/log
+        rm -rf /var/log/raspiBackup
         ;;
 esac
 

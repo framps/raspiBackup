@@ -3,8 +3,17 @@ Version: $VERSION
 Section: utils
 Priority: optional
 Architecture: all
-Depends: bash (>= 5),parted,e2fsprogs,rsync,whiptail,dosfstools,fdisk,util-linux (>= 2),fdisk,curl
+Installed-Size: $INSTALLED_SIZE
+Depends: bash (>= 5), parted, e2fsprogs, rsync, whiptail, dosfstools, fdisk, curl
+Recommends: bash-completion
+Suggests: pv, jq, lsof, btrfs-progs, f2fs-tools, mailutils, default-mta | msmtp-mta | mail-transport-agent
 Maintainer: framp <framp@linux-tips-and-tricks.de>
+Homepage: https://raspibackup.linux-tips-and-tricks.de
 Description: Backup your Raspberry Pi systems
  Create and keep multiple backup versions of your running Raspberries
- with dd, tar or rsync.
+ with dd, tar or rsync. Backups are restored to a new SD card, USB disk
+ or SSD with raspiBackup itself.
+ .
+ raspiBackupConfig configures the backup, its schedule with a systemd
+ timer, the number of backup versions to keep and email notifications.
+ Extensions run your own code before and after a backup.

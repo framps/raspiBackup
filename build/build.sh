@@ -261,6 +261,24 @@ install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$GITSRC/LICENSE"
 pushd "$GITSRC" > /dev/null
 last_date=$(git log --pretty=format:"%ai" -1)
 sha1=$(git log --pretty=format:"%h" -1)
+
+# Debian changelog (apt changelog, apt-listchanges): one entry with the commits since the last release tag
+last_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+suite="$REPO_SUITE"
+[[ "$VERSION" == *"~"* ]] && suite="$REPO_BETA_SUITE"
+changelog=$(
+    echo "${PACKAGE_NAME} ($VERSION) $suite; urgency=medium"
+    echo ""
+    echo "  * raspiBackup $VERSION_RASPIBACKUP, raspiBackupConfig $VERSION_RASPIBACKUPCONFIG"
+    echo "  * Release notes: https://github.com/framps/raspiBackup/releases"
+    if [[ -n "$last_tag" ]]; then
+        echo "  * Changes since $last_tag:"
+        git log --no-merges -n 100 --pretty=format:"%s" "$last_tag..HEAD" | sed 's/^/    - /'
+        echo ""
+    fi
+    echo ""
+    echo " -- framp <framp@linux-tips-and-tricks.de>  $(LC_ALL=C date -R -d "$last_date")"
+)
 popd > /dev/null
 
 # the gitsrc worktree is no longer needed here
@@ -292,11 +310,19 @@ ln -s raspiBackupConfig "$TGT/$DIR_SHARE/bash-completion/completions/raspiBackup
 
 # copy doc files (copyright in this case)
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
+echo "$changelog" > "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}/changelog"
+chmod 644 "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}/changelog"
+gzip -9n "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}/changelog"
 # The above locations isn't accepted by lintian, the one below is okay:
 #   install -m644 -D -t "$TGT/usr/share/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
 # But perhaps we should keep the first location and just silence lintian a bit... See below.
 
 mkdir -p "$TGT/DEBIAN"
+# dpkg-deb neither computes Installed-Size (KiB) nor creates md5sums (used by dpkg --verify and debsums)
+INSTALLED_SIZE=$(du -sk --apparent-size --exclude=DEBIAN "$TGT" | cut -f1)
+export INSTALLED_SIZE
+(cd "$TGT" && find . -path ./DEBIAN -prune -o -type f -printf '%P\0' | LC_ALL=C sort -z | xargs -0 md5sum) > "$TGT/DEBIAN/md5sums"
+chmod 644 "$TGT/DEBIAN/md5sums"
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control"   > "$TGT/DEBIAN/control"
 chmod 644 "$TGT/DEBIAN/control"
@@ -383,6 +409,8 @@ if [[ -n "$LINTIAN_CHECK" ]] ; then
                   SUPPRESS_TAGS="$SUPPRESS_TAGS,file-in-usr-marked-as-conffile,non-etc-file-marked-as-conffile"
                   SUPPRESS_TAGS="$SUPPRESS_TAGS,no-changelog"
                   SUPPRESS_TAGS="$SUPPRESS_TAGS,no-copyright-file"
+                  # the read is in revertMigration.sh created by preinst, not run by dpkg
+                  SUPPRESS_TAGS="$SUPPRESS_TAGS,read-in-maintainer-script"
                   ;;
         esac
 
