@@ -94,6 +94,34 @@ Notes:
 - Neither `build/deb/` nor `build/repo/` are committed to `master`. The packages exist on
   `gh-pages` only.
 
+### Installations without apt
+
+Installations with `raspiBackupInstallUI.sh` or `install.sh` don't know the apt repository. They
+read `published/` on `master`: `raspiBackup.properties` for new versions, `raspiBackup.sh` for
+`raspiBackup.sh -U` and `raspiBackupInstallUI.sh` for the update of the installer. To bring them
+to the package (see [Migrate an installation without apt](#migrate-an-installation-without-apt)),
+publish the current code there once after the first package release, and with every release
+which should be announced to them:
+
+```
+# 1. Use versions higher than those of the installations without apt (0.7.4 and installer 0.5):
+#    VERSION in raspiBackup.sh and raspiBackupConfig.sh, VERSION and VERSION_INSTALLER
+#    in properties/raspiBackup.properties. Commit and push them.
+
+# 2. Publish raspiBackup.sh, raspiBackupConfig.sh (also as raspiBackupInstallUI.sh),
+#    the config templates and raspiBackup.properties into published/ and commit them on master
+./publish.sh master
+```
+
+Then
+
+- `raspiBackup.sh` reports the new version and `raspiBackup.sh -U` installs the current
+  `raspiBackup.sh`. Without the package it reports after every backup how to migrate (RBK0367W)
+  and `-U` shows the same instead of updating.
+- `raspiBackupInstallUI.sh` offers the update of the installer. The updated installer is
+  `raspiBackupConfig` and offers the migration at its start and in the update menu.
+- `install.sh` starts `raspiBackupConfig`, which offers the migration as well.
+
 ### Beta versions
 
 Betas are built and published like a release but with a version like `0.7.5-beta1`,
@@ -216,6 +244,51 @@ sudo apt-get update && sudo apt-get upgrade
 
 To test beta versions see [section 3](#3-beta-versions).
 
+### Migrate an installation without apt
+
+raspiBackup installed with `raspiBackupInstallUI.sh` or `install.sh` doesn't get updates any more.
+Any of these commands replaces it by the package:
+
+```
+curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
+bash raspiBackupInstall.sh                  # reports the installation found and migrates it
+
+sudo raspiBackupInstallUI.sh                # update the installer in the update menu, then accept the migration
+sudo raspiBackupInstallUI.sh -U             # updates the installer, call it a second time to migrate
+```
+
+The migration adds the repository and installs the package. dpkg replaces `raspiBackup.sh` and
+`raspiBackupInstallUI.sh` in `/usr/local/bin` by links to `raspiBackup` and `raspiBackupConfig`
+because they aren't owned by any package. Kept are
+
+- the configuration `/usr/local/etc/raspiBackup.conf`, new options are added (saved as `raspiBackup.conf~` before)
+- the extensions `/usr/local/bin/raspiBackup_*.sh`
+- the systemd units in `/etc/systemd/system` or `/etc/cron.d/raspiBackup`, they still call
+  `/usr/local/bin/raspiBackup.sh`
+- the versions saved by former updates, `/usr/local/bin/raspiBackup.<version>.sh`.
+  They aren't needed any more and can be deleted.
+
+#### Revert the migration
+
+Before dpkg unpacks the package, `preinst` saves the former installation in
+`/var/backups/raspiBackup-legacy/files` (`raspiBackup.sh`, `raspiBackupInstallUI.sh`, extensions,
+configuration, systemd units or cron file, whether the timer was enabled) together with
+`revertMigration.sh`. The directory isn't deleted by `apt-get purge`. A later migration replaces it.
+
+```
+sudo /var/backups/raspiBackup-legacy/revertMigration.sh        # asks before it starts, -y doesn't ask
+```
+
+It needs neither the package nor network access and
+
+1. removes the package with `apt-get remove` (not purge) and its apt repository
+2. restores `raspiBackup.sh`, `raspiBackupInstallUI.sh` and their links `raspiBackup` and `raspiBackupInstallUI`
+3. restores the extensions and the configuration; the configuration of the package is kept as `raspiBackup.conf.package`
+4. restores the systemd units or the cron file and enables the timer again if it was enabled
+
+raspiBackup then runs as before the migration. It still reports the migration after the backup,
+because `published/` announces the package.
+
 Uninstall:
 
 ```
@@ -230,6 +303,7 @@ sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibac
 |------|-|
 | `/usr/local/bin/raspiBackup`, `raspiBackup.sh` | raspiBackup, `raspiBackup.sh` is a link for former installations |
 | `/usr/local/bin/raspiBackupConfig` | configuration |
+| `/usr/local/bin/raspiBackupInstallUI`, `raspiBackupInstallUI.sh` | links to `raspiBackupConfig`, the former installer |
 | `/usr/local/etc/raspiBackup.conf` | configuration, created on first installation from a template |
 | `/usr/local/share/raspibackup/` | configuration templates |
 | `/usr/local/share/raspibackup/extensions/` | sample extensions and their README |
@@ -528,6 +602,7 @@ GitHub account and for commits made in the web interface (signed by GitHub's key
 │   ├── DEBIAN          # DEBIAN package source                                                             --.     |
 │   │   ├── control     # package control file                                                                v     |
 │   │   ├── copyright                                                                                         |     |
+│   │   ├── preinst     # before installation: save installation without apt, revertMigration.sh              |     |
 │   │   ├── postinst    # after installation: create config from template if missing                          |     |
 │   │   ├── prerm       # before apt remove: disable backup timer                                             |     |
 │   │   └── postrm      # after apt remove/purge: remove extension links, timers, on purge config            |     ^

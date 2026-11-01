@@ -1547,6 +1547,20 @@ MSG_FI[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME palautettii
 MSG_FR[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME a déjà été ramené à %1 et reste à cette version. Le ramener quand même à %2 ?"
 MSG_ZH[$MSG_PACKAGE_HELD_REVERT]="${MSG_PRF}0051W: $RASPIBACKUP_NAME 已回退到 %1 并保持在此版本. 仍要回退到 %2 吗?"
 
+MSG_MIGRATE_QUESTION=$((SCNT++))
+MSG_EN[$MSG_MIGRATE_QUESTION]="$RASPIBACKUP_NAME is installed without apt and doesn't get any updates.${NL}${NL}Migrate it now to the Debian package $PACKAGE_NAME?${NL}${NL}The configuration, the extensions and the backup timer are kept."
+MSG_DE[$MSG_MIGRATE_QUESTION]="$RASPIBACKUP_NAME ist ohne apt installiert und erhält keine Aktualisierungen.${NL}${NL}Soll es jetzt auf das Debian Paket $PACKAGE_NAME umgestellt werden?${NL}${NL}Die Konfiguration, die Erweiterungen und der Backup Timer bleiben erhalten."
+MSG_FI[$MSG_MIGRATE_QUESTION]="$RASPIBACKUP_NAME on asennettu ilman apt:ia eikä saa päivityksiä.${NL}${NL}Siirretäänkö se nyt Debian-pakettiin $PACKAGE_NAME?${NL}${NL}Asetukset, laajennukset ja varmuuskopioajastin säilytetään."
+MSG_FR[$MSG_MIGRATE_QUESTION]="$RASPIBACKUP_NAME est installé sans apt et ne reçoit aucune mise à jour.${NL}${NL}Le migrer maintenant vers le paquet Debian $PACKAGE_NAME ?${NL}${NL}La configuration, les extensions et le minuteur de sauvegarde sont conservés."
+MSG_ZH[$MSG_MIGRATE_QUESTION]="$RASPIBACKUP_NAME 未通过apt安装, 不会获得任何更新.${NL}${NL}现在迁移到Debian软件包 $PACKAGE_NAME 吗?${NL}${NL}配置, 扩展和备份定时器将被保留."
+
+MSG_MIGRATION_FINISHED=$((SCNT++))
+MSG_EN[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME was migrated to Debian package %1. Update it with 'sudo apt-get update' and 'sudo apt-get upgrade' or with 'sudo raspiBackupConfig' from now on. The migration can be reverted with 'sudo /var/backups/raspiBackup-legacy/revertMigration.sh'."
+MSG_DE[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME wurde auf das Debian Paket %1 umgestellt. Aktualisiere es ab jetzt mit 'sudo apt-get update' und 'sudo apt-get upgrade' oder mit 'sudo raspiBackupConfig'. Die Umstellung kann mit 'sudo /var/backups/raspiBackup-legacy/revertMigration.sh' rückgängig gemacht werden."
+MSG_FI[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME siirrettiin Debian-pakettiin %1. Päivitä se tästä lähtien komennoilla 'sudo apt-get update' ja 'sudo apt-get upgrade' tai komennolla 'sudo raspiBackupConfig'. Siirron voi perua komennolla 'sudo /var/backups/raspiBackup-legacy/revertMigration.sh'."
+MSG_FR[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME a été migré vers le paquet Debian %1. Mettez-le à jour désormais avec 'sudo apt-get update' et 'sudo apt-get upgrade' ou avec 'sudo raspiBackupConfig'. La migration peut être annulée avec 'sudo /var/backups/raspiBackup-legacy/revertMigration.sh'."
+MSG_ZH[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME 已迁移到Debian软件包 %1. 今后请使用 'sudo apt-get update' 和 'sudo apt-get upgrade' 或 'sudo raspiBackupConfig' 进行更新. 可使用 'sudo /var/backups/raspiBackup-legacy/revertMigration.sh' 撤销迁移."
+
 MSG_QUERY_CHARS_YES_NO=$((SCNT++))
 MSG_EN[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
 MSG_DE[$MSG_QUERY_CHARS_YES_NO]="(j/N)"
@@ -2261,6 +2275,11 @@ function isRaspiBackupInstalled() {
 function isPackageInstalled() { # apt manages code, config template, extensions and uninstall
 	# a held package has the status "hold ok installed"
 	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" =~ ^(install|hold)\ ok\ installed$ ]]
+	return
+}
+
+function isLegacyInstalled() { # raspiBackup was installed without apt, e.g. by raspiBackupInstallUI.sh, and has to be migrated to the package
+	! isPackageInstalled && [[ -f $FILE_TO_INSTALL_ABS_FILE ]]
 	return
 }
 
@@ -4865,6 +4884,7 @@ EOF
 function isUpdatePossible() {
 		(( UPDATE_POSSIBLE != -1 )) && return $UPDATE_POSSIBLE
 		(( PACKAGE_MODE )) && UPDATE_POSSIBLE=0 && return 0		# apt versions are checked in update menu
+		isLegacyInstalled && UPDATE_POSSIBLE=0 && return 0		# update menu migrates to the package
 		logEntry
 		logItem "script: c:$VERSION_CURRENT p:$VERSION_PROPERTY"
 
@@ -5103,6 +5123,12 @@ function update_menu() {
 		return 0
 	fi
 
+	if isLegacyInstalled; then	# there are no updates without apt any more
+		migrate_do
+		logExit
+		return 0
+	fi
+
 	while :; do
 
 		local b1=$(getMessageText $BUTTON_BACK)
@@ -5334,12 +5360,66 @@ function package_upgrade_execute() { # updates the installed package to the late
 
 }
 
+function migrate_execute() { # replaces an installation without apt by the package, config, extensions and timers are kept
+
+	logEntry
+
+	repository_add_execute
+	package_install_execute		# merges new options into the existing config
+
+	logExit
+
+}
+
+function migrate_do() { # asks to migrate an installation without apt to the package and restarts the configurator of the package
+
+	logEntry
+
+	isInternetAvailable
+	local rc=$?
+	if (( $rc )); then
+		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
+		whiptail --msgbox "$a" --title "Error" $ROWS_MSGBOX $WINDOW_COLS 2
+		logExit
+		return 0
+	fi
+
+	local m="$(getMessageText $MSG_MIGRATE_QUESTION)"
+	local y="$(getMessageText $BUTTON_YES)"
+	local n="$(getMessageText $BUTTON_NO)"
+	local tt="$(getMessageText $TITLE_CONFIRM)"
+
+	if ! whiptail --yesno "$m" --title "$tt" --yes-button "$y" --no-button "$n" $ROWS_ABOUT $(($WINDOW_COLS * 2)) 2; then
+		logExit
+		return 0
+	fi
+
+	MIGRATE_DESCRIPTION=("Adding $RASPIBACKUP_NAME apt repository ..." "Installing $PACKAGE_NAME package with apt ...")
+	progressbar_do "MIGRATE_DESCRIPTION" "Migrating $RASPIBACKUP_NAME to package $PACKAGE_NAME" repository_add_execute package_install_execute
+
+	local v="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	m="$(getMessageText $MSG_MIGRATION_FINISHED "$v")"
+	tt="$(getMessageText $TITLE_INFORMATION)"
+	whiptail --msgbox "$m" --title "$tt" $ROWS_MSGBOX $(($WINDOW_COLS * 2)) 2
+
+	logExit
+
+	exec "$BIN_DIR/raspiBackupConfig" # continue with the configurator of the package, no return
+
+}
+
 function install_do() {
 
 	logEntry
 
 	if (( PACKAGE_MODE )); then
 		packageManagedMsgbox $MSG_PACKAGE_UPDATE
+		logExit
+		return
+	fi
+
+	if isLegacyInstalled; then # keep config and timers, just replace the code by the package
+		migrate_do
 		logExit
 		return
 	fi
@@ -6069,6 +6149,10 @@ function uiInstall() {
 
 	parseCurrentVersions
 
+	if isLegacyInstalled; then	# no updates without apt, offer the package right away
+		migrate_do
+	fi
+
 	if (( ! $configFound )); then
 		navigation_do
 	fi
@@ -6152,6 +6236,10 @@ function unattendedInstall() {
 		check4InternetAvailable
 		package_upgrade_execute
 		config_merge_package_execute
+	elif (( MODE_INSTALL || MODE_UPDATE )) && isLegacyInstalled; then	# keep config and timers of the installation without apt
+		check4InternetAvailable
+		migrate_execute
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MIGRATION_FINISHED "$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
 	elif (( MODE_INSTALL )); then
 		check4InternetAvailable
 		repository_add_execute
@@ -6199,6 +6287,7 @@ function show_help() {
 	echo "-m: add new options of the config template of package $PACKAGE_NAME to the config (called by the package after an update)"
 	echo "-R: unattended revert of $RASPIBACKUP_NAME with apt to the previous release, which is held until it's updated with -U or the update menu. Asks before reverting a held release again"
 	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME. Asks before updating a held release"
+	echo "    $RASPIBACKUP_NAME installed without apt is migrated to Debian package $PACKAGE_NAME, its configuration, extensions and timer are kept"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME with apt"
 	echo "-t: use either crond or systemd for backup timer"
 }

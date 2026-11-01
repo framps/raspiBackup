@@ -156,6 +156,7 @@ PACKAGE_NAME="raspibackup"									# Debian package, updates are detected with a
 PACKAGE_SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
 PACKAGE_SUITE="stable"
 PACKAGE_BETA_SUITE="beta"
+PACKAGE_INSTALLER_URL="https://framps.github.io/raspiBackup/raspiBackupInstall.sh"	# migrates installations without apt to the Debian package
 VARS_FILE="/tmp/$MYNAME.vars"
 TEMPORARY_MOUNTPOINT_ROOT="/tmp/${MYNAME}_mnt"
 
@@ -2172,6 +2173,10 @@ MSG_NEW_PACKAGE_VERSION_INSTALL=366
 MSG_EN[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE There is a new version %s of $MYNAME available. You are running version %s which isn't updated by 'apt upgrade'. Install the new version with 'sudo apt-mark unhold $PACKAGE_NAME && sudo apt-get update && sudo apt-get install $PACKAGE_NAME=%s'"
 #shellcheck disable=SC2034
 MSG_DE[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE Es gibt eine neue Version %s von $MYNAME. Die momentan benutzte Version %s wird von 'apt upgrade' nicht aktualisiert. Die neue Version kann mit 'sudo apt-mark unhold $PACKAGE_NAME && sudo apt-get update && sudo apt-get install $PACKAGE_NAME=%s' installiert werden"
+MSG_MIGRATE_TO_PACKAGE=367
+MSG_EN[$MSG_MIGRATE_TO_PACKAGE]="RBK0367W: $SMILEY_UPDATE_POSSIBLE $MYNAME isn't installed as Debian package and doesn't get any updates. Migrate to the Debian package with 'curl -fsSLO $PACKAGE_INSTALLER_URL && bash ${PACKAGE_INSTALLER_URL##*/}'. The configuration and the backup timer are kept"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_MIGRATE_TO_PACKAGE]="RBK0367W: $SMILEY_UPDATE_POSSIBLE $MYNAME ist nicht als Debian Paket installiert und erhält keine Aktualisierungen. Mit 'curl -fsSLO $PACKAGE_INSTALLER_URL && bash ${PACKAGE_INSTALLER_URL##*/}' wird auf das Debian Paket umgestellt. Die Konfiguration und der Backup Timer bleiben erhalten"
 
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
@@ -5592,6 +5597,12 @@ function isPackageInstalled() {
 	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" =~ ^(install|hold)\ ok\ installed$ ]]
 }
 
+# raspiBackup was installed and updated without apt, e.g. with raspiBackupInstallUI.sh, install.sh or
+# manually, and isn't replaced by the Debian package yet. Development versions and regression tests aren't nagged.
+function isLegacyInstallation() {
+	(( ! IS_DEV && ! REGRESSION_TEST )) && ! isPackageInstalled
+}
+
 function isPackageHeld() {
 	apt-mark showhold "$PACKAGE_NAME" 2>/dev/null | grep -qx "$PACKAGE_NAME"
 }
@@ -7986,6 +7997,14 @@ function reportNews() {
 
 	if isPackageInstalled; then	# the apt repository knows all versions, the properties file only DEPRECATED
 		reportPackageNews
+		logExit
+		return
+	fi
+
+	if isLegacyInstallation; then	# no updates without apt any more, the package has all new versions
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MIGRATE_TO_PACKAGE
+		NEWS_AVAILABLE=1
+		UPDATE_POSSIBLE=1
 		logExit
 		return
 	fi
@@ -11048,7 +11067,11 @@ if (( $DEPLOY )); then
 fi
 
 if [[ -n $UNSUPPORTED_OPTION ]]; then								# updates are done by raspiBackupConfig
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_NO_LONGER_SUPPORTED "$UNSUPPORTED_OPTION"
+	if isLegacyInstallation; then									# there is no raspiBackupConfig yet
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_MIGRATE_TO_PACKAGE
+	else
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_OPTION_NO_LONGER_SUPPORTED "$UNSUPPORTED_OPTION"
+	fi
 	exitError $RC_PARAMETER_ERROR
 fi
 

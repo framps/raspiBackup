@@ -43,6 +43,9 @@ readonly REPO_BETA_SUITE="${REPO_BETA_SUITE:-beta}"
 readonly REPO_COMPONENT="${REPO_COMPONENT:-main}"
 
 readonly KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
+# installed by former installations without apt, e.g. raspiBackupInstallUI.sh
+readonly LEGACY_SCRIPT="/usr/local/bin/${RASPIBACKUP}.sh"
+readonly LEGACY_CONFIG="/usr/local/etc/${RASPIBACKUP}.conf"
 readonly SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
 
 MYSELF=$(basename "$0")
@@ -364,6 +367,26 @@ install_local_package() {
     $SUDO apt-get install --allow-downgrades -y "${deb}" || return 42
 }
 
+report_legacy_installation() {
+    # A former installation without apt is replaced by the package. dpkg overwrites its files
+    # raspiBackup.sh and raspiBackupInstallUI.sh, postinst adds new options to the configuration.
+    if dpkg-query -W -f '${Status}' "${PACKAGE_NAME}" 2>/dev/null | grep -q " installed$" ; then
+        return 0
+    fi
+    if [[ ! -f "${LEGACY_SCRIPT}" || -L "${LEGACY_SCRIPT}" ]] ; then
+        return 0
+    fi
+
+    echo ""
+    echo "--- Found ${RASPIBACKUP} $(grep -m1 -oP '^VERSION="\K[^"]*' "${LEGACY_SCRIPT}" 2>/dev/null || true) installed without apt in ${LEGACY_SCRIPT}"
+    echo "--- It's migrated to the package ${PACKAGE_NAME}. Kept are:"
+    [[ -f "${LEGACY_CONFIG}" ]] && echo "    - the configuration ${LEGACY_CONFIG}, new options are added"
+    echo "    - the extensions in $(dirname "${LEGACY_SCRIPT}")"
+    echo "    - the backup timer (systemd or cron), ${LEGACY_SCRIPT} is still available"
+    echo "--- The former installation is saved and the migration can be reverted with"
+    echo "    sudo /var/backups/raspiBackup-legacy/revertMigration.sh"
+}
+
 finish() {
     dpkg-query -W -f '--- ${Package} ${Version} installed successfully\n' "${PACKAGE_NAME}"
 
@@ -439,9 +462,13 @@ trap '' ERR
 
 if [[ -n "${LOCAL_DEB}" ]] ; then
     verify_local_package "${LOCAL_DEB}" || exit $?
-    install_local_package "${LOCAL_DEB}" || exit $?
 else
     add_repository || exit $?
+fi
+report_legacy_installation
+if [[ -n "${LOCAL_DEB}" ]] ; then
+    install_local_package "${LOCAL_DEB}" || exit $?
+else
     install_from_repository || exit $?
 fi
 finish

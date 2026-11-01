@@ -124,9 +124,13 @@ sudo raspiBackupConfig
 
 Updates are installed with `sudo apt-get update && sudo apt-get upgrade`.
 
-The previous installation without apt is still available with following command:
+### Migration of an installation without apt
 
-`curl -o install -L https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh; sudo bash ./install`
+raspiBackup installed with the previous installer `raspiBackupInstallUI.sh` or with `install.sh` doesn't get updates any more. It reports this after every backup. Migrate it to the Debian package with the installation commands above. Alternatively update the installer with `sudo raspiBackupInstallUI.sh` (menu update) and accept the migration when it's offered, or use `sudo raspiBackupInstallUI.sh -U` twice (the first call updates the installer, the second migrates).
+
+The configuration `/usr/local/etc/raspiBackup.conf` is kept and new options are added. The extensions and the backup timer (systemd or cron) are kept too, `/usr/local/bin/raspiBackup.sh` is still available as link. Afterwards raspiBackup is updated with apt.
+
+The former installation is saved in `/var/backups/raspiBackup-legacy` before the migration. If something goes wrong, `sudo /var/backups/raspiBackup-legacy/revertMigration.sh` removes the package and its apt repository and restores the former code, installer, configuration, extensions and backup timer.
 
 ## Donation
 

@@ -280,12 +280,15 @@ gzip -9n "$TGT/$DIR_SHARE"/man/man?/*
 # keep the old name for raspiBackupConfig, crontabs and systemd units of former installations
 # (created after sed -i, which would replace the link by a file)
 ln -s raspiBackup "$TGT/$DIR_BIN/raspiBackup.sh"
-# keep the old name of raspiBackupConfig for users used to it
+# keep the old names of raspiBackupConfig for users used to them. raspiBackupInstallUI.sh also replaces
+# the installer of a former installation without apt, dpkg overwrites files not owned by any package
 ln -s raspiBackupConfig "$TGT/$DIR_BIN/raspiBackupInstallUI"
+ln -s raspiBackupConfig "$TGT/$DIR_BIN/raspiBackupInstallUI.sh"
 
 # completions are looked up by the name of the command, so the old names need links too
 ln -s raspiBackup "$TGT/$DIR_SHARE/bash-completion/completions/raspiBackup.sh"
 ln -s raspiBackupConfig "$TGT/$DIR_SHARE/bash-completion/completions/raspiBackupInstallUI"
+ln -s raspiBackupConfig "$TGT/$DIR_SHARE/bash-completion/completions/raspiBackupInstallUI.sh"
 
 # copy doc files (copyright in this case)
 install -m644 -D -t "$TGT/$DIR_SHARE/doc/${PACKAGE_NAME}" "$PACKAGE/DEBIAN/copyright"
@@ -298,7 +301,7 @@ mkdir -p "$TGT/DEBIAN"
 envsubst < "$PACKAGE/DEBIAN/control"   > "$TGT/DEBIAN/control"
 chmod 644 "$TGT/DEBIAN/control"
 # substitute only the build variables, the maintainer scripts use shell variables too
-for script in postinst prerm postrm; do
+for script in preinst postinst prerm postrm; do
     # shellcheck disable=2016
     envsubst '${DIR_BIN} ${DIR_ETC} ${DIR_LIB} ${DIR_SHARE} ${PACKAGE_NAME}' < "$PACKAGE/DEBIAN/$script" > "$TGT/DEBIAN/$script"
     chmod 755 "$TGT/DEBIAN/$script"

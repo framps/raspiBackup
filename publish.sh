@@ -49,9 +49,13 @@ Options:
 EOF_USAGE
 }
 
+# <source>[:<published name>]
+# Installations without apt update raspiBackup.sh and raspiBackupInstallUI.sh from published/.
+# They get raspiBackupConfig as raspiBackupInstallUI.sh, which migrates them to the Debian package.
 FILES=(
 	"raspiBackup.sh"
 	"installation/raspiBackupConfig.sh"
+	"installation/raspiBackupConfig.sh:raspiBackupInstallUI.sh"
 	"installation/install.sh"
 	"config/raspiBackup_de.conf"
 	"config/raspiBackup_en.conf"
@@ -149,8 +153,13 @@ function main() {
 		cd "$GITSRC"
 		for file in "${FILES[@]}"; do
 
+			tgtFile=""
+			if [[ $file == *:* ]]; then
+				tgtFile="${file#*:}"
+				file="${file%%:*}"
+			fi
 			# remove path
-			tgtFile="${file##*/}"
+			tgtFile="${tgtFile:-${file##*/}}"
 
 			destination="$PUBLISH_DIR/$tgtFile"
 
