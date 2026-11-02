@@ -40,6 +40,8 @@ and raspiBackupConfig -U/-R that
     3. a hotfix is updated and reverted
     4. an individual fix for one user (.deb, not in the repository) is installed,
        reverted and replaced by the next public fix or release
+    5. an installation without apt (raspiBackupInstallUI.sh, install.sh) is migrated to the
+       package and the migration is reverted with revertMigration.sh
 
 Only committed changes are tested: the sources are cloned from git.
 
@@ -49,6 +51,8 @@ At the end a summary report is displayed and saved in /tmp/raspiBackupPkgTest.*.
 RUN IT ON A TEST SYSTEM ONLY (VM, spare Raspberry). It installs, downgrades and purges
 the package 'raspibackup' and its dependencies. It refuses to run if raspibackup is
 installed or its repository is configured, unless --force is used.
+It always refuses to run if raspiBackup is installed without apt or a saved installation
+without apt exists in /var/backups/raspiBackup-legacy, --force doesn't delete them.
 The system repositories have to be reachable to install the dependencies.
 
 Options:
@@ -87,6 +91,13 @@ readonly KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
 readonly CONFIG="/usr/local/etc/raspiBackup.conf"
 readonly RASPIBACKUP="/usr/local/bin/raspiBackup"
 readonly RASPIBACKUPCONFIG="/usr/local/bin/raspiBackupConfig"
+# installation without apt, see preinst
+readonly LEGACY_DIR="/var/backups/raspiBackup-legacy"
+readonly LEGACY_SCRIPT="/usr/local/bin/raspiBackup.sh"
+readonly LEGACY_INSTALLER="/usr/local/bin/raspiBackupInstallUI.sh"
+readonly LEGACY_EXTENSION="/usr/local/bin/raspiBackup_test_pre.sh"
+readonly LEGACY_UNITS=(/etc/systemd/system/raspiBackup.service /etc/systemd/system/raspiBackup.timer)
+readonly LEGACY_CRON="/etc/cron.d/raspiBackup"
 # value set in the configuration after the first installation, has to survive all version changes
 readonly CONFIG_MARKER="DEFAULT_KEEPBACKUPS=13"
 
@@ -120,6 +131,14 @@ git() { command git -c safe.directory='*' "$@"; }
 GIT_TOP="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)" || exit 1
 SOURCE_COMMIT="$(git -C "$GIT_TOP" rev-parse --verify "${SOURCE_REF}^{commit}")" || { echo "Unknown git reference $SOURCE_REF"; exit 1; }
 
+# never deleted, not even with --force: it may be a real installation of the user
+if [[ -e "$LEGACY_DIR" ]] || [[ -f "$LEGACY_SCRIPT" && ! -L "$LEGACY_SCRIPT" ]]; then
+    echo "raspiBackup is installed without apt ($LEGACY_SCRIPT) or a saved installation exists in $LEGACY_DIR."
+    echo "Run this test on a test system only. If it's left over from a test run remove it with:"
+    echo "    sudo systemctl disable raspiBackup.timer; sudo rm -rf $LEGACY_DIR $LEGACY_SCRIPT $LEGACY_INSTALLER $LEGACY_EXTENSION ${LEGACY_SCRIPT%.sh} ${LEGACY_INSTALLER%.sh} ${LEGACY_UNITS[*]} $LEGACY_CRON"
+    exit 1
+fi
+
 if dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null | grep -q "installed" || [[ -e "$SOURCES" || -e "$KEYRING" ]]; then
     if (( ! FORCE )); then
         echo "$PACKAGE_NAME is installed or its repository is configured ($SOURCES, $KEYRING)."
@@ -148,6 +167,21 @@ mkdir -p "$DEBS" "$EMPTY_DIR"
 export GNUPGHOME="$WORK/gnupg"
 mkdir -m 700 "$GNUPGHOME"
 
+LEGACY_CREATED=0   # installation without apt created by section 5, removed by cleanup
+
+removeLegacy() { # installation without apt and its saved copy created by the test
+    (( LEGACY_CREATED )) || return 0
+    if [[ -d /run/systemd/system ]]; then
+        systemctl disable --now raspiBackup.timer > /dev/null 2>&1 || true
+    fi
+    rm -rf "$LEGACY_DIR"
+    rm -f "$LEGACY_SCRIPT" "$LEGACY_INSTALLER" "$LEGACY_EXTENSION" "${LEGACY_SCRIPT%.sh}" "${LEGACY_INSTALLER%.sh}" \
+        "${LEGACY_UNITS[@]}" "$LEGACY_CRON" "$CONFIG" "$CONFIG~" "$CONFIG.package"
+    if [[ -d /run/systemd/system ]]; then
+        systemctl daemon-reload > /dev/null 2>&1 || true
+    fi
+}
+
 cleanup() {
     local rc=$?
     trap - EXIT INT TERM
@@ -157,10 +191,14 @@ cleanup() {
         echo ""
         echo "Kept work directory $WORK, $PACKAGE_NAME and the repository $SOURCES"
         echo "Remove them with: sudo apt-mark unhold $PACKAGE_NAME; sudo apt-get purge -y $PACKAGE_NAME; sudo rm -rf $SOURCES $KEYRING $WORK /var/lib/apt/lists/*raspiBackupPkgTest*"
+        if (( LEGACY_CREATED )); then
+            echo "and the installation without apt with: sudo systemctl disable raspiBackup.timer; sudo rm -rf $LEGACY_DIR $LEGACY_SCRIPT $LEGACY_INSTALLER $LEGACY_EXTENSION ${LEGACY_SCRIPT%.sh} ${LEGACY_INSTALLER%.sh} ${LEGACY_UNITS[*]} $LEGACY_CRON"
+        fi
     else
         apt-mark unhold "$PACKAGE_NAME" > /dev/null 2>&1 || true
         apt-get purge -y "$PACKAGE_NAME" > /dev/null 2>&1 || true
         rm -f "$SOURCES" "$KEYRING" /var/lib/apt/lists/*raspiBackupPkgTest*
+        removeLegacy
         if (( rc != 0 )); then
             cp "$LOG" "/tmp/$(basename "$WORK").log" 2>/dev/null && echo "Log saved in /tmp/$(basename "$WORK").log"
         fi
@@ -672,6 +710,154 @@ noteInstalled "$(installedVersion)"
 [[ -z "$(installedVersion)" ]] && pass "$PACKAGE_NAME removed" || fail "$PACKAGE_NAME still installed: $(installedVersion)"
 [[ ! -e "$CONFIG" ]] && pass "$CONFIG removed" || fail "$CONFIG still exists"
 [[ ! -e /var/lib/raspiBackup ]] && pass "/var/lib/raspiBackup removed" || fail "/var/lib/raspiBackup still exists"
+
+#######################################################################################################################
+# 5. migration of an installation without apt and its reversal
+#######################################################################################################################
+
+CURRENT_SECTION="migration"
+section "5. Migration of an installation without apt and its reversal"
+
+V_LEGACY="0.7.4"
+readonly LEGACY_REF="$WORK/legacy"     # copy of the installation without apt to compare with
+HAS_SYSTEMD=0
+[[ -d /run/systemd/system ]] && HAS_SYSTEMD=1
+
+legacyFiles() { # files of the installation without apt, the backup timer depends on systemd
+    echo "$LEGACY_SCRIPT" "$LEGACY_INSTALLER" "$LEGACY_EXTENSION" "$CONFIG"
+    if (( HAS_SYSTEMD )); then
+        echo "${LEGACY_UNITS[@]}"
+    else
+        echo "$LEGACY_CRON"
+    fi
+}
+
+createLegacy() { # version - installation like raspiBackupInstallUI.sh creates it
+    local version="$1" file
+    step "create installation $version without apt"
+    LEGACY_CREATED=1
+    mkdir -p "$(dirname "$LEGACY_SCRIPT")" "$(dirname "$CONFIG")"
+
+    # the scripts aren't started, they only have to be identifiable
+    printf '#!/bin/bash\nVERSION="%s"\n# raspiBackup installed without apt by the package test\necho "raspiBackup %s"\n' \
+        "$version" "$version" > "$LEGACY_SCRIPT"
+    printf '#!/bin/bash\nVERSION="0.5"\n# raspiBackupInstallUI installed without apt by the package test\n' > "$LEGACY_INSTALLER"
+    printf '#!/bin/bash\n# extension of the user created by the package test\n' > "$LEGACY_EXTENSION"
+    chmod 755 "$LEGACY_SCRIPT" "$LEGACY_INSTALLER" "$LEGACY_EXTENSION"
+    ln -sfn raspiBackup.sh "${LEGACY_SCRIPT%.sh}"
+    ln -sfn raspiBackupInstallUI.sh "${LEGACY_INSTALLER%.sh}"
+
+    install -m 600 "$WORK/src/config/raspiBackup_en.conf" "$CONFIG"
+    sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
+
+    if (( HAS_SYSTEMD )); then
+        cp "$WORK/src/installation/raspiBackup.service" "$WORK/src/installation/raspiBackup.timer" /etc/systemd/system/
+        run systemctl daemon-reload
+        run systemctl enable raspiBackup.timer || fail "systemctl enable raspiBackup.timer"
+    else
+        echo "0 5 * * 0 root $LEGACY_SCRIPT" > "$LEGACY_CRON"
+    fi
+
+    rm -rf "$LEGACY_REF"
+    mkdir -p "$LEGACY_REF"
+    for file in $(legacyFiles); do
+        cp -a --parents "$file" "$LEGACY_REF" || abort "copy of $file failed"
+    done
+}
+
+assertTimer() { # enabled|disabled
+    (( HAS_SYSTEMD )) || return 0
+    if systemctl -q is-enabled raspiBackup.timer 2>/dev/null; then
+        [[ "$1" == enabled ]] && pass "raspiBackup.timer is enabled" || fail "raspiBackup.timer is enabled"
+    else
+        [[ "$1" == disabled ]] && pass "raspiBackup.timer is disabled" || fail "raspiBackup.timer isn't enabled"
+    fi
+}
+
+assertLink() { # link target
+    [[ -L "$1" && "$(readlink "$1")" == "$2" ]] && pass "$1 links to $2" || fail "$1 doesn't link to $2: $(ls -l "$1" 2>&1)"
+}
+
+assertSaved() { # installation without apt saved by preinst
+    local file
+    [[ -x "$LEGACY_DIR/revertMigration.sh" ]] && pass "$LEGACY_DIR/revertMigration.sh created" \
+        || fail "$LEGACY_DIR/revertMigration.sh missing"
+    for file in $(legacyFiles); do
+        cmp -s "$LEGACY_REF$file" "$LEGACY_DIR/files$file" && pass "$file saved" || fail "$file not saved in $LEGACY_DIR/files"
+    done
+    if (( HAS_SYSTEMD )); then
+        [[ -f "$LEGACY_DIR/timer.enabled" ]] && pass "enabled timer noted" || fail "$LEGACY_DIR/timer.enabled missing"
+    fi
+}
+
+assertMigrated() { # debianVersion - package installed, files of the installation without apt kept or saved
+    assertInstalled "$1"
+    assertLink "$LEGACY_SCRIPT" raspiBackup
+    assertSaved
+    cmp -s "$LEGACY_REF$LEGACY_EXTENSION" "$LEGACY_EXTENSION" && pass "extension kept" || fail "extension $LEGACY_EXTENSION changed or deleted"
+    [[ -f "$SOURCES" && -f "$KEYRING" ]] && pass "apt repository configured" || fail "apt repository not configured"
+    assertTimer enabled
+}
+
+assertReverted() { # version - package removed, installation without apt restored
+    local version="$1" file actual
+    noteInstalled "$(installedVersion)"
+    [[ -z "$(installedVersion)" ]] && pass "$PACKAGE_NAME removed" || fail "$PACKAGE_NAME still installed: $(installedVersion)"
+    dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null | grep -q "config-files" \
+        && pass "$PACKAGE_NAME removed, not purged" || fail "$PACKAGE_NAME purged or still installed"
+    [[ ! -e "$SOURCES" && ! -e "$KEYRING" ]] && pass "apt repository removed" || fail "$SOURCES or $KEYRING still exists"
+
+    for file in $(legacyFiles); do
+        if [[ ! -L "$file" ]] && cmp -s "$LEGACY_REF$file" "$file"; then
+            pass "$file restored"
+        else
+            fail "$file not restored"
+        fi
+    done
+    assertLink "${LEGACY_SCRIPT%.sh}" raspiBackup.sh
+    assertLink "${LEGACY_INSTALLER%.sh}" raspiBackupInstallUI.sh
+    [[ ! -e "$RASPIBACKUPCONFIG" ]] && pass "$RASPIBACKUPCONFIG removed" || fail "$RASPIBACKUPCONFIG still exists"
+    [[ -f "$CONFIG.package" ]] && pass "configuration of the package saved as $CONFIG.package" || fail "$CONFIG.package missing"
+    [[ -d "$LEGACY_DIR" ]] && pass "$LEGACY_DIR kept" || fail "$LEGACY_DIR deleted"
+
+    actual="$("${LEGACY_SCRIPT%.sh}" 2>&1)"
+    [[ "$actual" == "raspiBackup $version" ]] && pass "raspiBackup $version runs" || fail "raspiBackup prints '$actual' instead of 'raspiBackup $version'"
+    assertTimer enabled
+}
+
+# sections 1 to 4 install the package without an installation without apt, nothing is saved
+[[ ! -e "$LEGACY_DIR" ]] && pass "installation of the package saves nothing" || fail "$LEGACY_DIR created without an installation without apt"
+
+createLegacy "$V_LEGACY"
+installer && pass "migration with raspiBackupInstall.sh" || fail "migration with raspiBackupInstall.sh"
+assertMigrated "$V_REL3"
+
+step "revertMigration.sh without answer"
+run "$LEGACY_DIR/revertMigration.sh" < /dev/null
+(( $? == 1 )) && pass "revert not confirmed is refused" || fail "revert not confirmed isn't refused"
+assertInstalled "$V_REL3"
+
+step "revertMigration.sh confirmed (README section 2)"
+log "\$ printf 'y\\n' | $LEGACY_DIR/revertMigration.sh"
+printf 'y\n' | "$LEGACY_DIR/revertMigration.sh" >> "$LOG" 2>&1
+rc=$?
+log "rc=$rc"
+(( rc == 0 )) && pass "migration reverted (rc $rc)" || fail "revertMigration.sh: rc $rc, expected 0"
+assertReverted "$V_LEGACY"
+
+step "migrate again after the reversal"
+rm -f "$CONFIG.package"
+installer && pass "second migration with raspiBackupInstall.sh" || fail "second migration with raspiBackupInstall.sh"
+assertMigrated "$V_REL3"
+
+assertRc 0 "revertMigration.sh -y" "$LEGACY_DIR/revertMigration.sh" -y
+assertReverted "$V_LEGACY"
+
+assertRc 0 "migration once more" installer
+assertMigrated "$V_REL3"
+assertRc 0 "purge after migration" apt-get purge -y "$PACKAGE_NAME"
+noteInstalled "$(installedVersion)"
+[[ -x "$LEGACY_DIR/revertMigration.sh" ]] && pass "$LEGACY_DIR kept by purge" || fail "$LEGACY_DIR deleted by purge"
 
 #######################################################################################################################
 # result

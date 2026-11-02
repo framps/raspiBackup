@@ -597,7 +597,7 @@ GitHub account and for commits made in the web interface (signed by GitHub's key
 ├── publishRepo.sh      # publishes repo/ and raspiBackupInstall.sh on GitHub Pages (branch gh-pages)
 ├── common.sh           # common definitions for build and install
 ├── compareVersions.sh  # to test version up- and downgrade recognition
-├── testPackageUpdates.sh # tests updates and reversals (release, beta, hotfix, individual fix) on a test system
+├── testPackageUpdates.sh # tests updates and reversals (release, beta, hotfix, individual fix, migration without apt) on a test system
 │
 ├── deb                 # built deb packages (not committed)                  $DEB_TGT                           <--.
 │   ├── raspibackup_<version>.deb                                                                                   |
