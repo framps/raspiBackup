@@ -47,6 +47,9 @@ MYSELF="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"					# use l
 MYNAME=${MYSELF%.*}
 VERSION="0.5"			 	# -beta, -hotfix or -dev suffixes possible
 
+[[ "${BASH_SOURCE[0]}" -ef "$0" ]]
+INCLUDE_ONLY=$?				# 1: sourced by a test, only variables and functions are defined
+
 if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
 	exit 1
@@ -82,7 +85,7 @@ for cmd in ${!REQUIRED_COMMANDS[@]}; do
 	fi
 done
 
-if (( ${#requiredCmds[@]} > 0 )); then
+if (( ${#requiredCmds[@]} > 0 && ! INCLUDE_ONLY )); then
 	for cmd in ${requiredCmds[@]}; do
 			echo "$MYSELF depends on $cmd which is available in ${REQUIRED_COMMANDS[$cmd]}"
 	done
@@ -5856,11 +5859,12 @@ function isNewerVersion() { # current actual
 		suffix=${BASH_REMATCH[3]}
 	fi
 
-	grep -iq beta <<< "$version"
+	# the suffix of the current version, e.g. 0.5-beta, the version itself has no suffix any more
+	grep -iq beta <<< "$suffix"
 	local IS_BETA=$((! $? ))
-	grep -iq dev <<< "$version"
+	grep -iq dev <<< "$suffix"
 	local IS_DEV=$((! $? ))
-	grep -iq hotfix <<< "$version"
+	grep -iq hotfix <<< "$suffix"
 	local IS_HOTFIX=$((! $? ))
 
 	if (( $(compareVersions "$version" "$newVersion") < 0 )); then
@@ -6343,6 +6347,10 @@ fi
 
 if isCrontabConfigInstalled; then # use cron if already installed
 	USE_SYSTEMD=0
+fi
+
+if (( INCLUDE_ONLY )); then	# sourced by a test
+	return 0
 fi
 
 if [[ $1 == "--version" ]]; then
