@@ -454,6 +454,26 @@ The configuration before the last installation is saved as `raspiBackup.conf~`.
 
 ## 4. Revert to a previous release
 
+### Available versions
+
+Every published version stays in the repository until it is removed with
+`./publishRepo.sh --remove <version>`, so any older release can be installed again.
+Stable versions are listed in the suite `stable`, beta versions in the suite `beta`.
+
+```
+# on a system with the repository (after sudo apt-get update)
+apt list -a raspibackup                 # all versions, the installed one is marked
+apt-cache madison raspibackup           # one line per version and suite
+
+# without apt, directly from the published indices
+curl -s https://framps.github.io/raspiBackup/dists/stable/main/binary-amd64/Packages | grep ^Version
+curl -s https://framps.github.io/raspiBackup/dists/beta/main/binary-amd64/Packages   | grep ^Version
+
+# maintainer: versions published on gh-pages with their suite and the ones in repo/ not yet published
+./publishRepo.sh --list
+git log --format='%cd %b' FETCH_HEAD    # afterwards: "Versions:" and "Removed:" of each publish
+```
+
 ### Users
 
 ```

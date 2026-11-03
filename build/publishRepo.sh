@@ -48,6 +48,8 @@ Repository settings -> Pages -> Deploy from a branch -> gh-pages, / (root)
 
 Options:
 
+    --list               list the versions published on the Pages branch with their suite
+                         and the ones in 'repo' not yet published, then exit
     --no-push            create the commit but don't push it
     --remove <version>   unpublish this version, can be used multiple times
                          e.g. --remove 0.8.2-beta or --remove 0.8.2~beta
@@ -66,12 +68,16 @@ PAGES_REMOTE="${PAGES_REMOTE:-origin}"
 PAGES_BRANCH="${PAGES_BRANCH:-gh-pages}"
 
 PUSH=1
+LIST=0
 REMOVE=()
 while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
                    exit
                    ;;
+        --list) LIST=1
+                shift
+                ;;
         --no-push) PUSH=0
                    shift
                    ;;
@@ -90,6 +96,44 @@ while (( $# > 0 )); do
 done
 
 trap 'err $?' ERR
+
+# list deb file names (one per line, without path) as "<version> <suite> [<note>]"
+list_versions() {
+    local note="${1:-}"
+    sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -u -V | while read -r version; do
+        if [[ "$version" == *~* ]] ; then
+            printf '%-24s %-8s %s\n' "$version" "${REPO_BETA_SUITE:-beta}" "$note"
+        else
+            printf '%-24s %-8s %s\n' "$version" "${REPO_SUITE:-stable}" "$note"
+        fi
+    done
+}
+
+if (( LIST )) ; then
+    published=""
+    if git fetch -q "$PAGES_REMOTE" "$PAGES_BRANCH" 2>/dev/null ; then
+        published="$({ git ls-tree -r --name-only --full-tree FETCH_HEAD pool 2>/dev/null || true; } | sed -n 's|.*/||; /\.deb$/p')"
+        echo "Published on $PAGES_REMOTE/$PAGES_BRANCH ($(git log -1 --format=%cd FETCH_HEAD)):"
+        echo ""
+        if [[ -n "$published" ]] ; then
+            list_versions <<< "$published"
+        else
+            echo "none"
+        fi
+    else
+        echo "$PAGES_BRANCH doesn't exist yet, nothing published"
+    fi
+    if [[ -d "$REPO/pool" ]] ; then
+        local_only="$(comm -13 <(sort <<< "$published") <(find "$REPO/pool" -name '*.deb' -printf '%f\n' | sort))"
+        if [[ -n "$local_only" ]] ; then
+            echo ""
+            echo "In $REPO but not yet published:"
+            echo ""
+            list_versions "(local)" <<< "$local_only"
+        fi
+    fi
+    exit 0
+fi
 
 PAGES=$(mktemp --tmpdir -d raspiBackup_pages.XXXXXX)
 readonly PAGES
@@ -119,8 +163,8 @@ if (( ${#REMOVE[@]} > 0 )) ; then
     for version in "${REMOVE[@]}"; do
         mapfile -t debs < <(find "$REPO/pool" -name "${PACKAGE_NAME}_${version}_*.deb")
         if (( ${#debs[@]} == 0 )) ; then
-            echo "Error: Version $version isn't in the repository. Published versions:"
-            find "$REPO/pool" -name '*.deb' -printf '%f\n' | sort -V
+            echo "Error: Version $version isn't in the repository. Available versions:"
+            find "$REPO/pool" -name '*.deb' -printf '%f\n' | list_versions
             exit 1
         fi
         rm -v "${debs[@]}"
