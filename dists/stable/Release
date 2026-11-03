@@ -2,13 +2,13 @@ Acquire-By-Hash: yes
 Architectures: armhf arm64 amd64 i386
 Codename: stable
 Components: main
-Date: Tue, 03 Nov 2026 17:56:20 +0000
+Date: Tue, 03 Nov 2026 17:56:30 +0000
 Description: raspiBackup - Backup your Raspberry Pi systems
 Label: raspiBackup
 Origin: raspiBackup
 Suite: stable
 MD5Sum:
- 490e390ca723b98045fd24f8d5d6a5ee             4270 Release
+ 8011ff283d0ea18623e5c38621ee3538             4270 Release
  391ec661a85df22da2dad8e2c020ac0f              750 main/binary-amd64/Packages
  76e2047c0b38b37811ad4917966fcc54              532 main/binary-amd64/Packages.gz
  391ec661a85df22da2dad8e2c020ac0f              750 main/binary-arm64/Packages
@@ -18,7 +18,7 @@ MD5Sum:
  391ec661a85df22da2dad8e2c020ac0f              750 main/binary-i386/Packages
  76e2047c0b38b37811ad4917966fcc54              532 main/binary-i386/Packages.gz
 SHA1:
- 6e81ccf5e2c0637ec575d936edc2324154f52a1f             4270 Release
+ 09f4fdfa1e3fe73b02bf96c5d15e2ba2b3b0cac2             4270 Release
  5c98b5704efdd5dc4d973b264e2d5bf794aaed0f              750 main/binary-amd64/Packages
  62491a9a27b3e4dec78a33b9ed5ced2cd3b6f4ce              532 main/binary-amd64/Packages.gz
  5c98b5704efdd5dc4d973b264e2d5bf794aaed0f              750 main/binary-arm64/Packages
@@ -28,7 +28,7 @@ SHA1:
  5c98b5704efdd5dc4d973b264e2d5bf794aaed0f              750 main/binary-i386/Packages
  62491a9a27b3e4dec78a33b9ed5ced2cd3b6f4ce              532 main/binary-i386/Packages.gz
 SHA256:
- 3baae95df0a18da579c72c425868ab3fc977dc82af17d38a3dfb9a7e49b838a1             4270 Release
+ 7f48fb00a8ee057d114c252363998b42575fbc07baba7ce92dbb26183df1900d             4270 Release
  9269aac0ea51eed05682482da490a3eb50dcbbaad4cf97175495a5f904d2f770              750 main/binary-amd64/Packages
  bdaa00dd25ee5903ace7e52d5023e0d49fd4294c26cf7093ce19aa82e45e7f7e              532 main/binary-amd64/Packages.gz
  9269aac0ea51eed05682482da490a3eb50dcbbaad4cf97175495a5f904d2f770              750 main/binary-arm64/Packages
@@ -38,7 +38,7 @@ SHA256:
  9269aac0ea51eed05682482da490a3eb50dcbbaad4cf97175495a5f904d2f770              750 main/binary-i386/Packages
  bdaa00dd25ee5903ace7e52d5023e0d49fd4294c26cf7093ce19aa82e45e7f7e              532 main/binary-i386/Packages.gz
 SHA512:
- 83a9c9516309ee76695ea56d517eb9183a428092b8e040730ac860c422e777f83f08f892b362ad5dfab36d9dab02f34c851b5b27b77cfc1db8331c46b7e61d0b             4270 Release
+ 1d8036c726e9bde25568cae5df1807bf1a672e5cc96a00d67a64ea8b2956db45a1efa501c3b37394be62697a94b57c8f243f051ffca916fb9352b16d13775b59             4270 Release
  875bca5fe03f72825bc3ca45d65a5926ac083755fd330f952658f2777d6137ce9e64252c54e64c2705762fd357bca06c0921a8c1d87e6ce5d504782b78410914              750 main/binary-amd64/Packages
  593425544ee220b62e358bc5768263fb81a8dcc2bbdcb53f6d3fd64994284e86fdea218a56267b2cac0f381028d0d40bd2d35d6a3e7558511a4869c71d3fa2b5              532 main/binary-amd64/Packages.gz
  875bca5fe03f72825bc3ca45d65a5926ac083755fd330f952658f2777d6137ce9e64252c54e64c2705762fd357bca06c0921a8c1d87e6ce5d504782b78410914              750 main/binary-arm64/Packages
