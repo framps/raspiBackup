@@ -226,7 +226,7 @@ the apt commands described below:
 
 | Option | apt command | Available if |
 |--------|-------------|--------------|
-| `P1` Update current release | `apt-get install raspibackup=<latest stable>` | a newer release exists |
+| `P1` Update current release | `apt-get install raspibackup=<candidate>` | apt's candidate is newer: the latest release, or for an installed beta the latest beta or the release which follows it |
 | `P2` Revert to previous release | `apt-get install --allow-downgrades raspibackup=<previous>` and `apt-mark hold` | a release is installed and an older one exists |
 | `P3` Install or update beta | `apt-get install raspibackup=<latest beta>` | a newer beta exists |
 | `P4` Revert from beta to current release | `apt-get install --allow-downgrades raspibackup=<latest stable>` | a beta is installed |
@@ -236,13 +236,16 @@ Every option removes a hold first. Afterwards `raspiBackupConfig` restarts with 
 Without the menu:
 
 - `sudo raspiBackupConfig -U` updates the installed release, or an installed beta to the latest
-  beta or the release which follows it, like `P1` and `P3`.
+  beta or the release which follows it, like `P1`.
 - `sudo raspiBackupConfig -R` reverts to the previous release and holds it, like `P2`.
+- `sudo raspiBackupConfig -b` installs or updates the latest beta, like `P3`.
+- `sudo raspiBackupConfig -S` reverts a beta to the current release, like `P4`.
 
-If the installed version is held, both options ask before they change it. Without a terminal
-(e.g. cron) the answer is no.
+If the installed version is held, the options and the menu ask the same question before they
+change it. Without a terminal (e.g. cron) the options answer no. If the menu shows an item as
+not available, the option ends with an error (`-U` reports that the latest version is installed).
 
-The menu and both options update the package index with `apt-get update` at most once a day,
+The menu and the options update the package index with `apt-get update` at most once a day,
 or when the apt repository was changed. Add `-f` to update it anyway, e.g. right after a new
 version was published: `sudo raspiBackupConfig -f -U`.
 

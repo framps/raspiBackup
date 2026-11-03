@@ -33,7 +33,7 @@ Usage:
 
 Builds test packages with build.sh, publishes them in a local signed apt repository
 (file://, signed with a temporary GPG key) and checks with apt, raspiBackupInstall.sh
-and raspiBackupConfig -U/-R that
+and raspiBackupConfig -U/-R/-b/-S that
 
     1. a release is updated to a new release and reverted to the previous one
     2. a beta is installed and updated only on request and reverted to the release
@@ -610,6 +610,15 @@ assertInSuite "$D_BETA1" beta
 aptUpgrade
 assertInstalled "$V_REL"
 assertRc 0 "update doesn't install a beta" rbc -U
+assertInstalled "$V_REL"
+assertRc 1 "release isn't reverted like a beta" rbc -S
+assertInstalled "$V_REL"
+
+assertRc 0 "install beta" rbc -b
+assertInstalled "$D_BETA1"
+assertRc 1 "no newer beta" rbc -b
+assertInstalled "$D_BETA1"
+assertRc 0 "revert beta to release" rbc -S
 assertInstalled "$V_REL"
 
 step "apt-get install -t beta"

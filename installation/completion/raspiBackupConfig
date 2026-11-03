@@ -28,10 +28,10 @@ _raspiBackupConfig() {
     if [[ "$cur" == -* || -z "$cur" ]]; then
         local options="-f -h -s -t --version" w
         # the modes exclude each other, offer them only if none was given yet
-        local modes="-i -m -R -u -U"
+        local modes="-b -i -m -R -S -u -U"
         for w in "${COMP_WORDS[@]:1:COMP_CWORD-1}"; do
             case "$w" in
-                -*[imRuU]*) [[ "$w" != --* ]] && modes="" ;;
+                -*[bimRSuU]*) [[ "$w" != --* ]] && modes="" ;;
             esac
         done
         mapfile -t COMPREPLY < <(compgen -W "$options $modes" -- "$cur")

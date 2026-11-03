@@ -1564,6 +1564,20 @@ MSG_FI[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME siirrettiin 
 MSG_FR[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME a été migré vers le paquet Debian %1. Mettez-le à jour désormais avec 'sudo apt-get update' et 'sudo apt-get upgrade' ou avec 'sudo raspiBackupConfig'. La migration peut être annulée avec 'sudo /var/backups/raspiBackup-legacy/revertMigration.sh'."
 MSG_ZH[$MSG_MIGRATION_FINISHED]="${MSG_PRF}0052I: $RASPIBACKUP_NAME 已迁移到Debian软件包 %1. 今后请使用 'sudo apt-get update' 和 'sudo apt-get upgrade' 或 'sudo raspiBackupConfig' 进行更新. 可使用 'sudo /var/backups/raspiBackup-legacy/revertMigration.sh' 撤销迁移."
 
+MSG_PACKAGE_NO_BETA=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_NO_BETA]="${MSG_PRF}0053E: No beta of $RASPIBACKUP_NAME newer than %1 available."
+MSG_DE[$MSG_PACKAGE_NO_BETA]="${MSG_PRF}0053E: Keine Beta von $RASPIBACKUP_NAME neuer als %1 verfügbar."
+MSG_FI[$MSG_PACKAGE_NO_BETA]="${MSG_PRF}0053E: $RASPIBACKUP_NAME:n versiota %1 uudempaa betaa ei ole saatavilla."
+MSG_FR[$MSG_PACKAGE_NO_BETA]="${MSG_PRF}0053E: Aucune bêta de $RASPIBACKUP_NAME plus récente que %1 disponible."
+MSG_ZH[$MSG_PACKAGE_NO_BETA]="${MSG_PRF}0053E: 没有比 %1 更新的 $RASPIBACKUP_NAME 测试版可用."
+
+MSG_PACKAGE_NO_REVERT_BETA=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1 can't be reverted to the current release. Only a beta newer than the current release can be reverted."
+MSG_DE[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1 kann nicht auf das aktuelle Release zurückgesetzt werden. Nur eine Beta, die neuer als das aktuelle Release ist, kann zurückgesetzt werden."
+MSG_FI[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1:tä ei voi palauttaa nykyiseen julkaisuun. Vain nykyistä julkaisua uudemman betan voi palauttaa."
+MSG_FR[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1 ne peut pas être ramené à la version actuelle. Seule une bêta plus récente que la version actuelle peut être ramenée."
+MSG_ZH[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1 无法回退到当前版本. 只有比当前版本更新的测试版才能回退."
+
 MSG_QUERY_CHARS_YES_NO=$((SCNT++))
 MSG_EN[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
 MSG_DE[$MSG_QUERY_CHARS_YES_NO]="(j/N)"
@@ -2538,16 +2552,64 @@ function package_revert_execute() { # installs the previous release and holds it
 		exit 1
 	fi
 
-	if isPackageHeld && ! askYesNo $MSG_PACKAGE_HELD_REVERT "$PACKAGE_VERSION_INSTALLED" "$PACKAGE_VERSION_PREVIOUS"; then
+	package_change_execute "$PACKAGE_VERSION_PREVIOUS" 1 $MSG_PACKAGE_HELD_REVERT
+	writeToConsole $MSG_PACKAGE_HELD "$PACKAGE_TARGET_VERSION"
+
+	logExit
+
+}
+
+function package_beta_execute() { # installs or updates the latest beta, used by option -b like update menu P3
+
+	logEntry
+
+	package_index_update_execute
+	parsePackageVersions
+
+	if [[ -z "$PACKAGE_OFFER_BETA" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PACKAGE_NO_BETA "$PACKAGE_VERSION_INSTALLED"
+		logExit
+		exit 1
+	fi
+
+	package_change_execute "$PACKAGE_OFFER_BETA" 0 $MSG_PACKAGE_HELD_UPDATE
+
+	logExit
+
+}
+
+function package_revert_beta_execute() { # reverts a beta to the current release, used by option -S like update menu P4
+
+	logEntry
+
+	package_index_update_execute
+	parsePackageVersions
+
+	if [[ -z "$PACKAGE_OFFER_REVERT_BETA" ]]; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_PACKAGE_NO_REVERT_BETA "$PACKAGE_VERSION_INSTALLED"
+		logExit
+		exit 1
+	fi
+
+	package_change_execute "$PACKAGE_OFFER_REVERT_BETA" 0 $MSG_PACKAGE_HELD_UPDATE
+
+	logExit
+
+}
+
+function package_change_execute() { # version hold heldQuestion - installs the version, asks before a held version is changed
+
+	logEntry "$@"
+
+	if isPackageHeld && ! askYesNo $3 "$PACKAGE_VERSION_INSTALLED" "$1"; then
 		writeToConsole $MSG_PACKAGE_HELD "$PACKAGE_VERSION_INSTALLED"
 		logExit
 		exit 0
 	fi
 
-	PACKAGE_TARGET_VERSION="$PACKAGE_VERSION_PREVIOUS"
-	PACKAGE_TARGET_HOLD=1
+	PACKAGE_TARGET_VERSION="$1"
+	PACKAGE_TARGET_HOLD="$2"
 	package_version_execute
-	writeToConsole $MSG_PACKAGE_HELD "$PACKAGE_TARGET_VERSION"
 
 	logExit
 
@@ -2559,6 +2621,12 @@ function isBetaVersion() { # debianVersion - 0.7.5~beta1 is a beta, an individua
 
 function isPackageHeld() {
 	apt-mark showhold "$PACKAGE_NAME" 2>>"$LOG_FILE" | grep -qx "$PACKAGE_NAME"
+}
+
+function packageCandidate() { # version apt-get installs, a hold doesn't change it, for an installed beta it's the latest beta or the release which follows it
+	local candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
+	[[ "$candidate" == "(none)" ]] && candidate=""
+	echo "$candidate"
 }
 
 function packageVersions() { # suite - versions of the package available in the suite
@@ -2582,6 +2650,7 @@ function parsePackageVersions() { # sets the installed version and the versions 
 	logEntry
 
 	PACKAGE_VERSION_INSTALLED="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	PACKAGE_VERSION_CANDIDATE="$(packageCandidate)"
 	PACKAGE_VERSION_STABLE="$(packageVersions "$REPO_SUITE" | highestVersion)"
 	PACKAGE_VERSION_BETA="$(packageVersions "$REPO_BETA_SUITE" | highestVersion)"
 	PACKAGE_VERSION_PREVIOUS=""
@@ -2589,7 +2658,21 @@ function parsePackageVersions() { # sets the installed version and the versions 
 		PACKAGE_VERSION_PREVIOUS="$(packageVersions "$REPO_SUITE" | highestVersion "$PACKAGE_VERSION_INSTALLED")"
 	fi
 
-	logItem "installed: $PACKAGE_VERSION_INSTALLED stable: $PACKAGE_VERSION_STABLE previous: $PACKAGE_VERSION_PREVIOUS beta: $PACKAGE_VERSION_BETA"
+	# versions offered by the update menu P1-P4 and options -U, -R, -b and -S, empty if not available
+	local i="$PACKAGE_VERSION_INSTALLED"
+	PACKAGE_OFFER_UPDATE="" PACKAGE_OFFER_BETA="" PACKAGE_OFFER_REVERT_BETA=""
+	if [[ -n "$PACKAGE_VERSION_CANDIDATE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_CANDIDATE" gt "$i"; then
+		PACKAGE_OFFER_UPDATE="$PACKAGE_VERSION_CANDIDATE"
+	fi
+	if [[ -n "$PACKAGE_VERSION_BETA" ]] && dpkg --compare-versions "$PACKAGE_VERSION_BETA" gt "$i"; then
+		PACKAGE_OFFER_BETA="$PACKAGE_VERSION_BETA"
+	fi
+	if isBetaVersion "$i" && [[ -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" lt "$i"; then
+		PACKAGE_OFFER_REVERT_BETA="$PACKAGE_VERSION_STABLE"
+	fi
+
+	logItem "installed: $PACKAGE_VERSION_INSTALLED candidate: $PACKAGE_VERSION_CANDIDATE stable: $PACKAGE_VERSION_STABLE previous: $PACKAGE_VERSION_PREVIOUS beta: $PACKAGE_VERSION_BETA"
+	logItem "offered update: $PACKAGE_OFFER_UPDATE beta: $PACKAGE_OFFER_BETA revert beta: $PACKAGE_OFFER_REVERT_BETA"
 
 	logExit
 
@@ -5187,18 +5270,8 @@ function package_update_menu() { # update, revert, install or revert a beta with
 	progressbar_do "INDEX_DESCRIPTION" "Updating package index" package_index_update_execute
 	parsePackageVersions
 
-	local i="$PACKAGE_VERSION_INSTALLED"
-	local stable="" previous="$PACKAGE_VERSION_PREVIOUS" beta="" revertBeta=""
-
-	if [[ -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" gt "$i"; then
-		stable="$PACKAGE_VERSION_STABLE"
-	fi
-	if [[ -n "$PACKAGE_VERSION_BETA" ]] && dpkg --compare-versions "$PACKAGE_VERSION_BETA" gt "$i"; then
-		beta="$PACKAGE_VERSION_BETA"
-	fi
-	if isBetaVersion "$i" && [[ -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" lt "$i"; then
-		revertBeta="$PACKAGE_VERSION_STABLE"
-	fi
+	# same versions as options -U, -R, -b and -S
+	local update="$PACKAGE_OFFER_UPDATE" previous="$PACKAGE_VERSION_PREVIOUS" beta="$PACKAGE_OFFER_BETA" revertBeta="$PACKAGE_OFFER_REVERT_BETA"
 
 	local b1=$(getMessageText $BUTTON_BACK)
 	local o1=$(getMessageText $BUTTON_SELECT)
@@ -5214,7 +5287,7 @@ function package_update_menu() { # update, revert, install or revert a beta with
 	local s3="${m3[0]}"
 	local s4="${m4[0]}"
 
-	packageMenuItem m1 "$stable"
+	packageMenuItem m1 "$update"
 	packageMenuItem m2 "$previous"
 	packageMenuItem m3 "$beta"
 	packageMenuItem m4 "$revertBeta"
@@ -5229,7 +5302,7 @@ function package_update_menu() { # update, revert, install or revert a beta with
 	if [ $RET -eq 0 ]; then
 		logItem "$FUN"
 		case "$FUN" in
-			$s1) [[ -n "$stable" ]] && package_version_do "$stable" 0 ;;
+			$s1) [[ -n "$update" ]] && package_version_do "$update" 0 ;;
 			$s2) [[ -n "$previous" ]] && package_version_do "$previous" 1 ;;
 			$s3) [[ -n "$beta" ]] && package_version_do "$beta" 0 ;;
 			$s4) [[ -n "$revertBeta" ]] && package_version_do "$revertBeta" 0 ;;
@@ -5255,7 +5328,13 @@ function package_version_do() { # version hold
 	logEntry "$@"
 
 	local m
-	if (( $2 )); then
+	if isPackageHeld; then	# same question as options -U, -R, -b and -S
+		if (( $2 )); then
+			m="$(getMessageText $MSG_PACKAGE_HELD_REVERT "$PACKAGE_VERSION_INSTALLED" "$1")"
+		else
+			m="$(getMessageText $MSG_PACKAGE_HELD_UPDATE "$PACKAGE_VERSION_INSTALLED" "$1")"
+		fi
+	elif (( $2 )); then
 		m="$(getMessageText $MSG_PACKAGE_CONFIRM_PREVIOUS "$PACKAGE_VERSION_INSTALLED" "$1")"
 	else
 		m="$(getMessageText $MSG_PACKAGE_CONFIRM_VERSION "$PACKAGE_VERSION_INSTALLED" "$1")"
@@ -5327,8 +5406,7 @@ function package_upgrade_execute() { # updates the installed package to the late
 	package_index_update_execute
 
 	if isPackageHeld; then
-		# a hold doesn't change the candidate, it's the version apt-get installs
-		candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
+		candidate="$(packageCandidate)"
 		if [[ -z "$candidate" || "$candidate" == "$oldVersion" ]]; then
 			writeToConsole $MSG_PACKAGE_UP_TO_DATE "$oldVersion"
 			logExit
@@ -6228,13 +6306,22 @@ function unattendedInstall() {
 		if (( PACKAGE_MODE )); then
 			config_merge_package_execute
 		fi
-	elif (( MODE_REVERT )); then
+	elif (( MODE_REVERT || MODE_BETA || MODE_REVERT_BETA )); then
 		if (( ! PACKAGE_MODE )); then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PACKAGE_REQUIRED "-R"
+			local option="-R"
+			(( MODE_BETA )) && option="-b"
+			(( MODE_REVERT_BETA )) && option="-S"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PACKAGE_REQUIRED "$option"
 			exit 1
 		fi
 		check4InternetAvailable
-		package_revert_execute
+		if (( MODE_REVERT )); then
+			package_revert_execute
+		elif (( MODE_BETA )); then
+			package_beta_execute
+		else
+			package_revert_beta_execute
+		fi
 		config_merge_package_execute
 	elif (( PACKAGE_MODE )) && (( MODE_UPDATE )); then
 		check4InternetAvailable
@@ -6284,12 +6371,14 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF [-f] ( -i | -m | -R | -u | -U | -t [crond|systemd] )"
+	echo "$MYSELF [-f] ( -b | -i | -m | -R | -S | -u | -U | -t [crond|systemd] )"
+	echo "-b: unattended install or update of the latest beta of $RASPIBACKUP_NAME with apt. Asks before changing a held release"
 	echo "-f: update the package index with apt-get update even if it was updated less than a day ago"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
 	echo "-m: add new options of the config template of package $PACKAGE_NAME to the config (called by the package after an update)"
 	echo "-R: unattended revert of $RASPIBACKUP_NAME with apt to the previous release, which is held until it's updated with -U or the update menu. Asks before reverting a held release again"
+	echo "-S: unattended revert of a beta of $RASPIBACKUP_NAME with apt to the current release. Asks before changing a held release"
 	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME. Asks before updating a held release"
 	echo "    $RASPIBACKUP_NAME installed without apt is migrated to Debian package $PACKAGE_NAME, its configuration, extensions and timer are kept"
 	echo "-u: unattended uninstall of $RASPIBACKUP_NAME with apt"
@@ -6330,6 +6419,8 @@ MODE_UNINSTALL=0
 MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_REVERT=0 # revert the package to the previous release and hold it
+MODE_BETA=0 # install or update the latest beta of the package
+MODE_REVERT_BETA=0 # revert a beta of the package to the current release
 MODE_MERGE=0 # merge the config template of the package into the config, called by postinst
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 FORCE_INDEX_UPDATE=0 # apt-get update even if it was done less than a day ago
@@ -6358,7 +6449,7 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?fmusUiR" opt; do
+while getopts "t:h?bfmusSUiR" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -6373,6 +6464,12 @@ while getopts "t:h?fmusUiR" opt; do
 		 MODE_UNATTENDED=1
 		 ;;
     R) MODE_REVERT=1
+		 MODE_UNATTENDED=1
+		 ;;
+    b) MODE_BETA=1
+		 MODE_UNATTENDED=1
+		 ;;
+    S) MODE_REVERT_BETA=1
 		 MODE_UNATTENDED=1
 		 ;;
     m) MODE_MERGE=1

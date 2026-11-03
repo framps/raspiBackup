@@ -14,7 +14,7 @@ raspiBackupConfig \- configure, install and uninstall raspiBackup
 .B raspiBackupConfig
 .br
 .B raspiBackupConfig
-.BR \-i " | " \-m " | " \-R " | " \-u " | " \-U
+.BR \-b " | " \-i " | " \-m " | " \-R " | " \-S " | " \-u " | " \-U
 .RB [ \-t
 .BR crond | systemd ]
 .br
@@ -90,6 +90,26 @@ is given.
 has to be run as root.
 .SH OPTIONS
 .TP
+.B \-b
+Unattended install or update of the latest beta of
+.B raspiBackup
+with
+.BR apt-get (8),
+like the entry
+.B Install or update beta
+of the update menu.
+Afterwards
+.B \-U
+updates the beta to newer betas and finally to the next release.
+Fails if there is no beta newer than the installed version.
+If the installed version is held because it was reverted,
+.B \-b
+asks whether it should be changed anyway.
+Only available if
+.B raspiBackup
+is installed as Debian package
+.BR raspibackup .
+.TP
 .B \-f
 Update the package index with
 .B apt-get update
@@ -148,6 +168,27 @@ is installed as Debian package
 .BR raspibackup .
 There is no previous release for a beta.
 .TP
+.B \-S
+Unattended revert of an installed beta of
+.B raspiBackup
+with
+.BR apt-get (8)
+to the current release, like the entry
+.B Revert from beta to current release
+of the update menu.
+Fails if no beta is installed or the current release is newer than the beta,
+which is updated with
+.B \-U
+instead.
+If the installed version is held,
+.B \-S
+asks whether it should be changed anyway.
+The configuration isn't reverted.
+Only available if
+.B raspiBackup
+is installed as Debian package
+.BR raspibackup .
+.TP
 .BR \-t " crond" | systemd
 Use cron or systemd for regular backups.
 .TP
@@ -185,7 +226,7 @@ is updated.
 Display the version and exit.
 .PP
 The questions of
-.B \-R
+.BR \-b ", " \-R ", " \-S
 and
 .B \-U
 are answered with no if
@@ -225,7 +266,7 @@ are removed as well.
 All actions of
 .BR raspiBackupInstall.sh ,
 .BR "raspiBackupConfig \-i" ,
-.BR \-R ", " \-u " and " \-U
+.BR \-b ", " \-R ", " \-S ", " \-u " and " \-U
 and of the update menu can be done manually with
 .BR apt (8)
 as well.
