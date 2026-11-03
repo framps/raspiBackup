@@ -179,7 +179,7 @@ show "Create commit for $PAGES_BRANCH"
 git -C "$PAGES" rm -r -q --ignore-unmatch .
 git -C "$PAGES" clean -fdxq
 cp -a "$REPO/." "$PAGES/"
-install -m755 raspiBackupInstall.sh "$PAGES/"
+install -m755 ../raspiBackupInstall.sh "$PAGES/"
 # serve all files as they are
 touch "$PAGES/.nojekyll"
 

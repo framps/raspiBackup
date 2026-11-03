@@ -112,11 +112,10 @@ The installer uses menus, checklists and radiolists similar to raspi-config and 
 raspiBackup is installed as a Debian package from its signed apt repository with following commands:
 
 ```
-curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
-bash raspiBackupInstall.sh
+curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash
 ```
 
-The script adds the repository and installs the package `raspibackup`. `bash raspiBackupInstall.sh --help` lists all options, e.g. `--beta` to install the latest beta. Afterwards raspiBackup is configured with
+The script adds the repository and installs the package `raspibackup`. Nothing is left in the current directory, the log is written to `/tmp`. Options are passed with `bash -s --`, e.g. `curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash -s -- --beta` installs the latest beta and `... | bash -s -- --help` lists all options. Afterwards raspiBackup is configured with
 
 ```
 sudo raspiBackupConfig

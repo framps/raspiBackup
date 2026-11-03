@@ -502,7 +502,7 @@ rbcYes() { # options - raspiBackupConfig with a terminal answering yes
 
 installer() { # options - raspiBackupInstall.sh using the test repository and key
     step "raspiBackupInstall.sh $*"
-    (cd "$WORK" && REPO_URL="$TEST_REPO_URL" REPO_OWNER_GPG_FINGERPRINT="$GPG_FPR" run bash "$BUILD/raspiBackupInstall.sh" -y "$@")
+    (cd "$WORK" && REPO_URL="$TEST_REPO_URL" REPO_OWNER_GPG_FINGERPRINT="$GPG_FPR" run bash "$WORK/src/raspiBackupInstall.sh" -y "$@")
 }
 
 #######################################################################################################################

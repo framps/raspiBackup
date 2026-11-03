@@ -127,7 +127,7 @@ if (( rc )); then
     echo "??? Not all files could be restored, see the messages above"
 else
     echo "--- raspiBackup ${version} without apt restored"
-    echo "--- To migrate to the package again use: curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh && bash raspiBackupInstall.sh"
+    echo "--- To migrate to the package again use: curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash"
 fi
 exit $rc
 EOF_REVERT

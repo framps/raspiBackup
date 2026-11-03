@@ -205,11 +205,11 @@ git fetch origin gh-pages && git ls-tree -r --name-only FETCH_HEAD pool   # publ
 ## 2. Install and update
 
 ```
-curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
-bash raspiBackupInstall.sh
+curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash
 ```
 
-The script adds the repository and installs `raspibackup`. Then configure raspiBackup
+The script adds the repository and installs `raspibackup`. It isn't stored and isn't part of the package,
+its log is written to `/tmp/raspiBackupInstall.XXXXXX.log`. Options are passed with `bash -s -- <options>`. Then configure raspiBackup
 (backup path, backup type, timer, extensions, ...) with
 
 ```
@@ -260,8 +260,7 @@ raspiBackup installed with `raspiBackupInstallUI.sh` or `install.sh` doesn't get
 Any of these commands replaces it by the package:
 
 ```
-curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
-bash raspiBackupInstall.sh                  # reports the installation found and migrates it
+curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash   # reports the installation found and migrates it
 
 sudo raspiBackupInstallUI.sh                # update the installer in the update menu, then accept the migration
 sudo raspiBackupInstallUI.sh -U             # updates the installer, call it a second time to migrate
@@ -401,8 +400,7 @@ Notes:
 New installation:
 
 ```
-curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
-bash raspiBackupInstall.sh --beta
+curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash -s -- --beta
 ```
 
 Existing installation:
