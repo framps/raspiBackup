@@ -377,7 +377,9 @@ report() { # rc - summary report of the test run
 # state checks
 #######################################################################################################################
 
-installedVersion() { dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>/dev/null; }
+installedVersion() { # empty if not installed, also if removed but not purged (status config-files)
+    dpkg-query -W -f '${db:Status-Status} ${Version}' "$PACKAGE_NAME" 2>/dev/null | awk '$1 == "installed" { print $2 }'
+}
 isHeld() { apt-mark showhold "$PACKAGE_NAME" 2>/dev/null | grep -qx "$PACKAGE_NAME"; }
 
 declare -A SCRIPT_VERSION=()   # Debian version -> VERSION inserted into raspiBackup
