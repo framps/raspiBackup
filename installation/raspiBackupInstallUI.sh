@@ -10,7 +10,7 @@
 #	  FI - teemue
 #	  ZH - GoogleBeEvil
 #	  FR - mgrafr
-#         ES - majegarza
+#	  ES - majegarza (review)
 #
 #######################################################################################################################
 #
@@ -281,8 +281,10 @@ function containsElement () {
 
 SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ZH" "ES" "IT")
 
+# use locale variables to determine language. Precedence is the same as for messages: LC_ALL, LC_MESSAGES, LANG
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"
-LANG_EXT="${LANG^^*}"
+LANG_EXT="${LC_ALL:-${LC_MESSAGES:-$LANG}}"
+LANG_EXT="${LANG_EXT^^*}"
 LANG_SYSTEM="${LANG_EXT:0:2}"
 if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then
 	LANG_SYSTEM="EN"

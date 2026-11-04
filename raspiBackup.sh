@@ -14,7 +14,7 @@
 # Credits to following people for their translation work
 #	  FI - teemue
 #	  FR - mgrafr
-#	  ES - majegarza
+#	  ES - majegarza (review)
 #
 #######################################################################################################################
 #
@@ -524,10 +524,11 @@ function getIndexInArray() { # element ${array[@]}
 SUPPORTED_LANGUAGES=("EN" "DE" "FI" "FR" "ES" "IT")
 FALLBACK_LANGUAGE="EN"
 
-# use LANG variable to determine language
+# use locale variables to determine language. Precedence is the same as for messages: LC_ALL, LC_MESSAGES, LANG
 
 [[ -z "${LANG}" ]] && LANG="en_US.UTF-8"		# if no LANG set use English
-LANG_EXT="${LANG,,*}"
+LANG_EXT="${LC_ALL:-${LC_MESSAGES:-$LANG}}"
+LANG_EXT="${LANG_EXT,,*}"
 LANG_SYSTEM="${LANG_EXT:0:2}"						# extract language id
 if ! containsElement "${LANG_SYSTEM^^*}" "${SUPPORTED_LANGUAGES[@]}"; then	# if language is not supported use English
 	LANG_SYSTEM=$FALLBACK_LANGUAGE
