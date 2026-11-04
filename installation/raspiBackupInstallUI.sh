@@ -591,7 +591,7 @@ MSG_IT[$MSG_MISSING_DIRECTORY]="${MSG_PRF}0027E: Manca la directory richiesta %1
 
 MSG_CODE_UPDATED=$((SCNT++))
 MSG_EN[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: Updated %1 with latest available release."
-MSG_DE[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 wurde mit dem letzen aktuellen Release erneuert."
+MSG_DE[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 wurde mit dem letzten verfügbaren Release aktualisiert."
 MSG_FI[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 päivitetty viimeisimpään julkaisuun."
 MSG_FR[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: %1 a été mis à jour avec la dernière version disponible."
 MSG_ZH[$MSG_CODE_UPDATED]="${MSG_PRF}0028I: 已将 %1 更新到最新可用版本."
@@ -774,13 +774,13 @@ MSG_EN[$MSG_QUESTION_UNINSTALL]="Are you sure to uninstall $RASPIBACKUP_NAME ?"
 MSG_DE[$MSG_QUESTION_UNINSTALL]="Soll $RASPIBACKUP_NAME wirklich deinstalliert werden ?"
 MSG_FI[$MSG_QUESTION_UNINSTALL]="Haluatko varmasti poistaa $RASPIBACKUP_NAME:n asennuksen?"
 MSG_FR[$MSG_QUESTION_UNINSTALL]="Êtes-vous sûr de vouloir désinstaller $RASPIBACKUP_NAME ?"
-MSG_ZH[$MSG_QUESTION_UNINSTALL]="确认卸载 $RASPIBACKUP_NAME 么?"
+MSG_ZH[$MSG_QUESTION_UNINSTALL]="确定要卸载 $RASPIBACKUP_NAME 吗?"
 MSG_ES[$MSG_QUESTION_UNINSTALL]="¿Está seguro de que desea desinstalar $RASPIBACKUP_NAME ?"
 MSG_IT[$MSG_QUESTION_UNINSTALL]="Disinstallare davvero $RASPIBACKUP_NAME ?"
 
 MSG_SCRIPT_NOT_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME not installed."
-MSG_DE[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME ist nicht installiert"
+MSG_DE[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME ist nicht installiert."
 MSG_FI[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME ei ole asennettuna."
 MSG_FR[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME n'est pas installé."
 MSG_ZH[$MSG_SCRIPT_NOT_INSTALLED]="$RASPIBACKUP_NAME 尚未安装."
@@ -834,7 +834,7 @@ MSG_IT[$MSG_NO_EXTENSIONS_FOUND]="Nessuna estensione installata."
 
 MSG_EXTENSIONS_ALREADY_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Extensions already installed."
-MSG_DE[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Extensions sind bereits installiert."
+MSG_DE[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Erweiterungen sind bereits installiert."
 MSG_FI[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Lisäosat ovat jo asennettuna."
 MSG_FR[$MSG_EXTENSIONS_ALREADY_INSTALLED]="Les extensions sont déjà installées."
 MSG_ZH[$MSG_EXTENSIONS_ALREADY_INSTALLED]="扩展已安装."
@@ -1136,7 +1136,7 @@ ${NL}${NL}Qualsiasi aiuto per aggiungere un'altra lingua è benvenuto."
 
 DESCRIPTION_KEEP=$((SCNT++))
 MSG_EN[$DESCRIPTION_KEEP]="${NL}Enter number of backups to keep. Number has to be between 1 and 52."
-MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Backups die vorzuhalten sind. Die Zahl muss zwischen 1 und 52 liegen."
+MSG_DE[$DESCRIPTION_KEEP]="${NL}Gib die Anzahl der Backups ein, die aufbewahrt werden sollen. Die Zahl muss zwischen 1 und 52 liegen."
 MSG_FI[$DESCRIPTION_KEEP]="${NL}Syötä säilytettävien varmuuskopioiden lukumäärä. Numeron tulee olla 1:n ja 52:n väliltä."
 MSG_FR[$DESCRIPTION_KEEP]="${NL}Entrez le nombre de sauvegardes à conserver. Le nombre doit être compris entre 1 et 52."
 MSG_ZH[$DESCRIPTION_KEEP]="${NL}输入要保留的备份数. 数字必须在1和52之间."
@@ -1164,7 +1164,7 @@ MSG_EN[$DESCRIPTION_ERROR]="Unrecoverable error occurred. Check logfile $LOG_FIL
 MSG_DE[$DESCRIPTION_ERROR]="Ein nicht behebbarer Fehler ist aufgetreten. Siehe Logdatei $LOG_FILE."
 MSG_FI[$DESCRIPTION_ERROR]="Tapahtui korjaamaton virhe. Tarkista lokitiedosto $LOG_FILE."
 MSG_FR[$DESCRIPTION_ERROR]="Une erreur irrécupérable s'est produite. Voir le fichier journal $LOG_FILE."
-MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误。检查日志文件$LOG_FILE."
+MSG_ZH[$DESCRIPTION_ERROR]="发生了无法恢复的错误. 请检查日志文件 $LOG_FILE."
 MSG_ES[$DESCRIPTION_ERROR]="Se ha producido un error irrecuperable. Revise el archivo de registro $LOG_FILE."
 MSG_IT[$DESCRIPTION_ERROR]="Si è verificato un errore irreversibile. Controllare il file di log $LOG_FILE."
 
@@ -1307,7 +1307,7 @@ MSG_IT[$DESCRIPTION_MAIL_PROGRAM]="Selezionare il programma di posta da usare pe
 
 DESCRIPTION_EMAIL=$((SCNT++))
 MSG_EN[$DESCRIPTION_EMAIL]="Enter the eMail address to send notifications to. Enter no eMail address to disable notifications.\n\nNOTE: eMails will be sent only if a local MTA has been configured correctly."
-MSG_DE[$DESCRIPTION_EMAIL]="Gibt die eMail Adresse ein die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus.\n\nHINWEIS: eMails werden nur gesendet wenn ein lokaler MTA erfolgreich konfiguriert wurde."
+MSG_DE[$DESCRIPTION_EMAIL]="Gib die eMail Adresse ein, die Benachrichtigungen erhalten soll. Keine eMail Adresse schaltet Benachrichtigungen aus.\n\nHINWEIS: eMails werden nur gesendet, wenn ein lokaler MTA korrekt konfiguriert wurde."
 MSG_FI[$DESCRIPTION_EMAIL]="Syötä sähköpostiosoite, johon ilmoitukset lähetetään. Jos et halua ilmoituksia, älä syötä lainkaan sähköpostiosoitetta.\n\nHUOM: Sähköposteja lähetetään vain, jos paikallinen MTA on määritetty oikein."
 MSG_FR[$DESCRIPTION_EMAIL]="Saisissez l'adresse e-mail à laquelle envoyer les notifications. Ne saisissez aucune adresse e-mail pour désactiver les notifications.\n\nREMARQUE : les e-mails ne seront envoyés que si un MTA local a été correctement configuré."
 MSG_ZH[$DESCRIPTION_EMAIL]="输入接收通知的邮件地址，留空则禁用邮件通知.\n\n注意: 只有正确配置了本地MTA后才会发送邮件."
@@ -1491,7 +1491,7 @@ ${NL}${NL}Nota: Separare il dispositivo di clonazione e la PARTUUID con spazi"
 
 MSG_PARTUUID_NOT_FOUND=$((SCNT++))
 MSG_EN[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 not found on clone device %2."
-MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2"
+MSG_DE[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 existiert nicht auf Clonegerät %2."
 MSG_FI[$MSG_PARTUUID_NOT_FOUND]="PARTUUID:ta %1 ei löytynyt kloonauslaitteelta %2."
 MSG_FR[$MSG_PARTUUID_NOT_FOUND]="PARTUUID %1 introuvable sur le périphérique de clonage %2."
 MSG_ZH[$MSG_PARTUUID_NOT_FOUND]="在克隆设备 %2 上未找到PARTUUID %1."
