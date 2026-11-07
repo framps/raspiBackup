@@ -163,6 +163,19 @@ They sort in this order, so every version is replaced by the next public one:
   but `0.7.6~m972` would sort between `0.7.6~beta1` and `0.7.6~rc1`. Use only `alpha`, `beta`
   and `rc` for pre-releases.
 - `buildRepo.sh` puts every version containing `~` into the suite `beta`.
+- Never use `~` for a fix of a published release: `0.7.5~1` sorts before `0.7.5`, so users of
+  `0.7.5` never get it (only as a downgrade), and it lands in suite `beta`. A fix of `0.7.5` is
+  `0.7.5-1` (not reported) or `0.7.5-m1` (reported).
+- Rule of thumb: should the version replace something already published? Then no `~`.
+  Should it be replaced by something not published yet? Then `~`.
+
+| You want                              | Version            | Reported to users of `0.7.5` | Installed by                                      |
+|---------------------------------------|--------------------|------------------------------|---------------------------------------------------|
+| fix of `0.7.5`, silent                | `0.7.5-1`          | no                           | `apt upgrade`, `raspiBackupConfig -U`, new installation |
+| fix of `0.7.5` for everybody, announced | `0.7.5-m1`       | yes                          | `apt upgrade`, `raspiBackupConfig -U`, new installation |
+| next release                          | `0.7.6`            | yes                          | `apt upgrade`, `raspiBackupConfig -U`, new installation |
+| test version before `0.7.6`           | `0.7.6~beta1`      | as beta available            | `raspiBackupConfig -b`, `apt-get install -t beta`, `raspiBackupInstall.sh --beta` |
+| fix for one user                      | `0.7.5-m1~u972.1`  | no                           | the user installs the `.deb` file                 |
 
 ### Fix for one user only
 
