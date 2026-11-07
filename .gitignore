@@ -16,3 +16,5 @@ Session.vim
 *.bak
 .private-conf.sh
 .cdprc
+packageTest-results/
+CLAUDE.md
