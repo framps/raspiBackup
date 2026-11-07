@@ -40,7 +40,11 @@ and raspiBackupConfig -U/-R/-b/-S that
     3. a hotfix is updated and reverted
     4. an individual fix for one user (.deb, not in the repository) is installed,
        reverted and replaced by the next public fix or release
-    5. an installation without apt (raspiBackupInstallUI.sh, install.sh) is migrated to the
+    5. updates and downgrades skip or step over several versions, a beta is reverted
+       to an older hotfix
+    6. raspiBackup reports new versions, minor fixes (DEB_REVISION) and deprecated versions
+       according to DEPRECATED of raspiBackup.properties
+    7. an installation without apt (raspiBackupInstallUI.sh, install.sh) is migrated to the
        package and the migration is reverted with revertMigration.sh
 
 Only committed changes are tested: the sources are cloned from git.
@@ -438,6 +442,50 @@ assertInSuite() { # debianVersion suite|none
     fi
 }
 
+# functions of the installed raspiBackup which report new versions and deprecated versions after a backup
+readonly NEWS_FUNCTIONS=(debianVersion isVersionInList isPackageInstalled isPackageHeld packageSuiteVersions highestVersion withoutDebianRevision
+    withoutDeprecatedVersions updatePackageReminder reportPackageNews isVersionDeprecated runningVersion)
+
+news() { # deprecated [skipDeprecated] - messages of the installed raspiBackup about versions, one per line
+         # deprecated: DEPRECATED of raspiBackup.properties, skipDeprecated: SKIP_DEPRECATED of the configuration
+         # Messages are printed as name of the message constant without MSG_ followed by their parameters.
+    local script="$WORK/news.sh" f
+    {
+        echo 'logEntry() { :; }; logItem() { :; }; logExit() { :; }; getMessage() { :; }; exitError() { exit 2; }'
+        grep -E '^MSG_[A-Z_]+=[0-9]+$' "$RASPIBACKUP" | grep -v '^MSG_LEVEL_'
+        echo 'declare -A NAME_OF_MSG=(); for v in ${!MSG_@}; do NAME_OF_MSG[${!v}]="${v#MSG_}"; done'
+        echo 'MSG_LEVEL_MINIMAL=0; MSG_LEVEL_DETAILED=1'
+        echo 'writeToConsole() { local msg="$2"; shift 2; echo "${NAME_OF_MSG[$msg]:-$msg}${*:+ $*}"; }'
+        for f in "${NEWS_FUNCTIONS[@]}"; do
+            sed -n "/^function $f() /,/^}/p" "$RASPIBACKUP"
+        done
+        cat <<'EOF_NEWS'
+PACKAGE_NAME=raspibackup PACKAGE_SUITE=stable PACKAGE_BETA_SUITE=beta
+REGRESSION_TEST=1    # no refreshPackageIndex, the test updates the package index
+UPDATE_REMINDER_MAX=3 PACKAGE_UPDATE_REMINDER_FILE=reminder LOG_FILE=/dev/null
+VAR_LIB_DIRECTORY="$(mktemp -d)"
+DEPRECATED_PROPERTY="$1" SKIP_DEPRECATED="$2"
+VERSION="$(sed -n -E 's/^VERSION="([^"]*)".*/\1/p' "$3")"
+reportPackageNews
+RUNNING_VERSION="$(runningVersion)"
+isVersionDeprecated "$RUNNING_VERSION" && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
+rm -rf "$VAR_LIB_DIRECTORY"
+EOF_NEWS
+    } > "$script"
+    bash "$script" "$1" "${2:-}" "$RASPIBACKUP" 2>> "$LOG" | grep -v '^VISIT_VERSION_HISTORY_PAGE'
+}
+
+assertNews() { # description expected deprecated [skipDeprecated] - expected: messages of news() separated by ';', empty: none
+    local description="$1" expected="$2" actual
+    actual="$(news "${@:3}" | paste -sd ';')"
+    log "news (DEPRECATED='$3' SKIP_DEPRECATED='${4:-}'): $actual"
+    if [[ "$actual" == "$expected" ]]; then
+        pass "$description${expected:+: $expected}"
+    else
+        fail "$description (DEPRECATED='$3'${4:+ SKIP_DEPRECATED='$4'}): '${actual}' instead of '${expected}'"
+    fi
+}
+
 #######################################################################################################################
 # actions
 #######################################################################################################################
@@ -446,14 +494,22 @@ debianVersion() { # VERSION of raspiBackup -> Debian version, see build.sh
     sed -E -e 's/_/-/g' -e 's/-(alpha|beta|rc)/~\L\1/I' <<< "$1"
 }
 
-build() { # version [--no-repo] - builds the package with build.sh, adds it to the repository unless --no-repo
-    local version="$1" debVersion
+build() { # version [--no-repo] [--revision <n>] - builds the package with build.sh, adds it to the repository unless --no-repo
+          # --revision: minor fix of the version (DEB_REVISION of build.conf), e.g. 0.9.6 --revision 1 -> 0.9.6-1
+    local version="$1" revision="" debVersion
     shift
-    debVersion="$(debianVersion "$version")"
-    step "build $version (Debian version $debVersion) ${*:+($*)}"
+    local -a buildOptions=()
+    while (( $# > 0 )); do
+        case "$1" in
+            --revision) revision="${2:?missing revision}"; shift 2 ;;
+            *) buildOptions+=("$1"); shift ;;
+        esac
+    done
+    debVersion="$(debianVersion "$version")${revision:+-$revision}"
+    step "build $version${revision:+ revision $revision} (Debian version $debVersion) ${buildOptions[*]:+(${buildOptions[*]})}"
 
-    { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; } > "$BUILD/build.conf"
-    local -a options=("$@")
+    { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; echo "DEB_REVISION=\"$revision\""; } > "$BUILD/build.conf"
+    local -a options=("${buildOptions[@]}")
     (( LINTIAN )) || options+=(--no-check)
     (cd "$BUILD" && run ./build.sh "${options[@]}") || abort "build.sh failed for $version"
 
@@ -462,13 +518,13 @@ build() { # version [--no-repo] - builds the package with build.sh, adds it to t
     [[ "$(dpkg-deb -f "$deb" Version)" == "$debVersion" ]] || abort "$deb has version $(dpkg-deb -f "$deb" Version)"
     cp "$deb" "$deb.sig" "$DEBS/"
     local where="repository"
-    [[ " $* " == *" --no-repo "* ]] && where=".deb only"
+    [[ " ${buildOptions[*]} " == *" --no-repo "* ]] && where=".deb only"
     BUILT+=("$(printf '%-22s %s' "$debVersion" "$where")")
     SCRIPT_VERSION[$debVersion]="$version"
 }
 
-publish() { # version - build and add to the repository, like build.sh + publishRepo.sh
-    build "$1"
+publish() { # version [--revision <n>] - build and add to the repository, like build.sh + publishRepo.sh
+    build "$@"
     aptUpdate
 }
 
@@ -556,6 +612,20 @@ V_UFIX2="0.9.2-m2~u972.2"
 V_FIX2="0.9.2-m2"
 V_UFIX3="0.9.2-m3~u973.1"
 V_REL3="0.9.3"
+V_REL4="0.9.4"
+V_REL5="0.9.5"
+V_FIX5="0.9.5-m1"
+V_BETA6="0.9.6-beta1";        D_BETA6="$(debianVersion "$V_BETA6")"
+V_REL6="0.9.6"
+D_MINOR6="$V_REL6-1"          # minor fix, built with --revision 1
+D_MINOR6_2="$V_REL6-2"        # minor fix, built with --revision 2
+V_REL7="0.9.7"
+V_REL8="0.9.8"
+V_FIX8="0.9.8-m1"
+V_BETA9_1="0.9.9-beta1";      D_BETA9_1="$(debianVersion "$V_BETA9_1")"
+V_BETA9_2="0.9.9-beta2";      D_BETA9_2="$(debianVersion "$V_BETA9_2")"
+V_REL9="0.9.9"                # not published, deprecates its betas
+V_LATEST="$V_FIX8"            # latest release in suite stable at the end, installed by the migration
 
 #######################################################################################################################
 # 1. release update and reversal
@@ -710,6 +780,122 @@ aptUpgrade
 assertInstalled "$V_REL3"
 
 #######################################################################################################################
+# 5. version to version updates and downgrades
+#######################################################################################################################
+
+CURRENT_SECTION="version to version"
+section "5. Version to version updates and downgrades"
+
+publish "$V_REL4"
+publish "$V_REL5"
+assertRc 0 "update skips release $V_REL4" rbc -U
+assertInstalled "$V_REL5"
+
+assertRc 0 "revert to previous release" rbc -R
+assertInstalled "$V_REL4" held
+assertRc 0 "revert of held release without terminal is refused" rbc -R
+assertInstalled "$V_REL4" held
+assertRc 0 "revert of held release confirmed" rbcYes -R
+assertInstalled "$V_REL3" held
+assertRc 0 "revert to previous hotfix confirmed" rbcYes -R
+assertInstalled "$V_FIX2" held
+
+step "downgrade over several versions with apt"
+run apt-mark unhold "$PACKAGE_NAME"
+run apt-get install -y --allow-downgrades "$PACKAGE_NAME=$V_OLD" && run apt-mark hold "$PACKAGE_NAME" \
+    || fail "apt-get install --allow-downgrades $PACKAGE_NAME=$V_OLD"
+assertInstalled "$V_OLD" held
+assertRc 0 "update of held release over several versions confirmed" rbcYes -U
+assertInstalled "$V_REL5"
+
+step "downgrade with apt without hold"
+run apt-get install -y --allow-downgrades "$PACKAGE_NAME=$V_REL2" || fail "apt-get install --allow-downgrades $PACKAGE_NAME=$V_REL2"
+assertInstalled "$V_REL2"
+aptUpgrade
+assertInstalled "$V_REL5"
+
+publish "$V_BETA6"
+assertRc 0 "install beta" rbc -b
+assertInstalled "$D_BETA6"
+publish "$V_FIX5"
+assertInSuite "$V_FIX5" stable
+aptUpgrade
+assertInstalled "$D_BETA6"
+assertRc 0 "beta isn't replaced by an older hotfix" rbc -U
+assertInstalled "$D_BETA6"
+assertRc 0 "revert beta to hotfix" rbc -S
+assertInstalled "$V_FIX5"
+
+#######################################################################################################################
+# 6. deprecated versions
+#######################################################################################################################
+
+# DEPRECATED of raspiBackup.properties is passed to the functions of the installed raspiBackup, see news()
+
+CURRENT_SECTION="deprecated"
+section "6. Deprecated versions"
+
+publish "$V_REL6"
+aptUpgrade
+assertInstalled "$V_REL6"
+assertNews "no news" "" ""
+assertNews "deprecated version is reported" "SCRIPT_IS_DEPRECATED $V_REL6" "$V_REL6"
+assertNews "SKIP_DEPRECATED suppresses the warning" "" "$V_REL6" "$V_REL6"
+
+publish "$V_REL6" --revision 1
+assertInSuite "$D_MINOR6" stable
+assertNews "minor fix isn't reported" "" ""
+assertNews "minor fix of a deprecated version is deprecated too" "SCRIPT_IS_DEPRECATED $V_REL6" "$V_REL6"
+assertNews "deprecated version doesn't include a later version (${V_REL6}0)" "" "${V_REL6}0"
+aptUpgrade
+assertInstalled "$D_MINOR6"
+assertNews "installed minor fix of a deprecated version is deprecated" "SCRIPT_IS_DEPRECATED $D_MINOR6" "$V_REL6"
+assertNews "deprecated minor fix is detected" "SCRIPT_IS_DEPRECATED $D_MINOR6" "$D_MINOR6"
+
+publish "$V_REL6" --revision 2
+assertNews "minor fix of the installed minor fix isn't reported" "" ""
+assertNews "minor fix is reported to users of a deprecated minor fix" \
+    "NEW_VERSION_AVAILABLE $D_MINOR6_2 $D_MINOR6;SCRIPT_IS_DEPRECATED $D_MINOR6" "$D_MINOR6"
+
+publish "$V_REL7"
+publish "$V_REL8"
+assertNews "latest release is reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6" ""
+assertNews "deprecated latest release: newest release which isn't deprecated is reported with apt-get install" \
+    "NEW_PACKAGE_VERSION_INSTALL $V_REL7 $D_MINOR6 $V_REL7" "$V_REL8"
+assertNews "deprecated releases aren't reported (comma separated)" "" "$V_REL7,$V_REL8"
+run apt-mark hold "$PACKAGE_NAME"
+assertNews "held version: release is reported with apt-get install" "NEW_PACKAGE_VERSION_INSTALL $V_REL8 $D_MINOR6 $V_REL8" ""
+run apt-mark unhold "$PACKAGE_NAME"
+
+publish "$V_BETA9_1"
+assertNews "beta is reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6;BETAVERSION_AVAILABLE $D_BETA9_1" ""
+assertNews "betas of a deprecated release aren't reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6" "$V_REL9"
+assertNews "deprecated beta isn't reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6" "$V_BETA9_1"
+
+assertRc 0 "install beta" rbc -b
+assertInstalled "$D_BETA9_1"
+assertNews "no news for beta tester" "" ""
+publish "$V_BETA9_2"
+assertNews "newer beta is reported to beta tester" "NEW_VERSION_AVAILABLE $D_BETA9_2 $D_BETA9_1" ""
+assertNews "deprecated newer beta isn't reported to beta tester" "" "$V_BETA9_2"
+assertNews "deprecated release includes the installed and the newer beta" "SCRIPT_IS_DEPRECATED $D_BETA9_1" "$V_REL9"
+assertNews "deprecated beta is reported (Debian version in DEPRECATED)" \
+    "NEW_VERSION_AVAILABLE $D_BETA9_2 $D_BETA9_1;SCRIPT_IS_DEPRECATED $D_BETA9_1" "$D_BETA9_1"
+
+assertRc 0 "revert beta to release" rbc -S
+assertInstalled "$V_REL8"
+assertNews "deprecated latest release" "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_REL8" "$V_REL8"
+publish "$V_FIX8"
+assertNews "hotfix of deprecated release isn't reported" \
+    "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_REL8" "$V_REL8"
+assertNews "hotfix is reported" "NEW_VERSION_AVAILABLE $V_FIX8 $V_REL8;BETAVERSION_AVAILABLE $D_BETA9_2" ""
+aptUpgrade
+assertInstalled "$V_LATEST"
+assertNews "installed hotfix of deprecated release is deprecated" \
+    "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_FIX8" "$V_REL8"
+assertNews "no news" "BETAVERSION_AVAILABLE $D_BETA9_2" ""
+
+#######################################################################################################################
 # uninstall
 #######################################################################################################################
 
@@ -723,11 +909,11 @@ noteInstalled "$(installedVersion)"
 [[ ! -e /var/lib/raspiBackup ]] && pass "/var/lib/raspiBackup removed" || fail "/var/lib/raspiBackup still exists"
 
 #######################################################################################################################
-# 5. migration of an installation without apt and its reversal
+# 7. migration of an installation without apt and its reversal
 #######################################################################################################################
 
 CURRENT_SECTION="migration"
-section "5. Migration of an installation without apt and its reversal"
+section "7. Migration of an installation without apt and its reversal"
 
 V_LEGACY="0.7.4"
 readonly LEGACY_REF="$WORK/legacy"     # copy of the installation without apt to compare with
@@ -836,17 +1022,17 @@ assertReverted() { # version - package removed, installation without apt restore
     assertTimer enabled
 }
 
-# sections 1 to 4 install the package without an installation without apt, nothing is saved
+# sections 1 to 6 install the package without an installation without apt, nothing is saved
 [[ ! -e "$LEGACY_DIR" ]] && pass "installation of the package saves nothing" || fail "$LEGACY_DIR created without an installation without apt"
 
 createLegacy "$V_LEGACY"
 installer && pass "migration with raspiBackupInstall.sh" || fail "migration with raspiBackupInstall.sh"
-assertMigrated "$V_REL3"
+assertMigrated "$V_LATEST"
 
 step "revertMigration.sh without answer"
 run "$LEGACY_DIR/revertMigration.sh" < /dev/null
 (( $? == 1 )) && pass "revert not confirmed is refused" || fail "revert not confirmed isn't refused"
-assertInstalled "$V_REL3"
+assertInstalled "$V_LATEST"
 
 step "revertMigration.sh confirmed (README section 2)"
 log "\$ printf 'y\\n' | $LEGACY_DIR/revertMigration.sh"
@@ -859,13 +1045,13 @@ assertReverted "$V_LEGACY"
 step "migrate again after the reversal"
 rm -f "$CONFIG.package"
 installer && pass "second migration with raspiBackupInstall.sh" || fail "second migration with raspiBackupInstall.sh"
-assertMigrated "$V_REL3"
+assertMigrated "$V_LATEST"
 
 assertRc 0 "revertMigration.sh -y" "$LEGACY_DIR/revertMigration.sh" -y
 assertReverted "$V_LEGACY"
 
 assertRc 0 "migration once more" installer
-assertMigrated "$V_REL3"
+assertMigrated "$V_LATEST"
 assertRc 0 "purge after migration" apt-get purge -y "$PACKAGE_NAME"
 noteInstalled "$(installedVersion)"
 [[ -x "$LEGACY_DIR/revertMigration.sh" ]] && pass "$LEGACY_DIR kept by purge" || fail "$LEGACY_DIR deleted by purge"

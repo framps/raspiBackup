@@ -85,7 +85,9 @@ Notes:
   `apt-get update` of the raspiBackup repository only) and reports them after the backup.
   `raspiBackup.properties` isn't needed for that. Its `DEPRECATED` (versions separated by blanks or
   commas, e.g. `DEPRECATED="0.7.5 0.7.6-beta1"`) is still used: these versions are never reported
-  as update or beta, and users running one of them get a warning. If `apt upgrade` would install a
+  as update or beta, and users running one of them get a warning. A version includes all versions
+  derived from it: `0.7.5` deprecates `0.7.5~1`, `0.7.5-rc1`, `0.7.5-beta1`, `0.7.5-1`, `0.7.5-m1`,
+  `0.7.5-m1~u972.1`, ..., but not `0.7.50`. If `apt upgrade` would install a
   deprecated version, raspiBackup tells the user the `apt-get install raspibackup=<version>` command
   for the newest version which isn't deprecated.
 - All published versions stay in the repository (unless removed with `--remove`, see section 4),
@@ -149,8 +151,10 @@ They sort in this order, so every version is replaced by the next public one:
   and so on. Empty it again for the next release. New installations get the fix, existing
   installations get it with `apt upgrade`, but raspiBackup doesn't tell users of the same version
   about it (`0.7.5` -> `0.7.5-1`). Users of an older version are told about the latest one
-  (`0.7.4` -> `0.7.5-1`). To have a minor fix reported anyway, add the version it fixes to
-  `DEPRECATED` in `raspiBackup.properties`.
+  (`0.7.4` -> `0.7.5-1`). To have a minor fix reported to users of an earlier minor fix, add that
+  one to `DEPRECATED` in `raspiBackup.properties`: `0.7.5-1` reports `0.7.5-2` to users of `0.7.5-1`.
+  Users of `0.7.5` can't be told about a minor fix, because `DEPRECATED="0.7.5"` deprecates the
+  minor fixes as well. Publish a hotfix (`0.7.5-m1`) instead.
 
 - Use `~` only for versions which have to sort **before** the version in front of it:
   pre-releases (`~alpha`, `~beta`, `~rc`) and fixes for one user.

@@ -5583,11 +5583,15 @@ function debianVersion() { # version - the version as used by the Debian package
 }
 
 function isVersionInList() { # version list - true if version is in the list separated by blanks or commas, e.g. DEPRECATED
+	# An entry includes all versions derived from it (entry or entry[!0-9]*): 1.2.3 matches 1.2.3, 1.2.3~1, 1.2.3-rc1,
+	# 1.2.3-beta, 1.2.3-1, 1.2.3-m1, 1.2.3-m1~u972.1, 1.2.3.1, ... but not 1.2.30
 	local version entry
 	version="$(debianVersion "$1")"
 	for entry in ${2//,/ }; do
 		entry="${entry//\"/}"
-		[[ -n "$entry" && "$(debianVersion "$entry")" == "$version" ]] && return 0
+		[[ -z "$entry" ]] && continue
+		entry="$(debianVersion "$entry")"
+		[[ "$version" == "$entry" || "$version" == "$entry"[!0-9]* ]] && return 0
 	done
 	return 1
 }
@@ -5595,6 +5599,15 @@ function isVersionInList() { # version list - true if version is in the list sep
 function isPackageInstalled() {
 	# a held package has the status "hold ok installed"
 	[[ "$(dpkg-query -W -f '${Status}' "$PACKAGE_NAME" 2>/dev/null)" =~ ^(install|hold)\ ok\ installed$ ]]
+}
+
+# Version checked against DEPRECATED: the version of the installed package, VERSION otherwise.
+# A minor fix (DEB_REVISION of build.sh, e.g. 0.7.5-1) keeps VERSION of the version it fixes (0.7.5),
+# so a deprecated minor fix can't be detected with VERSION.
+function runningVersion() {
+	local version=""
+	isPackageInstalled && version="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	echo "${version:-$VERSION}"
 }
 
 # raspiBackup was installed and updated without apt, e.g. with raspiBackupInstallUI.sh, install.sh or
@@ -11187,10 +11200,11 @@ if [[ -n "$CLONE_DEVICE" ]]; then
 	fi
 fi
 
-if isVersionDeprecated "$VERSION"; then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$VERSION"
+RUNNING_VERSION="$(runningVersion)"
+if isVersionDeprecated "$RUNNING_VERSION"; then
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
+	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
 	VERSION_DEPRECATED=1
 	NEWS_AVAILABLE=1
 	FORCE_MESSAGE=1
