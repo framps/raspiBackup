@@ -1,0 +1,67 @@
+#######################################################################################################################
+#
+#    GitHub workflow: test install, update, downgrade, deprecated handling and migration of the raspiBackup
+#    Debian package with build/test/testPackageUpdates.sh on an arm64 runner
+#
+#    It isn't active here. testPackageUpdatesOnGitHub.sh adds it as .github/workflows/packageTest.yml
+#    to a temporary commit and pushes that to branch test-packageTest, which starts it.
+#    So no branch, also not master, contains the workflow.
+#
+#######################################################################################################################
+
+name: Package update test
+
+on:
+  push:
+    branches: [test-packageTest]
+
+concurrency:
+  group: packageTest
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  packageTest:
+    name: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0    # the test clones the commit from the local repository
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git gnupg dpkg-dev apt-utils gettext-base bsdutils curl lintian
+
+      - name: Run testPackageUpdates.sh
+        working-directory: build/test
+        env:
+          LINTIAN: ${{ contains(github.event.head_commit.message, '[lintian]') }}
+        run: |
+          options=()
+          [[ "$LINTIAN" == "true" ]] && options+=(--lintian)
+          sudo ./testPackageUpdates.sh "${options[@]}"
+
+      - name: Summary
+        if: always()
+        run: |
+          for report in /tmp/raspiBackupPkgTest.*.report; do
+              [[ -f "$report" ]] || continue
+              { echo '```'; cat "$report"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload report and log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: packageTest
+          path: |
+            /tmp/raspiBackupPkgTest.*.report
+            /tmp/raspiBackupPkgTest.*.log
+          if-no-files-found: ignore
+          retention-days: 14
