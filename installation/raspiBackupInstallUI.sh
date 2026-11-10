@@ -7,10 +7,10 @@
 # Visit http://www.linux-tips-and-tricks.de/raspiBackup for latest code and other details
 #
 # Credits to following people for their translation work
-#	  FI - teemue
-#	  ZH - GoogleBeEvil
-#	  FR - mgrafr
-#	  ES - majegarza (review)
+#	  FI - teemue - https://github.com/teemue
+#	  ZH - GoogleBeEvil - https://github.com/GoogleBeEvil
+#	  FR - mgrafr - https://github.com/mgrafr
+#	  ES - majegarza (review) - https://github.com/majegarza
 #
 #######################################################################################################################
 #
