@@ -2483,10 +2483,13 @@ function finished() {
 }
 
 function center() { # <cols> <text>
-	local columns="$1"
+	local columns="$1" line width pad
 	shift 1
 	while IFS= read -r line; do
-		printf "%*s\n" $(((${#line} + columns) / 2)) "$line"
+		width=$(wc -L <<<"$line")          # display width: CJK = 2 columns
+		pad=$(( (columns - width) / 2 ))
+		(( pad < 0 )) && pad=0             # line wider than columns: no padding
+		printf "%*s%s\n" "$pad" "" "$line"
 	done <<<"$@"
 }
 
