@@ -13,9 +13,11 @@
 #
 # Credits to following people for their translation work
 #	  FI - teemue - https://github.com/teemue
-#	  ZH - GoogleBeEvil (review) - https://github.com/GoogleBeEvil
 #	  FR - mgrafr - https://github.com/mgrafr
 #	  ES - majegarza (review) - https://github.com/majegarza
+#
+# ES, IT and ZH messages were translated by Claude (Anthropic)
+# FI and FR messages were partly translated by Claude (Anthropic)
 #
 #######################################################################################################################
 #
@@ -542,7 +544,7 @@ fi
 # 1) Add new language id LL (e.g. FI for Finnish) in variable SUPPORTED_LANGUAGES (see above)
 # 2) For every MSG_ add a new message MSG_LL, e.g. MSG_FI for Finnish
 # 3) For every MSG_ add a new declare -A in following line, e.g. MSG_FI for Finnish
-# 4) Optionally add a help function usageLL, e.g. usageFI
+# 4) Optionally add a help function usageLL, e.g. usageDE
 # 5) Note: If a message definition or help function (MSG_LL or usageLL) is missing in a supported language the fallback language English will be selected by the code (MSG_EN or usageEN)
 #
 
@@ -11713,54 +11715,6 @@ function usageDE() {
 	echo "-R {rootPartition} (Standard: restoreDevice) (Beispiel: /dev/sdb1)"
 	echo "-T {Liste der Partitionen die vom partitionsorientierten Backup zu restoren sind} (Partitionsnummern, z.B. \"1 2 3\" oder \"*\" für alle). (Standard: ${DEFAULT_PARTITIONS_TO_BACKUP})"
 	echo "--resizeRootFS|resizeLastPartitionFS (Standard: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
-}
-
-function usageFI() {
-	echo "$GIT_CODEVERSION"
-	echo "Käyttö: $MYSELF [valinta]* {varmuuskopionPolku}"
-	echo ""
-	echo "-Yleiset asetukset-"
-	[ -z "$DEFAULT_EMAIL" ] && DEFAULT_EMAIL="ei"
-	echo "-b {dd lohkon koko} (oletus: $DEFAULT_DD_BLOCKSIZE)"
-	[ -z "$DEFAULT_DD_PARMS" ] && DEFAULT_DD_PARMS="ei"
-	echo "-D {dd lisäparametrit} (oletus: $DEFAULT_DD_PARMS)"
-	echo "-e {sähköpostiosoite} (oletus: $DEFAULT_EMAIL)"
-	[ -z "$DEFAULT_EMAIL_PARMS" ] && DEFAULT_EMAIL_PARMS="ei"
-	echo "-E {sähköpostitoiminnon lisäparametrit} (oletus: $DEFAULT_EMAIL_PARMS)"
-	echo "-f {asetustiedoston tiedostonimi}"
-	echo "-g Näytä edistymispalkki"
-	echo "-G {viestien kieli} (${SUPPORTED_LANGUAGES[*]}) (oletus: $LANGUAGE)"
-	echo "-h Näytä tämä ohje"
-	echo "-l {lokitaso} ($POSSIBLE_LOG_LEVELs) (oletus: ${LOG_LEVELs[$DEFAULT_LOG_LEVEL]})"
-	echo "-m {viestitaso} ($POSSIBLE_MSG_LEVELs) (oletus: ${MSG_LEVELs[$DEFAULT_MSG_LEVEL]})"
-	echo "-M {varmuuskopion selite}"
-	echo "-s {käytettävä sähköpostiohjelma} ($SUPPORTED_MAIL_PROGRAMS) (oletus: $DEFAULT_MAIL_PROGRAM)"
-	echo "--timestamps Lisää aikaleima viestien alkuun (oletus: ${NO_YES[$DEFAULT_TIMESTAMPS]})"
-	echo "-u {excludeList} Lista hakemistoista, jotka ohitetaan tar- ja rsync-varmuuskopioissa"
-	echo "-U Nykyinen skriptin versio korvataan uusimmalla versiolla. Nykyinen versio varmuuskopioidaan ja sen voi palauttaa parametrillä -V"
-	echo "-v Sanallista varmuuskopiotyökalujen tilatiedot (oletus: ${NO_YES[$DEFAULT_VERBOSE]})"
-	echo "-V Palauta skriptin edellinen versio"
-	echo "-z Pakkaa varmuuskopiotiedosto käyttäen gzip:iä (oletus: ${NO_YES[$DEFAULT_ZIP_BACKUP]})"
-	echo ""
-	echo "-Varmuuskopioinnin valinnat-"
-	[ -z "$DEFAULT_STARTSERVICES" ] && DEFAULT_STARTSERVICES="ei"
-	echo "-a {varmuuskopion jläkeen suoritettavat komennot} (oletus: $DEFAULT_STARTSERVICES)"
-	echo "-B Tee käynnistysosiosta kopio tar tiedostoon (oletus: $DEFAULT_TAR_BOOT_PARTITION_ENABLED)"
-	echo "-F Varmuuskopioinnin simulointi"
-	echo "-k {säilytettävien varmuuskopioiden lkm} (oletus: $DEFAULT_KEEPBACKUPS)"
-	[ -z "$DEFAULT_STOPSERVICES" ] && DEFAULT_STOPSERVICES="ei"
-	echo "-o {ennen varmuuskopiointia suoritettavat komennot} (oletus: $DEFAULT_STOPSERVICES)"
-	echo "-t {varmuuskopion tyyppi} ($ALLOWED_TYPES) (oletus: $DEFAULT_BACKUPTYPE)"
-	echo "-T {Lista kopioitavista osioista} (Osionumerot, esim. \"1 2 3\"). Valinta käytettävissä vain parametrin -P kanssa (oletus: ${DEFAULT_PARTITIONS_TO_BACKUP})"
-	echo ""
-	echo "-Palautuksen valinnat-"
-	echo "-0 SD-korttia ei alusteta"
-	echo "-1 SD-kortin alustuksen virheet ohitetaan"
-	[ -z "$DEFAULT_RESTORE_DEVICE" ] && DEFAULT_RESTORE_DEVICE="ei"
-	echo "-C Tarkistetaan palautettavien osioiden epäkelvot lohkot (oletus: $DEFAULT_CHECK_FOR_BAD_BLOCKS)"
-	echo "-d {palautuslaite} (oletus: $DEFAULT_RESTORE_DEVICE) (Esimerkki: /dev/sda)"
-	echo "-R {juuriosio} (oletus: restoreDevice) (Esimerkki: /dev/sdb1)"
-	echo "--resizeRootFS|resizeLastPartitionFS (oletus: ${NO_YES[$DEFAULT_RESIZE_ROOTFS]})"
 }
 
 function mentionHelp() {

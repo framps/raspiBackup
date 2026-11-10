@@ -12,6 +12,9 @@
 #	  FR - mgrafr - https://github.com/mgrafr
 #	  ES - majegarza (review) - https://github.com/majegarza
 #
+# ES and IT messages were translated by Claude (Anthropic)
+# FI and FR messages were partly translated by Claude (Anthropic)
+#
 #######################################################################################################################
 #
 #    Copyright (c) 2015-2026 framp at linux-tips-and-tricks dot de
