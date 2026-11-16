@@ -60,6 +60,8 @@ Only committed changes are tested: the sources are cloned from git.
 
 At the end a summary report is displayed and saved in <workdir>/raspiBackupPkgTest.*.report
 (result per section, version history, packages built, failures and duration).
+The complete log with all commands, their output and every check is saved in
+<workdir>/raspiBackupPkgTest.*.log, with --keep it stays in the work directory as test.log.
 
 RUN IT ON A TEST SYSTEM ONLY (VM, spare Raspberry). It installs, downgrades and purges
 the package 'raspibackup' and its dependencies. It refuses to run if raspibackup is
@@ -217,9 +219,8 @@ cleanup() {
         apt-get purge -y "$PACKAGE_NAME" > /dev/null 2>&1 || true
         rm -f "$SOURCES" "$KEYRING" /var/lib/apt/lists/*raspiBackupPkgTest*
         removeLegacy
-        if (( rc != 0 )); then
-            cp "$LOG" "$WORK.log" 2>/dev/null && echo "Log saved in $WORK.log"
-        fi
+        # the complete log is kept next to the report, also if the test passed
+        cp "$LOG" "$WORK.log" 2>/dev/null && echo "Log saved in $WORK.log"
         rm -rf "$WORK"
     fi
     exit "$rc"
@@ -414,7 +415,7 @@ report() { # rc - summary report of the test run
     echo ""
     if (( KEEP )); then
         echo "  Log:    $LOG"
-    elif (( rc != 0 )); then
+    else
         echo "  Log:    $WORK.log"    # saved by cleanup
     fi
     echo "  Report: $REPORT"
