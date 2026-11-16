@@ -1578,6 +1578,13 @@ MSG_FI[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1:tä e
 MSG_FR[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1 ne peut pas être ramené à la version actuelle. Seule une bêta plus récente que la version actuelle peut être ramenée."
 MSG_ZH[$MSG_PACKAGE_NO_REVERT_BETA]="${MSG_PRF}0054E: $RASPIBACKUP_NAME %1 无法回退到当前版本. 只有比当前版本更新的测试版才能回退."
 
+MSG_UNINSTALL_ALSO_DELETED=$((SCNT++))
+MSG_EN[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: Uninstall deletes the configuration, the timer and also: %1"
+MSG_DE[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: Die Deinstallation löscht die Konfiguration, den Timer und außerdem: %1"
+MSG_FI[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: Poisto poistaa asetukset, ajastimen ja lisäksi: %1"
+MSG_FR[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: La désinstallation supprime la configuration, le minuteur et aussi : %1"
+MSG_ZH[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: 卸载将删除配置, 定时器以及: %1"
+
 MSG_QUERY_CHARS_YES_NO=$((SCNT++))
 MSG_EN[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
 MSG_DE[$MSG_QUERY_CHARS_YES_NO]="(j/N)"
@@ -2295,6 +2302,10 @@ function isPackageInstalled() { # apt manages code, config template, extensions 
 	return
 }
 
+function isPackageConfiguring() { # called by postinst of the package, dpkg reports it as half-configured and not as installed then
+	[[ "${DPKG_MAINTSCRIPT_PACKAGE:-}" == "$PACKAGE_NAME" && "${DPKG_MAINTSCRIPT_NAME:-}" == "postinst" ]]
+}
+
 function isLegacyInstalled() { # raspiBackup was installed without apt, e.g. by raspiBackupInstallUI.sh, and has to be migrated to the package
 	! isPackageInstalled && [[ -f $FILE_TO_INSTALL_ABS_FILE ]]
 	return
@@ -2788,8 +2799,8 @@ function extensions_uninstall_execute() {
 		writeToConsole $MSG_SAMPLEEXTENSION_UNINSTALL_SUCCESS
 	fi
 
-	if [[ -f CONFIG_ABS_FILE ]]; then
-		sed -i -E "s/DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"\"/" $CONFIG_ABS_FILE
+	if [[ -f "$CONFIG_ABS_FILE" ]]; then
+		sed -i -E "s/DEFAULT_EXTENSIONS=.*\$/DEFAULT_EXTENSIONS=\"\"/" "$CONFIG_ABS_FILE"
 	fi
 
 	logExit
@@ -3446,6 +3457,17 @@ function uninstall_script_execute() {
 
 	INSTALLATION_SUCCESSFULL=0
 	logExit
+}
+
+function uninstallAdditionalFiles() { # files -u deletes in addition to apt-get purge, e.g. own extensions, as comma separated list
+	local f files=()
+	for f in $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}*.* $CONFIG_FILE_ABS_PATH/${RASPIBACKUP_NAME}*; do
+		[[ -f "$f" && ! -L "$f" ]] || continue			# links of the package are deleted by apt
+		[[ "$f" == "$CONFIG_ABS_FILE" || "$f" == "$CONFIG_ABS_FILE~" ]] && continue	# the configuration is mentioned anyway
+		files+=("$f")
+	done
+	local IFS=","
+	sed 's/,/, /g' <<< "${files[*]}"
 }
 
 function uninstall_execute() {
@@ -5007,11 +5029,18 @@ function uninstall_do() {
 
 	local m="$(getMessageText $MSG_QUESTION_UNINSTALL)"
 	local t=$(center $WINDOW_COLS "$m")
+	local cols=$WINDOW_COLS
+	local additional
+	additional="$(uninstallAdditionalFiles)"
+	if [[ -n "$additional" ]]; then	# same list as option -u
+		cols=$((WINDOW_COLS * 2))
+		t="$(getMessageText $MSG_UNINSTALL_ALSO_DELETED "$additional")${NL}${NL}$m"
+	fi
 	local y="$(getMessageText $BUTTON_YES)"
 	local n="$(getMessageText $BUTTON_NO)"
 	local tt="$(getMessageText $TITLE_CONFIRM)"
 
-	if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 2 3>&1 1>&2 2>&3; then
+	if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $cols 2 3>&1 1>&2 2>&3; then
 		logExit
 		return
 	fi
@@ -6346,6 +6375,15 @@ function unattendedInstall() {
 		check4InternetAvailable
 		update_installer_execute
 	else # uninstall
+		local additional
+		additional="$(uninstallAdditionalFiles)"
+		if [[ -n "$additional" ]]; then
+			writeToConsole $MSG_UNINSTALL_ALSO_DELETED "$additional"
+		fi
+		if ! askYesNo $MSG_QUESTION_UNINSTALL; then
+			logExit
+			exit 1
+		fi
 		extensions_uninstall_execute
 		systemd_uninstall_execute
 		cron_uninstall_execute
@@ -6371,7 +6409,7 @@ function first_steps() {
 
 function show_help() {
 	echo $GIT_CODEVERSION
-	echo "$MYSELF [-f] ( -b | -i | -m | -R | -S | -u | -U | -t [crond|systemd] )"
+	echo "$MYSELF [-f] [-y] ( -b | -i | -m | -R | -S | -u | -U | -t [crond|systemd] )"
 	echo "-b: unattended install or update of the latest beta of $RASPIBACKUP_NAME with apt. Asks before changing a held release"
 	echo "-f: update the package index with apt-get update even if it was updated less than a day ago"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
@@ -6381,7 +6419,8 @@ function show_help() {
 	echo "-S: unattended revert of a beta of $RASPIBACKUP_NAME with apt to the current release. Asks before changing a held release"
 	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME. Asks before updating a held release"
 	echo "    $RASPIBACKUP_NAME installed without apt is migrated to Debian package $PACKAGE_NAME, its configuration, extensions and timer are kept"
-	echo "-u: unattended uninstall of $RASPIBACKUP_NAME with apt"
+	echo "-u: uninstall of $RASPIBACKUP_NAME with apt. Lists the files deleted in addition to the package, e.g. own extensions, and asks before"
+	echo "-y: answer the questions of the options with yes, e.g. for -u in scripts. Without -y and without a terminal they are answered with no"
 	echo "-t: use either crond or systemd for backup timer"
 }
 
@@ -6391,7 +6430,10 @@ function askYesNo() { # messagenumber messageparms - asks on the console, defaul
 	local answer=""
 
 	echo "MSG: $q" >>"$LOG_FILE"
-	if [[ -t 0 ]]; then
+	if (( ASSUME_YES )); then
+		echo "$q $(getMessageText $MSG_ANSWER_CHARS_YES | cut -c1)"
+		answer="$(getMessageText $MSG_ANSWER_CHARS_YES)"
+	elif [[ -t 0 ]]; then
 		read -r -p "$q " answer
 	else
 		echo "$q"	# no terminal to ask, e.g. called by cron, so answer no
@@ -6432,7 +6474,7 @@ UPDATE_POSSIBLE=-1 # -1 -> check whether update possible, 0 -> no, 1 -> yes
 CONFIG_PARSED=0
 
 PACKAGE_MODE=0
-if isPackageInstalled; then
+if isPackageInstalled || isPackageConfiguring; then
 	PACKAGE_MODE=1
 fi
 
@@ -6449,7 +6491,9 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?bfmusSUiR" opt; do
+ASSUME_YES=0 # -y answers questions of the options with yes
+
+while getopts "t:h?bfmusSUiRy" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -6477,6 +6521,8 @@ while getopts "t:h?bfmusSUiR" opt; do
 		 ;;
     u) MODE_UNINSTALL=1
 		 MODE_UNATTENDED=1
+		 ;;
+    y) ASSUME_YES=1
 		 ;;
 	s) MODE_SILENT=1
 		;;

@@ -227,16 +227,18 @@ curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash
 
 The script adds the repository and installs `raspibackup`. It isn't stored and isn't part of the package,
 its log is written to `/tmp/raspiBackupInstall.XXXXXX.log`. Options are passed with `bash -s -- <options>`. Then configure raspiBackup
-(backup path, backup type, timer, extensions, ...) with
+(backup path, backup type, timer, ...) with
 
 ```
 sudo raspiBackupConfig
 ```
 
-`raspiBackupConfig` detects the package installation. It offers the configuration
-and the sample extensions. Users not familiar with apt can update and uninstall raspiBackup
-with `sudo raspiBackupConfig -U` and `sudo raspiBackupConfig -u`. `-i` isn't available,
-the package is already installed.
+`raspiBackupConfig` detects the package installation. It offers the configuration.
+Users not familiar with apt can update and uninstall raspiBackup
+with `sudo raspiBackupConfig -U` and `sudo raspiBackupConfig -u` (asks before, `-y` answers yes). `-i` isn't available,
+the package is already installed. Every action of `raspiBackupConfig` and the apt commands
+with the same result are listed in
+[What raspiBackupConfig does, and the same with apt](#what-raspibackupconfig-does-and-the-same-with-apt).
 
 The menu `M3 Update components` of `raspiBackupConfig` runs `apt-get update` and offers
 the apt commands described below:
@@ -321,10 +323,13 @@ because `published/` announces the package.
 Uninstall:
 
 ```
-sudo apt-get remove raspibackup        # keeps the configuration
-sudo apt-get purge raspibackup         # also deletes configuration
+sudo apt-get remove raspibackup        # keeps the configuration, deletes the timer
+sudo apt-get purge raspibackup         # also deletes configuration, state and logs
 sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibackup-archive-keyring.gpg
 ```
+
+`sudo raspiBackupConfig -u` deletes more files, see
+[Uninstall](#uninstall-raspibackupconfig--u-or-menu-uninstall) below.
 
 ### Files installed
 
@@ -339,14 +344,123 @@ sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibac
 | `/usr/local/lib/systemd/system/raspiBackup.{service,timer}` | default systemd units |
 | `/etc/systemd/system/raspiBackup.{service,timer}` | units configured by `raspiBackupConfig`, take precedence |
 
-The configuration isn't managed by dpkg (no conffile). Installation, update and downgrade
-never change it, so there are no questions about it during `apt-get upgrade`.
-A configuration of a former installation with the curl script is used as it is.
-Before every installation the configuration is saved as `raspiBackup.conf~`.
-After an installation, update or version change `raspiBackupConfig` (menu and `-U`) adds new options
-of the template `/usr/local/share/raspibackup/raspiBackup_{en,de}.conf` to the configuration and
-comments out options which no longer exist. Existing values aren't changed. The configuration
-before the merge is saved as `raspiBackup.conf.v<config version>`. A downgrade doesn't change it.
+The configuration isn't managed by dpkg (no conffile), so dpkg never replaces it and there are
+no questions about it during `apt-get upgrade`. A configuration of a former installation with the
+curl script is used as it is. Before every installation the configuration is saved as `raspiBackup.conf~`.
+
+After every installation, update or version change, also a plain `apt-get upgrade`, `postinst`
+calls `raspiBackupConfig -m`. It adds new options of the template
+`/usr/local/share/raspibackup/raspiBackup_{en,de}.conf` to the configuration and comments out options
+which no longer exist, but only if the template has a newer config version than the configuration.
+Existing values aren't changed. The configuration before the merge is saved as
+`raspiBackup.conf.v<config version>`. A downgrade doesn't change it. If the merge fails, the package
+is installed anyway and `raspiBackupConfig` offers the merge when it's started.
+
+### What raspiBackupConfig does, and the same with apt
+
+`raspiBackupConfig` only runs apt and a few file operations. Everything can be done manually
+with the same result. Commands need root, e.g. `sudo -i`.
+
+#### Add the repository (`-i`, menu install, migration)
+
+Same as `raspiBackupInstall.sh`. `raspiBackupConfig` accepts the key only if it has the fingerprint
+`23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24`, is valid, and keeps only this key in the keyring.
+
+```
+curl -fsSL -o /tmp/raspibackup-archive-keyring.gpg https://framps.github.io/raspiBackup/raspibackup-archive-keyring.gpg
+gpg --show-keys /tmp/raspibackup-archive-keyring.gpg        # check: 23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24
+install -m 644 /tmp/raspibackup-archive-keyring.gpg /usr/share/keyrings/raspibackup-archive-keyring.gpg
+cat > /etc/apt/sources.list.d/raspibackup.sources <<EOF
+Types: deb
+URIs: https://framps.github.io/raspiBackup
+Suites: stable beta
+Components: main
+Signed-By: /usr/share/keyrings/raspibackup-archive-keyring.gpg
+EOF
+```
+
+An existing repository isn't changed. Only if `Suites:` misses `beta`, `raspiBackupConfig` adds it
+before every `apt-get update` (installations made before the beta suite existed).
+
+#### Install (`-i`, menu install)
+
+```
+apt-get update
+apt-get install raspibackup
+```
+
+`postinst` creates `/usr/local/etc/raspiBackup.conf` from the German template if `LANG` starts with `de`,
+otherwise from the English one. `raspiBackupConfig` uses the language selected in its menu instead.
+To change the language of a new configuration manually:
+
+```
+install -m 600 /usr/local/share/raspibackup/raspiBackup_de.conf /usr/local/etc/raspiBackup.conf   # replaces the configuration!
+```
+
+`raspiBackupConfig` also writes the selected settings into the configuration and creates a disabled timer:
+`/etc/systemd/system/raspiBackup.{service,timer}`, or `/etc/cron.d/raspiBackup` without systemd.
+Without `raspiBackupConfig` the default units of the package (Sundays at 05:00) are used:
+
+```
+systemctl enable --now raspiBackup.timer
+systemctl edit raspiBackup.timer          # other time: [Timer] OnCalendar= and OnCalendar=<new time>
+```
+
+#### Migrate an installation without apt (`-i`, `-U`, menu install)
+
+Add the repository and install the package, see above. `postinst` merges the new options into
+the existing configuration. Configuration, extensions and timers are kept, see
+[Migrate an installation without apt](#migrate-an-installation-without-apt).
+
+#### Update (`-U`, menu `P1`)
+
+```
+apt-mark unhold raspibackup               # only if held, raspiBackupConfig asks before
+apt-get update
+apt-get install --only-upgrade raspibackup   # or: apt-get upgrade
+```
+
+The menu `P1` installs `raspibackup=<candidate>` instead, which is the same version.
+`postinst` merges the configuration. `raspiBackupConfig` runs `apt-get update` at most once a day
+(time in `/var/lib/raspiBackup/packageIndexUpdated`), `-f` forces it.
+
+#### Other versions (`-R`, `-b`, `-S`, menu `P2`-`P4`)
+
+See the table above and [section 3](#3-beta-versions) and [section 4](#4-revert-to-a-previous-release).
+Every option removes a hold first (`apt-mark unhold raspibackup`), `-R` and `P2` set it again
+(`apt-mark hold raspibackup`).
+
+#### Sample extensions
+
+`raspiBackupConfig` doesn't install them. Link the ones needed and enable them in the configuration:
+
+```
+ln -s /usr/local/share/raspibackup/extensions/raspiBackup_{mem,temp,disk}_{pre,post}.sh /usr/local/bin/
+# /usr/local/etc/raspiBackup.conf: DEFAULT_EXTENSIONS="mem temp disk"
+```
+
+`apt-get remove` and `purge` delete these links.
+
+#### Uninstall (`raspiBackupConfig -u` or menu uninstall)
+
+`apt-get purge` deletes the package, the timers in `/etc/systemd/system` and `/etc/cron.d`, the links
+to the sample extensions, `/usr/local/etc/raspiBackup.conf` and `raspiBackup.conf~`,
+`/var/lib/raspiBackup` and `/var/log/raspiBackup`. `raspiBackupConfig -u` and the menu uninstall
+additionally delete the files below. Before they start, they list the ones which exist, except the
+configuration, and ask. Without a terminal `-u` answers no and deletes nothing, `-y` answers yes,
+e.g. in scripts:
+
+```
+apt-get purge raspibackup
+rm -f /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibackup-archive-keyring.gpg
+# in addition by raspiBackupConfig -u:
+rm -f /usr/local/bin/raspiBackup_*.sh     # all extensions, also your own ones!
+rm -f /usr/local/etc/raspiBackup*         # raspiBackup.conf.v*, .conf.package, .iservices, .eservices
+rm -f /usr/local/bin/raspiBackup*.*       # versions saved by former updates, e.g. raspiBackup.0.7.3.sh
+rm -f /tmp/raspiBackup*
+```
+
+Neither deletes `/var/backups/raspiBackup-legacy`, the backup of a migrated installation.
 
 ---
 
@@ -651,7 +765,7 @@ GitHub account and for commits made in the web interface (signed by GitHub's key
 │   │   ├── control     # package control file                                                                v     |
 │   │   ├── copyright                                                                                         |     |
 │   │   ├── preinst     # before installation: save installation without apt, revertMigration.sh              |     |
-│   │   ├── postinst    # after installation: create config from template if missing                          |     |
+│   │   ├── postinst    # after installation: create config from template if missing, else merge it         |     |
 │   │   ├── prerm       # before apt remove: disable backup timer                                             |     |
 │   │   └── postrm      # after apt remove/purge: remove extension links, timers, on purge config            |     ^
 │   │                                                                                                         |     |
