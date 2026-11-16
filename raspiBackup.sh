@@ -147,7 +147,6 @@ LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE"
 VAR_LIB_DIRECTORY="/var/lib/$MYNAME"
 RESTORE_REMINDER_FILE="restore.reminder"
 REPORT_COUNTER_FILE="report.counter"
-UPDATE_REMINDER_FILE="update.reminder"
 UPDATE_REMINDER_MAX=3
 PACKAGE_UPDATE_REMINDER_FILE="package.reminder"			# version and count of the last reported package update
 PACKAGE_INDEX_TIMESTAMP_FILE="package.index"				# time of the last refresh of the package index
@@ -3421,34 +3420,6 @@ function dynamic_mount() { # mountpoint
 
 }
 
-function isUpdatePossible() {
-
-	logEntry
-
-	local versions version_rc latestVersion newVersion oldVersion
-
-	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	#shellcheck disable=SC2207
-	versions=( $(isNewVersionAvailable) )
-	version_rc=$?
-	if [[ $version_rc == 0 ]]; then			# new version available
-		if updateUpdateReminder; then		# update message counter still not zero
-			NEWS_AVAILABLE=1
-			UPDATE_POSSIBLE=1
-			FORCE_MESSAGE=1
-			latestVersion="${versions[0]}"
-			newVersion="${versions[1]}"
-			oldVersion="${versions[2]}"
-
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$newVersion" "$oldVersion"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
-		fi
-	fi
-
-	logExit
-
-}
-
 function downloadPropertiesFile() {
 
 	logEntry
@@ -3503,10 +3474,9 @@ function downloadPropertiesFile() {
 	return
 }
 
-#VERSION="0.6.3.1"
-#INCOMPATIBLE=""
+# Only DEPRECATED is used, new versions are detected in the apt repository.
+# VERSION, BETA, ... are still read by installations without apt, see published/raspiBackup.properties
 #DEPRECATED=""
-#BETA="0.6.3.2"
 
 function parsePropertiesFile() { # propertyFileName
 
@@ -3514,19 +3484,10 @@ function parsePropertiesFile() { # propertyFileName
 
 	local properties
 
-	properties="$(grep "^VERSION=" "$1" 2>/dev/null)"
-	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY=${BASH_REMATCH[1]}
-
-	properties="$(grep "^INCOMPATIBLE=" "$1" 2>/dev/null)"
-	[[ $properties =~ $PROPERTY_REGEX ]] && INCOMPATIBLE_PROPERTY=${BASH_REMATCH[1]}
-
 	properties="$(grep "^DEPRECATED=" "$1" 2>/dev/null)"
 	[[ $properties =~ $PROPERTY_REGEX ]] && DEPRECATED_PROPERTY=${BASH_REMATCH[1]}
 
-	properties="$(grep "^BETA=" "$1" 2>/dev/null)"
-	[[ $properties =~ $PROPERTY_REGEX ]] && BETA_PROPERTY=${BASH_REMATCH[1]}
-
-	logItem "Properties: v: $VERSION_PROPERTY i: $INCOMPATIBLE_PROPERTY d: $DEPRECATED_PROPERTY b: $BETA_PROPERTY"
+	logItem "Properties: d: $DEPRECATED_PROPERTY"
 
 	logExit
 
@@ -3643,59 +3604,6 @@ function askYesNo() {
 	else
 		return 0
 	fi
-
-}
-
-function isNewVersionAvailable() {
-
-	logEntry
-
-	local newVersion="0.0"
-	local latestVersion="0.0"
-
-	local rc=99			# update not possible
-
-	local version="$VERSION"
-	local suffix=""
-	if [[ "$VERSION" =~ ^([^-]*)(-(.*))?$ ]]; then
-		version=${BASH_REMATCH[1]}
-		suffix=${BASH_REMATCH[3]}
-	fi
-
-	logItem "Versionsplit: $version - $suffix"
-
-	if (( $NEW_PROPERTIES_FILE )); then
-		local newVersion=$VERSION_PROPERTY
-		latestVersion=$(echo -e "$newVersion\n$version" | sort -V | tail -1)
-		logItem "new: $newVersion runtime: $version latest: $latestVersion"
-
-		if (( $(compareVersions $version $newVersion) < 0 )); then # $version < $newVersion
-			rc=0	# new version available
-		elif (( $(compareVersions $version $newVersion) > 0 )); then  # $version > $newVersion
-			rc=2	# current version is a newer version
-		else	    # versions are identical
-			if [[ -z $suffix ]]; then
-				rc=1	# no suffix, current version is latest version
-			else
-				if (( $IS_BETA || $IS_DEV )); then
-					rc=0	# current is beta or development version, replace with final version
-				elif (( $IS_HOTFIX )); then
-					rc=2	# current version is hotfix, keep it until new version is available
-				else
-					rc=1	# current version is latest version
-				fi
-			fi
-		fi
-	fi
-
-	result="$latestVersion $newVersion $VERSION"
-	echo "$result"
-
-	logItem "Returning: $result"
-
-	logExit "$rc"
-
-	return $rc
 
 }
 
@@ -5559,22 +5467,6 @@ function cleanupRestore() { # trap
 	cleanupTempFiles
 
 	logExit "$rc"
-
-}
-
-function isBetaAvailable() {
-
-	logEntry
-
-	local betaVersion=""
-
-	if (( $NEW_PROPERTIES_FILE )); then
-		betaVersion=${BETA_PROPERTY//\"/}
-	fi
-
-	echo $betaVersion
-
-	logExit "$betaVersion"
 
 }
 
@@ -8073,18 +7965,7 @@ function reportNews() {
 		return
 	fi
 
-	isUpdatePossible
-
-	if (( ! $IS_BETA )); then
-		local betaVersion
-		betaVersion=$(isBetaAvailable)
-		if [[ -n "$betaVersion" && "$VERSION" != "$betaVersion" ]]; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$betaVersion"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
-			NEWS_AVAILABLE=1
-			BETA_AVAILABLE=1
-		fi
-	fi
+	# development version or regression test without package: nothing to report
 
 	logExit
 
@@ -9637,69 +9518,6 @@ function updateRestoreReminder() {
 	fi
 
 	logExit
-
-}
-
-function updateUpdateReminder() {
-
-	logEntry
-
-	local update_file="$VAR_LIB_DIRECTORY/$UPDATE_REMINDER_FILE"
-
-	# create directory to save state
-	if [[ ! -d "$VAR_LIB_DIRECTORY" ]]; then
-		if ! mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"; then
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_UNABLE_TO_CREATE_DIRECTORY "$VAR_LIB_DIRECTORY"
-			exitError "$RC_CREATE_ERROR"
-		fi
-	fi
-
-	local version="$VERSION"
-	if [[ "$version" =~ ^([^-]*)(-(.*))?$ ]]; then
-		version=${BASH_REMATCH[1]}
-	fi
-
-	# initialize update version
-	if [[ ! -e "$update_file" ]]; then
-		echo "$version 0" > "$update_file"
-	fi
-
-	# retrieve update version
-	local rf
-	# Double quote to prevent globbing and word splitting.
-	#shellcheck disable=SC2086
-	rf="$(<$update_file)"
-	if [[ -z "${rf}" ]]; then				# issue #316: reminder file exists but is empty
-		echo "$version 0" > "$update_file"
-	fi
-
-	# Prefer mapfile or read -a to split command output (or quote to avoid splitting).
-	#shellcheck disable=SC2207
-	rf=( $(<$update_file) )
-
-	logItem "Vers: ${rf[0]} - cnt: ${rf[1]}"
-
-	local rc=0
-	# check if reminder should be send
-	if (( $(compareVersions $version $VERSION_PROPERTY) < 0 || $IS_BETA )); then		# is version older than available version?
-		if (( $(compareVersions "${rf[0]}" $VERSION_PROPERTY) < 0 )); then		# if reminder version older than available version ?
-			local left=$(( $UPDATE_REMINDER_MAX - ${rf[1]} ))
-			if (( $left == 0 )); then
-				echo "$VERSION_PROPERTY 0" > "$update_file"
-			else
-				local nr=$(( ${rf[1]} + 1 ))
-				logItem "Updated counter $version $nr"
-				echo "$version $nr" > "$update_file"
-			fi
-			rc=$(( $left <= 0 ))
-			logItem "rc=$rc"
-		fi
-	else
-		rc=1
-	fi
-
-	logExit $rc
-	return $rc
 
 }
 
