@@ -46,6 +46,10 @@ and raspiBackupConfig -U/-R/-b/-S that
        according to DEPRECATED of raspiBackup.properties
     7. an installation without apt (raspiBackupInstallUI.sh, install.sh) is migrated to the
        package and the migration is reverted with revertMigration.sh
+    8. a plain apt-get upgrade to a version with a newer config template merges the
+       configuration (postinst calls raspiBackupConfig -m), a downgrade doesn't change it
+    9. the pre-release cycle alpha1, alpha2, beta1, beta2, rc1, rc2 and the release:
+       suites, updates of testers, no updates for stable users, news and reversal
 
 Only committed changes are tested: the sources are cloned from git.
 
@@ -1062,6 +1066,173 @@ assertMigrated "$V_LATEST"
 assertRc 0 "purge after migration" apt-get purge -y "$PACKAGE_NAME"
 noteInstalled "$(installedVersion)"
 [[ -x "$LEGACY_DIR/revertMigration.sh" ]] && pass "$LEGACY_DIR kept by purge" || fail "$LEGACY_DIR deleted by purge"
+
+#######################################################################################################################
+# 8. configuration merge by apt-get upgrade
+#######################################################################################################################
+
+CURRENT_SECTION="config merge"
+section "8. Configuration merge by apt-get upgrade (postinst calls raspiBackupConfig -m)"
+
+V_CONF="0.9.10"                                   # its config templates have a newer config version
+readonly NEW_OPTION="DEFAULT_PKGTEST_NEW_OPTION"  # added by the newer templates
+readonly DELETED_OPTION="DEFAULT_KEEPBACKUPS_DDZ" # deleted by the newer templates
+
+configVersion() { # file - VERSION_CONFIG of a configuration or template
+    sed -n -E 's/^VERSION_CONFIG="([^"]*)".*/\1/p' "$1"
+}
+
+installer && pass "installation from repository" || fail "installation from repository"
+sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
+assertInstalled "$V_LATEST"
+OLD_CONFIG_VERSION="$(configVersion "$CONFIG")"
+NEW_CONFIG_VERSION="${OLD_CONFIG_VERSION%.*}.$(( ${OLD_CONFIG_VERSION##*.} + 1 ))"
+grep -q "^$DELETED_OPTION=" "$CONFIG" || abort "$DELETED_OPTION missing in $CONFIG, choose another option to delete"
+
+step "config templates with config version $NEW_CONFIG_VERSION: $NEW_OPTION added, $DELETED_OPTION deleted"
+for template in "$WORK/src/config/raspiBackup_en.conf" "$WORK/src/config/raspiBackup_de.conf"; do
+    sed -i -E -e "s/^VERSION_CONFIG=.*/VERSION_CONFIG=\"$NEW_CONFIG_VERSION\"/" -e "/^$DELETED_OPTION=/d" "$template"
+    printf '\n# option added by the package test\n%s="new"\n' "$NEW_OPTION" >> "$template"
+done
+# build.sh packages committed changes only
+run git -C "$WORK/src" -c user.name="raspiBackup package test" -c user.email="test@example.invalid" \
+    commit -q -am "Config version $NEW_CONFIG_VERSION" || abort "commit of the changed config templates failed"
+publish "$V_CONF"
+
+cp -a "$CONFIG" "$WORK/config.before"
+aptUpgrade
+assertInstalled "$V_CONF"
+actual="$(configVersion "$CONFIG")"
+[[ "$actual" == "$NEW_CONFIG_VERSION" ]] && pass "config version updated to $NEW_CONFIG_VERSION" \
+    || fail "config version $actual instead of $NEW_CONFIG_VERSION"
+grep -q "^$NEW_OPTION=\"new\"" "$CONFIG" && pass "new option $NEW_OPTION added" || fail "new option $NEW_OPTION not added"
+if grep -q "^# $DELETED_OPTION=" "$CONFIG" && ! grep -q "^$DELETED_OPTION=" "$CONFIG"; then
+    pass "deleted option $DELETED_OPTION commented out"
+else
+    fail "deleted option $DELETED_OPTION not commented out"
+fi
+cmp -s "$WORK/config.before" "$CONFIG.v$OLD_CONFIG_VERSION" \
+    && pass "configuration before the merge saved as $CONFIG.v$OLD_CONFIG_VERSION" \
+    || fail "configuration before the merge not saved as $CONFIG.v$OLD_CONFIG_VERSION"
+
+cp -a "$CONFIG" "$WORK/config.merged"
+assertRc 0 "merge again with raspiBackupConfig -m" rbc -m
+cmp -s "$WORK/config.merged" "$CONFIG" && pass "configuration unchanged by a second merge" \
+    || fail "configuration changed by a second merge"
+
+step "downgrade with apt to $V_LATEST"
+run apt-get install -y --allow-downgrades "$PACKAGE_NAME=$V_LATEST" \
+    || fail "apt-get install --allow-downgrades $PACKAGE_NAME=$V_LATEST"
+assertInstalled "$V_LATEST"
+cmp -s "$WORK/config.merged" "$CONFIG" && pass "configuration unchanged by the downgrade" \
+    || fail "configuration changed by the downgrade"
+
+aptUpgrade
+assertInstalled "$V_CONF"
+cmp -s "$WORK/config.merged" "$CONFIG" && pass "configuration unchanged by an upgrade to the same config version" \
+    || fail "configuration changed by an upgrade to the same config version"
+
+assertRc 0 "purge" apt-get purge -y "$PACKAGE_NAME"
+noteInstalled "$(installedVersion)"
+if compgen -G "$CONFIG.v*" > /dev/null; then
+    fail "purge didn't delete the configurations saved by the merge: $(echo "$CONFIG".v*)"
+    rm -f "$CONFIG".v*
+else
+    pass "purge deleted the configurations saved by the merge"
+fi
+
+#######################################################################################################################
+# 9. pre-release cycle: alpha, beta, rc and release
+#######################################################################################################################
+
+CURRENT_SECTION="pre-release cycle"
+section "9. Pre-release cycle alpha1, alpha2, beta1, beta2, rc1, rc2 and release"
+
+# all pre-releases go into suite beta, VERSION -> Debian version like build.sh: 0.9.11-alpha1 -> 0.9.11~alpha1
+V_ALPHA11_1="0.9.11-alpha1";  D_ALPHA11_1="$(debianVersion "$V_ALPHA11_1")"
+V_ALPHA11_2="0.9.11-alpha2";  D_ALPHA11_2="$(debianVersion "$V_ALPHA11_2")"
+V_BETA11_1="0.9.11-beta1";    D_BETA11_1="$(debianVersion "$V_BETA11_1")"
+V_BETA11_2="0.9.11-beta2";    D_BETA11_2="$(debianVersion "$V_BETA11_2")"
+V_RC11_1="0.9.11-rc1";        D_RC11_1="$(debianVersion "$V_RC11_1")"
+V_RC11_2="0.9.11-rc2";        D_RC11_2="$(debianVersion "$V_RC11_2")"
+V_REL11="0.9.11"
+
+step "version order"
+order=("$V_CONF" "$D_ALPHA11_1" "$D_ALPHA11_2" "$D_BETA11_1" "$D_BETA11_2" "$D_RC11_1" "$D_RC11_2" "$V_REL11")
+ordered=1
+for (( i = 1; i < ${#order[@]}; i++ )); do
+    dpkg --compare-versions "${order[i-1]}" lt "${order[i]}" || { ordered=0; fail "${order[i-1]} isn't lower than ${order[i]}"; }
+done
+(( ordered )) && pass "$(printf '%s < ' "${order[@]}" | sed 's/ < $//')"
+
+installer && pass "installation from repository" || fail "installation from repository"
+sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
+assertInstalled "$V_CONF"
+
+# stable users don't get pre-releases, they are only reported
+publish "$V_ALPHA11_1"
+assertInSuite "$D_ALPHA11_1" beta
+aptUpgrade
+assertInstalled "$V_CONF"
+assertRc 0 "update doesn't install an alpha" rbc -U
+assertInstalled "$V_CONF"
+assertNews "alpha is reported to stable users" "BETAVERSION_AVAILABLE $D_ALPHA11_1" ""
+
+# a tester installs the alpha and gets every newer pre-release
+assertRc 0 "install alpha" rbc -b
+assertInstalled "$D_ALPHA11_1"
+assertNews "no news for alpha tester" "" ""
+
+publish "$V_ALPHA11_2"
+assertInSuite "$D_ALPHA11_2" beta
+assertNews "newer alpha is reported to tester" "NEW_VERSION_AVAILABLE $D_ALPHA11_2 $D_ALPHA11_1" ""
+aptUpgrade
+assertInstalled "$D_ALPHA11_2"
+
+publish "$V_BETA11_1"
+assertInSuite "$D_BETA11_1" beta
+aptUpgrade
+assertInstalled "$D_BETA11_1"
+
+publish "$V_BETA11_2"
+assertInSuite "$D_BETA11_2" beta
+assertRc 0 "update beta to newer beta" rbc -U
+assertInstalled "$D_BETA11_2"
+
+publish "$V_RC11_1"
+assertInSuite "$D_RC11_1" beta
+assertNews "release candidate is reported to tester" "NEW_VERSION_AVAILABLE $D_RC11_1 $D_BETA11_2" ""
+aptUpgrade
+assertInstalled "$D_RC11_1"
+
+# a release candidate is reverted like a beta, not like a release
+assertRc 1 "release candidate isn't reverted like a release" rbc -R
+assertInstalled "$D_RC11_1"
+assertRc 0 "revert release candidate to release" rbc -S
+assertInstalled "$V_CONF"
+assertNews "release candidate is reported after the reversal" "BETAVERSION_AVAILABLE $D_RC11_1" ""
+assertRc 0 "install release candidate again" rbc -b
+assertInstalled "$D_RC11_1"
+
+publish "$V_RC11_2"
+assertInSuite "$D_RC11_2" beta
+aptUpgrade
+assertInstalled "$D_RC11_2"
+
+# the release ends the cycle, the tester is back on stable
+publish "$V_REL11"
+assertInSuite "$V_REL11" stable
+assertNews "release is reported to tester" "NEW_VERSION_AVAILABLE $V_REL11 $D_RC11_2" ""
+aptUpgrade
+assertInstalled "$V_REL11"
+assertNews "no news after the release, older pre-releases aren't reported" "" ""
+assertRc 1 "no pre-release newer than the release" rbc -b
+assertInstalled "$V_REL11"
+assertRc 1 "release isn't reverted like a pre-release" rbc -S
+assertInstalled "$V_REL11"
+
+assertRc 0 "purge" apt-get purge -y "$PACKAGE_NAME"
+noteInstalled "$(installedVersion)"
 
 #######################################################################################################################
 # result

@@ -324,7 +324,7 @@ Uninstall:
 
 ```
 sudo apt-get remove raspibackup        # keeps the configuration, deletes the timer
-sudo apt-get purge raspibackup         # also deletes configuration, state and logs
+sudo apt-get purge raspibackup         # also deletes configuration and its saved copies, state and logs
 sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibackup-archive-keyring.gpg
 ```
 
@@ -353,7 +353,8 @@ calls `raspiBackupConfig -m`. It adds new options of the template
 `/usr/local/share/raspibackup/raspiBackup_{en,de}.conf` to the configuration and comments out options
 which no longer exist, but only if the template has a newer config version than the configuration.
 Existing values aren't changed. The configuration before the merge is saved as
-`raspiBackup.conf.v<config version>`. A downgrade doesn't change it. If the merge fails, the package
+`raspiBackup.conf.v<config version>`, `apt-get purge` deletes these copies like the configuration
+because they may contain passwords. A downgrade doesn't change it. If the merge fails, the package
 is installed anyway and `raspiBackupConfig` offers the merge when it's started.
 
 ### What raspiBackupConfig does, and the same with apt
@@ -444,7 +445,7 @@ ln -s /usr/local/share/raspibackup/extensions/raspiBackup_{mem,temp,disk}_{pre,p
 #### Uninstall (`raspiBackupConfig -u` or menu uninstall)
 
 `apt-get purge` deletes the package, the timers in `/etc/systemd/system` and `/etc/cron.d`, the links
-to the sample extensions, `/usr/local/etc/raspiBackup.conf` and `raspiBackup.conf~`,
+to the sample extensions, `/usr/local/etc/raspiBackup.conf`, `raspiBackup.conf~` and `raspiBackup.conf.v*`,
 `/var/lib/raspiBackup` and `/var/log/raspiBackup`. `raspiBackupConfig -u` and the menu uninstall
 additionally delete the files below. Before they start, they list the ones which exist, except the
 configuration, and ask. Without a terminal `-u` answers no and deletes nothing, `-y` answers yes,
@@ -455,7 +456,7 @@ apt-get purge raspibackup
 rm -f /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibackup-archive-keyring.gpg
 # in addition by raspiBackupConfig -u:
 rm -f /usr/local/bin/raspiBackup_*.sh     # all extensions, also your own ones!
-rm -f /usr/local/etc/raspiBackup*         # raspiBackup.conf.v*, .conf.package, .iservices, .eservices
+rm -f /usr/local/etc/raspiBackup*         # e.g. raspiBackup.conf.package, .iservices, .eservices
 rm -f /usr/local/bin/raspiBackup*.*       # versions saved by former updates, e.g. raspiBackup.0.7.3.sh
 rm -f /tmp/raspiBackup*
 ```

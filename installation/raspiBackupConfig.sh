@@ -2626,8 +2626,8 @@ function package_change_execute() { # version hold heldQuestion - installs the v
 
 }
 
-function isBetaVersion() { # debianVersion - 0.7.5~beta1 is a beta, an individual fix like 0.7.5-m2~u972.1 isn't
-	[[ "$1" == *"~beta"* ]]
+function isBetaVersion() { # debianVersion - pre-releases 0.7.5~alpha1, 0.7.5~beta1 and 0.7.5~rc1 are in suite beta, an individual fix like 0.7.5-m2~u972.1 isn't
+	[[ "$1" =~ ~(alpha|beta|rc) ]]
 }
 
 function isPackageHeld() {
@@ -3464,6 +3464,7 @@ function uninstallAdditionalFiles() { # files -u deletes in addition to apt-get 
 	for f in $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}*.* $CONFIG_FILE_ABS_PATH/${RASPIBACKUP_NAME}*; do
 		[[ -f "$f" && ! -L "$f" ]] || continue			# links of the package are deleted by apt
 		[[ "$f" == "$CONFIG_ABS_FILE" || "$f" == "$CONFIG_ABS_FILE~" ]] && continue	# the configuration is mentioned anyway
+		[[ "$f" == "$CONFIG_ABS_FILE".v* ]] && continue	# copies saved by the merge are deleted by apt-get purge
 		files+=("$f")
 	done
 	local IFS=","
@@ -6410,13 +6411,13 @@ function first_steps() {
 function show_help() {
 	echo $GIT_CODEVERSION
 	echo "$MYSELF [-f] [-y] ( -b | -i | -m | -R | -S | -u | -U | -t [crond|systemd] )"
-	echo "-b: unattended install or update of the latest beta of $RASPIBACKUP_NAME with apt. Asks before changing a held release"
+	echo "-b: unattended install or update of the latest beta (alpha, beta or rc) of $RASPIBACKUP_NAME with apt. Asks before changing a held release"
 	echo "-f: update the package index with apt-get update even if it was updated less than a day ago"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
 	echo "-m: add new options of the config template of package $PACKAGE_NAME to the config (called by the package after an update)"
 	echo "-R: unattended revert of $RASPIBACKUP_NAME with apt to the previous release, which is held until it's updated with -U or the update menu. Asks before reverting a held release again"
-	echo "-S: unattended revert of a beta of $RASPIBACKUP_NAME with apt to the current release. Asks before changing a held release"
+	echo "-S: unattended revert of a beta (alpha, beta or rc) of $RASPIBACKUP_NAME with apt to the current release. Asks before changing a held release"
 	echo "-U: unattended update of $MYSELF, or of $RASPIBACKUP_NAME with apt if it is installed as Debian package $PACKAGE_NAME. Asks before updating a held release"
 	echo "    $RASPIBACKUP_NAME installed without apt is migrated to Debian package $PACKAGE_NAME, its configuration, extensions and timer are kept"
 	echo "-u: uninstall of $RASPIBACKUP_NAME with apt. Lists the files deleted in addition to the package, e.g. own extensions, and asks before"

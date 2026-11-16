@@ -20,8 +20,9 @@ esac
 
 case "${1:-}" in
     purge)
-        # configuration created by postinst and raspiBackupConfig
-        rm -f "${DIR_ETC}/raspiBackup.conf" "${DIR_ETC}/raspiBackup.conf~"
+        # configuration created by postinst and raspiBackupConfig and its copies saved by the merge,
+        # all of them may contain passwords
+        rm -f "${DIR_ETC}/raspiBackup.conf" "${DIR_ETC}/raspiBackup.conf~" "${DIR_ETC}/raspiBackup.conf.v"*
         # state of raspiBackup and raspiBackupConfig, e.g. the time of the last apt-get update
         rm -rf /var/lib/raspiBackup
         # logs written with the log option /var/log
