@@ -240,14 +240,23 @@ readonly REPORT
 
 log() { echo "$*" >> "$LOG"; }
 
-section() {
+SECTION_NO=0
+TOTAL_SECTIONS="$(grep -c '^section ' "${BASH_SOURCE[0]}")"
+declare -A SEC_TITLE=()     # section -> title for the report
+
+section() { # title [description] - description: what the section checks, in plain words
     SECTIONS+=("$CURRENT_SECTION")
     SEC_PASSED[$CURRENT_SECTION]=0
     SEC_FAILED[$CURRENT_SECTION]=0
+    SEC_TITLE[$CURRENT_SECTION]="$1"
+    (( SECTION_NO++ ))
     echo ""
-    echo "=== $* ==="
+    echo "=== [$SECTION_NO/$TOTAL_SECTIONS] $1 ==="
+    [[ -n "${2:-}" ]] && fold -s -w 90 <<< "$2" | sed -e 's/ *$//' -e 's/^/    /'
     log ""
-    log "=================== $* ==================="
+    log "=================== [$SECTION_NO/$TOTAL_SECTIONS] $1 ==================="
+    [[ -n "${2:-}" ]] && log "    $2"
+    return 0
 }
 
 step() {
@@ -256,9 +265,13 @@ step() {
 }
 
 pass() {
+    passQuiet "$@"
+    echo "    ok   $*"
+}
+
+passQuiet() { # counts a passed check, printed by the caller together with others
     (( PASSED++ ))
     SEC_PASSED[$CURRENT_SECTION]=$(( ${SEC_PASSED[$CURRENT_SECTION]:-0} + 1 ))
-    echo "    ok   $*"
     log "    ok   $*"
 }
 
@@ -330,7 +343,7 @@ report() { # rc - summary report of the test run
 
     echo ""
     echo "  Sections:"
-    printf '    %-20s %7s %7s  %s\n' "section" "passed" "failed" "status"
+    printf '    %-20s %7s %7s  %-11s %s\n' "section" "passed" "failed" "status" "title"
     for section in "${SECTIONS[@]}"; do
         p="${SEC_PASSED[$section]:-0}"
         f="${SEC_FAILED[$section]:-0}"
@@ -342,7 +355,7 @@ report() { # rc - summary report of the test run
         else
             state="ok"
         fi
-        printf '    %-20s %7d %7d  %s\n' "$section" "$p" "$f" "$state"
+        printf '    %-20s %7d %7d  %-11s %s\n' "$section" "$p" "$f" "$state" "${SEC_TITLE[$section]:-}"
     done
 
     if (( ${#BUILT[@]} )); then
@@ -353,7 +366,7 @@ report() { # rc - summary report of the test run
 
     if (( ${#VERSION_HISTORY[@]} )); then
         echo ""
-        echo "  Installed versions:"
+        echo "  Installed versions (in the order they were installed, held: kept by apt-mark hold, none: purged):"
         local line="   " entry
         for entry in "${VERSION_HISTORY[@]}"; do
             if (( ${#line} + ${#entry} > 85 )); then
@@ -399,33 +412,45 @@ declare -A SCRIPT_VERSION=()   # Debian version -> VERSION inserted into raspiBa
 
 assertInstalled() { # debianVersion [held|unheld]
     local expected="$1" hold="${2:-unheld}" actual scriptVersion
+    local failedBefore="$FAILED" joined
+    local -a ok=()
     actual="$(installedVersion)"
     noteInstalled "$actual"
     if [[ "$actual" == "$expected" ]]; then
-        pass "$PACKAGE_NAME $expected installed"
+        passQuiet "$PACKAGE_NAME $expected installed"
+        ok+=("installed $expected")
     else
         fail "$PACKAGE_NAME $expected expected but ${actual:-nothing} installed"
         return
     fi
 
     if [[ "$hold" == held ]]; then
-        isHeld && pass "$expected is held" || fail "$expected isn't held"
+        isHeld && { passQuiet "$expected is held"; ok+=("held"); } || fail "$expected isn't held"
     else
-        isHeld && fail "$expected is held" || pass "$expected isn't held"
+        isHeld && fail "$expected is held" || { passQuiet "$expected isn't held"; ok+=("not held"); }
     fi
 
     scriptVersion="$(sed -n -E 's/^VERSION="([^"]*)".*/\1/p' "$RASPIBACKUP")"
     if [[ "$scriptVersion" == "${SCRIPT_VERSION[$expected]}" ]]; then
-        pass "raspiBackup reports version $scriptVersion"
+        passQuiet "raspiBackup reports version $scriptVersion"
+        ok+=("raspiBackup reports $scriptVersion")
     else
         fail "raspiBackup reports version '$scriptVersion' instead of '${SCRIPT_VERSION[$expected]}'"
     fi
 
     if grep -qx "$CONFIG_MARKER" "$CONFIG" 2>/dev/null; then
-        pass "configuration kept ($CONFIG_MARKER)"
+        passQuiet "configuration kept ($CONFIG_MARKER)"
+        ok+=("configuration kept")
     else
         fail "configuration changed, $CONFIG_MARKER missing in $CONFIG"
     fi
+
+    # one line for all checks which passed
+    if (( FAILED == failedBefore )); then
+        joined="$(printf '%s, ' "${ok[@]}")"
+        echo "    ok   ${joined%, }"
+    fi
+    return 0
 }
 
 assertRc() { # expectedRc description command...
@@ -433,7 +458,9 @@ assertRc() { # expectedRc description command...
     shift 2
     run "$@"
     rc=$?
-    if (( rc == expected )); then
+    if (( rc == expected && rc != 0 )); then
+        pass "$description (refused as expected, rc $rc)"
+    elif (( rc == expected )); then
         pass "$description (rc $rc)"
     else
         fail "$description: rc $rc, expected $expected"
@@ -515,7 +542,14 @@ build() { # version [--no-repo] [--revision <n>] - builds the package with build
         esac
     done
     debVersion="$(debianVersion "$version")${revision:+-$revision}"
-    step "build $version${revision:+ revision $revision} (Debian version $debVersion) ${buildOptions[*]:+(${buildOptions[*]})}"
+    local where="suite stable"
+    [[ "$debVersion" == *"~"* ]] && where="suite beta"
+    [[ " ${buildOptions[*]} " == *" --no-repo "* ]] && where=".deb only, not in the repository"
+    if [[ "$where" == suite* ]]; then
+        step "maintainer: build and publish $debVersion in $where${revision:+ (minor fix $revision of $version)}"
+    else
+        step "maintainer: build $debVersion ($where)"
+    fi
 
     { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; echo "DEB_REVISION=\"$revision\""; } > "$BUILD/build.conf"
     local -a options=("${buildOptions[@]}")
@@ -526,9 +560,7 @@ build() { # version [--no-repo] [--revision <n>] - builds the package with build
     [[ -f "$deb" && -f "$deb.sig" ]] || abort "build.sh didn't create $deb and $deb.sig"
     [[ "$(dpkg-deb -f "$deb" Version)" == "$debVersion" ]] || abort "$deb has version $(dpkg-deb -f "$deb" Version)"
     cp "$deb" "$deb.sig" "$DEBS/"
-    local where="repository"
-    [[ " ${buildOptions[*]} " == *" --no-repo "* ]] && where=".deb only"
-    BUILT+=("$(printf '%-22s %s' "$debVersion" "$where")")
+    BUILT+=("$(printf '%-22s %s' "$debVersion" "${where%%,*}")")
     SCRIPT_VERSION[$debVersion]="$version"
 }
 
@@ -544,7 +576,7 @@ aptUpdate() { # refresh only the raspiBackup repository
 }
 
 aptUpgrade() { # what 'apt-get upgrade' does to raspibackup, other packages aren't touched
-    step "apt-get upgrade"
+    step "user: apt-get upgrade"
     aptUpdate
     run apt-get -s upgrade
     if apt-get -s upgrade 2>/dev/null | grep -q "^Inst $PACKAGE_NAME "; then
@@ -552,14 +584,26 @@ aptUpgrade() { # what 'apt-get upgrade' does to raspibackup, other packages aren
     fi
 }
 
+rbcPurpose() { # options - what raspiBackupConfig does with these options
+    case " $* " in
+        *" -U "*) echo "update to the latest version" ;;
+        *" -R "*) echo "revert to the previous release and hold it" ;;
+        *" -b "*) echo "install or update the latest beta" ;;
+        *" -S "*) echo "revert the beta to the release" ;;
+        *" -m "*) echo "merge the configuration" ;;
+        *" -u "*) echo "uninstall" ;;
+        *" -i "*) echo "install" ;;
+    esac
+}
+
 rbc() { # options - raspiBackupConfig without terminal, so held packages aren't changed
-    step "raspiBackupConfig $*"
+    step "user: raspiBackupConfig $* ($(rbcPurpose "$@"), no terminal, questions are answered with no)"
     # -f: versions are published between the calls, so the package index has to be updated every time
     RASPIBACKUP_INSTALL_DEBUG=1 run "$RASPIBACKUPCONFIG" -f "$@" < /dev/null
 }
 
 rbcYes() { # options - raspiBackupConfig with a terminal answering yes
-    step "raspiBackupConfig $* (answer yes)"
+    step "user: raspiBackupConfig $* ($(rbcPurpose "$@"), answers yes)"
     log "\$ printf 'y\\n' | script -qec '$RASPIBACKUPCONFIG -f $*' /dev/null"
     printf 'y\n' | RASPIBACKUP_INSTALL_DEBUG=1 timeout 600 script -qec "$RASPIBACKUPCONFIG -f $*" /dev/null >> "$LOG" 2>&1
     local rc=$?
@@ -568,7 +612,10 @@ rbcYes() { # options - raspiBackupConfig with a terminal answering yes
 }
 
 installer() { # options - raspiBackupInstall.sh using the test repository and key
-    step "raspiBackupInstall.sh $*"
+    local purpose="install the latest release"
+    [[ "${1:-}" == --beta ]] && purpose="install the latest beta"
+    [[ "${1:-}" == *.deb ]] && purpose="install the downloaded ${1##*/}"
+    step "user: raspiBackupInstall.sh $* ($purpose)"
     (cd "$WORK" && REPO_URL="$TEST_REPO_URL" REPO_OWNER_GPG_FINGERPRINT="$GPG_FPR" run bash "$WORK/src/raspiBackupInstall.sh" -y "$@")
 }
 
@@ -577,8 +624,11 @@ installer() { # options - raspiBackupInstall.sh using the test repository and ke
 #######################################################################################################################
 
 CURRENT_SECTION="setup"
-section "Setup in $WORK"
-echo "Log: $LOG"
+section "Setup" "Clone the commit to test, create a temporary signing key and the build configuration in $WORK"
+echo "    Log: $LOG"
+echo ""
+echo "    Every '---' line is an action of the maintainer or a user, the lines below it are the checks:"
+echo "    'ok' check passed, 'FAIL' check failed. 'refused as expected' means the action had to be rejected."
 
 step "clone $SOURCE_REF ($SOURCE_COMMIT)"
 if [[ -n "$(git -C "$GIT_TOP" status --porcelain --untracked-files=no)" ]]; then
@@ -643,7 +693,7 @@ V_LATEST="$V_FIX8"            # latest release in suite stable at the end, insta
 #######################################################################################################################
 
 CURRENT_SECTION="release"
-section "1. Release update and reversal"
+section "1. Release update and reversal" "A new release is installed with raspiBackupConfig and apt, reverted to the previous release, which is held, and updated again."
 
 publish "$V_OLD"
 installer && pass "installation from repository" || fail "installation from repository"
@@ -683,7 +733,7 @@ assertInstalled "$V_REL"
 #######################################################################################################################
 
 CURRENT_SECTION="beta"
-section "2. Beta update and reversal"
+section "2. Beta update and reversal" "A beta is installed only on request, updated to the next beta, reverted to the release and finally replaced by the next release."
 
 publish "$V_BETA1"
 assertInSuite "$D_BETA1" beta
@@ -730,7 +780,7 @@ assertInstalled "$V_REL2"
 #######################################################################################################################
 
 CURRENT_SECTION="hotfix"
-section "3. Hotfix update and reversal"
+section "3. Hotfix update and reversal" "A hotfix of the release is installed like a release and reverted to the release."
 
 publish "$V_FIX1"
 assertInSuite "$V_FIX1" stable
@@ -750,7 +800,7 @@ assertInstalled "$V_FIX1"
 #######################################################################################################################
 
 CURRENT_SECTION="individual fix"
-section "4. Individual fix for one user"
+section "4. Individual fix for one user" "A fix sent to one user as .deb (not in the repository) is installed, a .deb with a wrong signature is rejected, the fix is reverted and replaced by the next public version."
 
 build "$V_UFIX1" --no-repo
 aptUpdate
@@ -795,7 +845,7 @@ assertInstalled "$V_REL3"
 #######################################################################################################################
 
 CURRENT_SECTION="version to version"
-section "5. Version to version updates and downgrades"
+section "5. Version to version updates and downgrades" "Updates skip several versions, downgrades step back over several versions, a beta is reverted to an older hotfix."
 
 publish "$V_REL4"
 publish "$V_REL5"
@@ -844,7 +894,7 @@ assertInstalled "$V_FIX5"
 # DEPRECATED of raspiBackup.properties is passed to the functions of the installed raspiBackup, see news()
 
 CURRENT_SECTION="deprecated"
-section "6. Deprecated versions"
+section "6. Deprecated versions" "raspiBackup reports new versions, betas and deprecated versions (DEPRECATED of raspiBackup.properties) after a backup. Minor fixes are installed but not reported."
 
 publish "$V_REL6"
 aptUpgrade
@@ -911,7 +961,7 @@ assertNews "no news" "BETAVERSION_AVAILABLE $D_BETA9_2" ""
 #######################################################################################################################
 
 CURRENT_SECTION="uninstall"
-section "Uninstall"
+section "Uninstall" "apt-get purge removes the package, its configuration and its state."
 
 assertRc 0 "purge" apt-get purge -y "$PACKAGE_NAME"
 noteInstalled "$(installedVersion)"
@@ -924,7 +974,7 @@ noteInstalled "$(installedVersion)"
 #######################################################################################################################
 
 CURRENT_SECTION="migration"
-section "7. Migration of an installation without apt and its reversal"
+section "7. Migration of an installation without apt and its reversal" "An installation made by raspiBackupInstallUI.sh is migrated to the package, keeping configuration, extensions and timer. revertMigration.sh restores it."
 
 V_LEGACY="0.7.4"
 readonly LEGACY_REF="$WORK/legacy"     # copy of the installation without apt to compare with
@@ -1072,7 +1122,7 @@ noteInstalled "$(installedVersion)"
 #######################################################################################################################
 
 CURRENT_SECTION="config merge"
-section "8. Configuration merge by apt-get upgrade (postinst calls raspiBackupConfig -m)"
+section "8. Configuration merge by apt-get upgrade" "A plain apt-get upgrade to a version with a newer config template adds new options and comments out deleted ones (postinst calls raspiBackupConfig -m). A downgrade doesn't change the configuration, purge deletes the saved copies."
 
 V_CONF="0.9.10"                                   # its config templates have a newer config version
 readonly NEW_OPTION="DEFAULT_PKGTEST_NEW_OPTION"  # added by the newer templates
@@ -1146,7 +1196,7 @@ fi
 #######################################################################################################################
 
 CURRENT_SECTION="pre-release cycle"
-section "9. Pre-release cycle alpha1, alpha2, beta1, beta2, rc1, rc2 and release"
+section "9. Pre-release cycle" "alpha1, alpha2, beta1, beta2, rc1, rc2 and the release are published one after the other. Stable users don't get pre-releases, a tester gets each of them and finally the release."
 
 # all pre-releases go into suite beta, VERSION -> Debian version like build.sh: 0.9.11-alpha1 -> 0.9.11~alpha1
 V_ALPHA11_1="0.9.11-alpha1";  D_ALPHA11_1="$(debianVersion "$V_ALPHA11_1")"
