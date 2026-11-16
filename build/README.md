@@ -83,6 +83,10 @@ Notes:
   the committed sources stay unchanged.
 - raspiBackup detects new releases, hotfixes and betas in the repository itself (once a day
   `apt-get update` of the raspiBackup repository only) and reports them after the backup.
+  Users of a release get new releases and betas reported, no alphas and release candidates.
+  Users of a pre-release get a new release reported first. If there is none, newer betas and
+  release candidates, users of an alpha also newer alphas. A pre-release is only reported if it's
+  the newest one. The update menu of `raspiBackupConfig` (and `-b`) offers all of them.
   `raspiBackup.properties` isn't needed for that. Its `DEPRECATED` (versions separated by blanks or
   commas, e.g. `DEPRECATED="0.7.5 0.7.6-beta1"`) is still used: these versions are never reported
   as update or beta, and users running one of them get a warning. A version includes all versions

@@ -5721,13 +5721,36 @@ function updatePackageReminder() { # version - true if the update to version sho
 #   - releases and hotfixes in suite stable for all users, also for users of an individual fix
 #   - newer betas and the following release for beta testers (installed version is in suite beta)
 #   - a beta newer than the latest release for all others
+function preReleaseKind() { # debianVersion - alpha, beta or rc for a pre-release, empty for a release
+	[[ "$1" =~ ~(alpha|beta|rc) ]] && echo "${BASH_REMATCH[1]}"
+}
+
+function isReportedPreRelease() { # version installedVersion - betas are reported to everybody, rcs to users of a pre-release, alphas to users of an alpha
+	local installedKind
+	installedKind="$(preReleaseKind "$2")"
+	case "$(preReleaseKind "$1")" in
+		beta) return 0 ;;
+		rc) [[ -n "$installedKind" ]] ;;
+		alpha) [[ "$installedKind" == alpha ]] ;;
+		*) return 1 ;;
+	esac
+}
+
+function reportedPreReleases() { # installedVersion - pre-releases read from stdin which are reported to users of the installed version
+	local version
+	while read -r version; do
+		[[ -z "$version" ]] && continue
+		isReportedPreRelease "$version" "$1" && echo "$version"
+	done
+}
+
 function reportPackageNews() {
 
 	logEntry
 
 	(( ! REGRESSION_TEST )) && refreshPackageIndex
 
-	local installed candidate stableVersions betaVersions update latestRelease beta isBetaTester=0
+	local installed candidate stableVersions betaVersions update latestRelease beta newestPreRelease isBetaTester=0
 
 	installed="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
 	candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
@@ -5736,7 +5759,18 @@ function reportPackageNews() {
 
 	if grep -qxF -- "$installed" <<< "$betaVersions"; then
 		isBetaTester=1
-		update="$(printf '%s\n%s\n' "$stableVersions" "$betaVersions" | withoutDeprecatedVersions | highestVersion "$installed")"
+		# a new release first, pre-releases only if there is none. raspiBackupConfig offers all pre-releases,
+		# here alphas are reported to users of an alpha only and rcs to users of a pre-release only
+		update="$(withoutDeprecatedVersions <<< "$stableVersions" | highestVersion "$installed")"
+		if [[ -z "$update" ]]; then
+			update="$(reportedPreReleases "$installed" <<< "$betaVersions" | withoutDeprecatedVersions | highestVersion "$installed")"
+			# a pre-release only if it's the newest one, apt upgrade installs the newest one
+			newestPreRelease="$(withoutDeprecatedVersions <<< "$betaVersions" | highestVersion "$installed")"
+			if [[ -n "$update" && "$update" != "$newestPreRelease" ]]; then
+				logItem "Not reporting $update, the newer pre-release $newestPreRelease isn't reported"
+				update=""
+			fi
+		fi
 	else
 		update="$(withoutDeprecatedVersions <<< "$stableVersions" | highestVersion "$installed")"
 	fi
@@ -5768,6 +5802,10 @@ function reportPackageNews() {
 		latestRelease="$(printf '%s\n%s\n' "$installed" "$stableVersions" | highestVersion)"
 		beta="$(withoutDeprecatedVersions <<< "$betaVersions" | highestVersion "$latestRelease")"
 		logItem "latest release: $latestRelease beta: $beta"
+		if [[ -n "$beta" ]] && ! isReportedPreRelease "$beta" "$installed"; then	# users of a release get betas only, no alphas and rcs
+			logItem "Not reporting pre-release $beta"
+			beta=""
+		fi
 		if [[ -n "$beta" ]]; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_BETAVERSION_AVAILABLE "$beta"
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"

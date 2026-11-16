@@ -44,12 +44,17 @@ and raspiBackupConfig -U/-R/-b/-S that
        to an older hotfix
     6. raspiBackup reports new versions, minor fixes (DEB_REVISION) and deprecated versions
        according to DEPRECATED of raspiBackup.properties
+    In sections 1, 2, 3 and 9 raspiBackup (after a backup) and raspiBackupConfig (update menu M3)
+    have to report the new versions available.
     7. an installation without apt (raspiBackupInstallUI.sh, install.sh) is migrated to the
        package and the migration is reverted with revertMigration.sh
     8. a plain apt-get upgrade to a version with a newer config template merges the
        configuration (postinst calls raspiBackupConfig -m), a downgrade doesn't change it
     9. the pre-release cycle alpha1, alpha2, beta1, beta2, rc1, rc2 and the release:
-       suites, updates of testers, no updates for stable users, news and reversal
+       suites, updates of testers, no updates for stable users, news and reversal.
+       raspiBackup reports betas to users of a release. Users of a pre-release get a new release
+       first, otherwise newer betas and rcs, users of an alpha also newer alphas.
+       raspiBackupConfig offers all of them.
 
 Only committed changes are tested: the sources are cloned from git.
 
@@ -480,7 +485,8 @@ assertInSuite() { # debianVersion suite|none
 
 # functions of the installed raspiBackup which report new versions and deprecated versions after a backup
 readonly NEWS_FUNCTIONS=(debianVersion isVersionInList isPackageInstalled isPackageHeld packageSuiteVersions highestVersion withoutDebianRevision
-    withoutDeprecatedVersions updatePackageReminder reportPackageNews isVersionDeprecated runningVersion)
+    withoutDeprecatedVersions updatePackageReminder reportPackageNews isVersionDeprecated runningVersion
+    preReleaseKind isReportedPreRelease reportedPreReleases)
 
 news() { # deprecated [skipDeprecated] - messages of the installed raspiBackup about versions, one per line
          # deprecated: DEPRECATED of raspiBackup.properties, skipDeprecated: SKIP_DEPRECATED of the configuration
@@ -520,6 +526,31 @@ assertNews() { # description expected deprecated [skipDeprecated] - expected: me
     else
         fail "$description (DEPRECATED='$3'${4:+ SKIP_DEPRECATED='$4'}): '${actual}' instead of '${expected}'"
     fi
+}
+
+offers() { # what the update menu M3 of the installed raspiBackupConfig offers, - for not available:
+            # "P1 <update> P2 <previous release> P3 <beta> P4 <revert beta to release>", same as options -U, -R, -b, -S
+    (cd "$WORK" && bash -c 'source "$1" > /dev/null 2>&1 || exit 1
+        LOG_FILE=/dev/null
+        parsePackageVersions
+        echo "P1 ${PACKAGE_OFFER_UPDATE:--} P2 ${PACKAGE_VERSION_PREVIOUS:--} P3 ${PACKAGE_OFFER_BETA:--} P4 ${PACKAGE_OFFER_REVERT_BETA:--}"' \
+        _ "$RASPIBACKUPCONFIG" 2>> "$LOG")
+}
+
+assertOffers() { # description expected - expected: output of offers()
+    local description="$1" expected="$2" actual
+    actual="$(offers)"
+    log "raspiBackupConfig update menu: $actual"
+    if [[ "$actual" == "$expected" ]]; then
+        pass "raspiBackupConfig offers $description: $expected"
+    else
+        fail "raspiBackupConfig offers '$actual' instead of '$expected' ($description)"
+    fi
+}
+
+assertAvailable() { # description news offers - new versions reported by raspiBackup (see news()) and raspiBackupConfig (see offers())
+    assertNews "raspiBackup reports $1" "$2" ""
+    assertOffers "$1" "$3"
 }
 
 #######################################################################################################################
@@ -700,13 +731,18 @@ installer && pass "installation from repository" || fail "installation from repo
 assertInSuite "$V_OLD" stable
 sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
 assertInstalled "$V_OLD"
+assertAvailable "nothing new" "" "P1 - P2 - P3 - P4 -"
 
 publish "$V_REL"
+assertAvailable "the new release" "NEW_VERSION_AVAILABLE $V_REL $V_OLD" "P1 $V_REL P2 - P3 - P4 -"
 assertRc 0 "update to new release" rbc -U
 assertInstalled "$V_REL"
+assertAvailable "no newer version, the previous release" "" "P1 - P2 $V_OLD P3 - P4 -"
 
 assertRc 0 "revert to previous release" rbc -R
 assertInstalled "$V_OLD" held
+assertAvailable "the release to a held version, it has to be installed with apt-get install" \
+    "NEW_PACKAGE_VERSION_INSTALL $V_REL $V_OLD $V_REL" "P1 $V_REL P2 - P3 - P4 -"
 
 aptUpgrade
 assertInstalled "$V_OLD" held
@@ -737,6 +773,7 @@ section "2. Beta update and reversal" "A beta is installed only on request, upda
 
 publish "$V_BETA1"
 assertInSuite "$D_BETA1" beta
+assertAvailable "the beta to stable users" "BETAVERSION_AVAILABLE $D_BETA1" "P1 - P2 $V_OLD P3 $D_BETA1 P4 -"
 
 aptUpgrade
 assertInstalled "$V_REL"
@@ -747,6 +784,7 @@ assertInstalled "$V_REL"
 
 assertRc 0 "install beta" rbc -b
 assertInstalled "$D_BETA1"
+assertAvailable "nothing new to the beta tester, the reversal to the release" "" "P1 - P2 - P3 - P4 $V_REL"
 assertRc 1 "no newer beta" rbc -b
 assertInstalled "$D_BETA1"
 assertRc 0 "revert beta to release" rbc -S
@@ -784,6 +822,7 @@ section "3. Hotfix update and reversal" "A hotfix of the release is installed li
 
 publish "$V_FIX1"
 assertInSuite "$V_FIX1" stable
+assertAvailable "the hotfix" "NEW_VERSION_AVAILABLE $V_FIX1 $V_REL2" "P1 $V_FIX1 P2 $V_REL P3 - P4 -"
 aptUpgrade
 assertInstalled "$V_FIX1"
 
@@ -1226,7 +1265,8 @@ aptUpgrade
 assertInstalled "$V_CONF"
 assertRc 0 "update doesn't install an alpha" rbc -U
 assertInstalled "$V_CONF"
-assertNews "alpha is reported to stable users" "BETAVERSION_AVAILABLE $D_ALPHA11_1" ""
+assertNews "alpha isn't reported to stable users" "" ""
+assertOffers "the alpha to stable users" "P1 - P2 $V_FIX8 P3 $D_ALPHA11_1 P4 -"
 
 # a tester installs the alpha and gets every newer pre-release
 assertRc 0 "install alpha" rbc -b
@@ -1235,47 +1275,55 @@ assertNews "no news for alpha tester" "" ""
 
 publish "$V_ALPHA11_2"
 assertInSuite "$D_ALPHA11_2" beta
-assertNews "newer alpha is reported to tester" "NEW_VERSION_AVAILABLE $D_ALPHA11_2 $D_ALPHA11_1" ""
+assertNews "newer alpha is reported to alpha tester" "NEW_VERSION_AVAILABLE $D_ALPHA11_2 $D_ALPHA11_1" ""
+assertOffers "the newer alpha to the alpha tester" "P1 $D_ALPHA11_2 P2 - P3 $D_ALPHA11_2 P4 $V_CONF"
 aptUpgrade
 assertInstalled "$D_ALPHA11_2"
 
 publish "$V_BETA11_1"
 assertInSuite "$D_BETA11_1" beta
+assertNews "beta is reported to alpha tester" "NEW_VERSION_AVAILABLE $D_BETA11_1 $D_ALPHA11_2" ""
 aptUpgrade
 assertInstalled "$D_BETA11_1"
 
 publish "$V_BETA11_2"
 assertInSuite "$D_BETA11_2" beta
+assertNews "newer beta is reported to beta tester" "NEW_VERSION_AVAILABLE $D_BETA11_2 $D_BETA11_1" ""
 assertRc 0 "update beta to newer beta" rbc -U
 assertInstalled "$D_BETA11_2"
 
 publish "$V_RC11_1"
 assertInSuite "$D_RC11_1" beta
-assertNews "release candidate is reported to tester" "NEW_VERSION_AVAILABLE $D_RC11_1 $D_BETA11_2" ""
+assertNews "release candidate is reported to beta tester" "NEW_VERSION_AVAILABLE $D_RC11_1 $D_BETA11_2" ""
 aptUpgrade
 assertInstalled "$D_RC11_1"
+assertOffers "the reversal of the release candidate to the release" "P1 - P2 - P3 - P4 $V_CONF"
 
 # a release candidate is reverted like a beta, not like a release
 assertRc 1 "release candidate isn't reverted like a release" rbc -R
 assertInstalled "$D_RC11_1"
 assertRc 0 "revert release candidate to release" rbc -S
 assertInstalled "$V_CONF"
-assertNews "release candidate is reported after the reversal" "BETAVERSION_AVAILABLE $D_RC11_1" ""
+assertNews "release candidate isn't reported to stable users" "" ""
+assertOffers "the release candidate to stable users" "P1 - P2 $V_FIX8 P3 $D_RC11_1 P4 -"
 assertRc 0 "install release candidate again" rbc -b
 assertInstalled "$D_RC11_1"
 
 publish "$V_RC11_2"
 assertInSuite "$D_RC11_2" beta
+assertNews "newer release candidate is reported to rc tester" "NEW_VERSION_AVAILABLE $D_RC11_2 $D_RC11_1" ""
 aptUpgrade
 assertInstalled "$D_RC11_2"
 
 # the release ends the cycle, the tester is back on stable
 publish "$V_REL11"
 assertInSuite "$V_REL11" stable
-assertNews "release is reported to tester" "NEW_VERSION_AVAILABLE $V_REL11 $D_RC11_2" ""
+assertNews "release is reported to rc tester" "NEW_VERSION_AVAILABLE $V_REL11 $D_RC11_2" ""
+assertOffers "the release to the tester" "P1 $V_REL11 P2 - P3 - P4 -"
 aptUpgrade
 assertInstalled "$V_REL11"
 assertNews "no news after the release, older pre-releases aren't reported" "" ""
+assertOffers "the previous release only after the release" "P1 - P2 $V_CONF P3 - P4 -"
 assertRc 1 "no pre-release newer than the release" rbc -b
 assertInstalled "$V_REL11"
 assertRc 1 "release isn't reverted like a pre-release" rbc -S
