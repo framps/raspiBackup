@@ -14,7 +14,8 @@ Contents of this file:
 3. [Beta versions](#3-beta-versions) (maintainer and users)
 4. [Revert to a previous release](#4-revert-to-a-previous-release) (users and maintainer)
 5. [How the package is verified](#5-how-the-package-is-verified)
-6. [Files in this directory](#6-files-in-this-directory)
+6. [Test the package](#6-test-the-package) (maintainer)
+7. [Files in this directory](#7-files-in-this-directory)
 
 ---
 
@@ -741,7 +742,93 @@ GitHub account and for commits made in the web interface (signed by GitHub's key
 
 ---
 
-## 6. Files in this directory
+## 6. Test the package
+
+`build/test/testPackageUpdates.sh` checks the whole life cycle of the package with real apt:
+it builds test versions, publishes them in a local signed repository (`file://`, temporary GPG
+key) and installs, updates, reverts and uninstalls them with apt, `raspiBackupInstall.sh` and
+`raspiBackupConfig`. What each section checks is listed by `./testPackageUpdates.sh -h`.
+
+### Requirements
+
+- **A test system only**, e.g. a spare Raspberry or a VM. The test installs, downgrades and purges
+  the package `raspibackup` and its dependencies. It refuses to start if `raspibackup` or its
+  repository is installed (`--force` removes them first) or if an installation without apt exists.
+- root (`sudo`), git, gnupg, apt-utils, gettext-base, bsdutils and curl (lintian for `-l`).
+  The system repositories have to be reachable for the dependencies.
+- **Don't use apt in parallel.** apt allows only one run at a time. If something is installed or
+  updated during the test (also by `unattended-upgrades`), the next apt command of the test fails
+  and the check looks like an error of `raspiBackupConfig` (e.g. `RBI0004E`).
+- Only committed changes are tested, the test fetches the commit to test from the local git
+  repository. Push them and pull them on the test system first.
+- It takes about 30 minutes on a CM4. The work directory needs only a few MB in `/var/tmp`
+  (`-w` selects another directory, `/tmp` is a small tmpfs on Debian 13).
+
+### Run it
+
+```
+cd ~/github.com/framps/raspiBackup
+git pull
+cd build/test
+sudo ./testPackageUpdates.sh                 # -k keeps package, repository and work directory, -x stops at the first failure
+```
+
+The test doesn't need a terminal. To run it without keeping a terminal or SSH session open,
+start it in the background and follow its output, e.g. from another login:
+
+```
+sudo sh -c 'nohup ./testPackageUpdates.sh > /var/tmp/packageTest.out 2>&1 < /dev/null &'
+tail -f /var/tmp/packageTest.out                       # Ctrl-C ends tail only, not the test
+grep '^=== \[' /var/tmp/packageTest.out | tail -1      # current section, e.g. [5/11]
+grep FAIL /var/tmp/packageTest.out                     # failures so far
+pgrep -af testPackageUpdates.sh                        # still running?
+```
+
+Interrupting the test (Ctrl-C, a closed SSH session) leaves an incomplete run. Start it in the
+background as above if the session might be closed. Check afterwards with `dpkg -l raspibackup` and
+`ls /etc/apt/sources.list.d/raspibackup.sources` whether package and repository are left, the
+next run refuses to start otherwise (`--force` removes them).
+
+### Output, report and log
+
+- `=== [n/11] ...` starts a section and tells what it checks.
+- `--- ...` is an action of the maintainer or a user.
+- `$ ...` below it are the exact commands executed. They can be copied and repeated manually.
+- `ok ...` and `FAIL ...` are the checks. `refused as expected` means the action had to be rejected.
+
+At the end a summary report is displayed: result, passed and failed checks per section, packages
+built, the order of the installed versions and the failures. Afterwards the system is cleaned up:
+the package is purged and the test repository removed. Kept are
+
+| File | Contents |
+|------|----------|
+| `/var/tmp/raspiBackupPkgTest.XXXXXX.report` | summary report |
+| `/var/tmp/raspiBackupPkgTest.XXXXXX.log` | complete log: every command with its output and exit code (`rc=`), every check |
+| `/var/tmp/raspiBackupPkgTest.XXXXXX/` | work directory with `test.log`, packages and repository, only with `-k` or after a failure |
+
+If a check failed, the work directory, the package and the repository are kept to analyse the
+failure. The end of the report tells how to remove them. In the log the output of the command
+which failed is right above the `FAIL` line, `grep -B1 '^rc=[1-9]' <log>` lists all failed commands.
+`/var/tmp` isn't cleared on reboot, delete old reports and logs with
+`sudo rm /var/tmp/raspiBackupPkgTest.*.{report,log}`.
+
+### Run it on GitHub
+
+Without a test system the test can run on a GitHub arm64 runner (Ubuntu). It needs the GitHub CLI
+`gh` authenticated with `gh auth login`:
+
+```
+cd build/test
+./testPackageUpdatesOnGitHub.sh              # tests the pushed HEAD, waits and displays the report
+```
+
+It pushes a temporary branch `test-packageTest` with the workflow `packageTest.yml`, waits for the
+result and deletes the branch. Report and log are downloaded to `build/test/packageTest-results/<run id>/`.
+`-n` only starts the test. Only committed and pushed changes are tested.
+
+---
+
+## 7. Files in this directory
 
 ```
                                                                               set in       set in        in
