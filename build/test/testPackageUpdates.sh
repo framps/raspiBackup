@@ -303,8 +303,25 @@ abort() { # unrecoverable, e.g. build failed
     exit 2
 }
 
-run() { # command - runs it, output goes into the log
+showCommand() { # command - the command as it can be typed, arguments with blanks or special characters quoted
+    local arg line=""
+    for arg in "$@"; do
+        if [[ "$arg" =~ ^[A-Za-z0-9_./:=,~+@%-]+$ ]]; then
+            line+=" $arg"
+        else
+            line+=" '${arg//\'/\'\\\'\'}'"
+        fi
+    done
+    echo "${line# }"
+}
+
+showRun() { # line - shows a command on the console and in the log
+    echo "         \$ $*"
     log "\$ $*"
+}
+
+run() { # command - runs it, output goes into the log, the command is shown on the console too
+    showRun "$(showCommand "$@")"
     "$@" >> "$LOG" 2>&1
     local rc=$?
     log "rc=$rc"
@@ -630,12 +647,12 @@ rbcPurpose() { # options - what raspiBackupConfig does with these options
 rbc() { # options - raspiBackupConfig without terminal, so held packages aren't changed
     step "user: raspiBackupConfig $* ($(rbcPurpose "$@"), no terminal, questions are answered with no)"
     # -f: versions are published between the calls, so the package index has to be updated every time
-    RASPIBACKUP_INSTALL_DEBUG=1 run "$RASPIBACKUPCONFIG" -f "$@" < /dev/null
+    run env RASPIBACKUP_INSTALL_DEBUG=1 "$RASPIBACKUPCONFIG" -f "$@" < /dev/null
 }
 
 rbcYes() { # options - raspiBackupConfig with a terminal answering yes
     step "user: raspiBackupConfig $* ($(rbcPurpose "$@"), answers yes)"
-    log "\$ printf 'y\\n' | script -qec '$RASPIBACKUPCONFIG -f $*' /dev/null"
+    showRun "printf 'y\\n' | RASPIBACKUP_INSTALL_DEBUG=1 timeout 600 script -qec '$RASPIBACKUPCONFIG -f $*' /dev/null"
     printf 'y\n' | RASPIBACKUP_INSTALL_DEBUG=1 timeout 600 script -qec "$RASPIBACKUPCONFIG -f $*" /dev/null >> "$LOG" 2>&1
     local rc=$?
     log "rc=$rc"
@@ -646,8 +663,8 @@ installer() { # options - raspiBackupInstall.sh using the test repository and ke
     local purpose="install the latest release"
     [[ "${1:-}" == --beta ]] && purpose="install the latest beta"
     [[ "${1:-}" == *.deb ]] && purpose="install the downloaded ${1##*/}"
-    step "user: raspiBackupInstall.sh $* ($purpose)"
-    (cd "$WORK" && REPO_URL="$TEST_REPO_URL" REPO_OWNER_GPG_FINGERPRINT="$GPG_FPR" run bash "$WORK/src/raspiBackupInstall.sh" -y "$@")
+    step "user: raspiBackupInstall.sh${*:+ $*} ($purpose)"
+    (cd "$WORK" && run env REPO_URL="$TEST_REPO_URL" REPO_OWNER_GPG_FINGERPRINT="$GPG_FPR" bash "$WORK/src/raspiBackupInstall.sh" -y "$@")
 }
 
 #######################################################################################################################
@@ -658,7 +675,8 @@ CURRENT_SECTION="setup"
 section "Setup" "Clone the commit to test, create a temporary signing key and the build configuration in $WORK"
 echo "    Log: $LOG"
 echo ""
-echo "    Every '---' line is an action of the maintainer or a user, the lines below it are the checks:"
+echo "    Every '---' line is an action of the maintainer or a user, the '\$' lines below it are the exact"
+echo "    commands executed (their output is in the log), then the checks follow:"
 echo "    'ok' check passed, 'FAIL' check failed. 'refused as expected' means the action had to be rejected."
 
 step "clone $SOURCE_REF ($SOURCE_COMMIT)"
@@ -729,7 +747,7 @@ section "1. Release update and reversal" "A new release is installed with raspiB
 publish "$V_OLD"
 installer && pass "installation from repository" || fail "installation from repository"
 assertInSuite "$V_OLD" stable
-sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
+run sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
 assertInstalled "$V_OLD"
 assertAvailable "nothing new" "" "P1 - P2 - P3 - P4 -"
 
@@ -855,8 +873,8 @@ assertInstalled "$V_UFIX1"
 build "$V_UFIX2" --no-repo
 
 step "package with wrong signature is rejected"
-cp "$DEBS/${PACKAGE_NAME}_${V_UFIX2}.deb" "$WORK/tampered.deb"
-cp "$DEBS/${PACKAGE_NAME}_${V_UFIX1}.deb.sig" "$WORK/tampered.deb.sig"
+run cp "$DEBS/${PACKAGE_NAME}_${V_UFIX2}.deb" "$WORK/tampered.deb"
+run cp "$DEBS/${PACKAGE_NAME}_${V_UFIX1}.deb.sig" "$WORK/tampered.deb.sig"
 installer "$WORK/tampered.deb" && fail "package with wrong signature installed" || pass "package with wrong signature rejected"
 assertInstalled "$V_UFIX1"
 
@@ -1045,7 +1063,7 @@ createLegacy() { # version - installation like raspiBackupInstallUI.sh creates i
     ln -sfn raspiBackupInstallUI.sh "${LEGACY_INSTALLER%.sh}"
 
     install -m 600 "$WORK/src/config/raspiBackup_en.conf" "$CONFIG"
-    sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
+    run sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
 
     if (( HAS_SYSTEMD )); then
         cp "$WORK/src/installation/raspiBackup.service" "$WORK/src/installation/raspiBackup.timer" /etc/systemd/system/
@@ -1135,7 +1153,7 @@ run "$LEGACY_DIR/revertMigration.sh" < /dev/null
 assertInstalled "$V_LATEST"
 
 step "revertMigration.sh confirmed (README section 2)"
-log "\$ printf 'y\\n' | $LEGACY_DIR/revertMigration.sh"
+showRun "printf 'y\\n' | $LEGACY_DIR/revertMigration.sh"
 printf 'y\n' | "$LEGACY_DIR/revertMigration.sh" >> "$LOG" 2>&1
 rc=$?
 log "rc=$rc"
@@ -1172,7 +1190,7 @@ configVersion() { # file - VERSION_CONFIG of a configuration or template
 }
 
 installer && pass "installation from repository" || fail "installation from repository"
-sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
+run sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
 assertInstalled "$V_LATEST"
 OLD_CONFIG_VERSION="$(configVersion "$CONFIG")"
 NEW_CONFIG_VERSION="${OLD_CONFIG_VERSION%.*}.$(( ${OLD_CONFIG_VERSION##*.} + 1 ))"
@@ -1255,7 +1273,7 @@ done
 (( ordered )) && pass "$(printf '%s < ' "${order[@]}" | sed 's/ < $//')"
 
 installer && pass "installation from repository" || fail "installation from repository"
-sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
+run sed -i -E "s/^${CONFIG_MARKER%%=*}=.*/$CONFIG_MARKER/" "$CONFIG"
 assertInstalled "$V_CONF"
 
 # stable users don't get pre-releases, they are only reported
