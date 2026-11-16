@@ -50,7 +50,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          for report in /tmp/raspiBackupPkgTest.*.report; do
+          for report in /var/tmp/raspiBackupPkgTest.*.report; do
               [[ -f "$report" ]] || continue
               { echo '```'; cat "$report"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           done
@@ -61,7 +61,7 @@ jobs:
         with:
           name: packageTest
           path: |
-            /tmp/raspiBackupPkgTest.*.report
-            /tmp/raspiBackupPkgTest.*.log
+            /var/tmp/raspiBackupPkgTest.*.report
+            /var/tmp/raspiBackupPkgTest.*.log
           if-no-files-found: ignore
           retention-days: 14

@@ -49,7 +49,7 @@ and raspiBackupConfig -U/-R/-b/-S that
 
 Only committed changes are tested: the sources are cloned from git.
 
-At the end a summary report is displayed and saved in /tmp/raspiBackupPkgTest.*.report
+At the end a summary report is displayed and saved in <workdir>/raspiBackupPkgTest.*.report
 (result per section, version history, packages built, failures and duration).
 
 RUN IT ON A TEST SYSTEM ONLY (VM, spare Raspberry). It installs, downgrades and purges
@@ -62,6 +62,8 @@ The system repositories have to be reachable to install the dependencies.
 Options:
 
     -s | --source <ref>  git branch, tag or commit to test (default: HEAD)
+    -w | --workdir <dir> directory for the work directory, report and log (default: /var/tmp)
+                         /tmp is often a small tmpfs, e.g. on Debian 13 half of the RAM
     -l | --lintian       check the packages with lintian (slow)
     -f | --force         purge an installed raspibackup and remove its repository first
     -k | --keep          keep the work directory, package and repository afterwards
@@ -72,6 +74,7 @@ EOF_USAGE
 }
 
 SOURCE_REF="HEAD"
+WORK_BASE="/var/tmp"   # /tmp is a tmpfs on Debian 13, too small on systems with little RAM
 LINTIAN=0
 FORCE=0
 KEEP=0
@@ -81,6 +84,7 @@ while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         -s|--source) SOURCE_REF="${2:?missing git reference}"; shift 2 ;;
+        -w|--workdir) WORK_BASE="${2:?missing directory}"; shift 2 ;;
         -l|--lintian) LINTIAN=1; shift ;;
         -f|--force) FORCE=1; shift ;;
         -k|--keep) KEEP=1; shift ;;
@@ -159,7 +163,8 @@ fi
 # work directory, cleanup and logging
 #######################################################################################################################
 
-WORK="$(mktemp -d /tmp/raspiBackupPkgTest.XXXXXX)"
+[[ -d "$WORK_BASE" ]] || { echo "Work directory $WORK_BASE doesn't exist"; exit 1; }
+WORK="$(mktemp -d "$WORK_BASE/raspiBackupPkgTest.XXXXXX")"
 readonly WORK
 chmod 755 "$WORK"   # apt reads the file:// repository
 readonly BUILD="$WORK/src/build"
@@ -204,7 +209,7 @@ cleanup() {
         rm -f "$SOURCES" "$KEYRING" /var/lib/apt/lists/*raspiBackupPkgTest*
         removeLegacy
         if (( rc != 0 )); then
-            cp "$LOG" "/tmp/$(basename "$WORK").log" 2>/dev/null && echo "Log saved in /tmp/$(basename "$WORK").log"
+            cp "$LOG" "$WORK.log" 2>/dev/null && echo "Log saved in $WORK.log"
         fi
         rm -rf "$WORK"
     fi
@@ -226,7 +231,7 @@ ABORT_REASON=""
 FAIL_FAST_STOP=0
 START_EPOCH="$(date +%s)"
 START_DATE="$(date '+%Y-%m-%d %H:%M:%S')"
-REPORT="/tmp/${WORK##*/}.report"
+REPORT="$WORK.report"
 readonly REPORT
 
 log() { echo "$*" >> "$LOG"; }
@@ -371,7 +376,7 @@ report() { # rc - summary report of the test run
     if (( KEEP )); then
         echo "  Log:    $LOG"
     elif (( rc != 0 )); then
-        echo "  Log:    /tmp/${WORK##*/}.log"    # saved by cleanup
+        echo "  Log:    $WORK.log"    # saved by cleanup
     fi
     echo "  Report: $REPORT"
     echo "======================================================================================="
@@ -575,8 +580,10 @@ step "clone $SOURCE_REF ($SOURCE_COMMIT)"
 if [[ -n "$(git -C "$GIT_TOP" status --porcelain --untracked-files=no)" ]]; then
     echo "    Note: uncommitted changes in $GIT_TOP aren't tested"
 fi
-run git clone -q "$GIT_TOP" "$WORK/src" || abort "git clone failed"
-run git -C "$WORK/src" checkout -q --detach "$SOURCE_COMMIT" || abort "git checkout $SOURCE_COMMIT failed"
+# only the commit to test, the whole history doesn't fit into a small work directory
+run git init -q "$WORK/src" || abort "git init failed"
+run git -C "$WORK/src" fetch -q --depth 1 "file://$GIT_TOP" "$SOURCE_COMMIT" || abort "git fetch $SOURCE_COMMIT failed"
+run git -C "$WORK/src" checkout -q --detach FETCH_HEAD || abort "git checkout $SOURCE_COMMIT failed"
 
 step "create temporary signing key"
 run gpg --batch --passphrase '' --quick-gen-key "raspiBackup package test <test@example.invalid>" rsa3072 sign 1d \
