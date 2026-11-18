@@ -5476,7 +5476,7 @@ function debianVersion() { # version - the version as used by the Debian package
 
 function isVersionInList() { # version list - true if version is in the list separated by blanks or commas, e.g. DEPRECATED
 	# An entry includes all versions derived from it (entry or entry[!0-9]*): 1.2.3 matches 1.2.3, 1.2.3~1, 1.2.3-rc1,
-	# 1.2.3-beta, 1.2.3-1, 1.2.3-m1, 1.2.3-m1~u972.1, 1.2.3.1, ... but not 1.2.30
+	# 1.2.3-beta, 1.2.3-1, 1.2.3-m1, 1.2.3-m1+m972.1, 1.2.3.1, ... but not 1.2.30
 	local version entry
 	version="$(debianVersion "$1")"
 	for entry in ${2//,/ }; do
@@ -5610,7 +5610,8 @@ function updatePackageReminder() { # version - true if the update to version sho
 # Reports new versions in the apt repository, used if raspiBackup is installed as Debian package.
 # Versions listed in DEPRECATED of the properties file are never reported.
 # Minor fixes of the installed version (0.7.5 -> 0.7.5-1) aren't reported, apt upgrade installs them.
-#   - releases and hotfixes in suite stable for all users, also for users of an individual fix
+#   - releases and hotfixes in suite stable for all users, also for the tester of a fix of a branch
+#     (raspiBackupConfig -F, e.g. 0.7.5-m1+m972.1). The fixes are in no suite, so they are never reported.
 #   - newer betas and the following release for beta testers (installed version is in suite beta)
 #   - a beta newer than the latest release for all others
 function preReleaseKind() { # debianVersion - alpha, beta or rc for a pre-release, empty for a release

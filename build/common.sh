@@ -36,6 +36,10 @@ readonly DEB_TGT
 REPO="$BUILD_HOME/repo"
 # shellcheck disable=2034
 readonly REPO
+# fixes of branches for one tester, published with the repository but in no suite (build.sh --fix)
+FIXES_DIR="fixes"
+# shellcheck disable=2034
+readonly FIXES_DIR
 
 function show() {
 	local l=${#1}
@@ -59,3 +63,36 @@ function err() {
     exit 42
 }
 
+# fix of a branch for one tester, built with build.sh --fix: 0.7.5-m1+m972.1, 0.7.5-0+m972.2
+function is_fix_version() { # version
+    [[ "$1" =~ \+m[0-9]+\.[0-9]+$ ]]
+}
+
+# build of a fix branch with its VERSION 0.7.5-m_972 -> 0.7.5-m-972, never published
+function is_fix_branch_build() { # version
+    [[ "$1" =~ -m-[0-9]+ ]]
+}
+
+# highest Debian version read from stdin
+function highest_debian_version() {
+    local v highest=""
+    while read -r v; do
+        [[ -z "$v" ]] && continue
+        if [[ -z "$highest" ]] || dpkg --compare-versions "$v" gt "$highest"; then
+            highest="$v"
+        fi
+    done
+    echo "$highest"
+}
+
+# writes the file name of the newest fix of a fix directory into its file 'latest', raspiBackupConfig -F reads it
+function update_fix_index() { # directory of a fix branch, e.g. repo/fixes/m_972
+    local latest
+    latest="$(find "$1" -maxdepth 1 -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | highest_debian_version)"
+    if [[ -z "$latest" ]]; then
+        rm -f "$1/latest"
+        return
+    fi
+    find "$1" -maxdepth 1 -name "*_${latest}_*.deb" -printf '%f\n' | head -n 1 > "$1/latest"
+    chmod 644 "$1/latest"
+}

@@ -40,8 +40,12 @@ Packages already in the pool are kept, so older versions stay installable
 
 All packages share one pool but are listed in two suites:
 
-    <REPO_SUITE>       (stable) all versions without '~', e.g. 0.7.4, 0.7.4-m972
+    <REPO_SUITE>       (stable) all versions without '~', e.g. 0.7.4, 0.7.4-1, 0.7.4-m1
     <REPO_BETA_SUITE>  (beta)   all versions with '~', e.g. 0.7.5~beta1, 0.7.5~rc1
+
+Fixes of branches for one tester (build.sh --fix, e.g. 0.7.4-m1+m972.1) are in no suite.
+They are in 'repo/fixes/<branch>', the file 'latest' there names the newest one.
+Builds of a fix branch with its VERSION (0.7.4-m_972 -> 0.7.4-m-972) are refused.
 
 The beta suite is marked 'NotAutomatic' and 'ButAutomaticUpgrades'. So apt never
 installs a beta by itself, but updates an installed beta to newer betas:
@@ -97,6 +101,16 @@ for deb in "$@"; do
     arch="$(dpkg-deb -f "$deb" Architecture)"
     if [[ "$name" != "$PACKAGE_NAME" ]] ; then
         echo "Error: $deb contains package '$name' but '$PACKAGE_NAME' is expected"
+        exit 1
+    fi
+    # a suite reaches all its users: apt would install it and raspiBackup would announce it
+    if is_fix_version "$version" ; then
+        echo "Error: $version is a fix for one tester and doesn't belong into a suite. Build it with build.sh --fix."
+        exit 1
+    fi
+    if is_fix_branch_build "$version" ; then
+        echo "Error: $version is a build of a fix branch (VERSION=\"...-m_<n>\"). Build a fix for the tester"
+        echo "       with build.sh --fix <try>, or set a release or hotfix version for everybody."
         exit 1
     fi
     pooled="$REPO/$POOL/${name}_${version}_${arch}.deb"
@@ -166,6 +180,28 @@ create_suite() {
 # both suites always exist, raspiBackupInstall.sh adds both to the sources
 create_suite "$REPO_SUITE" stable
 create_suite "$REPO_BETA_SUITE" beta
+
+# fixes of branches for one tester: in no suite, raspiBackupConfig -F reads the file 'latest' of the branch
+if [[ -d "$REPO/$FIXES_DIR" ]] ; then
+    show "Index fixes of branches in $REPO/$FIXES_DIR"
+    for dir in "$REPO/$FIXES_DIR"/*/; do
+        dir="${dir%/}"
+        [[ -d "$dir" ]] || continue
+        while read -r deb; do
+            if [[ ! -f "$deb.sig" ]] ; then
+                echo "Error: Signature $deb.sig missing"
+                exit 1
+            fi
+        done < <(find "$dir" -maxdepth 1 -name '*.deb')
+        update_fix_index "$dir"
+        if [[ -f "$dir/latest" ]] ; then
+            echo "${dir##*/}: $(cat "$dir/latest")"
+        else
+            echo "${dir##*/}: no fix, removed"
+            rm -rf "$dir"
+        fi
+    done
+fi
 
 show "Export public key"
 

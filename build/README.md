@@ -81,8 +81,8 @@ touch `build/deb/` and `build/repo/` and doesn't commit, push or tag. Only `buil
 
 | Command | Shows | Warns if |
 |---------|-------|----------|
-| `./build.sh --dry-run [--no-repo] [<version>]` | branch and commit, package version, versions of raspiBackup and raspiBackupConfig, fix branches (`Fixes`), last tag, target suite | the version is a build of a fix branch (`-m_972`) which would go into a suite, the version is already in `build/repo/`, or it's lower than the highest version of its suite in `build/repo/` (apt wouldn't install it as update) |
-| `./publishRepo.sh --dry-run [--remove <version>]` | versions which would be published, marked `(new)`, removed versions, tags which would be created on which commit, GitHub releases with their notes, and whether they would be created (`GITHUB_RELEASES`) | a version can't be tagged (fix branch build, commit not available) |
+| `./build.sh --dry-run [--no-repo] [<version>]`, `./build.sh --dry-run --fix <try>` | branch and commit, package version, versions of raspiBackup and raspiBackupConfig, fix branches (`Fixes`), last tag, target suite or for `--fix` the fix directory | the version is a build of a fix branch (`-m_972`) which would go into a suite, the version is already in `build/repo/`, or it's lower than the highest version of its suite in `build/repo/` (apt wouldn't install it as update) |
+| `./publishRepo.sh --dry-run [--remove <version>] [--remove-fix <branch>]` | versions which would be published, marked `(new)`, removed versions, fixes for testers per branch, removed fixes, tags which would be created on which commit, GitHub releases with their notes, and whether they would be created (`GITHUB_RELEASES`) | a version can't be tagged (fix branch build, commit not available) |
 
 `./publishRepo.sh --no-push` is no dry run: it signs and updates `build/repo/` and creates the
 commit locally, only pushing, tagging and the GitHub releases are skipped.
@@ -92,7 +92,8 @@ shown by `./publishRepo.sh --dry-run` or `--list`.
 
 A fix branch build like `0.8.1-m-972` is dangerous in suite `stable`: apt reads it as release
 `0.8.1-m` plus revision `972`, so it sorts above every hotfix `0.8.1-m1`, `0.8.1-m2`, ... Users who
-installed it never get a hotfix of `0.8.1`. Build fix branches with `--no-repo`.
+installed it never get a hotfix of `0.8.1`. So `build.sh` and `buildRepo.sh` refuse to add it to a
+suite. Build a fix for the tester with `--fix <try>`, see [Fix of a branch for one tester](#fix-of-a-branch-for-one-tester).
 
 Notes:
 
@@ -114,7 +115,7 @@ Notes:
   commas, e.g. `DEPRECATED="0.7.5 0.7.6-beta1"`) is still used: these versions are never reported
   as update or beta, and users running one of them get a warning. A version includes all versions
   derived from it: `0.7.5` deprecates `0.7.5~1`, `0.7.5-rc1`, `0.7.5-beta1`, `0.7.5-1`, `0.7.5-m1`,
-  `0.7.5-m1~u972.1`, ..., but not `0.7.50`. If `apt upgrade` would install a
+  `0.7.5-m1+m972.1`, ..., but not `0.7.50`. If `apt upgrade` would install a
   deprecated version, raspiBackup tells the user the `apt-get install raspibackup=<version>` command
   for the newest version which isn't deprecated.
 - All published versions stay in the repository (unless removed with `--remove`, see section 4),
@@ -158,7 +159,8 @@ GitHub release for every new tag:
 | release `0.7.5`, hotfix `0.7.5-m1` | release with the fixed issues, e.g. `- #972 (branch m_972)` |
 | beta `0.7.6~beta1` | pre-release |
 | minor fix `0.7.5-1` | none, only the tag: minor fixes aren't announced |
-| build of a fix branch `0.7.5-m-972` (`VERSION="0.7.5-m_972"`) | none and no tag: it's for one tester only and never announced |
+| fix of a branch for one tester `0.7.5-m1+m972.1` | none and no tag: it's in no suite and never announced |
+| build of a fix branch `0.7.5-m-972` (`VERSION="0.7.5-m_972"` without `--fix`) | none and no tag. `build.sh` and `buildRepo.sh` refuse to add it to a suite |
 
 > **Warning: GitHub releases are public.** They are shown to everybody on
 > https://github.com/framps/raspiBackup/releases, the page raspiBackup refers to in its update
@@ -218,12 +220,12 @@ see [section 3](#3-beta-versions).
 | release                           | `0.7.5`           | `0.7.5`            | suite `stable`                          |
 | minor fix, not reported          | `0.7.5`           | `0.7.5-1`          | suite `stable`, `DEB_REVISION="1"`      |
 | hotfix for all users              | `0.7.5-m1`        | `0.7.5-m1`         | suite `stable`                          |
-| temporary fix for one user only   | -                 | `0.7.5-m1~u972.1`  | not in the repository, see below        |
+| fix of a branch for one tester    | `0.7.5-m_972`     | `0.7.5-m1+m972.1`  | in no suite, `repo/fixes/m_972`, see [below](#fix-of-a-branch-for-one-tester) |
 
 They sort in this order, so every version is replaced by the next public one:
 
 ```
-0.7.5 < 0.7.5-1 < 0.7.5-2 < 0.7.5-m1~u972.1 < 0.7.5-m1~u972.2 < 0.7.5-m1 < 0.7.6~beta1 < 0.7.6
+0.7.5 < 0.7.5-1 < 0.7.5-2 < 0.7.5-m1 < 0.7.5-m1+m972.1 < 0.7.5-m1+m972.2 < 0.7.5-m2 < 0.7.6~beta1 < 0.7.6
 ```
 
 - A minor fix (small code fix, packaging, maintainer scripts, ...) keeps `VERSION` of raspiBackup
@@ -237,7 +239,7 @@ They sort in this order, so every version is replaced by the next public one:
   minor fixes as well. Publish a hotfix (`0.7.5-m1`) instead.
 
 - Use `~` only for versions which have to sort **before** the version in front of it:
-  pre-releases (`~alpha`, `~beta`, `~rc`) and fixes for one user.
+  pre-releases (`~alpha`, `~beta`, `~rc`).
   A `~` sorts before everything, even before the end of the version.
 - Behind the `~` the text is compared alphabetically. That's why `alpha < beta < rc` works,
   but `0.7.6~m972` would sort between `0.7.6~beta1` and `0.7.6~rc1`. Use only `alpha`, `beta`
@@ -255,45 +257,85 @@ They sort in this order, so every version is replaced by the next public one:
 | fix of `0.7.5` for everybody, announced | `0.7.5-m1`       | yes                          | `apt upgrade`, `raspiBackupConfig -U`, new installation |
 | next release                          | `0.7.6`            | yes                          | `apt upgrade`, `raspiBackupConfig -U`, new installation |
 | test version before `0.7.6`           | `0.7.6~beta1`      | as beta available            | `raspiBackupConfig -b`, `apt-get install -t beta`, `raspiBackupInstall.sh --beta` |
-| fix for one user                      | `0.7.5-m1~u972.1`  | no                           | the user installs the `.deb` file                 |
+| fix of a branch, tested by one user   | `0.7.5-m1+m972.1`  | no, never offered to others  | the tester with `raspiBackupConfig -F m_972`      |
 
-### Fix for one user only
+### Fix of a branch for one tester
 
-Every package in the repository reaches all users of its suite. So a fix for one user isn't
-added to the repository. The user gets the `.deb` file instead.
+A fix is developed on a fix branch `m_<issue>`, e.g. `m_972` for issue #972, with
+`VERSION="0.7.5-m_972"` in `raspiBackup.sh`. Before it's merged, the user who reported the issue
+tests it. Nobody else gets it or is told about it until it's released.
 
-Name it as pre-release of the next public hotfix plus `u<issue>.<n>`, e.g. `0.7.5-m1~u972.1`
-if `0.7.5` is the current release. Then it
+Every package in a suite reaches all users of that suite. So the fix isn't added to a suite, but
+published next to the repository in `fixes/m_972/` on `gh-pages`. apt never sees it, raspiBackup
+never reports it. Only who knows the branch can install it, and only signed with the key of the
+repository. `build.sh` and `buildRepo.sh` refuse to add a build of a fix branch to a suite.
 
-- upgrades the installed release `0.7.5`,
-- is replaced by `0.7.5-m1~u972.2` if the first fix wasn't sufficient,
-- is replaced automatically by the next public hotfix `0.7.5-m1` or release `0.7.6` on the
-  next `apt-get upgrade`, because the user's system still uses the repository.
+**Version.** `build.sh --fix <try>` takes the newest published release as base and appends
+`+m<issue>.<try>`, with `-0` if the base has no Debian revision:
 
-Don't use `0.7.5+u972`: it sorts after the hotfix `0.7.5-m1`, so the user would never get it.
+| Newest release | Try 1             | Try 2             |
+|----------------|-------------------|-------------------|
+| `0.7.5`        | `0.7.5-0+m972.1`  | `0.7.5-0+m972.2`  |
+| `0.7.5-1`      | `0.7.5-1+m972.1`  | `0.7.5-1+m972.2`  |
+| `0.7.5-m1`     | `0.7.5-m1+m972.1` | `0.7.5-m1+m972.2` |
+
+Every try is above its base and the previous try, and below **every** later public version:
+a minor fix, any hotfix (`0.7.5-m2`, `0.7.5-m10`), a beta or the next release. So it doesn't
+matter in which order fixes of different branches are released. Without the `-0`,
+`0.7.5+m972.1` would sort above the hotfix `0.7.5-m1`.
+
+**Maintainer**
 
 ```
-# Build without adding it to build/repo. The argument is the Debian version.
+# 1. On the fix branch: VERSION="0.7.5-m_972" in raspiBackup.sh, the fix committed
+git switch m_972
 cd build
-./build.sh --no-repo 0.7.5-m1~u972.1
-# -> deb/raspibackup_0.7.5-m1~u972.1.deb and .sig, send both to the user
+./build.sh --dry-run --fix 1      # shows the version of the fix
+./build.sh --fix 1                # -> repo/fixes/m_972/raspibackup_0.7.5-m1+m972.1_all.deb and .sig
+./publishRepo.sh                  # publishes fixes/m_972 on gh-pages, no tag, no release
 
-# The user installs it with
-sudo apt install ./raspibackup_0.7.5-m1~u972.1.deb
+# 2. Tell the tester: sudo raspiBackupConfig -F m_972
 
-# and returns to the release before the next version is published with
-sudo apt install raspibackup=0.7.5
+# 3. The fix isn't sufficient: next try, every try needs a new, higher number
+./build.sh --fix 2 && ./publishRepo.sh
+
+# 4. The fix works: merge it and release it as hotfix or with the next release
+git switch master && git merge m_972        # VERSION="0.7.5-m2" or "0.7.6"
+./build.sh && ./publishRepo.sh              # Fixes: m_972, tagged, GitHub release if enabled
+
+# 5. Tell the tester: sudo raspiBackupConfig -U
+#    After the tester updated, remove the fix
+./publishRepo.sh --remove-fix m_972
 ```
 
-The argument of `build.sh` sets only the version of the package. To show it in the
-messages of raspiBackup too, set `VERSION_RASPIBACKUP="0.7.5-m1~u972.1"` in `build.conf`
-for this build and remove it afterwards.
+`./publishRepo.sh --list` and `--dry-run` show the published fixes per branch. `build.sh --fix`
+warns if the branch is based on an older release than the newest one: the fix replaces the newest
+release for the tester, so merge or rebase the branch first.
+
+**Tester**
+
+| Step | Command |
+|------|---------|
+| install the fix, also every newer try | `sudo raspiBackupConfig -F m_972` |
+| fix doesn't work: back to the release | `sudo raspiBackupConfig -R` |
+| fix is released: install the release with the fix | `sudo raspiBackupConfig -U` |
+
+`-F` downloads the newest try, checks its signature against the key apt trusts for the
+repository, installs it and holds the package. Nothing replaces it then: neither
+`apt-get upgrade`, nor a hotfix of another branch, nor a beta. raspiBackup still reports new
+releases after the backup, also the release with the fix, with the command to install it.
+`-U` installs the newest release then and releases the hold. It never installs a beta, although
+apt's candidate can be a beta: a package installed from a file has the same apt priority as
+the beta suite. `-R` installs the release the fix is based on and holds it, `-F` installs the fix
+again. Like before with the fixed `raspiBackup.sh`: if the tester updates with `-U` to an
+unrelated hotfix before the fix is released, the fix is gone. Tell the tester which version
+contains the fix.
 
 Useful commands:
 
 ```
-./build.sh --help                       # options: --dry-run, --no-check (no lintian), --no-repo
-./publishRepo.sh --help                 # options: --dry-run, --list, --no-push, --remove <version>
+./build.sh --help                       # options: --dry-run, --fix <try>, --no-check (no lintian), --no-repo
+./publishRepo.sh --help                 # options: --dry-run, --list, --no-push, --remove <version>, --remove-fix <branch>
 ./buildRepo.sh                          # re-create and re-sign the repository index only
 git fetch origin gh-pages && git ls-tree -r --name-only FETCH_HEAD pool   # published versions
 ```
@@ -511,6 +553,24 @@ The menu `P1` installs `raspibackup=<candidate>` instead, which is the same vers
 See the table above and [section 3](#3-beta-versions) and [section 4](#4-revert-to-a-previous-release).
 Every option removes a hold first (`apt-mark unhold raspibackup`), `-R` and `P2` set it again
 (`apt-mark hold raspibackup`).
+
+#### Fix of a branch (`-F m_972`)
+
+See [Fix of a branch for one tester](#fix-of-a-branch-for-one-tester). The repository URL is the
+one in `/etc/apt/sources.list.d/raspibackup.sources`.
+
+```
+url=https://framps.github.io/raspiBackup/fixes/m_972
+fix="$(curl -fsSL "$url/latest")"                 # file name of the newest try
+curl -fsSLO "$url/$fix" && curl -fsSLO "$url/$fix.sig"
+gpgv --keyring /usr/share/keyrings/raspibackup-archive-keyring.gpg "$fix.sig" "$fix"
+sudo apt-mark unhold raspibackup
+sudo apt-get install -y --allow-downgrades "./$fix"
+sudo apt-mark hold raspibackup
+```
+
+With a fix installed, `-U` and `P1` install the newest release (`apt-get install raspibackup=<version>`),
+not the candidate of apt, which can be a beta.
 
 #### Sample extensions
 
@@ -917,7 +977,7 @@ result and deletes the branch. Report and log are downloaded to `build/test/pack
 ├── publishRepo.sh      # publishes repo/ and raspiBackupInstall.sh on GitHub Pages (branch gh-pages), tags versions
 ├── common.sh           # common definitions for build and install
 ├── compareVersions.sh  # to test version up- and downgrade recognition
-├── testPackageUpdates.sh # tests updates and reversals (release, beta, hotfix, individual fix, migration without apt) on a test system
+├── testPackageUpdates.sh # tests updates and reversals (release, beta, hotfix, fix of a branch for a tester, migration without apt) on a test system
 │
 ├── deb                 # built deb packages (not committed)                  $DEB_TGT                           <--.
 │   ├── raspibackup_<version>.deb                                                                                   |

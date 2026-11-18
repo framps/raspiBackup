@@ -33,13 +33,15 @@ Usage:
 
 Builds test packages with build.sh, publishes them in a local signed apt repository
 (file://, signed with a temporary GPG key) and checks with apt, raspiBackupInstall.sh
-and raspiBackupConfig -U/-R/-b/-S that
+and raspiBackupConfig -U/-R/-b/-S/-F that
 
     1. a release is updated to a new release and reverted to the previous one
     2. a beta is installed and updated only on request and reverted to the release
     3. a hotfix is updated and reverted
-    4. an individual fix for one user (.deb, not in the repository) is installed,
-       reverted and replaced by the next public fix or release
+    4. a fix of a branch for one tester (build.sh --fix, in no suite) isn't offered or reported
+       to other users. The tester installs it with raspiBackupConfig -F, it's held, a newer try
+       replaces it, a fix with a wrong signature is rejected, -R reverts it to the release and
+       -U installs the release with the fix, never a beta
     5. updates and downgrades skip or step over several versions, a beta is reverted
        to an older hotfix
     6. raspiBackup reports new versions, minor fixes (DEB_REVISION) and deprecated versions
@@ -613,6 +615,24 @@ build() { # version [--no-repo] [--revision <n>] - builds the package with build
     SCRIPT_VERSION[$debVersion]="$version"
 }
 
+buildFix() { # version try - builds try <try> of the fix of a fix branch with build.sh --fix, it's in no suite
+              # version: VERSION of the branch, e.g. 0.9.2-m_972. Sets FIX_VERSION to the Debian version.
+    local version="$1" try="$2" branch="m_${1##*-m_}"
+    step "maintainer: build try $try of the fix of branch $branch for its tester (in no suite)"
+
+    { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; echo 'DEB_REVISION=""'; } > "$BUILD/build.conf"
+    local -a options=(--fix "$try")
+    (( LINTIAN )) || options+=(--no-check)
+    (cd "$BUILD" && run ./build.sh "${options[@]}") || abort "build.sh --fix $try failed for $version"
+
+    local latest="$BUILD/repo/fixes/$branch/latest"
+    [[ -f "$latest" ]] || abort "build.sh --fix didn't create $latest"
+    FIX_VERSION="$(sed -E 's/^[^_]*_([^_]*)_.*/\1/' "$latest")"
+    [[ -f "$BUILD/repo/fixes/$branch/$(cat "$latest").sig" ]] || abort "signature of $(cat "$latest") missing"
+    BUILT+=("$(printf '%-22s %s' "$FIX_VERSION" "fix of $branch, in no suite")")
+    SCRIPT_VERSION[$FIX_VERSION]="$version"
+}
+
 publish() { # version [--revision <n>] - build and add to the repository, like build.sh + publishRepo.sh
     build "$@"
     aptUpdate
@@ -639,6 +659,7 @@ rbcPurpose() { # options - what raspiBackupConfig does with these options
         *" -R "*) echo "revert to the previous release and hold it" ;;
         *" -b "*) echo "install or update the latest beta" ;;
         *" -S "*) echo "revert the beta to the release" ;;
+        *" -F "*) echo "install the newest fix of the branch and hold it" ;;
         *" -m "*) echo "merge the configuration" ;;
         *" -u "*) echo "uninstall" ;;
         *" -i "*) echo "install" ;;
@@ -718,10 +739,11 @@ V_BETA1="0.9.2-beta1";        D_BETA1="$(debianVersion "$V_BETA1")"
 V_BETA2="0.9.2-beta2";        D_BETA2="$(debianVersion "$V_BETA2")"
 V_REL2="0.9.2"
 V_FIX1="0.9.2-m1"
-V_UFIX1="0.9.2-m2~u972.1"
-V_UFIX2="0.9.2-m2~u972.2"
+V_BRANCH="0.9.2-m_972"        # VERSION on fix branch m_972, its fixes are based on the newest release V_FIX1
+D_TRY1="0.9.2-m1+m972.1"
+D_TRY2="0.9.2-m1+m972.2"
 V_FIX2="0.9.2-m2"
-V_UFIX3="0.9.2-m3~u973.1"
+V_BETA3="0.9.3-beta1";        D_BETA3="$(debianVersion "$V_BETA3")"
 V_REL3="0.9.3"
 V_REL4="0.9.4"
 V_REL5="0.9.5"
@@ -854,48 +876,68 @@ assertRc 0 "update to hotfix confirmed" rbcYes -U
 assertInstalled "$V_FIX1"
 
 #######################################################################################################################
-# 4. individual fix for one user
+# 4. fix of a branch for one tester
 #######################################################################################################################
 
-CURRENT_SECTION="individual fix"
-section "4. Individual fix for one user" "A fix sent to one user as .deb (not in the repository) is installed, a .deb with a wrong signature is rejected, the fix is reverted and replaced by the next public version."
+CURRENT_SECTION="fix for a tester"
+section "4. Fix of a branch for one tester" "A fix of branch m_972 is in no suite: other users neither get nor see it. The tester installs it with raspiBackupConfig -F, it's held, apt upgrade, an unrelated hotfix and a beta don't replace it, a newer try does, a fix with a wrong signature is rejected, -R reverts it, -U installs the release with the fix."
 
-build "$V_UFIX1" --no-repo
+FIXDIR="$BUILD/repo/fixes/m_972"
+
+buildFix "$V_BRANCH" 1
+[[ "$FIX_VERSION" == "$D_TRY1" ]] && pass "fix based on the newest release: $D_TRY1" || fail "fix has version $FIX_VERSION instead of $D_TRY1"
 aptUpdate
-assertInSuite "$V_UFIX1" none
-
-installer "$DEBS/${PACKAGE_NAME}_${V_UFIX1}.deb" && pass "installation of individual fix" || fail "installation of individual fix"
-assertInstalled "$V_UFIX1"
+assertInSuite "$D_TRY1" none
+assertAvailable "nothing to other users" "" "P1 - P2 $V_REL2 P3 - P4 -"
 aptUpgrade
-assertInstalled "$V_UFIX1"
-assertRc 0 "update keeps individual fix" rbc -U
-assertInstalled "$V_UFIX1"
+assertInstalled "$V_FIX1"
 
-build "$V_UFIX2" --no-repo
+assertRc 0 "tester installs the fix" rbc -F m_972
+assertInstalled "$D_TRY1" held
+aptUpgrade
+assertInstalled "$D_TRY1" held
 
-step "package with wrong signature is rejected"
-run cp "$DEBS/${PACKAGE_NAME}_${V_UFIX2}.deb" "$WORK/tampered.deb"
-run cp "$DEBS/${PACKAGE_NAME}_${V_UFIX1}.deb.sig" "$WORK/tampered.deb.sig"
-installer "$WORK/tampered.deb" && fail "package with wrong signature installed" || pass "package with wrong signature rejected"
-assertInstalled "$V_UFIX1"
+buildFix "$V_BRANCH" 2
+[[ "$FIX_VERSION" == "$D_TRY2" ]] && pass "next try: $D_TRY2" || fail "next try has version $FIX_VERSION instead of $D_TRY2"
+assertRc 0 "tester installs the next try" rbc -F m_972
+assertInstalled "$D_TRY2" held
 
-installer "$DEBS/${PACKAGE_NAME}_${V_UFIX2}.deb" && pass "installation of second individual fix" || fail "installation of second individual fix"
-assertInstalled "$V_UFIX2"
+step "fix with a wrong signature is rejected"
+TAMPERED="${PACKAGE_NAME}_0.9.2-m1+m972.9_all.deb"
+run cp "$FIXDIR/${PACKAGE_NAME}_${D_TRY1}_all.deb" "$FIXDIR/$TAMPERED"
+run cp "$FIXDIR/${PACKAGE_NAME}_${D_TRY2}_all.deb.sig" "$FIXDIR/$TAMPERED.sig"
+run cp "$FIXDIR/latest" "$WORK/latest.saved"
+echo "$TAMPERED" > "$FIXDIR/latest"
+rbc -F m_972 && fail "fix with a wrong signature installed" || pass "fix with a wrong signature rejected"
+assertInstalled "$D_TRY2" held
+run rm -f "$FIXDIR/$TAMPERED" "$FIXDIR/$TAMPERED.sig"
+run cp "$WORK/latest.saved" "$FIXDIR/latest"
 
-assertRc 0 "revert individual fix to hotfix" rbc -R
-assertInstalled "$V_FIX1" held
-
+# a hotfix of another branch: the tester is told, but keeps the fix
 publish "$V_FIX2"
 aptUpgrade
-assertInstalled "$V_FIX1" held
-assertRc 0 "update to fixed version confirmed" rbcYes -U
-assertInstalled "$V_FIX2"
+assertInstalled "$D_TRY2" held
+assertAvailable "the unrelated hotfix to the tester" "NEW_PACKAGE_VERSION_INSTALL $V_FIX2 $D_TRY2 $V_FIX2" "P1 $V_FIX2 P2 $V_FIX1 P3 - P4 -"
 
-build "$V_UFIX3" --no-repo
-installer "$DEBS/${PACKAGE_NAME}_${V_UFIX3}.deb" && pass "installation of individual fix" || fail "installation of individual fix"
-assertInstalled "$V_UFIX3"
+assertRc 0 "tester reverts the fix to the release" rbcYes -R
+assertInstalled "$V_FIX1" held
+assertRc 0 "tester installs the fix again" rbc -F m_972
+assertInstalled "$D_TRY2" held
+
+# apt's candidate is the beta now, it has the same priority as the fix installed from a file
+publish "$V_BETA3"
+assertInSuite "$D_BETA3" beta
+aptUpgrade
+assertInstalled "$D_TRY2" held
+assertOffers "the hotfix as update and the beta only as beta to the tester" "P1 $V_FIX2 P2 $V_FIX1 P3 $D_BETA3 P4 -"
+
+# the fix is merged and released
 publish "$V_REL3"
 aptUpgrade
+assertInstalled "$D_TRY2" held
+# the menu offers every beta above the installed version, also one older than the release
+assertAvailable "the release with the fix to the tester" "NEW_PACKAGE_VERSION_INSTALL $V_REL3 $D_TRY2 $V_REL3" "P1 $V_REL3 P2 $V_FIX1 P3 $D_BETA3 P4 -"
+assertRc 0 "tester updates to the release with the fix" rbcYes -U
 assertInstalled "$V_REL3"
 
 #######################################################################################################################

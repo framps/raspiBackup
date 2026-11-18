@@ -29,12 +29,21 @@ usage() {
     cat <<"EOF_USAGE"
 Usage:
 
-        build.sh [options]
+        build.sh [options] [<version>]
+        build.sh [options] --fix <try>
 
 That simple call builds a Debian package from raspiBackup.
 Then it runs `lintian` to check the package for compliance.
 That is a reduced check to fit this package not being a "real" Debian package.
 Finally the package is added to the signed apt repository in 'repo' (see buildRepo.sh).
+
+--fix builds a fix of a fix branch for one tester, e.g. on branch m_972 with
+VERSION="0.7.5-m_972" in raspiBackup.sh. Its version is the newest published release
+plus +m<branch>.<try>, e.g. 0.7.5-m1+m972.1 or 0.7.5-0+m972.1. It's above that release
+and below every later one, so the tester gets the release with the fix with
+raspiBackupConfig -U. The fix isn't added to any suite of the repository but to
+'repo/fixes/m_972', publishRepo.sh publishes it there. The tester installs it with
+raspiBackupConfig -F m_972. Every try needs a new, higher number.
 
 Options:
 
@@ -42,6 +51,7 @@ Options:
                    then exit. Nothing is built, signed or added to the repository.
     --no-check     don't check anything with `lintian`
     --no-repo      don't add the package to the apt repository
+    --fix <try>    build try <try> (1, 2, ...) of the fix of the current fix branch, see above
     -h | --help    display this short help
 
 In file 'build.conf' you can configure some aspects of the build process.
@@ -171,6 +181,7 @@ fi
 
 UPDATE_REPO=1
 DRY_RUN=0
+FIX_TRY=""
 while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
@@ -185,6 +196,13 @@ while (( $# > 0 )); do
         --no-repo) UPDATE_REPO=0
                    shift
                    ;;
+        --fix) if [[ ! "${2:-}" =~ ^[1-9][0-9]*$ ]]; then
+                   echo "Error: --fix requires the number of the try, e.g. --fix 1" >&2
+                   exit 1
+               fi
+               FIX_TRY="$2"
+               shift 2
+               ;;
         *) break
            ;;
     esac
@@ -236,6 +254,10 @@ export VERSION="$VERSION_RASPIBACKUP"
 
 # allow to pass another version number for upgrade/downgrade tests
 if (( $# > 0 )); then
+    if [[ -n "$FIX_TRY" ]]; then
+        echo "Error: --fix computes the version, don't pass one" >&2
+        exit 1
+    fi
     VERSION="$1"
     DEB_REVISION=""
 fi
@@ -254,6 +276,55 @@ if [[ -n "${DEB_REVISION:-}" ]]; then
     fi
     VERSION="$VERSION-$DEB_REVISION"
 fi
+
+# highest published release (no pre-release, no fix): in the local repository and on the Pages branch
+highest_published_release() {
+    {
+        find "$REPO/pool" -name '*.deb' -printf '%f\n' 2>/dev/null || true
+        if git -C "$GITSRC" fetch -q "${PAGES_REMOTE:-origin}" "${PAGES_BRANCH:-gh-pages}" 2>/dev/null; then
+            git -C "$GITSRC" ls-tree -r --name-only --full-tree FETCH_HEAD pool 2>/dev/null | sed 's|.*/||' || true
+        fi
+    } | sed -n -E 's/^[^_]*_([^_]*)_.*\.deb$/\1/p' | while read -r v; do
+        [[ "$v" == *"~"* ]] || is_fix_version "$v" || is_fix_branch_build "$v" || echo "$v"
+    done | highest_debian_version
+}
+
+# fix of a fix branch for one tester: VERSION="0.7.5-m_972" -> newest release 0.7.5-m1 + "+m972.<try>"
+fix_branch=""
+fix_file=""
+if [[ -n "$FIX_TRY" ]]; then
+    if [[ ! "$VERSION_RASPIBACKUP" =~ ^(.+)-m_([0-9]+)$ ]]; then
+        echo "Error: --fix requires VERSION of a fix branch like \"0.7.5-m_972\" in raspiBackup.sh (or VERSION_RASPIBACKUP), not \"$VERSION_RASPIBACKUP\"" >&2
+        exit 1
+    fi
+    fix_release="${BASH_REMATCH[1]}"
+    fix_branch="m_${BASH_REMATCH[2]}"
+    fix_base="$(highest_published_release)"
+    if [[ -z "$fix_base" ]]; then
+        echo "Error: No published release found to base the fix on, neither in $REPO nor on the Pages branch" >&2
+        exit 1
+    fi
+    # the fix sorts above its base and below every later version: 0.7.5 -> 0.7.5-0+m972.1, 0.7.5-m1 -> 0.7.5-m1+m972.1
+    if [[ "$fix_base" == *-* ]]; then
+        VERSION="$fix_base+m${fix_branch#m_}.$FIX_TRY"
+    else
+        VERSION="$fix_base-0+m${fix_branch#m_}.$FIX_TRY"
+    fi
+    DEB_REVISION=""
+    UPDATE_REPO=0       # never in a suite, apt would offer it to everybody
+    FIXES="${FIXES:-$fix_branch}"
+    fix_file="$REPO/$FIXES_DIR/$fix_branch/${PACKAGE_NAME}_${VERSION}_all.deb"
+    show "Fix $fix_branch try $FIX_TRY based on release $fix_base: $VERSION"
+    if [[ "${fix_base%-*}" != "$fix_release" ]]; then
+        echo "Warning: Branch $fix_branch has VERSION $VERSION_RASPIBACKUP, but the newest release is $fix_base."
+        echo "         The fix replaces $fix_base for the tester. Merge or rebase the branch on $fix_base."
+    fi
+    if [[ -f "$fix_file" ]]; then
+        echo "Error: Try $FIX_TRY of $fix_branch exists already ($fix_file). Use a higher try." >&2
+        exit 1
+    fi
+fi
+
 VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
 # last release tag, used for the changelog and the fix branches
@@ -270,6 +341,7 @@ FIXES="$(xargs <<< "${FIXES:-}")"
 show "Fix branches: ${FIXES:-none}"
 suite="$REPO_SUITE"
 [[ "$VERSION" == *"~"* ]] && suite="$REPO_BETA_SUITE"
+[[ -n "$fix_branch" ]] && suite="$fix_branch"
 
 if (( DRY_RUN )); then
     show "Dry run: nothing is built, signed or added to the repository"
@@ -279,7 +351,10 @@ if (( DRY_RUN )); then
     echo "raspiBackupConfig:   $VERSION_RASPIBACKUPCONFIG"
     echo "Fix branches:        ${FIXES:-none}"
     echo "Last tag:            ${last_tag:-none}"
-    if (( UPDATE_REPO )); then
+    if [[ -n "$fix_branch" ]]; then
+        echo "Repository:          in no suite, $fix_file, published by publishRepo.sh"
+        echo "                     The tester installs it with: sudo raspiBackupConfig -F $fix_branch"
+    elif (( UPDATE_REPO )); then
         echo "Repository:          added to $REPO, suite $suite, published by publishRepo.sh"
     else
         echo "Repository:          not added (--no-repo)"
@@ -317,6 +392,13 @@ if (( DRY_RUN )); then
     fi
     (( problems )) || echo "No problems found."
     exit 0
+fi
+
+# a suite reaches all its users, buildRepo.sh refuses a build of a fix branch anyway, but only after building and signing
+if (( UPDATE_REPO )) && is_fix_branch_build "$VERSION"; then
+    echo "Error: $VERSION is a build of fix branch (VERSION=\"$VERSION_RASPIBACKUP\") and would be installed and announced" >&2
+    echo "       to everybody. Build a fix for the tester with --fix <try>, or use --no-repo." >&2
+    exit 1
 fi
 
 show "Building deb package '${PACKAGE_NAME}' for raspiBackup $VERSION"
@@ -538,4 +620,14 @@ ls -l "$DEB_TGT"
 
 if (( UPDATE_REPO )) ; then
     ./buildRepo.sh "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+fi
+
+if [[ -n "$fix_branch" ]] ; then
+    show "Fix $VERSION for the tester of $fix_branch"
+    install -m644 -D "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb" "$fix_file"
+    install -m644 "$DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb.sig" "$fix_file.sig"
+    update_fix_index "${fix_file%/*}"
+    ls -l "${fix_file%/*}"
+    echo ""
+    echo "Publish it with ./publishRepo.sh, the tester installs it with: sudo raspiBackupConfig -F $fix_branch"
 fi

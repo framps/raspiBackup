@@ -14,7 +14,8 @@ raspiBackupConfig \- configure, install and uninstall raspiBackup
 .B raspiBackupConfig
 .br
 .B raspiBackupConfig
-.BR \-b " | " \-i " | " \-m " | " \-R " | " \-S " | " \-u " | " \-U
+.BR \-b " | " \-i " | " \-m " | " \-R " | " \-S " | " \-u " | " \-U " | " \-F
+.I branch
 .RB [ \-t
 .BR crond | systemd ]
 .br
@@ -118,6 +119,31 @@ Otherwise the package index is updated at most once a day, or when the
 .B raspiBackup
 apt repository was changed since the last update.
 Can be combined with all other options and the menu.
+.TP
+.BI \-F " branch"
+Unattended install of the newest fix of a fix branch, e.g.
+.BR "\-F m_972" ,
+to test it before it's released.
+The fix is downloaded next to the
+.B raspiBackup
+apt repository, but it isn't in any suite of the repository: apt never offers it to other users.
+It's installed only if it's signed with the key of the repository.
+Afterwards the package is held, so neither
+.B apt-get upgrade
+nor a newer hotfix or beta replaces the fix.
+Use
+.B \-F
+again to install a newer fix of the same branch,
+.B \-R
+to go back to the release, and
+.B \-U
+to install the release which contains the fix as soon as it's published.
+.B \-U
+installs the newest release then, never a beta.
+Only available if
+.B raspiBackup
+is installed as Debian package
+.BR raspibackup .
 .TP
 .B \-h
 Display a short help text and exit.

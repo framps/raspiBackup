@@ -40,8 +40,10 @@ Steps:
     - copy packages already published there but missing in 'repo' back into 'repo',
       so no published version gets lost when building on another system
     - delete the packages of the versions given with --remove from 'repo'
+    - delete the fixes of the branches given with --remove-fix from 'repo'
     - recreate and sign the repository index (buildRepo.sh)
-    - replace the contents of the Pages branch by 'repo' and push it
+    - replace the contents of the Pages branch by 'repo' and push it. That includes the fixes
+      of branches for one tester in 'repo/fixes/<branch>' (build.sh --fix), which are in no suite
     - tag the commit of every published package which has no tag yet with a signed tag
       v<version>, e.g. v0.7.5, v0.7.5-1, v0.7.5-m1, v0.7.6-beta1 (a tag can't contain '~')
     - if GITHUB_RELEASES="1" in build.conf: create a GitHub release for every new tag of a
@@ -63,6 +65,9 @@ Options:
     --remove <version>   unpublish this version, can be used multiple times
                          e.g. --remove 0.8.2-beta or --remove 0.8.2~beta
                          Systems which installed it keep it. Publish a higher version to replace it.
+    --remove-fix <branch>
+                         unpublish all fixes of a fix branch, e.g. --remove-fix m_972, after the
+                         tester installed the release with the fix. Can be used multiple times.
     -h | --help          display this short help
 
 EOF_USAGE
@@ -80,6 +85,7 @@ PUSH=1
 LIST=0
 DRY_RUN=0
 REMOVE=()
+REMOVE_FIXES=()
 while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
@@ -102,6 +108,13 @@ while (( $# > 0 )); do
                   REMOVE+=("$(sed -E 's/-(alpha|beta|rc)/~\L\1/I; s/_/-/g' <<< "$2")")
                   shift 2
                   ;;
+        --remove-fix) if (( $# < 2 )) || [[ ! "$2" =~ ^m_[0-9]+$ ]] ; then
+                          echo "Error: --remove-fix requires a fix branch like m_972!"
+                          exit 1
+                      fi
+                      REMOVE_FIXES+=("$2")
+                      shift 2
+                      ;;
         *) echo "Error: Unknown option '$1'!"
            exit 1
            ;;
@@ -125,6 +138,27 @@ sort_debian_versions() {
     if (( ${#sorted[@]} > 0 )) ; then
         printf '%s\n' "${sorted[@]}"
     fi
+}
+
+# list fixes of branches read from stdin as "<branch>/<deb file name>", one per line, as "<version> <branch> [<note>]"
+list_fixes() {
+    local note="${1:-}" path
+    sort -V | while read -r path; do
+        [[ -z "$path" ]] && continue
+        printf '%-24s %-8s %s\n' "$(sed -E 's/^[^_]*_([^_]*)_.*/\1/' <<< "${path##*/}")" "${path%%/*}" "$note"
+    done
+}
+
+# fixes in 'repo' as "<branch>/<deb file name>"
+local_fixes() {
+    if [[ -d "$REPO/$FIXES_DIR" ]] ; then
+        (cd "$REPO/$FIXES_DIR" && find . -mindepth 2 -maxdepth 2 -name '*.deb' | sed 's|^\./||')
+    fi
+}
+
+# fixes published on the fetched Pages branch (FETCH_HEAD) as "<branch>/<deb file name>"
+published_fixes() {
+    { git ls-tree -r --name-only --full-tree FETCH_HEAD "$FIXES_DIR" 2>/dev/null || true; } | sed -n "s|^$FIXES_DIR/||; /\.deb\$/p"
 }
 
 # list deb file names (one per line, without path) as "<version> <suite> [<note>]"
@@ -328,12 +362,40 @@ dry_run() {
         suite="${REPO_SUITE:-stable}"
         [[ "$version" == *~* ]] && suite="${REPO_BETA_SUITE:-beta}"
         note=""
-        printf '%s\n' "${published_names[@]}" | grep -qxF -- "$name" || note="(new)"
+        grep -qxF -- "$name" <<< "$(printf '%s\n' "${published_names[@]}")" || note="(new)"
         printf '%-24s %-8s %s\n' "$version" "$suite" "$note"
     done < <(find "$DRY_RUN_DIR" -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -u | sort_debian_versions)
     if (( ${#removed_versions[@]} > 0 )) ; then
         echo ""
         echo "Would remove: ${removed_versions[*]}"
+    fi
+
+    # fixes of branches for one tester: the published ones and the ones in 'repo' minus the removed branches
+    local fixes_published path branch
+    fixes_published="$(published_fixes)"
+    for branch in "${REMOVE_FIXES[@]}"; do
+        if ! grep -q "^$branch/" <<< "$fixes_published"$'\n'"$(local_fixes)" ; then
+            echo "Error: There are no fixes of branch $branch"
+            exit 1
+        fi
+    done
+    { echo "$fixes_published"; local_fixes; } | grep -v '^$' | sort -u | sort -V | while read -r path; do
+        grep -qxF -- "${path%%/*}" <<< "$(printf '%s\n' "${REMOVE_FIXES[@]}")" && continue
+        if grep -qxF -- "$path" <<< "$fixes_published" ; then
+            list_fixes <<< "$path"
+        else
+            list_fixes "(new)" <<< "$path"
+        fi
+    done > "$DRY_RUN_DIR/fixes"
+    if [[ -s "$DRY_RUN_DIR/fixes" ]] ; then
+        echo ""
+        echo "Would publish fixes for testers (in no suite, installed with raspiBackupConfig -F <branch>):"
+        echo ""
+        cat "$DRY_RUN_DIR/fixes"
+    fi
+    if (( ${#REMOVE_FIXES[@]} > 0 )) ; then
+        echo ""
+        echo "Would remove the fixes of: ${REMOVE_FIXES[*]}"
     fi
 
     # tags: the local ones and the ones on GitHub
@@ -401,6 +463,19 @@ if (( LIST )) ; then
             list_versions "(local)" <<< "$local_only"
         fi
     fi
+    fixes_published="$(published_fixes)"
+    fixes_local_only="$(comm -13 <(sort <<< "$fixes_published") <(local_fixes | sort) | grep -v '^$' || true)"
+    if [[ -n "$fixes_published$fixes_local_only" ]] ; then
+        echo ""
+        echo "Fixes for testers (in no suite, installed with raspiBackupConfig -F <branch>):"
+        echo ""
+        if [[ -n "$fixes_published" ]] ; then
+            list_fixes <<< "$fixes_published"
+        fi
+        if [[ -n "$fixes_local_only" ]] ; then
+            list_fixes "(local)" <<< "$fixes_local_only"
+        fi
+    fi
     exit 0
 fi
 
@@ -416,7 +491,7 @@ if git fetch "$PAGES_REMOTE" "$PAGES_BRANCH" 2>/dev/null ; then
     git worktree add --detach "$PAGES" "$parent"
     # get back published packages and by-hash files missing locally
     mkdir -p "$REPO"
-    for dir in pool dists ; do
+    for dir in pool dists "$FIXES_DIR" ; do
         if [[ -d "$PAGES/$dir" ]] ; then
             cp -a -n "$PAGES/$dir" "$REPO/"
         fi
@@ -441,6 +516,17 @@ if (( ${#REMOVE[@]} > 0 )) ; then
     removed="${REMOVE[*]}"
 fi
 
+for branch in "${REMOVE_FIXES[@]}"; do
+    show "Remove fixes of $branch"
+    if [[ ! -d "$REPO/$FIXES_DIR/$branch" ]] ; then
+        echo "Error: There are no fixes of branch $branch. Branches with fixes:"
+        local_fixes | list_fixes
+        exit 1
+    fi
+    rm -rv "${REPO:?}/$FIXES_DIR/$branch"
+    removed="${removed:+$removed }fixes of $branch"
+done
+
 ./buildRepo.sh
 
 show "Create commit for $PAGES_BRANCH"
@@ -453,10 +539,11 @@ install -m755 ../raspiBackupInstall.sh "$PAGES/"
 touch "$PAGES/.nojekyll"
 
 git -C "$PAGES" add -A -f
-versions="$(cd "$REPO" && find pool -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -V | tr '\n' ' ')"
+versions="$(cd "$REPO" && find pool -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort_debian_versions | tr '\n' ' ')"
+fixes="$(local_fixes | list_fixes | awk '{ print $1 }' | tr '\n' ' ')"
 tree="$(git -C "$PAGES" write-tree)"
 # signed, so users can verify the published raspiBackupInstall.sh (commit-tree ignores commit.gpgsign)
-commit="$(git -C "$PAGES" commit-tree -S"$GPG_KEYID" "$tree" ${parent:+-p "$parent"} -m "Publish raspiBackup apt repository" -m "Versions: $versions" ${removed:+-m "Removed: $removed"})"
+commit="$(git -C "$PAGES" commit-tree -S"$GPG_KEYID" "$tree" ${parent:+-p "$parent"} -m "Publish raspiBackup apt repository" -m "Versions: $versions" ${fixes:+-m "Fixes for testers: $fixes"} ${removed:+-m "Removed: $removed"})"
 git log --stat -1 "$commit" | tail -n 25
 
 if (( PUSH )) ; then

@@ -277,6 +277,7 @@ REPO_BETA_SUITE="beta"
 REPO_COMPONENT="main"
 REPO_KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
 REPO_SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
+REPO_FIXES_DIR="fixes"	# fixes of branches for one tester, next to the repository but in no suite, see build.sh --fix
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 PACKAGE_INDEX_STAMP="$VAR_LIB_DIRECTORY/packageIndexUpdated" # time of the last apt-get update
 PACKAGE_INDEX_MAX_AGE=$((24*60*60)) # apt-get update at most once a day
@@ -1585,6 +1586,34 @@ MSG_FI[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: Poisto poistaa asetukset, 
 MSG_FR[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: La désinstallation supprime la configuration, le minuteur et aussi : %1"
 MSG_ZH[$MSG_UNINSTALL_ALSO_DELETED]="${MSG_PRF}0055I: 卸载将删除配置, 定时器以及: %1"
 
+MSG_FIX_INVALID_BRANCH=$((SCNT++))
+MSG_EN[$MSG_FIX_INVALID_BRANCH]="${MSG_PRF}0056E: %1 isn't a fix branch like m_972."
+MSG_DE[$MSG_FIX_INVALID_BRANCH]="${MSG_PRF}0056E: %1 ist kein Fixbranch wie m_972."
+
+MSG_FIX_NOT_FOUND=$((SCNT++))
+MSG_EN[$MSG_FIX_NOT_FOUND]="${MSG_PRF}0057E: No fix of branch %1 found in %2."
+MSG_DE[$MSG_FIX_NOT_FOUND]="${MSG_PRF}0057E: Kein Fix des Branches %1 in %2 gefunden."
+
+MSG_FIX_INVALID=$((SCNT++))
+MSG_EN[$MSG_FIX_INVALID]="${MSG_PRF}0058E: %1 isn't a fix of branch %2 signed with the key of the repository. It's not installed."
+MSG_DE[$MSG_FIX_INVALID]="${MSG_PRF}0058E: %1 ist kein mit dem Schlüssel des Repositories signierter Fix des Branches %2. Er wird nicht installiert."
+
+MSG_FIX_INSTALLED=$((SCNT++))
+MSG_EN[$MSG_FIX_INSTALLED]="${MSG_PRF}0059I: Fix %1 of branch %2 installed and kept at this version. Back to the release: raspiBackupConfig -R. After the fix is released: raspiBackupConfig -U."
+MSG_DE[$MSG_FIX_INSTALLED]="${MSG_PRF}0059I: Fix %1 des Branches %2 installiert, er bleibt auf dieser Version. Zurück zum Release: raspiBackupConfig -R. Wenn der Fix veröffentlicht ist: raspiBackupConfig -U."
+
+MSG_FIX_REPLACE=$((SCNT++))
+MSG_EN[$MSG_FIX_REPLACE]="${MSG_PRF}0060W: Fix %1 of a branch is installed and kept at this version. Replace it by %2?"
+MSG_DE[$MSG_FIX_REPLACE]="${MSG_PRF}0060W: Fix %1 eines Branches ist installiert und bleibt auf dieser Version. Soll er durch %2 ersetzt werden?"
+
+MSG_FIX_DOWNGRADE=$((SCNT++))
+MSG_EN[$MSG_FIX_DOWNGRADE]="${MSG_PRF}0061W: The installed version %1 is newer than fix %2, maybe the fix is released already. Install the fix anyway?"
+MSG_DE[$MSG_FIX_DOWNGRADE]="${MSG_PRF}0061W: Die installierte Version %1 ist neuer als Fix %2, vielleicht ist der Fix schon veröffentlicht. Soll der Fix trotzdem installiert werden?"
+
+MSG_FIX_ALREADY_INSTALLED=$((SCNT++))
+MSG_EN[$MSG_FIX_ALREADY_INSTALLED]="${MSG_PRF}0062I: Fix %1 is already installed."
+MSG_DE[$MSG_FIX_ALREADY_INSTALLED]="${MSG_PRF}0062I: Fix %1 ist bereits installiert."
+
 MSG_QUERY_CHARS_YES_NO=$((SCNT++))
 MSG_EN[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
 MSG_DE[$MSG_QUERY_CHARS_YES_NO]="(j/N)"
@@ -2550,6 +2579,100 @@ function package_version_execute() { # installs PACKAGE_TARGET_VERSION, holds it
 
 }
 
+function isFixVersion() { # debianVersion - fix of a branch built with build.sh --fix for one tester, e.g. 0.7.5-m1+m972.1
+	[[ "$1" =~ \+m[0-9]+\.[0-9]+$ ]]
+}
+
+function repositoryUrl() { # URL of the raspiBackup repository in the apt sources, REPO_URL if there is none
+	local url
+	url="$(awk '$1 == "URIs:" { print $2; exit }' "$REPO_SOURCES" 2>>"$LOG_FILE")"
+	echo "${url:-$REPO_URL}"
+}
+
+function package_fix_execute() { # branch - installs the newest fix of the branch and holds it, used by option -F
+
+	logEntry "$1"
+
+	local branch="$1" url dir latest version installed signer
+
+	if [[ ! "$branch" =~ ^m_[0-9]+$ ]]; then
+		writeToConsole $MSG_FIX_INVALID_BRANCH "$branch"
+		logExit
+		exit 1
+	fi
+
+	# the fixes are published next to the repository, but in no suite: apt never offers them to anybody
+	url="$(repositoryUrl)/$REPO_FIXES_DIR/$branch"
+	dir="$(mktemp -d)"
+	chmod 755 "$dir" &>>"$LOG_FILE"	# apt reads the package as user _apt
+
+	# 'latest' contains the file name of the newest fix
+	if ! downloadFile "$url/latest" "$dir/latest"; then
+		rm -rf "$dir" &>>"$LOG_FILE"
+		writeToConsole $MSG_FIX_NOT_FOUND "$branch" "$url"
+		logExit
+		exit 1
+	fi
+	latest="$(head -n 1 "$dir/latest")"
+	logItem "Latest fix: $latest"
+	if [[ ! "$latest" =~ ^${PACKAGE_NAME}_[A-Za-z0-9.+~-]+_all\.deb$ ]] \
+		|| ! downloadFile "$url/$latest" "$dir/$latest" || ! downloadFile "$url/$latest.sig" "$dir/$latest.sig"; then
+		rm -rf "$dir" &>>"$LOG_FILE"
+		writeToConsole $MSG_FIX_NOT_FOUND "$branch" "$url"
+		logExit
+		exit 1
+	fi
+	chmod 644 "$dir/$latest" &>>"$LOG_FILE"
+
+	# signed with the key apt trusts for the repository, raspiBackupInstall.sh accepted it by its fingerprint
+	signer="$(gpgv --keyring "$REPO_KEYRING" --status-fd 1 "$dir/$latest.sig" "$dir/$latest" 2>>"$LOG_FILE" | awk '$2 == "VALIDSIG" { print $NF }')"
+	version="$(dpkg-deb -f "$dir/$latest" Version 2>>"$LOG_FILE")"
+	logItem "Signer: $signer version: $version"
+	if [[ -z "$signer" || "$(dpkg-deb -f "$dir/$latest" Package 2>>"$LOG_FILE")" != "$PACKAGE_NAME" ]] \
+		|| ! isFixVersion "$version" || [[ "$version" != *"+m${branch#m_}."* ]]; then
+		rm -rf "$dir" &>>"$LOG_FILE"
+		writeToConsole $MSG_FIX_INVALID "$latest" "$branch"
+		logExit
+		exit 1
+	fi
+
+	installed="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	if [[ "$installed" == "$version" ]]; then
+		rm -rf "$dir" &>>"$LOG_FILE"
+		writeToConsole $MSG_FIX_ALREADY_INSTALLED "$version"
+		logExit
+		return
+	fi
+	if dpkg --compare-versions "$version" lt "$installed" && ! askYesNo $MSG_FIX_DOWNGRADE "$installed" "$version"; then
+		rm -rf "$dir" &>>"$LOG_FILE"
+		logExit
+		exit 1
+	fi
+
+	# a held package can't be changed
+	executeApt apt-mark unhold "$PACKAGE_NAME"
+
+	if ! executeApt apt-get install -y --allow-downgrades "$dir/$latest"; then
+		rm -rf "$dir" &>>"$LOG_FILE"
+		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$latest"
+		logExit
+		return
+	fi
+	rm -rf "$dir" &>>"$LOG_FILE"
+
+	# nothing replaces the fix until the tester reverts it with -R or updates with -U, not even a beta or another hotfix
+	if ! executeApt apt-mark hold "$PACKAGE_NAME"; then
+		unrecoverableError $MSG_PACKAGE_HOLD_FAILED "$PACKAGE_NAME"
+		logExit
+		return
+	fi
+
+	writeToConsole $MSG_FIX_INSTALLED "$version" "$branch"
+
+	logExit
+
+}
+
 function package_revert_execute() { # installs the previous release and holds it, used by option -R
 
 	logEntry
@@ -2626,7 +2749,7 @@ function package_change_execute() { # version hold heldQuestion - installs the v
 
 }
 
-function isBetaVersion() { # debianVersion - pre-releases 0.7.5~alpha1, 0.7.5~beta1 and 0.7.5~rc1 are in suite beta, an individual fix like 0.7.5-m2~u972.1 isn't
+function isBetaVersion() { # debianVersion - pre-releases 0.7.5~alpha1, 0.7.5~beta1 and 0.7.5~rc1 are in suite beta, a fix of a branch like 0.7.5-m1+m972.1 isn't
 	[[ "$1" =~ ~(alpha|beta|rc) ]]
 }
 
@@ -2674,6 +2797,13 @@ function parsePackageVersions() { # sets the installed version and the versions 
 	PACKAGE_OFFER_UPDATE="" PACKAGE_OFFER_BETA="" PACKAGE_OFFER_REVERT_BETA=""
 	if [[ -n "$PACKAGE_VERSION_CANDIDATE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_CANDIDATE" gt "$i"; then
 		PACKAGE_OFFER_UPDATE="$PACKAGE_VERSION_CANDIDATE"
+	fi
+	# a fix of a branch is installed from a file, so the candidate of apt can be a beta: offer the newest release
+	if isFixVersion "$i"; then
+		PACKAGE_OFFER_UPDATE=""
+		if [[ -n "$PACKAGE_VERSION_STABLE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_STABLE" gt "$i"; then
+			PACKAGE_OFFER_UPDATE="$PACKAGE_VERSION_STABLE"
+		fi
 	fi
 	if [[ -n "$PACKAGE_VERSION_BETA" ]] && dpkg --compare-versions "$PACKAGE_VERSION_BETA" gt "$i"; then
 		PACKAGE_OFFER_BETA="$PACKAGE_VERSION_BETA"
@@ -2732,13 +2862,17 @@ function downloadFile() { # url, targetFileName
 		local url="$1"
 		local file="$2"
 		local f=$(mktemp)
-		local httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
-		local rc=$?
+		local httpCode rc
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		rc=$?	# of curl, not of local
 		logItem "httpCode: $httpCode RC: $rc"
-		if [[ $rc != 0 || ${httpCode:0:1} != "2" ]]; then
+		# a file:// URL has no HTTP code (000), e.g. the repository of the package test
+		if [[ $rc != 0 || ( ${httpCode:0:1} != "2" && ! ( "$url" == file://* && "$httpCode" == "000" ) ) ]]; then
 			rm $f &>>$LOG_FILE
 			logExit $httpCode
-			return $httpCode
+			# errors of curl have no HTTP code either, 000 would be return code 0
+			[[ "$httpCode" =~ ^[1-9][0-9]*$ ]] && return $httpCode
+			return 1
 		fi
 
 		if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
@@ -5435,6 +5569,19 @@ function package_upgrade_execute() { # updates the installed package to the late
 
 	package_index_update_execute
 
+	if isFixVersion "$oldVersion"; then	# replaced by the newest release, never by the candidate of apt, which can be a beta
+		parsePackageVersions
+		if [[ -z "$PACKAGE_OFFER_UPDATE" ]]; then
+			writeToConsole $MSG_PACKAGE_UP_TO_DATE "$oldVersion"
+			logExit
+			return
+		fi
+		package_change_execute "$PACKAGE_OFFER_UPDATE" 0 $MSG_FIX_REPLACE
+		writeToConsole $MSG_PACKAGE_UPGRADED "$oldVersion" "$PACKAGE_TARGET_VERSION"
+		logExit
+		return
+	fi
+
 	if isPackageHeld; then
 		candidate="$(packageCandidate)"
 		if [[ -z "$candidate" || "$candidate" == "$oldVersion" ]]; then
@@ -6336,6 +6483,14 @@ function unattendedInstall() {
 		if (( PACKAGE_MODE )); then
 			config_merge_package_execute
 		fi
+	elif (( MODE_FIX )); then
+		if (( ! PACKAGE_MODE )); then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_PACKAGE_REQUIRED "-F"
+			exit 1
+		fi
+		check4InternetAvailable
+		package_fix_execute "$FIX_BRANCH"
+		config_merge_package_execute
 	elif (( MODE_REVERT || MODE_BETA || MODE_REVERT_BETA )); then
 		if (( ! PACKAGE_MODE )); then
 			local option="-R"
@@ -6413,6 +6568,7 @@ function show_help() {
 	echo "$MYSELF [-f] [-y] ( -b | -i | -m | -R | -S | -u | -U | -t [crond|systemd] )"
 	echo "-b: unattended install or update of the latest beta (alpha, beta or rc) of $RASPIBACKUP_NAME with apt. Asks before changing a held release"
 	echo "-f: update the package index with apt-get update even if it was updated less than a day ago"
+	echo "-F <branch>: unattended install of the newest fix of a fix branch for testing, e.g. -F m_972. It's held until it's reverted to the release with -R or updated to the release with the fix with -U"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
 	echo "-m: add new options of the config template of package $PACKAGE_NAME to the config (called by the package after an update)"
@@ -6464,6 +6620,8 @@ MODE_UPDATE=0 # force install
 MODE_REVERT=0 # revert the package to the previous release and hold it
 MODE_BETA=0 # install or update the latest beta of the package
 MODE_REVERT_BETA=0 # revert a beta of the package to the current release
+MODE_FIX=0 # install the newest fix of a branch for testing and hold it
+FIX_BRANCH=""
 MODE_MERGE=0 # merge the config template of the package into the config, called by postinst
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
 FORCE_INDEX_UPDATE=0 # apt-get update even if it was done less than a day ago
@@ -6494,7 +6652,7 @@ fi
 
 ASSUME_YES=0 # -y answers questions of the options with yes
 
-while getopts "t:h?bfmusSUiRy" opt; do
+while getopts "t:h?bfmusSUiRyF:" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -6515,6 +6673,10 @@ while getopts "t:h?bfmusSUiRy" opt; do
 		 MODE_UNATTENDED=1
 		 ;;
     S) MODE_REVERT_BETA=1
+		 MODE_UNATTENDED=1
+		 ;;
+    F) MODE_FIX=1
+		 FIX_BRANCH="$OPTARG"
 		 MODE_UNATTENDED=1
 		 ;;
     m) MODE_MERGE=1
