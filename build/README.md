@@ -43,6 +43,8 @@ Check these settings:
 | `VERSION_RASPIBACKUP` | version inserted into `raspiBackup` and used for the package, empty = `VERSION` of `raspiBackup.sh` |
 | `VERSION_RASPIBACKUPCONFIG` | version inserted into `raspiBackupConfig`, empty = `VERSION` of `raspiBackupConfig.sh` |
 | `DEB_REVISION` | Debian revision appended to the package version for a minor fix, e.g. `1` -> `0.7.5-1`, empty = none |
+| `FIXES` | fix branches in the package, e.g. `m_972 m_965`, empty = branches `m_<issue>` merged since the last tag, see [Tags and GitHub releases](#tags-and-github-releases) |
+| `GITHUB_RELEASES` | `1` = `publishRepo.sh` creates public GitHub releases, empty = git tags only. **Set it only when the apt repository is in production** |
 
 GitHub Pages is already enabled (repository settings -> Pages -> Deploy from a branch ->
 `gh-pages`, `/ (root)`). Nothing else has to be done on GitHub.
@@ -58,19 +60,39 @@ git push
 
 # 2. Build, sign and add the package to the local repository build/repo
 cd build
+./build.sh --dry-run          # optional: check version, suite and fix branches first
 ./build.sh
 
-# 3. Publish the repository on GitHub Pages (branch gh-pages)
-./publishRepo.sh              # or first: ./publishRepo.sh --no-push to review the commit
+# 3. Publish the repository on GitHub Pages (branch gh-pages). Also tags the published
+#    version (v0.7.5) and, if GITHUB_RELEASES="1", creates its GitHub release
+./publishRepo.sh --dry-run    # optional: check what is published, tagged and released first
+./publishRepo.sh
 
 # 4. Check after one or two minutes that the new version is online
-curl -fsS https://framps.github.io/raspiBackup/dists/stable/main/binary-armhf/Packages | grep ^Version
-
-# 5. Optional: tag the release
-git tag v0.7.5 && git push origin v0.7.5
+curl -fsS https://framps.github.io/raspiBackup/dists/stable/main/binary-armhf/Packages | grep -E '^(Version|Fixes):'
 ```
 
 `gpg` asks for the passphrase of the signing key during steps 2 and 3.
+
+#### Check before building and publishing
+
+Both scripts have a `--dry-run` which changes nothing. It doesn't sign (no passphrase), doesn't
+touch `build/deb/` and `build/repo/` and doesn't commit, push or tag. Only `build.log` is rewritten.
+
+| Command | Shows | Warns if |
+|---------|-------|----------|
+| `./build.sh --dry-run [--no-repo] [<version>]` | branch and commit, package version, versions of raspiBackup and raspiBackupConfig, fix branches (`Fixes`), last tag, target suite | the version is a build of a fix branch (`-m_972`) which would go into a suite, the version is already in `build/repo/`, or it's lower than the highest version of its suite in `build/repo/` (apt wouldn't install it as update) |
+| `./publishRepo.sh --dry-run [--remove <version>]` | versions which would be published, marked `(new)`, removed versions, tags which would be created on which commit, GitHub releases with their notes, and whether they would be created (`GITHUB_RELEASES`) | a version can't be tagged (fix branch build, commit not available) |
+
+`./publishRepo.sh --no-push` is no dry run: it signs and updates `build/repo/` and creates the
+commit locally, only pushing, tagging and the GitHub releases are skipped.
+
+`build.sh --dry-run` only knows the versions in the local `build/repo/`. The published ones are
+shown by `./publishRepo.sh --dry-run` or `--list`.
+
+A fix branch build like `0.8.1-m-972` is dangerous in suite `stable`: apt reads it as release
+`0.8.1-m` plus revision `972`, so it sorts above every hotfix `0.8.1-m1`, `0.8.1-m2`, ... Users who
+installed it never get a hotfix of `0.8.1`. Build fix branches with `--no-repo`.
 
 Notes:
 
@@ -101,6 +123,59 @@ Notes:
   so you can publish from any system.
 - Neither `build/deb/` nor `build/repo/` are committed to `master`. The packages exist on
   `gh-pages` only.
+
+### Tags and GitHub releases
+
+Which fix branch went into which version is recorded automatically, nothing has to be
+documented by hand. The branch number is the issue number: `m_972` fixes issue #972.
+
+**In the package.** `build.sh` writes two own fields into the package:
+
+| Field | Content |
+|-------|---------|
+| `Fixes` | fix branches in the package, e.g. `m_972 m_965`. `build.sh` takes the branches `m_<issue>` merged since the last tag (`Merge branch 'm_972'`, `Merge pull request #.. from ../m_972`). Set `FIXES` in `build.conf` if that's wrong or incomplete, e.g. for a squash merge |
+| `Git-Commit` | commit the package was built from, `publishRepo.sh` tags it |
+
+They are also listed in the Debian changelog (`apt changelog raspibackup`). Every version in the
+repository shows them, on GitHub (`dists/stable/main/binary-armhf/Packages` on branch `gh-pages`)
+and on every system with the repository:
+
+```
+apt-cache show raspibackup | grep -E '^(Version|Fixes):'
+```
+
+**Git tags.** After the push `publishRepo.sh` creates a signed tag `v<version>` on the commit of
+every published package which has no tag yet and pushes it. A tag can't contain `~`, so the
+tags look like the former ones: `v0.7.5`, `v0.7.5-1`, `v0.7.5-m1`, `v0.7.6-beta1`. Packages built
+before `build.sh` recorded the commit aren't tagged. On GitHub every commit page lists the tags
+containing it, and two tags can be compared (`compare/v0.7.5...v0.7.5-m1`).
+
+**GitHub releases.** With `GITHUB_RELEASES="1"` in `build.conf`, `publishRepo.sh` also creates a
+GitHub release for every new tag:
+
+| Version | Release |
+|---------|---------|
+| release `0.7.5`, hotfix `0.7.5-m1` | release with the fixed issues, e.g. `- #972 (branch m_972)` |
+| beta `0.7.6~beta1` | pre-release |
+| minor fix `0.7.5-1` | none, only the tag: minor fixes aren't announced |
+| build of a fix branch `0.7.5-m-972` (`VERSION="0.7.5-m_972"`) | none and no tag: it's for one tester only and never announced |
+
+> **Warning: GitHub releases are public.** They are shown to everybody on
+> https://github.com/framps/raspiBackup/releases, the page raspiBackup refers to in its update
+> messages and where the releases of the installations without apt are announced. Set
+> `GITHUB_RELEASES="1"` only when the apt repository is in production. Before that, leave it empty:
+> `publishRepo.sh` creates the tags only and says that no releases were created.
+> With `GITHUB_RELEASES="1"`, `publishRepo.sh` shows the same warning together with the releases
+> it would create and asks before creating them.
+
+Creating the releases requires the GitHub CLI: `sudo apt-get install gh` and `gh auth login`.
+If you answer no, or `gh` is missing, the tags exist anyway and a later `publishRepo.sh` doesn't
+create the releases again. Create them by hand:
+
+```
+gh release create v0.7.5-m1 --verify-tag --title "raspiBackup 0.7.5-m1" --notes "Fixes: #972 (branch m_972)"
+gh release create v0.7.6-beta1 --verify-tag --prerelease --title "raspiBackup 0.7.6~beta1" --notes "..."
+```
 
 ### Installations without apt
 
@@ -217,7 +292,8 @@ for this build and remove it afterwards.
 Useful commands:
 
 ```
-./build.sh --help                       # options: --no-check (no lintian), --no-repo
+./build.sh --help                       # options: --dry-run, --no-check (no lintian), --no-repo
+./publishRepo.sh --help                 # options: --dry-run, --list, --no-push, --remove <version>
 ./buildRepo.sh                          # re-create and re-sign the repository index only
 git fetch origin gh-pages && git ls-tree -r --name-only FETCH_HEAD pool   # published versions
 ```
@@ -838,7 +914,7 @@ result and deletes the branch. Report and log are downloaded to `build/test/pack
 ├── build-debug.log     # build debug log
 ├── build.sh            # build script, calls buildRepo.sh at the end
 ├── buildRepo.sh        # adds packages to the signed apt repository in repo/
-├── publishRepo.sh      # publishes repo/ and raspiBackupInstall.sh on GitHub Pages (branch gh-pages)
+├── publishRepo.sh      # publishes repo/ and raspiBackupInstall.sh on GitHub Pages (branch gh-pages), tags versions
 ├── common.sh           # common definitions for build and install
 ├── compareVersions.sh  # to test version up- and downgrade recognition
 ├── testPackageUpdates.sh # tests updates and reversals (release, beta, hotfix, individual fix, migration without apt) on a test system

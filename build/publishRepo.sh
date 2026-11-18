@@ -42,15 +42,24 @@ Steps:
     - delete the packages of the versions given with --remove from 'repo'
     - recreate and sign the repository index (buildRepo.sh)
     - replace the contents of the Pages branch by 'repo' and push it
+    - tag the commit of every published package which has no tag yet with a signed tag
+      v<version>, e.g. v0.7.5, v0.7.5-1, v0.7.5-m1, v0.7.6-beta1 (a tag can't contain '~')
+    - if GITHUB_RELEASES="1" in build.conf: create a GitHub release for every new tag of a
+      release, hotfix or beta, with the fix branches of the package (field Fixes).
+      Minor fixes (e.g. 0.7.5-1) aren't announced, they get the tag only.
+      GitHub releases are public: they are shown to everybody on the releases page
+      raspiBackup refers to. Asks before creating them. Requires the GitHub CLI gh.
 
 GitHub Pages has to be enabled once for the Pages branch:
 Repository settings -> Pages -> Deploy from a branch -> gh-pages, / (root)
 
 Options:
 
+    --dry-run            show what would be published, removed, tagged and released, then exit.
+                         Nothing is signed, changed, committed, pushed or tagged.
     --list               list the versions published on the Pages branch with their suite
                          and the ones in 'repo' not yet published, then exit
-    --no-push            create the commit but don't push it
+    --no-push            create the commit but don't push it, no tags and no GitHub releases
     --remove <version>   unpublish this version, can be used multiple times
                          e.g. --remove 0.8.2-beta or --remove 0.8.2~beta
                          Systems which installed it keep it. Publish a higher version to replace it.
@@ -69,11 +78,15 @@ PAGES_BRANCH="${PAGES_BRANCH:-gh-pages}"
 
 PUSH=1
 LIST=0
+DRY_RUN=0
 REMOVE=()
 while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
                    exit
+                   ;;
+        --dry-run) DRY_RUN=1
+                   shift
                    ;;
         --list) LIST=1
                 shift
@@ -97,10 +110,27 @@ done
 
 trap 'err $?' ERR
 
+# sort Debian versions read from stdin in the order of apt, sort -V doesn't (it sorts 0.7.5 after 0.7.5-m1)
+sort_debian_versions() {
+    local v i sorted=()
+    while read -r v; do
+        [[ -z "$v" ]] && continue
+        i=${#sorted[@]}
+        while (( i > 0 )) && dpkg --compare-versions "${sorted[i-1]}" gt "$v"; do
+            sorted[i]="${sorted[i-1]}"
+            i=$(( i - 1 ))
+        done
+        sorted[i]="$v"
+    done
+    if (( ${#sorted[@]} > 0 )) ; then
+        printf '%s\n' "${sorted[@]}"
+    fi
+}
+
 # list deb file names (one per line, without path) as "<version> <suite> [<note>]"
 list_versions() {
     local note="${1:-}"
-    sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -u -V | while read -r version; do
+    sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -u | sort_debian_versions | while read -r version; do
         if [[ "$version" == *~* ]] ; then
             printf '%-24s %-8s %s\n' "$version" "${REPO_BETA_SUITE:-beta}" "$note"
         else
@@ -108,6 +138,245 @@ list_versions() {
         fi
     done
 }
+
+# git tag of a package version, a tag can't contain '~': 0.7.5~beta1 -> v0.7.5-beta1
+tag_name() { # version
+    echo "v${1//\~/-}"
+}
+
+# GitHub repository "owner/name" of the remote, e.g. framps/raspiBackup
+github_repository() {
+    git remote get-url "$PAGES_REMOTE" | sed -E 's#^.*github\.com[:/]([^/]+/[^/]+)$#\1#; s#\.git$##'
+}
+
+# release notes of a package: kind of version and fix branches linked to their issues
+release_notes() { # deb version
+    local fixes branch
+    fixes="$(dpkg-deb -f "$1" Fixes)"
+    if [[ "$2" == *~* ]] ; then
+        echo "Beta version $2 of raspiBackup."
+    elif [[ "$2" =~ -m[0-9]+$ ]] ; then
+        echo "Hotfix $2 of raspiBackup."
+    else
+        echo "Release $2 of raspiBackup."
+    fi
+    if [[ -n "$fixes" ]] ; then
+        echo ""
+        echo "Fixes:"
+        echo ""
+        for branch in $fixes; do
+            echo "- #${branch#m_} (branch $branch)"
+        done
+    fi
+}
+
+# packages which get a tag, read as deb files from stdin: prints "<deb> <tag> <release>" per package,
+# release is 1 if it also gets a GitHub release. $1 is a file with the existing tags, one per line.
+tag_plan() { # existingTagsFile
+    local deb version commit tag
+    while read -r deb; do
+        version="$(dpkg-deb -f "$deb" Version)"
+        commit="$(dpkg-deb -f "$deb" Git-Commit)"
+        tag="$(tag_name "$version")"
+        if [[ -z "$commit" ]] ; then	# built before build.sh recorded the commit
+            continue
+        fi
+        # a build of a fix branch (VERSION="0.7.5-m_972" -> 0.7.5-m-972) is for one tester, never announced
+        if [[ "$version" =~ -m-[0-9]+ ]] ; then
+            echo "Warning: $version is a build of a fix branch, not tagged and no GitHub release." >&2
+            continue
+        fi
+        if grep -qxF -- "$tag" "$1" ; then
+            continue
+        fi
+        if ! git cat-file -e "$commit^{commit}" 2>/dev/null ; then
+            echo "Warning: Commit $commit of $version not found, $tag not created. Fetch it and run publishRepo.sh again." >&2
+            continue
+        fi
+        # minor fixes like 0.7.5-1 aren't announced
+        if [[ "$version" =~ -[0-9]+$ ]] ; then
+            echo "$deb $tag 0"
+        else
+            echo "$deb $tag 1"
+        fi
+    done
+}
+
+public_releases_warning() {
+    echo "!!! WARNING: GitHub releases are public. They are shown to everybody on"
+    echo "!!!          https://github.com/$(github_repository)/releases"
+    echo "!!!          which raspiBackup refers to in its update messages."
+    echo "!!!          Create them only if the apt repository is in production."
+}
+
+show_release_notes() { # deb ...
+    local deb version
+    for deb in "$@"; do
+        version="$(dpkg-deb -f "$deb" Version)"
+        echo "--- $(tag_name "$version")"
+        release_notes "$deb" "$version" | sed 's/^/    /'
+    done
+}
+
+# tag the commits of published packages without tag, create GitHub releases if GITHUB_RELEASES="1"
+tag_and_release() {
+    local deb version tag release existing tags=() releases=() answer repository
+
+    git fetch -q --tags "$PAGES_REMOTE" || true
+    existing="$(mktemp)"
+    git tag -l > "$existing"
+
+    while read -r deb tag release; do
+        version="$(dpkg-deb -f "$deb" Version)"
+        git tag -s -u "$GPG_KEYID" -m "raspiBackup $version" "$tag" "$(dpkg-deb -f "$deb" Git-Commit)"
+        git push "$PAGES_REMOTE" "refs/tags/$tag"
+        tags+=("$tag")
+        if (( release )) ; then
+            releases+=("$deb")
+        fi
+    done < <(find "$REPO/pool" -name '*.deb' | sort -V | tag_plan "$existing")
+    rm -f "$existing"
+
+    if (( ${#tags[@]} == 0 )) ; then
+        echo "No new versions to tag"
+        return
+    fi
+    echo "Created tags: ${tags[*]}"
+
+    if (( ${#releases[@]} == 0 )) ; then
+        return
+    fi
+
+    repository="$(github_repository)"
+    if [[ "${GITHUB_RELEASES:-}" != "1" ]] ; then
+        echo ""
+        echo "No GitHub releases created, GITHUB_RELEASES isn't \"1\" in build.conf."
+        echo "Create them when the apt repository is in production, see build/README.md."
+        return
+    fi
+
+    echo ""
+    public_releases_warning
+    echo ""
+    show_release_notes "${releases[@]}"
+    echo ""
+    read -r -p "Create these public GitHub releases? [y/N] " answer || answer=""
+    if [[ ! "$answer" =~ ^[yYjJ] ]] ; then
+        echo "No GitHub releases created. The tags exist, create the releases later with"
+        echo "    gh release create <tag> --verify-tag --title \"raspiBackup <version>\" --notes \"...\""
+        return
+    fi
+
+    if ! command -v gh > /dev/null ; then
+        echo "Error: GitHub CLI 'gh' isn't installed, no GitHub releases created."
+        echo "       Install it (sudo apt-get install gh), log in with 'gh auth login' and create them with"
+        echo "       gh release create <tag> --verify-tag --title \"raspiBackup <version>\" --notes \"...\""
+        exit 1
+    fi
+
+    for deb in "${releases[@]}"; do
+        version="$(dpkg-deb -f "$deb" Version)"
+        tag="$(tag_name "$version")"
+        local prerelease=()
+        [[ "$version" == *~* ]] && prerelease=(--prerelease)
+        gh release create "$tag" --repo "$repository" --verify-tag "${prerelease[@]}" \
+            --title "raspiBackup $version" --notes "$(release_notes "$deb" "$version")"
+    done
+}
+
+# show what a run would publish, remove, tag and release without signing, changing or pushing anything
+dry_run() {
+    local name path version deb tag release existing note suite
+    local published_names=() removed_versions=() plan=() releases=()
+
+    DRY_RUN_DIR="$(mktemp --tmpdir -d raspiBackup_dryrun.XXXXXX)"
+    trap 'rm -rf "$DRY_RUN_DIR"' EXIT
+
+    show "Dry run: nothing is signed, changed, committed, pushed or tagged"
+
+    # the packages a run would publish: the published ones, the ones in 'repo' and minus the removed ones
+    if git fetch -q "$PAGES_REMOTE" "$PAGES_BRANCH" 2>/dev/null ; then
+        while read -r path; do
+            name="${path##*/}"
+            git show "FETCH_HEAD:$path" > "$DRY_RUN_DIR/$name"
+            published_names+=("$name")
+        done < <({ git ls-tree -r --name-only --full-tree FETCH_HEAD pool 2>/dev/null || true; } | grep '\.deb$' || true)
+        echo "Published on $PAGES_REMOTE/$PAGES_BRANCH: ${#published_names[@]} packages"
+    else
+        echo "$PAGES_BRANCH doesn't exist yet and would be created"
+    fi
+    if [[ -d "$REPO/pool" ]] ; then
+        find "$REPO/pool" -name '*.deb' -exec cp -f -t "$DRY_RUN_DIR" {} +
+    fi
+
+    for version in "${REMOVE[@]}"; do
+        mapfile -t debs < <(find "$DRY_RUN_DIR" -name "${PACKAGE_NAME}_${version}_*.deb")
+        if (( ${#debs[@]} == 0 )) ; then
+            echo "Error: Version $version isn't in the repository. Available versions:"
+            find "$DRY_RUN_DIR" -name '*.deb' -printf '%f\n' | list_versions
+            exit 1
+        fi
+        rm -f "${debs[@]}"
+        removed_versions+=("$version")
+    done
+
+    echo ""
+    echo "Would publish:"
+    echo ""
+    while read -r version; do
+        name="$(find "$DRY_RUN_DIR" -name "${PACKAGE_NAME}_${version}_*.deb" -printf '%f\n' | head -n 1)"
+        suite="${REPO_SUITE:-stable}"
+        [[ "$version" == *~* ]] && suite="${REPO_BETA_SUITE:-beta}"
+        note=""
+        printf '%s\n' "${published_names[@]}" | grep -qxF -- "$name" || note="(new)"
+        printf '%-24s %-8s %s\n' "$version" "$suite" "$note"
+    done < <(find "$DRY_RUN_DIR" -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -u | sort_debian_versions)
+    if (( ${#removed_versions[@]} > 0 )) ; then
+        echo ""
+        echo "Would remove: ${removed_versions[*]}"
+    fi
+
+    # tags: the local ones and the ones on GitHub
+    existing="$DRY_RUN_DIR/tags"
+    { git tag -l; git ls-remote --tags "$PAGES_REMOTE" 2>/dev/null | sed -E 's#.*refs/tags/##; s#\^\{\}$##'; } | sort -u > "$existing"
+    mapfile -t plan < <(find "$DRY_RUN_DIR" -name '*.deb' | sort -V | tag_plan "$existing")
+
+    echo ""
+    if (( ${#plan[@]} == 0 )) ; then
+        echo "No new versions to tag"
+    else
+        echo "Would create and push signed tags:"
+        echo ""
+        for line in "${plan[@]}"; do
+            read -r deb tag release <<< "$line"
+            echo "$tag on commit $(dpkg-deb -f "$deb" Git-Commit | cut -c1-12)"
+            if (( release )) ; then
+                releases+=("$deb")
+            fi
+        done
+    fi
+
+    if (( ${#releases[@]} > 0 )) ; then
+        echo ""
+        if [[ "${GITHUB_RELEASES:-}" == "1" ]] ; then
+            echo "Would ask before creating these GitHub releases (GITHUB_RELEASES=\"1\"):"
+            echo ""
+            public_releases_warning
+        else
+            echo "No GitHub releases, GITHUB_RELEASES isn't \"1\" in build.conf. With \"1\" these would be created:"
+        fi
+        echo ""
+        show_release_notes "${releases[@]}"
+    fi
+
+    echo ""
+    echo "A real run asks for the passphrase of key $GPG_KEYID to sign the repository and the tags."
+}
+
+if (( DRY_RUN )) ; then
+    dry_run
+    exit 0
+fi
 
 if (( LIST )) ; then
     published=""
@@ -193,7 +462,11 @@ git log --stat -1 "$commit" | tail -n 25
 if (( PUSH )) ; then
     show "Push to $PAGES_REMOTE/$PAGES_BRANCH"
     git push "$PAGES_REMOTE" "$commit:refs/heads/$PAGES_BRANCH"
+
+    show "Tag published versions"
+    tag_and_release
 else
     echo ""
     echo "Not pushed. To push use: git push $PAGES_REMOTE $commit:refs/heads/$PAGES_BRANCH"
+    echo "Then run publishRepo.sh again to tag the published versions."
 fi

@@ -38,6 +38,8 @@ Finally the package is added to the signed apt repository in 'repo' (see buildRe
 
 Options:
 
+    --dry-run      show what would be built (versions, suite, fix branches) and possible problems,
+                   then exit. Nothing is built, signed or added to the repository.
     --no-check     don't check anything with `lintian`
     --no-repo      don't add the package to the apt repository
     -h | --help    display this short help
@@ -79,6 +81,18 @@ VERSION_RASPIBACKUPCONFIG=""
 # raspiBackup doesn't report a minor fix to users of the same version, apt upgrade installs it.
 # Not used if a version is passed as argument to build.sh.
 DEB_REVISION=""
+
+# FIXES
+# Fix branches contained in the package, e.g. "m_972 m_965". Written into the package (field Fixes,
+# apt-cache show raspibackup) and into the GitHub release created by publishRepo.sh.
+# If empty then the branches m_<issue> merged since the last tag are used.
+FIXES=""
+
+# GITHUB_RELEASES
+# "1": publishRepo.sh creates a GitHub release for every published release, hotfix and beta.
+# GitHub releases are public, so set it only if the apt repository is in production.
+# Empty: publishRepo.sh only creates the git tags.
+GITHUB_RELEASES=""
 
 # Note: Some of the following variables need to be exported
 #       because they are used in/with envsubst.
@@ -156,10 +170,14 @@ fi
 
 
 UPDATE_REPO=1
+DRY_RUN=0
 while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
                    exit
+                   ;;
+        --dry-run) DRY_RUN=1
+                   shift
                    ;;
         --no-check) LINTIAN_CHECK=""
                     shift
@@ -238,6 +256,69 @@ if [[ -n "${DEB_REVISION:-}" ]]; then
 fi
 VERSION_FILES="_$(sed -E 's/_/./g' <<< "$VERSION")"
 
+# last release tag, used for the changelog and the fix branches
+last_tag=$(git -C "$GITSRC" describe --tags --abbrev=0 2>/dev/null || true)
+# commit of the package, publishRepo.sh tags it
+git_commit=$(git -C "$GITSRC" rev-parse HEAD)
+# fix branches merged since the last tag, e.g. "Merge branch 'm_972'" or "Merge pull request #1 from framps/m_972"
+if [[ -z "${FIXES:-}" && -n "$last_tag" ]]; then
+    FIXES=$(git -C "$GITSRC" log --merges --pretty=format:"%s%n" "$last_tag..HEAD" \
+        | sed -nE "s/^Merge (remote-tracking )?branch '([^']*\/)?(m_[0-9]+)'.*/\3/p; s/^Merge pull request #[0-9]+ from [^\/]+\/(m_[0-9]+)$/\1/p" \
+        | sort -u -V | tr '\n' ' ')
+fi
+FIXES="$(xargs <<< "${FIXES:-}")"
+show "Fix branches: ${FIXES:-none}"
+suite="$REPO_SUITE"
+[[ "$VERSION" == *"~"* ]] && suite="$REPO_BETA_SUITE"
+
+if (( DRY_RUN )); then
+    show "Dry run: nothing is built, signed or added to the repository"
+    echo "Branch:              $BRANCH_TO_DEB, commit $git_commit"
+    echo "Package:             ${PACKAGE_NAME} $VERSION -> $DEB_TGT/${PACKAGE_NAME}${VERSION_FILES}.deb"
+    echo "raspiBackup:         $VERSION_RASPIBACKUP"
+    echo "raspiBackupConfig:   $VERSION_RASPIBACKUPCONFIG"
+    echo "Fix branches:        ${FIXES:-none}"
+    echo "Last tag:            ${last_tag:-none}"
+    if (( UPDATE_REPO )); then
+        echo "Repository:          added to $REPO, suite $suite, published by publishRepo.sh"
+    else
+        echo "Repository:          not added (--no-repo)"
+    fi
+
+    # problems a real run wouldn't notice
+    problems=0
+    if (( UPDATE_REPO )) && [[ "$VERSION" =~ -m-[0-9]+ ]]; then
+        echo "Warning: $VERSION is a build of a fix branch. It's for one tester only, but would go into"
+        echo "         suite $suite and be installed and announced to everybody. Use --no-repo."
+        problems=1
+    fi
+    if (( UPDATE_REPO )) && [[ -d "$REPO/pool" ]]; then
+        if [[ -n "$(find "$REPO/pool" -name "${PACKAGE_NAME}_${VERSION}_*.deb")" ]]; then
+            echo "Warning: $VERSION is already in $REPO. Systems which installed it won't get the rebuild."
+            problems=1
+        fi
+        # highest version of the same suite in the local repository, see publishRepo.sh --dry-run for the published ones
+        highest=""
+        # same suite only: pre-releases with '~' are in the beta suite
+        is_beta=0
+        [[ "$VERSION" == *"~"* ]] && is_beta=1
+        while read -r v; do
+            v_beta=0
+            [[ "$v" == *"~"* ]] && v_beta=1
+            (( v_beta == is_beta )) || continue
+            if [[ -z "$highest" ]] || dpkg --compare-versions "$v" gt "$highest"; then
+                highest="$v"
+            fi
+        done < <(find "$REPO/pool" -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/')
+        if [[ -n "$highest" && "$highest" != "$VERSION" ]] && dpkg --compare-versions "$VERSION" lt "$highest"; then
+            echo "Warning: $VERSION is lower than $highest in suite $suite. apt doesn't install it as an update."
+            problems=1
+        fi
+    fi
+    (( problems )) || echo "No problems found."
+    exit 0
+fi
+
 show "Building deb package '${PACKAGE_NAME}' for raspiBackup $VERSION"
 
 rm -rf "$TGT"
@@ -280,14 +361,14 @@ last_date=$(git log --pretty=format:"%ai" -1)
 sha1=$(git log --pretty=format:"%h" -1)
 
 # Debian changelog (apt changelog, apt-listchanges): one entry with the commits since the last release tag
-last_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
-suite="$REPO_SUITE"
-[[ "$VERSION" == *"~"* ]] && suite="$REPO_BETA_SUITE"
 changelog=$(
     echo "${PACKAGE_NAME} ($VERSION) $suite; urgency=medium"
     echo ""
     echo "  * raspiBackup $VERSION_RASPIBACKUP, raspiBackupConfig $VERSION_RASPIBACKUPCONFIG"
     echo "  * Release notes: https://github.com/framps/raspiBackup/releases"
+    if [[ -n "$FIXES" ]]; then
+        echo "  * Fixes: $(sed -E 's/m_([0-9]+)/#\1/g' <<< "$FIXES")"
+    fi
     if [[ -n "$last_tag" ]]; then
         echo "  * Changes since $last_tag:"
         git log --no-merges -n 100 --pretty=format:"%s" "$last_tag..HEAD" | sed 's/^/    - /'
@@ -342,6 +423,11 @@ export INSTALLED_SIZE
 chmod 644 "$TGT/DEBIAN/md5sums"
 # create DEBIAN package files and insert version number in control file
 envsubst < "$PACKAGE/DEBIAN/control"   > "$TGT/DEBIAN/control"
+# own fields, shown by apt-cache show and used by publishRepo.sh for the git tag and the GitHub release
+sed -i "/^Description:/i Git-Commit: $git_commit" "$TGT/DEBIAN/control"
+if [[ -n "$FIXES" ]]; then
+    sed -i "/^Description:/i Fixes: $FIXES" "$TGT/DEBIAN/control"
+fi
 chmod 644 "$TGT/DEBIAN/control"
 # substitute only the build variables, the maintainer scripts use shell variables too
 for script in preinst postinst prerm postrm; do
@@ -432,6 +518,8 @@ if [[ -n "$LINTIAN_CHECK" ]] ; then
                   SUPPRESS_TAGS="$SUPPRESS_TAGS,read-in-maintainer-script"
                   # no debhelper and Raspberry Pi OS always runs systemd
                   SUPPRESS_TAGS="$SUPPRESS_TAGS,maintainer-script-calls-systemctl"
+                  # own control fields Fixes and Git-Commit
+                  SUPPRESS_TAGS="$SUPPRESS_TAGS,unknown-field"
                   ;;
         esac
 
