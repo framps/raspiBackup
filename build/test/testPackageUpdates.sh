@@ -510,10 +510,11 @@ readonly NEWS_FUNCTIONS=(debianVersion isVersionInList isPackageInstalled isPack
     preReleaseKind isReportedPreRelease reportedPreReleases)
 
 news() { # deprecated [skipDeprecated] - messages of the installed raspiBackup about versions, one per line
-         # deprecated: DEPRECATED of build.conf, see deprecate(), skipDeprecated: SKIP_DEPRECATED of the configuration
+         # deprecated: DEPRECATED of build.conf, has to be set with deprecate() before,
+         # skipDeprecated: SKIP_DEPRECATED of the configuration
          # Messages are printed as name of the message constant without MSG_ followed by their parameters.
     local script="$WORK/news.sh" f
-    deprecate "$1"
+    [[ "$1" == "$REPO_DEPRECATED" ]] || abort "news(): DEPRECATED='$1' isn't set with deprecate()"
     {
         echo 'logEntry() { :; }; logItem() { :; }; logExit() { :; }; getMessage() { :; }; exitError() { exit 2; }'
         grep -E '^MSG_[A-Z_]+=[0-9]+$' "$RASPIBACKUP" | grep -v '^MSG_LEVEL_'
@@ -541,6 +542,7 @@ EOF_NEWS
 
 assertNews() { # description expected deprecated [skipDeprecated] - expected: messages of news() separated by ';', empty: none
     local description="$1" expected="$2" actual
+    deprecate "$3"      # the mark stays in the repository until the next deprecate()
     actual="$(news "${@:3}" | paste -sd ';')"
     log "news (DEPRECATED='$3' SKIP_DEPRECATED='${4:-}'): $actual"
     if [[ "$actual" == "$expected" ]]; then
@@ -559,7 +561,7 @@ offers() { # what the update menu M3 of the installed raspiBackupConfig offers, 
         _ "$RASPIBACKUPCONFIG" 2>> "$LOG")
 }
 
-REPO_DEPRECATED=""    # DEPRECATED of build.conf, kept by build() and buildFix()
+REPO_DEPRECATED=""    # DEPRECATED of build.conf, kept by build() and buildFix(), stays in the repository like in production
 
 deprecate() { # versions - DEPRECATED of build.conf: buildRepo.sh marks them in the package index, like the maintainer does
     [[ "$1" == "$REPO_DEPRECATED" ]] && return 0
@@ -1078,6 +1080,7 @@ assertNews "beta is reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6;BETAVERSI
 assertNews "betas of a deprecated release aren't reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6" "$V_REL9"
 assertNews "deprecated beta isn't reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6" "$V_BETA9_1"
 
+deprecate ""          # the betas were deprecated by the checks above
 assertRc 0 "install beta" rbc -b
 assertInstalled "$D_BETA9_1"
 assertNews "no news for beta tester" "" ""
