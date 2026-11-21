@@ -104,6 +104,14 @@ FIXES=""
 # Empty: publishRepo.sh only creates the git tags.
 GITHUB_RELEASES=""
 
+# DEPRECATED
+# Published versions with a severe bug, separated by blanks or commas, e.g. "0.7.5 0.7.6~beta1".
+# An entry includes all versions derived from it: "0.7.5" also 0.7.5-1, 0.7.5-m1, 0.7.5~beta1, but not 0.7.50.
+# buildRepo.sh marks them in the signed package index (field Deprecated). raspiBackup warns their users
+# at the start of every run and never reports them as update, raspiBackupConfig never offers them.
+# Change it and run publishRepo.sh (it runs buildRepo.sh), no package has to be built.
+DEPRECATED=""
+
 # Note: Some of the following variables need to be exported
 #       because they are used in/with envsubst.
 

@@ -45,7 +45,8 @@ and raspiBackupConfig -U/-R/-b/-S/-F that
     5. updates and downgrades skip or step over several versions, a beta is reverted
        to an older hotfix
     6. raspiBackup reports new versions, minor fixes (DEB_REVISION) and deprecated versions
-       according to DEPRECATED of raspiBackup.properties
+       according to DEPRECATED of build.conf (field Deprecated in the signed package index),
+       raspiBackupConfig doesn't offer them
     In sections 1, 2, 3 and 9 raspiBackup (after a backup) and raspiBackupConfig (update menu M3)
     have to report the new versions available.
     7. an installation without apt (raspiBackupInstallUI.sh, install.sh) is migrated to the
@@ -505,13 +506,14 @@ assertInSuite() { # debianVersion suite|none
 
 # functions of the installed raspiBackup which report new versions and deprecated versions after a backup
 readonly NEWS_FUNCTIONS=(debianVersion isVersionInList isPackageInstalled isPackageHeld packageSuiteVersions highestVersion withoutDebianRevision
-    withoutDeprecatedVersions updatePackageReminder reportPackageNews isVersionDeprecated runningVersion
+    deprecatedPackageVersions isPackageVersionDeprecated withoutDeprecatedVersions updatePackageReminder reportPackageNews isVersionDeprecated runningVersion
     preReleaseKind isReportedPreRelease reportedPreReleases)
 
 news() { # deprecated [skipDeprecated] - messages of the installed raspiBackup about versions, one per line
-         # deprecated: DEPRECATED of raspiBackup.properties, skipDeprecated: SKIP_DEPRECATED of the configuration
+         # deprecated: DEPRECATED of build.conf, see deprecate(), skipDeprecated: SKIP_DEPRECATED of the configuration
          # Messages are printed as name of the message constant without MSG_ followed by their parameters.
     local script="$WORK/news.sh" f
+    deprecate "$1"
     {
         echo 'logEntry() { :; }; logItem() { :; }; logExit() { :; }; getMessage() { :; }; exitError() { exit 2; }'
         grep -E '^MSG_[A-Z_]+=[0-9]+$' "$RASPIBACKUP" | grep -v '^MSG_LEVEL_'
@@ -526,7 +528,7 @@ PACKAGE_NAME=raspibackup PACKAGE_SUITE=stable PACKAGE_BETA_SUITE=beta
 REGRESSION_TEST=1    # no refreshPackageIndex, the test updates the package index
 UPDATE_REMINDER_MAX=3 PACKAGE_UPDATE_REMINDER_FILE=reminder LOG_FILE=/dev/null
 VAR_LIB_DIRECTORY="$(mktemp -d)"
-DEPRECATED_PROPERTY="$1" SKIP_DEPRECATED="$2"
+SKIP_DEPRECATED="$2"
 VERSION="$(sed -n -E 's/^VERSION="([^"]*)".*/\1/p' "$3")"
 reportPackageNews
 RUNNING_VERSION="$(runningVersion)"
@@ -555,6 +557,17 @@ offers() { # what the update menu M3 of the installed raspiBackupConfig offers, 
         parsePackageVersions
         echo "P1 ${PACKAGE_OFFER_UPDATE:--} P2 ${PACKAGE_VERSION_PREVIOUS:--} P3 ${PACKAGE_OFFER_BETA:--} P4 ${PACKAGE_OFFER_REVERT_BETA:--}"' \
         _ "$RASPIBACKUPCONFIG" 2>> "$LOG")
+}
+
+REPO_DEPRECATED=""    # DEPRECATED of build.conf, kept by build() and buildFix()
+
+deprecate() { # versions - DEPRECATED of build.conf: buildRepo.sh marks them in the package index, like the maintainer does
+    [[ "$1" == "$REPO_DEPRECATED" ]] && return 0
+    REPO_DEPRECATED="$1"
+    log "maintainer: DEPRECATED=\"$1\" in build.conf, buildRepo.sh, publishRepo.sh"
+    { cat "$BUILD/build.conf.test"; echo "DEPRECATED=\"$REPO_DEPRECATED\""; } > "$BUILD/build.conf"
+    (cd "$BUILD" && run ./buildRepo.sh) || abort "buildRepo.sh failed for DEPRECATED=\"$1\""
+    aptUpdate
 }
 
 assertOffers() { # description expected - expected: output of offers()
@@ -602,7 +615,7 @@ build() { # version [--no-repo] [--revision <n>] - builds the package with build
         step "maintainer: build $debVersion ($where)"
     fi
 
-    { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; echo "DEB_REVISION=\"$revision\""; } > "$BUILD/build.conf"
+    { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; echo "DEB_REVISION=\"$revision\""; echo "DEPRECATED=\"$REPO_DEPRECATED\""; } > "$BUILD/build.conf"
     local -a options=("${buildOptions[@]}")
     (( LINTIAN )) || options+=(--no-check)
     (cd "$BUILD" && run ./build.sh "${options[@]}") || abort "build.sh failed for $version"
@@ -620,7 +633,7 @@ buildFix() { # version try - builds try <try> of the fix of a fix branch with bu
     local version="$1" try="$2" branch="m_${1##*-m_}"
     step "maintainer: build try $try of the fix of branch $branch for its tester (in no suite)"
 
-    { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; echo 'DEB_REVISION=""'; } > "$BUILD/build.conf"
+    { cat "$BUILD/build.conf.test"; echo "VERSION_RASPIBACKUP=\"$version\""; echo 'DEB_REVISION=""'; echo "DEPRECATED=\"$REPO_DEPRECATED\""; } > "$BUILD/build.conf"
     local -a options=(--fix "$try")
     (( LINTIAN )) || options+=(--no-check)
     (cd "$BUILD" && run ./build.sh "${options[@]}") || abort "build.sh --fix $try failed for $version"
@@ -991,10 +1004,10 @@ assertInstalled "$V_FIX5"
 # 6. deprecated versions
 #######################################################################################################################
 
-# DEPRECATED of raspiBackup.properties is passed to the functions of the installed raspiBackup, see news()
+# DEPRECATED of build.conf is marked in the package index by buildRepo.sh (field Deprecated), see news() and deprecate()
 
 CURRENT_SECTION="deprecated"
-section "6. Deprecated versions" "raspiBackup reports new versions, betas and deprecated versions (DEPRECATED of raspiBackup.properties) after a backup. Minor fixes are installed but not reported."
+section "6. Deprecated versions" "raspiBackup reports new versions, betas and deprecated versions (DEPRECATED of build.conf, marked in the package index) after a backup. Minor fixes are installed but not reported. raspiBackupConfig doesn't offer deprecated versions."
 
 publish "$V_REL6"
 aptUpgrade
@@ -1024,6 +1037,38 @@ assertNews "latest release is reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6
 assertNews "deprecated latest release: newest release which isn't deprecated is reported with apt-get install" \
     "NEW_PACKAGE_VERSION_INSTALL $V_REL7 $D_MINOR6 $V_REL7" "$V_REL8"
 assertNews "deprecated releases aren't reported (comma separated)" "" "$V_REL7,$V_REL8"
+
+deprecate "$V_REL8"
+step "user: apt-cache show $PACKAGE_NAME=$V_REL8"
+if apt-cache show "$PACKAGE_NAME=$V_REL8" 2>/dev/null | grep -qx "Deprecated: yes"; then
+    pass "$V_REL8 is marked as deprecated in the package index"
+else
+    fail "$V_REL8 isn't marked as deprecated in the package index"
+fi
+if apt-cache show "$PACKAGE_NAME=$V_REL7" 2>/dev/null | grep -q "^Deprecated:"; then
+    fail "$V_REL7 is marked as deprecated in the package index"
+else
+    pass "$V_REL7 isn't marked as deprecated in the package index"
+fi
+actual="$(offers)"
+log "raspiBackupConfig update menu: $actual"
+if [[ "$actual" == "P1 $V_REL7 P2 $V_REL6 "* ]]; then
+    pass "raspiBackupConfig offers the newest release which isn't deprecated: $actual"
+else
+    fail "raspiBackupConfig offers '$actual' instead of P1 $V_REL7 P2 $V_REL6 (deprecated $V_REL8)"
+fi
+assertRc 0 "update installs the newest release which isn't deprecated" rbc -U
+assertInstalled "$V_REL7"
+assertRc 0 "downgrade to $D_MINOR6" apt-get install -y --allow-downgrades "$PACKAGE_NAME=$D_MINOR6"
+assertInstalled "$D_MINOR6"
+deprecate "$V_REL6"
+actual="$(offers)"
+log "raspiBackupConfig update menu: $actual"
+if [[ "$actual" == "P1 $V_REL8 P2 "* && "$actual" != *" P2 $V_REL6 "* ]]; then
+    pass "raspiBackupConfig doesn't offer the deprecated previous release $V_REL6: $actual"
+else
+    fail "raspiBackupConfig offers '$actual' (deprecated $V_REL6)"
+fi
 run apt-mark hold "$PACKAGE_NAME"
 assertNews "held version: release is reported with apt-get install" "NEW_PACKAGE_VERSION_INSTALL $V_REL8 $D_MINOR6 $V_REL8" ""
 run apt-mark unhold "$PACKAGE_NAME"

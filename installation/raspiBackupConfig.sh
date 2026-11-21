@@ -283,6 +283,7 @@ REPO_FIXES_DIR="fixes"	# fixes of branches for one tester, next to the repositor
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
 PACKAGE_INDEX_STAMP="$VAR_LIB_DIRECTORY/packageIndexUpdated" # time of the last apt-get update
 PACKAGE_INDEX_MAX_AGE=$((24*60*60)) # apt-get update at most once a day
+PACKAGE_VERSIONS_DEPRECATED="" # marked in the apt repository (field Deprecated), never offered, read by parsePackageVersions
 
 PROPERTY_REGEX='.*="([^"]*)"'
 
@@ -2823,6 +2824,28 @@ function packageVersions() { # suite - versions of the package available in the 
 		| awk -F'|' -v suite="$1" '{ gsub(/ /, "", $2); split($3, a, " "); split(a[2], s, "/"); if (s[1] == suite) print $2 }'
 }
 
+# Versions marked as deprecated in the signed apt repository: field 'Deprecated: yes' of the package index,
+# set by build/buildRepo.sh for DEPRECATED of build/build.conf. They are never offered.
+function deprecatedPackageVersions() {
+	apt-cache show "$PACKAGE_NAME" 2>>"$LOG_FILE" \
+		| awk 'BEGIN { RS = "" } { v = ""; d = 0; n = split($0, line, "\n")
+			for (i = 1; i <= n; i++) { if (line[i] ~ /^Version: /) v = substr(line[i], 10); if (line[i] ~ /^Deprecated: *yes *$/) d = 1 }
+			if (d && v != "") print v }' | sort -u
+}
+
+function isPackageVersionDeprecated() { # version - true if marked as deprecated in the apt repository, read by parsePackageVersions
+	[[ -n "$1" ]] && grep -qxF -- "$1" <<< "$PACKAGE_VERSIONS_DEPRECATED"
+}
+
+function withoutDeprecatedVersions() { # versions read from stdin which aren't marked as deprecated in the apt repository
+	local v
+	while read -r v; do
+		[[ -z "$v" ]] && continue
+		isPackageVersionDeprecated "$v" && continue
+		echo "$v"
+	done
+}
+
 function highestVersion() { # [lowerThan] - highest version read from stdin, optionally only versions lower than lowerThan
 	local v max=""
 	while read -r v; do
@@ -2840,11 +2863,12 @@ function parsePackageVersions() { # sets the installed version and the versions 
 
 	PACKAGE_VERSION_INSTALLED="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
 	PACKAGE_VERSION_CANDIDATE="$(packageCandidate)"
-	PACKAGE_VERSION_STABLE="$(packageVersions "$REPO_SUITE" | highestVersion)"
-	PACKAGE_VERSION_BETA="$(packageVersions "$REPO_BETA_SUITE" | highestVersion)"
+	PACKAGE_VERSIONS_DEPRECATED="$(deprecatedPackageVersions)"	# never offered
+	PACKAGE_VERSION_STABLE="$(packageVersions "$REPO_SUITE" | withoutDeprecatedVersions | highestVersion)"
+	PACKAGE_VERSION_BETA="$(packageVersions "$REPO_BETA_SUITE" | withoutDeprecatedVersions | highestVersion)"
 	PACKAGE_VERSION_PREVIOUS=""
 	if ! isBetaVersion "$PACKAGE_VERSION_INSTALLED"; then	# for a beta the previous release is the current release
-		PACKAGE_VERSION_PREVIOUS="$(packageVersions "$REPO_SUITE" | highestVersion "$PACKAGE_VERSION_INSTALLED")"
+		PACKAGE_VERSION_PREVIOUS="$(packageVersions "$REPO_SUITE" | withoutDeprecatedVersions | highestVersion "$PACKAGE_VERSION_INSTALLED")"
 	fi
 
 	# versions offered by the update menu P1-P4 and options -U, -R, -b and -S, empty if not available
@@ -2852,6 +2876,14 @@ function parsePackageVersions() { # sets the installed version and the versions 
 	PACKAGE_OFFER_UPDATE="" PACKAGE_OFFER_BETA="" PACKAGE_OFFER_REVERT_BETA=""
 	if [[ -n "$PACKAGE_VERSION_CANDIDATE" ]] && dpkg --compare-versions "$PACKAGE_VERSION_CANDIDATE" gt "$i"; then
 		PACKAGE_OFFER_UPDATE="$PACKAGE_VERSION_CANDIDATE"
+	fi
+	# apt would install a deprecated version: offer the newest one which isn't deprecated, for a beta also the betas
+	if isPackageVersionDeprecated "$PACKAGE_OFFER_UPDATE"; then
+		PACKAGE_OFFER_UPDATE="$( { packageVersions "$REPO_SUITE"; isBetaVersion "$i" && packageVersions "$REPO_BETA_SUITE"; } \
+			| withoutDeprecatedVersions | highestVersion)"
+		if [[ -n "$PACKAGE_OFFER_UPDATE" ]] && ! dpkg --compare-versions "$PACKAGE_OFFER_UPDATE" gt "$i"; then
+			PACKAGE_OFFER_UPDATE=""
+		fi
 	fi
 	# a fix of a branch is installed from a file, so the candidate of apt can be a beta: offer the newest release
 	if isFixVersion "$i"; then
@@ -2868,7 +2900,7 @@ function parsePackageVersions() { # sets the installed version and the versions 
 	fi
 
 	logItem "installed: $PACKAGE_VERSION_INSTALLED candidate: $PACKAGE_VERSION_CANDIDATE stable: $PACKAGE_VERSION_STABLE previous: $PACKAGE_VERSION_PREVIOUS beta: $PACKAGE_VERSION_BETA"
-	logItem "offered update: $PACKAGE_OFFER_UPDATE beta: $PACKAGE_OFFER_BETA revert beta: $PACKAGE_OFFER_REVERT_BETA"
+	logItem "offered update: $PACKAGE_OFFER_UPDATE beta: $PACKAGE_OFFER_BETA revert beta: $PACKAGE_OFFER_REVERT_BETA deprecated: ${PACKAGE_VERSIONS_DEPRECATED//$'\n'/ }"
 
 	logExit
 
@@ -5634,6 +5666,19 @@ function package_upgrade_execute() { # updates the installed package to the late
 			return
 		fi
 		package_change_execute "$PACKAGE_OFFER_UPDATE" 0 $MSG_FIX_REPLACE
+		writeToConsole $MSG_PACKAGE_UPGRADED "$oldVersion" "$PACKAGE_TARGET_VERSION"
+		logExit
+		return
+	fi
+
+	parsePackageVersions
+	if isPackageVersionDeprecated "$PACKAGE_VERSION_CANDIDATE"; then	# apt would install a deprecated version, install the offered one
+		if [[ -z "$PACKAGE_OFFER_UPDATE" ]]; then
+			writeToConsole $MSG_PACKAGE_UP_TO_DATE "$oldVersion"
+			logExit
+			return
+		fi
+		package_change_execute "$PACKAGE_OFFER_UPDATE" 0 $MSG_PACKAGE_HELD_UPDATE
 		writeToConsole $MSG_PACKAGE_UPGRADED "$oldVersion" "$PACKAGE_TARGET_VERSION"
 		logExit
 		return

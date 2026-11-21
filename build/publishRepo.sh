@@ -363,6 +363,7 @@ dry_run() {
         [[ "$version" == *~* ]] && suite="${REPO_BETA_SUITE:-beta}"
         note=""
         grep -qxF -- "$name" <<< "$(printf '%s\n' "${published_names[@]}")" || note="(new)"
+        is_deprecated "$version" "${DEPRECATED:-}" && note="${note:+$note }deprecated"
         printf '%-24s %-8s %s\n' "$version" "$suite" "$note"
     done < <(find "$DRY_RUN_DIR" -name '*.deb' -printf '%f\n' | sed -E 's/^[^_]*_([^_]*)_.*/\1/' | sort -u | sort_debian_versions)
     if (( ${#removed_versions[@]} > 0 )) ; then

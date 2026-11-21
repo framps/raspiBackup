@@ -45,6 +45,7 @@ Check these settings:
 | `DEB_REVISION` | Debian revision appended to the package version for a minor fix, e.g. `1` -> `0.7.5-1`, empty = none |
 | `FIXES` | fix branches in the package, e.g. `m_972 m_965`, empty = branches `m_<issue>` merged since the last tag, see [Tags and GitHub releases](#tags-and-github-releases) |
 | `GITHUB_RELEASES` | `1` = `publishRepo.sh` creates public GitHub releases, empty = git tags only. **Set it only when the apt repository is in production** |
+| `DEPRECATED` | published versions with a severe bug, e.g. `0.7.5 0.7.6~beta1`, see [Deprecate a version](#deprecate-a-version) |
 
 GitHub Pages is already enabled (repository settings -> Pages -> Deploy from a branch ->
 `gh-pages`, `/ (root)`). Nothing else has to be done on GitHub.
@@ -111,13 +112,9 @@ Notes:
   Users of a pre-release get a new release reported first. If there is none, newer betas and
   release candidates, users of an alpha also newer alphas. A pre-release is only reported if it's
   the newest one. The update menu of `raspiBackupConfig` (and `-b`) offers all of them.
-  `raspiBackup.properties` isn't needed for that. Its `DEPRECATED` (versions separated by blanks or
-  commas, e.g. `DEPRECATED="0.7.5 0.7.6-beta1"`) is still used: these versions are never reported
-  as update or beta, and users running one of them get a warning. A version includes all versions
-  derived from it: `0.7.5` deprecates `0.7.5~1`, `0.7.5-rc1`, `0.7.5-beta1`, `0.7.5-1`, `0.7.5-m1`,
-  `0.7.5-m1+m972.1`, ..., but not `0.7.50`. If `apt upgrade` would install a
-  deprecated version, raspiBackup tells the user the `apt-get install raspibackup=<version>` command
-  for the newest version which isn't deprecated.
+  Deprecated versions are marked in the repository as well, see
+  [Deprecate a version](#deprecate-a-version). A package installation doesn't download
+  `raspiBackup.properties` any more, only installations without apt still read it.
 - All published versions stay in the repository (unless removed with `--remove`, see section 4),
   so users can always go back.
   `publishRepo.sh` copies packages published earlier but missing locally back into `repo/`,
@@ -179,6 +176,43 @@ gh release create v0.7.5-m1 --verify-tag --title "raspiBackup 0.7.5-m1" --notes 
 gh release create v0.7.6-beta1 --verify-tag --prerelease --title "raspiBackup 0.7.6~beta1" --notes "..."
 ```
 
+### Deprecate a version
+
+A published version with a severe bug is marked as deprecated in the signed package index.
+apt itself has no such mark: the usual way is to publish a fixed version, which `apt upgrade`
+installs and raspiBackup reports. The mark in addition reaches the users who don't update or keep
+a version (`-R`, `apt-mark hold`), and keeps the version from being offered again.
+
+```
+# 1. List the version in build.conf, versions separated by blanks or commas
+DEPRECATED="0.7.5"
+
+# 2. Check and publish, publishRepo.sh recreates and signs the package index (buildRepo.sh).
+#    No package has to be built.
+./publishRepo.sh --dry-run      # lists the versions with 'deprecated'
+./publishRepo.sh
+```
+
+- `buildRepo.sh` adds the field `Deprecated: yes` to these versions in the package index
+  (`apt-cache show raspibackup=0.7.5`). The packages stay in the pool: apt has to know a version,
+  so its users get the warning.
+- An entry includes all versions derived from it: `0.7.5` deprecates `0.7.5-1`, `0.7.5-m1`,
+  `0.7.5~beta1`, `0.7.5~rc1`, ..., but not `0.7.50`. Debian versions and `VERSION` of raspiBackup
+  (`0.7.6-beta1`) are both accepted. `buildRepo.sh` warns about an entry which matches no version.
+- raspiBackup warns users of a deprecated version at the start of every run (RBK0135W, three times)
+  and sends the eMail even with `MAIL_ON_ERROR_ONLY`. Telegram, Pushover and Slack get 💀 in their
+  notification if they are configured to send messages. It never reports a deprecated version as
+  update or beta. `SKIP_DEPRECATED` in the configuration
+  of raspiBackup suppresses the warning for a version.
+- `raspiBackupConfig` never offers a deprecated version (menu `P1`-`P4`, `-U`, `-R`, `-b`, `-S`).
+  If `apt upgrade` would install a deprecated version, `-U` installs the newest one which isn't
+  deprecated, and raspiBackup tells the user the `apt-get install raspibackup=<version>` command.
+  A plain `apt upgrade` still installs it, so publish a fixed version soon.
+- raspiBackup reads the mark from the local package index, which `apt-daily` and raspiBackup
+  itself (once a day) update. A changed mark reaches the users within a day.
+- Fixes of a branch for one tester (`-F`) aren't in the package index and are never deprecated.
+- Installations without apt still read `DEPRECATED` of `raspiBackup.properties` on `master`.
+
 ### Installations without apt
 
 Installations with `raspiBackupInstallUI.sh` or `install.sh` don't know the apt repository. They
@@ -234,7 +268,7 @@ They sort in this order, so every version is replaced by the next public one:
   installations get it with `apt upgrade`, but raspiBackup doesn't tell users of the same version
   about it (`0.7.5` -> `0.7.5-1`). Users of an older version are told about the latest one
   (`0.7.4` -> `0.7.5-1`). To have a minor fix reported to users of an earlier minor fix, add that
-  one to `DEPRECATED` in `raspiBackup.properties`: `0.7.5-1` reports `0.7.5-2` to users of `0.7.5-1`.
+  one to `DEPRECATED` in `build.conf`: `0.7.5-1` reports `0.7.5-2` to users of `0.7.5-1`.
   Users of `0.7.5` can't be told about a minor fix, because `DEPRECATED="0.7.5"` deprecates the
   minor fixes as well. Publish a hotfix (`0.7.5-m1`) instead.
 

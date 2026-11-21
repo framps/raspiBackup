@@ -3453,14 +3453,19 @@ function downloadPropertiesFile() {
 			local statsURL="$MYSTATSURL/raspiBackup.properties?version=$VERSION&type=$type&mode=$mode&keep=$keep&func=$func&srs=$srs&os=$os"
 		fi
 
-		local dlHttpCode dlRC
-		dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
-		dlRC=$?
-		if (( $dlRC != 0 )); then
-			logItem "Download of $downloadURL failed: $dlHttpCode $dlRC"	# silently ignore download error of property file
+		# the package gets new and deprecated versions from the signed apt repository, see reportPackageNews
+		if isPackageInstalled; then
+			logItem "Package installed, $downloadURL not needed"
 		else
-			NEW_PROPERTIES_FILE=1
-			parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
+			local dlHttpCode dlRC
+			dlHttpCode=$(downloadFile "$downloadURL" "$LATEST_TEMP_PROPERTY_FILE")
+			dlRC=$?
+			if (( $dlRC != 0 )); then
+				logItem "Download of $downloadURL failed: $dlHttpCode $dlRC"	# silently ignore download error of property file
+			else
+				NEW_PROPERTIES_FILE=1
+				parsePropertiesFile "$LATEST_TEMP_PROPERTY_FILE"
+			fi
 		fi
 
 		# send some statistics data
@@ -3474,8 +3479,8 @@ function downloadPropertiesFile() {
 	return
 }
 
-# Only DEPRECATED is used, new versions are detected in the apt repository.
-# VERSION, BETA, ... are still read by installations without apt, see published/raspiBackup.properties
+# Only DEPRECATED is used and only without the package: the package gets new and deprecated versions from the
+# signed apt repository. VERSION, BETA, ... are still read by installations without apt, see published/raspiBackup.properties
 #DEPRECATED=""
 
 function parsePropertiesFile() { # propertyFileName
@@ -3499,7 +3504,9 @@ function isVersionDeprecated() { # versionNumber
 
 	local rc=1	# no/failure
 
-	if isVersionInList "$1" "$DEPRECATED_PROPERTY"; then
+	if isPackageInstalled; then	# marked in the apt repository, read by reportPackageNews
+		isPackageVersionDeprecated "$1" && rc=0
+	elif isVersionInList "$1" "$DEPRECATED_PROPERTY"; then
 		rc=0
 		logItem "Version $1 is deprecated"
 	fi
@@ -5567,11 +5574,25 @@ function withoutDebianRevision() { # version - version without the Debian revisi
 	sed -E 's/-[0-9]+$//' <<< "$1"
 }
 
-function withoutDeprecatedVersions() { # versions read from stdin which aren't listed in DEPRECATED of the properties file
+# Versions marked as deprecated in the signed apt repository: field 'Deprecated: yes' of the package index,
+# set by build/buildRepo.sh for DEPRECATED of build/build.conf. apt-cache shows the record of the repository
+# also for the installed version. A version not in the repository (fix of a branch, -F) is never deprecated.
+function deprecatedPackageVersions() {
+	apt-cache show "$PACKAGE_NAME" 2>>"$LOG_FILE" \
+		| awk 'BEGIN { RS = "" } { v = ""; d = 0; n = split($0, line, "\n")
+			for (i = 1; i <= n; i++) { if (line[i] ~ /^Version: /) v = substr(line[i], 10); if (line[i] ~ /^Deprecated: *yes *$/) d = 1 }
+			if (d && v != "") print v }' | sort -u
+}
+
+function isPackageVersionDeprecated() { # version - true if marked as deprecated in the apt repository, see reportPackageNews
+	[[ -n "$1" ]] && grep -qxF -- "$1" <<< "$DEPRECATED_PACKAGE_VERSIONS"
+}
+
+function withoutDeprecatedVersions() { # versions read from stdin which aren't marked as deprecated in the apt repository
 	local version
 	while read -r version; do
 		[[ -z "$version" ]] && continue
-		if isVersionInList "$version" "$DEPRECATED_PROPERTY"; then
+		if isPackageVersionDeprecated "$version"; then
 			logItem "Ignoring deprecated version $version"
 			continue
 		fi
@@ -5608,7 +5629,7 @@ function updatePackageReminder() { # version - true if the update to version sho
 }
 
 # Reports new versions in the apt repository, used if raspiBackup is installed as Debian package.
-# Versions listed in DEPRECATED of the properties file are never reported.
+# Versions marked as deprecated in the apt repository are never reported (DEPRECATED of build/build.conf).
 # Minor fixes of the installed version (0.7.5 -> 0.7.5-1) aren't reported, apt upgrade installs them.
 #   - releases and hotfixes in suite stable for all users, also for the tester of a fix of a branch
 #     (raspiBackupConfig -F, e.g. 0.7.5-m1+m972.1). The fixes are in no suite, so they are never reported.
@@ -5649,6 +5670,8 @@ function reportPackageNews() {
 	candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
 	stableVersions="$(packageSuiteVersions "$PACKAGE_SUITE")"
 	betaVersions="$(packageSuiteVersions "$PACKAGE_BETA_SUITE")"
+	DEPRECATED_PACKAGE_VERSIONS="$(deprecatedPackageVersions)"	# also used by isVersionDeprecated after the news
+	logItem "deprecated: ${DEPRECATED_PACKAGE_VERSIONS//$'\n'/ }"
 
 	if grep -qxF -- "$installed" <<< "$betaVersions"; then
 		isBetaTester=1
@@ -5673,7 +5696,7 @@ function reportPackageNews() {
 	# a minor fix of the installed version (DEB_REVISION of build.sh, e.g. 0.7.5 -> 0.7.5-1) isn't reported,
 	# apt upgrade installs it anyway. It's reported if the installed version is deprecated.
 	if [[ -n "$update" && "$(withoutDebianRevision "$update")" == "$(withoutDebianRevision "$installed")" ]] \
-		&& ! isVersionInList "$installed" "$DEPRECATED_PROPERTY"; then
+		&& ! isPackageVersionDeprecated "$installed"; then
 		logItem "Ignoring minor fix $update"
 		update=""
 	fi
@@ -10335,6 +10358,7 @@ SKIP_FORMAT=0
 UNSUPPORTED_OPTION=""
 UPDATE_POSSIBLE=0
 VERSION_DEPRECATED=0
+DEPRECATED_PACKAGE_VERSIONS=""	# marked in the apt repository, read by reportPackageNews
 WARNING_MESSAGE_WRITTEN=0
 ERROR_MESSAGE_WRITTEN=0
 UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"

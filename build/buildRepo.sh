@@ -47,6 +47,10 @@ Fixes of branches for one tester (build.sh --fix, e.g. 0.7.4-m1+m972.1) are in n
 They are in 'repo/fixes/<branch>', the file 'latest' there names the newest one.
 Builds of a fix branch with its VERSION (0.7.4-m_972 -> 0.7.4-m-972) are refused.
 
+Versions listed in DEPRECATED of build.conf get the field 'Deprecated: yes' in the package index.
+raspiBackup warns their users at the start of every run and never reports them, raspiBackupConfig never offers them.
+They stay in the pool, so apt still knows them and the users of a deprecated version get the warning.
+
 The beta suite is marked 'NotAutomatic' and 'ButAutomaticUpgrades'. So apt never
 installs a beta by itself, but updates an installed beta to newer betas:
 
@@ -128,6 +132,24 @@ if ! compgen -G "$REPO/$POOL/*.deb" > /dev/null ; then
     exit 1
 fi
 
+# versions of the pool marked as deprecated in the package index, raspiBackup warns their users and never reports them
+DEPRECATED_VERSIONS=""
+if [[ -n "$(xargs <<< "${DEPRECATED:-}")" ]] ; then
+    show "Mark deprecated versions: ${DEPRECATED}"
+    for deb in "$REPO/$POOL"/*.deb; do
+        version="$(dpkg-deb -f "$deb" Version)"
+        is_deprecated "$version" "$DEPRECATED" && DEPRECATED_VERSIONS+="$version "
+    done
+    for entry in ${DEPRECATED//,/ }; do
+        matched=0
+        for version in $DEPRECATED_VERSIONS; do
+            is_deprecated "$version" "$entry" && matched=1
+        done
+        (( matched )) || echo "Warning: DEPRECATED entry $entry matches no version in the repository"
+    done
+    echo "Deprecated: ${DEPRECATED_VERSIONS:-none}"
+fi
+
 create_suite() {
     # $1 suite, $2 "beta" to list only versions with '~', otherwise only the ones without
     local suite="$1" beta="$2" dist="dists/$1" arch release filter
@@ -148,10 +170,14 @@ create_suite() {
         mkdir -p "$REPO/$dist/$REPO_COMPONENT/binary-$arch"
         # 'Filename:' entries have to be relative to the repository root
         (cd "$REPO" && apt-ftparchive --arch "$arch" packages "$POOL") \
-            | awk 'BEGIN { RS = ""; ORS = "\n\n" } '"$filter" > "$REPO/$dist/$REPO_COMPONENT/binary-$arch/Packages"
+            | awk 'BEGIN { RS = ""; ORS = "\n\n" } '"$filter" \
+            | awk -v deprecated="$DEPRECATED_VERSIONS" 'BEGIN { RS = ""; ORS = "\n\n"; split(deprecated, d, " "); for (i in d) dep[d[i]] = 1 }
+                { v = ""; n = split($0, line, "\n"); for (i = 1; i <= n; i++) if (line[i] ~ /^Version: /) v = substr(line[i], 10)
+                  if (v in dep) $0 = $0 "\nDeprecated: yes"
+                  print }' > "$REPO/$dist/$REPO_COMPONENT/binary-$arch/Packages"
         gzip -9nc "$REPO/$dist/$REPO_COMPONENT/binary-$arch/Packages" > "$REPO/$dist/$REPO_COMPONENT/binary-$arch/Packages.gz"
     done
-    grep -E "^(Package|Version|Filename):" "$REPO/$dist/$REPO_COMPONENT/binary-${REPO_ARCHITECTURES%% *}/Packages" || echo "No packages"
+    grep -E "^(Package|Version|Filename|Deprecated):" "$REPO/$dist/$REPO_COMPONENT/binary-${REPO_ARCHITECTURES%% *}/Packages" || echo "No packages"
 
     show "Create and sign Release file of suite $suite"
 

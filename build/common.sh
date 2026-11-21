@@ -73,6 +73,24 @@ function is_fix_branch_build() { # version
     [[ "$1" =~ -m-[0-9]+ ]]
 }
 
+# VERSION of raspiBackup -> Debian version, same as build.sh and debianVersion of raspiBackup.sh: 0.7.5-beta1 -> 0.7.5~beta1
+function debian_version() { # version
+    sed -E -e 's/_/-/g' -e 's/-(alpha|beta|rc)/~\L\1/I' <<< "$1"
+}
+
+# true if the Debian version is in the list DEPRECATED of build.conf (separated by blanks or commas), same rule as
+# isVersionInList of raspiBackup.sh: an entry includes all versions derived from it (entry or entry[!0-9]*),
+# 0.7.5 includes 0.7.5-1, 0.7.5~beta1, 0.7.5-m1, but not 0.7.50. Entries can be Debian versions or VERSION of raspiBackup.
+function is_deprecated() { # version list
+    local entry
+    for entry in ${2//,/ }; do
+        entry="$(debian_version "${entry//\"/}")"
+        [[ -z "$entry" ]] && continue
+        [[ "$1" == "$entry" || "$1" == "$entry"[!0-9]* ]] && return 0
+    done
+    return 1
+}
+
 # highest Debian version read from stdin
 function highest_debian_version() {
     local v highest=""
