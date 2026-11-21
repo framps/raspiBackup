@@ -73,11 +73,37 @@ if [[ "${1:-}" != "-y" ]]; then
     [[ "$answer" =~ ^[yYjJ] ]] || exit 1
 fi
 
+apt_lock_holder() { # writes the pid of a process holding a lock of apt or dpkg, false if none is held
+    # /proc/locks: '1: POSIX  ADVISORY  WRITE <pid> <major>:<minor>:<inode> 0 EOF', waiting processes have '->' as 2nd field
+    local f dev ino
+    for f in /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock; do
+        read -r dev ino < <(stat -c '%d %i' "$f" 2>/dev/null) || continue
+        awk -v id="$(printf '%02x:%02x:%d' $(( (dev >> 8) & 0xfff )) $(( (dev & 0xff) | ((dev >> 12) & 0xfff00) )) "$ino")" \
+            '$2 != "->" && $6 == id { print $5; found=1; exit } END { exit !found }' /proc/locks && return 0
+    done
+    return 1
+}
+
+wait_for_apt_locks() { # waits up to 5 minutes while another process uses apt, e.g. apt-daily or unattended-upgrades
+    local pid name waited=0
+    while pid="$(apt_lock_holder)"; do
+        name="$(cat "/proc/$pid/comm" 2>/dev/null || echo "?")"
+        if (( waited >= 300 )); then
+            echo "??? apt is still in use by process $pid ($name) after $waited seconds. Try again later. Nothing restored"
+            return 1
+        fi
+        echo "--- apt is in use by process $pid ($name). Retrying in 60 seconds (waited $waited of at most 300 seconds)"
+        sleep 60
+        (( waited += 60 ))
+    done
+}
+
 # remove, not purge: purge deletes the configuration. postrm deletes the timers and the links of the extensions
 if dpkg-query -W -f '${Status}' ${PACKAGE_NAME} 2> /dev/null | grep -q " installed$"; then
     echo "--- Removing package ${PACKAGE_NAME}"
-    apt-mark unhold ${PACKAGE_NAME} > /dev/null 2>&1
-    if ! apt-get remove -y ${PACKAGE_NAME}; then
+    wait_for_apt_locks || exit 1
+    apt-mark -o DPkg::Lock::Timeout=60 unhold ${PACKAGE_NAME} > /dev/null 2>&1
+    if ! apt-get -o DPkg::Lock::Timeout=60 remove -y ${PACKAGE_NAME}; then
         echo "??? apt-get remove ${PACKAGE_NAME} failed, nothing restored"
         exit 1
     fi

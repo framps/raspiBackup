@@ -244,6 +244,8 @@ EOF
 fi
 
 DOWNLOAD_TIMEOUT=60 # seconds
+APT_LOCK_TIMEOUT=300 # seconds apt-get and apt-mark wait for the locks of apt and dpkg held by another process, e.g. apt-daily
+APT_LOCK_RETRY=60 # seconds between the checks of the locks, the user is told about each one
 DOWNLOAD_RETRIES=3
 
 BIN_DIR="/usr/local/bin"
@@ -1613,6 +1615,12 @@ MSG_DE[$MSG_FIX_DOWNGRADE]="${MSG_PRF}0061W: Die installierte Version %1 ist neu
 MSG_FIX_ALREADY_INSTALLED=$((SCNT++))
 MSG_EN[$MSG_FIX_ALREADY_INSTALLED]="${MSG_PRF}0062I: Fix %1 is already installed."
 MSG_DE[$MSG_FIX_ALREADY_INSTALLED]="${MSG_PRF}0062I: Fix %1 ist bereits installiert."
+MSG_APT_LOCK_WAIT=$((SCNT++))
+MSG_EN[$MSG_APT_LOCK_WAIT]="${MSG_PRF}0063W: apt is in use by process %1 (%2). Retrying in %3 seconds (waited %4 of at most %5 seconds)."
+MSG_DE[$MSG_APT_LOCK_WAIT]="${MSG_PRF}0063W: apt wird vom Prozess %1 (%2) benutzt. Neuer Versuch in %3 Sekunden (%4 von höchstens %5 Sekunden gewartet)."
+MSG_APT_LOCK_TIMEOUT=$((SCNT++))
+MSG_EN[$MSG_APT_LOCK_TIMEOUT]="${MSG_PRF}0064E: apt is still in use by process %1 (%2) after %3 seconds. Try again later."
+MSG_DE[$MSG_APT_LOCK_TIMEOUT]="${MSG_PRF}0064E: apt wird nach %3 Sekunden immer noch vom Prozess %1 (%2) benutzt. Versuche es später noch einmal."
 
 MSG_QUERY_CHARS_YES_NO=$((SCNT++))
 MSG_EN[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
@@ -2187,6 +2195,13 @@ function logItem() { # message
 
 function executeApt() { # command and arguments - logs command, complete stdout and stderr and rc of apt-get and apt-mark
 	local output rc line
+	case "$1" in
+		apt-get|apt-mark)
+			waitForAptLocks || return 1
+			# the short time between the check and apt locking, apt-get update doesn't wait for its lock though
+			set -- "$1" -o DPkg::Lock::Timeout=$APT_LOCK_RETRY "${@:2}"
+			;;
+	esac
 	log "Executing: $*"
 	output="$(DEBIAN_FRONTEND=noninteractive "$@" 2>&1)"
 	rc=$?
@@ -2195,6 +2210,46 @@ function executeApt() { # command and arguments - logs command, complete stdout 
 	done <<< "$output"
 	log "RC: $rc"
 	return $rc
+}
+
+function aptLockHolder() { # writes the pid of a process holding a lock of apt or dpkg, false if none is held
+	# /proc/locks: '1: POSIX  ADVISORY  WRITE <pid> <major>:<minor>:<inode> 0 EOF', waiting processes have '->' as 2nd field
+	local f dev ino
+	for f in /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock; do
+		read -r dev ino < <(stat -c '%d %i' "$f" 2>/dev/null) || continue
+		awk -v id="$(printf '%02x:%02x:%d' $(( (dev >> 8) & 0xfff )) $(( (dev & 0xff) | ((dev >> 12) & 0xfff00) )) "$ino")" \
+			'$2 != "->" && $6 == id { print $5; found=1; exit } END { exit !found }' /proc/locks && return 0
+	done
+	return 1
+}
+
+function showAptLock() { # message number and parameters - in the gauge of the progressbar, on the console or in an infobox
+	local m
+	m="$(getMessageText "$@")"
+	log "$m"
+	if (( PROGRESSBAR_DO )) && [[ -n "${GAUGE_FD:-}" ]]; then
+		printf 'XXX\n%s\n%s\nXXX\n' "${counter:-0}" "$m" >&"$GAUGE_FD"
+	elif (( MODE_UNATTENDED )); then
+		echo "$m"
+	else
+		whiptail --infobox "$m" 10 70
+	fi
+}
+
+function waitForAptLocks() { # waits up to APT_LOCK_TIMEOUT seconds until no process holds a lock of apt or dpkg, e.g. apt-daily or unattended-upgrades
+	# apt-get update doesn't wait for its lock at all, the others only with DPkg::Lock::Timeout and then report each second
+	local pid name waited=0
+	while pid="$(aptLockHolder)"; do
+		name="$(cat "/proc/$pid/comm" 2>/dev/null || echo "?")"
+		if (( waited >= APT_LOCK_TIMEOUT )); then
+			showAptLock $MSG_APT_LOCK_TIMEOUT "$pid" "$name" "$waited"
+			return 1
+		fi
+		showAptLock $MSG_APT_LOCK_WAIT "$pid" "$name" "$APT_LOCK_RETRY" "$waited" "$APT_LOCK_TIMEOUT"
+		sleep "$APT_LOCK_RETRY"
+		(( waited += APT_LOCK_RETRY ))
+	done
+	return 0
 }
 
 function downloadURL() { # fileName
@@ -5082,6 +5137,8 @@ function progressbar_do() { # <name of description array> <menu title> <funcs to
 	rm /tmp/$MYSELF.err &>/dev/null
 	local ERROR_FILE="/tmp/$MYSELF.err"
 	(
+		# stdout of the steps is their error, waitForAptLocks shows its messages in the gauge with this fd
+		exec {GAUGE_FD}>&1
 		while
 			:
 			eval "desc=\${$descArrayName[\$idx]}"
