@@ -205,6 +205,11 @@ DEPRECATED="0.7.5"
   notification if they are configured to send messages. It never reports a deprecated version as
   update or beta. `SKIP_DEPRECATED` in the configuration
   of raspiBackup suppresses the warning for a version.
+- raspiBackup also tells users of a deprecated version how to get rid of it. If there is a newer
+  version which isn't deprecated, it reports it with `raspiBackupConfig -U` (menu `M3`, `P1`) after
+  every run, not only three times like other updates. Otherwise it offers to revert (RBK0368I) to
+  the version `raspiBackupConfig` installs: the previous release with `-R` (menu `P2`), for a
+  beta the release with `-S` (menu `P4`). Without such a version there is only the warning.
 - `raspiBackupConfig` never offers a deprecated version (menu `P1`-`P4`, `-U`, `-R`, `-b`, `-S`).
   If `apt upgrade` would install a deprecated version, `-U` installs the newest one which isn't
   deprecated. raspiBackup tells the user to update with `raspiBackupConfig -U` or menu `M3` (`P1`).

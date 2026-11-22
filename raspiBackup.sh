@@ -2024,6 +2024,11 @@ MSG_EN[$MSG_MIGRATE_TO_PACKAGE]="RBK0367W: $SMILEY_UPDATE_POSSIBLE $MYNAME isn't
 #shellcheck disable=SC2034
 MSG_DE[$MSG_MIGRATE_TO_PACKAGE]="RBK0367W: $SMILEY_UPDATE_POSSIBLE $MYNAME ist nicht als Debian Paket installiert und erhält keine Aktualisierungen. Mit 'curl -fsSLO $PACKAGE_INSTALLER_URL && bash ${PACKAGE_INSTALLER_URL##*/}' wird auf das Debian Paket umgestellt. Die Konfiguration und der Backup Timer bleiben erhalten"
 
+MSG_DEPRECATED_REVERT=368
+MSG_EN[$MSG_DEPRECATED_REVERT]="RBK0368I: There is no version of $MYNAME without this bug yet. Revert to version %s with 'sudo raspiBackupConfig %s' or in menu M3 (%s) of 'sudo raspiBackupConfig'"
+#shellcheck disable=SC2034
+MSG_DE[$MSG_DEPRECATED_REVERT]="RBK0368I: Es gibt noch keine Version von $MYNAME ohne diesen Fehler. Gehe mit 'sudo raspiBackupConfig %2' oder im Menü M3 (%3) von 'sudo raspiBackupConfig' auf Version %1 zurück"
+
 declare -A MSG_HEADER=( ['I']="---" ['W']="!!!" ['E']="???" )
 
 # setup trap function
@@ -5447,6 +5452,13 @@ function withoutDeprecatedVersions() { # versions read from stdin which aren't m
 	done
 }
 
+function versionsLowerThan() { # version - versions read from stdin which are lower than version
+	local v
+	while read -r v; do
+		[[ -n "$v" ]] && dpkg --compare-versions "$v" lt "$1" && echo "$v"
+	done
+}
+
 function updatePackageReminder() { # version - true if the update to version should be reported, at most UPDATE_REMINDER_MAX times
 
 	logEntry "$1"
@@ -5548,7 +5560,8 @@ function reportPackageNews() {
 		update=""
 	fi
 
-	if [[ -n "$update" ]] && updatePackageReminder "$update"; then
+	# the update is reported every time while the installed version is deprecated, otherwise at most UPDATE_REMINDER_MAX times
+	if [[ -n "$update" ]] && { isVersionDeprecated "$installed" || updatePackageReminder "$update"; }; then
 		NEWS_AVAILABLE=1
 		UPDATE_POSSIBLE=1
 		FORCE_MESSAGE=1
@@ -5575,6 +5588,42 @@ function reportPackageNews() {
 			NEWS_AVAILABLE=1
 			BETA_AVAILABLE=1
 		fi
+	fi
+
+	# no version without the bug of the installed deprecated version: reportDeprecatedVersion offers to revert,
+	# the same version raspiBackupConfig offers: the release for a beta (-S), the previous release otherwise (-R)
+	PACKAGE_REVERT_VERSION="" PACKAGE_REVERT_OPTION="" PACKAGE_REVERT_MENU=""
+	if [[ -z "$update" ]] && isVersionDeprecated "$installed"; then
+		PACKAGE_REVERT_VERSION="$(withoutDeprecatedVersions <<< "$stableVersions" | versionsLowerThan "$installed" | highestVersion)"
+		if (( isBetaTester )); then
+			PACKAGE_REVERT_OPTION="-S" PACKAGE_REVERT_MENU="P4"
+		else
+			PACKAGE_REVERT_OPTION="-R" PACKAGE_REVERT_MENU="P2"
+		fi
+		logItem "revert deprecated $installed to: $PACKAGE_REVERT_VERSION $PACKAGE_REVERT_OPTION"
+	fi
+
+	logExit
+
+}
+
+# Warns users of a deprecated version (DEPRECATED of the properties file, or marked in the apt repository for the package).
+# Users of the package are told how to get rid of it: the update reported by reportPackageNews, or the revert to the version
+# without the bug if there is no update.
+function reportDeprecatedVersion() {
+
+	logEntry
+
+	if isVersionDeprecated "$RUNNING_VERSION"; then
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
+		writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
+		if [[ -n "$PACKAGE_REVERT_VERSION" ]]; then
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DEPRECATED_REVERT "$PACKAGE_REVERT_VERSION" "$PACKAGE_REVERT_OPTION" "$PACKAGE_REVERT_MENU"
+		fi
+		VERSION_DEPRECATED=1
+		NEWS_AVAILABLE=1
+		FORCE_MESSAGE=1
 	fi
 
 	logExit
@@ -10206,6 +10255,9 @@ UNSUPPORTED_OPTION=""
 UPDATE_POSSIBLE=0
 VERSION_DEPRECATED=0
 DEPRECATED_PACKAGE_VERSIONS=""	# marked in the apt repository, read by reportPackageNews
+PACKAGE_REVERT_VERSION=""	# version without the bug of a deprecated version if there is no newer one, set by reportPackageNews
+PACKAGE_REVERT_OPTION=""	# option of raspiBackupConfig which installs it, -R or -S
+PACKAGE_REVERT_MENU=""		# item of menu M3 of raspiBackupConfig which installs it, P2 or P4
 WARNING_MESSAGE_WRITTEN=0
 ERROR_MESSAGE_WRITTEN=0
 UNSUPPORTED_ENVIRONMENT="${UNSUPPORTED_ENVIRONMENT:=0}"
@@ -10929,14 +10981,7 @@ if [[ -n "$CLONE_DEVICE" ]]; then
 fi
 
 RUNNING_VERSION="$(runningVersion)"
-if isVersionDeprecated "$RUNNING_VERSION"; then
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
-	writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
-	VERSION_DEPRECATED=1
-	NEWS_AVAILABLE=1
-	FORCE_MESSAGE=1
-fi
+reportDeprecatedVersion
 
 doit # no return
 

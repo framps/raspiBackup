@@ -506,8 +506,8 @@ assertInSuite() { # debianVersion suite|none
 
 # functions of the installed raspiBackup which report new versions and deprecated versions after a backup
 readonly NEWS_FUNCTIONS=(debianVersion isVersionInList isPackageInstalled isPackageHeld packageSuiteVersions highestVersion withoutDebianRevision
-    deprecatedPackageVersions isPackageVersionDeprecated withoutDeprecatedVersions updatePackageReminder reportPackageNews isVersionDeprecated runningVersion
-    preReleaseKind isReportedPreRelease reportedPreReleases)
+    deprecatedPackageVersions isPackageVersionDeprecated withoutDeprecatedVersions versionsLowerThan updatePackageReminder reportPackageNews
+    isVersionDeprecated runningVersion reportDeprecatedVersion preReleaseKind isReportedPreRelease reportedPreReleases)
 
 news() { # deprecated [skipDeprecated] - messages of the installed raspiBackup about versions, one per line
          # deprecated: DEPRECATED of build.conf, has to be set with deprecate() before,
@@ -531,13 +531,15 @@ UPDATE_REMINDER_MAX=3 PACKAGE_UPDATE_REMINDER_FILE=reminder LOG_FILE=/dev/null
 VAR_LIB_DIRECTORY="$(mktemp -d)"
 SKIP_DEPRECATED="$2"
 VERSION="$(sed -n -E 's/^VERSION="([^"]*)".*/\1/p' "$3")"
-reportPackageNews
-RUNNING_VERSION="$(runningVersion)"
-isVersionDeprecated "$RUNNING_VERSION" && writeToConsole $MSG_LEVEL_MINIMAL $MSG_SCRIPT_IS_DEPRECATED "$RUNNING_VERSION"
+for (( run = 1; run <= $4; run++ )); do    # the reminder file is kept, messages of the last run
+    out="$(reportPackageNews; RUNNING_VERSION="$(runningVersion)"; reportDeprecatedVersion)"
+done
+echo "$out"
 rm -rf "$VAR_LIB_DIRECTORY"
 EOF_NEWS
     } > "$script"
-    bash "$script" "$1" "${2:-}" "$RASPIBACKUP" 2>> "$LOG" | grep -v '^VISIT_VERSION_HISTORY_PAGE'
+    # the warning is written three times
+    bash "$script" "$1" "${2:-}" "$RASPIBACKUP" "${NEWS_RUNS:-1}" 2>> "$LOG" | grep -v '^VISIT_VERSION_HISTORY_PAGE' | uniq
 }
 
 assertNews() { # description expected deprecated [skipDeprecated] - expected: messages of news() separated by ';', empty: none
@@ -1015,27 +1017,30 @@ publish "$V_REL6"
 aptUpgrade
 assertInstalled "$V_REL6"
 assertNews "no news" "" ""
-assertNews "deprecated version is reported" "SCRIPT_IS_DEPRECATED $V_REL6" "$V_REL6"
+assertNews "deprecated version is reported, revert to the previous release" "SCRIPT_IS_DEPRECATED $V_REL6;DEPRECATED_REVERT $V_FIX5 -R P2" "$V_REL6"
 assertNews "SKIP_DEPRECATED suppresses the warning" "" "$V_REL6" "$V_REL6"
 
 publish "$V_REL6" --revision 1
 assertInSuite "$D_MINOR6" stable
 assertNews "minor fix isn't reported" "" ""
-assertNews "minor fix of a deprecated version is deprecated too" "SCRIPT_IS_DEPRECATED $V_REL6" "$V_REL6"
+assertNews "minor fix of a deprecated version is deprecated too" "SCRIPT_IS_DEPRECATED $V_REL6;DEPRECATED_REVERT $V_FIX5 -R P2" "$V_REL6"
 assertNews "deprecated version doesn't include a later version (${V_REL6}0)" "" "${V_REL6}0"
 aptUpgrade
 assertInstalled "$D_MINOR6"
-assertNews "installed minor fix of a deprecated version is deprecated" "SCRIPT_IS_DEPRECATED $D_MINOR6" "$V_REL6"
-assertNews "deprecated minor fix is detected" "SCRIPT_IS_DEPRECATED $D_MINOR6" "$D_MINOR6"
+assertNews "installed minor fix of a deprecated version is deprecated" "SCRIPT_IS_DEPRECATED $D_MINOR6;DEPRECATED_REVERT $V_FIX5 -R P2" "$V_REL6"
+assertNews "deprecated minor fix is detected, revert to the release" "SCRIPT_IS_DEPRECATED $D_MINOR6;DEPRECATED_REVERT $V_REL6 -R P2" "$D_MINOR6"
 
 publish "$V_REL6" --revision 2
 assertNews "minor fix of the installed minor fix isn't reported" "" ""
 assertNews "minor fix is reported to users of a deprecated minor fix" \
     "NEW_VERSION_AVAILABLE $D_MINOR6_2 $D_MINOR6;SCRIPT_IS_DEPRECATED $D_MINOR6" "$D_MINOR6"
+NEWS_RUNS=4 assertNews "update is reported in the 4th run too while the installed version is deprecated" \
+    "NEW_VERSION_AVAILABLE $D_MINOR6_2 $D_MINOR6;SCRIPT_IS_DEPRECATED $D_MINOR6" "$D_MINOR6"
 
 publish "$V_REL7"
 publish "$V_REL8"
 assertNews "latest release is reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6" ""
+NEWS_RUNS=4 assertNews "release isn't reported in the 4th run (reminded 3 times)" "" ""
 assertNews "deprecated latest release: newest release which isn't deprecated is reported with raspiBackupConfig -U" \
     "NEW_PACKAGE_VERSION_INSTALL $V_REL7 $D_MINOR6" "$V_REL8"
 assertNews "deprecated releases aren't reported (comma separated)" "" "$V_REL7,$V_REL8"
@@ -1087,21 +1092,21 @@ assertNews "no news for beta tester" "" ""
 publish "$V_BETA9_2"
 assertNews "newer beta is reported to beta tester" "NEW_VERSION_AVAILABLE $D_BETA9_2 $D_BETA9_1" ""
 assertNews "deprecated newer beta isn't reported to beta tester" "" "$V_BETA9_2"
-assertNews "deprecated release includes the installed and the newer beta" "SCRIPT_IS_DEPRECATED $D_BETA9_1" "$V_REL9"
+assertNews "deprecated release includes the installed and the newer beta, revert beta to release" "SCRIPT_IS_DEPRECATED $D_BETA9_1;DEPRECATED_REVERT $V_REL8 -S P4" "$V_REL9"
 assertNews "deprecated beta is reported (Debian version in DEPRECATED)" \
     "NEW_VERSION_AVAILABLE $D_BETA9_2 $D_BETA9_1;SCRIPT_IS_DEPRECATED $D_BETA9_1" "$D_BETA9_1"
 
 assertRc 0 "revert beta to release" rbc -S
 assertInstalled "$V_REL8"
-assertNews "deprecated latest release" "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_REL8" "$V_REL8"
+assertNews "deprecated latest release" "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_REL8;DEPRECATED_REVERT $V_REL7 -R P2" "$V_REL8"
 publish "$V_FIX8"
 assertNews "hotfix of deprecated release isn't reported" \
-    "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_REL8" "$V_REL8"
+    "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_REL8;DEPRECATED_REVERT $V_REL7 -R P2" "$V_REL8"
 assertNews "hotfix is reported" "NEW_VERSION_AVAILABLE $V_FIX8 $V_REL8;BETAVERSION_AVAILABLE $D_BETA9_2" ""
 aptUpgrade
 assertInstalled "$V_LATEST"
 assertNews "installed hotfix of deprecated release is deprecated" \
-    "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_FIX8" "$V_REL8"
+    "BETAVERSION_AVAILABLE $D_BETA9_2;SCRIPT_IS_DEPRECATED $V_FIX8;DEPRECATED_REVERT $V_REL7 -R P2" "$V_REL8"
 assertNews "no news" "BETAVERSION_AVAILABLE $D_BETA9_2" ""
 
 #######################################################################################################################
