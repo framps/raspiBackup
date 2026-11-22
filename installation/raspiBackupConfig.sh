@@ -281,8 +281,7 @@ REPO_KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
 REPO_SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
 REPO_FIXES_DIR="fixes"	# fixes of branches for one tester, next to the repository but in no suite, see build.sh --fix
 VAR_LIB_DIRECTORY="/var/lib/$RASPIBACKUP_NAME"
-PACKAGE_INDEX_STAMP="$VAR_LIB_DIRECTORY/packageIndexUpdated" # time of the last apt-get update
-PACKAGE_INDEX_MAX_AGE=$((24*60*60)) # apt-get update at most once a day
+PACKAGE_INDEX_REFRESHED=0 # package index of the repository already updated by this invocation
 PACKAGE_VERSIONS_DEPRECATED="" # marked in the apt repository (field Deprecated), never offered, read by parsePackageVersions
 
 PROPERTY_REGEX='.*="([^"]*)"'
@@ -2511,7 +2510,7 @@ function package_install_execute() { # apt installs code, installer, config temp
 	writeToConsole $MSG_DOWNLOADING "$PACKAGE_NAME"
 
 	# dependencies come from the system repositories which might be outdated
-	package_index_refresh
+	package_index_refresh all
 	if ! executeApt apt-get install -y "$PACKAGE_NAME"; then
 		unrecoverableError $MSG_PACKAGE_INSTALL_FAILED "$PACKAGE_NAME"
 		logExit
@@ -2578,32 +2577,29 @@ function package_index_update_execute() { # apt-get update to get the versions a
 
 }
 
-function isPackageIndexCurrent() { # true if apt-get update was done less than a day ago, isn't forced and the repository didn't change since
-	(( FORCE_INDEX_UPDATE )) && return 1
-	[[ -f "$PACKAGE_INDEX_STAMP" ]] || return 1
-	[[ -f "$REPO_SOURCES" && "$REPO_SOURCES" -nt "$PACKAGE_INDEX_STAMP" ]] && return 1
-	local age=$(( $(date +%s) - $(stat -c %Y "$PACKAGE_INDEX_STAMP" 2>>"$LOG_FILE" || echo 0) ))
-	(( age >= 0 && age < PACKAGE_INDEX_MAX_AGE ))
-}
+function package_index_refresh() { # [all] - apt-get update of the raspiBackup repository only, once per invocation. all: of all repositories
 
-function package_index_refresh() { # apt-get update, but only once a day unless forced with -f
+	logEntry "$1"
 
-	logEntry
+	# Only the raspiBackup repository: that's one small InRelease and, if nothing changed, answered with
+	# 304 Not Modified. So new versions are seen immediately without updating the system repositories
+	# every time, which takes long on a Raspberry. List-Cleanup=0 keeps the lists of the other repositories.
+	local -a options=(-o Dir::Etc::sourcelist="$REPO_SOURCES" -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0)
 
-	if isPackageIndexCurrent; then
-		logItem "Package index updated less than $((PACKAGE_INDEX_MAX_AGE / 3600)) hours ago"
+	if [[ "$1" == all || ! -f "$REPO_SOURCES" ]]; then
+		options=()
+	elif (( PACKAGE_INDEX_REFRESHED )); then
+		logItem "Package index of the repository already updated"
 		logExit
 		return 0
 	fi
 
-	if ! executeApt apt-get update; then
+	if ! executeApt apt-get update "${options[@]}"; then
 		logExit 1
 		return 1
 	fi
 
-	mkdir -p "$VAR_LIB_DIRECTORY" &>>"$LOG_FILE"
-	touch "$PACKAGE_INDEX_STAMP" &>>"$LOG_FILE"
-	FORCE_INDEX_UPDATE=0 # once per invocation is enough
+	PACKAGE_INDEX_REFRESHED=1
 
 	logExit
 	return 0
@@ -6669,7 +6665,7 @@ function show_help() {
 	echo $GIT_CODEVERSION
 	echo "$MYSELF [-f] [-y] ( -b | -i | -m | -R | -S | -u | -U | -t [crond|systemd] )"
 	echo "-b: unattended install or update of the latest beta (alpha, beta or rc) of $RASPIBACKUP_NAME with apt. Asks before changing a held release"
-	echo "-f: update the package index with apt-get update even if it was updated less than a day ago"
+	echo "-f: ignored, the package index of the $RASPIBACKUP_NAME repository is updated on every call"
 	echo "-F <branch>: unattended install of the newest fix of a fix branch for testing, e.g. -F m_972. It's held until it's reverted to the release with -R or updated to the release with the fix with -U"
 	echo "-i: unattended install of $RASPIBACKUP_NAME with apt"
 	echo "-h: display this help"
@@ -6726,7 +6722,6 @@ MODE_FIX=0 # install the newest fix of a branch for testing and hold it
 FIX_BRANCH=""
 MODE_MERGE=0 # merge the config template of the package into the config, called by postinst
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
-FORCE_INDEX_UPDATE=0 # apt-get update even if it was done less than a day ago
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 
@@ -6760,7 +6755,7 @@ while getopts "t:h?bfmusSUiRyF:" opt; do
        show_help
        exit 0
        ;;
-    f) FORCE_INDEX_UPDATE=1
+    f) # ignored, kept for compatibility: the package index of the repository is updated on every call
        ;;
     i) MODE_INSTALL=1
 		 MODE_UNATTENDED=1

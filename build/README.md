@@ -422,9 +422,9 @@ If the installed version is held, the options and the menu ask the same question
 change it. Without a terminal (e.g. cron) the options answer no. If the menu shows an item as
 not available, the option ends with an error (`-U` reports that the latest version is installed).
 
-The menu and the options update the package index with `apt-get update` at most once a day,
-or when the apt repository was changed. Add `-f` to update it anyway, e.g. right after a new
-version was published: `sudo raspiBackupConfig -f -U`.
+The menu and the options update the package index of the raspiBackup repository on every call,
+so a new version is offered right after it was published (GitHub Pages may deliver the old index
+for a few minutes). The other repositories are only updated for an installation. `-f` is ignored.
 
 Updates afterwards:
 
@@ -580,8 +580,9 @@ apt-get install --only-upgrade raspibackup   # or: apt-get upgrade
 ```
 
 The menu `P1` installs `raspibackup=<candidate>` instead, which is the same version.
-`postinst` merges the configuration. `raspiBackupConfig` runs `apt-get update` at most once a day
-(time in `/var/lib/raspiBackup/packageIndexUpdated`), `-f` forces it.
+`postinst` merges the configuration. `raspiBackupConfig` runs `apt-get update` of the raspiBackup
+repository only (`-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/raspibackup.sources`) once per call,
+for an installation of all repositories.
 
 #### Other versions (`-R`, `-b`, `-S`, menu `P2`-`P4`)
 

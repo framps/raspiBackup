@@ -112,13 +112,10 @@ is installed as Debian package
 .BR raspibackup .
 .TP
 .B \-f
-Update the package index with
-.B apt-get update
-even if it was updated less than a day ago.
-Otherwise the package index is updated at most once a day, or when the
+Ignored, kept for compatibility. The package index of the
 .B raspiBackup
-apt repository was changed since the last update.
-Can be combined with all other options and the menu.
+apt repository is updated on every call, so new versions are seen
+immediately. The other repositories are only updated for an installation.
 .TP
 .BI \-F " branch"
 Unattended install of the newest fix of a fix branch, e.g.

@@ -683,7 +683,7 @@ rbcPurpose() { # options - what raspiBackupConfig does with these options
 
 rbc() { # options - raspiBackupConfig without terminal, so held packages aren't changed
     step "user: raspiBackupConfig $* ($(rbcPurpose "$@"), no terminal, questions are answered with no)"
-    # -f: versions are published between the calls, so the package index has to be updated every time
+    # -f is ignored by now, raspiBackupConfig updates the package index of the repository on every call
     run env RASPIBACKUP_INSTALL_DEBUG=1 "$RASPIBACKUPCONFIG" -f "$@" < /dev/null
 }
 
