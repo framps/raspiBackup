@@ -911,10 +911,10 @@ MSG_DE[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z ist für Backuptyp 
 MSG_FI[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Valintaa -z ei voi käyttää varmuuskopiointityyppi %s:n kanssa"
 MSG_FR[$MSG_UNKNOWN_BACKUPTYPE_FOR_ZIP]="RBK0079E: Option -z non autorisée avec ce type de sauvegarde %s"
 MSG_NEW_VERSION_AVAILABLE=80
-MSG_EN[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE There is a new version %s of $MYNAME available. You are running version %s and now can use 'sudo apt update && sudo apt upgrade' to upgrade your local version"
-MSG_DE[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE Es gibt eine neue Version %s von $MYNAME. Die momentan benutze Version ist %s und es kann mit 'sudo apt update && sudo apt upgrade' die lokale Version aktualisiert werden"
-MSG_FI[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE Uusi versio %s kohteesta $MYNAME on saatavilla. Käytät versiota %s ja voit suorittaa 'sudo apt update && sudo apt upgrade' päivittääksesi paikallisen version"
-MSG_FR[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE Une nouvelle version %s de $MYNAME est disponible. Vous exécutez la version %s et pouvez maintenant utiliser 'sudo apt update && sudo apt upgrade' pour la mettre à niveau"
+MSG_EN[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE There is a new version %s of $MYNAME available. You are running version %s. Update it with 'sudo raspiBackupConfig -U' or in menu M3 (P1) of 'sudo raspiBackupConfig'"
+MSG_DE[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE Es gibt eine neue Version %s von $MYNAME. Die momentan benutzte Version ist %s. Aktualisiere sie mit 'sudo raspiBackupConfig -U' oder im Menü M3 (P1) von 'sudo raspiBackupConfig'"
+MSG_FI[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE Uusi versio %s kohteesta $MYNAME on saatavilla. Käytät versiota %s. Päivitä se komennolla 'sudo raspiBackupConfig -U' tai komennon 'sudo raspiBackupConfig' valikossa M3 (P1)"
+MSG_FR[$MSG_NEW_VERSION_AVAILABLE]="RBK0080I: $SMILEY_UPDATE_POSSIBLE Une nouvelle version %s de $MYNAME est disponible. Vous exécutez la version %s. Mettez-la à jour avec 'sudo raspiBackupConfig -U' ou dans le menu M3 (P1) de 'sudo raspiBackupConfig'"
 MSG_BACKUP_TARGET=81
 MSG_EN[$MSG_BACKUP_TARGET]="RBK0081I: Creating backup of type %s in %s"
 MSG_DE[$MSG_BACKUP_TARGET]="RBK0081I: Backup vom Typ %s wird in %s erstellt"
@@ -2016,9 +2016,9 @@ MSG_EN[$MSG_OPTION_NO_LONGER_SUPPORTED]="RBK0365E: Option %s is no longer suppor
 #shellcheck disable=SC2034
 MSG_DE[$MSG_OPTION_NO_LONGER_SUPPORTED]="RBK0365E: Option %s wird nicht mehr unterstützt. Mit 'sudo raspiBackupConfig' werden $MYNAME und seine Konfiguration aktualisiert"
 MSG_NEW_PACKAGE_VERSION_INSTALL=366
-MSG_EN[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE There is a new version %s of $MYNAME available. You are running version %s which isn't updated by 'apt upgrade'. Install the new version with 'sudo apt-mark unhold $PACKAGE_NAME && sudo apt-get update && sudo apt-get install $PACKAGE_NAME=%s'"
+MSG_EN[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE There is a new version %s of $MYNAME available. You are running version %s, which isn't updated automatically. Install the new version with 'sudo raspiBackupConfig -U' or in menu M3 (P1) of 'sudo raspiBackupConfig'"
 #shellcheck disable=SC2034
-MSG_DE[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE Es gibt eine neue Version %s von $MYNAME. Die momentan benutzte Version %s wird von 'apt upgrade' nicht aktualisiert. Die neue Version kann mit 'sudo apt-mark unhold $PACKAGE_NAME && sudo apt-get update && sudo apt-get install $PACKAGE_NAME=%s' installiert werden"
+MSG_DE[$MSG_NEW_PACKAGE_VERSION_INSTALL]="RBK0366I: $SMILEY_UPDATE_POSSIBLE Es gibt eine neue Version %s von $MYNAME. Die momentan benutzte Version %s wird nicht automatisch aktualisiert. Installiere die neue Version mit 'sudo raspiBackupConfig -U' oder im Menü M3 (P1) von 'sudo raspiBackupConfig'"
 MSG_MIGRATE_TO_PACKAGE=367
 MSG_EN[$MSG_MIGRATE_TO_PACKAGE]="RBK0367W: $SMILEY_UPDATE_POSSIBLE $MYNAME isn't installed as Debian package and doesn't get any updates. Migrate to the Debian package with 'curl -fsSLO $PACKAGE_INSTALLER_URL && bash ${PACKAGE_INSTALLER_URL##*/}'. The configuration and the backup timer are kept"
 #shellcheck disable=SC2034
@@ -5554,8 +5554,8 @@ function reportPackageNews() {
 		FORCE_MESSAGE=1
 		if [[ "$update" == "$candidate" ]] && ! isPackageHeld; then
 			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_VERSION_AVAILABLE "$update" "$installed"
-		else	# apt upgrade doesn't install it: package is held or apt would install a deprecated version
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_PACKAGE_VERSION_INSTALL "$update" "$installed" "$update"
+		else	# apt upgrade doesn't install it: package is held or apt would install a deprecated version, raspiBackupConfig -U does
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_NEW_PACKAGE_VERSION_INSTALL "$update" "$installed"
 		fi
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_VISIT_VERSION_HISTORY_PAGE "$(getMessage $MSG_VERSION_HISTORY_PAGE)"
 	fi

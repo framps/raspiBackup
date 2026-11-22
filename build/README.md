@@ -207,7 +207,7 @@ DEPRECATED="0.7.5"
   of raspiBackup suppresses the warning for a version.
 - `raspiBackupConfig` never offers a deprecated version (menu `P1`-`P4`, `-U`, `-R`, `-b`, `-S`).
   If `apt upgrade` would install a deprecated version, `-U` installs the newest one which isn't
-  deprecated, and raspiBackup tells the user the `apt-get install raspibackup=<version>` command.
+  deprecated. raspiBackup tells the user to update with `raspiBackupConfig -U` or menu `M3` (`P1`).
   A plain `apt upgrade` still installs it, so publish a fixed version soon.
 - raspiBackup reads the mark from the local package index, which `apt-daily` and raspiBackup
   itself (once a day) update. A changed mark reaches the users within a day.
@@ -358,7 +358,7 @@ release for the tester, so merge or rebase the branch first.
 `-F` downloads the newest try, checks its signature against the key apt trusts for the
 repository, installs it and holds the package. Nothing replaces it then: neither
 `apt-get upgrade`, nor a hotfix of another branch, nor a beta. raspiBackup still reports new
-releases after the backup, also the release with the fix, with the command to install it.
+releases after the backup, also the release with the fix, and refers to `raspiBackupConfig -U`.
 `-U` installs the newest release then and releases the hold. It never installs a beta, although
 apt's candidate can be a beta: a package installed from a file has the same apt priority as
 the beta suite. `-R` installs the release the fix is based on and holds it, `-F` installs the fix

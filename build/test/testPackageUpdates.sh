@@ -797,8 +797,8 @@ assertAvailable "no newer version, the previous release" "" "P1 - P2 $V_OLD P3 -
 
 assertRc 0 "revert to previous release" rbc -R
 assertInstalled "$V_OLD" held
-assertAvailable "the release to a held version, it has to be installed with apt-get install" \
-    "NEW_PACKAGE_VERSION_INSTALL $V_REL $V_OLD $V_REL" "P1 $V_REL P2 - P3 - P4 -"
+assertAvailable "the release to a held version, it has to be installed with raspiBackupConfig -U" \
+    "NEW_PACKAGE_VERSION_INSTALL $V_REL $V_OLD" "P1 $V_REL P2 - P3 - P4 -"
 
 aptUpgrade
 assertInstalled "$V_OLD" held
@@ -932,7 +932,7 @@ run cp "$WORK/latest.saved" "$FIXDIR/latest"
 publish "$V_FIX2"
 aptUpgrade
 assertInstalled "$D_TRY2" held
-assertAvailable "the unrelated hotfix to the tester" "NEW_PACKAGE_VERSION_INSTALL $V_FIX2 $D_TRY2 $V_FIX2" "P1 $V_FIX2 P2 $V_FIX1 P3 - P4 -"
+assertAvailable "the unrelated hotfix to the tester" "NEW_PACKAGE_VERSION_INSTALL $V_FIX2 $D_TRY2" "P1 $V_FIX2 P2 $V_FIX1 P3 - P4 -"
 
 assertRc 0 "tester reverts the fix to the release" rbcYes -R
 assertInstalled "$V_FIX1" held
@@ -951,7 +951,7 @@ publish "$V_REL3"
 aptUpgrade
 assertInstalled "$D_TRY2" held
 # the menu offers every beta above the installed version, also one older than the release
-assertAvailable "the release with the fix to the tester" "NEW_PACKAGE_VERSION_INSTALL $V_REL3 $D_TRY2 $V_REL3" "P1 $V_REL3 P2 $V_FIX1 P3 $D_BETA3 P4 -"
+assertAvailable "the release with the fix to the tester" "NEW_PACKAGE_VERSION_INSTALL $V_REL3 $D_TRY2" "P1 $V_REL3 P2 $V_FIX1 P3 $D_BETA3 P4 -"
 assertRc 0 "tester updates to the release with the fix" rbcYes -U
 assertInstalled "$V_REL3"
 
@@ -1036,8 +1036,8 @@ assertNews "minor fix is reported to users of a deprecated minor fix" \
 publish "$V_REL7"
 publish "$V_REL8"
 assertNews "latest release is reported" "NEW_VERSION_AVAILABLE $V_REL8 $D_MINOR6" ""
-assertNews "deprecated latest release: newest release which isn't deprecated is reported with apt-get install" \
-    "NEW_PACKAGE_VERSION_INSTALL $V_REL7 $D_MINOR6 $V_REL7" "$V_REL8"
+assertNews "deprecated latest release: newest release which isn't deprecated is reported with raspiBackupConfig -U" \
+    "NEW_PACKAGE_VERSION_INSTALL $V_REL7 $D_MINOR6" "$V_REL8"
 assertNews "deprecated releases aren't reported (comma separated)" "" "$V_REL7,$V_REL8"
 
 deprecate "$V_REL8"
@@ -1072,7 +1072,7 @@ else
     fail "raspiBackupConfig offers '$actual' (deprecated $V_REL6)"
 fi
 run apt-mark hold "$PACKAGE_NAME"
-assertNews "held version: release is reported with apt-get install" "NEW_PACKAGE_VERSION_INSTALL $V_REL8 $D_MINOR6 $V_REL8" ""
+assertNews "held version: release is reported with raspiBackupConfig -U" "NEW_PACKAGE_VERSION_INSTALL $V_REL8 $D_MINOR6" ""
 run apt-mark unhold "$PACKAGE_NAME"
 
 publish "$V_BETA9_1"
