@@ -1,0 +1,32 @@
+Package: raspibackup
+Architecture: all
+Version: 0.9~beta
+Priority: optional
+Section: admin
+Maintainer: framp <framp@linux-tips-and-tricks.de>
+Installed-Size: 762
+Depends: bash (>= 5), parted, e2fsprogs, rsync, whiptail, dosfstools, fdisk, curl
+Recommends: bash-completion
+Suggests: pv, jq, lsof, btrfs-progs, f2fs-tools, mailutils, default-mta | msmtp-mta | mail-transport-agent
+Filename: pool/main/r/raspibackup/raspibackup_0.9~beta_all.deb
+Size: 172784
+MD5sum: e416b161cfc7c15172375ee3f5e3047a
+SHA1: ea54af313fc92b3400840142ab75bc664855b374
+SHA256: 3f873a8c3523b0942d5ebc7d3564a8021ad820b5d4b899e8a12433868b2953e3
+SHA512: ad161a881c9c62d54f5dbecea05ff801502669afa44c3708a1d1e7a183fa25f87b694846bbc57b3104865d0a2e23b44b46570042e3d7c9aa01cc6d566101d234
+Homepage: https://raspibackup.linux-tips-and-tricks.de
+Description: Backup and restore tool raspiBackup for Raspberry Pi systems
+ raspiBackup creates full backups (images) of a running Raspberry Pi
+ with dd, tar or rsync, including incremental rsync backups with hardlinks.
+ Backups can be stored on a USB disk, NAS (NFS, SMB/CIFS) or any mounted
+ device, and are restored to an SD card, USB disk, SSD or NVMe with
+ raspiBackup itself. Supports Raspberry Pi OS (Raspbian) and Ubuntu.
+ .
+ Old backup versions are deleted automatically: either a fixed number
+ of backups is kept, or smart recycle applies a more sophisticated
+ strategy. Backups are scheduled with a systemd timer, email and other
+ notifications report the result. raspiBackupConfig configures all of
+ it in a menu. Sample extensions run your own code before and after a
+ backup at different extension points.
+Git-Commit: 1bdd7291ddf8edbf6f9630d024ebbcae54ace3b2
+
