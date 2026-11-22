@@ -47,6 +47,9 @@ readonly KEYRING="/usr/share/keyrings/${PACKAGE_NAME}-archive-keyring.gpg"
 readonly LEGACY_SCRIPT="/usr/local/bin/${RASPIBACKUP}.sh"
 readonly LEGACY_CONFIG="/usr/local/etc/${RASPIBACKUP}.conf"
 readonly SOURCES="/etc/apt/sources.list.d/${PACKAGE_NAME}.sources"
+# apt-get and apt-mark wait for the locks of apt and dpkg instead of failing at once, e.g. while apt-daily or unattended-upgrades run
+readonly APT_LOCK_TIMEOUT=300   # seconds
+readonly APT_LOCK_RETRY=60      # seconds between the checks of the locks, the user is told about each one
 
 MYSELF=$(basename "$0")
 
@@ -164,6 +167,37 @@ cleanup() {
     fi
 }
 
+apt_lock_holder() {
+    # writes the pid of a process holding a lock of apt or dpkg, false if none is held
+    # /proc/locks: '1: POSIX  ADVISORY  WRITE <pid> <major>:<minor>:<inode> 0 EOF', waiting processes have '->' as 2nd field
+    local f dev ino
+    for f in /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock; do
+        read -r dev ino < <(stat -c '%d %i' "$f" 2>/dev/null) || continue
+        awk -v id="$(printf '%02x:%02x:%d' $(( (dev >> 8) & 0xfff )) $(( (dev & 0xff) | ((dev >> 12) & 0xfff00) )) "$ino")" \
+            '$2 != "->" && $6 == id { print $5; found=1; exit } END { exit !found }' /proc/locks && return 0
+    done
+    return 1
+}
+
+apt_run() {
+    # apt-get or apt-mark with its arguments. Waits up to APT_LOCK_TIMEOUT seconds while another process uses apt,
+    # e.g. apt-daily or unattended-upgrades: apt-get update doesn't wait for its lock at all, the others only with
+    # DPkg::Lock::Timeout and then write a line each second. Messages go to stderr, some apt calls discard stdout.
+    local pid name waited=0
+    while pid="$(apt_lock_holder)"; do
+        name="$(cat "/proc/${pid}/comm" 2>/dev/null || echo "?")"
+        if (( waited >= APT_LOCK_TIMEOUT )); then
+            echo "??? apt is still in use by process ${pid} (${name}) after ${waited} seconds. Try again later." >&2
+            exit 42
+        fi
+        echo "--- apt is in use by process ${pid} (${name}). Retrying in ${APT_LOCK_RETRY} seconds (waited ${waited} of at most ${APT_LOCK_TIMEOUT} seconds)" >&2
+        sleep "${APT_LOCK_RETRY}"
+        (( waited += APT_LOCK_RETRY ))
+    done
+    # the short time between the check and apt locking
+    $SUDO "$1" -o DPkg::Lock::Timeout="${APT_LOCK_RETRY}" "${@:2}"
+}
+
 check_required_tools() {
     local req_cmd cmd pkg is_debian
 
@@ -184,7 +218,7 @@ check_required_tools() {
             echo "Problem: Required command '${cmd}' is not installed!"
             ask_yes_no -n "Should '${cmd}' from package '${pkg}' being installed now (otherwise you have to do it manually)?" || return 42
             echo "--- Installing '${pkg}'"
-            $SUDO apt-get install -y "${pkg}"
+            apt_run apt-get install -y "${pkg}"
         fi
     done
 }
@@ -253,7 +287,7 @@ EOF_SOURCES
     echo "--- Updating package lists (verifies the repository signature)"
     # Only refresh the raspiBackup repository, the system ones don't matter here
     mkdir -p "${TMP_DIR}/empty"
-    if ! $SUDO apt-get update \
+    if ! apt_run apt-get update \
             -o Dir::Etc::sourcelist="${SOURCES}" \
             -o Dir::Etc::sourceparts="${TMP_DIR}/empty" \
             -o APT::Get::List-Cleanup="0" ; then
@@ -278,7 +312,7 @@ release_hold() {
         echo "    > using command:"
         echo "    >     sudo apt-mark unhold ${PACKAGE_NAME}"
     fi
-    $SUDO apt-mark unhold "${PACKAGE_NAME}" || return 42
+    apt_run apt-mark unhold "${PACKAGE_NAME}" || return 42
 }
 
 install_from_repository() {
@@ -309,8 +343,8 @@ install_from_repository() {
         echo "    >     sudo apt-get install -y ${target[*]}${target:+ }${PACKAGE_NAME}"
     fi
     # dependencies come from the system repositories which might be outdated
-    $SUDO apt-get update > /dev/null || true
-    $SUDO apt-get install -y "${target[@]}" "${PACKAGE_NAME}" || return 42
+    apt_run apt-get update > /dev/null || true
+    apt_run apt-get install -y "${target[@]}" "${PACKAGE_NAME}" || return 42
 }
 
 verify_local_package() {
@@ -363,8 +397,8 @@ install_local_package() {
         echo "    > using command:"
         echo "    >     sudo apt-get install --allow-downgrades -y ${deb}"
     fi
-    $SUDO apt-get update > /dev/null || true
-    $SUDO apt-get install --allow-downgrades -y "${deb}" || return 42
+    apt_run apt-get update > /dev/null || true
+    apt_run apt-get install --allow-downgrades -y "${deb}" || return 42
 }
 
 report_legacy_installation() {
