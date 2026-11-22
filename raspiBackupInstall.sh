@@ -261,7 +261,7 @@ get_gpg_key() {
     gpg --batch --export "${REPO_OWNER_GPG_FINGERPRINT}" > "${TMP_DIR}/keyring.gpg"
 
     echo "--- Key accepted:"
-    gpg --batch --list-keys --keyid-format long "${REPO_OWNER_GPG_FINGERPRINT}" | sed -e 's/^/    /'
+    gpg --batch --list-keys --keyid-format long --list-options no-show-uid-validity "${REPO_OWNER_GPG_FINGERPRINT}" | sed -e 's/^/    /'
 }
 
 add_repository() {

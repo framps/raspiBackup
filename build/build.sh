@@ -144,6 +144,11 @@ VERBOSITY=normal
 # The full GPG key fingerprint used for signing the built package and the repository. Required!
 GPG_KEYID=
 
+# GPG_KEY_UID
+# Only user IDs of the key matching this regular expression are published with the key, e.g. to hide
+# other identities. Empty publishes all user IDs. The fingerprint doesn't change.
+GPG_KEY_UID=
+
 # REPO_SUITE, REPO_BETA_SUITE, REPO_COMPONENT, REPO_ARCHITECTURES
 # Layout of the signed apt repository created by buildRepo.sh.
 # Versions with '~' (e.g. 0.7.5~beta1) go into REPO_BETA_SUITE, all others into REPO_SUITE.

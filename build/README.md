@@ -38,6 +38,7 @@ Check these settings:
 |-----------------|----------------------------------------------------------------------|
 | `BRANCH_TO_DEB` | branch the package is built from, empty = current branch             |
 | `GPG_KEYID`     | full fingerprint of the signing key                                  |
+| `GPG_KEY_UID`   | regex, only matching user IDs of the key are published (e.g. `GITHUB-KEY`), empty = all |
 | `REPO_SUITE`    | `stable`, has to match `REPO_SUITE` in `raspiBackupInstall.sh`       |
 | `REPO_BETA_SUITE` | `beta`, has to match `REPO_BETA_SUITE` in `raspiBackupInstall.sh`  |
 | `VERSION_RASPIBACKUP` | version inserted into `raspiBackup` and used for the package, empty = `VERSION` of `raspiBackup.sh` |

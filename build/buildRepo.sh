@@ -244,8 +244,17 @@ fi
 show "Export public key"
 
 # Users get the key from here, but raspiBackupInstall.sh accepts it only if it matches its built-in fingerprint
-gpg --export --export-options export-minimal "$GPG_KEYID" > "$REPO/${PACKAGE_NAME}-archive-keyring.gpg"
-gpg --armor --export --export-options export-minimal "$GPG_KEYID" > "$REPO/${PACKAGE_NAME}-archive-keyring.asc"
+# publish only the user IDs matching GPG_KEY_UID, the fingerprint stays the same
+export_options=(--export-options export-minimal)
+if [[ -n "${GPG_KEY_UID:-}" ]] ; then
+    export_options+=(--export-filter "keep-uid=uid =~ $GPG_KEY_UID")
+fi
+gpg --export "${export_options[@]}" "$GPG_KEYID" > "$REPO/${PACKAGE_NAME}-archive-keyring.gpg"
+gpg --armor --export "${export_options[@]}" "$GPG_KEYID" > "$REPO/${PACKAGE_NAME}-archive-keyring.asc"
+if ! gpg --show-keys --with-colons "$REPO/${PACKAGE_NAME}-archive-keyring.gpg" | grep -q '^uid:' ; then
+    echo "Error: GPG_KEY_UID=\"$GPG_KEY_UID\" matches no user ID of key $GPG_KEYID"
+    exit 1
+fi
 chmod 644 "$REPO/${PACKAGE_NAME}-archive-keyring".*
 
 show "Verify repository signatures"
