@@ -50,7 +50,7 @@ VERSION="0.5"			 	# -beta, -hotfix or -dev suffixes possible
 [[ "${BASH_SOURCE[0]}" -ef "$0" ]]
 INCLUDE_ONLY=$?				# 1: sourced by a test, only variables and functions are defined
 
-if [[ (( ${BASH_VERSINFO[0]} < 4 )) || ( (( ${BASH_VERSINFO[0]} == 4 )) && (( ${BASH_VERSINFO[1]} < 3 )) ) ]]; then
+if (( BASH_VERSINFO[0] < 4 || ( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3 ) )); then
 	echo "bash version 0.4.3 or beyond is required by $MYSELF" # nameref feature, declare -n var=$v
 	exit 1
 fi
@@ -79,14 +79,19 @@ declare -A REQUIRED_COMMANDS=( \
 		)
 
 requiredCmds=()
-for cmd in ${!REQUIRED_COMMANDS[@]}; do
-	if ! hash $cmd 2>/dev/null; then
-		requiredCmds+=($cmd)
+for cmd in "${!REQUIRED_COMMANDS[@]}"; do
+	if ! hash "$cmd" 2>/dev/null; then
+		requiredCmds+=("$cmd")
 	fi
 done
 
+requiredPackages=()		# packages of the missing commands, each only once, e.g. dosfstools for fsck.vfat and dosfslabel
+for cmd in "${requiredCmds[@]}"; do
+	[[ " ${requiredPackages[*]} " == *" ${REQUIRED_COMMANDS[$cmd]} "* ]] || requiredPackages+=("${REQUIRED_COMMANDS[$cmd]}")
+done
+
 if (( ${#requiredCmds[@]} > 0 && ! INCLUDE_ONLY )); then
-	for cmd in ${requiredCmds[@]}; do
+	for cmd in "${requiredCmds[@]}"; do
 			echo "$MYSELF depends on $cmd which is available in ${REQUIRED_COMMANDS[$cmd]}"
 	done
 
@@ -100,8 +105,8 @@ if (( ${#requiredCmds[@]} > 0 && ! INCLUDE_ONLY )); then
 		exit 1
 	fi
 
-	apt -y install ${requiredCmds[@]}
-	if (( $? )); then
+	# waits for the dpkg lock held by another apt, e.g. apt-daily, the functions with waitForAptLocks aren't defined yet
+	if ! apt-get -o DPkg::Lock::Timeout=300 -y install "${requiredPackages[@]}"; then
 		echo "Installation of missing package(s) failed. Please install them manually and then invoke ./$MYSELF again."
 		exit 1
 	fi
@@ -110,12 +115,13 @@ fi
 GITHUB_URL="https://github.com"
 MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
 
-MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck disable=SC2154 # $Date$ is substituted by publish.sh and build/build.sh
 GIT_DATE="$Date$"
 GIT_DATE_ONLY=${GIT_DATE/: /}
 GIT_DATE_ONLY=$(cut -f 2 -d ' ' <<<$GIT_DATE)
 GIT_TIME_ONLY=$(cut -f 3 -d ' ' <<<$GIT_DATE)
+# shellcheck disable=SC2154 # $Sha1$ is substituted by publish.sh and build/build.sh
 GIT_COMMIT="$Sha1$"
 GIT_COMMIT_ONLY=$(cut -f 2 -d ' ' <<<$GIT_COMMIT | sed 's/\$//')
 
@@ -136,12 +142,9 @@ MASQUERADE_STRING="@@@@"
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 
 PROPERTY_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
-BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupConfig.sh"
-STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
 
@@ -246,7 +249,6 @@ fi
 DOWNLOAD_TIMEOUT=60 # seconds
 APT_LOCK_TIMEOUT=300 # seconds apt-get and apt-mark wait for the locks of apt and dpkg held by another process, e.g. apt-daily
 APT_LOCK_RETRY=60 # seconds between the checks of the locks, the user is told about each one
-DOWNLOAD_RETRIES=3
 
 BIN_DIR="/usr/local/bin"
 ETC_DIR="/usr/local/etc"
@@ -1631,9 +1633,13 @@ MSG_ZH[$MSG_QUERY_CHARS_YES_NO]="(y/N)"
 
 MSG_ANSWER_CHARS_YES=$((SCNT++))
 MSG_EN[$MSG_ANSWER_CHARS_YES]="Yy"
+# shellcheck disable=SC2034 # used by name in getMessageText, keep in front of the last message
 MSG_DE[$MSG_ANSWER_CHARS_YES]="JjYy"
+# shellcheck disable=SC2034 # used by name in getMessageText, keep in front of the last message
 MSG_FI[$MSG_ANSWER_CHARS_YES]="KkYy"
+# shellcheck disable=SC2034 # used by name in getMessageText, keep in front of the last message
 MSG_FR[$MSG_ANSWER_CHARS_YES]="OoYy"
+# shellcheck disable=SC2034 # used by name in getMessageText, keep in front of the last message
 MSG_ZH[$MSG_ANSWER_CHARS_YES]="Yy"
 
 
@@ -2056,9 +2062,13 @@ MENU_ZH[$MENU_PACKAGE_BETA]='"P3" "安装或更新测试版"'
 
 MENU_PACKAGE_REVERT_BETA=$((MCNT++))
 MENU_EN[$MENU_PACKAGE_REVERT_BETA]='"P4" "Revert from beta to current release"'
+# shellcheck disable=SC2034 # used by name in getMenuText, keep in front of the last menu entry
 MENU_DE[$MENU_PACKAGE_REVERT_BETA]='"P4" "Von Beta zurück zum aktuellen Release"'
+# shellcheck disable=SC2034 # used by name in getMenuText, keep in front of the last menu entry
 MENU_FI[$MENU_PACKAGE_REVERT_BETA]='"P4" "Palaa betasta nykyiseen julkaisuun"'
+# shellcheck disable=SC2034 # used by name in getMenuText, keep in front of the last menu entry
 MENU_FR[$MENU_PACKAGE_REVERT_BETA]='"P4" "Revenir de la bêta à la version actuelle"'
+# shellcheck disable=SC2034 # used by name in getMenuText, keep in front of the last menu entry
 MENU_ZH[$MENU_PACKAGE_REVERT_BETA]='"P4" "从测试版回退到当前版本"'
 
 declare -A MSG_HEADER=(['I']="---" ['W']="!!!" ['E']="???")
@@ -2071,8 +2081,6 @@ CRON_INSTALLED=0
 SYSTEMD_INSTALLED=0
 PROGRESSBAR_DO=0
 
-INSTALL_EXTENSIONS=0
-BETA_INSTALL=0
 CRONTAB_ENABLED="undefined"
 SYSTEMD_ENABLED="undefined"
 
@@ -2116,7 +2124,7 @@ function getMessageText() { # messagenumber parm1 parm2 ...
 	msgVar="MSG_${CONFIG_LANGUAGE}"
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
-		msgVar="$msgVar[$1]"
+		msgVar="${msgVar}[$1]"
 		msg=${!msgVar}
 		if [[ -z $msg ]]; then # no translation found
 			msg="${MSG_EN[$1]}" # fallback into english
@@ -2156,10 +2164,11 @@ function getMenuText() { # menutextnumber varname
 	local menu varname
 
 	local menuVar="MENU_${CONFIG_LANGUAGE}"
+	# shellcheck disable=SC2034 # assigned with eval below
 	declare -n varname=$2
 
 	if [[ -n ${SUPPORTED_LANGUAGES[$CONFIG_LANGUAGE]} ]]; then
-		menuVar="$menuVar[$1]"
+		menuVar="${menuVar}[$1]"
 		menu="${!menuVar}"
 		if [[ -z $menu ]]; then # no translation found
 			menu="${MENU_EN[$1]}" # fallback into english
@@ -2168,12 +2177,12 @@ function getMenuText() { # menutextnumber varname
 		menu="${MENU_EN[$1]}" # fallback into english
 	fi
 
-   eval "varname=( ${menu[@]} )"
+   eval "varname=( $menu )"
 
 }
 
 function writeToConsole() {
-	local msg="$(getMessageText "$@")"
+	local msg; msg="$(getMessageText "$@")"
 	echo "MSG: $msg" >>"$LOG_FILE"
 	if (( $MODE_UNATTENDED )); then
 		echo "$msg"
@@ -2183,8 +2192,8 @@ function writeToConsole() {
 function log() { # logtype message
 
 	local lineno=${BASH_LINENO[1]}
-	local dte=$(date +%Y%m%d-%H%M%S)
-	local indent=$(printf '%*s' "$LOG_INDENT")
+	local dte; dte=$(date +%Y%m%d-%H%M%S)
+	local indent; indent=$(printf '%*s' "$LOG_INDENT" "")
 	printf "%s: DBG: %04d - %s %s\n" "$dte" "$lineno" "$indent" "$@" >> "$LOG_FILE"
 
 }
@@ -2281,13 +2290,13 @@ function isInternetAvailable() {
 }
 
 function logEntry() {
-	log "-> ${FUNCNAME[1]} $@"
+	log "-> ${FUNCNAME[1]} $*"
 	(( LOG_INDENT+=3 ))
 }
 
 function logExit() {
 	(( LOG_INDENT-=3 ))
-	log "<- ${FUNCNAME[1]} $@"
+	log "<- ${FUNCNAME[1]} $*"
 }
 
 function finished() {
@@ -2319,7 +2328,7 @@ function isCrontabEnabled() {
 	logEntry $CRONTAB_ENABLED
 	if [[ "$CRONTAB_ENABLED" == "undefined" ]]; then
 		if isCrontabConfigInstalled; then
-			local l="$(tail -n 1 < $CRON_ABS_FILE)"
+			local l; l="$(tail -n 1 < $CRON_ABS_FILE)"
 			logItem "$l"
 			[[ ${l:0:1} != "#" ]]
 			CRONTAB_ENABLED=$?
@@ -2335,7 +2344,7 @@ function isSystemdEnabled() {
 	logEntry $SYSTEMD_ENABLED
 	if [[ "$SYSTEMD_ENABLED" == "undefined" ]]; then
 		if isSystemdConfigInstalled; then
-			local state="$(systemctl show --no-pager $SYSTEMD_TIMER_FILE_NAME | grep -i "ActiveState" | cut -f 2 -d '=')"
+			local state; state="$(systemctl show --no-pager $SYSTEMD_TIMER_FILE_NAME | grep -i "ActiveState" | cut -f 2 -d '=')"
 			logItem "Current systemd state: $state"
 			[[ $state == "active" ]]
 			SYSTEMD_ENABLED=$?
@@ -2371,7 +2380,7 @@ function isConfigInstalled() {
 }
 
 function isExtensionInstalled() {
-	ls $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh 2>/dev/null &>>"$LOG_FILE"
+	ls $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"
 	return
 }
 
@@ -2396,8 +2405,8 @@ function isLegacyInstalled() { # raspiBackup was installed without apt, e.g. by 
 }
 
 function packageManagedMsgbox() { # messagenumber
-	local m="$(getMessageText $1)"
-	local tt="$(getMessageText $TITLE_INFORMATION)"
+	local m; m="$(getMessageText $1)"
+	local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 	whiptail --msgbox "$m" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 }
 
@@ -2433,7 +2442,7 @@ function repository_add_execute() { # add the signed raspiBackup apt repository,
 	fi
 
 	local keyName="${REPO_KEYRING##*/}"
-	local gnupgHome="$(mktemp -d)"
+	local gnupgHome; gnupgHome="$(mktemp -d)"
 
 	writeToConsole $MSG_DOWNLOADING "$keyName"
 
@@ -2448,7 +2457,7 @@ function repository_add_execute() { # add the signed raspiBackup apt repository,
 
 	# accept the key only if it has the expected fingerprint and is valid, the keyring of root isn't touched
 	gpg --homedir "$gnupgHome" --batch --quiet --import "$gnupgHome/$keyName" &>>"$LOG_FILE"
-	local validity="$(gpg --homedir "$gnupgHome" --batch --with-colons --list-keys "$REPO_OWNER_GPG_FINGERPRINT" 2>>"$LOG_FILE" \
+	local validity; validity="$(gpg --homedir "$gnupgHome" --batch --with-colons --list-keys "$REPO_OWNER_GPG_FINGERPRINT" 2>>"$LOG_FILE" \
 		| awk -F: -v fpr="$REPO_OWNER_GPG_FINGERPRINT" '$1 == "pub" { v = $2 } $1 == "fpr" && $10 == fpr { print v; exit }')"
 	logItem "Key validity: $validity"
 	if [[ -z "$validity" || "$validity" =~ [rei] ]] \
@@ -2810,7 +2819,7 @@ function isPackageHeld() {
 }
 
 function packageCandidate() { # version apt-get installs, a hold doesn't change it, for an installed beta it's the latest beta or the release which follows it
-	local candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
+	local candidate; candidate="$(apt-cache policy "$PACKAGE_NAME" 2>>"$LOG_FILE" | awk '$1 == "Candidate:" { print $2 }')"
 	[[ "$candidate" == "(none)" ]] && candidate=""
 	echo "$candidate"
 }
@@ -2915,7 +2924,7 @@ function update_script_execute() {
 		mv "$FILE_TO_INSTALL_ABS_FILE" "$newName" &>>"$LOG_FILE"
 	fi
 
-	local httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")"  "/tmp/$FILE_TO_INSTALL" )"
+	local httpCode; httpCode="$(downloadFile "$(downloadURL "$FILE_TO_INSTALL")"  "/tmp/$FILE_TO_INSTALL" )"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$FILE_TO_INSTALL")" "$httpCode"
 		logExit
@@ -2944,9 +2953,9 @@ function downloadFile() { # url, targetFileName
 		logEntry "URL: $1, file: $2"
 		local url="$1"
 		local file="$2"
-		local f=$(mktemp)
+		local f; f=$(mktemp)
 		local httpCode rc
-		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w %{http_code} -L "$url" 2>>$LOG_FILE)
+		httpCode=$(curl -sSL -o "$f" -m $DOWNLOAD_TIMEOUT -w '%{http_code}' -L "$url" 2>>$LOG_FILE)
 		rc=$?	# of curl, not of local
 		logItem "httpCode: $httpCode RC: $rc"
 		# a file:// URL has no HTTP code (000), e.g. the repository of the package test
@@ -2961,7 +2970,7 @@ function downloadFile() { # url, targetFileName
 		if head -n 1 "$f" | grep -q "^<!DOCTYPE html>"; then						# Download plugin doesn't return 404 if file not found but a HTML doc
 			rm $f &>>$LOG_FILE
 			logExit 404
-			return 404
+			return 1	# callers only check for an error, the HTTP code is logged
 		fi
 		mv $f $file &>>$LOG_FILE
 		logExit 0
@@ -2974,7 +2983,7 @@ function update_installer_execute() {
 
 	local newName
 
-	local httpCode="$(downloadFile "$(downloadURL "$MYSELF")" "/tmp/$MYSELF")"
+	local httpCode; httpCode="$(downloadFile "$(downloadURL "$MYSELF")" "/tmp/$MYSELF")"
 	if (( $? )); then
 		unrecoverableError $MSG_DOWNLOAD_FAILED "$(downloadURL "$MYSELF")" "$httpCode"
 		return
@@ -3006,7 +3015,6 @@ function extensions_uninstall_execute() {
 
 	logEntry
 
-	local extensions="mem temp disk"
 
 	if ls $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh >&/dev/null; then
 		if ! rm -f $FILE_TO_INSTALL_ABS_PATH/${RASPIBACKUP_NAME}_*.sh &>>"$LOG_FILE"; then
@@ -3029,7 +3037,7 @@ function getActiveServices() {
 
 	logItem "$EXCLUDE_SERVICES_REGEX"
 	local as=""
-	while 	IFS=" " read s r; do
+	while 	IFS=" " read s _; do
 		if [[ $s == *".service" ]]; then
 			as+=" $(sed 's/\.service$//' <<< "$s")"
 		fi
@@ -3052,7 +3060,7 @@ function getPartitionNumbers() { # device, e.g. /dev/mmcblk0
 #	"5 265G 83 Linux"
 	logItem "Partitions: $ap"
 # now remove partition type info
-	local apr="$(cut -d ' ' -f 1-2,4- <<< "$ap")"
+	local apr; apr="$(cut -d ' ' -f 1-2,4- <<< "$ap")"
 #	"1 256M W95"
 #	"2 14.3G Linux"
 #	"5 265G Linux"
@@ -3088,23 +3096,24 @@ function getStartStopCommands() { # listOfServicesToStop pcommandvarname scomman
 	logEntry "$1"
 
 	local startServices
-	IFS=" " startServices=( $1 )
+	IFS=" "
+	read -r -a startServices <<< "$1"
 	logItem "Number of entries: ${#startServices[@]}"
 
 	local sc="" pc="" and=""
 
 	for s in "${startServices[@]}"; do
 		logItem "Processing $s"
-		pc="$pc $and systemctl stop \'"$s"\'"
-		sc="systemctl start \'"$s"\' $and $sc"
+		pc="$pc $and systemctl stop \\'$s\\'"
+		sc="systemctl start \\'$s\\' $and $sc"
 		[[ -z $and ]] && and="&&"
 	done
 
 	#pc="systemctl stop $1"
 	#sc="systemctl start $1"
 
-	pc=$(sed -e 's/ \+/ /g' <<< $pc | xargs)
-	sc=$(sed -e 's/ \+/ /g' <<< $sc | xargs)
+	pc=$(sed -e 's/ \+/ /g' <<< "$pc" | xargs)
+	sc=$(sed -e 's/ \+/ /g' <<< "$sc" | xargs)
 
 	printf -v "${2}" "%s" "$pc"
 	printf -v "${3}" "%s" "$sc"
@@ -3184,9 +3193,9 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_PARTUUID=.*$/DEFAULT_CLONE_PARTUUID=\"$CONFIG_CLONE_PARTUUID\"/" "$CONFIG_ABS_FILE"
-	local c=$(sed 's_/_\\/_g' <<< "$CONFIG_CLONE_DEVICE")
+	local c; c=$(sed 's_/_\\/_g' <<< "$CONFIG_CLONE_DEVICE")
 	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$/DEFAULT_CLONE_DEVICE=\"$c\"/" "$CONFIG_ABS_FILE"
-	local f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
+	local f; f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
 	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPPATH=.*$/DEFAULT_BACKUPPATH=\"$f\"/" "$CONFIG_ABS_FILE"
 
 	local pline sline
@@ -3339,7 +3348,7 @@ function config_merge_check_do() { # offers to merge the config template of the 
 
 	logEntry
 
-	local template="$PACKAGE_TEMPLATES_DIR/$(configTemplateName)"
+	local template; template="$PACKAGE_TEMPLATES_DIR/$(configTemplateName)"
 
 	if (( ! PACKAGE_MODE )) || ! isConfigTemplateNewer "$template"; then
 		logExit
@@ -3350,10 +3359,10 @@ function config_merge_check_do() { # offers to merge the config template of the 
 	oldVersion="$(extractVersionFromFile "$CONFIG_ABS_FILE" "$CONFIG_VERSION_VARNAME")"
 	newVersion="$(extractVersionFromFile "$template" "$CONFIG_VERSION_VARNAME")"
 
-	local m="$(getMessageText $MSG_CONFIG_MERGE_PENDING "$CONFIG_ABS_FILE" "$oldVersion" "$newVersion")"
-	local y="$(getMessageText $BUTTON_YES)"
-	local n="$(getMessageText $BUTTON_NO)"
-	local tt="$(getMessageText $TITLE_CONFIRM)"
+	local m; m="$(getMessageText $MSG_CONFIG_MERGE_PENDING "$CONFIG_ABS_FILE" "$oldVersion" "$newVersion")"
+	local y; y="$(getMessageText $BUTTON_YES)"
+	local n; n="$(getMessageText $BUTTON_NO)"
+	local tt; tt="$(getMessageText $TITLE_CONFIRM)"
 
 	if ! whiptail --yesno "$m" --title "$tt" --yes-button "$y" --no-button "$n" $ROWS_MSGBOX $WINDOW_COLS 2; then
 		logExit
@@ -3404,15 +3413,15 @@ function cron_update_execute() {
 
 	logItem "cron: $CONFIG_CRON_DAY $CONFIG_CRON_HOUR $CONFIG_CRON_MINUTE"
 
-	local l="$(tail -n 1 < $CRON_ABS_FILE)"
+	local l; l="$(tail -n 1 < $CRON_ABS_FILE)"
 	local disabled=""
 	if ! isCrontabEnabled; then
 		disabled="#"
 	fi
-	local cron_day="$(daynum_to_config_string "$CONFIG_CRON_DAY")"
-	local v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
+	local cron_day; cron_day="$(daynum_to_config_string "$CONFIG_CRON_DAY")"
+	local v; v=$(awk -v disabled=$disabled -v minute=$CONFIG_CRON_MINUTE -v hour=$CONFIG_CRON_HOUR -v day=$cron_day ' {print disabled minute, hour, $3, $4, day, $6, $7, $8}' <<< "$l")
 	logItem "cron update: $v"
-	local t=$(mktemp)
+	local t; t=$(mktemp)
 	head -n -1 "$CRON_ABS_FILE" > $t
 	echo "$v" >> $t
 	mv $t $CRON_ABS_FILE
@@ -3460,9 +3469,9 @@ function systemd_update_execute() {
 
 #	OnCalendar=Sun *-*-* 05:00:42 # on sunday
 #	OnCalendar=*-*-* 05:00:42     # daily
-	local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
+	local l; l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE)"
 
-	local systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
+	local systemd_day; systemd_day="$(daynum_to_config_string "$CONFIG_SYSTEMD_DAY")"
 
 	logItem "Day: -${systemd_day}-"
 	if [[ -z $systemd_day ]]; then
@@ -3594,7 +3603,6 @@ function systemd_uninstall_execute() {
 		fi
 	fi
 
-	SYSTEMD_INSTALLED_INSTALLED=0
 
 	logExit
 
@@ -3726,7 +3734,7 @@ function unrecoverableError() { # messagenumber messageparms
 	logEntry "$@"
 
 	if (( $PROGRESSBAR_DO )); then
-		logItem "Progressbar error occured $@"
+		logItem "Progressbar error occured $*"
 		echo "$@"
 		return
 	fi
@@ -3735,24 +3743,28 @@ function unrecoverableError() { # messagenumber messageparms
 	calc_wt_size
 
 	logStack
-	local tt="$(getMessageText $TITLE_ERROR)"
-	local d="$(getMessageText $DESCRIPTION_ERROR)"
+	local tt; tt="$(getMessageText $TITLE_ERROR)"
+	local d; d="$(getMessageText $DESCRIPTION_ERROR)"
 
 	local id="$1"
 	shift
 
 	logItem "Id: $id"
-	logItem "Msg: $@"
+	logItem "Msg: $*"
 
 	if (( $MODE_UNATTENDED )); then
 		echo
+		# shellcheck disable=SC2068 # split again: an error of a progressbar step is passed as one parameter
 		d="$(getMessageText $id $@ )${NL}${NL}$d"
 		logItem "$d"
 		echo "$d"
 	else
-		local m="$(getMessageText $id $@ )${NL}${NL}$d"
+		# shellcheck disable=SC2068 # split again: an error of a progressbar step is passed as one parameter
+		local m
+		# shellcheck disable=SC2068 # split again: an error of a progressbar step is passed as one parameter
+		m="$(getMessageText $id $@ )${NL}${NL}$d"
 		logItem "$m"
-		local t=$(center $(($WINDOW_COLS * 2)) "$m")
+		local t; t=$(center $(($WINDOW_COLS * 2)) "$m")
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $(($WINDOW_COLS * 2)) 1
 	fi
 	logExit
@@ -3786,9 +3798,10 @@ function testIfServicesExist() { # list of services
 	logEntry "$1"
 
 	local services
-	IFS=" " services=( $1 )
+	IFS=" "
+	read -r -a services <<< "$1"
 	local fails=""
-	for s in ${services[@]}; do
+	for s in "${services[@]}"; do
 		if ! systemd-analyze verify $s.service &>/dev/null; then
 			[[ -n "$fails" ]] && fails+=","
 			fails+="$s"
@@ -3800,7 +3813,7 @@ function testIfServicesExist() { # list of services
 }
 
 function extractVersionFromFile() { # fileName type (VERSION|VERSION_CONFIG)
-	local v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
+	local v; v="$(grep -E "^$2=" "$1" | cut -f 2 -d = | sed  -e 's/[[:space:]]*#.*$//g' -e 's/\"//g')"
 	[[ -z "$v" ]] && v="0.0.0.0"
 	echo "$v"
 }
@@ -3810,26 +3823,26 @@ function about_do() {
 	logEntry
 
 	if [[ -f $FILE_TO_INSTALL_ABS_FILE ]]; then
-		local RASPI_GIT_DATE="$(grep "^GIT_DATE=" $FILE_TO_INSTALL_ABS_FILE)"
+		local RASPI_GIT_DATE; RASPI_GIT_DATE="$(grep "^GIT_DATE=" $FILE_TO_INSTALL_ABS_FILE)"
 		local RASPI_GIT_DATE_ONLY="${RASPI_GIT_DATE/: /}"
-		local RASPI_GIT_DATE_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_DATE")"
-		local RASPI_GIT_TIME_ONLY="$(cut -f 3 -d ' ' <<< "$RASPI_GIT_DATE")"
-		local RASPI_GIT_COMMIT="$(grep "^GIT_COMMIT=" $FILE_TO_INSTALL_ABS_FILE)"
-		local RASPI_GIT_COMMIT_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_COMMIT" | sed 's/\$//' | sed "s/'//" )"
-		local RASPI_VERSION="$(extractVersionFromFile $FILE_TO_INSTALL_ABS_FILE VERSION)"
+		local RASPI_GIT_DATE_ONLY; RASPI_GIT_DATE_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_DATE")"
+		local RASPI_GIT_TIME_ONLY; RASPI_GIT_TIME_ONLY="$(cut -f 3 -d ' ' <<< "$RASPI_GIT_DATE")"
+		local RASPI_GIT_COMMIT; RASPI_GIT_COMMIT="$(grep "^GIT_COMMIT=" $FILE_TO_INSTALL_ABS_FILE)"
+		local RASPI_GIT_COMMIT_ONLY; RASPI_GIT_COMMIT_ONLY="$(cut -f 2 -d ' ' <<< "$RASPI_GIT_COMMIT" | sed 's/\$//' | sed "s/'//" )"
+		local RASPI_VERSION; RASPI_VERSION="$(extractVersionFromFile $FILE_TO_INSTALL_ABS_FILE VERSION)"
 		local RASPI_GIT_CODEVERSION="$FILE_TO_INSTALL $RASPI_VERSION, $RASPI_GIT_DATE_ONLY/$RASPI_GIT_TIME_ONLY - $RASPI_GIT_COMMIT_ONLY"
 	fi
 
-	local a="$(getMessageText $MSG_ABOUT "$RASPI_GIT_CODEVERSION")"
-	local t=$(center $(($WINDOW_COLS * 2)) "$a")
+	local a; a="$(getMessageText $MSG_ABOUT "$RASPI_GIT_CODEVERSION")"
+	local t; t=$(center $(($WINDOW_COLS * 2)) "$a")
 	whiptail --msgbox "$t" --title "About" $ROWS_ABOUT $(($WINDOW_COLS * 2)) 1
 	logExit
 }
 
 function navigation_do() {
 
-	local a="$(getMessageText $MSG_NAVIGATION)"
-	local t=$(center $(($WINDOW_COLS * 2)) "$a")
+	local a; a="$(getMessageText $MSG_NAVIGATION)"
+	local t; t=$(center $(($WINDOW_COLS * 2)) "$a")
 	whiptail --msgbox "$t" --title "Navigation" $ROWS_ABOUT $(($WINDOW_COLS * 2)) 1
 }
 
@@ -3843,11 +3856,11 @@ function do_finish() {
 
 		if isRaspiBackupInstalled ; then
 			if ! isStartStopDefined; then
-				local m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
-				local y="$(getMessageText $BUTTON_YES)"
-				local n="$(getMessageText $BUTTON_NO)"
-				local t=$(center $WINDOW_COLS "$m")
-				local tt="$(getMessageText $TITLE_WARNING)"
+				local m; m="$(getMessageText $MSG_QUESTION_IGNORE_MISSING_STARTSTOP)"
+				local y; y="$(getMessageText $BUTTON_YES)"
+				local n; n="$(getMessageText $BUTTON_NO)"
+				local t; t=$(center $WINDOW_COLS "$m")
+				local tt; tt="$(getMessageText $TITLE_WARNING)"
 				if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
 					return
 				fi
@@ -3869,9 +3882,9 @@ function do_finish() {
 }
 
 function help() {
-	local a="$(getMessageText $MSG_HELP)"
-	local t=$(center $(($WINDOW_COLS * 2)) "$a")
-	local tt="$(getMessageText $TITLE_HELP)"
+	local a; a="$(getMessageText $MSG_HELP)"
+	local t; t=$(center $(($WINDOW_COLS * 2)) "$a")
+	local tt; tt="$(getMessageText $TITLE_HELP)"
 	whiptail --msgbox "$t" --title "$tt" $ROWS_ABOUT $(($WINDOW_COLS * 2)) 1
 }
 
@@ -3879,6 +3892,7 @@ function trapWithArg() { # function trap1 trap2 ... trapn
 	local func="$1"
 	shift
 	for sig; do
+		# shellcheck disable=SC2064 # function and signal are expanded now on purpose
 		trap "$func $sig" "$sig"
 	done
 }
@@ -3896,7 +3910,6 @@ function cleanup() {
 	logItem "Signal: $signal"
 	logItem "rc: $rc"
 
-	TAIL=0
 
 	if (($INSTALLATION_STARTED)); then
 		if ((!$INSTALLATION_SUCCESSFULL)); then
@@ -3929,8 +3942,8 @@ function config_menu() {
 	logEntry
 
 	if ! isConfigInstalled; then
-		local t=$(center $WINDOW_COLS "No $RASPIBACKUP_NAME configuration found.")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local t; t=$(center $WINDOW_COLS "No $RASPIBACKUP_NAME configuration found.")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return
@@ -3944,14 +3957,14 @@ function config_menu() {
 	fi
 
 	if isCrontabConfigInstalled; then
-		local l="$(tail -n 1 < $CRON_ABS_FILE)"
+		local l; l="$(tail -n 1 < $CRON_ABS_FILE)"
 		logItem "last line: $l"
-		local v=$(awk ' {print $1, $2, $5}' <<< "$l")
+		local v; v=$(awk ' {print $1, $2, $5}' <<< "$l")
 		logItem "parsed $v"
 		CONFIG_CRON_MINUTE="$(cut -f 1 -d ' ' <<< $v)"
 		[[ ${CONFIG_CRON_MINUTE:0:1} == "#" ]] && CONFIG_CRON_MINUTE="${CONFIG_CRON_MINUTE:1}"
 		CONFIG_CRON_HOUR="$(cut -f 2 -d ' ' <<< $v)"
-		local day=$(cut -f 3 -d ' ' <<< $v)
+		local day; day=$(cut -f 3 -d ' ' <<< $v)
 		CONFIG_CRON_DAY=$(daynum_from_config_string "$day")
 		logItem "parsed hour: $CONFIG_CRON_HOUR"
 		logItem "parsed minute: $CONFIG_CRON_MINUTE"
@@ -3959,12 +3972,12 @@ function config_menu() {
 	elif isSystemdConfigInstalled; then
 		#	OnCalendar=Sun *-*-* 05:00:00
 		#	OnCalendar=*-*-* 05:00:00
-		local l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")"
+		local l; l="$(grep "^OnCalendar" $SYSTEMD_TIMER_ABS_FILE | cut -f 2 -d "=")"
 		logItem "extracted line $l"
 
 		local token
 		set -o noglob # *-*-* looks up files in local directory otherwise :-(
-		token=( $l )
+		read -r -a token <<< "$l"
 		set +o noglob
 
 		logItem "Token1: ${token[0]}"
@@ -3992,10 +4005,10 @@ function config_menu() {
 
 	while :; do
 
-		local b1="$(getMessageText $BUTTON_BACK)"
-		local sel1="$(getMessageText $BUTTON_SELECT)"
-		local y="$(getMessageText $BUTTON_YES)"
-		local n="$(getMessageText $BUTTON_NO)"
+		local b1; b1="$(getMessageText $BUTTON_BACK)"
+		local sel1; sel1="$(getMessageText $BUTTON_SELECT)"
+		local y; y="$(getMessageText $BUTTON_YES)"
+		local n; n="$(getMessageText $BUTTON_NO)"
 
 		getMenuText $MENU_LANGUAGE m1
 		getMenuText $MENU_CONFIG_BACKUPPATH m2
@@ -4012,14 +4025,20 @@ function config_menu() {
 
 		local s1="${m1[0]}"
 		local s2="${m2[0]}"
+		# shellcheck disable=SC2154 # set by getMenuText
 		local s3="${m3[0]}"
+		# shellcheck disable=SC2154 # set by getMenuText
 		local s4="${m4[0]}"
+		# shellcheck disable=SC2154 # set by getMenuText
 		local s5="${m5[0]}"
+		# shellcheck disable=SC2154 # set by getMenuText
 		local s6="${m6[0]}"
+		# shellcheck disable=SC2154 # set by getMenuText
 		local s7="${m7[0]}"
+		# shellcheck disable=SC2154 # set by getMenuText
 		local s8="${m8[0]}"
+		# shellcheck disable=SC2154 # set by getMenuText
 		local s9="${m9[0]}"
-		local s10="${m10[0]}"
 
 		local mx=( 	\
 			"${m1[@]}" \
@@ -4035,6 +4054,7 @@ function config_menu() {
 
 		if [[ $CONFIG_BACKUPTYPE != "dd" ]]; then
 			getMenuText $MENU_CONFIG_CLONE mcc
+			# shellcheck disable=SC2154 # set by getMenuText
 			local scc="${mcc[0]}"
 			mx+=("${mcc[@]}")
 		else
@@ -4043,6 +4063,7 @@ function config_menu() {
 
 		if [[ $CONFIG_BACKUPTYPE == "dd" || $CONFIG_BACKUPTYPE == "tar" ]]; then
 			getMenuText $MENU_CONFIG_ZIP mcp
+			# shellcheck disable=SC2154 # set by getMenuText
 			local scp="${mcp[0]}"
 			mx+=("${mcp[@]}")
 		else
@@ -4058,9 +4079,9 @@ function config_menu() {
 		if [ $RET -eq 1 ]; then
 			if (($CONFIG_UPDATED)); then
 				if (( ! MODE_SILENT )); then
-					local m="$(getMessageText $MSG_QUESTION_UPDATE_CONFIG)"
-					local t=$(center $WINDOW_COLS "$m")
-					local ttm="$(getMessageText $TITLE_CONFIRM)"
+					local m; m="$(getMessageText $MSG_QUESTION_UPDATE_CONFIG)"
+					local t; t=$(center $WINDOW_COLS "$m")
+					local ttm; ttm="$(getMessageText $TITLE_CONFIRM)"
 					if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
 						config_update_do
 					fi
@@ -4076,8 +4097,8 @@ function config_menu() {
 					else
 						m="$(getMessageText $MSG_QUESTION_UPDATE_SYSTEMD)"
 					fi
-					local t=$(center $WINDOW_COLS "$m")
-					local ttm="$(getMessageText $TITLE_CONFIRM)"
+					local t; t=$(center $WINDOW_COLS "$m")
+					local ttm; ttm="$(getMessageText $TITLE_CONFIRM)"
 					if whiptail --yesno "$t" --title "$ttm" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 1 3>&1 1>&2 2>&3; then
 						timer_update_do
 					fi
@@ -4090,17 +4111,17 @@ function config_menu() {
 		elif [ $RET -eq 0 ]; then
 			logItem "$FUN"
 			case "$FUN" in
-				$s1) config_language_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s2) config_backuppath_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s3) config_keep_selection_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s4) config_backuptype_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s5) config_backupmode_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s6) config_services_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s7) config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s8) config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
-				$s9) config_timer_menu; TIMER_UPDATED=$? ;;
-				$scc) config_clone_menu; CONFIG_UPDATED=$? ;;
-				$scp) config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s1") config_language_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s2") config_backuppath_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s3") config_keep_selection_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s4") config_backuptype_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s5") config_backupmode_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s6") config_services_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s7") config_message_detail_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s8") config_email_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
+				"$s9") config_timer_menu; TIMER_UPDATED=$? ;;
+				"$scc") config_clone_menu; CONFIG_UPDATED=$? ;;
+				"$scp") config_compress_do; CONFIG_UPDATED=$(( CONFIG_UPDATED|$? )) ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
@@ -4133,9 +4154,9 @@ function config_keep_selection_do() {
 	local s2="${m2[0]}"
 
 	getMenuText $MENU_CONFIG_BACKUPS tt
-	local o1="$(getMessageText $BUTTON_OK)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local d="$(getMessageText $DESCRIPTION_SMARTMODE)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local d; d="$(getMessageText $DESCRIPTION_SMARTMODE)"
 
 	local updated=0
 
@@ -4146,11 +4167,11 @@ function config_keep_selection_do() {
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-		$s1)	logItem "$s1"
+		"$s1")	logItem "$s1"
 				config_keep_do 0
 				updated=$?
 				;;
-		$s2)	logItem "$s2"
+		"$s2")	logItem "$s2"
 				config_keep_do 1
 				updated=$?
 				;;
@@ -4185,8 +4206,8 @@ function config_keep_do() { # smartRecycle
 		fi
 
 		getMenuText $MENU_CONFIG_BACKUPS tt
-		local c1="$(getMessageText $BUTTON_CANCEL)"
-		local o1="$(getMessageText $BUTTON_OK)"
+		local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1; o1="$(getMessageText $BUTTON_OK)"
 
 		local d
 		if (( $isSmartRecycle )); then
@@ -4200,12 +4221,13 @@ function config_keep_do() { # smartRecycle
 			logItem "Answer: $ANSWER"
 
 			IFS=$DEFAULT_IFS
-			local srNumbers=( $ANSWER )
+			local srNumbers
+			read -r -a srNumbers <<< "$ANSWER"
 			local srNumberCount=${#srNumbers[@]}
 			local n
 
 			if (( $srNumberCount == 4 || $srNumberCount == 1 )); then
-				for n in ${srNumbers[@]}; do
+				for n in "${srNumbers[@]}"; do
 					if [[ ! "$n" =~ ^[0-9]+$ ]]; then
 						local m
 						if (( $isSmartRecycle )); then
@@ -4213,8 +4235,8 @@ function config_keep_do() { # smartRecycle
 						else
 							m="$(getMessageText $MSG_INVALID_KEEP "$n")"
 						fi
-						local t=$(center $WINDOW_COLS "$m")
-						local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+						local t; t=$(center $WINDOW_COLS "$m")
+						local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 						whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 						error=1
 						break
@@ -4227,8 +4249,8 @@ function config_keep_do() { # smartRecycle
 				else
 					m="$(getMessageText $MSG_INVALID_KEEP_NUMBER_COUNT)"
 				fi
-				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+				local t; t=$(center $WINDOW_COLS "$m")
+				local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				error=1
 			fi
@@ -4284,23 +4306,23 @@ function config_backuppath_do() {
 	while :; do
 
 		getMenuText $MENU_CONFIG_BACKUPPATH tt
-		local c1="$(getMessageText $BUTTON_CANCEL)"
-		local o1="$(getMessageText $BUTTON_OK)"
-		local d="$(getMessageText $DESCRIPTION_BACKUPPATH)"
+		local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1; o1="$(getMessageText $BUTTON_OK)"
+		local d; d="$(getMessageText $DESCRIPTION_BACKUPPATH)"
 
 		ANSWER=$(whiptail --inputbox "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS "$current" --ok-button "$o1" --cancel-button "$c1" 3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			current="$ANSWER"
 			if [[ -z "$ANSWER" || ! -d "$ANSWER" ]]; then
-				local m="$(getMessageText $MSG_INVALID_BACKUPPATH "$ANSWER")"
-				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+				local m; m="$(getMessageText $MSG_INVALID_BACKUPPATH "$ANSWER")"
+				local t; t=$(center $WINDOW_COLS "$m")
+				local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 			elif ! isPathMounted "$ANSWER"; then
-				local m="$(getMessageText $MSG_LOCAL_BACKUPPATH "$ANSWER")"
-				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_WARNING)"
+				local m; m="$(getMessageText $MSG_LOCAL_BACKUPPATH "$ANSWER")"
+				local t; t=$(center $WINDOW_COLS "$m")
+				local ttm; ttm="$(getMessageText $TITLE_WARNING)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				CONFIG_BACKUPPATH="$ANSWER"
 				break				
@@ -4339,33 +4361,33 @@ function config_time_do() {
 
 function config_crontime_do() {
 
-	local old=$(printf "%02d:%02d" "$((10#$CONFIG_CRON_HOUR))" "$((10#$CONFIG_CRON_MINUTE))" )
+	local old; old=$(printf "%02d:%02d" "$((10#$CONFIG_CRON_HOUR))" "$((10#$CONFIG_CRON_MINUTE))" )
 	current="$old"
 
 	logEntry "$old"
 
-	local b1="$(getMessageText $SELECT_TIME)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local o1="$(getMessageText $BUTTON_OK)"
+	local b1; b1="$(getMessageText $SELECT_TIME)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
 	getMenuText $MENU_CONFIG_TIME tt
 
 	while :; do
-		ANSWER=$(whiptail --inputbox "$b" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" $ROWS_MENU $WINDOW_COLS 2 3>&1 1>&2 2>&3)
+		ANSWER=$(whiptail --inputbox "$b1" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" $ROWS_MENU $WINDOW_COLS 2 3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			current="$ANSWER"
 			if [[ ! "$ANSWER" =~ ^[0-9]{1,2}:[0-9]{1,2}$ ]]; then
-				local m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
-				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+				local m; m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
+				local t; t=$(center $WINDOW_COLS "$m")
+				local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 			else
 				CONFIG_CRON_HOUR=$(cut -f1 -d: <<< "$ANSWER")
 				CONFIG_CRON_MINUTE=$(cut -f2 -d: <<< "$ANSWER")
 				if (( 10#$CONFIG_CRON_HOUR > 23 || 10#$CONFIG_CRON_MINUTE > 59 )); then
-					local m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
-					local t=$(center $WINDOW_COLS "$m")
-					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					local m; m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
+					local t; t=$(center $WINDOW_COLS "$m")
+					local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				else
 					logItem "hour: $CONFIG_CRON_HOUR minute: $CONFIG_CRON_MINUTE"
@@ -4386,32 +4408,32 @@ function config_crontime_do() {
 
 function config_systemdtime_do() {
 
-	local old=$(printf "%02d:%02d" "$((10#$CONFIG_SYSTEMD_HOUR))" "$((10#$CONFIG_SYSTEMD_MINUTE))")
+	local old; old=$(printf "%02d:%02d" "$((10#$CONFIG_SYSTEMD_HOUR))" "$((10#$CONFIG_SYSTEMD_MINUTE))")
 	current="$old"
 	logEntry "$old"
 
-	local b1="$(getMessageText $SELECT_TIME)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local o1="$(getMessageText $BUTTON_OK)"
+	local b1; b1="$(getMessageText $SELECT_TIME)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
 	getMenuText $MENU_CONFIG_TIME tt
 
 	while :; do
-		ANSWER=$(whiptail --inputbox "$b" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" $ROWS_MENU $WINDOW_COLS 2 3>&1 1>&2 2>&3)
+		ANSWER=$(whiptail --inputbox "$b1" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS --ok-button "$o1" --cancel-button "$c1" "$current" $ROWS_MENU $WINDOW_COLS 2 3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			current="$ANSWER"
 			if [[ ! "$ANSWER" =~ ^[0-9]{1,2}:[0-9]{1,2}$ ]]; then
-				local m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
-				local t=$(center $WINDOW_COLS "$m")
-				local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+				local m; m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
+				local t; t=$(center $WINDOW_COLS "$m")
+				local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 				whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 			else
 				CONFIG_SYSTEMD_HOUR=$(cut -f1 -d: <<< "$ANSWER")
 				CONFIG_SYSTEMD_MINUTE=$(cut -f2 -d: <<< "$ANSWER")
 				if (( 10#$CONFIG_SYSTEMD_HOUR > 23 || 10#$CONFIG_SYSTEMD_MINUTE > 59 )); then
-					local m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
-					local t=$(center $WINDOW_COLS "$m")
-					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					local m; m="$(getMessageText $MSG_INVALID_TIME "$ANSWER")"
+					local t; t=$(center $WINDOW_COLS "$m")
+					local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				else
 					logItem "hour: $CONFIG_SYSTEMD_HOUR minute: $CONFIG_SYSTEMD_MINUTE"
@@ -4439,7 +4461,7 @@ function config_email_do() {
 	local current="$CONFIG_EMAIL"
 	local oldeMail="$current"
 
-	local d="$(getMessageText $DESCRIPTION_EMAIL)"
+	local d; d="$(getMessageText $DESCRIPTION_EMAIL)"
 
 	while :; do
 		ANSWER=$(whiptail --inputbox "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS "$current" --ok-button "$o1" --cancel-button "$c1" 3>&1 1>&2 2>&3)
@@ -4448,9 +4470,9 @@ function config_email_do() {
 			current="$ANSWER"
 			if [[ -n "$current" ]]; then
 				if ! [[ "$current" =~ ^[a-zA-Z0-9_.+-]+\@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$ ]]; then
-					local m="$(getMessageText $MSG_INVALID_EMAIL "$current")"
-					local t=$(center $WINDOW_COLS "$m")
-					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					local m; m="$(getMessageText $MSG_INVALID_EMAIL "$current")"
+					local t; t=$(center $WINDOW_COLS "$m")
+					local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				else
 					CONFIG_EMAIL="$ANSWER"
@@ -4489,8 +4511,8 @@ function config_email_do() {
 	local s2="${m2[0]}"
 	local s3="${m3[0]}"
 
-	local o1="$(getMessageText $BUTTON_OK)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
 
 	case "$CONFIG_MAIL_PROGRAM" in
 		mail) mail_=on ;;
@@ -4498,7 +4520,7 @@ function config_email_do() {
 		msmtp) msmtp_=on ;;
 	esac
 
-	local d="$(getMessageText $DESCRIPTION_MAIL_PROGRAM)"
+	local d; d="$(getMessageText $DESCRIPTION_MAIL_PROGRAM)"
 
 	ANSWER=$(whiptail --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $WT_WIDTH 3 \
 		"${m1[@]}" "$mail_" \
@@ -4508,9 +4530,9 @@ function config_email_do() {
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-			$s3) CONFIG_MAIL_PROGRAM="msmtp" ;;
-			$s2) CONFIG_MAIL_PROGRAM="ssmtp" ;;
-			$s1) CONFIG_MAIL_PROGRAM="mail" ;;
+			"$s3") CONFIG_MAIL_PROGRAM="msmtp" ;;
+			"$s2") CONFIG_MAIL_PROGRAM="ssmtp" ;;
+			"$s1") CONFIG_MAIL_PROGRAM="mail" ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
 				return 1 ;;
@@ -4542,8 +4564,8 @@ function config_backuptype_do() {
 	local s2="${m2[0]}"
 	local s3="${m3[0]}"
 
-	local o1="$(getMessageText $BUTTON_OK)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
 
 	case "$CONFIG_BACKUPTYPE" in
 		dd) dd_=on ;;
@@ -4556,9 +4578,9 @@ function config_backuptype_do() {
 	logItem "$b1"
 	logItem "$t"
 
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local o1="$(getMessageText $BUTTON_OK)"
-	local d="$(getMessageText $DESCRIPTION_BACKUPTYPE)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local d; d="$(getMessageText $DESCRIPTION_BACKUPTYPE)"
 
 	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $WT_WIDTH 3 \
 		"${m1[@]}" "$rsync_" \
@@ -4568,15 +4590,15 @@ function config_backuptype_do() {
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-			$s3) CONFIG_BACKUPTYPE="dd"
+			"$s3") CONFIG_BACKUPTYPE="dd"
 				 CONFIG_TAR_COMPRESSION_TOOL=""
   			     CONFIG_ZIP_BACKUP=0
 				 ;;
-			$s2) CONFIG_BACKUPTYPE="tar"
+			"$s2") CONFIG_BACKUPTYPE="tar"
   			     CONFIG_ZIP_BACKUP=0
 				 CONFIG_TAR_COMPRESSION_TOOL=""
 				 ;;
-			$s1) CONFIG_BACKUPTYPE="rsync"
+			"$s1") CONFIG_BACKUPTYPE="rsync"
 				 CONFIG_ZIP_BACKUP=0
 				 CONFIG_TAR_COMPRESSION_TOOL=""
 				 ;;
@@ -4597,13 +4619,14 @@ function config_tar_compressiontool_do() {
 
 	logEntry "$old"
 
-	local bzip2=off
-	local gzip=off
-	local lzip=off
-	local lzma=off
-	local lzop=off
-	local xz=off
-	local zstd=off
+	local bzip2_=off
+	local gzip_=off
+	local lzip_=off
+	local lzma_=off
+	local lzop_=off
+	local xz_=off
+	local lz4_=off
+	local zstd_=off
 
 	local old="$CONFIG_TAR_COMPRESSION_TOOL"
 
@@ -4625,8 +4648,8 @@ function config_tar_compressiontool_do() {
 	local s7="${m7[0]}"
 	local s8="${m8[0]}"
 
-	local o1="$(getMessageText $BUTTON_OK)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
 
 	case "$CONFIG_TAR_COMPRESSION_TOOL" in
 		zstd) zstd_=on ;;
@@ -4638,7 +4661,7 @@ function config_tar_compressiontool_do() {
 		lz4) lz4_=on ;;
 		xz) xz_=on ;;
 		*) if (( CONFIG_ZIP_BACKUP )); then
-		      gzip=on
+		      gzip_=on
 		   else
 			  zstd_=on
 		   fi
@@ -4647,9 +4670,9 @@ function config_tar_compressiontool_do() {
 
 	getMenuText $MENU_CONFIG_TAR_COMPRESSION_TOOL tt
 
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local o1="$(getMessageText $BUTTON_OK)"
-	local d="$(getMessageText $DESCRIPTION_TAR_COMPRESSION_TOOL)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local d; d="$(getMessageText $DESCRIPTION_TAR_COMPRESSION_TOOL)"
 
 	ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $WT_WIDTH 7 \
 		"${m1[@]}" "$zstd_" \
@@ -4658,20 +4681,20 @@ function config_tar_compressiontool_do() {
 		"${m4[@]}" "$lzip_" \
 		"${m5[@]}" "$lzma_" \
 		"${m6[@]}" "$lzop_" \
-		"${m7[@]}" "$lz4" \
+		"${m7[@]}" "$lz4_" \
 		"${m8[@]}" "$xz_" \
 		3>&1 1>&2 2>&3)
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-			$s1) CONFIG_TAR_COMPRESSION_TOOL="zstd" ;;
-			$s2) CONFIG_TAR_COMPRESSION_TOOL="gzip" ;;
-			$s3) CONFIG_TAR_COMPRESSION_TOOL="bzip2" ;;
-			$s4) CONFIG_TAR_COMPRESSION_TOOL="lzip" ;;
-			$s5) CONFIG_TAR_COMPRESSION_TOOL="lzma" ;;
-			$s6) CONFIG_TAR_COMPRESSION_TOOL="lzop" ;;
-			$s7) CONFIG_TAR_COMPRESSION_TOOL="lz4" ;;
-			$s8) CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
+			"$s1") CONFIG_TAR_COMPRESSION_TOOL="zstd" ;;
+			"$s2") CONFIG_TAR_COMPRESSION_TOOL="gzip" ;;
+			"$s3") CONFIG_TAR_COMPRESSION_TOOL="bzip2" ;;
+			"$s4") CONFIG_TAR_COMPRESSION_TOOL="lzip" ;;
+			"$s5") CONFIG_TAR_COMPRESSION_TOOL="lzma" ;;
+			"$s6") CONFIG_TAR_COMPRESSION_TOOL="lzop" ;;
+			"$s7") CONFIG_TAR_COMPRESSION_TOOL="lz4" ;;
+			"$s8") CONFIG_TAR_COMPRESSION_TOOL="xz" ;;
 			"") : ;;
 			*) whiptail --msgbox "Programm error, unrecognized backup type" $ROWS_MENU $WINDOW_COLS 2
 				logExit
@@ -4695,19 +4718,21 @@ function config_services_do() {
 	wtv=$(whiptail -v | cut -d " " -f 3)
 
 	local as
-	IFS=" " as=( $(getActiveServices) )												# sorted alphabetically
+	IFS=" "
+	read -r -a as <<< "$(getActiveServices)"										# sorted alphabetically
 	local state
 
 	logItem "Active services: ${as[*]}"
 
 	getMenuText $MENU_CONFIG_SERVICES tt
 
-	logItem "INCLUDE_SERVICES_REGEX: "${INCLUDE_SERVICES_REGEX[@]}""
+	logItem "INCLUDE_SERVICES_REGEX: ${INCLUDE_SERVICES_REGEX[*]}"
 	local ci=() 					# list of included servcices
 	local cu=()						# unselected services
-	local css=( ${CONFIG_STOPSERVICES[*]} )										# already configured services
+	local css
+	read -r -a css <<< "${CONFIG_STOPSERVICES[*]}"						# already configured services
 	local srvc
-	for srvc in ${as[@]}; do
+	for srvc in "${as[@]}"; do
 		if grep -q -i "$INCLUDE_SERVICES_REGEX" <<< "$srvc"; then			# service should be included
 			ci+=( "$srvc" )
 		elif containsElement "$srvc" "${css[@]}"; then
@@ -4717,16 +4742,13 @@ function config_services_do() {
 		fi
 	done
 
-	local oldIFS="$IFS"
-	IFS=$'\n' sorted=($(sort <<<"${ci[*]}"))										# sort list of included services
-	IFS="$oldIFS"
 
-	ci+=( ${cu[@]} ) 													  					# append unselected sevices (already sorted)
+	ci+=( "${cu[@]}" )														# append unselected sevices (already sorted)
 
 	# now build whiptail list, selected services first followed by unselected services
 
 	local c=()
-	for s in ${ci[@]}; do
+	for s in "${ci[@]}"; do
 		if containsElement "$s" "${cu[@]}"; then
 			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 				c+=("$s" "" "off")
@@ -4742,9 +4764,9 @@ function config_services_do() {
 		fi
 	done
 
-	local d="$(getMessageText $DESCRIPTION_STARTSTOP_SERVICES)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local o1="$(getMessageText $BUTTON_OK)"
+	local d; d="$(getMessageText $DESCRIPTION_STARTSTOP_SERVICES)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
 
 	ANSWER=$(whiptail --notags --checklist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 7 \
 		"${c[@]}" \
@@ -4776,7 +4798,8 @@ function config_service_sequence_do() {
 	while :; do
 
 		local src
-		IFS=" " src=( $current )
+		IFS=" "
+		read -r -a src <<< "$current"
 		local tgt=()
 		local aborted=0
 
@@ -4784,7 +4807,7 @@ function config_service_sequence_do() {
 
 			local sl=()
 
-			for s in ${src[@]}; do
+			for s in "${src[@]}"; do
 				if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 					sl+=("$s" "" "")
 				else
@@ -4792,10 +4815,10 @@ function config_service_sequence_do() {
 				fi
 			done
 
-			local d="$(getMessageText $DESCRIPTION_STARTSTOP_SEQUENCE)"
-			local tt="$(getMessageText $TITLE_INFORMATION)"
-			local c1="$(getMessageText $BUTTON_CANCEL)"
-			local o1="$(getMessageText $BUTTON_OK)"
+			local d; d="$(getMessageText $DESCRIPTION_STARTSTOP_SEQUENCE)"
+			local tt; tt="$(getMessageText $TITLE_INFORMATION)"
+			local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+			local o1; o1="$(getMessageText $BUTTON_OK)"
 
 			ANSWER=$(whiptail --notags --radiolist "$d" --title "$tt" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 5 \
 				"${sl[@]}" \
@@ -4826,7 +4849,7 @@ function config_service_sequence_do() {
 		fi
 
 		local pline sline t
-		sel="${tgt[@]}"
+		sel="${tgt[*]}"
 		getStartStopCommands "$sel" "pline" "sline"
 		pline=$(sed 's/\&/\\\&/g' <<< "$pline")
 		sline=$(sed 's/\&/\\\&/g' <<< "$sline")
@@ -4835,7 +4858,7 @@ function config_service_sequence_do() {
 
 		local tl=()
 		local i=1
-		for t in ${tgt[@]}; do
+		for t in "${tgt[@]}"; do
 			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 				tl+=("$i: $t" "" on)
 			else
@@ -4844,18 +4867,18 @@ function config_service_sequence_do() {
 			(( i++ ))
 		done
 
-		local m="$(getMessageText $MSG_SEQUENCE_OK)"
-		local t=$(center $(( $WINDOW_COLS*2 )) "$m")
-		local y="$(getMessageText $BUTTON_YES)"
-		local n="$(getMessageText $BUTTON_NO)"
-		local tt="$(getMessageText $TITLE_CONFIRM)"
+		local m; m="$(getMessageText $MSG_SEQUENCE_OK)"
+		local t; t=$(center $(( $WINDOW_COLS*2 )) "$m")
+		local y; y="$(getMessageText $BUTTON_YES)"
+		local n; n="$(getMessageText $BUTTON_NO)"
+		local tt; tt="$(getMessageText $TITLE_CONFIRM)"
 
 		ANSWER=$(whiptail --notags --checklist "$m" --title "$tt" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 7 \
 			"${tl[@]}" \
 			3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
-			CONFIG_STOPSERVICES="${tgt[@]}"
+			CONFIG_STOPSERVICES="${tgt[*]}"
 			break
 		fi
 
@@ -4874,7 +4897,7 @@ function config_partitions_do() {
 
 	wtv=$(whiptail -v | cut -d " " -f 3)
 
-	local rootPartition=$(findmnt / -o source -n | sed -E 's/p?[0-9]+$//') # /dev/sda or /dev/mmcblk0
+	local rootPartition; rootPartition=$(findmnt / -o source -n | sed -E 's/p?[0-9]+$//') # /dev/sda or /dev/mmcblk0
 	logItem "Rootpartition: $rootPartition"
 
 	local done=0
@@ -4884,7 +4907,8 @@ function config_partitions_do() {
 		local current="$CONFIG_PARTITIONS_TO_BACKUP"
 
 		logItem "Current: $current"
-		local c=($current)
+		local c
+		read -r -a c <<< "$current"
 
 #	1 256M c W95
 #	2 14.3G 83 Linux
@@ -4905,8 +4929,8 @@ function config_partitions_do() {
 		IFS="$DEFAULT_IFS"
 
 		for s in "${ps[@]}"; do
-			local n="$(cut -f1 -d " " <<< "$s")"
-			pn+=($n)
+			local n; n="$(cut -f1 -d " " <<< "$s")"
+			pn+=("$n")
 			pn_desc[$n]="$(cut -f2- -d " " <<< "$s")"
 		done
 
@@ -4914,7 +4938,7 @@ function config_partitions_do() {
 
 		local cl=()
 		# add all partitions in list
-		for s in ${pn[@]}; do
+		for s in "${pn[@]}"; do
 			if containsElement "$s" "${c[@]}"; then
 				state=on
 			else
@@ -4923,14 +4947,14 @@ function config_partitions_do() {
 			if [[ "$wtv" < "0.52.19" ]]; then	# workaround for whiptail issue in 0.52.19
 				cl+=("$s" "" "$state")
 			else
-				local desc="$(printf "%6s %s" $(cut -d ' ' -f 1 <<< "${pn_desc[$s]}") $(cut -d ' ' -f 2- <<< "${pn_desc[$s]}"))"
+				local desc; desc="$(printf "%6s %s" "$(cut -d ' ' -f 1 <<< "${pn_desc[$s]}")" "$(cut -d ' ' -f 2- <<< "${pn_desc[$s]}")")"
 				cl+=("$s" "$s: ${desc}" "$state")
 			fi
 		done
 
-		local d="$(getMessageText $DESCRIPTION_PARTITIONS)"
-		local c1="$(getMessageText $BUTTON_CANCEL)"
-		local o1="$(getMessageText $BUTTON_OK)"
+		local d; d="$(getMessageText $DESCRIPTION_PARTITIONS)"
+		local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1; o1="$(getMessageText $BUTTON_OK)"
 
 		ANSWER=$(whiptail --notags --checklist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 7 \
 			"${cl[@]}" \
@@ -4947,9 +4971,9 @@ function config_partitions_do() {
 			done=$(( ! $? ))
 
 			if (( ! $done )); then
-				local m="$(getMessageText $MSG_FIRST_PARTITIONS_NOT_SELECTED)"
-				local t=$(center $WINDOW_COLS "$m")
-				local tt="$(getMessageText $TITLE_INFORMATION)"
+				local m; m="$(getMessageText $MSG_FIRST_PARTITIONS_NOT_SELECTED)"
+				local t; t=$(center $WINDOW_COLS "$m")
+				local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 				whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 			fi
 		else
@@ -5055,8 +5079,8 @@ function config_compress_do() {
 	local oldTar="$CONFIG_TAR_COMPRESSION_TOOL"
 
 	if [ $CONFIG_BACKUPTYPE == "rsync" ]; then
-		local t=$(center $WINDOW_COLS "rsync backups cannot be compressed.")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local t; t=$(center $WINDOW_COLS "rsync backups cannot be compressed.")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MENU $WINDOW_COLS 2
 	else
 
@@ -5079,8 +5103,8 @@ function config_compress_do() {
 			fi
 		fi		
 		
-		local o1="$(getMessageText $BUTTON_OK)"
-		local c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1; o1="$(getMessageText $BUTTON_OK)"
+		local c1; c1="$(getMessageText $BUTTON_CANCEL)"
 
 		if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
 			COMPRESSION_TYPE="dd (gzip)"
@@ -5096,7 +5120,7 @@ function config_compress_do() {
 		local s1="${m1[0]}"
 		local s2="${m2[0]}"
 
-		local d="$(getMessageText $DESCRIPTION_COMPRESS)"
+		local d; d="$(getMessageText $DESCRIPTION_COMPRESS)"
 		getMenuText $MENU_CONFIG_ZIP tt
 
 		ANSWER=$(whiptail --notags --radiolist "$d" --title "${tt[1]}" --ok-button "$o1" --cancel-button  "$c1" $WT_HEIGHT $(($WT_WIDTH/2)) 3 \
@@ -5107,7 +5131,7 @@ function config_compress_do() {
 		if [ $? -eq 0 ]; then
 			logItem "Answer: $ANSWER"
 			case "$ANSWER" in
-				$s1) if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
+				"$s1") if [[ "$CONFIG_BACKUPTYPE" == "dd" ]]; then
 						CONFIG_ZIP_BACKUP="1"
 						CONFIG_TAR_COMPRESSION_TOOL=""
 					 else
@@ -5120,7 +5144,7 @@ function config_compress_do() {
 						fi
 					 fi
 					 ;;
-				$s2) CONFIG_ZIP_BACKUP="0"
+				"$s2") CONFIG_ZIP_BACKUP="0"
 					 CONFIG_TAR_COMPRESSION_TOOL=""
 					 ;;
 				*) whiptail --msgbox "Programm error, unrecognized compress mode $ANSWER" $ROWS_MENU $WINDOW_COLS 2
@@ -5169,7 +5193,7 @@ function progressbar_do() { # <name of description array> <menu title> <funcs to
 		exec {GAUGE_FD}>&1
 		while
 			:
-			eval "desc=\${$descArrayName[\$idx]}"
+			eval "desc=\${${descArrayName}[\$idx]}"
 		do
 			desc=$(center $WINDOW_COLS "$desc")
 
@@ -5202,8 +5226,8 @@ EOF
 		m="$(<$ERROR_FILE)"
 		logItem "Detected error $m"
 		rm $ERROR_FILE &>/dev/null
-		local id="$(cut -f1 -d' ' <<< $m)"
-		local msg="$(cut -f2- -d' ' <<< $m)"
+		local id; id="$(cut -f1 -d' ' <<< $m)"
+		local msg; msg="$(cut -f2- -d' ' <<< $m)"
 		logItem "Rethrowing error from progressbar id: $id - msg: $msg"
 		unrecoverableError "$id" "$msg"
 	fi
@@ -5237,9 +5261,9 @@ function uninstall_do() {
 	logEntry
 
 	if ! isRaspiBackupInstalled; then
-		local m="$(getMessageText $MSG_SCRIPT_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local m; m="$(getMessageText $MSG_SCRIPT_NOT_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return
@@ -5247,8 +5271,8 @@ function uninstall_do() {
 
 	#help
 
-	local m="$(getMessageText $MSG_QUESTION_UNINSTALL)"
-	local t=$(center $WINDOW_COLS "$m")
+	local m; m="$(getMessageText $MSG_QUESTION_UNINSTALL)"
+	local t; t=$(center $WINDOW_COLS "$m")
 	local cols=$WINDOW_COLS
 	local additional
 	additional="$(uninstallAdditionalFiles)"
@@ -5256,15 +5280,16 @@ function uninstall_do() {
 		cols=$((WINDOW_COLS * 2))
 		t="$(getMessageText $MSG_UNINSTALL_ALSO_DELETED "$additional")${NL}${NL}$m"
 	fi
-	local y="$(getMessageText $BUTTON_YES)"
-	local n="$(getMessageText $BUTTON_NO)"
-	local tt="$(getMessageText $TITLE_CONFIRM)"
+	local y; y="$(getMessageText $BUTTON_YES)"
+	local n; n="$(getMessageText $BUTTON_NO)"
+	local tt; tt="$(getMessageText $TITLE_CONFIRM)"
 
 	if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $cols 2 3>&1 1>&2 2>&3; then
 		logExit
 		return
 	fi
 
+	# shellcheck disable=SC2034 # used by name in progressbar_do
 	UNINSTALL_DESCRIPTION=("Deleting $RASPIBACKUP_NAME extensions ..." "Deleting $RASPIBACKUP_NAME timer configuration ..." "Uninstalling $PACKAGE_NAME package ..." "Deleting $RASPIBACKUP_NAME configurations ..."  "Deleting misc files ..." "Deleting $FILE_TO_INSTALL ..." "Deleting $RASPIBACKUP_NAME installer ..." "Deleting $RASPIBACKUP_NAME apt repository ...")
 	progressbar_do "UNINSTALL_DESCRIPTION" "Uninstalling $RASPIBACKUP_NAME" extensions_uninstall_execute timer_uninstall_execute package_uninstall_execute config_uninstall_execute misc_uninstall_execute uninstall_script_execute uninstall_execute repository_remove_execute
 
@@ -5302,9 +5327,9 @@ function cron_timer_menu() {
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME crond configuration" cron_install_execute
 	fi
 	if ! isCrontabConfigInstalled; then
-		local m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local m; m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return 1
@@ -5319,11 +5344,11 @@ function cron_timer_menu() {
 
 	while :; do
 
-		local b1="$(getMessageText $BUTTON_BACK)"
-		local o1="$(getMessageText $BUTTON_SELECT)"
-		local m="$(getMessageText $MSG_TIMER_NA)"
-		local t=$(center $WINDOW_COLS "$m")
-		local d="$(getMessageText $DESCRIPTION_CRON)"
+		local b1; b1="$(getMessageText $BUTTON_BACK)"
+		local o1; o1="$(getMessageText $BUTTON_SELECT)"
+		local m; m="$(getMessageText $MSG_TIMER_NA)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local d; d="$(getMessageText $DESCRIPTION_CRON)"
 
 		getMenuText $MENU_REGULARBACKUP_ENABLE ct
 		getMenuText $MENU_CONFIG_DAY m1
@@ -5340,6 +5365,7 @@ function cron_timer_menu() {
 			m2=(" " " ")
 		fi
 
+		# shellcheck disable=SC2154 # set by getMenuText
 		FUN=$(whiptail --title "${tt[1]}" --menu "$d" $WT_HEIGHT $WT_WIDTH $((WT_MENU_HEIGHT-5)) --cancel-button "$b1" --ok-button "$o1" \
 			"${ct[@]}" \
 			"${m1[@]}" \
@@ -5351,9 +5377,9 @@ function cron_timer_menu() {
 		elif [ $RET -eq 0 ]; then
 			logItem "$FUN"
 			case "$FUN" in
-				$s1) config_cronday_do; cron_updated=$(( $cron_updated|$? )) ;;
-				$s2) config_crontime_do; cron_updated=$(( $cron_updated|$? )) ;;
-				$ct) CRONTAB_ENABLED=$((!$CRONTAB_ENABLED)); enabled=$((!$enabled)); cron_updated=$(( $old != $enabled || $cron_updated )) ;;
+				"$s1") config_cronday_do; cron_updated=$(( $cron_updated|$? )) ;;
+				"$s2") config_crontime_do; cron_updated=$(( $cron_updated|$? )) ;;
+				"$ct") CRONTAB_ENABLED=$((!$CRONTAB_ENABLED)); enabled=$((!$enabled)); cron_updated=$(( $old != $enabled || $cron_updated )) ;;
 				\ *) whiptail --msgbox "$t" $ROWS_MENU $WINDOW_COLS 1 ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
@@ -5375,9 +5401,9 @@ function systemd_timer_menu() {
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" systemd_install_execute
 	fi
 	if ! isSystemdConfigInstalled; then
-		local m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local m; m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return 1
@@ -5392,11 +5418,11 @@ function systemd_timer_menu() {
 
 	while :; do
 
-		local b1="$(getMessageText $BUTTON_BACK)"
-		local o1="$(getMessageText $BUTTON_SELECT)"
-		local m="$(getMessageText $MSG_TIMER_NA)"
-		local t=$(center $WINDOW_COLS "$m")
-		local d="$(getMessageText $DESCRIPTION_SYSTEMD)"
+		local b1; b1="$(getMessageText $BUTTON_BACK)"
+		local o1; o1="$(getMessageText $BUTTON_SELECT)"
+		local m; m="$(getMessageText $MSG_TIMER_NA)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local d; d="$(getMessageText $DESCRIPTION_SYSTEMD)"
 
 		getMenuText $MENU_REGULARBACKUP_ENABLE ct
 		getMenuText $MENU_CONFIG_DAY m1
@@ -5424,9 +5450,9 @@ function systemd_timer_menu() {
 		elif [ $RET -eq 0 ]; then
 			logItem "$FUN"
 			case "$FUN" in
-				$s1) config_systemday_do; systemd_updated=$(( $systemd_updated|$? )) ;;
-				$s2) config_systemdtime_do; systemd_updated=$(( $systemd_updated|$? )) ;;
-				$ct) SYSTEMD_ENABLED=$((!$SYSTEMD_ENABLED)); enabled=$((!$enabled)); systemd_updated=$(( $old != $enabled || $systemd_updated )) ;;
+				"$s1") config_systemday_do; systemd_updated=$(( $systemd_updated|$? )) ;;
+				"$s2") config_systemdtime_do; systemd_updated=$(( $systemd_updated|$? )) ;;
+				"$ct") SYSTEMD_ENABLED=$((!$SYSTEMD_ENABLED)); enabled=$((!$enabled)); systemd_updated=$(( $old != $enabled || $systemd_updated )) ;;
 				\ *) whiptail --msgbox "$t" $ROWS_MENU $WINDOW_COLS 1 ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
@@ -5446,7 +5472,7 @@ function update_menu() {
 	isInternetAvailable
 	local rc=$?
 	if (( $rc )); then
-		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
+		local a; a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
 		whiptail --msgbox "$a" --title "$TITLE_ERROR" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return 0
@@ -5466,13 +5492,13 @@ function update_menu() {
 
 	while :; do
 
-		local b1=$(getMessageText $BUTTON_BACK)
-		local o1=$(getMessageText $BUTTON_SELECT)
+		local b1; b1=$(getMessageText $BUTTON_BACK)
+		local o1; o1=$(getMessageText $BUTTON_SELECT)
 
 		getMenuText $MENU_UPDATE_SCRIPT m1
 		getMenuText $MENU_UPDATE_INSTALLER m2
 		getMenuText $MENU_UPDATE tt
-		local nua="$(getMessageText $MSG_NO_UPDATE_AVAILABLE)"
+		local nua; nua="$(getMessageText $MSG_NO_UPDATE_AVAILABLE)"
 
 		local s1="${m1[0]}"
 		local s2="${m2[0]}"
@@ -5500,8 +5526,8 @@ function update_menu() {
 		elif [ $RET -eq 0 ]; then
 			logItem "$FUN"
 			case "$FUN" in
-				$s1) update_script_do ;;
-				$s2) update_installer_do ;;
+				"$s1") update_script_do ;;
+				"$s2") update_installer_do ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
 			parseCurrentVersions
@@ -5515,6 +5541,7 @@ function package_update_menu() { # update, revert, install or revert a beta with
 
 	logEntry
 
+	# shellcheck disable=SC2034 # used by name in progressbar_do
 	INDEX_DESCRIPTION=("Updating $PACKAGE_NAME package index ...")
 	progressbar_do "INDEX_DESCRIPTION" "Updating package index" package_index_update_execute
 	parsePackageVersions
@@ -5522,8 +5549,8 @@ function package_update_menu() { # update, revert, install or revert a beta with
 	# same versions as options -U, -R, -b and -S
 	local update="$PACKAGE_OFFER_UPDATE" previous="$PACKAGE_VERSION_PREVIOUS" beta="$PACKAGE_OFFER_BETA" revertBeta="$PACKAGE_OFFER_REVERT_BETA"
 
-	local b1=$(getMessageText $BUTTON_BACK)
-	local o1=$(getMessageText $BUTTON_SELECT)
+	local b1; b1=$(getMessageText $BUTTON_BACK)
+	local o1; o1=$(getMessageText $BUTTON_SELECT)
 
 	getMenuText $MENU_PACKAGE_UPDATE m1
 	getMenuText $MENU_PACKAGE_PREVIOUS m2
@@ -5551,10 +5578,10 @@ function package_update_menu() { # update, revert, install or revert a beta with
 	if [ $RET -eq 0 ]; then
 		logItem "$FUN"
 		case "$FUN" in
-			$s1) [[ -n "$update" ]] && package_version_do "$update" 0 ;;
-			$s2) [[ -n "$previous" ]] && package_version_do "$previous" 1 ;;
-			$s3) [[ -n "$beta" ]] && package_version_do "$beta" 0 ;;
-			$s4) [[ -n "$revertBeta" ]] && package_version_do "$revertBeta" 0 ;;
+			"$s1") [[ -n "$update" ]] && package_version_do "$update" 0 ;;
+			"$s2") [[ -n "$previous" ]] && package_version_do "$previous" 1 ;;
+			"$s3") [[ -n "$beta" ]] && package_version_do "$beta" 0 ;;
+			"$s4") [[ -n "$revertBeta" ]] && package_version_do "$revertBeta" 0 ;;
 			*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 		esac
 	fi
@@ -5588,9 +5615,9 @@ function package_version_do() { # version hold
 	else
 		m="$(getMessageText $MSG_PACKAGE_CONFIRM_VERSION "$PACKAGE_VERSION_INSTALLED" "$1")"
 	fi
-	local y="$(getMessageText $BUTTON_YES)"
-	local n="$(getMessageText $BUTTON_NO)"
-	local tt="$(getMessageText $TITLE_CONFIRM)"
+	local y; y="$(getMessageText $BUTTON_YES)"
+	local n; n="$(getMessageText $BUTTON_NO)"
+	local tt; tt="$(getMessageText $TITLE_CONFIRM)"
 
 	if ! whiptail --yesno "$m" --title "$tt" --yes-button "$y" --no-button "$n" --defaultno $ROWS_MSGBOX $WINDOW_COLS 2; then
 		logExit
@@ -5613,11 +5640,11 @@ function update_script_do() {
 	logEntry
 
 	if ! isRaspiBackupInstalled; then
-		local m="$(getMessageText $MSG_SCRIPT_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local y="$(getMessageText $BUTTON_YES)"
-		local n="$(getMessageText $BUTTON_NO)"
-		local tt="$(getMessageText $TITLE_CONFIRM)"
+		local m; m="$(getMessageText $MSG_SCRIPT_NOT_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local y; y="$(getMessageText $BUTTON_YES)"
+		local n; n="$(getMessageText $BUTTON_NO)"
+		local tt; tt="$(getMessageText $TITLE_CONFIRM)"
 
 		if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" $ROWS_MSGBOX $WINDOW_COLS 2; then
 			logExit
@@ -5639,6 +5666,7 @@ function update_installer_do() {
 	INSTALL_DESCRIPTION=("Downloading $MYSELF ...")
 	progressbar_do "INSTALL_DESCRIPTION" "Updating $MYSELF" update_installer_execute
 
+	# shellcheck disable=SC2093 # restart the installer, logExit only if exec fails
 	exec $INSTALLER_ABS_PATH/$MYSELF # restart installer, no return
 
 	logExit
@@ -5734,26 +5762,27 @@ function migrate_do() { # asks to migrate an installation without apt to the pac
 	isInternetAvailable
 	local rc=$?
 	if (( $rc )); then
-		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
+		local a; a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
 		whiptail --msgbox "$a" --title "Error" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return 0
 	fi
 
-	local m="$(getMessageText $MSG_MIGRATE_QUESTION)"
-	local y="$(getMessageText $BUTTON_YES)"
-	local n="$(getMessageText $BUTTON_NO)"
-	local tt="$(getMessageText $TITLE_CONFIRM)"
+	local m; m="$(getMessageText $MSG_MIGRATE_QUESTION)"
+	local y; y="$(getMessageText $BUTTON_YES)"
+	local n; n="$(getMessageText $BUTTON_NO)"
+	local tt; tt="$(getMessageText $TITLE_CONFIRM)"
 
 	if ! whiptail --yesno "$m" --title "$tt" --yes-button "$y" --no-button "$n" $ROWS_ABOUT $(($WINDOW_COLS * 2)) 2; then
 		logExit
 		return 0
 	fi
 
+	# shellcheck disable=SC2034 # used by name in progressbar_do
 	MIGRATE_DESCRIPTION=("Adding $RASPIBACKUP_NAME apt repository ..." "Installing $PACKAGE_NAME package with apt ...")
 	progressbar_do "MIGRATE_DESCRIPTION" "Migrating $RASPIBACKUP_NAME to package $PACKAGE_NAME" repository_add_execute package_install_execute
 
-	local v="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
+	local v; v="$(dpkg-query -W -f '${Version}' "$PACKAGE_NAME" 2>>"$LOG_FILE")"
 	m="$(getMessageText $MSG_MIGRATION_FINISHED "$v")"
 	tt="$(getMessageText $TITLE_INFORMATION)"
 	whiptail --msgbox "$m" --title "$tt" $ROWS_MSGBOX $(($WINDOW_COLS * 2)) 2
@@ -5783,18 +5812,18 @@ function install_do() {
 	isInternetAvailable
 	local rc=$?
 	if (( $rc )); then
-		local a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
+		local a; a="$(getMessageText $MSG_NO_INTERNET_CONNECTION_FOUND $rc)"
 		whiptail --msgbox "$a" --title "Error" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return 0
 	fi
 
 	if isRaspiBackupInstalled; then # installed without apt
-		local m="$(getMessageText $MSG_SCRIPT_ALREADY_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local y="$(getMessageText $BUTTON_YES)"
-		local n="$(getMessageText $BUTTON_NO)"
-		local tt="$(getMessageText $TITLE_CONFIRM)"
+		local m; m="$(getMessageText $MSG_SCRIPT_ALREADY_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local y; y="$(getMessageText $BUTTON_YES)"
+		local n; n="$(getMessageText $BUTTON_NO)"
+		local tt; tt="$(getMessageText $TITLE_CONFIRM)"
 
 		if ! whiptail --yesno "$t" --title "$tt" --yes-button "$y" --no-button "$n" $ROWS_MSGBOX $WINDOW_COLS 2; then
 			logExit
@@ -5807,6 +5836,7 @@ function install_do() {
 		INSTALL_DESCRIPTION=("Adding $RASPIBACKUP_NAME apt repository ..." "Installing $PACKAGE_NAME package with apt ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME systemd config ...")
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" repository_add_execute package_install_execute config_update_execute systemd_install_execute
 	else
+		# shellcheck disable=SC2034 # used by name in progressbar_do
 		INSTALL_DESCRIPTION=("Adding $RASPIBACKUP_NAME apt repository ..." "Installing $PACKAGE_NAME package with apt ..." "Creating default $RASPIBACKUP_NAME configuration ..." "Installing $RASPIBACKUP_NAME cron config ...")
 		progressbar_do "INSTALL_DESCRIPTION" "Installing $RASPIBACKUP_NAME" repository_add_execute package_install_execute config_update_execute cron_install_execute
 	fi
@@ -5824,9 +5854,9 @@ function config_update_do() {
 	logEntry
 
 	if ! isConfigInstalled; then
-		local m="$(getMessageText $MSG_CONFIG_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local m; m="$(getMessageText $MSG_CONFIG_NOT_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return
@@ -5860,9 +5890,9 @@ function cron_update_do() {
 	logEntry
 
 	if ! isCrontabConfigInstalled; then
-		local m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local m; m="$(getMessageText $MSG_CRON_NOT_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return
@@ -5879,14 +5909,15 @@ function systemd_update_do() {
 	logEntry
 
 	if ! isSystemdConfigInstalled; then
-		local m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_INFORMATION)"
+		local m; m="$(getMessageText $MSG_SYSTEMD_NOT_INSTALLED)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local tt; tt="$(getMessageText $TITLE_INFORMATION)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		return
 	fi
 
+	# shellcheck disable=SC2034 # used by name in progressbar_do
 	UPDATE_DESCRIPTION=("Updating $RASPIBACKUP_NAME systemd configuration ..." "Configure systemd timer")
 	progressbar_do "UPDATE_DESCRIPTION" "Updating $RASPIBACKUP_NAME systemd configuration" systemd_update_execute systemd_timer_execute
 
@@ -5894,9 +5925,9 @@ function systemd_update_do() {
 
 	local rc=$?
 	if (( $rc )); then
-		local m="$(getMessageText $MSG_SYSTEMD_CONFIG_ERROR $rc)"
-		local t=$(center $WINDOW_COLS "$m")
-		local tt="$(getMessageText $TITLE_ERROR)"
+		local m; m="$(getMessageText $MSG_SYSTEMD_CONFIG_ERROR $rc)"
+		local t; t=$(center $WINDOW_COLS "$m")
+		local tt; tt="$(getMessageText $TITLE_ERROR)"
 		whiptail --msgbox "$t" --title "$tt" $ROWS_MSGBOX $WINDOW_COLS 2
 		logExit
 		exit 1
@@ -5930,9 +5961,9 @@ function config_backupmode_do() {
 	local s2="${m2[0]}"
 
 	getMenuText $MENU_CONFIG_MODE tt
-	local o1="$(getMessageText $BUTTON_OK)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local d="$(getMessageText $DESCRIPTION_BACKUPMODE)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local d; d="$(getMessageText $DESCRIPTION_BACKUPMODE)"
 
 	local partitionsUpdated=0
 
@@ -5943,10 +5974,10 @@ function config_backupmode_do() {
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-		$s1) CONFIG_PARTITIONBASED_BACKUP="0"
+		"$s1") CONFIG_PARTITIONBASED_BACKUP="0"
 			CONFIG_PARTITIONS_TO_BACKUP="$DEFAULT_CONFIG_PARTITIONS_TO_BACKUP" # reset default
 			;;
-		$s2) CONFIG_PARTITIONBASED_BACKUP="1"
+		"$s2") CONFIG_PARTITIONBASED_BACKUP="1"
 			config_partitions_do
 			if [ $? -eq 1 ]; then
 				partitionsUpdated=1
@@ -5986,7 +6017,7 @@ function config_message_detail_do() {
 	getMenuText $MENU_CONFIG_MESSAGE_N m1
 	getMenuText $MENU_CONFIG_MESSAGE_V m2
 
-	local d="$(getMessageText $DESCRIPTION_MESSAGEDETAIL)"
+	local d; d="$(getMessageText $DESCRIPTION_MESSAGEDETAIL)"
 	getMenuText $MENU_CONFIG_MESSAGE tt
 
 	local s1="${m1[0]}"
@@ -5999,8 +6030,8 @@ function config_message_detail_do() {
 	if [ $? -eq 0 ]; then
 		logItem "Answer: $ANSWER"
 		case "$ANSWER" in
-			$s1) CONFIG_MSG_LEVEL="0";;
-			$s2) CONFIG_MSG_LEVEL="1" ;;
+			"$s1") CONFIG_MSG_LEVEL="0";;
+			"$s2") CONFIG_MSG_LEVEL="1" ;;
 			*) whiptail --msgbox "Programm error, unrecognized message level $ANSWER" $ROWS_MENU $WINDOW_COLS 2
 				logExit
 				return 1
@@ -6035,9 +6066,9 @@ function config_clone_menu() {
 	while :; do
 
 		getMenuText $MENU_CONFIG_CLONE tt
-		local c1="$(getMessageText $BUTTON_CANCEL)"
-		local o1="$(getMessageText $BUTTON_OK)"
-		local d="$(getMessageText $DESCRIPTION_CLONE_DEVICE)"
+		local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+		local o1; o1="$(getMessageText $BUTTON_OK)"
+		local d; d="$(getMessageText $DESCRIPTION_CLONE_DEVICE)"
 
 		ANSWER=$(whiptail --inputbox "$d" --title "${tt[1]}" $ROWS_MENU $WINDOW_COLS "$current" --ok-button "$o1" --cancel-button "$c1" 3>&1 1>&2 2>&3)
 		if [ $? -eq 0 ]; then
@@ -6047,29 +6078,29 @@ function config_clone_menu() {
 				local device partuuid
 				read -r device partuuid <<< "$ANSWER"
 				if [[ ! -b "$device" ]]; then
-					local m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$device")"
-					local t=$(center $WINDOW_COLS "$m")
-					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					local m; m="$(getMessageText $MSG_INVALID_CLONE_DEVICE "$device")"
+					local t; t=$(center $WINDOW_COLS "$m")
+					local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				elif [[ -z "$partuuid" ]]; then
-					local m="$(getMessageText $MSG_MISSING_PARTUUID "$partuuid")"
-					local t=$(center $WINDOW_COLS "$m")
-					local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+					local m; m="$(getMessageText $MSG_MISSING_PARTUUID "$partuuid")"
+					local t; t=$(center $WINDOW_COLS "$m")
+					local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 					whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 				else
 					if [[ ! "$partuuid" =~ ^[0-9a-f\-]+$ ]]; then
-						local m="$(getMessageText $MSG_INVALID_PARTUUID "$partuuid")"
-						local t=$(center $WINDOW_COLS "$m")
-						local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+						local m; m="$(getMessageText $MSG_INVALID_PARTUUID "$partuuid")"
+						local t; t=$(center $WINDOW_COLS "$m")
+						local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 						whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2 
 					else
 						local partuuidList
-						partuuidList=( $(blkid | grep -E "^$device" | sed -E 's|^(.+)PARTUUID="(.+)"|\2|') )
+						mapfile -t partuuidList < <(blkid | grep -E "^$device" | sed -E 's|^(.+)PARTUUID="(.+)"|\2|')
 						logItem "PARTUUIDs: ${partuuidList[*]} - defined PARTUUID: $partuuid"
 						if ! containsElement "$partuuid" "${partuuidList[@]}"; then
-							local m="$(getMessageText $MSG_PARTUUID_NOT_FOUND "$partuuid" "$device")"
-							local t=$(center $WINDOW_COLS "$m")
-							local ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
+							local m; m="$(getMessageText $MSG_PARTUUID_NOT_FOUND "$partuuid" "$device")"
+							local t; t=$(center $WINDOW_COLS "$m")
+							local ttm; ttm="$(getMessageText $TITLE_VALIDATIONERROR)"
 							whiptail --msgbox "$t" --title "$ttm" $ROWS_MENU $WINDOW_COLS 2
 						else
 							CONFIG_CLONE_DEVICE="$device"
@@ -6115,13 +6146,13 @@ function config_language_do() {
 		local menuLang="MENU_CONFIG_LANGUAGE_$l"
 		getMenuText ${!menuLang} m
 		[[ "$l" == "$CONFIG_LANGUAGE" ]] && state=on || state=off
-		lng+=(${m[@]} $state)
+		lng+=("${m[@]}" "$state")
 	done
 
 	getMenuText $MENU_LANGUAGE tt
-	local o1="$(getMessageText $BUTTON_OK)"
-	local c1="$(getMessageText $BUTTON_CANCEL)"
-	local d="$(getMessageText $DESCRIPTION_LANGUAGE)"
+	local o1; o1="$(getMessageText $BUTTON_OK)"
+	local c1; c1="$(getMessageText $BUTTON_CANCEL)"
+	local d; d="$(getMessageText $DESCRIPTION_LANGUAGE)"
 
 	local listSize=${#SUPPORTED_LANGUAGES[@]}
 	(( $listSize > 7 )) && listSize=7
@@ -6255,7 +6286,7 @@ function parsePropertiesFile() { # propertyFileName
 
 	logEntry
 
-	local properties=$(grep "^VERSION=" "$1" 2>/dev/null)
+	local properties; properties=$(grep "^VERSION=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY=${BASH_REMATCH[1]}
 	properties=$(grep "^INCOMPATIBLE=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && INCOMPATIBLE_PROPERTY=${BASH_REMATCH[1]}
@@ -6263,7 +6294,7 @@ function parsePropertiesFile() { # propertyFileName
 	[[ $properties =~ $PROPERTY_REGEX ]] && BETA_PROPERTY=${BASH_REMATCH[1]}
 	logItem "Script properties: v: $VERSION_PROPERTY i: $INCOMPATIBLE_PROPERTY b: $BETA_PROPERTY"
 
-	local properties=$(grep "^VERSION_INSTALLER=" "$1" 2>/dev/null)
+	local properties; properties=$(grep "^VERSION_INSTALLER=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && VERSION_PROPERTY_INSTALLER=${BASH_REMATCH[1]}
 	properties=$(grep "^INCOMPATIBLE_INSTALLER=" "$1" 2>/dev/null)
 	[[ $properties =~ $PROPERTY_REGEX ]] && INCOMPATIBLE_PROPERTY_INSTALLER=${BASH_REMATCH[1]}
@@ -6288,6 +6319,7 @@ function downloadPropertiesFile_do() {
 
 	logEntry
 	if shouldRenewDownloadPropertiesFile; then
+		# shellcheck disable=SC2034 # used by name in progressbar_do
 		DOWNLOAD_DESCRIPTION=("Updating latest version information ...")
 		progressbar_do "DOWNLOAD_DESCRIPTION" "Downloading version information" downloadPropertiesFile_execute
 	fi
@@ -6303,7 +6335,7 @@ function downloadPropertiesFile_execute() {
 
 	if (( ! $RASPIBACKUP_INSTALL_DEBUG )); then
 		writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING_PROPERTYFILE
-		local httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
+		local httpCode; httpCode="$(downloadFile "$PROPERTY_URL" "$LATEST_TEMP_PROPERTY_FILE")"
 		if (( ! $? )); then
 			NEW_PROPERTIES_FILE=1
 		else
@@ -6330,11 +6362,11 @@ function shouldRenewDownloadPropertiesFile() {
 		lastCheckTime="00000000"
 	fi
 
-	local currentTime=$(date +%Y%m%d)
+	local currentTime; currentTime=$(date +%Y%m%d)
 
 	logItem "$currentTime : $lastCheckTime"
 
-	if [[ $currentTime == $lastCheckTime && "$1" != "FORCE" ]]; then
+	if [[ $currentTime == "$lastCheckTime" ]]; then
 		logItem "Skip download"
 		rc=1		#  download already done today
 	else
@@ -6433,7 +6465,7 @@ function masquerade() { # text
 	local e=${t: -1}
 
 	if (( $l < 8 )); then
-		local m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
+		local m; m="$(yes ${MASQUERADE_STRING:0:1} | head -n $(($l-2)) | tr -d "\n" )"
 		echo "$s$m$e"
 	else
 		echo "$s$MASQUERADE_STRING$e$lm"
@@ -6521,8 +6553,8 @@ function uiInstall() {
 		getMenuText $MENU_UNINSTALL m4
 		getMenuText $MENU_UPDATE m5
 
-		local f1="$(getMessageText $BUTTON_FINISH)"
-		local sel1="$(getMessageText $BUTTON_SELECT)"
+		local f1; f1="$(getMessageText $BUTTON_FINISH)"
+		local sel1; sel1="$(getMessageText $BUTTON_SELECT)"
 
 		local s9="${m9[0]}"
 		local s3="${m3[0]}"
@@ -6553,10 +6585,10 @@ function uiInstall() {
 		elif [ $RET -eq 0 ]; then
 			logItem "$FUN"
 			case "$FUN" in
-				$s9) about_do ;;
-				$s3) config_menu ;;
-				$s4) uninstall_do ;;
-				$s5) update_menu ;;
+				"$s9") about_do ;;
+				"$s3") config_menu ;;
+				"$s4") uninstall_do ;;
+				"$s5") update_menu ;;
 				\ *) : ;;
 				*) whiptail --msgbox "Programm error: unrecognized option $FUN" $ROWS_MENU $WINDOW_COLS 1 ;;
 			esac || whiptail --msgbox "There was an error running option $FUN" $ROWS_MENU $WINDOW_COLS 1
@@ -6654,9 +6686,9 @@ function unattendedInstall() {
 
 function first_steps() {
 	logEntry
-	local a="$(getMessageText $MSG_FIRST_STEPS)"
-	local t=$(center $(($WINDOW_COLS * 2)) "$a")
-	local tt="$(getMessageText $TITLE_FIRST_STEPS)"
+	local a; a="$(getMessageText $MSG_FIRST_STEPS)"
+	local t; t=$(center $(($WINDOW_COLS * 2)) "$a")
+	local tt; tt="$(getMessageText $TITLE_FIRST_STEPS)"
 	whiptail --msgbox "$t" --title "$tt" $ROWS_ABOUT $(($WINDOW_COLS * 2)) 1
 	logExit
 }
@@ -6681,7 +6713,7 @@ function show_help() {
 
 function askYesNo() { # messagenumber messageparms - asks on the console, default is no, true if answered with yes
 
-	local q="$(getMessageText "$@") $(getMessageText $MSG_QUERY_CHARS_YES_NO)"
+	local q; q="$(getMessageText "$@") $(getMessageText $MSG_QUERY_CHARS_YES_NO)"
 	local answer=""
 
 	echo "MSG: $q" >>"$LOG_FILE"
@@ -6702,13 +6734,11 @@ function askYesNo() { # messagenumber messageparms - asks on the console, defaul
 CALLING_USER="$(findUser)"
 
 INVOCATIONPARMS=""			# save passed opts for logging
-invocationParms=()			# and restart
 for (( i=1; i<=$#; i++ )); do
 	p=${!i}
 	INVOCATIONPARMS="$INVOCATIONPARMS $p"
 done
 
-CLEANUP_LOG=0
 
 MODE_SILENT=0
 MODE_UNATTENDED=0
@@ -6779,7 +6809,8 @@ while getopts "t:h?bfmusSUiRyF:" opt; do
     m) MODE_MERGE=1
 		 MODE_UNATTENDED=1
 		 ;;
-    u) MODE_UNINSTALL=1
+    u) # shellcheck disable=SC2034 # -u is the else branch of unattendedInstall
+		 MODE_UNINSTALL=1
 		 MODE_UNATTENDED=1
 		 ;;
     y) ASSUME_YES=1
@@ -6800,7 +6831,7 @@ while getopts "t:h?bfmusSUiRyF:" opt; do
 				;;
 		 esac
 		 ;;
-	*)  echo "Unknown option $op"
+	*)  echo "Unknown option $opt"
 		 show_help
 		 exit 1
 		 ;;
