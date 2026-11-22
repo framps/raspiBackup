@@ -39,6 +39,7 @@ while read line; do
 done < messages.dat
 
 while read line; do
+   [[ "$line" == MSG_UNDEFINED ]] && continue    # used by getMessageText as message 0 for an undefined message constant
    cnt=$(grep -c "[^\[]\$$line" ../installation/raspiBackupConfig.sh)
    if [[ $cnt == 0 ]]; then
    	echo "$line: $cnt"
