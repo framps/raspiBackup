@@ -509,7 +509,7 @@ sudo rm /etc/apt/sources.list.d/raspibackup.sources /usr/share/keyrings/raspibac
 
 The configuration isn't managed by dpkg (no conffile), so dpkg never replaces it and there are
 no questions about it during `apt-get upgrade`. A configuration of a former installation with the
-curl script is used as it is. Before every installation the configuration is saved as `raspiBackup.conf~`.
+curl script is used as it is. `apt-get purge` also deletes a `raspiBackup.conf~` left by former installations.
 
 After every installation, update or version change, also a plain `apt-get upgrade`, `postinst`
 calls `raspiBackupConfig -m`. It adds new options of the template
@@ -519,6 +519,66 @@ Existing values aren't changed. The configuration before the merge is saved as
 `raspiBackup.conf.v<config version>`, `apt-get purge` deletes these copies like the configuration
 because they may contain passwords. A downgrade doesn't change it. If the merge fails, the package
 is installed anyway and `raspiBackupConfig` offers the merge when it's started.
+
+### Files raspiBackup writes
+
+Besides the backups, raspiBackup keeps information in these files.
+
+#### State between runs: `/var/lib/raspiBackup/`
+
+Created when it's needed first, deleted by `apt-get purge` and `raspiBackupConfig -u`.
+
+| File | Content | Used for |
+|------|---------|----------|
+| `restore.reminder` | `<yyyymm> <count>`: month the reminder period started, number of reminders so far | reminder to test a restore every `RESTORE_REMINDER_INTERVAL` months (default 6), `RESTORE_REMINDER_REPEAT` times (default 3). Only if `RESTORE_REMINDER_INTERVAL` > 0 |
+| `report.counter` | number of reminders left | reminder about backups with the names used before release 0.7, `OLD_REMINDER_REPEAT` times (default 5) |
+| `package.reminder` | `<version> <count>`: last reported update, number of reports | an update is reported at most 3 times, every time while the installed version is deprecated. A newer version restarts the count. Package only |
+| `package.index` | only its time stamp | `apt-get update` of the raspiBackup repository at most once a day. Package only |
+
+#### Configuration
+
+| File | Written by |
+|------|------------|
+| `/usr/local/etc/raspiBackup.conf` | `postinst` from the template, `raspiBackupConfig` (menu, `-m` merge) |
+| `/usr/local/etc/raspiBackup.conf.v<config version>` | `raspiBackupConfig -m`, copy before a merge |
+| `~/.raspiBackup.conf`, `./.raspiBackup.conf`, option `-f <file>` | the user. Read after the one in `/usr/local/etc` and override its options. `~` is the home of the user who called `sudo` |
+
+raspiBackup itself only reads the configuration.
+
+#### Log and messages of a run
+
+raspiBackup writes the log (`.log`) and the messages (`.msg`) to `/tmp` while it runs and copies
+them at the end to the log target (`DEFAULT_LOG_OUTPUT`, option `-L`). A restore uses `.logr` and `.msgr`.
+
+| Log target | Files |
+|------------|-------|
+| `Backup` (default) | `<backup directory>/raspiBackup.log`, `raspiBackup.msg` |
+| `Varlog` | `/var/log/raspiBackup/<hostname>.log`, `.msg`, appended. Deleted by `apt-get purge` |
+| `Current` | `~/raspiBackup.log`, `~/raspiBackup.msg` of the calling user. Also used if the backup failed with target `Backup`, the backup directory was deleted or `-F` (fake) is used |
+| `-L <file>` | `<file>.log`, `<file>.msg` |
+
+#### In the backup directory
+
+Every backup contains, besides the data, the partition layout needed for a restore:
+`<hostname>-backup.sfdisk` and `.mbr`, for tar and rsync backups also the boot partition as
+`.img` (dd) or `.tmg` (tar). Partition oriented backups have `.blkid`, `.parted` and `.fdisk` in
+addition. In rsync backups unchanged files are hard links to the ones of the previous backup.
+
+#### Until the next reboot: `/tmp`
+
+| File | Content |
+|------|---------|
+| `/tmp/raspiBackup.vars` | after every run as root: `BACKUP_TARGETDIR`, `BACKUP_TARGETFILE`, `MSG_FILE` and `LOG_FILE` of the last run, e.g. for own scripts |
+| `/tmp/raspiBackup.properties` | properties file downloaded from `master`. Installations without apt only, the package gets new and deprecated versions from the repository |
+| `/tmp/raspiBackup.log`, `.msg`, `.logf`, `/tmp/<pid>.sfdisk`, `/tmp/raspiBackup_mnt*` | log, messages, mount points and partition table while raspiBackup runs, removed or moved at the end |
+
+#### Written by raspiBackupConfig and the package
+
+| File | Content |
+|------|---------|
+| `/etc/apt/sources.list.d/raspibackup.sources`, `/usr/share/keyrings/raspibackup-archive-keyring.gpg` | the apt repository and its key, `raspiBackupInstall.sh` and `raspiBackupConfig` (install, migration). Deleted by `raspiBackupConfig -u` |
+| `/etc/systemd/system/raspiBackup.{service,timer}`, `/etc/cron.d/raspiBackup` | the backup timer configured with `raspiBackupConfig` |
+| `/var/backups/raspiBackup-legacy/` | the installation without apt, saved by `preinst` during the migration, with `revertMigration.sh` |
 
 ### What raspiBackupConfig does, and the same with apt
 

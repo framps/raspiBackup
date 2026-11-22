@@ -443,6 +443,32 @@ systemd units to run regular backups.
 .IR /var/log/raspiBackup/ hostname .log
 Log file if the log target is
 .BR Varlog .
+.TP
+.IR backupdirectory /raspiBackup.log ", " ~/raspiBackup.log
+Log file if the log target is
+.B Backup
+(default) or
+.BR Current .
+The messages are in the same directory with extension
+.IR .msg ,
+those of a restore have
+.I .logr
+and
+.IR .msgr .
+.TP
+.I /var/lib/raspiBackup/
+State kept between runs:
+.I restore.reminder
+(restore test reminder),
+.I report.counter
+(reminder about backups with old names),
+.I package.reminder
+(how often an update was reported) and
+.I package.index
+(time of the last update of the package index).
+.TP
+.I /tmp/raspiBackup.vars
+Backup directory, backup file, message and log file of the last run as root, for own scripts.
 .SH EXIT STATUS
 .TP
 .B 0
