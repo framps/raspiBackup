@@ -1,19 +1,19 @@
 Package: raspibackup
 Architecture: all
-Version: 0.9
+Version: 0.8
 Priority: optional
 Section: admin
 Maintainer: framp <framp@linux-tips-and-tricks.de>
-Installed-Size: 772
+Installed-Size: 770
 Depends: bash (>= 5), parted, e2fsprogs, rsync, whiptail, dosfstools, fdisk, curl
 Recommends: bash-completion
 Suggests: pv, jq, lsof, btrfs-progs, f2fs-tools, mailutils, default-mta | msmtp-mta | mail-transport-agent
-Filename: pool/main/r/raspibackup/raspibackup_0.9_all.deb
-Size: 176268
-MD5sum: 1d3a55c59878bf4815a1869f50149452
-SHA1: b8983c35adcf7d83c7159866cf0b6143483f98d5
-SHA256: d24ef2fc3afc219016f3c3768914ef00f8f7297bd86ed740bdd8241c0a9df9a9
-SHA512: 20dbdd2378282263681df02a6014ed64ac20a579cadf3d3ac9c1b742a5e341098766ad47afa7b20ad2c74d5ac0a26935055b6eb3ed18e0b46db44cee94656a59
+Filename: pool/main/r/raspibackup/raspibackup_0.8_all.deb
+Size: 174314
+MD5sum: 7e65c9fc7c48f81c3c130f360ebda89c
+SHA1: 0ae7a14c56abbd051dbdf424eb6d136eb4b3637d
+SHA256: 8cda864e33288c3553326a18cc5e10b10286fcfc8f14887badf86cbb38f35b42
+SHA512: d6dae3225667b4062e4d0d784b895aa34b38f030ab38e84bb125dfed33b04cd83e624f93bbd156131736d223c4f4606c3daa2679da3d0dff07be1506920307b4
 Homepage: https://raspibackup.linux-tips-and-tricks.de
 Description: Backup and restore tool raspiBackup for Raspberry Pi systems
  raspiBackup creates full backups (images) of a running Raspberry Pi
@@ -28,6 +28,5 @@ Description: Backup and restore tool raspiBackup for Raspberry Pi systems
  notifications report the result. raspiBackupConfig configures all of
  it in a menu. Sample extensions run your own code before and after a
  backup at different extension points.
-Git-Commit: f79f4c60dba714a0ca8b394e3eac9f61a7a3daaa
-Fixes: m_972
+Git-Commit: 9bb7e7b46624bbd88ff443081921d40091a62c6d
 
