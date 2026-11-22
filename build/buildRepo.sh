@@ -29,7 +29,7 @@ usage() {
     cat <<"EOF_USAGE"
 Usage:
 
-        buildRepo.sh [<package.deb> ...]
+        buildRepo.sh [--allow-empty] [<package.deb> ...]
 
 Adds the given Debian packages to the pool of the apt repository in 'repo'
 and (re)creates and signs the repository index files. Without arguments
@@ -65,7 +65,9 @@ Chain of trust which is checked by apt on the user's system:
 
 Options:
 
-    -h | --help    display this short help
+    -h | --help      display this short help
+    --allow-empty    create the index files also without any package in the pool,
+                     e.g. after publishRepo.sh --remove removed the last version
 
 EOF_USAGE
 }
@@ -80,13 +82,19 @@ REPO_BETA_SUITE="${REPO_BETA_SUITE:-beta}"
 REPO_COMPONENT="${REPO_COMPONENT:-main}"
 REPO_ARCHITECTURES="${REPO_ARCHITECTURES:-armhf arm64 amd64 i386}"
 
-if (( $# > 0 )); then
+ALLOW_EMPTY=0
+while (( $# > 0 )); do
     case "$1" in
         -h|--help) usage
                    exit
                    ;;
+        --allow-empty) ALLOW_EMPTY=1
+                   shift
+                   ;;
+        *) break
+                   ;;
     esac
-fi
+done
 
 if [[ -z "${GPG_KEYID:-}" ]] ; then
     echo "Error: Missing GPG_KEYID in 'build.conf'. The repository can't be signed!"
@@ -128,8 +136,11 @@ for deb in "$@"; do
 done
 
 if ! compgen -G "$REPO/$POOL/*.deb" > /dev/null ; then
-    echo "Error: No packages in $REPO/$POOL"
-    exit 1
+    if (( ! ALLOW_EMPTY )) ; then
+        echo "Error: No packages in $REPO/$POOL"
+        exit 1
+    fi
+    echo "Warning: No packages in $REPO/$POOL, the repository is empty. New installations fail until a version is published."
 fi
 
 # versions of the pool marked as deprecated in the package index, raspiBackup warns their users and never reports them
@@ -137,6 +148,7 @@ DEPRECATED_VERSIONS=""
 if [[ -n "$(xargs <<< "${DEPRECATED:-}")" ]] ; then
     show "Mark deprecated versions: ${DEPRECATED}"
     for deb in "$REPO/$POOL"/*.deb; do
+        [[ -e "$deb" ]] || continue     # empty pool
         version="$(dpkg-deb -f "$deb" Version)"
         is_deprecated "$version" "$DEPRECATED" && DEPRECATED_VERSIONS+="$version "
     done

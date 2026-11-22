@@ -492,9 +492,14 @@ if git fetch "$PAGES_REMOTE" "$PAGES_BRANCH" 2>/dev/null ; then
     git worktree add --detach "$PAGES" "$parent"
     # get back published packages and by-hash files missing locally
     mkdir -p "$REPO"
+    # keep local files, -n is deprecated since coreutils 9.3 which added --update=none
+    cp_keep=(-n)
+    if cp --update=none --help > /dev/null 2>&1 ; then
+        cp_keep=(--update=none)
+    fi
     for dir in pool dists "$FIXES_DIR" ; do
         if [[ -d "$PAGES/$dir" ]] ; then
-            cp -a -n "$PAGES/$dir" "$REPO/"
+            cp -a "${cp_keep[@]}" "$PAGES/$dir" "$REPO/"
         fi
     done
 else
@@ -528,7 +533,8 @@ for branch in "${REMOVE_FIXES[@]}"; do
     removed="${removed:+$removed }fixes of $branch"
 done
 
-./buildRepo.sh
+# removing the last version leaves an empty pool, which buildRepo.sh refuses otherwise
+./buildRepo.sh ${removed:+--allow-empty}
 
 show "Create commit for $PAGES_BRANCH"
 
