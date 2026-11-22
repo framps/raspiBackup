@@ -1467,11 +1467,11 @@ MSG_FR[$MSG_PACKAGE_CONFIRM_VERSION]="Remplacer $RASPIBACKUP_NAME %1 par %2 ?"
 MSG_ZH[$MSG_PACKAGE_CONFIRM_VERSION]="是否将 $RASPIBACKUP_NAME %1 替换为 %2?"
 
 MSG_PACKAGE_CONFIRM_PREVIOUS=$((SCNT++))
-MSG_EN[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Revert $RASPIBACKUP_NAME %1 to %2?${NL}${NL}%2 is held. apt doesn't upgrade it until 'Update current release' is selected.${NL}The configuration isn't reverted."
-MSG_DE[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Soll $RASPIBACKUP_NAME %1 auf %2 zurückgesetzt werden?${NL}${NL}%2 wird festgehalten. apt aktualisiert es erst wieder, wenn 'Aktualisiere aktuelles Release' ausgewählt wird.${NL}Die Konfiguration wird nicht zurückgesetzt."
-MSG_FI[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Palautetaanko $RASPIBACKUP_NAME %1 versioon %2?${NL}${NL}%2 lukitaan. apt ei päivitä sitä ennen kuin 'Päivitä nykyinen julkaisu' valitaan.${NL}Asetuksia ei palauteta."
-MSG_FR[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Ramener $RASPIBACKUP_NAME %1 à %2 ?${NL}${NL}%2 est bloqué. apt ne le met pas à jour tant que 'Mettre à jour la version actuelle' n'est pas sélectionné.${NL}La configuration n'est pas restaurée."
-MSG_ZH[$MSG_PACKAGE_CONFIRM_PREVIOUS]="是否将 $RASPIBACKUP_NAME %1 回退到 %2?${NL}${NL}%2 将被锁定. 在选择 '更新当前版本' 之前apt不会升级它.${NL}配置不会被回退."
+MSG_EN[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Revert $RASPIBACKUP_NAME %1 to %2?${NL}${NL}Select 'Yes' to revert."
+MSG_DE[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Soll $RASPIBACKUP_NAME %1 auf %2 zurückgesetzt werden?${NL}${NL}Wähle 'Ja' zum Zurücksetzen."
+MSG_FI[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Palautetaanko $RASPIBACKUP_NAME %1 versioon %2?${NL}${NL}Valitse 'Kyllä' palauttaaksesi."
+MSG_FR[$MSG_PACKAGE_CONFIRM_PREVIOUS]="Ramener $RASPIBACKUP_NAME %1 à %2 ?${NL}${NL}Sélectionnez 'Oui' pour revenir en arrière."
+MSG_ZH[$MSG_PACKAGE_CONFIRM_PREVIOUS]="是否将 $RASPIBACKUP_NAME %1 回退到 %2?${NL}${NL}选择 'Yes' 进行回退."
 
 MSG_CONFIG_MERGED=$((SCNT++))
 MSG_EN[$MSG_CONFIG_MERGED]="${MSG_PRF}0043I: Configuration %1 updated from version %2 to %3. Previous configuration saved in %4."
