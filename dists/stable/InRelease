@@ -5,13 +5,13 @@ Acquire-By-Hash: yes
 Architectures: armhf arm64 amd64 i386
 Codename: stable
 Components: main
-Date: Sun, 22 Nov 2026 16:50:06 +0000
+Date: Sun, 22 Nov 2026 16:53:35 +0000
 Description: raspiBackup - Backup your Raspberry Pi systems
 Label: raspiBackup
 Origin: raspiBackup
 Suite: stable
 MD5Sum:
- ad2817a46652e09fb28dd4416f879587             4270 Release
+ 0cc8cb54f1edaea93841af47605e66ce             4270 Release
  e5d1582296b048c01e400bbd3f23ac30             1671 main/binary-amd64/Packages
  1c547b8097e01ebdeabfcb2bfb4bf28f             1026 main/binary-amd64/Packages.gz
  e5d1582296b048c01e400bbd3f23ac30             1671 main/binary-arm64/Packages
@@ -21,7 +21,7 @@ MD5Sum:
  e5d1582296b048c01e400bbd3f23ac30             1671 main/binary-i386/Packages
  1c547b8097e01ebdeabfcb2bfb4bf28f             1026 main/binary-i386/Packages.gz
 SHA1:
- 0a3ecef9d03784e6de35652531b21f7e56bf4260             4270 Release
+ e5f443bfe79b90f2d4d4e4bfdc3852cf39b42b5f             4270 Release
  121212073fc4e5388098fe61b83a10eb0d96b080             1671 main/binary-amd64/Packages
  aa78691bdea94a5dce7040dea9c27bc581640390             1026 main/binary-amd64/Packages.gz
  121212073fc4e5388098fe61b83a10eb0d96b080             1671 main/binary-arm64/Packages
@@ -31,7 +31,7 @@ SHA1:
  121212073fc4e5388098fe61b83a10eb0d96b080             1671 main/binary-i386/Packages
  aa78691bdea94a5dce7040dea9c27bc581640390             1026 main/binary-i386/Packages.gz
 SHA256:
- 632365cc8ca5cc5c1172430a159e6cd7671b4d7beec6b662531ed4acbcb1fa47             4270 Release
+ 5643f9519a85e3e4e576eaa7e0d634892134abe42077a715b3fbfe225cb388c5             4270 Release
  94e64664bbb13c047f547af6eb9b24aec577991e6f64308756ff02d0ac93407b             1671 main/binary-amd64/Packages
  1da95bd6d3252f549e1f2b5c62ef8d4be4fb00f0826df938a20567ac7afc9fee             1026 main/binary-amd64/Packages.gz
  94e64664bbb13c047f547af6eb9b24aec577991e6f64308756ff02d0ac93407b             1671 main/binary-arm64/Packages
@@ -41,7 +41,7 @@ SHA256:
  94e64664bbb13c047f547af6eb9b24aec577991e6f64308756ff02d0ac93407b             1671 main/binary-i386/Packages
  1da95bd6d3252f549e1f2b5c62ef8d4be4fb00f0826df938a20567ac7afc9fee             1026 main/binary-i386/Packages.gz
 SHA512:
- 4caa8feb16aa2b29505bae27c1274f9fb0e30138c9dba312306f96436770db54eab4dc2090cbc35ab162e5120abfc6b02bdac2c912ba8c67f0c58383f31c7554             4270 Release
+ f0610b861bb036c6aeb8b0801c0466b17d29ca50b46ebee3b44f668a3b4686a469627e9806bbee3c305c0695ec4ccf0226520f89ff95d1be18cba8c5fc402763             4270 Release
  ed080d6c890556d212eb5c560721f8445fba464d0f89b86dcfd22200dfd6302903ca5417073d0bc2e2a2175eb79744557d28b99ddf1c787a4029209b7ca33d3c             1671 main/binary-amd64/Packages
  6f566f8637911458e4560c2a16021b1fef184a523603012f5911d4dfcff6384a25f6e361a41fb15bd49b49a7881dc0cc3691ff65b07945234d4daa49d0c97fe2             1026 main/binary-amd64/Packages.gz
  ed080d6c890556d212eb5c560721f8445fba464d0f89b86dcfd22200dfd6302903ca5417073d0bc2e2a2175eb79744557d28b99ddf1c787a4029209b7ca33d3c             1671 main/binary-arm64/Packages
@@ -52,15 +52,15 @@ SHA512:
  6f566f8637911458e4560c2a16021b1fef184a523603012f5911d4dfcff6384a25f6e361a41fb15bd49b49a7881dc0cc3691ff65b07945234d4daa49d0c97fe2             1026 main/binary-i386/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCgAdFiEEI6Lpd/N3/DHORNycS54C26yk3SQFAmsDHT4ACgkQS54C26yk
-3SS/hwv7B6UXVxwYqljDIst7kqzYtSqRwOO7N928EiN8j1tjnmHyiNMSzcTdd/Wl
-dU0QyA1pm14ongmGxHUEaGSQQwYjAeg9wT1MbyZoaC6JIBo1RDXjXlCJl6DcWhcl
-NgKjXz3lYhaG4f+LvnlrEKT7ICmrpp89e1t8QWpYa/hM/ZA/9Sb0f8SqtF5wIpDc
-FIkPSkUGTVZDg5qoNLE18tgPYt8NV9RkyjBSawFigTcDJTvdBqe49KyINcMJaq5u
-F0CJufHY3FFJ2eUjZh9tQxC71g709JiHmNtXB6rytvIUSqALLbe3EmuNeaYfZblD
-c0qaNKszbTMYpv/clCDPoVYWtaiNlpMU37nXJxDoXrKGlhHWAWQ7Ofd83Uxxt9Cg
-s/IABhcH/ZR/3LsHaPq+kwsx6I6XrXqS3mpei3Qux5UuH4OHZSNoLaGLcT/AfR6F
-BC4EsTmcorgwvDh/Kz0itoj285OBJO45YxRFz+jA5Lia740PRXS6DGdtC5p+41bq
-FN1kAuL7
-=K4Xm
+iQGzBAEBCgAdFiEEI6Lpd/N3/DHORNycS54C26yk3SQFAmsDHg8ACgkQS54C26yk
+3STkbQv/ZKMmaXcJErc65J8rnAC7V7b7AI05/x0BdEEx9cMQoAn9Ce9Gxnw19B/r
+yKgS/kYpv9VVA0Gk87EiKr8HXZHRTr4AdguEgpadp9jxK8dmeW/FqBKS53+MBAcF
+zeQSYmeyh55MJ0eTs56BMQGZNN8x1EpE+XSEHGBjm4JhCKZZhNCyNRLt08w3pwzN
+oVECWxbU4oga74S+rfNcMo2T8Qxi5Fdftf+VLNEdVWFQIuYDhp8bb/BXNioS9lvy
+NNZMqR9ddTwG3SkeDCaRxePP+VoMil3cqbynuEGWJ3SlbSK9uCb8tf0OOgb/frWp
+NHqIT5R40rgGnb100Q4Q2Pxe3BiL3HW/SsLXBtAi5BNoi28YBEAYctvA2p08K5xL
+mnFNKmhVflaeR+ABAWgb1ApkMLK+1LZ9bVtswIALkMnbnHju9DICGd/Yv/T5tueD
+c/G8h4h6jd6juS+fTJvI7mJW9Gx5bZojpbTnot4huS47l1Uz64vu7gCgJgftSNwv
+UXPCeyF8
+=AE7M
 -----END PGP SIGNATURE-----

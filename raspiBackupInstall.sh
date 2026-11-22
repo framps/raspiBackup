@@ -247,9 +247,14 @@ get_gpg_key() {
         echo "??? The downloaded key doesn't have the expected fingerprint ${REPO_OWNER_GPG_FINGERPRINT}"
         echo "??? Somebody might have tampered with the key. Installation aborted!"
         echo ""
-        gpg --show-keys "${keyfile}" || true
+        gpg --show-keys --list-options no-show-uid-validity "${keyfile}" || true
         return 42
     fi
+
+    # The fingerprint matches, so trust the key in the temporary GNUPGHOME. Otherwise gpg reports
+    # its validity as "unknown" and warns that the key isn't certified, which only confuses users.
+    echo "${REPO_OWNER_GPG_FINGERPRINT}:6:" | gpg --batch --quiet --import-ownertrust 2>/dev/null || true
+    gpg --batch --quiet --check-trustdb 2>/dev/null || true
 
     validity="$(gpg --batch --with-colons --list-keys "${REPO_OWNER_GPG_FINGERPRINT}" | awk -F: '$1 == "pub" { print $2 }')"
     if [[ "${validity}" =~ [rei] ]] ; then
@@ -361,7 +366,7 @@ verify_local_package() {
     if (( VERBOSE )) ; then
         echo "    > using command:"
         echo "    >     gpg --verify ${deb}.sig ${deb}"
-        gpg --batch --verify "${deb}.sig" "${deb}" 2>&1 | sed -e 's/^/    > /' || true
+        gpg --batch --verify-options no-show-uid-validity --verify "${deb}.sig" "${deb}" 2>&1 | sed -e 's/^/    > /' || true
     fi
 
     # VALIDSIG <signing key fpr> ... <primary key fpr>, only the downloaded key is in GNUPGHOME
@@ -371,7 +376,7 @@ verify_local_package() {
     if [[ "${signer}" != "${REPO_OWNER_GPG_FINGERPRINT}" ]] ; then
         echo "??? SIGNATURE IS NOT VALID. The package wasn't created by ${REPO_OWNER} or was modified!"
         if ! (( VERBOSE )) ; then
-            gpg --batch --verify "${deb}.sig" "${deb}" || true
+            gpg --batch --verify-options no-show-uid-validity --verify "${deb}.sig" "${deb}" || true
         fi
         return 42
     fi
