@@ -104,7 +104,8 @@ if (( ${#requiredCmds[@]} > 0 )); then
 fi
 
 GITHUB_URL="https://github.com"
-MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
+MYHOMEPATH="framps/raspiBackup/master/published"
+MYHOMEURL="https://raw.githubusercontent.com/$MYHOMEPATH"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -5534,6 +5535,7 @@ function first_steps() {
 function show_help() {
 	echo $GIT_CODEVERSION
 	echo "$MYSELF ( -i [-e]? | -u | -U | -t [crond|systemd] )"
+	echo "-d: Install from <url>"
 	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
 	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
 	echo "-h: display this help"
@@ -5580,6 +5582,16 @@ function askYesNo() { # message message_parms
 	fi
 }
 
+function updateHomeURL() { # url
+	logEntry "$1"
+	MYHOMEURL="${1%/}"
+	logItem "$MYHOMEURL"
+	PROPERTY_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
+	BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
+	INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupInstallUI.sh"
+	logExit
+}
+
 CALLING_USER="$(findUser)"
 
 INVOCATIONPARMS=""			# save passed opts for logging
@@ -5598,6 +5610,7 @@ MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
+MODE_HOMEURL_UPDATED=0
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 
@@ -5614,7 +5627,7 @@ if [[ $1 == "--version" ]]; then
 	exit
 fi
 
-while getopts "t:h?usUei" opt; do
+while getopts "t:h?usUeid:" opt; do
     case "$opt" in
 	 h|\?)
        show_help
@@ -5634,6 +5647,9 @@ while getopts "t:h?usUei" opt; do
 		 ;;
 	s) MODE_SILENT=1
 		;;
+	d) 	updateHomeURL "$OPTARG" # use https://www.jsdelivr.com/ for example in China
+		MODE_HOMEURL_UPDATED=1
+		;;
 
 	 t) case $OPTARG in
 			crond) USE_SYSTEMD=0
@@ -5648,7 +5664,7 @@ while getopts "t:h?usUei" opt; do
 				;;
 		 esac
 		 ;;
-	*)  echo "Unknown option $op"
+	*)  echo "Unknown option $opt"
 		 show_help
 		 exit 1
 		 ;;
