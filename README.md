@@ -7,6 +7,14 @@
 ![](https://img.shields.io/github/last-commit/framps/raspiBackup.svg?style=flat) 
 ![](https://img.shields.io/github/stars/framps/raspiBackup?style=flat) 
 
+## Quick links
+
+[One pager](https://raspibackup.linux-tips-and-tricks.de/en/home/)
+
+[Comprehensive Documentation](https://framps.github.io/raspiBackupDoc)
+
+## Features
+
 * Primary features
   * Unattended full or incremental system backup with no shutdown of the system.
   * Backup types 
