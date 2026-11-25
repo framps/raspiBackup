@@ -105,7 +105,8 @@ fi
 
 GITHUB_URL="https://github.com"
 MYHOMEPATH="framps/raspiBackup/master/published"
-MYHOMEURL="https://raw.githubusercontent.com/$MYHOMEPATH"
+GITHUB_DOWNLOAD_URL="https://raw.githubusercontent.com"
+MYHOMEURL="$GITHUB_DOWNLOAD_URL/$MYHOMEPATH"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -297,6 +298,7 @@ CONFIG_MSG_LEVEL="0"
 CONFIG_CLONE_DEVICE=""
 CONFIG_CLONE_PARTUUID=""
 CONFIG_BACKUPTYPE="rsync"
+CONFIG_DOWNLOAD_URL="$MYHOMEURL"
 CONFIG_KEEPBACKUPS="3"
 DEFAULT_CONFIG_SMART_RECYCLE="0"
 CONFIG_SMART_RECYCLE="$DEFAULT_CONFIG_SMART_RECYCLE"
@@ -2447,6 +2449,7 @@ function config_update_execute() {
 	logItem "eMail: $CONFIG_EMAIL"
 	logItem "mailProgram: $CONFIG_MAIL_PROGRAM"
 	logItem "Resize: $CONFIG_RESIZE_ROOTFS"
+	logItem "DownloadURL: $CONFIG_DOWNLOAD_URL"
 
 	sed -i -E "s/^(#?\s?)?DEFAULT_LANGUAGE=.*\$/DEFAULT_LANGUAGE=\"$CONFIG_LANGUAGE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONBASED_BACKUP=.*\$/DEFAULT_PARTITIONBASED_BACKUP=\"$CONFIG_PARTITIONBASED_BACKUP\"/" "$CONFIG_ABS_FILE"
@@ -2462,10 +2465,16 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_EMAIL=.*$/DEFAULT_EMAIL=\"$CONFIG_EMAIL\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_MAIL_PROGRAM=.*$/DEFAULT_MAIL_PROGRAM=\"$CONFIG_MAIL_PROGRAM\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_PARTUUID=.*$/DEFAULT_CLONE_PARTUUID=\"$CONFIG_CLONE_PARTUUID\"/" "$CONFIG_ABS_FILE"
-	local c=$(sed 's_/_\\/_g' <<< "$CONFIG_CLONE_DEVICE")
-	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$/DEFAULT_CLONE_DEVICE=\"$c\"/" "$CONFIG_ABS_FILE"
-	local f=$(sed 's_/_\\/_g' <<< "$CONFIG_BACKUPPATH")
-	sed -i -E "s/^(#?\s?)?DEFAULT_BACKUPPATH=.*$/DEFAULT_BACKUPPATH=\"$f\"/" "$CONFIG_ABS_FILE"
+	sed -i -E "s|^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$|DEFAULT_CLONE_DEVICE=\"$CONFIG_CLONE_DEVICE\"|" "$CONFIG_ABS_FILE"
+	sed -i -E "s|^(#?\s?)?DEFAULT_BACKUPPATH=.*$|DEFAULT_BACKUPPATH=\"$CONFIG_BACKUPPATH\"|" "$CONFIG_ABS_FILE"
+	
+	if grep -q "DEFAULT_DOWNLOAD_URL=" "$CONFIG_ABS_FILE"; then
+		sed -i -E "s|^(#?\s?)?DEFAULT_DOWNLOAD_URL=.*$|DEFAULT_DOWNLOAD_URL=\"$CONFIG_DOWNLOAD_URL\"|" "$CONFIG_ABS_FILE"
+	else
+		echo "" >> "$CONFIG_ABS_FILE"
+		echo "# Use a different download URL for raspiBackup other than github, e.g. https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China" >> "$CONFIG_ABS_FILE"
+		echo "DEFAULT_DOWNLOAD_URL=\"$CONFIG_DOWNLOAD_URL\"" >> "$CONFIG_ABS_FILE"
+	fi
 
 	local pline sline
 	if [[ "$CONFIG_STOPSERVICES" != "$IGNORE_START_STOP_CHAR" && -n "$CONFIG_STOPSERVICES" ]]; then
@@ -5610,7 +5619,6 @@ MODE_INSTALL=0
 MODE_UPDATE=0 # force install
 MODE_EXTENSIONS=0
 MODE_FORCE_TIMER=0 # flag that option -t was used to override default behavior
-MODE_HOMEURL_UPDATED=0
 
 USE_SYSTEMD=$SYSTEMD_DETECTED # use SYTEMD if detected
 
@@ -5647,8 +5655,16 @@ while getopts "t:h?usUeid:" opt; do
 		 ;;
 	s) MODE_SILENT=1
 		;;
-	d) 	updateHomeURL "$OPTARG" # use https://www.jsdelivr.com/ for example in China
-		MODE_HOMEURL_UPDATED=1
+	d) set -x
+		if [[ -z $OPTARG ]]; then
+			updateHomeURL "$MYHOMEURL"
+			CONFIG_DOWNLOAD_URL="\"$MYHOMEURL\""
+		else		
+			updateHomeURL "$OPTARG" # use https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China
+			CONFIG_DOWNLOAD_URL="\"$MYHOMEURL\""
+		fi
+		set +x
+		read
 		;;
 
 	 t) case $OPTARG in
