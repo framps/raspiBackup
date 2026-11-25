@@ -5658,10 +5658,10 @@ while getopts "t:h?usUeid:" opt; do
 	d) set -x
 		if [[ -z $OPTARG ]]; then
 			updateHomeURL "$MYHOMEURL"
-			CONFIG_DOWNLOAD_URL="\"$MYHOMEURL\""
+			CONFIG_DOWNLOAD_URL="$MYHOMEURL"
 		else		
 			updateHomeURL "$OPTARG" # use https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China
-			CONFIG_DOWNLOAD_URL="\"$MYHOMEURL\""
+			CONFIG_DOWNLOAD_URL="$MYHOMEURL"
 		fi
 		set +x
 		read
