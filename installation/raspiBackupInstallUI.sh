@@ -103,10 +103,21 @@ if (( ${#requiredCmds[@]} > 0 )); then
 	fi
 fi
 
+# Note: No debug stmts possible
+# Set the download URLs to either github or any other download location
+function updateDownloadURLs() { # url
+	DOWNLOAD_URL_PREFIX="${1%/}"
+	PROPERTY_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/raspiBackup.properties"
+	BETA_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/beta/raspiBackup.sh"
+	INSTALLER_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/raspiBackupInstallUI.sh"
+}
+
 GITHUB_URL="https://github.com"
-MYHOMEPATH="framps/raspiBackup/master/published"
+DOWNLOAD_URL_SUFFIX="framps/raspiBackup/master/published"
 GITHUB_DOWNLOAD_URL="https://raw.githubusercontent.com"
-MYHOMEURL="$GITHUB_DOWNLOAD_URL/$MYHOMEPATH"
+DOWNLOAD_URL_PREFIX="$GITHUB_DOWNLOAD_URL/$DOWNLOAD_URL_SUFFIX"
+
+updateDownloadURLs "$DOWNLOAD_URL_PREFIX"
 
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -134,12 +145,9 @@ MASQUERADE_STRING="@@@@"
 
 [[ -n $URLTARGET ]] && URLTARGET="/$URLTARGET"
 
-PROPERTY_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
-BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
 PROPERTY_FILE_NAME="$MYNAME.properties"
 LATEST_TEMP_PROPERTY_FILE="/tmp/$PROPERTY_FILE_NAME"
 LOCAL_PROPERTY_FILE="$CURRENT_DIR/.$PROPERTY_FILE_NAME"
-INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupInstallUI.sh"
 STABLE_CODE_URL="$FILE_TO_INSTALL"
 INCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.iservices"
 EXCLUDE_SERVICES_REGEX_FILE="/usr/local/etc/raspiBackup.eservices"
@@ -298,7 +306,7 @@ CONFIG_MSG_LEVEL="0"
 CONFIG_CLONE_DEVICE=""
 CONFIG_CLONE_PARTUUID=""
 CONFIG_BACKUPTYPE="rsync"
-CONFIG_DOWNLOAD_URL="$MYHOMEURL"
+CONFIG_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX"
 CONFIG_KEEPBACKUPS="3"
 DEFAULT_CONFIG_SMART_RECYCLE="0"
 CONFIG_SMART_RECYCLE="$DEFAULT_CONFIG_SMART_RECYCLE"
@@ -488,11 +496,11 @@ MSG_FR[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: Création du fichier cro
 MSG_ZH[$MSG_INSTALLING_CRON_TEMPLATE]="${MSG_PRF}0020I: 创建cron文件 %1."
 
 MSG_NO_INTERNET_CONNECTION_FOUND=$((SCNT++))
-MSG_EN[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Unable to connect to $MYHOMEDOMAIN. wget RC: %1"
-MSG_DE[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Es kann nicht auf $MYHOMEDOMAIN zugegriffen werden. wget RC: %1"
-MSG_FI[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Yhdistäminen kohteeseen $MYHOMEDOMAIN epäonnistui. wget RC: %1"
-MSG_FR[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Impossible de se connecter à $MYHOMEDOMAIN. Code erreur wget : %1"
-MSG_ZH[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: 连接 $MYHOMEDOMAIN 失败. wget RC: %1"
+MSG_EN[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Unable to connect to $GITHUB_URL. wget RC: %1"
+MSG_DE[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Es kann nicht auf $GITHUB_URL zugegriffen werden. wget RC: %1"
+MSG_FI[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Yhdistäminen kohteeseen $GITHUB_URL epäonnistui. wget RC: %1"
+MSG_FR[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: Impossible de se connecter à $GITHUB_URL. Code erreur wget : %1"
+MSG_ZH[$MSG_NO_INTERNET_CONNECTION_FOUND]="${MSG_PRF}0021E: 连接 $GITHUB_URL 失败. wget RC: %1"
 
 MSG_CHECK_INTERNET_CONNECTION=$((SCNT++))
 MSG_EN[$MSG_CHECK_INTERNET_CONNECTION]="${MSG_PRF}0022I: Checking internet connection."
@@ -1257,32 +1265,27 @@ MSG_EN[$MSG_HELP]="In case you have any issue or question about $RASPIBACKUP_NAM
 1) Read the FAQ page https://framps.github.io/raspiBackupDoc/faq${NL}\
 2) Visit https://framps.github.io/raspiBackupDoc/introduction for a lot more information about $RASPIBACKUP_NAME${NL}\
 3) Create an issue on github https://github.com/framps/raspiBackup/issues. That's my preference${NL}\
-4) Add comments on any webpage dealing with $RASPIBACKUP_NAME on $MYHOMEDOMAIN${NL}\
-5) Visit $RASPIBACKUP_NAME on Facebook"
+4) Visit $RASPIBACKUP_NAME on Facebook"
 MSG_DE[$MSG_HELP]="Falls es irgendwelche Fragen oder Probleme zu $RASPIBACKUP_NAME gibt bestehen folgende Möglichkeiten Hilfe zu bekommen${NL}
 1) Lies die FAQ Seite https://framps.github.io/raspiBackupDoc/faq${NL}\
 2) Besuche https://framps.github.io/raspiBackupDoc/introduction um noch wesentlich detailiertere Informationen zu $RASPIBACKUP_NAME zu erhalten${NL}\
 3) Erstelle einen Fehlerbericht auf github https://github.com/framps/raspiBackup/issues. Gerne auch in Deutsch. Das ist meine Präferenz.${NL} \
-4) Erstelle einen Kommentar auf jeder Webseite zu $RASPIBACKUP_NAME auf $MYHOMEDOMAIN${NL}\
-5) Besuche $RASPIBACKUP_NAME auf Facebook"
+4) Besuche $RASPIBACKUP_NAME auf Facebook"
 MSG_FI[$MSG_HELP]="Jos sinulla on kysymyksiä tai ongelmia $RASPIBACKUP_NAME:n kanssa, käytä jotain seuraavista tavoista saadaksesi apua${NL}
 1) Lue FAQ-sivu osoitteessa https://framps.github.io/raspiBackupDoc/faq${NL}\
 2) Käy osoitteessa https://framps.github.io/raspiBackupDoc/introduction ja lue paljon lisää $RASPIBACKUP_NAME-tietoa${NL}\
 3) Luo issue githubissa https://github.com/framps/raspiBackup/issues. Tätä suosin.${NL}\
-4) Lisää kommentti $RASPIBACKUP_NAME-verkkosivuilla osoitteessa $MYHOMEDOMAIN${NL}\
-5) Käy $RASPIBACKUP_NAME:n Facebook-sivulla"
+4) Käy $RASPIBACKUP_NAME:n Facebook-sivulla"
 MSG_FR[$MSG_HELP]="Si vous avez un problème ou une question concernant $RASPIBACKUP_NAME, utilisez simplement un des liens suivants pour obtenir une aide :${NL}
 1) Lisez la page FAQ https://framps.github.io/raspiBackupDoc/faq${NL}\
 2) Visitez https://framps.github.io/raspiBackupDoc/introduction pour plus d'informations sur $RASPIBACKUP_NAME${NL}\
 3) Exposez le problème sur github https://github.com/framps/raspiBackup/issues. C'est ma préférence${NL}\
-4) Ajoutez des commentaires sur toute page Web traitant de $RASPIBACKUP_NAME sur $MYHOMEDOMAIN${NL}\
-5) Visitez $RASPIBACKUP_NAME sur Facebook"
+4) Visitez $RASPIBACKUP_NAME sur Facebook"
 MSG_ZH[$MSG_HELP]="如果你有任何关于 $RASPIBACKUP_NAME 的问题，请用以下方式联系${NL}
 1) 参考FAQ页面 https://framps.github.io/raspiBackupDoc/faq${NL}\
 2) 访问 https://framps.github.io/raspiBackupDoc/introduction 获取更多$RASPIBACKUP_NAME$信息{NL}\
 3) 在github上创建issues https://github.com/framps/raspiBackup/issues. 通常选这项!${NL}\
-4) 在 $MYHOMEDOMAIN$上关于$RASPIBACKUP_NAME的页面留言评论{NL}\
-5) 访问$RASPIBACKUP_NAME 的Facebook页面"
+4) 访问$RASPIBACKUP_NAME 的Facebook页面"
 
 MSG_FIRST_PARTITIONS_NOT_SELECTED=$((SCNT++))
 MSG_EN[$MSG_FIRST_PARTITIONS_NOT_SELECTED]="At least the first two partitions have to be selected."
@@ -1810,7 +1813,7 @@ function logItem() { # message
 
 function downloadURL() { # fileName
 	logEntry "$1"
-	local u="$MYHOMEURL$URLTARGET/$1"
+	local u="$DOWNLOAD_URL_PREFIX$URLTARGET/$1"
 	echo "$u"
 	logExit "$u"
 }
@@ -5591,16 +5594,6 @@ function askYesNo() { # message message_parms
 	fi
 }
 
-function updateHomeURL() { # url
-	logEntry "$1"
-	MYHOMEURL="${1%/}"
-	logItem "$MYHOMEURL"
-	PROPERTY_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
-	BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
-	INSTALLER_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackupInstallUI.sh"
-	logExit
-}
-
 CALLING_USER="$(findUser)"
 
 INVOCATIONPARMS=""			# save passed opts for logging
@@ -5655,16 +5648,13 @@ while getopts "t:h?usUeid:" opt; do
 		 ;;
 	s) MODE_SILENT=1
 		;;
-	d) set -x
-		if [[ -z $OPTARG ]]; then
-			updateHomeURL "$MYHOMEURL"
-			CONFIG_DOWNLOAD_URL="$MYHOMEURL"
+	d) if [[ -z $OPTARG ]]; then		# reset downloadurl to default (github) with empty argument "" to -d
+			updateDownloadURLs "$DOWNLOAD_URL_PREFIX"
+			CONFIG_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX"
 		else		
-			updateHomeURL "$OPTARG" # use https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China
-			CONFIG_DOWNLOAD_URL="$MYHOMEURL"
+			updateDownloadURLs "$OPTARG" # use https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China
+			CONFIG_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX"
 		fi
-		set +x
-		read
 		;;
 
 	 t) case $OPTARG in
