@@ -57,7 +57,6 @@ fi
 
 if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
-	URLTARGET="/$URLTARGET"
 	sleep 1s
 fi
 
@@ -113,7 +112,12 @@ if (( ${#requiredCmds[@]} > 0 && ! INCLUDE_ONLY )); then
 fi
 
 GITHUB_URL="https://github.com"
-MYHOMEURL=readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
+# same as raspiBackup.sh: test data of URLTARGET is on the website, don't pollute github with it
+if [[ -n $URLTARGET ]]; then
+	readonly MYHOMEURL="https://www.linux-tips-and-tricks.de/raspiBackup"
+else
+	readonly MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/master/published"
+fi
 
 
 # shellcheck disable=SC2154 # $Date$ is substituted by publish.sh and build/build.sh
