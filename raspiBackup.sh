@@ -64,7 +64,7 @@ function updateDownloadURLs() { # url
 	PROPERTIES_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/raspiBackup.properties"
 }
 
-# default, may be overwritten by config option CONFIG_DOWNLOAD_URL
+# default, may be overwritten by config option DEFAULT_DOWNLOAD_URL
 
 GITHUB_URL="https://github.com"
 DOWNLOAD_URL_SUFFIX="framps/raspiBackup/master/published"
@@ -73,7 +73,7 @@ DOWNLOAD_URL_PREFIX="$GITHUB_DOWNLOAD_URL/$DOWNLOAD_URL_SUFFIX"
 
 updateDownloadURLs "$DOWNLOAD_URL_PREFIX"
 
-MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
+VERSION_PAGE="https://github.com/framps/raspiBackup/releases"
 
 if [[ -n $URLBRANCH ]]; then
 	echo "===> URLBRANCH: $URLBRANCH"
@@ -83,7 +83,7 @@ if [[ -n $URLTARGET ]]; then
 	echo "===> URLTARGET: $URLTARGET"
 	URLTARGET="/$URLTARGET"
 	# don't pollute github with test data
-	MYHOMEURL="https://www.linux-tips-and-tricks.de/raspiBackup"
+	DOWNLOAD_URL_PREFIX="https://www.linux-tips-and-tricks.de/raspiBackup"
 fi
 
 [ "$(kill -l | grep -c SIG)" -eq 0 ] && printf "\n\033[1;35m Don't call script with leading \"sh\"! \033[m\n\n"  >&2 && exit 255
@@ -151,19 +151,6 @@ SMILEY_UPDATE_POSSIBLE=";-)"
 SMILEY_BETA_AVAILABLE=":-D"
 SMILEY_RESTORETEST_REQUIRED="8-)"
 SMILEY_VERSION_DEPRECATED=":-("
-
-# URLs and temp filenames used
-
-DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.sh"
-CONFIG_URL="$MYHOMEURL${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-BETA_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup.sh"
-BETA_CONFIG_URL="$MYHOMEURL${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
-PROPERTIES_DOWNLOAD_URL="$MYHOMEURL${URLTARGET}/raspiBackup.properties"
-VERSION_PAGE="https://github.com/framps/raspiBackup/releases"
-
-# dd warning website
-#DD_WARNING_URL_DE="$MYHOMEURL/de/raspibackupcategorie/579-raspibackup-warum-sollte-man-dd-als-backupmethode-besser-nicht-benutzen/"
-#DD_WARNING_URL_EN="$MYHOMEURL/en/all-pages-about-raspibackup/581-raspibackup-why-shouldn-t-you-use-dd-as-backup-method/"
 
 CALLING_USER="$(findUser)"
 CALLING_HOME="$(eval echo "~${CALLING_USER}")"
@@ -3963,7 +3950,7 @@ function updateScript() {
 
 		if (( $updateNow )); then
 			local tmpFile="/tmp/${MYSELF}~"
-			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$MYSELF" "$MYHOMEURL"
+			writeToConsole $MSG_LEVEL_MINIMAL $MSG_DOWNLOADING "$MYSELF" "$DOWNLOAD_URL_PREFIX"
 
 			local dlHttpCode dlRC
 			dlHttpCode="$(downloadFile "$DOWNLOAD_URL" "${tmpFile}")"
