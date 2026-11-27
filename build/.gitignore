@@ -1,6 +1,5 @@
 #! raspiBackup_*.deb
 #! raspiBackup_*.deb.sig
-build.conf
 ## deb/*
 package/src
 # published on branch gh-pages by publishRepo.sh
