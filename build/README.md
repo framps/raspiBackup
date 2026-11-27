@@ -1067,83 +1067,69 @@ result and deletes the branch. Report and log are downloaded to `build/test/pack
 
 New versions, betas, deprecations and fixes can be tried on a real system before they are published,
 e.g. how `raspiBackupConfig` offers them and what raspiBackup reports after the backup. The test
-repository is built like the real one, just served from the build machine. `raspiBackupConfig`,
-`raspiBackup` and apt take the repository URL from `/etc/apt/sources.list.d/raspibackup.sources`
-(also for fixes with `-F`), so only that URL has to be changed on the test system.
+repository is built like the real one, signed with `GPG_KEYID`, and served from the build machine.
+`raspiBackupConfig`, `raspiBackup` and apt take the repository URL from
+`/etc/apt/sources.list.d/raspibackup.sources` (also for fixes with `-F`), so only that URL is changed
+on the test system. Two scripts in `build/test` do all steps:
 
-**Don't build test versions in `build/`.** `publishRepo.sh` publishes everything in `build/repo`,
-test versions would reach all users with the next release. Use a separate worktree.
+- `testRepo.sh` on the build machine builds the test versions in a separate build directory
+  (a git worktree, default `~/raspiBackup-testRepo`) and serves its repository. **Don't build test
+  versions in `build/`**: `publishRepo.sh` publishes everything in `build/repo`.
+- `useTestRepo.sh` on the test system switches between the test repository and the real one.
+  `testRepo.sh serve` offers it for download with the URL of the test repository.
 
-On the build machine:
-
-```
-# 1. Separate build directory, never run publishRepo.sh in it
-cd ~/github.com/framps/raspiBackup
-git worktree add --detach ~/rbk-test
-cd ~/rbk-test/build
-cp ~/github.com/framps/raspiBackup/build/build.conf .
-
-# 2. In ~/rbk-test/build/build.conf: the branch to build (only committed changes are packaged)
-#    and the version. Keep GPG_KEYID, the test system already trusts this key.
-#    BRANCH_TO_DEB is required, the worktree has no branch checked out (detached HEAD).
-#    It builds the latest commit of the branch, the worktree itself isn't updated.
-#        BRANCH_TO_DEB="m_972"
-#        VERSION_RASPIBACKUP="0.9.1"
-
-# 3. Build, sign and add the package to the test repository ~/rbk-test/build/repo.
-#    Repeat with other versions, e.g. 0.9.2 or 0.9.3-beta1 (suite beta)
-./build.sh
-#    deprecate a version: DEPRECATED="0.9.1" in build.conf, then only recreate the index
-./buildRepo.sh
-#    fix for one tester, see "Fix of a branch for one tester"
-./build.sh --fix 1
-
-# 4. Serve the test repository, keep it running during the test. http is sufficient,
-#    apt checks the signatures.
-cd ~/rbk-test/build/repo
-python3 -m http.server 8000
-```
-
-On the test system (`obelix` is the build machine, use its name or IP address):
+On the build machine (`buildhost` stands for its name):
 
 ```
-# 5. Use the test repository instead of the real one, apt then knows only the test versions
-sudo sed -i 's|^URIs:.*|URIs: http://obelix:8000|' /etc/apt/sources.list.d/raspibackup.sources
-sudo apt-get update
-apt-cache policy raspibackup
-
-# 6. Test raspiBackupConfig: the menu and the options offer the test versions.
-#    -f is needed only by versions which update the package index once a day (0.8 and older)
-sudo raspiBackupConfig -f
-sudo raspiBackupConfig -F m_972              # fix of a branch
-
-# 7. Test the report of raspiBackup after the backup (new version, beta, deprecated).
-#    raspiBackup updates the package index once a day, remove its time to update it now
-sudo rm -f /var/lib/raspiBackup/package.index
-sudo raspiBackup ...
-
-# 8. Next round: build the next version on the build machine (step 3), repeat steps 6 and 7
-
-# 9. Back to the real repository. A test version newer than the published one stays installed,
-#    replace it with the published one, e.g. 0.8 (or with the revert of raspiBackupConfig)
-sudo sed -i 's|^URIs:.*|URIs: https://framps.github.io/raspiBackup|' /etc/apt/sources.list.d/raspibackup.sources
-sudo apt-get update
-sudo apt-get install --allow-downgrades raspibackup=0.8
+cd build/test
+./testRepo.sh init m_972                  # once: test build directory for branch m_972, build.conf from build/build.conf
+./testRepo.sh build 0.9.1                 # build the latest commit of m_972 as 0.9.1 into the test repository
+./testRepo.sh build 0.9.2-beta1           # more versions, a beta goes into the suite beta
+./testRepo.sh deprecate "0.9.1"           # deprecate versions, "" removes the marks
+./testRepo.sh build --fix 1               # fix for one tester, VERSION of raspiBackup.sh, e.g. 0.9.2-m_972
+./testRepo.sh list                        # versions and fixes in the test repository
+./testRepo.sh serve                       # serve it on http://buildhost:8000 until Ctrl-C, prints the commands below
 ```
 
-Finally remove the test build directory on the build machine:
+`serve 8080 192.168.0.10` uses another port, or the IP address if the name of the build machine
+can't be resolved on the test system. Only committed changes are built, `build` uses the latest commit
+of the branch. The repository can be served while new versions are built in another terminal.
+
+On the test system:
 
 ```
-cd ~/github.com/framps/raspiBackup && git worktree remove --force ~/rbk-test
+curl -fsSL http://buildhost:8000/useTestRepo.sh | sudo bash -s -- on        # use the test repository
+sudo raspiBackupConfig                                                        # offers the test versions
+sudo raspiBackupConfig -F m_972                                               # fix of a branch
+sudo raspiBackup ...                                                          # reports news after the backup
+
+curl -fsSL http://buildhost:8000/useTestRepo.sh | sudo bash -s -- refresh   # after a new build or deprecation
+curl -fsSL http://buildhost:8000/useTestRepo.sh | sudo bash -s -- status    # repository used and versions
+curl -fsSL http://buildhost:8000/useTestRepo.sh | sudo bash -s -- off       # back to the real repository
 ```
 
-Instead of `sed`, `REPO_URL=http://obelix:8000 bash raspiBackupInstall.sh` (from the git checkout)
-adds the test repository and installs from it, e.g. on a new system. Called again without `REPO_URL`
-it switches back to the real repository. To sign test versions with a throwaway key instead of
-`GPG_KEYID`, create it in a separate `GNUPGHOME` like `testPackageUpdates.sh` does, set it as
-`GPG_KEYID` in the test `build.conf` and add `REPO_OWNER_GPG_FINGERPRINT=<its fingerprint>` to the
-`raspiBackupInstall.sh` call. It installs that key. Call it without both variables to get the real
-key and repository back.
+- `on` replaces the URL in `raspibackup.sources`, apt then knows only the test versions. Without the
+  repository (new system) it calls `raspiBackupInstall.sh` with `REPO_URL` of the test repository,
+  which adds it and installs raspiBackup from it.
+- `on` and `refresh` update the package index of the repository and remove
+  `/var/lib/raspiBackup/package.index`, so the next backup of raspiBackup updates the index too and
+  reports the news at once. raspiBackupConfig 0.8 and older update the index only once a day, call
+  them with `-f`.
+- `off` switches back to `https://framps.github.io/raspiBackup`. A test version newer than the latest
+  published release is replaced by that release and its hold is removed.
+
+Finally remove the test build directory on the build machine with `./testRepo.sh remove`.
+
+What the scripts do by hand: `git worktree add --detach`, `BRANCH_TO_DEB` and `VERSION_RASPIBACKUP` in
+its `build.conf`, `./build.sh` there and `python3 -m http.server 8000 --directory repo`. On the test
+system `sed -i 's|^URIs:.*|URIs: http://buildhost:8000|' /etc/apt/sources.list.d/raspibackup.sources`
+and `sudo apt-get update`.
+
+To sign test versions with a throwaway key instead of `GPG_KEYID`, create it in a separate `GNUPGHOME`
+like `testPackageUpdates.sh` does and set it as `GPG_KEYID` in the `build.conf` of the test build
+directory. The test system then needs that key: `REPO_URL=http://buildhost:8000
+REPO_OWNER_GPG_FINGERPRINT=<its fingerprint> bash raspiBackupInstall.sh`. Call it without both variables
+to get the real key and repository back.
 
 This replaces the test of new versions with `URLTARGET` and a test `raspiBackup.properties`, which
 only installations without apt still read.
@@ -1164,6 +1150,8 @@ only installations without apt still read.
 ├── common.sh           # common definitions for build and install
 ├── compareVersions.sh  # to test version up- and downgrade recognition
 ├── testPackageUpdates.sh # tests updates and reversals (release, beta, hotfix, fix of a branch for a tester, migration without apt) on a test system
+├── test/testRepo.sh    # builds test versions into a test repository and serves it, see "Test by hand with a test repository"
+├── test/useTestRepo.sh # on the test system: switches between the test repository and the real one
 │
 ├── deb                 # built deb packages (not committed)                  $DEB_TGT                           <--.
 │   ├── raspibackup_<version>.deb                                                                                   |
