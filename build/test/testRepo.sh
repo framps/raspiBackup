@@ -50,8 +50,8 @@ test system. The real repository build/repo isn't touched, nothing is published.
     init       creates the test build directory <dir> (a git worktree) with a build.conf copied
                from build/build.conf. <branch> is the branch to build, default the current branch.
     build      builds <version> of the latest commit of the branch, signs it and adds it to the
-               test repository, e.g. 0.9.1 or 0.9.2-beta1. Without <version> the VERSION of
-               raspiBackup.sh is used, e.g. for a fix: $MYSELF build --fix 1
+               test repository, e.g. 0.9.1 or 0.9.2-beta1. A fix for one tester is built without
+               <version>, with the VERSION of raspiBackup.sh: $MYSELF build --fix 1
     deprecate  marks the versions as deprecated in the test repository ("" removes the marks)
     list       lists the versions and fixes in the test repository
     serve      serves the test repository on http://<host>:<port> (default <ip address>:$DEFAULT_PORT,
@@ -132,6 +132,10 @@ cmd_build() { # [version] [build.sh options]
     if (( $# > 0 )) && [[ "$1" != -* ]]; then
         version="$1"
         shift
+    fi
+    # without a version VERSION of raspiBackup.sh is used, on a fix branch (e.g. 0.7.4-m_972) that's possible only for a fix
+    if [[ -z "$version" && " $* " != *" --fix "* ]]; then
+        error "Pass the version to build, e.g. '$MYSELF build 1.1'. Without a version only a fix can be built: '$MYSELF build --fix 1'"
     fi
     update_worktree
     set_conf VERSION_RASPIBACKUP "$version"
