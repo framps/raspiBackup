@@ -31,7 +31,7 @@ sudo apt-get install git gnupg dpkg-dev apt-utils lintian gettext-base
 gpg --list-secret-keys 23A2E977F377FC31CE44DC9C4B9E02DBACA4DD24
 ```
 
-`build.conf` isn't committed. `./build.sh` creates a template if it's missing.
+`build.conf` is committed with the settings of the maintainer. `./build.sh` creates a template if it's missing.
 Check these settings:
 
 | Setting         | Meaning                                                              |
@@ -1142,7 +1142,7 @@ only installations without apt still read.
 ```
                                                                               set in       set in        in
                                                                               common.sh    build.conf    build.sh
-├── build.conf          # configuration for package build (not committed)
+├── build.conf          # configuration for package build
 ├── build.log           # build log
 ├── build-debug.log     # build debug log
 ├── build.sh            # build script, calls buildRepo.sh at the end

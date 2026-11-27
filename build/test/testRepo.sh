@@ -96,10 +96,16 @@ check_initialized() {
 }
 
 update_worktree() { # use the build scripts of the latest commit of the branch too
-    local branch
+    local branch saved
     branch="$(get_conf BRANCH_TO_DEB)"
     [[ -n "$branch" ]] || error "BRANCH_TO_DEB isn't set in $TEST_DIR/build/build.conf"
-    git -C "$TEST_DIR" checkout -q --detach "$branch"
+    # build.conf is committed and changed here, keep the test settings across the checkout.
+    # -f only discards them, repo/ and deb/ are ignored and stay
+    saved="$(mktemp)"
+    cp "$TEST_DIR/build/build.conf" "$saved"
+    git -C "$TEST_DIR" checkout -q -f --detach "$branch"
+    cp "$saved" "$TEST_DIR/build/build.conf"
+    rm -f "$saved"
 }
 
 cmd_init() { # [branch]

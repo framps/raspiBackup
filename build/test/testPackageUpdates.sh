@@ -736,7 +736,8 @@ readonly GPG_FPR
 log "test key $GPG_FPR"
 
 step "create build.conf"
-(cd "$BUILD" && run ./build.sh)   # creates the template and exits
+# build.conf is committed, build.sh creates the template only if it's missing
+[[ -f "$BUILD/build.conf" ]] || (cd "$BUILD" && run ./build.sh)
 [[ -f "$BUILD/build.conf" ]] || abort "build.sh didn't create build.conf"
 cp "$BUILD/build.conf" "$BUILD/build.conf.test"
 cat >> "$BUILD/build.conf.test" <<EOF_CONF
@@ -745,6 +746,7 @@ cat >> "$BUILD/build.conf.test" <<EOF_CONF
 BRANCH_TO_DEB="HEAD"
 VERSION_RASPIBACKUPCONFIG=""
 GPG_KEYID="$GPG_FPR"
+GPG_KEY_UID=""                    # the test key has only its own user ID
 REPO_ARCHITECTURES="$(dpkg --print-architecture)"
 VERBOSITY=normal
 EOF_CONF
