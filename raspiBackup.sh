@@ -53,7 +53,26 @@ VERSION_CONFIG_VARNAME="VERSION_.*CONF.*"					# used to lookup VERSION_CONFIG in
 
 BRANCH="${URLBRANCH:-master}"
 
-# standard download location
+# Note: No debug stmts possible
+# Set the download URLs to either github or any other download location
+function updateDownloadURLs() { # url
+	DOWNLOAD_URL_PREFIX="${1%/}"	
+	DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/raspiBackup.sh"
+	CONFIG_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+	BETA_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/beta/raspiBackup.sh"
+	BETA_CONFIG_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/beta/raspiBackup_\$lang\.conf" # used in eval for late binding of URLTAGRET
+	PROPERTIES_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX${URLTARGET}/raspiBackup.properties"
+}
+
+# default, may be overwritten by config option CONFIG_DOWNLOAD_URL
+
+GITHUB_URL="https://github.com"
+DOWNLOAD_URL_SUFFIX="framps/raspiBackup/master/published"
+GITHUB_DOWNLOAD_URL="https://raw.githubusercontent.com"
+DOWNLOAD_URL_PREFIX="$GITHUB_DOWNLOAD_URL/$DOWNLOAD_URL_SUFFIX"
+
+updateDownloadURLs "$DOWNLOAD_URL_PREFIX"
+
 MYHOMEURL="https://raw.githubusercontent.com/framps/raspiBackup/$BRANCH/published"
 
 if [[ -n $URLBRANCH ]]; then
@@ -4312,6 +4331,11 @@ function readConfigParameters() {
 			CURRENTDIR_CONFIG_FILE_VERSION="$(extractVersionFromFile "$CURRENTDIR_CONFIG_FILE" "$VERSION_CONFIG_VARNAME" )"
 			logItem "Read config ${CURRENTDIR_CONFIG_FILE} : ${HOME_CONFIG_FILE_VERSION}$NL$(egrep -v '^\s*$|^#' $CURRENTDIR_CONFIG_FILE)"
 		fi
+	fi
+
+	# use configured downloadurl
+	if [[ -n $DEFAULT_DOWNLOAD_URL ]]; then
+		updateDownloadURLs "$DEFAULT_DOWNLOAD_URL"
 	fi
 
 	logExit
