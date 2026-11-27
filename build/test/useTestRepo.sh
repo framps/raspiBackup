@@ -65,7 +65,10 @@ installed_version() {
 }
 
 refresh() { # update the package index of the raspiBackup repository only and let raspiBackup report news now
-    apt-get update -o Dir::Etc::sourcelist="$SOURCES" -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
+    # --error-on=any: fail if the repository can't be reached, apt-get update ignores it otherwise
+    if ! apt-get update --error-on=any -o Dir::Etc::sourcelist="$SOURCES" -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0; then
+        error "The repository $(current_url) can't be read. Is 'testRepo.sh serve' running and reachable from here?"
+    fi
     rm -f "$INDEX_STAMP"
 }
 

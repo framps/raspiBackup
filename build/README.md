@@ -1078,7 +1078,7 @@ on the test system. Two scripts in `build/test` do all steps:
 - `useTestRepo.sh` on the test system switches between the test repository and the real one.
   `testRepo.sh serve` offers it for download with the URL of the test repository.
 
-On the build machine (`buildhost` stands for its name):
+On the build machine (`buildhost` stands for its IP address, which `serve` uses and prints):
 
 ```
 cd build/test
@@ -1091,8 +1091,8 @@ cd build/test
 ./testRepo.sh serve                       # serve it on http://buildhost:8000 until Ctrl-C, prints the commands below
 ```
 
-`serve 8080 192.168.0.10` uses another port, or the IP address if the name of the build machine
-can't be resolved on the test system. Only committed changes are built, `build` uses the latest commit
+`serve` uses the IP address of the interface of the default route, a host name often can't be
+resolved on the test system. `serve 8080 192.168.0.10` uses another port and address. Only committed changes are built, `build` uses the latest commit
 of the branch. The repository can be served while new versions are built in another terminal.
 
 On the test system:
@@ -1108,7 +1108,8 @@ curl -fsSL http://buildhost:8000/useTestRepo.sh | sudo bash -s -- status    # re
 curl -fsSL http://buildhost:8000/useTestRepo.sh | sudo bash -s -- off       # back to the real repository
 ```
 
-- `on` replaces the URL in `raspibackup.sources`, apt then knows only the test versions. Without the
+- `on` replaces the URL in `raspibackup.sources`, apt then knows only the test versions. `on`, `refresh`
+  and `off` fail if the repository can't be read. Without the
   repository (new system) it calls `raspiBackupInstall.sh` with `REPO_URL` of the test repository,
   which adds it and installs raspiBackup from it.
 - `on` and `refresh` update the package index of the repository and remove

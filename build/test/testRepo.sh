@@ -54,7 +54,8 @@ test system. The real repository build/repo isn't touched, nothing is published.
                raspiBackup.sh is used, e.g. for a fix: $MYSELF build --fix 1
     deprecate  marks the versions as deprecated in the test repository ("" removes the marks)
     list       lists the versions and fixes in the test repository
-    serve      serves the test repository on http://<host>:<port> (default $(hostname):$DEFAULT_PORT)
+    serve      serves the test repository on http://<host>:<port> (default <ip address>:$DEFAULT_PORT,
+               the address of the interface of the default route)
                until Ctrl-C and prints the command for the test system
     remove     removes the test build directory with its test repository
 
@@ -68,6 +69,12 @@ EOF_USAGE
 error() {
     echo "Error: $*" >&2
     exit 1
+}
+
+default_host() { # IP address of the interface of the default route, a host name often can't be resolved on the test system
+    local ip
+    ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i < NF; i++) if ($i == "src") { print $(i + 1); exit } }')"
+    echo "${ip:-$(hostname)}"
 }
 
 set_conf() { # name value - sets a variable in the test build.conf
@@ -149,7 +156,7 @@ cmd_list() {
 
 cmd_serve() { # [port] [host]
     check_initialized
-    local port="${1:-$DEFAULT_PORT}" host="${2:-$(hostname)}"
+    local port="${1:-$DEFAULT_PORT}" host="${2:-$(default_host)}"
     local repo="$TEST_DIR/build/repo" url
     url="http://$host:$port"
     compgen -G "$repo/dists/*/InRelease" > /dev/null || error "The test repository is empty, call '$MYSELF build <version>' first"
@@ -168,7 +175,7 @@ On the test system:
     curl -fsSL $url/useTestRepo.sh | sudo bash -s -- refresh   # after a new build here
     curl -fsSL $url/useTestRepo.sh | sudo bash -s -- off       # back to the real repository
 
-If '$host' can't be resolved on the test system, call '$MYSELF serve $port <ip address>'.
+If the test system can't reach $host, call '$MYSELF serve $port <ip address or name>'.
 
 EOF_SERVE
     exec python3 -m http.server "$port" --directory "$repo"
