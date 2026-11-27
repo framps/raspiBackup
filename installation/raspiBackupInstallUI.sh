@@ -1156,14 +1156,14 @@ Tab key: Jump to buttons at the bottom${NL}\
 ${NL}\
 Pfeiltasten: Bewege Schreibmarke zum nächsten Menueintrag, Listeneintrag oder Auswahlknopf${NL}\
 Leertaste: Selektiere/Deselektieren Einträge in einer Auswahliste${NL}\
-Tab Taste: Springe zu den unteren Auswahlknöpfen"
+Tab Taste: Springe zu dem nächsten Auswahlknopf"
 MSG_DE[$MSG_NAVIGATION]="Pfeiltasten: Bewege Schreibmarke zum nächsten Menueintrag, Listeneintrag oder Auswahlknopf${NL}\
 Leertaste: Selektiere/Deselektieren Einträge in einer Auswahliste${NL}\
 Tab Taste: Springe zu den unteren Auswahlknöpfen${NL}\
 ${NL}\
 Cursor keys: Move cursor to next menu or list item${NL}\
 Space key: Select/unselect items in a selection list${NL}\
-Tab key: Jump to buttons at the bottom"
+Tab key: Jump to next button"
 MSG_FI[$MSG_NAVIGATION]="Nuolinäppäimet: Siirrä kursori seuraavaan valikon tai listan kohteeseen${NL}\
 Välilyönti: Valitse/poista valinta${NL}\
 Sarkain: Kohdista alarivin painikkeisiin${NL}\
@@ -2452,7 +2452,6 @@ function config_update_execute() {
 	logItem "eMail: $CONFIG_EMAIL"
 	logItem "mailProgram: $CONFIG_MAIL_PROGRAM"
 	logItem "Resize: $CONFIG_RESIZE_ROOTFS"
-	logItem "DownloadURL: $CONFIG_DOWNLOAD_URL"
 
 	sed -i -E "s/^(#?\s?)?DEFAULT_LANGUAGE=.*\$/DEFAULT_LANGUAGE=\"$CONFIG_LANGUAGE\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s/^(#?\s?)?DEFAULT_PARTITIONBASED_BACKUP=.*\$/DEFAULT_PARTITIONBASED_BACKUP=\"$CONFIG_PARTITIONBASED_BACKUP\"/" "$CONFIG_ABS_FILE"
@@ -5539,7 +5538,7 @@ function first_steps() {
 function show_help() {
 	echo $GIT_CODEVERSION
 	echo "$MYSELF ( -i [-e]? | -u | -U | -t [crond|systemd] )"
-	echo "-d: Install from <url>"
+	echo "-d: Install raspiBackup from <url>"
 	echo "-e: unattended (re)install of $RASPIBACKUP_NAME extensions"
 	echo "-i: unattended (re)install of $RASPIBACKUP_NAME"
 	echo "-h: display this help"
