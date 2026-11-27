@@ -41,21 +41,18 @@ Le programme d’installation utilise des menus, des listes et des boutons radio
 raspiBackup est installé comme paquet Debian depuis son dépôt apt signé avec les commandes suivantes :
 
 ```
-curl -fsSLO https://framps.github.io/raspiBackup/raspiBackupInstall.sh
-bash raspiBackupInstall.sh
+curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash
 ```
 
-Le script ajoute le dépôt et installe le paquet `raspibackup`. `bash raspiBackupInstall.sh --help` affiche toutes les options, par exemple `--beta` pour installer la dernière version bêta. Ensuite raspiBackup est configuré avec
+Le script ajoute le dépôt et installe le paquet `raspibackup`. Rien n’est laissé dans le répertoire courant, le journal est écrit dans `/tmp`. Les options sont passées avec `bash -s --`, par exemple `curl -fsSL https://framps.github.io/raspiBackup/raspiBackupInstall.sh | bash -s -- --beta` installe la dernière version bêta et `... | bash -s -- --help` affiche toutes les options. Ensuite raspiBackup est configuré avec
 
 ```
 sudo raspiBackupConfig
 ```
 
-Les mises à jour sont installées avec `sudo apt-get update && sudo apt-get upgrade`.
+Les mises à jour sont installées avec `sudo apt-get update && sudo apt-get upgrade`. Chaque mise à jour ajoute les nouvelles options à la configuration et conserve les valeurs existantes. `sudo raspiBackupConfig -U` met également à jour.
 
-L’ancienne installation sans apt reste disponible avec la commande suivante :
-
-`curl -s https://raw.githubusercontent.com/framps/raspiBackup/master/installation/install.sh | sudo bash`
+Les détails (installation manuelle, versions bêta, retour à une version précédente, désinstallation) sont décrits dans le [README anglais](../README.md#installation).
 
 ## Dons
 
@@ -94,7 +91,7 @@ Vous êtes invité à créer vos demandes de fonctionnalités dans github. Ils s
 
 ## Systemd
 
-Au lieu de cron systemd peut être utilisé pour démarrer raspiBackup. Voir [ici](../installation/systemd)
+raspiBackupConfig configure un timer systemd (au lieu de cron) qui démarre raspiBackup régulièrement.
 
 # Démonstration du concept du serveur REST API
 
