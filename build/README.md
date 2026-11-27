@@ -1085,6 +1085,8 @@ cp ~/github.com/framps/raspiBackup/build/build.conf .
 
 # 2. In ~/rbk-test/build/build.conf: the branch to build (only committed changes are packaged)
 #    and the version. Keep GPG_KEYID, the test system already trusts this key.
+#    BRANCH_TO_DEB is required, the worktree has no branch checked out (detached HEAD).
+#    It builds the latest commit of the branch, the worktree itself isn't updated.
 #        BRANCH_TO_DEB="m_972"
 #        VERSION_RASPIBACKUP="0.9.1"
 

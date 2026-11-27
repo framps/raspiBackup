@@ -244,6 +244,11 @@ trap 'git worktree remove --force "$GITSRC" 2>/dev/null || true' EXIT
 CURRENT_BRANCH=$(git branch --show-current)
 
 BRANCH_TO_DEB="${BRANCH_TO_DEB:-${CURRENT_BRANCH}}"
+if [[ -z "$BRANCH_TO_DEB" ]] ; then
+    # e.g. in a worktree with detached HEAD for a test repository
+    echo "Error: No branch checked out (detached HEAD). Set BRANCH_TO_DEB in 'build.conf' to the branch to build." >&2
+    exit 1
+fi
 show "Using branch '$BRANCH_TO_DEB' as source for the build"
 
 # detached because a branch can't be checked out in two worktrees
