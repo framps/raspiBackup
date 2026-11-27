@@ -2470,14 +2470,6 @@ function config_update_execute() {
 	sed -i -E "s/^(#?\s?)?DEFAULT_CLONE_PARTUUID=.*$/DEFAULT_CLONE_PARTUUID=\"$CONFIG_CLONE_PARTUUID\"/" "$CONFIG_ABS_FILE"
 	sed -i -E "s|^(#?\s?)?DEFAULT_CLONE_DEVICE=.*$|DEFAULT_CLONE_DEVICE=\"$CONFIG_CLONE_DEVICE\"|" "$CONFIG_ABS_FILE"
 	sed -i -E "s|^(#?\s?)?DEFAULT_BACKUPPATH=.*$|DEFAULT_BACKUPPATH=\"$CONFIG_BACKUPPATH\"|" "$CONFIG_ABS_FILE"
-	
-	if grep -q "DEFAULT_DOWNLOAD_URL=" "$CONFIG_ABS_FILE"; then
-		sed -i -E "s|^(#?\s?)?DEFAULT_DOWNLOAD_URL=.*$|DEFAULT_DOWNLOAD_URL=\"$CONFIG_DOWNLOAD_URL\"|" "$CONFIG_ABS_FILE"
-	else
-		echo "" >> "$CONFIG_ABS_FILE"
-		echo "# Use a different download URL for raspiBackup other than github, e.g. https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China" >> "$CONFIG_ABS_FILE"
-		echo "DEFAULT_DOWNLOAD_URL=\"$CONFIG_DOWNLOAD_URL\"" >> "$CONFIG_ABS_FILE"
-	fi
 
 	local pline sline
 	if [[ "$CONFIG_STOPSERVICES" != "$IGNORE_START_STOP_CHAR" && -n "$CONFIG_STOPSERVICES" ]]; then
@@ -5654,6 +5646,13 @@ while getopts "t:h?usUeid:" opt; do
 		else		
 			updateDownloadURLs "$OPTARG" # use https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China
 			CONFIG_DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX"
+		fi
+		if grep -q "DEFAULT_DOWNLOAD_URL=" "$CONFIG_ABS_FILE"; then
+			sed -i -E "s|^(#?\s?)?DEFAULT_DOWNLOAD_URL=.*$|DEFAULT_DOWNLOAD_URL=\"$CONFIG_DOWNLOAD_URL\"|" "$CONFIG_ABS_FILE"
+		else
+			echo "" >> "$CONFIG_ABS_FILE"
+			echo "# Use a different download URL for raspiBackup other than github, e.g. https://cdn.jsdelivr.net/gh/framps/raspiBackup@master/published for example in China" >> "$CONFIG_ABS_FILE"
+			echo "DEFAULT_DOWNLOAD_URL=\"$CONFIG_DOWNLOAD_URL\"" >> "$CONFIG_ABS_FILE"
 		fi
 		;;
 
