@@ -1421,6 +1421,13 @@ MSG_FI[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: Pakettihakemiston pä
 MSG_FR[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: La mise à jour de l'index des paquets avec apt-get update a échoué."
 MSG_ZH[$MSG_PACKAGE_INDEX_UPDATE_FAILED]="${MSG_PRF}0037E: 使用apt-get update更新软件包索引失败."
 
+MSG_PACKAGE_INDEX_UPDATING=$((SCNT++))
+MSG_EN[$MSG_PACKAGE_INDEX_UPDATING]="${MSG_PRF}0065I: Updating the package index..."
+MSG_DE[$MSG_PACKAGE_INDEX_UPDATING]="${MSG_PRF}0065I: Der Paketindex wird aktualisiert..."
+MSG_FI[$MSG_PACKAGE_INDEX_UPDATING]="${MSG_PRF}0065I: Päivitetään pakettihakemistoa..."
+MSG_FR[$MSG_PACKAGE_INDEX_UPDATING]="${MSG_PRF}0065I: Mise à jour de l'index des paquets..."
+MSG_ZH[$MSG_PACKAGE_INDEX_UPDATING]="${MSG_PRF}0065I: 正在更新软件包索引..."
+
 MSG_PACKAGE_HOLD_FAILED=$((SCNT++))
 MSG_EN[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold of package %1 failed."
 MSG_DE[$MSG_PACKAGE_HOLD_FAILED]="${MSG_PRF}0038E: apt-mark hold des Pakets %1 fehlgeschlagen."
@@ -2594,6 +2601,7 @@ function package_index_refresh() { # [all] - apt-get update of the raspiBackup r
 		return 0
 	fi
 
+	writeToConsole $MSG_PACKAGE_INDEX_UPDATING	# can take a while, the menu shows a progress bar instead
 	if ! executeApt apt-get update "${options[@]}"; then
 		logExit 1
 		return 1
